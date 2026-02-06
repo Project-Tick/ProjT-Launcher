@@ -16,11 +16,11 @@
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/Dominance.h"
 #include "mlir/Interfaces/SubsetOpInterface.h"
-#include "mlir/Transforms/RegionUtils.h"
+#include "mlir/Pass/Pass.h"
 
 namespace mlir {
 namespace bufferization {
-#define GEN_PASS_DEF_EMPTYTENSORELIMINATIONPASS
+#define GEN_PASS_DEF_EMPTYTENSORELIMINATION
 #include "mlir/Dialect/Bufferization/Transforms/Passes.h.inc"
 } // namespace bufferization
 } // namespace mlir
@@ -106,13 +106,8 @@ Value mlir::bufferization::buildSubsetExtraction(RewriterBase &rewriter,
   // this replacement.
   Operation *insertionPoint =
       findValidInsertionPoint(emptyTensorOp, user, neededValues);
-  if (!insertionPoint) {
-    // If no already suitable insertion point was found, attempt to move all
-    // needed values before the user.
-    if (failed(moveValueDefinitions(rewriter, neededValues, user)))
-      return {};
-    insertionPoint = user;
-  }
+  if (!insertionPoint)
+    return {};
 
   rewriter.setInsertionPoint(insertionPoint);
   Value replacement =
@@ -174,8 +169,8 @@ LogicalResult mlir::bufferization::eliminateEmptyTensors(
             cast<ShapedType>(v.getType()).getElementType())
           continue;
         rewriter.setInsertionPointAfterValue(replacement);
-        replacement = tensor::CastOp::create(rewriter, v.getLoc(), v.getType(),
-                                             replacement);
+        replacement = rewriter.create<tensor::CastOp>(v.getLoc(), v.getType(),
+                                                      replacement);
       }
       // Replace the specific use of the tensor::EmptyOp.
       rewriter.modifyOpInPlace(user, [&]() {
@@ -192,9 +187,9 @@ LogicalResult mlir::bufferization::eliminateEmptyTensors(
 
 namespace {
 struct EmptyTensorElimination
-    : public bufferization::impl::EmptyTensorEliminationPassBase<
+    : public bufferization::impl::EmptyTensorEliminationBase<
           EmptyTensorElimination> {
-  using Base::Base;
+  EmptyTensorElimination() = default;
 
   void runOnOperation() override;
 
@@ -231,4 +226,8 @@ void EmptyTensorElimination::runOnOperation() {
   IRRewriter rewriter(getOperation()->getContext());
   if (failed(bufferization::eliminateEmptyTensors(rewriter, getOperation())))
     signalPassFailure();
+}
+
+std::unique_ptr<Pass> mlir::bufferization::createEmptyTensorEliminationPass() {
+  return std::make_unique<EmptyTensorElimination>();
 }

@@ -12,14 +12,9 @@
 #include "MCTargetDesc/AMDGPUMCTargetDesc.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/CodeGen/Register.h"
-#include "llvm/IR/PassManager.h"
 #include "llvm/Pass.h"
-#include "llvm/PassRegistry.h"
-#include <variant>
 
 namespace llvm {
-
-void initializeAMDGPUArgumentUsageInfoWrapperLegacyPass(PassRegistry &);
 
 class Function;
 class LLT;
@@ -32,44 +27,55 @@ private:
   friend struct AMDGPUFunctionArgInfo;
   friend class AMDGPUArgumentUsageInfo;
 
-  std::variant<std::monostate, MCRegister, unsigned> Val;
+  union {
+    MCRegister Reg;
+    unsigned StackOffset;
+  };
 
   // Bitmask to locate argument within the register.
   unsigned Mask;
 
+  bool IsStack : 1;
+  bool IsSet : 1;
+
 public:
-  ArgDescriptor(unsigned Mask = ~0u) : Mask(Mask) {}
+  ArgDescriptor(unsigned Val = 0, unsigned Mask = ~0u, bool IsStack = false,
+                bool IsSet = false)
+      : Reg(Val), Mask(Mask), IsStack(IsStack), IsSet(IsSet) {}
 
   static ArgDescriptor createRegister(Register Reg, unsigned Mask = ~0u) {
-    ArgDescriptor Ret(Mask);
-    Ret.Val = Reg.asMCReg();
-    return Ret;
+    return ArgDescriptor(Reg, Mask, false, true);
   }
 
   static ArgDescriptor createStack(unsigned Offset, unsigned Mask = ~0u) {
-    ArgDescriptor Ret(Mask);
-    Ret.Val = Offset;
-    return Ret;
+    return ArgDescriptor(Offset, Mask, true, true);
   }
 
   static ArgDescriptor createArg(const ArgDescriptor &Arg, unsigned Mask) {
-    // Copy the descriptor, then change the mask.
-    ArgDescriptor Ret(Arg);
-    Ret.Mask = Mask;
-    return Ret;
+    return ArgDescriptor(Arg.Reg, Mask, Arg.IsStack, Arg.IsSet);
   }
 
-  bool isSet() const { return !std::holds_alternative<std::monostate>(Val); }
+  bool isSet() const {
+    return IsSet;
+  }
 
   explicit operator bool() const {
     return isSet();
   }
 
-  bool isRegister() const { return std::holds_alternative<MCRegister>(Val); }
+  bool isRegister() const {
+    return !IsStack;
+  }
 
-  MCRegister getRegister() const { return std::get<MCRegister>(Val); }
+  MCRegister getRegister() const {
+    assert(!IsStack);
+    return Reg;
+  }
 
-  unsigned getStackOffset() const { return std::get<unsigned>(Val); }
+  unsigned getStackOffset() const {
+    assert(IsStack);
+    return StackOffset;
+  }
 
   unsigned getMask() const {
     // None of the target SGPRs or VGPRs are expected to have a 'zero' mask.
@@ -90,7 +96,7 @@ inline raw_ostream &operator<<(raw_ostream &OS, const ArgDescriptor &Arg) {
 }
 
 struct KernArgPreloadDescriptor : public ArgDescriptor {
-  KernArgPreloadDescriptor() = default;
+  KernArgPreloadDescriptor() {}
   SmallVector<MCRegister> Regs;
 };
 
@@ -105,25 +111,18 @@ struct AMDGPUFunctionArgInfo {
     DISPATCH_ID         =  4,
     FLAT_SCRATCH_INIT   =  5,
     LDS_KERNEL_ID       =  6, // LLVM internal, not part of the ABI
-    WORKGROUP_ID_X      = 10, // Also used for cluster ID X.
-    WORKGROUP_ID_Y      = 11, // Also used for cluster ID Y.
-    WORKGROUP_ID_Z      = 12, // Also used for cluster ID Z.
+    WORKGROUP_ID_X      = 10,
+    WORKGROUP_ID_Y      = 11,
+    WORKGROUP_ID_Z      = 12,
     PRIVATE_SEGMENT_WAVE_BYTE_OFFSET = 14,
     IMPLICIT_BUFFER_PTR = 15,
     IMPLICIT_ARG_PTR = 16,
     PRIVATE_SEGMENT_SIZE = 17,
-    CLUSTER_WORKGROUP_ID_X = 21,
-    CLUSTER_WORKGROUP_ID_Y = 22,
-    CLUSTER_WORKGROUP_ID_Z = 23,
-    CLUSTER_WORKGROUP_MAX_ID_X = 24,
-    CLUSTER_WORKGROUP_MAX_ID_Y = 25,
-    CLUSTER_WORKGROUP_MAX_ID_Z = 26,
-    CLUSTER_WORKGROUP_MAX_FLAT_ID = 27,
 
     // VGPRS:
-    WORKITEM_ID_X       = 28,
-    WORKITEM_ID_Y       = 29,
-    WORKITEM_ID_Z       = 30,
+    WORKITEM_ID_X       = 18,
+    WORKITEM_ID_Y       = 19,
+    WORKITEM_ID_Z       = 20,
     FIRST_VGPR_VALUE    = WORKITEM_ID_X
   };
   // clang-format on
@@ -172,70 +171,32 @@ struct AMDGPUFunctionArgInfo {
   static AMDGPUFunctionArgInfo fixedABILayout();
 };
 
-class AMDGPUArgumentUsageInfo {
+class AMDGPUArgumentUsageInfo : public ImmutablePass {
 private:
   DenseMap<const Function *, AMDGPUFunctionArgInfo> ArgInfoMap;
 
 public:
+  static char ID;
+
   static const AMDGPUFunctionArgInfo ExternFunctionInfo;
   static const AMDGPUFunctionArgInfo FixedABIFunctionInfo;
 
-  void print(raw_ostream &OS, const Module *M = nullptr) const;
+  AMDGPUArgumentUsageInfo() : ImmutablePass(ID) { }
 
-  void clear() { ArgInfoMap.clear(); }
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.setPreservesAll();
+  }
+
+  bool doInitialization(Module &M) override;
+  bool doFinalization(Module &M) override;
+
+  void print(raw_ostream &OS, const Module *M = nullptr) const override;
 
   void setFuncArgInfo(const Function &F, const AMDGPUFunctionArgInfo &ArgInfo) {
     ArgInfoMap[&F] = ArgInfo;
   }
 
   const AMDGPUFunctionArgInfo &lookupFuncArgInfo(const Function &F) const;
-
-  bool invalidate(Module &M, const PreservedAnalyses &PA,
-                  ModuleAnalysisManager::Invalidator &Inv);
-};
-
-class AMDGPUArgumentUsageInfoWrapperLegacy : public ImmutablePass {
-  std::unique_ptr<AMDGPUArgumentUsageInfo> AUIP;
-
-public:
-  static char ID;
-
-  AMDGPUArgumentUsageInfoWrapperLegacy() : ImmutablePass(ID) {
-    initializeAMDGPUArgumentUsageInfoWrapperLegacyPass(
-        *PassRegistry::getPassRegistry());
-  }
-
-  AMDGPUArgumentUsageInfo &getArgUsageInfo() { return *AUIP; }
-  const AMDGPUArgumentUsageInfo &getArgUsageInfo() const { return *AUIP; }
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.setPreservesAll();
-  }
-
-  bool doInitialization(Module &M) override {
-    AUIP = std::make_unique<AMDGPUArgumentUsageInfo>();
-    return false;
-  }
-
-  bool doFinalization(Module &M) override {
-    AUIP->clear();
-    return false;
-  }
-
-  void print(raw_ostream &OS, const Module *M = nullptr) const override {
-    AUIP->print(OS, M);
-  }
-};
-
-class AMDGPUArgumentUsageAnalysis
-    : public AnalysisInfoMixin<AMDGPUArgumentUsageAnalysis> {
-  friend AnalysisInfoMixin<AMDGPUArgumentUsageAnalysis>;
-  static AnalysisKey Key;
-
-public:
-  using Result = AMDGPUArgumentUsageInfo;
-
-  AMDGPUArgumentUsageInfo run(Module &M, ModuleAnalysisManager &);
 };
 
 } // end namespace llvm

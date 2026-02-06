@@ -8,7 +8,7 @@
 
 // <forward_list>
 
-// forward_list(size_type n, const value_type& v); // constexpr since C++26
+// forward_list(size_type n, const value_type& v);
 
 #include <forward_list>
 #include <cassert>
@@ -16,39 +16,31 @@
 #include "test_macros.h"
 #include "min_allocator.h"
 
-TEST_CONSTEXPR_CXX26 bool test() {
-  {
-    typedef int T;
-    typedef std::forward_list<T> C;
-    T v(6);
-    unsigned N = 10;
-    C c(N, v);
-    unsigned n = 0;
-    for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, ++n)
-      assert(*i == v);
-    assert(n == N);
-  }
+int main(int, char**)
+{
+    {
+        typedef int T;
+        typedef std::forward_list<T> C;
+        T v(6);
+        unsigned N = 10;
+        C c(N, v);
+        unsigned n = 0;
+        for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, ++n)
+            assert(*i == v);
+        assert(n == N);
+    }
 #if TEST_STD_VER >= 11
-  {
-    typedef int T;
-    typedef std::forward_list<T, min_allocator<T>> C;
-    T v(6);
-    unsigned N = 10;
-    C c(N, v);
-    unsigned n = 0;
-    for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, ++n)
-      assert(*i == v);
-    assert(n == N);
-  }
-#endif
-
-  return true;
-}
-
-int main(int, char**) {
-  assert(test());
-#if TEST_STD_VER >= 26
-  static_assert(test());
+    {
+        typedef int T;
+        typedef std::forward_list<T, min_allocator<T>> C;
+        T v(6);
+        unsigned N = 10;
+        C c(N, v);
+        unsigned n = 0;
+        for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, ++n)
+            assert(*i == v);
+        assert(n == N);
+    }
 #endif
 
   return 0;

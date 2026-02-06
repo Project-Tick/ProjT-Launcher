@@ -34,19 +34,14 @@
 ;
 ; RUN: lli --jit-linker=rtdyld --orc-lazy-debug=jit-debug-objects %s | \
 ; RUN:                              llvm-objdump --section-headers - | \
-; RUN:                              FileCheck --check-prefix=CHECK_RTDYLD %s
-;
-; CHECK_RTDYLD:      .ltext
-; CHECK_RTDYLD-NOT:  0000000000000000
-; CHECK_RTDYLD-SAME: TEXT
-;
+; RUN:                              FileCheck --check-prefix=CHECK_LOAD_ADDR %s
 ; RUN: lli --jit-linker=jitlink --orc-lazy-debug=jit-debug-objects %s | \
 ; RUN:                               llvm-objdump --section-headers - | \
-; RUN:                               FileCheck --check-prefix=CHECK_JITLINK %s
+; RUN:                               FileCheck --check-prefix=CHECK_LOAD_ADDR %s
 ;
-; CHECK_JITLINK:      .text
-; CHECK_JITLINK-NOT:  0000000000000000
-; CHECK_JITLINK-SAME: TEXT
+; CHECK_LOAD_ADDR:      .text
+; CHECK_LOAD_ADDR-NOT:  0000000000000000
+; CHECK_LOAD_ADDR-SAME: TEXT
 
 define i32 @main() !dbg !3 {
 entry:

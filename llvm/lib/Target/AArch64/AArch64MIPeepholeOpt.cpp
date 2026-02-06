@@ -8,11 +8,11 @@
 //
 // This pass performs below peephole optimizations on MIR level.
 //
-// 1. MOVi32imm + (ANDS?|EOR|ORR)Wrr ==> (AND|EOR|ORR)Wri + (ANDS?|EOR|ORR)Wri
-//    MOVi64imm + (ANDS?|EOR|ORR)Xrr ==> (AND|EOR|ORR)Xri + (ANDS?|EOR|ORR)Xri
+// 1. MOVi32imm + ANDWrr ==> ANDWri + ANDWri
+//    MOVi64imm + ANDXrr ==> ANDXri + ANDXri
 //
 // 2. MOVi32imm + ADDWrr ==> ADDWRi + ADDWRi
-//    MOVi64imm + ADDXrr ==> ADDXri + ADDXri
+//    MOVi64imm + ADDXrr ==> ANDXri + ANDXri
 //
 // 3. MOVi32imm + SUBWrr ==> SUBWRi + SUBWRi
 //    MOVi64imm + SUBXrr ==> SUBXri + SUBXri
@@ -84,7 +84,9 @@ namespace {
 struct AArch64MIPeepholeOpt : public MachineFunctionPass {
   static char ID;
 
-  AArch64MIPeepholeOpt() : MachineFunctionPass(ID) {}
+  AArch64MIPeepholeOpt() : MachineFunctionPass(ID) {
+    initializeAArch64MIPeepholeOptPass(*PassRegistry::getPassRegistry());
+  }
 
   const AArch64InstrInfo *TII;
   const AArch64RegisterInfo *TRI;
@@ -125,14 +127,8 @@ struct AArch64MIPeepholeOpt : public MachineFunctionPass {
   template <typename T>
   bool visitADDSSUBS(OpcodePair PosOpcs, OpcodePair NegOpcs, MachineInstr &MI);
 
-  // Strategy used to split logical immediate bitmasks.
-  enum class SplitStrategy {
-    Intersect,
-    Disjoint,
-  };
   template <typename T>
-  bool trySplitLogicalImm(unsigned Opc, MachineInstr &MI,
-                          SplitStrategy Strategy, unsigned OtherOpc = 0);
+  bool visitAND(unsigned Opc, MachineInstr &MI);
   bool visitORR(MachineInstr &MI);
   bool visitCSEL(MachineInstr &MI);
   bool visitINSERT(MachineInstr &MI);
@@ -164,7 +160,14 @@ INITIALIZE_PASS(AArch64MIPeepholeOpt, "aarch64-mi-peephole-opt",
 template <typename T>
 static bool splitBitmaskImm(T Imm, unsigned RegSize, T &Imm1Enc, T &Imm2Enc) {
   T UImm = static_cast<T>(Imm);
-  assert(UImm && (UImm != ~static_cast<T>(0)) && "Invalid immediate!");
+  if (AArch64_AM::isLogicalImmediate(UImm, RegSize))
+    return false;
+
+  // If this immediate can be handled by one instruction, do not split it.
+  SmallVector<AArch64_IMM::ImmInsnModel, 4> Insn;
+  AArch64_IMM::expandMOVImm(UImm, RegSize, Insn);
+  if (Insn.size() == 1)
+    return false;
 
   // The bitmask immediate consists of consecutive ones.  Let's say there is
   // constant 0b00000000001000000000010000000000 which does not consist of
@@ -193,74 +196,24 @@ static bool splitBitmaskImm(T Imm, unsigned RegSize, T &Imm1Enc, T &Imm2Enc) {
 }
 
 template <typename T>
-static bool splitDisjointBitmaskImm(T Imm, unsigned RegSize, T &Imm1Enc,
-                                    T &Imm2Enc) {
-  assert(Imm && (Imm != ~static_cast<T>(0)) && "Invalid immediate!");
-
-  // Try to split a bitmask of the form 0b00000000011000000000011110000000 into
-  // two disjoint masks such as 0b00000000011000000000000000000000 and
-  // 0b00000000000000000000011110000000 where the inclusive/exclusive OR of the
-  // new masks match the original mask.
-  unsigned LowestBitSet = llvm::countr_zero(Imm);
-  unsigned LowestGapBitUnset =
-      LowestBitSet + llvm::countr_one(Imm >> LowestBitSet);
-
-  // Create a mask for the least significant group of consecutive ones.
-  assert(LowestGapBitUnset < sizeof(T) * CHAR_BIT && "Undefined behaviour!");
-  T NewImm1 = (static_cast<T>(1) << LowestGapBitUnset) -
-              (static_cast<T>(1) << LowestBitSet);
-  // Create a disjoint mask for the remaining ones.
-  T NewImm2 = Imm & ~NewImm1;
-
-  // Do not split if NewImm2 is not a valid bitmask immediate.
-  if (!AArch64_AM::isLogicalImmediate(NewImm2, RegSize))
-    return false;
-
-  Imm1Enc = AArch64_AM::encodeLogicalImmediate(NewImm1, RegSize);
-  Imm2Enc = AArch64_AM::encodeLogicalImmediate(NewImm2, RegSize);
-  return true;
-}
-
-template <typename T>
-bool AArch64MIPeepholeOpt::trySplitLogicalImm(unsigned Opc, MachineInstr &MI,
-                                              SplitStrategy Strategy,
-                                              unsigned OtherOpc) {
-  // Try below transformations.
+bool AArch64MIPeepholeOpt::visitAND(
+    unsigned Opc, MachineInstr &MI) {
+  // Try below transformation.
   //
-  // MOVi32imm + (ANDS?|EOR|ORR)Wrr ==> (AND|EOR|ORR)Wri + (ANDS?|EOR|ORR)Wri
-  // MOVi64imm + (ANDS?|EOR|ORR)Xrr ==> (AND|EOR|ORR)Xri + (ANDS?|EOR|ORR)Xri
+  // MOVi32imm + ANDWrr ==> ANDWri + ANDWri
+  // MOVi64imm + ANDXrr ==> ANDXri + ANDXri
   //
   // The mov pseudo instruction could be expanded to multiple mov instructions
   // later. Let's try to split the constant operand of mov instruction into two
-  // bitmask immediates based on the given split strategy. It makes only two
-  // logical instructions instead of multiple mov + logic instructions.
+  // bitmask immediates. It makes only two AND instructions instead of multiple
+  // mov + and instructions.
 
   return splitTwoPartImm<T>(
       MI,
-      [Opc, Strategy, OtherOpc](T Imm, unsigned RegSize, T &Imm0,
-                                T &Imm1) -> std::optional<OpcodePair> {
-        // If this immediate is already a suitable bitmask, don't split it.
-        // TODO: Should we just combine the two instructions in this case?
-        if (AArch64_AM::isLogicalImmediate(Imm, RegSize))
-          return std::nullopt;
-
-        // If this immediate can be handled by one instruction, don't split it.
-        SmallVector<AArch64_IMM::ImmInsnModel, 4> Insn;
-        AArch64_IMM::expandMOVImm(Imm, RegSize, Insn);
-        if (Insn.size() == 1)
-          return std::nullopt;
-
-        bool SplitSucc = false;
-        switch (Strategy) {
-        case SplitStrategy::Intersect:
-          SplitSucc = splitBitmaskImm(Imm, RegSize, Imm0, Imm1);
-          break;
-        case SplitStrategy::Disjoint:
-          SplitSucc = splitDisjointBitmaskImm(Imm, RegSize, Imm0, Imm1);
-          break;
-        }
-        if (SplitSucc)
-          return std::make_pair(Opc, !OtherOpc ? Opc : OtherOpc);
+      [Opc](T Imm, unsigned RegSize, T &Imm0,
+            T &Imm1) -> std::optional<OpcodePair> {
+        if (splitBitmaskImm(Imm, RegSize, Imm0, Imm1))
+          return std::make_pair(Opc, Opc);
         return std::nullopt;
       },
       [&TII = TII](MachineInstr &MI, OpcodePair Opcode, unsigned Imm0,
@@ -310,18 +263,15 @@ bool AArch64MIPeepholeOpt::visitORR(MachineInstr &MI) {
     // A COPY from an FPR will become a FMOVSWr, so do so now so that we know
     // that the upper bits are zero.
     if (RC != &AArch64::FPR32RegClass &&
-        ((RC != &AArch64::FPR64RegClass && RC != &AArch64::FPR128RegClass &&
-          RC != &AArch64::ZPRRegClass) ||
+        ((RC != &AArch64::FPR64RegClass && RC != &AArch64::FPR128RegClass) ||
          SrcMI->getOperand(1).getSubReg() != AArch64::ssub))
       return false;
-    Register CpySrc;
+    Register CpySrc = SrcMI->getOperand(1).getReg();
     if (SrcMI->getOperand(1).getSubReg() == AArch64::ssub) {
       CpySrc = MRI->createVirtualRegister(&AArch64::FPR32RegClass);
       BuildMI(*SrcMI->getParent(), SrcMI, SrcMI->getDebugLoc(),
               TII->get(TargetOpcode::COPY), CpySrc)
           .add(SrcMI->getOperand(1));
-    } else {
-      CpySrc = SrcMI->getOperand(1).getReg();
     }
     BuildMI(*SrcMI->getParent(), SrcMI, SrcMI->getDebugLoc(),
             TII->get(AArch64::FMOVSWr), SrcMI->getOperand(0).getReg())
@@ -594,18 +544,19 @@ bool AArch64MIPeepholeOpt::splitTwoPartImm(
   // NewDstReg = Opcode.second NewTmpReg Imm1
 
   // Determine register classes for destinations and register operands
+  MachineFunction *MF = MI.getMF();
   const TargetRegisterClass *FirstInstrDstRC =
-      TII->getRegClass(TII->get(Opcode.first), 0);
+      TII->getRegClass(TII->get(Opcode.first), 0, TRI, *MF);
   const TargetRegisterClass *FirstInstrOperandRC =
-      TII->getRegClass(TII->get(Opcode.first), 1);
+      TII->getRegClass(TII->get(Opcode.first), 1, TRI, *MF);
   const TargetRegisterClass *SecondInstrDstRC =
       (Opcode.first == Opcode.second)
           ? FirstInstrDstRC
-          : TII->getRegClass(TII->get(Opcode.second), 0);
+          : TII->getRegClass(TII->get(Opcode.second), 0, TRI, *MF);
   const TargetRegisterClass *SecondInstrOperandRC =
       (Opcode.first == Opcode.second)
           ? FirstInstrOperandRC
-          : TII->getRegClass(TII->get(Opcode.second), 1);
+          : TII->getRegClass(TII->get(Opcode.second), 1, TRI, *MF);
 
   // Get old registers destinations and new register destinations
   Register DstReg = MI.getOperand(0).getReg();
@@ -784,14 +735,14 @@ bool AArch64MIPeepholeOpt::visitUBFMXri(MachineInstr &MI) {
   }
 
   const TargetRegisterClass *DstRC64 =
-      TII->getRegClass(TII->get(MI.getOpcode()), 0);
+      TII->getRegClass(TII->get(MI.getOpcode()), 0, TRI, *MI.getMF());
   const TargetRegisterClass *DstRC32 =
       TRI->getSubRegisterClass(DstRC64, AArch64::sub_32);
   assert(DstRC32 && "Destination register class of UBFMXri doesn't have a "
                     "sub_32 subregister class");
 
   const TargetRegisterClass *SrcRC64 =
-      TII->getRegClass(TII->get(MI.getOpcode()), 1);
+      TII->getRegClass(TII->get(MI.getOpcode()), 1, TRI, *MI.getMF());
   const TargetRegisterClass *SrcRC32 =
       TRI->getSubRegisterClass(SrcRC64, AArch64::sub_32);
   assert(SrcRC32 && "Source register class of UBFMXri doesn't have a sub_32 "
@@ -907,36 +858,10 @@ bool AArch64MIPeepholeOpt::runOnMachineFunction(MachineFunction &MF) {
         Changed |= visitINSERT(MI);
         break;
       case AArch64::ANDWrr:
-        Changed |= trySplitLogicalImm<uint32_t>(AArch64::ANDWri, MI,
-                                                SplitStrategy::Intersect);
+        Changed |= visitAND<uint32_t>(AArch64::ANDWri, MI);
         break;
       case AArch64::ANDXrr:
-        Changed |= trySplitLogicalImm<uint64_t>(AArch64::ANDXri, MI,
-                                                SplitStrategy::Intersect);
-        break;
-      case AArch64::ANDSWrr:
-        Changed |= trySplitLogicalImm<uint32_t>(
-            AArch64::ANDWri, MI, SplitStrategy::Intersect, AArch64::ANDSWri);
-        break;
-      case AArch64::ANDSXrr:
-        Changed |= trySplitLogicalImm<uint64_t>(
-            AArch64::ANDXri, MI, SplitStrategy::Intersect, AArch64::ANDSXri);
-        break;
-      case AArch64::EORWrr:
-        Changed |= trySplitLogicalImm<uint32_t>(AArch64::EORWri, MI,
-                                                SplitStrategy::Disjoint);
-        break;
-      case AArch64::EORXrr:
-        Changed |= trySplitLogicalImm<uint64_t>(AArch64::EORXri, MI,
-                                                SplitStrategy::Disjoint);
-        break;
-      case AArch64::ORRWrr:
-        Changed |= trySplitLogicalImm<uint32_t>(AArch64::ORRWri, MI,
-                                                SplitStrategy::Disjoint);
-        break;
-      case AArch64::ORRXrr:
-        Changed |= trySplitLogicalImm<uint64_t>(AArch64::ORRXri, MI,
-                                                SplitStrategy::Disjoint);
+        Changed |= visitAND<uint64_t>(AArch64::ANDXri, MI);
         break;
       case AArch64::ORRWrs:
         Changed |= visitORR(MI);

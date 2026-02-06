@@ -24,9 +24,7 @@
 #  include <wctype.h>
 #endif
 
-#if __has_include(<xlocale.h>)
-#  include <xlocale.h>
-#endif
+#include <xlocale.h>
 
 #if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
 #  pragma GCC system_header
@@ -47,9 +45,9 @@ namespace __locale {
 #define _LIBCPP_ALL_MASK LC_ALL_MASK
 #define _LIBCPP_LC_ALL LC_ALL
 
-using __locale_t _LIBCPP_NODEBUG = ::locale_t;
+using __locale_t = ::locale_t;
 #if defined(_LIBCPP_BUILDING_LIBRARY)
-using __lconv_t _LIBCPP_NODEBUG = std::lconv;
+using __lconv_t = std::lconv;
 
 inline _LIBCPP_HIDE_FROM_ABI __locale_t __newlocale(int __category_mask, const char* __locale, __locale_t __base) {
   return ::newlocale(__category_mask, __locale, __base);
@@ -79,9 +77,28 @@ inline _LIBCPP_HIDE_FROM_ABI long double __strtold(const char* __nptr, char** __
   return ::strtold_l(__nptr, __endptr, __loc);
 }
 
+inline _LIBCPP_HIDE_FROM_ABI long long __strtoll(const char* __nptr, char** __endptr, int __base, __locale_t __loc) {
+  return ::strtoll_l(__nptr, __endptr, __base, __loc);
+}
+
+inline _LIBCPP_HIDE_FROM_ABI unsigned long long
+__strtoull(const char* __nptr, char** __endptr, int __base, __locale_t __loc) {
+  return ::strtoull_l(__nptr, __endptr, __base, __loc);
+}
+
 //
 // Character manipulation functions
 //
+#if defined(_LIBCPP_BUILDING_LIBRARY)
+inline _LIBCPP_HIDE_FROM_ABI int __islower(int __c, __locale_t __loc) { return ::islower_l(__c, __loc); }
+
+inline _LIBCPP_HIDE_FROM_ABI int __isupper(int __c, __locale_t __loc) { return ::isupper_l(__c, __loc); }
+#endif
+
+inline _LIBCPP_HIDE_FROM_ABI int __isdigit(int __c, __locale_t __loc) { return ::isdigit_l(__c, __loc); }
+
+inline _LIBCPP_HIDE_FROM_ABI int __isxdigit(int __c, __locale_t __loc) { return ::isxdigit_l(__c, __loc); }
+
 #if defined(_LIBCPP_BUILDING_LIBRARY)
 inline _LIBCPP_HIDE_FROM_ABI int __toupper(int __c, __locale_t __loc) { return ::toupper_l(__c, __loc); }
 
@@ -201,6 +218,12 @@ template <class... _Args>
 _LIBCPP_HIDE_FROM_ABI _LIBCPP_VARIADIC_ATTRIBUTE_FORMAT(__printf__, 3, 4) int __asprintf(
     char** __s, __locale_t __loc, const char* __format, _Args&&... __args) {
   return ::asprintf_l(__s, __loc, __format, std::forward<_Args>(__args)...); // non-standard
+}
+
+template <class... _Args>
+_LIBCPP_HIDE_FROM_ABI _LIBCPP_VARIADIC_ATTRIBUTE_FORMAT(__scanf__, 3, 4) int __sscanf(
+    const char* __s, __locale_t __loc, const char* __format, _Args&&... __args) {
+  return ::sscanf_l(__s, __loc, __format, std::forward<_Args>(__args)...);
 }
 _LIBCPP_DIAGNOSTIC_POP
 #undef _LIBCPP_VARIADIC_ATTRIBUTE_FORMAT

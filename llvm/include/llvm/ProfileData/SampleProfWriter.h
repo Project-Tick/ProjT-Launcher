@@ -16,7 +16,6 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/IR/ProfileSummary.h"
 #include "llvm/ProfileData/SampleProf.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorOr.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cstdint>
@@ -66,7 +65,7 @@ public:
   virtual void Erase(size_t CurrentOutputSize) = 0;
 };
 
-class LLVM_ABI DefaultFunctionPruningStrategy : public FunctionPruningStrategy {
+class DefaultFunctionPruningStrategy : public FunctionPruningStrategy {
   std::vector<NameFunctionSamples> SortedFunctions;
 
 public:
@@ -87,7 +86,7 @@ public:
 };
 
 /// Sample-based profile writer. Base class.
-class LLVM_ABI SampleProfileWriter {
+class SampleProfileWriter {
 public:
   virtual ~SampleProfileWriter() = default;
 
@@ -164,7 +163,7 @@ protected:
 };
 
 /// Sample-based profile writer (text format).
-class LLVM_ABI SampleProfileWriterText : public SampleProfileWriter {
+class SampleProfileWriterText : public SampleProfileWriter {
 public:
   std::error_code writeSample(const FunctionSamples &S) override;
 
@@ -193,13 +192,13 @@ private:
   /// cannot be skipped.
   bool MarkFlatProfiles = false;
 
-  LLVM_ABI friend ErrorOr<std::unique_ptr<SampleProfileWriter>>
+  friend ErrorOr<std::unique_ptr<SampleProfileWriter>>
   SampleProfileWriter::create(std::unique_ptr<raw_ostream> &OS,
                               SampleProfileFormat Format);
 };
 
 /// Sample-based profile writer (binary format).
-class LLVM_ABI SampleProfileWriterBinary : public SampleProfileWriter {
+class SampleProfileWriterBinary : public SampleProfileWriter {
 public:
   SampleProfileWriterBinary(std::unique_ptr<raw_ostream> &OS)
       : SampleProfileWriter(OS) {}
@@ -217,22 +216,15 @@ protected:
   std::error_code writeBody(const FunctionSamples &S);
   inline void stablizeNameTable(MapVector<FunctionId, uint32_t> &NameTable,
                                 std::set<FunctionId> &V);
-
+  
   MapVector<FunctionId, uint32_t> NameTable;
-
+  
   void addName(FunctionId FName);
   virtual void addContext(const SampleContext &Context);
   void addNames(const FunctionSamples &S);
 
-  /// Write \p CallsiteTypeMap to the output stream \p OS.
-  std::error_code
-  writeCallsiteVTableProf(const CallsiteTypeMap &CallsiteTypeMap,
-                          raw_ostream &OS);
-
-  bool WriteVTableProf = false;
-
 private:
-  LLVM_ABI friend ErrorOr<std::unique_ptr<SampleProfileWriter>>
+  friend ErrorOr<std::unique_ptr<SampleProfileWriter>>
   SampleProfileWriter::create(std::unique_ptr<raw_ostream> &OS,
                               SampleProfileFormat Format);
 };
@@ -272,8 +264,7 @@ const std::array<SmallVector<SecHdrTableEntry, 8>, NumOfLayout>
                                           {SecFuncMetadata, 0, 0, 0, 0}}),
 };
 
-class LLVM_ABI SampleProfileWriterExtBinaryBase
-    : public SampleProfileWriterBinary {
+class SampleProfileWriterExtBinaryBase : public SampleProfileWriterBinary {
   using SampleProfileWriterBinary::SampleProfileWriterBinary;
 public:
   std::error_code write(const SampleProfileMap &ProfileMap) override;
@@ -416,10 +407,10 @@ private:
   ProfileSymbolList *ProfSymList = nullptr;
 };
 
-class LLVM_ABI SampleProfileWriterExtBinary
-    : public SampleProfileWriterExtBinaryBase {
+class SampleProfileWriterExtBinary : public SampleProfileWriterExtBinaryBase {
 public:
-  SampleProfileWriterExtBinary(std::unique_ptr<raw_ostream> &OS);
+  SampleProfileWriterExtBinary(std::unique_ptr<raw_ostream> &OS)
+      : SampleProfileWriterExtBinaryBase(OS) {}
 
 private:
   std::error_code writeDefaultLayout(const SampleProfileMap &ProfileMap);

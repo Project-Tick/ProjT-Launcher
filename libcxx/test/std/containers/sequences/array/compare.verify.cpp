@@ -28,7 +28,7 @@
 template <int>
 struct NoCompare {};
 
-void test() {
+int main(int, char**) {
   {
     typedef NoCompare<0> T;
     typedef std::array<T, 3> C;
@@ -53,4 +53,6 @@ void test() {
     TEST_IGNORE_NODISCARD(c1 == c1);
     TEST_IGNORE_NODISCARD(c1 < c1);
   }
+
+  return 0;
 }

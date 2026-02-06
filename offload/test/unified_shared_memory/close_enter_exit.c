@@ -8,7 +8,6 @@
 // Fails on nvptx with error: an illegal memory access was encountered
 // XFAIL: nvptx64-nvidia-cuda
 // XFAIL: nvptx64-nvidia-cuda-LTO
-// XFAIL: intelgpu
 
 #include <omp.h>
 #include <stdio.h>

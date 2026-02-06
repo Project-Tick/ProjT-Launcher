@@ -17,7 +17,8 @@
 #include "llvm/DebugInfo/Symbolize/Symbolize.h"
 #include <unordered_map>
 
-namespace llvm::xray {
+namespace llvm {
+namespace xray {
 
 // This class consolidates common operations related to Function IDs.
 class FuncIdConversionHelper {
@@ -44,6 +45,7 @@ public:
   std::string FileLineAndColumn(int32_t FuncId) const;
 };
 
-} // namespace llvm::xray
+} // namespace xray
+} // namespace llvm
 
 #endif // LLVM_TOOLS_LLVM_XRAY_FUNC_ID_HELPER_H

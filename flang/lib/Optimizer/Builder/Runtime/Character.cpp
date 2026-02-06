@@ -34,7 +34,7 @@ static void genCharacterSearch(FN func, fir::FirOpBuilder &builder,
   auto args = fir::runtime::createArguments(builder, loc, fTy, resultBox,
                                             string1Box, string2Box, backBox,
                                             kind, sourceFile, sourceLine);
-  fir::CallOp::create(builder, loc, func, args);
+  builder.create<fir::CallOp>(loc, func, args);
 }
 
 /// Helper function to recover the KIND from the FIR type.
@@ -72,7 +72,7 @@ static void genAdjust(fir::FirOpBuilder &builder, mlir::Location loc,
   auto sourceFile = fir::factory::locationToFilename(builder, loc);
   auto args = fir::runtime::createArguments(builder, loc, fTy, resultBox,
                                             stringBox, sourceFile, sourceLine);
-  fir::CallOp::create(builder, loc, adjustFunc, args);
+  builder.create<fir::CallOp>(loc, adjustFunc, args);
 }
 
 void fir::runtime::genAdjustL(fir::FirOpBuilder &builder, mlir::Location loc,
@@ -94,46 +94,29 @@ fir::runtime::genCharCompare(fir::FirOpBuilder &builder, mlir::Location loc,
                              mlir::arith::CmpIPredicate cmp,
                              mlir::Value lhsBuff, mlir::Value lhsLen,
                              mlir::Value rhsBuff, mlir::Value rhsLen) {
-  int lhsKind = discoverKind(lhsBuff.getType());
-  int rhsKind = discoverKind(rhsBuff.getType());
-  if (lhsKind != rhsKind) {
-    fir::emitFatalError(loc, "runtime does not support comparison of different "
-                             "CHARACTER kind values");
-  }
-  mlir::func::FuncOp func;
-  switch (lhsKind) {
+  mlir::func::FuncOp beginFunc;
+  switch (discoverKind(lhsBuff.getType())) {
   case 1:
-    func = fir::runtime::getRuntimeFunc<mkRTKey(CharacterCompareScalar1)>(
+    beginFunc = fir::runtime::getRuntimeFunc<mkRTKey(CharacterCompareScalar1)>(
         loc, builder);
     break;
   case 2:
-    func = fir::runtime::getRuntimeFunc<mkRTKey(CharacterCompareScalar2)>(
+    beginFunc = fir::runtime::getRuntimeFunc<mkRTKey(CharacterCompareScalar2)>(
         loc, builder);
     break;
   case 4:
-    func = fir::runtime::getRuntimeFunc<mkRTKey(CharacterCompareScalar4)>(
+    beginFunc = fir::runtime::getRuntimeFunc<mkRTKey(CharacterCompareScalar4)>(
         loc, builder);
     break;
   default:
-    fir::emitFatalError(
-        loc, "unsupported CHARACTER kind value. Runtime expects 1, 2, or 4.");
+    llvm_unreachable("runtime does not support CHARACTER KIND");
   }
-  auto fTy = func.getFunctionType();
+  auto fTy = beginFunc.getFunctionType();
   auto args = fir::runtime::createArguments(builder, loc, fTy, lhsBuff, rhsBuff,
                                             lhsLen, rhsLen);
-  auto tri = fir::CallOp::create(builder, loc, func, args).getResult(0);
+  auto tri = builder.create<fir::CallOp>(loc, beginFunc, args).getResult(0);
   auto zero = builder.createIntegerConstant(loc, tri.getType(), 0);
-  return mlir::arith::CmpIOp::create(builder, loc, cmp, tri, zero);
-}
-
-static mlir::Value allocateIfNotInMemory(fir::FirOpBuilder &builder,
-                                         mlir::Location loc, mlir::Value base) {
-  if (fir::isa_ref_type(base.getType()))
-    return base;
-  auto mem =
-      fir::AllocaOp::create(builder, loc, base.getType(), /*pinned=*/false);
-  fir::StoreOp::create(builder, loc, base, mem);
-  return mem;
+  return builder.create<mlir::arith::CmpIOp>(loc, cmp, tri, zero);
 }
 
 mlir::Value fir::runtime::genCharCompare(fir::FirOpBuilder &builder,
@@ -141,8 +124,18 @@ mlir::Value fir::runtime::genCharCompare(fir::FirOpBuilder &builder,
                                          mlir::arith::CmpIPredicate cmp,
                                          const fir::ExtendedValue &lhs,
                                          const fir::ExtendedValue &rhs) {
-  auto lhsBuffer = allocateIfNotInMemory(builder, loc, fir::getBase(lhs));
-  auto rhsBuffer = allocateIfNotInMemory(builder, loc, fir::getBase(rhs));
+  if (lhs.getBoxOf<fir::BoxValue>() || rhs.getBoxOf<fir::BoxValue>())
+    TODO(loc, "character compare from descriptors");
+  auto allocateIfNotInMemory = [&](mlir::Value base) -> mlir::Value {
+    if (fir::isa_ref_type(base.getType()))
+      return base;
+    auto mem =
+        builder.create<fir::AllocaOp>(loc, base.getType(), /*pinned=*/false);
+    builder.create<fir::StoreOp>(loc, base, mem);
+    return mem;
+  };
+  auto lhsBuffer = allocateIfNotInMemory(fir::getBase(lhs));
+  auto rhsBuffer = allocateIfNotInMemory(fir::getBase(rhs));
   return genCharCompare(builder, loc, cmp, lhsBuffer, fir::getLen(lhs),
                         rhsBuffer, fir::getLen(rhs));
 }
@@ -172,21 +165,7 @@ mlir::Value fir::runtime::genIndex(fir::FirOpBuilder &builder,
   auto args =
       fir::runtime::createArguments(builder, loc, fTy, stringBase, stringLen,
                                     substringBase, substringLen, back);
-  return fir::CallOp::create(builder, loc, indexFunc, args).getResult(0);
-}
-
-mlir::Value fir::runtime::genIndex(fir::FirOpBuilder &builder,
-                                   mlir::Location loc,
-                                   const fir::ExtendedValue &str,
-                                   const fir::ExtendedValue &substr,
-                                   mlir::Value back) {
-  assert(!substr.getBoxOf<fir::BoxValue>() && !str.getBoxOf<fir::BoxValue>() &&
-         "shall use genIndexDescriptor version");
-  auto strBuffer = allocateIfNotInMemory(builder, loc, fir::getBase(str));
-  auto substrBuffer = allocateIfNotInMemory(builder, loc, fir::getBase(substr));
-  int kind = discoverKind(strBuffer.getType());
-  return genIndex(builder, loc, kind, strBuffer, fir::getLen(str), substrBuffer,
-                  fir::getLen(substr), back);
+  return builder.create<fir::CallOp>(loc, indexFunc, args).getResult(0);
 }
 
 void fir::runtime::genIndexDescriptor(fir::FirOpBuilder &builder,
@@ -210,7 +189,7 @@ void fir::runtime::genRepeat(fir::FirOpBuilder &builder, mlir::Location loc,
 
   auto args = fir::runtime::createArguments(
       builder, loc, fTy, resultBox, stringBox, ncopies, sourceFile, sourceLine);
-  fir::CallOp::create(builder, loc, repeatFunc, args);
+  builder.create<fir::CallOp>(loc, repeatFunc, args);
 }
 
 void fir::runtime::genTrim(fir::FirOpBuilder &builder, mlir::Location loc,
@@ -223,7 +202,7 @@ void fir::runtime::genTrim(fir::FirOpBuilder &builder, mlir::Location loc,
 
   auto args = fir::runtime::createArguments(builder, loc, fTy, resultBox,
                                             stringBox, sourceFile, sourceLine);
-  fir::CallOp::create(builder, loc, trimFunc, args);
+  builder.create<fir::CallOp>(loc, trimFunc, args);
 }
 
 void fir::runtime::genScanDescriptor(fir::FirOpBuilder &builder,
@@ -258,7 +237,7 @@ mlir::Value fir::runtime::genScan(fir::FirOpBuilder &builder,
   auto fTy = func.getFunctionType();
   auto args = fir::runtime::createArguments(builder, loc, fTy, stringBase,
                                             stringLen, setBase, setLen, back);
-  return fir::CallOp::create(builder, loc, func, args).getResult(0);
+  return builder.create<fir::CallOp>(loc, func, args).getResult(0);
 }
 
 void fir::runtime::genVerifyDescriptor(fir::FirOpBuilder &builder,
@@ -295,5 +274,5 @@ mlir::Value fir::runtime::genVerify(fir::FirOpBuilder &builder,
   auto fTy = func.getFunctionType();
   auto args = fir::runtime::createArguments(builder, loc, fTy, stringBase,
                                             stringLen, setBase, setLen, back);
-  return fir::CallOp::create(builder, loc, func, args).getResult(0);
+  return builder.create<fir::CallOp>(loc, func, args).getResult(0);
 }

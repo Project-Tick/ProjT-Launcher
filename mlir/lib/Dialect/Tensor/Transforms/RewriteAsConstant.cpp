@@ -189,14 +189,14 @@ struct PadOpToConstant final : public OpRewritePattern<PadOp> {
               return constantFoldPadOp<llvm::APInt>(
                   rewriter, loc, inputAttr, integerAttr, *lowPad, *highPad);
             })
-            .Default(nullptr);
+            .Default(Value());
 
     if (!newOp)
       return rewriter.notifyMatchFailure(padTensorOp,
                                          "tensor type not supported");
 
     if (newOp.getType() != resultType)
-      newOp = tensor::CastOp::create(rewriter, loc, resultType, newOp);
+      newOp = rewriter.create<tensor::CastOp>(loc, resultType, newOp);
 
     rewriter.replaceOp(padTensorOp, newOp);
     return success();

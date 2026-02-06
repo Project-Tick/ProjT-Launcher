@@ -117,7 +117,7 @@ class MyClass
 };
 
 [numthreads(4,1,1)]
-void main() {
+float main() {
   float f = 3;
   MyClass C = { 1.0f };
   float a = alive(f);
@@ -125,4 +125,5 @@ void main() {
   float c = C.makeF();
   float d = test((float)1.0);
   float e = test((half)1.0);
+  return a * b * c;
 }

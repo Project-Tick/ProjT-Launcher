@@ -531,7 +531,8 @@ TEST(RANDSTRUCT_TEST, AnonymousStructsAndUnionsRetainFieldOrder) {
 
   for (const Decl *D : RD->decls())
     if (const FieldDecl *FD = dyn_cast<FieldDecl>(D)) {
-      if (const auto *RD = FD->getType()->getAsRecordDecl()) {
+      if (const auto *Record = FD->getType()->getAs<RecordType>()) {
+        RD = Record->getDecl();
         if (RD->isAnonymousStructOrUnion()) {
           // These field orders shouldn't change.
           if (RD->isUnion()) {

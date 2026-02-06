@@ -39,7 +39,6 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/Target/TargetMachine.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -84,6 +83,7 @@ void RegBankSelect::init(MachineFunction &MF) {
   assert(RBI && "Cannot work without RegisterBankInfo");
   MRI = &MF.getRegInfo();
   TRI = MF.getSubtarget().getRegisterInfo();
+  TPC = &getAnalysis<TargetPassConfig>();
   if (OptMode != Mode::Fast) {
     MBFI = &getAnalysis<MachineBlockFrequencyInfoWrapperPass>().getMBFI();
     MBPI = &getAnalysis<MachineBranchProbabilityInfoWrapperPass>().getMBPI();
@@ -308,8 +308,7 @@ const RegisterBankInfo::InstructionMapping &RegBankSelect::findBestMapping(
         RepairPts.emplace_back(std::move(RepairPt));
     }
   }
-  if (!BestMapping && MI.getMF()->getTarget().Options.GlobalISelAbort !=
-                          GlobalISelAbortMode::Enable) {
+  if (!BestMapping && !TPC->isGlobalISelAbortEnabled()) {
     // If none of the mapping worked that means they are all impossible.
     // Thus, pick the first one and set an impossible repairing point.
     // It will trigger the failed isel mode.
@@ -709,7 +708,7 @@ bool RegBankSelect::assignRegisterBanks(MachineFunction &MF) {
         continue;
 
       if (!assignInstr(MI)) {
-        reportGISelFailure(MF, *MORE, "gisel-regbankselect",
+        reportGISelFailure(MF, *TPC, *MORE, "gisel-regbankselect",
                            "unable to map instruction", MI);
         return false;
       }
@@ -723,7 +722,7 @@ bool RegBankSelect::checkFunctionIsLegal(MachineFunction &MF) const {
 #ifndef NDEBUG
   if (!DisableGISelLegalityCheck) {
     if (const MachineInstr *MI = machineFunctionIsIllegal(MF)) {
-      reportGISelFailure(MF, *MORE, "gisel-regbankselect",
+      reportGISelFailure(MF, *TPC, *MORE, "gisel-regbankselect",
                          "instruction is not legal", *MI);
       return false;
     }
@@ -734,7 +733,8 @@ bool RegBankSelect::checkFunctionIsLegal(MachineFunction &MF) const {
 
 bool RegBankSelect::runOnMachineFunction(MachineFunction &MF) {
   // If the ISel pipeline failed, do not bother running that pass.
-  if (MF.getProperties().hasFailedISel())
+  if (MF.getProperties().hasProperty(
+          MachineFunctionProperties::Property::FailedISel))
     return false;
 
   LLVM_DEBUG(dbgs() << "Assign register banks for: " << MF.getName() << '\n');

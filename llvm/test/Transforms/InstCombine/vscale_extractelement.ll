@@ -53,12 +53,12 @@ define i8 @extractelement_bitcast_useless_insert(<vscale x 2 x i32> %a, i32 %x) 
   ret i8 %r
 }
 
-; while in these tests it may be that the extract is out-of-bounds,
-; any valid index is going to yield %v (because the mask is all-zeros).
-
 define i32 @extractelement_shuffle_maybe_out_of_range(i32 %v) {
 ; CHECK-LABEL: @extractelement_shuffle_maybe_out_of_range(
-; CHECK-NEXT:    ret i32 [[V:%.*]]
+; CHECK-NEXT:    [[IN:%.*]] = insertelement <vscale x 4 x i32> undef, i32 [[V:%.*]], i64 0
+; CHECK-NEXT:    [[SPLAT:%.*]] = shufflevector <vscale x 4 x i32> [[IN]], <vscale x 4 x i32> poison, <vscale x 4 x i32> zeroinitializer
+; CHECK-NEXT:    [[R:%.*]] = extractelement <vscale x 4 x i32> [[SPLAT]], i64 4
+; CHECK-NEXT:    ret i32 [[R]]
 ;
   %in = insertelement <vscale x 4 x i32> undef, i32 %v, i32 0
   %splat = shufflevector <vscale x 4 x i32> %in, <vscale x 4 x i32> undef, <vscale x 4 x i32> zeroinitializer
@@ -68,7 +68,10 @@ define i32 @extractelement_shuffle_maybe_out_of_range(i32 %v) {
 
 define i32 @extractelement_shuffle_invalid_index(i32 %v) {
 ; CHECK-LABEL: @extractelement_shuffle_invalid_index(
-; CHECK-NEXT:    ret i32 [[V:%.*]]
+; CHECK-NEXT:    [[IN:%.*]] = insertelement <vscale x 4 x i32> undef, i32 [[V:%.*]], i64 0
+; CHECK-NEXT:    [[SPLAT:%.*]] = shufflevector <vscale x 4 x i32> [[IN]], <vscale x 4 x i32> poison, <vscale x 4 x i32> zeroinitializer
+; CHECK-NEXT:    [[R:%.*]] = extractelement <vscale x 4 x i32> [[SPLAT]], i64 4294967295
+; CHECK-NEXT:    ret i32 [[R]]
 ;
   %in = insertelement <vscale x 4 x i32> undef, i32 %v, i32 0
   %splat = shufflevector <vscale x 4 x i32> %in, <vscale x 4 x i32> undef, <vscale x 4 x i32> zeroinitializer
@@ -214,15 +217,12 @@ entry:
   ret i64 %1
 }
 
-; TODO: stepvector now wraps rather than poisons elements when the value does
-; not fit, so this should return 0.
+; Check that poison is returned when the extracted element has wrapped.
 
 define i8 @ext_lane256_from_stepvec() {
 ; CHECK-LABEL: @ext_lane256_from_stepvec(
 ; CHECK-NEXT:  entry:
-; CHECK-NEXT:    [[TMP0:%.*]] = call <vscale x 512 x i8> @llvm.stepvector.nxv512i8()
-; CHECK-NEXT:    [[TMP1:%.*]] = extractelement <vscale x 512 x i8> [[TMP0]], i64 256
-; CHECK-NEXT:    ret i8 [[TMP1]]
+; CHECK-NEXT:    ret i8 poison
 ;
 entry:
   %0 = call <vscale x 512 x i8> @llvm.stepvector.nxv512i8()

@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- UniqueptrResetReleaseCheck.cpp - clang-tidy ----------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -53,8 +53,9 @@ void UniqueptrResetReleaseCheck::registerMatchers(MatchFinder *Finder) {
       this);
 }
 
-static const Type *
-getDeleterForUniquePtr(const MatchFinder::MatchResult &Result, StringRef ID) {
+namespace {
+const Type *getDeleterForUniquePtr(const MatchFinder::MatchResult &Result,
+                                   StringRef ID) {
   const auto *Class =
       Result.Nodes.getNodeAs<ClassTemplateSpecializationDecl>(ID);
   if (!Class)
@@ -65,7 +66,7 @@ getDeleterForUniquePtr(const MatchFinder::MatchResult &Result, StringRef ID) {
   return DeleterArgument.getAsType().getTypePtr();
 }
 
-static bool areDeletersCompatible(const MatchFinder::MatchResult &Result) {
+bool areDeletersCompatible(const MatchFinder::MatchResult &Result) {
   const Type *LeftDeleterType = getDeleterForUniquePtr(Result, "left_class");
   const Type *RightDeleterType = getDeleterForUniquePtr(Result, "right_class");
 
@@ -101,6 +102,8 @@ static bool areDeletersCompatible(const MatchFinder::MatchResult &Result) {
   }
   return false;
 }
+
+} // namespace
 
 void UniqueptrResetReleaseCheck::check(const MatchFinder::MatchResult &Result) {
   if (!areDeletersCompatible(Result))

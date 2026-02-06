@@ -24,7 +24,6 @@
 #include "llvm/CodeGen/MachineScheduler.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/DataLayout.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Target/TargetMachine.h"
 #include <bitset>
 
@@ -84,26 +83,17 @@ public:
     SiFive7,
     VentanaVeyron,
     MIPSP8700,
-    Andes45,
-  };
-  enum RISCVVRGatherCostModelEnum : uint8_t {
-    Quadratic,
-    NLog2N,
   };
   // clang-format on
 private:
   virtual void anchor();
 
   RISCVProcFamilyEnum RISCVProcFamily = Others;
-  RISCVVRGatherCostModelEnum RISCVVRGatherCostModel = Quadratic;
-
-  bool IsLittleEndian = true;
 
 #define GET_SUBTARGETINFO_MACRO(ATTRIBUTE, DEFAULT, GETTER) \
   bool ATTRIBUTE = DEFAULT;
 #include "RISCVGenSubtargetInfo.inc"
 
-  unsigned XSfmmTE = 0;
   unsigned ZvlLen = 0;
   unsigned RVVVectorBitsMin;
   unsigned RVVVectorBitsMax;
@@ -114,6 +104,7 @@ private:
 
   RISCVFrameLowering FrameLowering;
   RISCVInstrInfo InstrInfo;
+  RISCVRegisterInfo RegInfo;
   RISCVTargetLowering TLInfo;
 
   /// Initializes using the passed in CPU and feature strings so that we can
@@ -141,7 +132,7 @@ public:
   }
   const RISCVInstrInfo *getInstrInfo() const override { return &InstrInfo; }
   const RISCVRegisterInfo *getRegisterInfo() const override {
-    return &InstrInfo.getRegisterInfo();
+    return &RegInfo;
   }
   const RISCVTargetLowering *getTargetLowering() const override {
     return &TLInfo;
@@ -164,14 +155,11 @@ public:
   /// initializeProperties().
   RISCVProcFamilyEnum getProcFamily() const { return RISCVProcFamily; }
 
-  RISCVVRGatherCostModelEnum getVRGatherCostModel() const { return RISCVVRGatherCostModel; }
-
 #define GET_SUBTARGETINFO_MACRO(ATTRIBUTE, DEFAULT, GETTER) \
   bool GETTER() const { return ATTRIBUTE; }
 #include "RISCVGenSubtargetInfo.inc"
 
-  LLVM_DEPRECATED("Now Equivalent to hasStdExtZca", "hasStdExtZca")
-  bool hasStdExtCOrZca() const { return HasStdExtZca; }
+  bool hasStdExtCOrZca() const { return HasStdExtC || HasStdExtZca; }
   bool hasStdExtCOrZcd() const { return HasStdExtC || HasStdExtZcd; }
   bool hasStdExtCOrZcfOrZce() const {
     return HasStdExtC || HasStdExtZcf || HasStdExtZce;
@@ -187,50 +175,21 @@ public:
     return HasStdExtZfhmin || HasStdExtZfbfmin;
   }
 
-  bool hasCLZLike() const {
-    return HasStdExtZbb || HasVendorXTHeadBb ||
-           (HasVendorXCVbitmanip && !IsRV64);
-  }
-  bool hasCTZLike() const {
-    return HasStdExtZbb || (HasVendorXCVbitmanip && !IsRV64);
-  }
-  bool hasCPOPLike() const {
-    return HasStdExtZbb || (HasVendorXCVbitmanip && !IsRV64);
-  }
-  bool hasREV8Like() const {
-    return HasStdExtZbb || HasStdExtZbkb || HasVendorXTHeadBb;
-  }
-
-  bool hasBEXTILike() const { return HasStdExtZbs || HasVendorXTHeadBs; }
-
-  bool hasCZEROLike() const {
-    return HasStdExtZicond || HasVendorXVentanaCondOps;
-  }
-
   bool hasConditionalMoveFusion() const {
     // Do we support fusing a branch+mv or branch+c.mv as a conditional move.
-    return (hasConditionalCompressedMoveFusion() && hasStdExtZca()) ||
-           hasShortForwardBranchIALU();
-  }
-
-  bool hasShlAdd(int64_t ShAmt) const {
-    if (ShAmt <= 0)
-      return false;
-    if (ShAmt <= 3)
-      return HasStdExtZba || HasVendorXAndesPerf || HasVendorXTHeadBa;
-    return ShAmt <= 31 && HasVendorXqciac;
+    return (hasConditionalCompressedMoveFusion() && hasStdExtCOrZca()) ||
+           hasShortForwardBranchOpt();
   }
 
   bool is64Bit() const { return IsRV64; }
-  bool isLittleEndian() const { return IsLittleEndian; }
   MVT getXLenVT() const {
     return is64Bit() ? MVT::i64 : MVT::i32;
   }
   unsigned getXLen() const {
     return is64Bit() ? 64 : 32;
   }
-  bool useMIPSLoadStorePairs() const;
-  bool useMIPSCCMovInsn() const;
+  bool useLoadStorePairs() const;
+  bool useCCMovInsn() const;
   unsigned getFLen() const {
     if (HasStdExtD)
       return 64;
@@ -240,13 +199,6 @@ public:
 
     return 0;
   }
-
-  Align getZilsdAlign() const {
-    return Align(enableUnalignedScalarMem() ? 1
-                 : allowZilsd4ByteAlign()   ? 4
-                                            : 8);
-  }
-
   unsigned getELen() const {
     assert(hasVInstructions() && "Expected V extension");
     return hasVInstructionsI64() ? 64 : 32;
@@ -285,8 +237,8 @@ public:
            TargetABI == RISCVABI::ABI_ILP32E;
   }
   bool isRegisterReservedByUser(Register i) const override {
-    assert(i.id() < RISCV::NUM_TARGET_REGS && "Register out of range");
-    return UserReservedRegister[i.id()];
+    assert(i < RISCV::NUM_TARGET_REGS && "Register out of range");
+    return UserReservedRegister[i];
   }
 
   // XRay support - require D and C extensions.
@@ -297,12 +249,9 @@ public:
   bool hasVInstructionsI64() const { return HasStdExtZve64x; }
   bool hasVInstructionsF16Minimal() const { return HasStdExtZvfhmin; }
   bool hasVInstructionsF16() const { return HasStdExtZvfh; }
-  bool hasVInstructionsBF16Minimal() const {
-    return HasStdExtZvfbfmin || HasStdExtZvfbfa;
-  }
+  bool hasVInstructionsBF16Minimal() const { return HasStdExtZvfbfmin; }
   bool hasVInstructionsF32() const { return HasStdExtZve32f; }
   bool hasVInstructionsF64() const { return HasStdExtZve64d; }
-  bool hasVInstructionsBF16() const { return HasStdExtZvfbfa; }
   // F16 and F64 both require F32.
   bool hasVInstructionsAnyF() const { return hasVInstructionsF32(); }
   bool hasVInstructionsFullMultiply() const { return HasStdExtV; }
@@ -330,8 +279,6 @@ public:
       llvm_unreachable("Unexpected NF");
     }
   }
-
-  bool enablePExtSIMDCodeGen() const;
 
   // Returns VLEN divided by DLEN. Where DLEN is the datapath width of the
   // vector hardware implementation which may be less than VLEN.
@@ -400,7 +347,6 @@ public:
   unsigned getMaxPrefetchIterationsAhead() const override {
     return TuneInfo->MaxPrefetchIterationsAhead;
   };
-  bool enableWritePrefetching() const override { return true; }
 
   unsigned getMinimumJumpTableEntries() const;
 
@@ -437,11 +383,11 @@ public:
   }
 
   void overrideSchedPolicy(MachineSchedPolicy &Policy,
-                           const SchedRegion &Region) const override;
+                           unsigned NumRegionInstrs) const override;
 
   void overridePostRASchedPolicy(MachineSchedPolicy &Policy,
-                                 const SchedRegion &Region) const override;
+                                 unsigned NumRegionInstrs) const override;
 };
-} // namespace llvm
+} // End llvm namespace
 
 #endif

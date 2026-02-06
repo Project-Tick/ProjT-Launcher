@@ -25,7 +25,7 @@ include "mlir/Dialect/Transform/Interfaces/TransformInterfaces.td"
 
 def AlternativesOp : TransformDialectOp<"alternatives",
     [DeclareOpInterfaceMethods<RegionBranchOpInterface,
-        ["getEntrySuccessorOperands",
+        ["getEntrySuccessorOperands", "getSuccessorRegions",
          "getRegionInvocationBounds"]>,
      DeclareOpInterfaceMethods<TransformOpInterface>,
      DeclareOpInterfaceMethods<MemoryEffectsOpInterface>,
@@ -399,32 +399,15 @@ def ApplyLoopInvariantCodeMotionOp : TransformDialectOp<"apply_licm",
 }
 
 def ApplyRegisteredPassOp : TransformDialectOp<"apply_registered_pass",
-    [DeclareOpInterfaceMethods<TransformOpInterface>,
-     DeclareOpInterfaceMethods<MemoryEffectsOpInterface>]> {
+    [TransformOpInterface, TransformEachOpTrait,
+     FunctionalStyleTransformOpTrait, MemoryEffectsOpInterface]> {
   let summary = "Applies the specified registered pass or pass pipeline";
   let description = [{
     This transform applies the specified pass or pass pipeline to the targeted
     ops. The name of the pass/pipeline is specified as a string attribute, as
-    set during pass/pipeline registration.
-
-    Optionally, pass options may be specified via a DictionaryAttr. This
-    dictionary is converted to a string -- formatted `key=value ...` -- which
-    is expected to be in the exact format used by the pass on the commandline.
-    Values are either attributes or (SSA-values of) Transform Dialect params.
-    For example:
-
-    ```mlir
-    transform.apply_registered_pass "canonicalize"
-        with options = { "top-down" = false,
-                         "max-iterations" = %max_iter,
-                         "test-convergence" = true,
-                         "max-num-rewrites" = %max_rewrites }
-        to %module
-    : (!transform.any_param, !transform.any_param, !transform.any_op) -> !transform.any_op
-    ```
-
-    Options' values which are `ArrayAttr`s are converted to comma-separated
-    lists of options. Likewise for params which associate multiple values.
+    set during pass/pipeline registration. Optionally, pass options may be
+    specified as a string attribute. The pass options syntax is identical to the
+    one used with "mlir-opt".
 
     This op first looks for a pass pipeline with the specified name. If no such
     pipeline exists, it looks for a pass with the specified name. If no such
@@ -439,15 +422,19 @@ def ApplyRegisteredPassOp : TransformDialectOp<"apply_registered_pass",
 
   let arguments = (ins TransformHandleTypeInterface:$target,
                        StrAttr:$pass_name,
-                       DefaultValuedAttr<DictionaryAttr, "{}">:$options,
-                       Variadic<TransformParamTypeInterface>:$dynamic_options);
+                       DefaultValuedAttr<StrAttr, "\"\"">:$options);
   let results = (outs TransformHandleTypeInterface:$result);
   let assemblyFormat = [{
-    $pass_name (`with` `options` `=`
-      custom<ApplyRegisteredPassOptions>($options, $dynamic_options)^)?
-      `to` $target attr-dict `:` functional-type(operands, results)
+    $pass_name `to` $target attr-dict `:` functional-type(operands, results)
   }];
-  let hasVerifier = 1;
+
+  let extraClassDeclaration = [{
+    ::mlir::DiagnosedSilenceableFailure applyToOne(
+      ::mlir::transform::TransformRewriter &rewriter,
+      ::mlir::Operation *target,
+      ::mlir::transform::ApplyToEachResultList &results,
+      ::mlir::transform::TransformState &state);
+  }];
 }
 
 def CastOp : TransformDialectOp<"cast",
@@ -624,7 +611,7 @@ def ForeachOp : TransformDialectOp<"foreach",
     [DeclareOpInterfaceMethods<TransformOpInterface>,
      DeclareOpInterfaceMethods<MemoryEffectsOpInterface>,
      DeclareOpInterfaceMethods<RegionBranchOpInterface, [
-         "getEntrySuccessorOperands"]>,
+         "getSuccessorRegions", "getEntrySuccessorOperands"]>,
      SingleBlockImplicitTerminator<"::mlir::transform::YieldOp">
     ]> {
   let summary = "Executes the body for each element of the payload";
@@ -899,9 +886,7 @@ def IncludeOp : TransformDialectOp<"include",
 
   let arguments = (ins SymbolRefAttr:$target,
                        FailurePropagationMode:$failure_propagation_mode,
-                       Variadic<Transform_AnyHandleOrParamType>:$operands,
-                       OptionalAttr<DictArrayAttr>:$arg_attrs,
-                       OptionalAttr<DictArrayAttr>:$res_attrs);
+                       Variadic<Transform_AnyHandleOrParamType>:$operands);
   let results = (outs Variadic<Transform_AnyHandleOrParamType>:$results);
 
   let assemblyFormat =
@@ -1237,7 +1222,7 @@ def SelectOp : TransformDialectOp<"select",
 
 def SequenceOp : TransformDialectOp<"sequence",
     [DeclareOpInterfaceMethods<RegionBranchOpInterface,
-        ["getEntrySuccessorOperands",
+        ["getEntrySuccessorOperands", "getSuccessorRegions",
          "getRegionInvocationBounds"]>,
      MatchOpInterface,
      DeclareOpInterfaceMethods<TransformOpInterface>,

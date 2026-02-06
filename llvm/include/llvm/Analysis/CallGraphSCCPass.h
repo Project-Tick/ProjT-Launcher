@@ -22,7 +22,6 @@
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/Pass.h"
-#include "llvm/Support/Compiler.h"
 #include <vector>
 
 namespace llvm {
@@ -32,7 +31,7 @@ class CallGraphNode;
 class CallGraphSCC;
 class PMStack;
 
-class LLVM_ABI CallGraphSCCPass : public Pass {
+class CallGraphSCCPass : public Pass {
 public:
   explicit CallGraphSCCPass(char &pid) : Pass(PT_CallGraphSCC, pid) {}
 
@@ -77,6 +76,11 @@ public:
   /// the call graph.  If the derived class implements this method, it should
   /// always explicitly call the implementation here.
   void getAnalysisUsage(AnalysisUsage &Info) const override;
+
+protected:
+  /// Optional passes call this function to check whether the pass should be
+  /// skipped. This is the case when optimization bisect is over the limit.
+  bool skipSCC(CallGraphSCC &SCC) const;
 };
 
 /// CallGraphSCC - This is a single SCC that a CallGraphSCCPass is run on.
@@ -97,11 +101,11 @@ public:
 
   /// ReplaceNode - This informs the SCC and the pass manager that the specified
   /// Old node has been deleted, and New is to be used in its place.
-  LLVM_ABI void ReplaceNode(CallGraphNode *Old, CallGraphNode *New);
+  void ReplaceNode(CallGraphNode *Old, CallGraphNode *New);
 
   /// DeleteNode - This informs the SCC and the pass manager that the specified
   /// Old node has been deleted.
-  LLVM_ABI void DeleteNode(CallGraphNode *Old);
+  void DeleteNode(CallGraphNode *Old);
 
   using iterator = std::vector<CallGraphNode *>::const_iterator;
 
@@ -111,13 +115,13 @@ public:
   const CallGraph &getCallGraph() { return CG; }
 };
 
-LLVM_ABI void initializeDummyCGSCCPassPass(PassRegistry &);
+void initializeDummyCGSCCPassPass(PassRegistry &);
 
 /// This pass is required by interprocedural register allocation. It forces
 /// codegen to follow bottom up order on call graph.
 class DummyCGSCCPass : public CallGraphSCCPass {
 public:
-  LLVM_ABI static char ID;
+  static char ID;
 
   DummyCGSCCPass() : CallGraphSCCPass(ID) {
     PassRegistry &Registry = *PassRegistry::getPassRegistry();

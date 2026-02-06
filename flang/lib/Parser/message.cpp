@@ -16,14 +16,9 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
-#include <tuple>
 #include <vector>
 
 namespace Fortran::parser {
-
-// The nextCh parser emits this, and Message::GetProvenanceRange() looks for it.
-const MessageFixedText MessageFixedText::endOfFileMessage{
-    "end of file"_err_en_US};
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &o, const MessageFixedText &t) {
   std::size_t n{t.text().size()};
@@ -165,7 +160,9 @@ bool Message::SortBefore(const Message &that) const {
       location_, that.location_);
 }
 
-bool Message::IsFatal() const { return IsFatalSeverity(severity()); }
+bool Message::IsFatal() const {
+  return severity() == Severity::Error || severity() == Severity::Todo;
+}
 
 Severity Message::severity() const {
   return common::visit(
@@ -234,20 +231,7 @@ std::optional<ProvenanceRange> Message::GetProvenanceRange(
     const AllCookedSources &allCooked) const {
   return common::visit(
       common::visitors{
-          [&](CharBlock cb) -> std::optional<ProvenanceRange> {
-            if (auto pr{allCooked.GetProvenanceRange(cb)}) {
-              return pr;
-            } else if (const auto *fixed{std::get_if<MessageFixedText>(&text_)};
-                fixed &&
-                fixed->text() == MessageFixedText::endOfFileMessage.text() &&
-                cb.begin() && cb.size() == 1) {
-              // Failure from "nextCh" due to reaching EOF.  Back up one byte
-              // to the terminal newline so that the output looks better.
-              return allCooked.GetProvenanceRange(CharBlock{cb.begin() - 1, 1});
-            } else {
-              return std::nullopt;
-            }
-          },
+          [&](CharBlock cb) { return allCooked.GetProvenanceRange(cb); },
           [](const ProvenanceRange &pr) { return std::make_optional(pr); },
       },
       location_);
@@ -256,7 +240,6 @@ std::optional<ProvenanceRange> Message::GetProvenanceRange(
 static std::string Prefix(Severity severity) {
   switch (severity) {
   case Severity::Error:
-  case Severity::ErrorUnlessDeadCode:
     return "error: ";
   case Severity::Warning:
     return "warning: ";
@@ -275,83 +258,33 @@ static std::string Prefix(Severity severity) {
 }
 
 static llvm::raw_ostream::Colors PrefixColor(Severity severity) {
-  if (IsFatalSeverity(severity)) {
+  switch (severity) {
+  case Severity::Error:
+  case Severity::Todo:
     return llvm::raw_ostream::RED;
-  } else if (IsWarningSeverity(severity)) {
+  case Severity::Warning:
+  case Severity::Portability:
     return llvm::raw_ostream::MAGENTA;
-  } else {
-    return llvm::raw_ostream::SAVEDCOLOR;
+  default:
+    // TODO: Set the color.
+    break;
   }
+  return llvm::raw_ostream::SAVEDCOLOR;
 }
-
-static std::string HintLanguageControlFlag(
-    const common::LanguageFeatureControl *hintFlagPtr,
-    std::optional<common::LanguageFeature> feature,
-    std::optional<common::UsageWarning> warning) {
-  if (hintFlagPtr) {
-    std::string flag;
-    if (warning) {
-      flag = hintFlagPtr->getDefaultCliSpelling(*warning);
-    } else if (feature) {
-      flag = hintFlagPtr->getDefaultCliSpelling(*feature);
-    }
-    if (!flag.empty()) {
-      return " [-W" + flag + "]";
-    }
-  }
-  return "";
-}
-
-static constexpr int MAX_CONTEXTS_EMITTED{2};
-static constexpr bool OMIT_SHARED_CONTEXTS{true};
 
 void Message::Emit(llvm::raw_ostream &o, const AllCookedSources &allCooked,
-    bool echoSourceLine,
-    const common::LanguageFeatureControl *hintFlagPtr) const {
+    bool echoSourceLine) const {
   std::optional<ProvenanceRange> provenanceRange{GetProvenanceRange(allCooked)};
   const AllSources &sources{allCooked.allSources()};
-  const std::string text{ToString()};
-  const std::string hint{
-      HintLanguageControlFlag(hintFlagPtr, languageFeature_, usageWarning_)};
-  sources.EmitMessage(o, provenanceRange, text + hint, Prefix(severity()),
+  sources.EmitMessage(o, provenanceRange, ToString(), Prefix(severity()),
       PrefixColor(severity()), echoSourceLine);
-  // Refers to whether the attachment in the loop below is a context, but can't
-  // be declared inside the loop because the previous iteration's
-  // attachment->attachmentIsContext_ indicates this.
   bool isContext{attachmentIsContext_};
-  int contextsEmitted{0};
-  // Emit attachments.
   for (const Message *attachment{attachment_.get()}; attachment;
-      isContext = attachment->attachmentIsContext_,
-      attachment = attachment->attachment_.get()) {
+       attachment = attachment->attachment_.get()) {
     Severity severity = isContext ? Severity::Context : attachment->severity();
-    auto emitAttachment = [&]() {
-      sources.EmitMessage(o, attachment->GetProvenanceRange(allCooked),
-          attachment->ToString(), Prefix(severity), PrefixColor(severity),
-          echoSourceLine);
-    };
-
-    if (isContext) {
-      // Truncate the number of contexts emitted.
-      if (contextsEmitted < MAX_CONTEXTS_EMITTED) {
-        emitAttachment();
-        ++contextsEmitted;
-      }
-      if constexpr (OMIT_SHARED_CONTEXTS) {
-        // Skip less specific contexts at the same location.
-        for (const Message *next_attachment{attachment->attachment_.get()};
-            next_attachment && next_attachment->attachmentIsContext_ &&
-            next_attachment->AtSameLocation(*attachment);
-            next_attachment = next_attachment->attachment_.get()) {
-          attachment = next_attachment;
-        }
-        // NB, this loop increments `attachment` one more time after the
-        // previous loop is done advancing it to the last context at the same
-        // location.
-      }
-    } else {
-      emitAttachment();
-    }
+    sources.EmitMessage(o, attachment->GetProvenanceRange(allCooked),
+        attachment->ToString(), Prefix(severity), PrefixColor(severity),
+        echoSourceLine);
   }
 }
 
@@ -365,7 +298,7 @@ bool Message::operator==(const Message &that) const {
   }
   const Message *thatAttachment{that.attachment_.get()};
   for (const Message *attachment{attachment_.get()}; attachment;
-      attachment = attachment->attachment_.get()) {
+       attachment = attachment->attachment_.get()) {
     if (!thatAttachment || !attachment->AtSameLocation(*thatAttachment) ||
         attachment->ToString() != thatAttachment->ToString() ||
         attachment->severity() != thatAttachment->severity()) {
@@ -463,47 +396,21 @@ void Messages::ResolveProvenances(const AllCookedSources &allCooked) {
 }
 
 void Messages::Emit(llvm::raw_ostream &o, const AllCookedSources &allCooked,
-    bool echoSourceLines, const common::LanguageFeatureControl *hintFlagPtr,
-    std::size_t maxErrorsToEmit, bool warningsAreErrors) const {
+    bool echoSourceLines) const {
   std::vector<const Message *> sorted;
   for (const auto &msg : messages_) {
     sorted.push_back(&msg);
   }
   std::stable_sort(sorted.begin(), sorted.end(),
       [](const Message *x, const Message *y) { return x->SortBefore(*y); });
-  std::vector<const Message *> msgsWithLastLocation;
-  std::size_t errorsEmitted{0};
+  const Message *lastMsg{nullptr};
   for (const Message *msg : sorted) {
-    bool shouldSkipMsg{false};
-    // Don't emit two identical messages for the same location.
-    // At the same location, messages are sorted by the order they were
-    // added to the Messages buffer, which is a decent proxy for the
-    // causality of the messages.
-    if (!msgsWithLastLocation.empty()) {
-      if (msgsWithLastLocation[0]->AtSameLocation(*msg)) {
-        for (const Message *msgAtThisLocation : msgsWithLastLocation) {
-          if (*msg == *msgAtThisLocation) {
-            shouldSkipMsg = true; // continue loop over sorted messages
-            break;
-          }
-        }
-      } else {
-        msgsWithLastLocation.clear();
-      }
-    }
-    if (shouldSkipMsg) {
+    if (lastMsg && *msg == *lastMsg) {
+      // Don't emit two identical messages for the same location
       continue;
     }
-    msgsWithLastLocation.push_back(msg);
-    msg->Emit(o, allCooked, echoSourceLines, hintFlagPtr);
-    if (warningsAreErrors || msg->IsFatal()) {
-      ++errorsEmitted;
-    }
-    // If maxErrorsToEmit is 0, emit all errors, otherwise break after
-    // maxErrorsToEmit.
-    if (maxErrorsToEmit > 0 && errorsEmitted >= maxErrorsToEmit) {
-      break;
-    }
+    msg->Emit(o, allCooked, echoSourceLines);
+    lastMsg = msg;
   }
 }
 
@@ -518,18 +425,7 @@ void Messages::AttachTo(Message &msg, std::optional<Severity> severity) {
   messages_.clear();
 }
 
-bool Messages::AnyFatalError(bool warningsAreErrors) const {
-  // Short-circuit in the most common case.
-  if (messages_.empty()) {
-    return false;
-  }
-  // If warnings are errors and there are warnings or errors, this is fatal.
-  // This preserves the compiler's current behavior of treating any non-fatal
-  // message as a warning. We may want to refine this in the future.
-  if (warningsAreErrors) {
-    return true;
-  }
-  // Otherwise, check the message buffer for fatal errors.
+bool Messages::AnyFatalError() const {
   for (const auto &msg : messages_) {
     if (msg.IsFatal()) {
       return true;

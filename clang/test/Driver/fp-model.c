@@ -81,7 +81,8 @@
 // WARN12: warning: overriding '-ffp-model=strict' option with '-Ofast'
 
 // RUN: %clang -### -ffast-math -ffp-model=strict -c %s 2>&1 | FileCheck \
-// RUN:   --check-prefix=CHECK-FASTMATH-FPM-STRICT %s
+// RUN:   --check-prefix=WARN-CX-BASIC-TO-FULL %s
+// WARN-CX-BASIC-TO-FULL: warning: overriding '-fcomplex-arithmetic=basic' option with '-fcomplex-arithmetic=full'
 
 // RUN: %clang -### -ffp-model=strict -fapprox-func -c %s 2>&1 \
 // RUN:   | FileCheck --check-prefix=WARN13 %s
@@ -204,7 +205,7 @@
 
 // RUN: %clang -### -nostdinc -ffast-math -ffp-model=fast -c %s 2>&1 \
 // RUN:   | FileCheck --check-prefix=CHECK-FASTMATH-FPM-FAST %s
-// CHECK-FASTMATH-FPM-FAST: warning: '-ffp-model=fast' sets complex range to "promoted" overriding the setting of "basic" that was implied by '-ffast-math'
+// CHECK-FASTMATH-FPM-FAST: warning: overriding '-fcomplex-arithmetic=basic' option with '-fcomplex-arithmetic=promoted'
 // CHECK-FASTMATH-FPM-FAST: "-cc1"
 // CHECK-FASTMATH-FPM-FAST-NOT: "-menable-no-infs"
 // CHECK-FASTMATH-FPM-FAST-NOT: "-menable-no-nans"
@@ -220,8 +221,7 @@
 // CHECK-FASTMATH-FPM-FAST-SAME: "-complex-range=promoted"
 
 // RUN: %clang -### -nostdinc -ffast-math -ffp-model=precise -c %s 2>&1 \
-// RUN:   | FileCheck --check-prefixes=CHECK-FASTMATH-FPM-PRECISE %s
-// CHECK-FASTMATH-FPM-PRECISE: warning: '-ffp-model=precise' sets complex range to "full" overriding the setting of "basic" that was implied by '-ffast-math'
+// RUN:   | FileCheck --check-prefixes=CHECK-FASTMATH-FPM-PRECISE,WARN-CX-BASIC-TO-FULL %s
 // CHECK-FASTMATH-FPM-PRECISE:     "-cc1"
 // CHECK-FASTMATH-FPM-PRECISE-NOT: "-menable-no-infs"
 // CHECK-FASTMATH-FPM-PRECISE-NOT: "-menable-no-nans"
@@ -237,8 +237,7 @@
 // CHECK-FASTMATH-FPM-PRECISE-SAME: "-complex-range=full"
 
 // RUN: %clang -### -nostdinc -ffast-math -ffp-model=strict -c %s 2>&1 \
-// RUN:   | FileCheck --check-prefixes=CHECK-FASTMATH-FPM-STRICT %s
-// CHECK-FASTMATH-FPM-STRICT: warning: '-ffp-model=strict' sets complex range to "full" overriding the setting of "basic" that was implied by '-ffast-math'
+// RUN:   | FileCheck --check-prefixes=CHECK-FASTMATH-FPM-STRICT,WARN-CX-BASIC-TO-FULL %s
 // CHECK-FASTMATH-FPM-STRICT:     "-cc1"
 // CHECK-FASTMATH-FPM-STRICT-NOT: "-menable-no-infs"
 // CHECK-FASTMATH-FPM-STRICT-NOT: "-menable-no-nans"

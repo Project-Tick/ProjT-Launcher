@@ -20,6 +20,9 @@
 #include "mlir/IR/ExtensibleDialect.h"
 #include "mlir/IR/OperationSupport.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/Support/SMLoc.h"
+#include <numeric>
 
 using namespace mlir;
 using namespace mlir::irdl;
@@ -169,7 +172,7 @@ LogicalResult getSegmentSizes(Operation *op, StringRef elemName,
 LogicalResult getOperandSegmentSizes(Operation *op,
                                      ArrayRef<Variadicity> variadicities,
                                      SmallVectorImpl<int> &segmentSizes) {
-  return getSegmentSizes(op, "operand", "operandSegmentSizes",
+  return getSegmentSizes(op, "operand", "operand_segment_sizes",
                          op->getNumOperands(), variadicities, segmentSizes);
 }
 
@@ -180,7 +183,7 @@ LogicalResult getOperandSegmentSizes(Operation *op,
 LogicalResult getResultSegmentSizes(Operation *op,
                                     ArrayRef<Variadicity> variadicities,
                                     SmallVectorImpl<int> &segmentSizes) {
-  return getSegmentSizes(op, "result", "resultSegmentSizes",
+  return getSegmentSizes(op, "result", "result_segment_sizes",
                          op->getNumResults(), variadicities, segmentSizes);
 }
 

@@ -7,7 +7,6 @@
 #include <complex.h>
 #include <stdio.h>
 
-#define RELATIVE_TOLERANCE 1e-9
 
 // Returns: the product of a + ib and c + id
 
@@ -15,19 +14,6 @@ COMPILER_RT_ABI double _Complex
 __muldc3(double __a, double __b, double __c, double __d);
 
 enum {zero, non_zero, inf, NaN, non_zero_nan};
-
-int check_complex_equal(double _Complex r1, double _Complex r2)
-{
-    double max_magnitude = fmax(cabs(r1), cabs(r2));
-    double real_diff = fabs(creal(r1) - creal(r2));
-    double imag_diff = fabs(cimag(r1) - cimag(r2));
-    if (real_diff >= max_magnitude * RELATIVE_TOLERANCE)
-      return 0;
-    if (imag_diff >= max_magnitude * RELATIVE_TOLERANCE)
-      return 0;
-
-    return 1;
-}
 
 int
 classify(double _Complex x)
@@ -60,15 +46,11 @@ int test__muldc3(double a, double b, double c, double d)
 //             a, b, c, d, creal(r), cimag(r));
 	double _Complex dividend;
 	double _Complex divisor;
-  double _Complex temp;	
-
+	
 	__real__ dividend = a;
 	__imag__ dividend = b;
 	__real__ divisor = c;
 	__imag__ divisor = d;
-
-  __real__ temp = a * c - b * d;
-  __imag__ temp = a * d + b * c;
 	
     switch (classify(dividend))
     {
@@ -107,7 +89,7 @@ int test__muldc3(double a, double b, double c, double d)
         case non_zero:
             if (classify(r) != non_zero)
                 return 1;
-            if (!check_complex_equal(r, temp))
+            if (r != a * c - b * d + _Complex_I*(a * d + b * c))
                 return 1;
             break;
         case inf:

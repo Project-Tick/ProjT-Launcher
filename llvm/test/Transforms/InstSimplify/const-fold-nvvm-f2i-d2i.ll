@@ -334,7 +334,8 @@ define i32 @test_neg_1_5_d2i_rz() {
 ;+-------------------------------------------------------------+
 define i32 @test_neg_1_5_f2ui_rm() {
 ; CHECK-LABEL: define i32 @test_neg_1_5_f2ui_rm() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.f2ui.rm(float -1.500000e+00)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.f2ui.rm(float -1.5)
   ret i32 %res
@@ -342,7 +343,8 @@ define i32 @test_neg_1_5_f2ui_rm() {
 
 define i32 @test_neg_1_5_f2ui_rn() {
 ; CHECK-LABEL: define i32 @test_neg_1_5_f2ui_rn() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.f2ui.rn(float -1.500000e+00)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.f2ui.rn(float -1.5)
   ret i32 %res
@@ -351,7 +353,8 @@ define i32 @test_neg_1_5_f2ui_rn() {
 
 define i32 @test_neg_1_5_f2ui_rp() {
 ; CHECK-LABEL: define i32 @test_neg_1_5_f2ui_rp() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.f2ui.rp(float -1.500000e+00)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.f2ui.rp(float -1.5)
   ret i32 %res
@@ -359,7 +362,8 @@ define i32 @test_neg_1_5_f2ui_rp() {
 
 define i32 @test_neg_1_5_f2ui_rz() {
 ; CHECK-LABEL: define i32 @test_neg_1_5_f2ui_rz() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.f2ui.rz(float -1.500000e+00)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.f2ui.rz(float -1.5)
   ret i32 %res
@@ -370,7 +374,8 @@ define i32 @test_neg_1_5_f2ui_rz() {
 ;+-------------------------------------------------------------+
 define i32 @test_neg_1_5_f2ui_rm_ftz() {
 ; CHECK-LABEL: define i32 @test_neg_1_5_f2ui_rm_ftz() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.f2ui.rm.ftz(float -1.500000e+00)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.f2ui.rm.ftz(float -1.5)
   ret i32 %res
@@ -378,7 +383,8 @@ define i32 @test_neg_1_5_f2ui_rm_ftz() {
 
 define i32 @test_neg_1_5_f2ui_rn_ftz() {
 ; CHECK-LABEL: define i32 @test_neg_1_5_f2ui_rn_ftz() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.f2ui.rn.ftz(float -1.500000e+00)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.f2ui.rn.ftz(float -1.5)
   ret i32 %res
@@ -386,7 +392,8 @@ define i32 @test_neg_1_5_f2ui_rn_ftz() {
 
 define i32 @test_neg_1_5_f2ui_rp_ftz() {
 ; CHECK-LABEL: define i32 @test_neg_1_5_f2ui_rp_ftz() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.f2ui.rp.ftz(float -1.500000e+00)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.f2ui.rp.ftz(float -1.5)
   ret i32 %res
@@ -394,7 +401,8 @@ define i32 @test_neg_1_5_f2ui_rp_ftz() {
 
 define i32 @test_neg_1_5_f2ui_rz_ftz() {
 ; CHECK-LABEL: define i32 @test_neg_1_5_f2ui_rz_ftz() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.f2ui.rz.ftz(float -1.500000e+00)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.f2ui.rz.ftz(float -1.5)
   ret i32 %res
@@ -404,7 +412,8 @@ define i32 @test_neg_1_5_f2ui_rz_ftz() {
 ;+-------------------------------------------------------------+
 define i32 @test_neg_1_5_d2ui_rm() {
 ; CHECK-LABEL: define i32 @test_neg_1_5_d2ui_rm() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.d2ui.rm(double -1.500000e+00)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.d2ui.rm(double -1.5)
   ret i32 %res
@@ -412,7 +421,8 @@ define i32 @test_neg_1_5_d2ui_rm() {
 
 define i32 @test_neg_1_5_d2ui_rn() {
 ; CHECK-LABEL: define i32 @test_neg_1_5_d2ui_rn() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.d2ui.rn(double -1.500000e+00)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.d2ui.rn(double -1.5)
   ret i32 %res
@@ -421,7 +431,8 @@ define i32 @test_neg_1_5_d2ui_rn() {
 
 define i32 @test_neg_1_5_d2ui_rp() {
 ; CHECK-LABEL: define i32 @test_neg_1_5_d2ui_rp() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.d2ui.rp(double -1.500000e+00)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.d2ui.rp(double -1.5)
   ret i32 %res
@@ -429,7 +440,8 @@ define i32 @test_neg_1_5_d2ui_rp() {
 
 define i32 @test_neg_1_5_d2ui_rz() {
 ; CHECK-LABEL: define i32 @test_neg_1_5_d2ui_rz() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.d2ui.rz(double -1.500000e+00)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.d2ui.rz(double -1.5)
   ret i32 %res
@@ -514,7 +526,7 @@ define i32 @test_nan_f2i_rz_ftz() {
 ;+-------------------------------------------------------------+
 define i32 @test_nan_d2i_rm() {
 ; CHECK-LABEL: define i32 @test_nan_d2i_rm() {
-; CHECK-NEXT:    ret i32 -2147483648
+; CHECK-NEXT:    ret i32 0
 ;
   %res = call i32 @llvm.nvvm.d2i.rm(double 0xFFF8000000000000)
   ret i32 %res
@@ -522,7 +534,7 @@ define i32 @test_nan_d2i_rm() {
 
 define i32 @test_nan_d2i_rn() {
 ; CHECK-LABEL: define i32 @test_nan_d2i_rn() {
-; CHECK-NEXT:    ret i32 -2147483648
+; CHECK-NEXT:    ret i32 0
 ;
   %res = call i32 @llvm.nvvm.d2i.rn(double 0xFFF8000000000000)
   ret i32 %res
@@ -531,7 +543,7 @@ define i32 @test_nan_d2i_rn() {
 
 define i32 @test_nan_d2i_rp() {
 ; CHECK-LABEL: define i32 @test_nan_d2i_rp() {
-; CHECK-NEXT:    ret i32 -2147483648
+; CHECK-NEXT:    ret i32 0
 ;
   %res = call i32 @llvm.nvvm.d2i.rp(double 0xFFF8000000000000)
   ret i32 %res
@@ -539,7 +551,7 @@ define i32 @test_nan_d2i_rp() {
 
 define i32 @test_nan_d2i_rz() {
 ; CHECK-LABEL: define i32 @test_nan_d2i_rz() {
-; CHECK-NEXT:    ret i32 -2147483648
+; CHECK-NEXT:    ret i32 0
 ;
   %res = call i32 @llvm.nvvm.d2i.rz(double 0xFFF8000000000000)
   ret i32 %res
@@ -620,7 +632,7 @@ define i32 @test_nan_f2ui_rz_ftz() {
 ;+-------------------------------------------------------------+
 define i32 @test_nan_d2ui_rm() {
 ; CHECK-LABEL: define i32 @test_nan_d2ui_rm() {
-; CHECK-NEXT:    ret i32 -2147483648
+; CHECK-NEXT:    ret i32 0
 ;
   %res = call i32 @llvm.nvvm.d2ui.rm(double 0xFFF8000000000000)
   ret i32 %res
@@ -628,7 +640,7 @@ define i32 @test_nan_d2ui_rm() {
 
 define i32 @test_nan_d2ui_rn() {
 ; CHECK-LABEL: define i32 @test_nan_d2ui_rn() {
-; CHECK-NEXT:    ret i32 -2147483648
+; CHECK-NEXT:    ret i32 0
 ;
   %res = call i32 @llvm.nvvm.d2ui.rn(double 0xFFF8000000000000)
   ret i32 %res
@@ -637,7 +649,7 @@ define i32 @test_nan_d2ui_rn() {
 
 define i32 @test_nan_d2ui_rp() {
 ; CHECK-LABEL: define i32 @test_nan_d2ui_rp() {
-; CHECK-NEXT:    ret i32 -2147483648
+; CHECK-NEXT:    ret i32 0
 ;
   %res = call i32 @llvm.nvvm.d2ui.rp(double 0xFFF8000000000000)
   ret i32 %res
@@ -645,7 +657,7 @@ define i32 @test_nan_d2ui_rp() {
 
 define i32 @test_nan_d2ui_rz() {
 ; CHECK-LABEL: define i32 @test_nan_d2ui_rz() {
-; CHECK-NEXT:    ret i32 -2147483648
+; CHECK-NEXT:    ret i32 0
 ;
   %res = call i32 @llvm.nvvm.d2ui.rz(double 0xFFF8000000000000)
   ret i32 %res
@@ -982,7 +994,8 @@ define i32 @test_neg_subnormal_d2i_rz() {
 ;+-------------------------------------------------------------+
 define i32 @test_neg_subnormal_f2ui_rm() {
 ; CHECK-LABEL: define i32 @test_neg_subnormal_f2ui_rm() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.f2ui.rm(float 0xB80FFFFFC0000000)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.f2ui.rm(float 0xB80FFFFFC0000000)
   ret i32 %res
@@ -1052,7 +1065,8 @@ define i32 @test_neg_subnormal_f2ui_rz_ftz() {
 ;+-------------------------------------------------------------+
 define i32 @test_neg_subnormal_d2ui_rm() {
 ; CHECK-LABEL: define i32 @test_neg_subnormal_d2ui_rm() {
-; CHECK-NEXT:    ret i32 0
+; CHECK-NEXT:    [[RES:%.*]] = call i32 @llvm.nvvm.d2ui.rm(double 0x800FFFFFFFFFFFFF)
+; CHECK-NEXT:    ret i32 [[RES]]
 ;
   %res = call i32 @llvm.nvvm.d2ui.rm(double 0x800fffffffffffff)
   ret i32 %res

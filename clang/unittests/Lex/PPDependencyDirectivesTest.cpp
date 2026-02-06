@@ -31,16 +31,16 @@ namespace {
 class PPDependencyDirectivesTest : public ::testing::Test {
 protected:
   PPDependencyDirectivesTest()
-      : FileMgr(FileMgrOpts),
-        Diags(DiagnosticIDs::create(), DiagOpts, new IgnoringDiagConsumer()),
+      : FileMgr(FileMgrOpts), DiagID(new DiagnosticIDs()),
+        Diags(DiagID, new DiagnosticOptions, new IgnoringDiagConsumer()),
         SourceMgr(Diags, FileMgr), TargetOpts(new TargetOptions) {
     TargetOpts->Triple = "x86_64-apple-macos12";
-    Target = TargetInfo::CreateTargetInfo(Diags, *TargetOpts);
+    Target = TargetInfo::CreateTargetInfo(Diags, TargetOpts);
   }
 
   FileSystemOptions FileMgrOpts;
   FileManager FileMgr;
-  DiagnosticOptions DiagOpts;
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID;
   DiagnosticsEngine Diags;
   SourceManager SourceMgr;
   LangOptions LangOpts;
@@ -74,7 +74,7 @@ TEST_F(PPDependencyDirectivesTest, MacroGuard) {
   // "head2.h" and "head3.h" have tokens following the macro check, they should
   // be included multiple times.
 
-  auto VFS = llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  auto VFS = new llvm::vfs::InMemoryFileSystem();
   VFS->addFile(
       "head1.h", 0,
       llvm::MemoryBuffer::getMemBuffer("#ifndef H1_H\n#define H1_H\n#endif\n"));
@@ -103,42 +103,32 @@ TEST_F(PPDependencyDirectivesTest, MacroGuard) {
     SmallVector<dependency_directives_scan::Token> Tokens;
     SmallVector<dependency_directives_scan::Directive> Directives;
   };
+  SmallVector<std::unique_ptr<DepDirectives>> DepDirectivesObjects;
 
-  class TestDependencyDirectivesGetter : public DependencyDirectivesGetter {
-    FileManager &FileMgr;
-    SmallVector<std::unique_ptr<DepDirectives>> DepDirectivesObjects;
-
-  public:
-    TestDependencyDirectivesGetter(FileManager &FileMgr) : FileMgr(FileMgr) {}
-
-    std::unique_ptr<DependencyDirectivesGetter>
-    cloneFor(FileManager &FileMgr) override {
-      return std::make_unique<TestDependencyDirectivesGetter>(FileMgr);
-    }
-
-    std::optional<ArrayRef<dependency_directives_scan::Directive>>
-    operator()(FileEntryRef File) override {
-      DepDirectivesObjects.push_back(std::make_unique<DepDirectives>());
-      StringRef Input = (*FileMgr.getBufferForFile(File))->getBuffer();
-      bool Err = scanSourceForDependencyDirectives(
-          Input, DepDirectivesObjects.back()->Tokens,
-          DepDirectivesObjects.back()->Directives);
-      EXPECT_FALSE(Err);
-      return DepDirectivesObjects.back()->Directives;
-    }
+  auto getDependencyDirectives = [&](FileEntryRef File)
+      -> std::optional<ArrayRef<dependency_directives_scan::Directive>> {
+    DepDirectivesObjects.push_back(std::make_unique<DepDirectives>());
+    StringRef Input = (*FileMgr.getBufferForFile(File))->getBuffer();
+    bool Err = scanSourceForDependencyDirectives(
+        Input, DepDirectivesObjects.back()->Tokens,
+        DepDirectivesObjects.back()->Directives);
+    EXPECT_FALSE(Err);
+    return llvm::ArrayRef(DepDirectivesObjects.back()->Directives);
   };
-  TestDependencyDirectivesGetter GetDependencyDirectives(FileMgr);
 
-  PreprocessorOptions PPOpts;
-  HeaderSearchOptions HSOpts;
+  auto PPOpts = std::make_shared<PreprocessorOptions>();
+  PPOpts->DependencyDirectivesForFile = [&](FileEntryRef File)
+      -> std::optional<ArrayRef<dependency_directives_scan::Directive>> {
+    return getDependencyDirectives(File);
+  };
+
   TrivialModuleLoader ModLoader;
-  HeaderSearch HeaderInfo(HSOpts, SourceMgr, Diags, LangOpts, Target.get());
+  HeaderSearch HeaderInfo(std::make_shared<HeaderSearchOptions>(), SourceMgr,
+                          Diags, LangOpts, Target.get());
   Preprocessor PP(PPOpts, Diags, LangOpts, SourceMgr, HeaderInfo, ModLoader,
                   /*IILookup =*/nullptr,
                   /*OwnsHeaderSearch =*/false);
   PP.Initialize(*Target);
-
-  PP.setDependencyDirectivesGetter(GetDependencyDirectives);
 
   SmallVector<StringRef> IncludedFiles;
   PP.addPPCallbacks(std::make_unique<IncludeCollector>(PP, IncludedFiles));

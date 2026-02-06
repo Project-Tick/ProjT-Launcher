@@ -530,11 +530,13 @@ static Expr<Type<TypeCategory::Logical, KIND>> RewriteOutOfRange(
           if (args.size() >= 3) {
             // Bounds depend on round= value
             if (auto *round{UnwrapExpr<Expr<SomeType>>(args[2])}) {
-              if (const Symbol *whole{UnwrapWholeSymbolDataRef(*round)};
-                  whole && semantics::IsOptional(whole->GetUltimate())) {
+              if (const Symbol * whole{UnwrapWholeSymbolDataRef(*round)};
+                  whole && semantics::IsOptional(whole->GetUltimate()) &&
+                  context.languageFeatures().ShouldWarn(
+                      common::UsageWarning::OptionalMustBePresent)) {
                 if (auto source{args[2]->sourceLocation()}) {
-                  context.Warn(common::UsageWarning::OptionalMustBePresent,
-                      *source,
+                  context.messages().Say(
+                      common::UsageWarning::OptionalMustBePresent, *source,
                       "ROUND= argument to OUT_OF_RANGE() is an optional dummy argument that must be present at execution"_warn_en_US);
                 }
               }
@@ -650,18 +652,21 @@ Expr<Type<TypeCategory::Logical, KIND>> FoldIntrinsicFunction(
   if (name == "all") {
     return FoldAllAnyParity(
         context, std::move(funcRef), &Scalar<T>::AND, Scalar<T>{true});
-  } else if (name == "allocated") {
-    if (IsNullAllocatable(args[0]->UnwrapExpr())) {
-      return Expr<T>{false};
-    }
   } else if (name == "any") {
     return FoldAllAnyParity(
         context, std::move(funcRef), &Scalar<T>::OR, Scalar<T>{false});
   } else if (name == "associated") {
-    if (IsNullPointer(args[0]->UnwrapExpr()) ||
-        (args[1] && IsNullPointer(args[1]->UnwrapExpr()))) {
-      return Expr<T>{false};
+    bool gotConstant{true};
+    const Expr<SomeType> *firstArgExpr{args[0]->UnwrapExpr()};
+    if (!firstArgExpr || !IsNullPointer(*firstArgExpr)) {
+      gotConstant = false;
+    } else if (args[1]) { // There's a second argument
+      const Expr<SomeType> *secondArgExpr{args[1]->UnwrapExpr()};
+      if (!secondArgExpr || !IsNullPointer(*secondArgExpr)) {
+        gotConstant = false;
+      }
     }
+    return gotConstant ? Expr<T>{false} : Expr<T>{std::move(funcRef)};
   } else if (name == "bge" || name == "bgt" || name == "ble" || name == "blt") {
     static_assert(std::is_same_v<Scalar<LargestInt>, BOZLiteralConstant>);
 
@@ -799,20 +804,14 @@ Expr<Type<TypeCategory::Logical, KIND>> FoldIntrinsicFunction(
     }
   } else if (name == "is_contiguous") {
     if (args.at(0)) {
-      std::optional<bool> knownContiguous;
       if (auto *expr{args[0]->UnwrapExpr()}) {
-        knownContiguous = IsContiguous(*expr, context);
-      } else if (auto *assumedType{args[0]->GetAssumedTypeDummy()}) {
-        knownContiguous = IsContiguous(*assumedType, context);
-      }
-      if (knownContiguous) {
-        if (*knownContiguous) {
-          if (auto source{args[0]->sourceLocation()}) {
-            context.Warn(common::UsageWarning::ConstantIsContiguous, *source,
-                "is_contiguous() is always true for named constants and subobjects of named constants"_warn_en_US);
-          }
+        if (auto contiguous{IsContiguous(*expr, context)}) {
+          return Expr<T>{*contiguous};
         }
-        return Expr<T>{*knownContiguous};
+      } else if (auto *assumedType{args[0]->GetAssumedTypeDummy()}) {
+        if (auto contiguous{IsContiguous(*assumedType, context)}) {
+          return Expr<T>{*contiguous};
+        }
       }
     }
   } else if (name == "is_iostat_end") {
@@ -879,41 +878,11 @@ Expr<Type<TypeCategory::Logical, KIND>> FoldIntrinsicFunction(
     return Expr<T>{context.targetCharacteristics().ieeeFeatures().test(
         IeeeFeature::Divide)};
   } else if (name == "__builtin_ieee_support_flag") {
-    if (context.targetCharacteristics().ieeeFeatures().test(
-            IeeeFeature::Flags)) {
-      if (args[0]) {
-        if (const auto *cst{UnwrapExpr<Constant<SomeDerived>>(args[0])}) {
-          if (auto constr{cst->GetScalarValue()}) {
-            if (StructureConstructorValues & values{constr->values()};
-                values.size() == 1) {
-              const Expr<SomeType> &value{values.begin()->second.value()};
-              if (auto flag{ToInt64(value)}) {
-                if (flag != _FORTRAN_RUNTIME_IEEE_DENORM) {
-                  // Check for suppport for standard exceptions.
-                  return Expr<T>{
-                      context.targetCharacteristics().ieeeFeatures().test(
-                          IeeeFeature::Flags)};
-                } else if (args[1]) {
-                  // Check for nonstandard ieee_denorm exception support for
-                  // a given kind.
-                  return Expr<T>{context.targetCharacteristics()
-                          .hasSubnormalExceptionSupport(
-                              args[1]->GetType().value().kind())};
-                } else {
-                  // Check for nonstandard ieee_denorm exception support for
-                  // all kinds.
-                  return Expr<T>{context.targetCharacteristics()
-                          .hasSubnormalExceptionSupport()};
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+    return Expr<T>{context.targetCharacteristics().ieeeFeatures().test(
+        IeeeFeature::Flags)};
   } else if (name == "__builtin_ieee_support_halting") {
     if (!context.targetCharacteristics()
-            .haltingSupportIsUnknownAtCompileTime()) {
+             .haltingSupportIsUnknownAtCompileTime()) {
       return Expr<T>{context.targetCharacteristics().ieeeFeatures().test(
           IeeeFeature::Halting)};
     }
@@ -937,12 +906,8 @@ Expr<Type<TypeCategory::Logical, KIND>> FoldIntrinsicFunction(
     return Expr<T>{
         context.targetCharacteristics().ieeeFeatures().test(IeeeFeature::Sqrt)};
   } else if (name == "__builtin_ieee_support_standard") {
-    // ieee_support_standard depends in part on ieee_support_halting.
-    if (!context.targetCharacteristics()
-            .haltingSupportIsUnknownAtCompileTime()) {
-      return Expr<T>{context.targetCharacteristics().ieeeFeatures().test(
-          IeeeFeature::Standard)};
-    }
+    return Expr<T>{context.targetCharacteristics().ieeeFeatures().test(
+        IeeeFeature::Standard)};
   } else if (name == "__builtin_ieee_support_subnormal") {
     return Expr<T>{context.targetCharacteristics().ieeeFeatures().test(
         IeeeFeature::Subnormal)};

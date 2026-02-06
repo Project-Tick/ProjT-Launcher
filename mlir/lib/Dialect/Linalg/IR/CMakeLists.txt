@@ -13,7 +13,6 @@ add_mlir_dialect_library(MLIRLinalgDialect
   MLIRLinalgOpsEnumsIncGen
   MLIRLinalgOpsIncGen
   MLIRLinalgStructuredOpsIncGen
-  MLIRLinalgRelayoutOpsIncGen
   MLIRShardingInterfaceIncGen
 
   LINK_LIBS PUBLIC
@@ -24,7 +23,6 @@ add_mlir_dialect_library(MLIRLinalgDialect
   MLIRDestinationStyleOpInterface
   MLIRDialectUtils
   MLIRFunctionInterfaces
-  MLIRIndexingMapOpInterface
   MLIRInferTypeOpInterface
   MLIRIR
   MLIRParser

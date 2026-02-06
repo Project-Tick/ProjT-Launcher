@@ -41,20 +41,19 @@ Quickstart
 2. Check out the `test-suite` module with:
 
    ```bash
-   % git clone https://github.com/llvm/llvm-test-suite.git
+   % git clone https://github.com/llvm/llvm-test-suite.git test-suite
    ```
 
 3. Create a build directory and use CMake to configure the suite. Use the
-   `CMAKE_C_COMPILER` option to specify the compiler to test (the C++ compiler
-   will be inferred automatically from this). Use a cache file to choose a typical
-   build configuration:
+   `CMAKE_C_COMPILER` option to specify the compiler to test. Use a cache file
+   to choose a typical build configuration:
 
    ```bash
    % mkdir test-suite-build
    % cd test-suite-build
    % cmake -DCMAKE_C_COMPILER=<path to llvm build>/bin/clang \
-           -C../llvm-test-suite/cmake/caches/O3.cmake \
-           ../llvm-test-suite
+           -C../test-suite/cmake/caches/O3.cmake \
+           ../test-suite
    ```
 
 **NOTE!** if you are using your built clang, and you want to build and run the
@@ -86,15 +85,9 @@ MicroBenchmarks/XRay microbenchmarks, you need to add `compiler-rt` to your
    PASS: test-suite :: MultiSource/Applications/ALAC/encode/alacconvert-encode.test (2 of 474)
    ...
    ```
-
-```{note}
-  Even when you only want compile-time results you still need to run the test
-  with the above `llvm-lit` command. In this case, the `results.json` file will
-  contain compile time metrics only (code size, llvm stats and so on).
-
-  This mode is enabled by settting `-DTEST_SUITE_RUN_BENCHMARKS=OFF`,
-  more details [here](common_configuration_options).
-```
+**NOTE!** even in the case you only want to get the compile-time results(code size, llvm stats etc),
+you need to run the test with the above `llvm-lit` command. In that case, the *results.json* file will
+contain compile-time metrics.
 
 6. Show and compare result files (optional):
 
@@ -102,9 +95,9 @@ MicroBenchmarks/XRay microbenchmarks, you need to add `compiler-rt` to your
    # Make sure pandas and scipy are installed. Prepend `sudo` if necessary.
    % pip install pandas scipy
    # Show a single result file:
-   % llvm-test-suite/utils/compare.py results.json
+   % test-suite/utils/compare.py results.json
    # Compare two result files:
-   % llvm-test-suite/utils/compare.py results_a.json results_b.json
+   % test-suite/utils/compare.py results_a.json results_b.json
    ```
 
 
@@ -209,7 +202,6 @@ benchmarks. CMake can print a list of them:
 % cmake -LAH
 ```
 
-(common_configuration_options)=
 ### Common Configuration Options
 
 - `CMAKE_C_FLAGS`
@@ -287,7 +279,7 @@ benchmarks. CMake can print a list of them:
 
   Generate build files for the ninja build tool.
 
-- `-Cllvm-test-suite/cmake/caches/<cachefile.cmake>`
+- `-Ctest-suite/cmake/caches/<cachefile.cmake>`
 
   Use a CMake cache.  The test-suite comes with several CMake caches which
   predefine common or tricky build configurations.
@@ -304,7 +296,7 @@ Example usage:
 - Basic Usage:
 
   ```text
-  % llvm-test-suite/utils/compare.py baseline.json
+  % test-suite/utils/compare.py baseline.json
   Warning: 'test-suite :: External/SPEC/CINT2006/403.gcc/403.gcc.test' has No metrics!
   Tests: 508
   Metric: exec_time
@@ -328,14 +320,14 @@ Example usage:
 - Show compile_time or text segment size metrics:
 
   ```bash
-  % llvm-test-suite/utils/compare.py -m compile_time baseline.json
-  % llvm-test-suite/utils/compare.py -m size.__text baseline.json
+  % test-suite/utils/compare.py -m compile_time baseline.json
+  % test-suite/utils/compare.py -m size.__text baseline.json
   ```
 
 - Compare two result files and filter short running tests:
 
   ```bash
-  % llvm-test-suite/utils/compare.py --filter-short baseline.json experiment.json
+  % test-suite/utils/compare.py --filter-short baseline.json experiment.json
   ...
   Program                                         baseline  experiment  diff
 
@@ -349,7 +341,7 @@ Example usage:
   runtime each:
 
   ```bash
-  % llvm-test-suite/utils/compare.py base0.json base1.json base2.json vs exp0.json exp1.json exp2.json
+  % test-suite/utils/compare.py base0.json base1.json base2.json vs exp0.json exp1.json exp2.json
   ```
 
 ### Continuous Tracking with LNT
@@ -365,11 +357,11 @@ External Suites
 
 External suites such as SPEC can be enabled by either
 
-- placing (or linking) them into the `llvm-test-suite/test-suite-externals/xxx` directory (example: `llvm-test-suite/test-suite-externals/speccpu2000`)
+- placing (or linking) them into the `test-suite/test-suite-externals/xxx` directory (example: `test-suite/test-suite-externals/speccpu2000`)
 - using a configuration option such as `-D TEST_SUITE_SPEC2000_ROOT=path/to/speccpu2000`
 
 You can find further information in the respective README files such as
-`llvm-test-suite/External/SPEC/README`.
+`test-suite/External/SPEC/README`.
 
 For the SPEC benchmarks you can switch between the `test`, `train` and
 `ref` input datasets via the `TEST_SUITE_RUN_TYPE` configuration option.
@@ -377,8 +369,8 @@ The `train` dataset is used by default.
 
 In addition to SPEC, the multimedia frameworks ffmpeg and dav1d can also
 be hooked up as external projects in the same way. By including them in
-llvm-test-suite, a lot more of potentially vectorizable code gets compiled -
-which can catch compiler bugs merely by triggering code generation asserts.
+llvm-test-suite, a lot more of potentially vectorizable code gets compiled
+- which can catch compiler bugs merely by triggering code generation asserts.
 Including them also adds small code correctness tests, that compare the
 output of the compiler generated functions against handwritten assembly
 functions. (On x86, building the assembly requires having the nasm tool
@@ -398,7 +390,7 @@ picked up automatically if placed into a subdirectory of the test-suite or when
 setting the `TEST_SUITE_SUBDIRS` variable:
 
 ```bash
-% cmake -DTEST_SUITE_SUBDIRS=path/to/my/benchmark-suite ../llvm-test-suite
+% cmake -DTEST_SUITE_SUBDIRS=path/to/my/benchmark-suite ../test-suite
 ```
 
 
@@ -416,7 +408,7 @@ Example:
 % cmake -DTEST_SUITE_PROFILE_GENERATE=ON \
         -DTEST_SUITE_USE_IR_PGO=ON \
         -DTEST_SUITE_RUN_TYPE=train \
-        ../llvm-test-suite
+        ../test-suite
 % make
 % llvm-lit .
 # Use the profile data for compilation and actual benchmark run:
@@ -446,7 +438,7 @@ information can be found here:
 - [https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html](https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html)
 
 Cross compilation from macOS to iOS is possible with the
-`llvm-test-suite/cmake/caches/target-target-*-iphoneos-internal.cmake` CMake cache
+`test-suite/cmake/caches/target-target-*-iphoneos-internal.cmake` CMake cache
 files; this requires an internal iOS SDK.
 
 ### Running
@@ -464,10 +456,10 @@ There are two ways to run the tests in a cross compilation setting:
 
   ```bash
   % cmake -G Ninja -D CMAKE_C_COMPILER=path/to/clang \
-          -C ../llvm-test-suite/cmake/caches/target-arm64-iphoneos-internal.cmake \
+          -C ../test-suite/cmake/caches/target-arm64-iphoneos-internal.cmake \
           -D CMAKE_BUILD_TYPE=Release \
           -D TEST_SUITE_REMOTE_HOST=mydevice \
-          ../llvm-test-suite
+          ../test-suite
   % ninja
   % ninja rsync
   % llvm-lit -j1 -o result.json .

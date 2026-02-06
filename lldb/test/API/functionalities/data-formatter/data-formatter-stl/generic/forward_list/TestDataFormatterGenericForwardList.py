@@ -7,17 +7,19 @@ from lldbsuite.test.decorators import *
 from lldbsuite.test.lldbtest import *
 from lldbsuite.test import lldbutil
 
+USE_LIBSTDCPP = "USE_LIBSTDCPP"
+USE_LIBCPP = "USE_LIBCPP"
+
 
 class TestDataFormatterGenericForwardList(TestBase):
-    TEST_WITH_PDB_DEBUG_INFO = True
-
     def setUp(self):
         TestBase.setUp(self)
         self.line = line_number("main.cpp", "// break here")
         self.namespace = "std"
 
-    def do_test(self):
+    def do_test(self, stdlib_type):
         """Test that std::forward_list is displayed correctly"""
+        self.build(dictionary={stdlib_type: "1"})
         lldbutil.run_to_source_breakpoint(
             self, "// break here", lldb.SBFileSpec("main.cpp", False)
         )
@@ -48,7 +50,7 @@ class TestDataFormatterGenericForwardList(TestBase):
         self.expect(
             "settings show target.max-children-count",
             matching=True,
-            substrs=["target.max-children-count (unsigned) = 24"],
+            substrs=["target.max-children-count (unsigned) = 256"],
         )
 
         self.expect(
@@ -71,11 +73,13 @@ class TestDataFormatterGenericForwardList(TestBase):
         self.expect(
             "frame variable thousand_elts",
             matching=True,
-            substrs=["size=24", "[0]", "[1]", "[2]", "..."],
+            substrs=["size=256", "[0]", "[1]", "[2]", "..."],
         )
 
-    def do_test_ptr_and_ref(self):
+    def do_test_ptr_and_ref(self, stdlib_type):
         """Test that ref and ptr to std::forward_list is displayed correctly"""
+        self.build(dictionary={stdlib_type: "1"})
+
         (_, process, _, bkpt) = lldbutil.run_to_source_breakpoint(
             self, "Check ref and ptr", lldb.SBFileSpec("main.cpp", False)
         )
@@ -154,31 +158,16 @@ class TestDataFormatterGenericForwardList(TestBase):
 
     @add_test_categories(["libstdcxx"])
     def test_libstdcpp(self):
-        self.build(dictionary={"USE_LIBSTDCPP": 1})
-        self.do_test()
+        self.do_test(USE_LIBSTDCPP)
 
     @add_test_categories(["libstdcxx"])
     def test_ptr_and_ref_libstdcpp(self):
-        self.build(dictionary={"USE_LIBSTDCPP": 1})
-        self.do_test_ptr_and_ref()
+        self.do_test_ptr_and_ref(USE_LIBSTDCPP)
 
     @add_test_categories(["libc++"])
     def test_libcpp(self):
-        self.build(dictionary={"USE_LIBCPP": 1})
-        self.do_test()
+        self.do_test(USE_LIBCPP)
 
     @add_test_categories(["libc++"])
     def test_ptr_and_ref_libcpp(self):
-        self.build(dictionary={"USE_LIBCPP": 1})
-        self.do_test_ptr_and_ref()
-
-    @add_test_categories(["msvcstl"])
-    def test_msvcstl(self):
-        # No flags, because the "msvcstl" category checks that the MSVC STL is used by default.
-        self.build()
-        self.do_test()
-
-    @add_test_categories(["msvcstl"])
-    def test_ptr_and_ref_msvcstl(self):
-        self.build()
-        self.do_test_ptr_and_ref()
+        self.do_test_ptr_and_ref(USE_LIBCPP)

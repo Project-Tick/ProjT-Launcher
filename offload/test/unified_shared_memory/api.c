@@ -5,7 +5,6 @@
 // XFAIL: nvptx64-nvidia-cuda-LTO
 
 // REQUIRES: unified_shared_memory
-// XFAIL: intelgpu
 
 #include <omp.h>
 #include <stdio.h>

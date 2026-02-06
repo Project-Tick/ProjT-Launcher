@@ -33,7 +33,7 @@ public:
 
   explicit RISCVLMULInstrument(StringRef Data) : Instrument(DESC_NAME, Data) {}
 
-  ~RISCVLMULInstrument() override = default;
+  ~RISCVLMULInstrument() = default;
 
   uint8_t getLMUL() const;
 };
@@ -45,7 +45,7 @@ public:
 
   explicit RISCVSEWInstrument(StringRef Data) : Instrument(DESC_NAME, Data) {}
 
-  ~RISCVSEWInstrument() override = default;
+  ~RISCVSEWInstrument() = default;
 
   uint8_t getSEW() const;
 };

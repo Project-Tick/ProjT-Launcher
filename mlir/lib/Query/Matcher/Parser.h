@@ -16,11 +16,8 @@
 // provided to the parser.
 //
 // The grammar for the supported expressions is as follows:
-// <Expression>        := <Literal> | <MatcherExpression>
-// <Literal>           := <StringLiteral> | <NumericLiteral> | <BooleanLiteral>
+// <Expression>        := <StringLiteral> | <MatcherExpression>
 // <StringLiteral>     := "quoted string"
-// <BooleanLiteral>    := "true" | "false"
-// <NumericLiteral>    := [0-9]+
 // <MatcherExpression> := <MatcherName>(<ArgumentList>)
 // <MatcherName>       := [a-zA-Z]+
 // <ArgumentList>      := <Expression> | <Expression>,<ArgumentList>

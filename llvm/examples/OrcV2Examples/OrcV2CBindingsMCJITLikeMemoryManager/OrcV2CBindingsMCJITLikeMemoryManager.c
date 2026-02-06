@@ -150,25 +150,27 @@ int handleError(LLVMErrorRef Err) {
 }
 
 LLVMOrcThreadSafeModuleRef createDemoModule(void) {
-  // Create an LLVMContext.
-  LLVMContextRef Ctx = LLVMContextCreate();
+  // Create a new ThreadSafeContext and underlying LLVMContext.
+  LLVMOrcThreadSafeContextRef TSCtx = LLVMOrcCreateNewThreadSafeContext();
+
+  // Get a reference to the underlying LLVMContext.
+  LLVMContextRef Ctx = LLVMOrcThreadSafeContextGetContext(TSCtx);
 
   // Create a new LLVM module.
   LLVMModuleRef M = LLVMModuleCreateWithNameInContext("demo", Ctx);
 
   // Add a "sum" function":
   //  - Create the function type and function instance.
-  LLVMTypeRef Int32Type = LLVMInt32TypeInContext(Ctx);
-  LLVMTypeRef ParamTypes[] = {Int32Type, Int32Type};
-  LLVMTypeRef SumFunctionType = LLVMFunctionType(Int32Type, ParamTypes, 2, 0);
+  LLVMTypeRef ParamTypes[] = {LLVMInt32Type(), LLVMInt32Type()};
+  LLVMTypeRef SumFunctionType =
+      LLVMFunctionType(LLVMInt32Type(), ParamTypes, 2, 0);
   LLVMValueRef SumFunction = LLVMAddFunction(M, "sum", SumFunctionType);
 
   //  - Add a basic block to the function.
-  LLVMBasicBlockRef EntryBB =
-      LLVMAppendBasicBlockInContext(Ctx, SumFunction, "entry");
+  LLVMBasicBlockRef EntryBB = LLVMAppendBasicBlock(SumFunction, "entry");
 
   //  - Add an IR builder and point it at the end of the basic block.
-  LLVMBuilderRef Builder = LLVMCreateBuilderInContext(Ctx);
+  LLVMBuilderRef Builder = LLVMCreateBuilder();
   LLVMPositionBuilderAtEnd(Builder, EntryBB);
 
   //  - Get the two function arguments and use them co construct an "add"
@@ -179,10 +181,6 @@ LLVMOrcThreadSafeModuleRef createDemoModule(void) {
 
   //  - Build the return instruction.
   LLVMBuildRet(Builder, Result);
-
-  // Create a new ThreadSafeContext to hold the context.
-  LLVMOrcThreadSafeContextRef TSCtx =
-      LLVMOrcCreateNewThreadSafeContextFromLLVMContext(Ctx);
 
   // Our demo module is now complete. Wrap it and our ThreadSafeContext in a
   // ThreadSafeModule.

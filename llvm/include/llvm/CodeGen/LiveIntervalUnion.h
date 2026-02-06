@@ -191,14 +191,14 @@ public:
 
     void clear();
 
-    LiveIntervalUnion &operator[](MCRegUnit Unit) {
-      assert(static_cast<unsigned>(Unit) < Size && "Unit out of bounds");
-      return LIUs[static_cast<unsigned>(Unit)];
+    LiveIntervalUnion& operator[](unsigned idx) {
+      assert(idx <  Size && "idx out of bounds");
+      return LIUs[idx];
     }
 
-    const LiveIntervalUnion &operator[](MCRegUnit Unit) const {
-      assert(static_cast<unsigned>(Unit) < Size && "Unit out of bounds");
-      return LIUs[static_cast<unsigned>(Unit)];
+    const LiveIntervalUnion& operator[](unsigned Idx) const {
+      assert(Idx < Size && "Idx out of bounds");
+      return LIUs[Idx];
     }
   };
 };

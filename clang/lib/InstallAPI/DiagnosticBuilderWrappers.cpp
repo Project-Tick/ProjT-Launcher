@@ -8,6 +8,7 @@
 
 #include "DiagnosticBuilderWrappers.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/TextAPI/Platform.h"
 
@@ -96,12 +97,12 @@ const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
 
 const clang::DiagnosticBuilder &
 operator<<(const clang::DiagnosticBuilder &DB,
-           const clang::installapi::LibAttrs::Entry &LibAttr) {
-  std::string Entry;
-  raw_string_ostream OS(Entry);
+           const StringMapEntry<ArchitectureSet> &LibAttr) {
+  std::string IFAsString;
+  raw_string_ostream OS(IFAsString);
 
-  OS << LibAttr.first << " [ " << LibAttr.second << " ]";
-  DB.AddString(Entry);
+  OS << LibAttr.getKey() << " [ " << LibAttr.getValue() << " ]";
+  DB.AddString(IFAsString);
   return DB;
 }
 

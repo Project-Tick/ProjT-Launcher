@@ -19,14 +19,13 @@ template <typename T> class IListBaseTest : public ::testing::Test {};
 class Parent;
 
 // Test variants with the same test.
-using IListBaseTestTypes =
-    ::testing::Types<ilist_base<false, void>, ilist_base<true, void>,
-                     ilist_base<false, Parent *>, ilist_base<true, Parent *>>;
+typedef ::testing::Types<ilist_base<false, void>, ilist_base<true, void>, ilist_base<false, Parent*>, ilist_base<true, Parent*>>
+    IListBaseTestTypes;
 TYPED_TEST_SUITE(IListBaseTest, IListBaseTestTypes, );
 
 TYPED_TEST(IListBaseTest, insertBeforeImpl) {
-  using list_base_type = TypeParam;
-  using node_base_type = typename list_base_type::node_base_type;
+  typedef TypeParam list_base_type;
+  typedef typename list_base_type::node_base_type node_base_type;
 
   node_base_type S, A, B;
 
@@ -52,8 +51,8 @@ TYPED_TEST(IListBaseTest, insertBeforeImpl) {
 }
 
 TYPED_TEST(IListBaseTest, removeImpl) {
-  using list_base_type = TypeParam;
-  using node_base_type = typename list_base_type::node_base_type;
+  typedef TypeParam list_base_type;
+  typedef typename list_base_type::node_base_type node_base_type;
 
   node_base_type S, A, B;
 
@@ -81,8 +80,8 @@ TYPED_TEST(IListBaseTest, removeImpl) {
 }
 
 TYPED_TEST(IListBaseTest, removeRangeImpl) {
-  using list_base_type = TypeParam;
-  using node_base_type = typename list_base_type::node_base_type;
+  typedef TypeParam list_base_type;
+  typedef typename list_base_type::node_base_type node_base_type;
 
   node_base_type S, A, B, C, D;
 
@@ -107,8 +106,8 @@ TYPED_TEST(IListBaseTest, removeRangeImpl) {
 }
 
 TYPED_TEST(IListBaseTest, removeRangeImplAllButSentinel) {
-  using list_base_type = TypeParam;
-  using node_base_type = typename list_base_type::node_base_type;
+  typedef TypeParam list_base_type;
+  typedef typename list_base_type::node_base_type node_base_type;
 
   node_base_type S, A, B;
 
@@ -127,8 +126,8 @@ TYPED_TEST(IListBaseTest, removeRangeImplAllButSentinel) {
 }
 
 TYPED_TEST(IListBaseTest, transferBeforeImpl) {
-  using list_base_type = TypeParam;
-  using node_base_type = typename list_base_type::node_base_type;
+  typedef TypeParam list_base_type;
+  typedef typename list_base_type::node_base_type node_base_type;
 
   node_base_type S1, S2, A, B, C, D, E;
 

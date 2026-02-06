@@ -15,6 +15,7 @@
 #include "llvm/DWARFLinker/Utils.h"
 #include "llvm/DebugInfo/DWARF/DWARFDebugAbbrev.h"
 #include "llvm/DebugInfo/DWARF/DWARFDebugMacro.h"
+#include "llvm/Support/DJB.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/Path.h"
@@ -101,8 +102,10 @@ void CompileUnit::maybeResetToLoadedStage() {
   OutUnitDIE = nullptr;
   DebugAddrIndexMap.clear();
 
-  llvm::fill(OutDieOffsetArray, 0);
-  llvm::fill(TypeEntries, nullptr);
+  for (uint64_t &Offset : OutDieOffsetArray)
+    Offset = 0;
+  for (TypeEntry *&Name : TypeEntries)
+    Name = nullptr;
   eraseSections();
 
   setStage(Stage::CreatedNotLoaded);
@@ -1430,13 +1433,13 @@ DIE *CompileUnit::allocateTypeDie(TypeEntryBody *TypeDescriptor,
   if (IsDeclaration && !DeclarationDie) {
     // Alocate declaration DIE.
     DIE *NewDie = TypeDIEGenerator.createDIE(DieTag, 0);
-    if (TypeDescriptor->DeclarationDie.compare_exchange_strong(DeclarationDie,
-                                                               NewDie))
+    if (TypeDescriptor->DeclarationDie.compare_exchange_weak(DeclarationDie,
+                                                             NewDie))
       return NewDie;
   } else if (IsDeclaration && !IsParentDeclaration && OldParentIsDeclaration) {
     // Overwrite existing declaration DIE if it's parent is also an declaration
     // while parent of current declaration DIE is a definition.
-    if (TypeDescriptor->ParentIsDeclaration.compare_exchange_strong(
+    if (TypeDescriptor->ParentIsDeclaration.compare_exchange_weak(
             OldParentIsDeclaration, false)) {
       DIE *NewDie = TypeDIEGenerator.createDIE(DieTag, 0);
       TypeDescriptor->DeclarationDie = NewDie;
@@ -1446,13 +1449,13 @@ DIE *CompileUnit::allocateTypeDie(TypeEntryBody *TypeDescriptor,
     // Alocate declaration DIE since parent of current DIE is marked as
     // declaration.
     DIE *NewDie = TypeDIEGenerator.createDIE(DieTag, 0);
-    if (TypeDescriptor->DeclarationDie.compare_exchange_strong(DeclarationDie,
-                                                               NewDie))
+    if (TypeDescriptor->DeclarationDie.compare_exchange_weak(DeclarationDie,
+                                                             NewDie))
       return NewDie;
   } else if (!IsDeclaration && !IsParentDeclaration) {
     // Allocate definition DIE.
     DIE *NewDie = TypeDIEGenerator.createDIE(DieTag, 0);
-    if (TypeDescriptor->Die.compare_exchange_strong(DefinitionDie, NewDie)) {
+    if (TypeDescriptor->Die.compare_exchange_weak(DefinitionDie, NewDie)) {
       TypeDescriptor->ParentIsDeclaration = false;
       return NewDie;
     }

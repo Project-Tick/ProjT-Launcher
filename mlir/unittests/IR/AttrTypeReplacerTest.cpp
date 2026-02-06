@@ -80,9 +80,9 @@ public:
     });
   }
 
-  Type getFunctionTypeChain(unsigned n) {
+  Type getFunctionTypeChain(unsigned N) {
     Type type = b.getIndexType();
-    for (unsigned i = 0; i < n; i++)
+    for (unsigned i = 0; i < N; i++)
       type = b.getFunctionType({}, type);
     return type;
   };
@@ -168,9 +168,9 @@ public:
     });
   }
 
-  Type getFunctionTypeTree(unsigned n) {
+  Type getFunctionTypeTree(unsigned N) {
     Type type = b.getIndexType();
-    for (unsigned i = 0; i < n; i++)
+    for (unsigned i = 0; i < N; i++)
       type = b.getFunctionType(type, type);
     return type;
   };

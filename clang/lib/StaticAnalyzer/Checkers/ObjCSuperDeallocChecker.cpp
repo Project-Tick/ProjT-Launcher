@@ -34,7 +34,7 @@ class ObjCSuperDeallocChecker
       this, "[super dealloc] should not be called more than once",
       categories::CoreFoundationObjectiveC};
 
-  void initIdentifierInfoAndSelectors(const ASTContext &Ctx) const;
+  void initIdentifierInfoAndSelectors(ASTContext &Ctx) const;
 
   bool isSuperDeallocMessage(const ObjCMethodCall &M) const;
 
@@ -214,8 +214,8 @@ void ObjCSuperDeallocChecker::diagnoseCallArguments(const CallEvent &CE,
   }
 }
 
-void ObjCSuperDeallocChecker::initIdentifierInfoAndSelectors(
-    const ASTContext &Ctx) const {
+void
+ObjCSuperDeallocChecker::initIdentifierInfoAndSelectors(ASTContext &Ctx) const {
   if (IIdealloc)
     return;
 
@@ -230,7 +230,7 @@ ObjCSuperDeallocChecker::isSuperDeallocMessage(const ObjCMethodCall &M) const {
   if (M.getOriginExpr()->getReceiverKind() != ObjCMessageExpr::SuperInstance)
     return false;
 
-  const ASTContext &Ctx = M.getASTContext();
+  ASTContext &Ctx = M.getState()->getStateManager().getContext();
   initIdentifierInfoAndSelectors(Ctx);
 
   return M.getSelector() == SELdealloc;

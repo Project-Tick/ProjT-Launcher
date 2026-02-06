@@ -34,9 +34,6 @@ def FeatureNoFMULS
 def FeatureV9
   : SubtargetFeature<"v9", "IsV9", "true",
                      "Enable SPARC-V9 instructions">;
-def Feature64Bit : SubtargetFeature<"64bit", "Is64Bit", "true",
-                                    "Enable 64-bit mode", [FeatureV9]>;
-
 def FeatureV8Plus
   : SubtargetFeature<"v8plus", "IsV8Plus", "true",
                      "Enable V8+ mode, allowing use of 64-bit V9 instructions in 32-bit code">;
@@ -45,32 +42,13 @@ def FeatureV8Deprecated
                      "Enable deprecated V8 instructions in V9 mode">;
 def FeatureVIS
   : SubtargetFeature<"vis", "IsVIS", "true",
-                     "Enable UltraSPARC Visual Instruction Set extensions",
-                     [FeatureV9]>;
+                     "Enable UltraSPARC Visual Instruction Set extensions">;
 def FeatureVIS2
   : SubtargetFeature<"vis2", "IsVIS2", "true",
-                     "Enable Visual Instruction Set extensions II",
-                     [FeatureV9]>;
+                     "Enable Visual Instruction Set extensions II">;
 def FeatureVIS3
   : SubtargetFeature<"vis3", "IsVIS3", "true",
-                     "Enable Visual Instruction Set extensions III",
-                     [FeatureV9]>;
-def FeatureUA2005
-  : SubtargetFeature<"ua2005", "IsUA2005", "true",
-                     "Enable UltraSPARC Architecture 2005 extensions",
-                     [FeatureV9, FeatureVIS, FeatureVIS2]>;
-def FeatureUA2007
-  : SubtargetFeature<"ua2007", "IsUA2007", "true",
-                     "Enable UltraSPARC Architecture 2007 extensions",
-                     [FeatureV9, FeatureVIS, FeatureVIS2]>;
-def FeatureOSA2011
-  : SubtargetFeature<"osa2011", "IsOSA2011", "true",
-                     "Enable Oracle SPARC Architecture 2011 extensions",
-                     [FeatureV9, FeatureVIS, FeatureVIS2, FeatureVIS3]>;
-def FeatureCrypto
-  : SubtargetFeature<"crypto", "IsCrypto", "true",
-                     "Enable cryptographic extensions",
-                     [FeatureOSA2011]>;
+                     "Enable Visual Instruction Set extensions III">;
 def FeatureLeon
   : SubtargetFeature<"leon", "IsLeon", "true",
                      "Enable LEON extensions">;
@@ -94,9 +72,6 @@ def FeatureSoftFloat : SubtargetFeature<"soft-float", "UseSoftFloat", "true",
 
 def TuneSlowRDPC : SubtargetFeature<"slow-rdpc", "HasSlowRDPC", "true",
                                     "rd %pc, %XX is slow", [FeatureV9]>;
-
-def TuneNoPredictor : SubtargetFeature<"no-predictor", "HasNoPredictor", "true",
-                                    "Processor has no branch predictor, branches stall execution", []>;
 
 //==== Features added predmoninantly for LEON subtarget support
 include "LeonFeatures.td"
@@ -125,8 +100,6 @@ include "SparcRegisterInfo.td"
 include "SparcCallingConv.td"
 include "SparcSchedule.td"
 include "SparcInstrInfo.td"
-
-defm : RemapAllTargetPseudoPointerOperands<sparc_ptr_rc>;
 
 def SparcInstrInfo : InstrInfo;
 
@@ -179,19 +152,13 @@ def : Proc<"ultrasparc3",     [FeatureV9, FeatureV8Deprecated, FeatureVIS,
                                FeatureVIS2],
                               [TuneSlowRDPC]>;
 def : Proc<"niagara",         [FeatureV9, FeatureV8Deprecated, FeatureVIS,
-                               FeatureVIS2, FeatureUA2005],
-                              [TuneNoPredictor]>;
+                               FeatureVIS2]>;
 def : Proc<"niagara2",        [FeatureV9, FeatureV8Deprecated, UsePopc,
-                               FeatureVIS, FeatureVIS2, FeatureUA2005],
-                              [TuneNoPredictor]>;
+                               FeatureVIS, FeatureVIS2]>;
 def : Proc<"niagara3",        [FeatureV9, FeatureV8Deprecated, UsePopc,
-                               FeatureVIS, FeatureVIS2, FeatureVIS3,
-                               FeatureUA2005, FeatureUA2007],
-                              [TuneNoPredictor]>;
+                               FeatureVIS, FeatureVIS2]>;
 def : Proc<"niagara4",        [FeatureV9, FeatureV8Deprecated, UsePopc,
-                               FeatureVIS, FeatureVIS2, FeatureVIS3,
-                               FeatureUA2005, FeatureUA2007, FeatureOSA2011,
-                               FeatureCrypto]>;
+                               FeatureVIS, FeatureVIS2, FeatureVIS3]>;
 
 // LEON 2 FT generic
 def : Processor<"leon2", LEON2Itineraries,

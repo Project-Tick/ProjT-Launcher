@@ -317,24 +317,8 @@ static void convertFunctionLineTable(OutputAggregator &Out, CUInfo &CUI,
   const object::SectionedAddress SecAddress{
       StartAddress, object::SectionedAddress::UndefSection};
 
-  // Attempt to retrieve DW_AT_LLVM_stmt_sequence if present.
-  std::optional<uint64_t> StmtSeqOffset;
-  if (auto StmtSeqAttr = Die.find(llvm::dwarf::DW_AT_LLVM_stmt_sequence)) {
-    // The `DW_AT_LLVM_stmt_sequence` attribute might be set to an invalid
-    // sentinel value when it refers to an empty line sequence. In such cases,
-    // the DWARF linker will exclude the empty sequence from the final output
-    // and assign the sentinel value to the `DW_AT_LLVM_stmt_sequence`
-    // attribute. The sentinel value is UINT32_MAX for DWARF32 and UINT64_MAX
-    // for DWARF64.
-    const uint64_t InvalidOffset =
-        Die.getDwarfUnit()->getFormParams().getDwarfMaxOffset();
-    uint64_t StmtSeqVal = dwarf::toSectionOffset(StmtSeqAttr, InvalidOffset);
-    if (StmtSeqVal != InvalidOffset)
-      StmtSeqOffset = StmtSeqVal;
-  }
 
-  if (!CUI.LineTable->lookupAddressRange(SecAddress, RangeSize, RowVector,
-                                         StmtSeqOffset)) {
+  if (!CUI.LineTable->lookupAddressRange(SecAddress, RangeSize, RowVector)) {
     // If we have a DW_TAG_subprogram but no line entries, fall back to using
     // the DW_AT_decl_file an d DW_AT_decl_line if we have both attributes.
     std::string FilePath = Die.getDeclFile(
@@ -342,13 +326,9 @@ static void convertFunctionLineTable(OutputAggregator &Out, CUInfo &CUI,
     if (FilePath.empty()) {
       // If we had a DW_AT_decl_file, but got no file then we need to emit a
       // warning.
-      const uint64_t DwarfFileIdx = dwarf::toUnsigned(
-          Die.findRecursively(dwarf::DW_AT_decl_file), UINT32_MAX);
-      // Check if there is no DW_AT_decl_line attribute, and don't report an
-      // error if it isn't there.
-      if (DwarfFileIdx == UINT32_MAX)
-        return;
       Out.Report("Invalid file index in DW_AT_decl_file", [&](raw_ostream &OS) {
+        const uint64_t DwarfFileIdx = dwarf::toUnsigned(
+            Die.findRecursively(dwarf::DW_AT_decl_file), UINT32_MAX);
         OS << "error: function DIE at " << HEX32(Die.getOffset())
            << " has an invalid file index " << DwarfFileIdx
            << " in its DW_AT_decl_file attribute, unable to create a single "
@@ -629,7 +609,9 @@ void DwarfTransformer::parseCallSiteInfoFromDwarf(CUInfo &CUI, DWARFDie Die,
     if (!FI.CallSites)
       FI.CallSites = CallSiteInfoCollection();
     // Append parsed DWARF callsites:
-    llvm::append_range(FI.CallSites->CallSites, CSIC.CallSites);
+    FI.CallSites->CallSites.insert(FI.CallSites->CallSites.end(),
+                                   CSIC.CallSites.begin(),
+                                   CSIC.CallSites.end());
   }
 }
 
@@ -637,10 +619,6 @@ Error DwarfTransformer::convert(uint32_t NumThreads, OutputAggregator &Out) {
   size_t NumBefore = Gsym.getNumFunctionInfos();
   auto getDie = [&](DWARFUnit &DwarfUnit) -> DWARFDie {
     DWARFDie ReturnDie = DwarfUnit.getUnitDIE(false);
-    // Apple uses DW_AT_GNU_dwo_id for things other than split DWARF.
-    if (IsMachO)
-      return ReturnDie;
-
     if (DwarfUnit.getDWOId()) {
       DWARFUnit *DWOCU = DwarfUnit.getNonSkeletonUnitDIE(false).getDwarfUnit();
       if (!DWOCU->isDWOUnit())
@@ -751,7 +729,7 @@ llvm::Error DwarfTransformer::verify(StringRef GsymPath,
       uint32_t NumDwarfInlineInfos = DwarfInlineInfos.getNumberOfFrames();
       if (NumDwarfInlineInfos == 0) {
         DwarfInlineInfos.addFrame(
-            DICtx.getLineInfoForAddress(SectAddr, DLIS).value_or(DILineInfo()));
+            DICtx.getLineInfoForAddress(SectAddr, DLIS));
       }
 
       // Check for 1 entry that has no file and line info
@@ -792,7 +770,7 @@ llvm::Error DwarfTransformer::verify(StringRef GsymPath,
           const auto &dii = DwarfInlineInfos.getFrame(Idx);
           gsymFilename = LR->getSourceFile(Idx);
           // Verify function name
-          if (!StringRef(dii.FunctionName).starts_with(gii.Name))
+          if (dii.FunctionName.find(gii.Name.str()) != 0)
             Out << "error: address " << HEX64(Addr) << " DWARF function \""
                 << dii.FunctionName.c_str()
                 << "\" doesn't match GSYM function \"" << gii.Name << "\"\n";

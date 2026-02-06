@@ -77,11 +77,6 @@ public:
     /// Array elements in the type are assumed to be padding and skipped.
     CoerceAndExpand,
 
-    /// TargetSpecific - Some argument types are passed as target specific types
-    /// such as RISC-V's tuple type, these need to be handled in the target
-    /// hook.
-    TargetSpecific,
-
     /// InAlloca - Pass the argument directly using the LLVM inalloca attribute.
     /// This is similar to indirect with byval, except it only applies to
     /// arguments stored in memory and forbids any implicit copies.  When
@@ -125,7 +120,7 @@ private:
 
   bool canHavePaddingType() const {
     return isDirect() || isExtend() || isIndirect() || isIndirectAliased() ||
-           isExpand() || isTargetSpecific();
+           isExpand();
   }
   void setPaddingType(llvm::Type *T) {
     assert(canHavePaddingType());
@@ -211,8 +206,8 @@ public:
   static ABIArgInfo getIgnore() {
     return ABIArgInfo(Ignore);
   }
-  static ABIArgInfo getIndirect(CharUnits Alignment, unsigned AddrSpace,
-                                bool ByVal = true, bool Realign = false,
+  static ABIArgInfo getIndirect(CharUnits Alignment, bool ByVal = true,
+                                bool Realign = false,
                                 llvm::Type *Padding = nullptr) {
     auto AI = ABIArgInfo(Indirect);
     AI.setIndirectAlign(Alignment);
@@ -220,7 +215,6 @@ public:
     AI.setIndirectRealign(Realign);
     AI.setSRetAfterThis(false);
     AI.setPaddingType(Padding);
-    AI.setIndirectAddrSpace(AddrSpace);
     return AI;
   }
 
@@ -238,7 +232,7 @@ public:
 
   static ABIArgInfo getIndirectInReg(CharUnits Alignment, bool ByVal = true,
                                      bool Realign = false) {
-    auto AI = getIndirect(Alignment, 0, ByVal, Realign);
+    auto AI = getIndirect(Alignment, ByVal, Realign);
     AI.setInReg(true);
     return AI;
   }
@@ -296,20 +290,6 @@ public:
     return AI;
   }
 
-  static ABIArgInfo getTargetSpecific(llvm::Type *T = nullptr,
-                                      unsigned Offset = 0,
-                                      llvm::Type *Padding = nullptr,
-                                      bool CanBeFlattened = true,
-                                      unsigned Align = 0) {
-    auto AI = ABIArgInfo(TargetSpecific);
-    AI.setCoerceToType(T);
-    AI.setPaddingType(Padding);
-    AI.setDirectOffset(Offset);
-    AI.setDirectAlign(Align);
-    AI.setCanBeFlattened(CanBeFlattened);
-    return AI;
-  }
-
   static bool isPaddingForCoerceAndExpand(llvm::Type *eltType) {
     return eltType->isArrayTy() &&
            eltType->getArrayElementType()->isIntegerTy(8);
@@ -324,33 +304,27 @@ public:
   bool isIndirectAliased() const { return TheKind == IndirectAliased; }
   bool isExpand() const { return TheKind == Expand; }
   bool isCoerceAndExpand() const { return TheKind == CoerceAndExpand; }
-  bool isTargetSpecific() const { return TheKind == TargetSpecific; }
 
   bool canHaveCoerceToType() const {
-    return isDirect() || isExtend() || isCoerceAndExpand() ||
-           isTargetSpecific();
+    return isDirect() || isExtend() || isCoerceAndExpand();
   }
 
   // Direct/Extend accessors
   unsigned getDirectOffset() const {
-    assert((isDirect() || isExtend() || isTargetSpecific()) &&
-           "Not a direct or extend or target specific kind");
+    assert((isDirect() || isExtend()) && "Not a direct or extend kind");
     return DirectAttr.Offset;
   }
   void setDirectOffset(unsigned Offset) {
-    assert((isDirect() || isExtend() || isTargetSpecific()) &&
-           "Not a direct or extend or target specific kind");
+    assert((isDirect() || isExtend()) && "Not a direct or extend kind");
     DirectAttr.Offset = Offset;
   }
 
   unsigned getDirectAlign() const {
-    assert((isDirect() || isExtend() || isTargetSpecific()) &&
-           "Not a direct or extend or target specific kind");
+    assert((isDirect() || isExtend()) && "Not a direct or extend kind");
     return DirectAttr.Align;
   }
   void setDirectAlign(unsigned Align) {
-    assert((isDirect() || isExtend() || isTargetSpecific()) &&
-           "Not a direct or extend or target specific kind");
+    assert((isDirect() || isExtend()) && "Not a direct or extend kind");
     DirectAttr.Align = Align;
   }
 
@@ -419,14 +393,12 @@ public:
   }
 
   bool getInReg() const {
-    assert((isDirect() || isExtend() || isIndirect() || isTargetSpecific()) &&
-           "Invalid kind!");
+    assert((isDirect() || isExtend() || isIndirect()) && "Invalid kind!");
     return InReg;
   }
 
   void setInReg(bool IR) {
-    assert((isDirect() || isExtend() || isIndirect() || isTargetSpecific()) &&
-           "Invalid kind!");
+    assert((isDirect() || isExtend() || isIndirect()) && "Invalid kind!");
     InReg = IR;
   }
 
@@ -450,12 +422,12 @@ public:
   }
 
   unsigned getIndirectAddrSpace() const {
-    assert((isIndirect() || isIndirectAliased()) && "Invalid kind!");
+    assert(isIndirectAliased() && "Invalid kind!");
     return IndirectAttr.AddrSpace;
   }
 
   void setIndirectAddrSpace(unsigned AddrSpace) {
-    assert((isIndirect() || isIndirectAliased()) && "Invalid kind!");
+    assert(isIndirectAliased() && "Invalid kind!");
     IndirectAttr.AddrSpace = AddrSpace;
   }
 
@@ -508,12 +480,12 @@ public:
   }
 
   bool getCanBeFlattened() const {
-    assert((isDirect() || isTargetSpecific()) && "Invalid kind!");
+    assert(isDirect() && "Invalid kind!");
     return CanBeFlattened;
   }
 
   void setCanBeFlattened(bool Flatten) {
-    assert((isDirect() || isTargetSpecific()) && "Invalid kind!");
+    assert(isDirect() && "Invalid kind!");
     CanBeFlattened = Flatten;
   }
 
@@ -855,8 +827,10 @@ public:
         ID.AddInteger(paramInfo.getOpaqueValue());
     }
     resultType.Profile(ID);
-    for (const CanQualType &argType : argTypes)
-      argType.Profile(ID);
+    for (ArrayRef<CanQualType>::iterator
+           i = argTypes.begin(), e = argTypes.end(); i != e; ++i) {
+      i->Profile(ID);
+    }
   }
 };
 

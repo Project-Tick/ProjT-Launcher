@@ -966,18 +966,15 @@ void DataFlowGraph::build(const Config &config) {
 
   // Build a map "PhiM" which will contain, for each block, the set
   // of references that will require phi definitions in that block.
-  // "PhiClobberM" map contains references that require phis for clobbering defs
   BlockRefsMap PhiM(getPRI());
-  BlockRefsMap PhiClobberM(getPRI());
   for (Block BA : Blocks)
-    recordDefsForDF(PhiM, PhiClobberM, BA);
+    recordDefsForDF(PhiM, BA);
   for (Block BA : Blocks)
     buildPhis(PhiM, BA);
 
   // Link all the refs. This will recursively traverse the dominator tree.
-  // Phis for clobbering defs are added here.
   DefStackMap DM;
-  linkBlockRefs(DM, PhiClobberM, EA);
+  linkBlockRefs(DM, EA);
 
   // Finally, remove all unused phi nodes.
   if (!(BuildCfg.Options & BuildOptions::KeepDeadPhis))
@@ -1061,13 +1058,13 @@ void DataFlowGraph::pushClobbers(Instr IA, DefStackMap &DefM) {
 
     // Push the definition on the stack for the register and all aliases.
     // The def stack traversal in linkNodeUp will check the exact aliasing.
-    DefM[RR.Id].push(DA);
-    Defined.insert(RR.Id);
-    for (RegisterId A : getPRI().getAliasSet(RR)) {
+    DefM[RR.Reg].push(DA);
+    Defined.insert(RR.Reg);
+    for (RegisterId A : getPRI().getAliasSet(RR.Reg)) {
       if (RegisterRef::isRegId(A) && !isTracked(RegisterRef(A)))
         continue;
       // Check that we don't push the same def twice.
-      assert(A != RR.Id);
+      assert(A != RR.Reg);
       if (!Defined.count(A))
         DefM[A].push(DA);
     }
@@ -1109,7 +1106,7 @@ void DataFlowGraph::pushDefs(Instr IA, DefStackMap &DefM) {
 #ifndef NDEBUG
     // Assert if the register is defined in two or more unrelated defs.
     // This could happen if there are two or more def operands defining it.
-    if (!Defined.insert(RR.Id).second) {
+    if (!Defined.insert(RR.Reg).second) {
       MachineInstr *MI = Stmt(IA).Addr->getCode();
       dbgs() << "Multiple definitions of register: " << Print(RR, *this)
              << " in\n  " << *MI << "in " << printMBBReference(*MI->getParent())
@@ -1119,12 +1116,12 @@ void DataFlowGraph::pushDefs(Instr IA, DefStackMap &DefM) {
 #endif
     // Push the definition on the stack for the register and all aliases.
     // The def stack traversal in linkNodeUp will check the exact aliasing.
-    DefM[RR.Id].push(DA);
-    for (RegisterId A : getPRI().getAliasSet(RR)) {
+    DefM[RR.Reg].push(DA);
+    for (RegisterId A : getPRI().getAliasSet(RR.Reg)) {
       if (RegisterRef::isRegId(A) && !isTracked(RegisterRef(A)))
         continue;
       // Check that we don't push the same def twice.
-      assert(A != RR.Id);
+      assert(A != RR.Reg);
       DefM[A].push(DA);
     }
     // Mark all the related defs as visited.
@@ -1381,9 +1378,7 @@ void DataFlowGraph::buildStmt(Block BA, MachineInstr &In) {
 
 // Scan all defs in the block node BA and record in PhiM the locations of
 // phi nodes corresponding to these defs.
-// Clobbering defs in BA are recorded in PhiClobberM
-void DataFlowGraph::recordDefsForDF(BlockRefsMap &PhiM,
-                                    BlockRefsMap &PhiClobberM, Block BA) {
+void DataFlowGraph::recordDefsForDF(BlockRefsMap &PhiM, Block BA) {
   // Check all defs from block BA and record them in each block in BA's
   // iterated dominance frontier. This information will later be used to
   // create phi nodes.
@@ -1399,27 +1394,21 @@ void DataFlowGraph::recordDefsForDF(BlockRefsMap &PhiM,
   // This is done to make sure that each defined reference gets only one
   // phi node, even if it is defined multiple times.
   RegisterAggr Defs(getPRI());
-  RegisterAggr ClobberDefs(getPRI());
   for (Instr IA : BA.Addr->members(*this)) {
     for (Ref RA : IA.Addr->members_if(IsDef, *this)) {
       RegisterRef RR = RA.Addr->getRegRef(*this);
-      if (!isTracked(RR))
-        continue;
-      if (RR.isReg())
+      if (RR.isReg() && isTracked(RR))
         Defs.insert(RR);
-      // Clobbering def
-      else if (RR.isMask())
-        ClobberDefs.insert(RR);
     }
   }
 
   // Calculate the iterated dominance frontier of BB.
   const MachineDominanceFrontier::DomSetType &DF = DFLoc->second;
-  SetVector<MachineBasicBlock *> IDF(llvm::from_range, DF);
+  SetVector<MachineBasicBlock *> IDF(DF.begin(), DF.end());
   for (unsigned i = 0; i < IDF.size(); ++i) {
     auto F = MDF.find(IDF[i]);
     if (F != MDF.end())
-      IDF.insert_range(F->second);
+      IDF.insert(F->second.begin(), F->second.end());
   }
 
   // Finally, add the set of defs to each block in the iterated dominance
@@ -1427,14 +1416,12 @@ void DataFlowGraph::recordDefsForDF(BlockRefsMap &PhiM,
   for (auto *DB : IDF) {
     Block DBA = findBlock(DB);
     PhiM[DBA.Id].insert(Defs);
-    PhiClobberM[DBA.Id].insert(ClobberDefs);
   }
 }
 
 // Given the locations of phi nodes in the map PhiM, create the phi nodes
 // that are located in the block node BA.
-void DataFlowGraph::buildPhis(BlockRefsMap &PhiM, Block BA,
-                              const DefStackMap &DefM) {
+void DataFlowGraph::buildPhis(BlockRefsMap &PhiM, Block BA) {
   // Check if this blocks has any DF defs, i.e. if there are any defs
   // that this block is in the iterated dominance frontier of.
   auto HasDF = PhiM.find(BA.Id);
@@ -1447,37 +1434,10 @@ void DataFlowGraph::buildPhis(BlockRefsMap &PhiM, Block BA,
   for (MachineBasicBlock *PB : MBB->predecessors())
     Preds.push_back(findBlock(PB));
 
-  RegisterAggr PhiDefs(getPRI());
-  // DefM will be non empty when we are building phis
-  // for clobbering defs
-  if (!DefM.empty()) {
-    for (Instr IA : BA.Addr->members_if(IsPhi, *this)) {
-      for (Def DA : IA.Addr->members_if(IsDef, *this)) {
-        auto DR = DA.Addr->getRegRef(*this);
-        PhiDefs.insert(DR);
-      }
-    }
-  }
-
-  MachineRegisterInfo &MRI = MF.getRegInfo();
   const RegisterAggr &Defs = PhiM[BA.Id];
   uint16_t PhiFlags = NodeAttrs::PhiRef | NodeAttrs::Preserving;
 
   for (RegisterRef RR : Defs.refs()) {
-    if (!DefM.empty()) {
-      auto F = DefM.find(RR.Id);
-      // Do not create a phi for unallocatable registers, or for registers
-      // that are never livein to BA.
-      // If a phi exists for RR, do not create another.
-      if (!MRI.isAllocatable(RR.asMCReg()) || PhiDefs.hasCoverOf(RR) ||
-          F == DefM.end() || F->second.empty())
-        continue;
-      // Do not create a phi, if all reaching defs are clobbering
-      auto RDef = F->second.top();
-      if (RDef->Addr->getFlags() & NodeAttrs::Clobbering)
-        continue;
-      PhiDefs.insert(RR);
-    }
     Phi PA = newPhi(BA);
     PA.Addr->addMember(newDef(PA, RR, PhiFlags), *this);
 
@@ -1601,7 +1561,7 @@ void DataFlowGraph::linkStmtRefs(DefStackMap &DefM, Stmt SA, Predicate P) {
     Defs.insert(RR);
 #endif
 
-    auto F = DefM.find(RR.Id);
+    auto F = DefM.find(RR.Reg);
     if (F == DefM.end())
       continue;
     DefStack &DS = F->second;
@@ -1616,15 +1576,7 @@ void DataFlowGraph::linkStmtRefs(DefStackMap &DefM, Stmt SA, Predicate P) {
 
 // Create data-flow links for all instructions in the block node BA. This
 // will include updating any phi nodes in BA.
-void DataFlowGraph::linkBlockRefs(DefStackMap &DefM, BlockRefsMap &PhiClobberM,
-                                  Block BA) {
-  // Create phi nodes for clobbering defs.
-  // Since a huge number of registers can get clobbered, it would result in many
-  // phi nodes being created in the graph. Only create phi nodes that have a non
-  // clobbering reaching def. Use DefM to get not clobbering defs reaching a
-  // block.
-  buildPhis(PhiClobberM, BA, DefM);
-
+void DataFlowGraph::linkBlockRefs(DefStackMap &DefM, Block BA) {
   // Push block delimiters.
   markBlock(BA.Id, DefM);
 
@@ -1661,7 +1613,7 @@ void DataFlowGraph::linkBlockRefs(DefStackMap &DefM, BlockRefsMap &PhiClobberM,
   for (auto *I : *N) {
     MachineBasicBlock *SB = I->getBlock();
     Block SBA = findBlock(SB);
-    linkBlockRefs(DefM, PhiClobberM, SBA);
+    linkBlockRefs(DefM, SBA);
   }
 
   // Link the phi uses from the successor blocks.
@@ -1691,7 +1643,7 @@ void DataFlowGraph::linkBlockRefs(DefStackMap &DefM, BlockRefsMap &PhiClobberM,
       for (auto U : IA.Addr->members_if(IsUseForBA, *this)) {
         PhiUse PUA = U;
         RegisterRef RR = PUA.Addr->getRegRef(*this);
-        linkRefUp<UseNode *>(IA, PUA, DefM[RR.Id]);
+        linkRefUp<UseNode *>(IA, PUA, DefM[RR.Reg]);
       }
     }
   }
@@ -1827,7 +1779,7 @@ bool DataFlowGraph::hasUntrackedRef(Stmt S, bool IgnoreReserved) const {
   for (Ref R : S.Addr->members(*this)) {
     Ops.push_back(&R.Addr->getOp());
     RegisterRef RR = R.Addr->getRegRef(*this);
-    if (IgnoreReserved && RR.isReg() && ReservedRegs[RR.asMCReg().id()])
+    if (IgnoreReserved && RR.isReg() && ReservedRegs[RR.idx()])
       continue;
     if (!isTracked(RR))
       return true;

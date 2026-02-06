@@ -26,19 +26,20 @@ struct PerFunctionMIParsingState;
 class AMDGPUMIRFormatter final : public MIRFormatter {
 public:
   AMDGPUMIRFormatter() = default;
-  ~AMDGPUMIRFormatter() override = default;
+  virtual ~AMDGPUMIRFormatter() = default;
 
   /// Implement target specific printing for machine operand immediate value, so
   /// that we can have more meaningful mnemonic than a 64-bit integer. Passing
   /// None to OpIdx means the index is unknown.
-  void printImm(raw_ostream &OS, const MachineInstr &MI,
-                std::optional<unsigned> OpIdx, int64_t Imm) const override;
+  virtual void printImm(raw_ostream &OS, const MachineInstr &MI,
+                        std::optional<unsigned> OpIdx,
+                        int64_t Imm) const override;
 
   /// Implement target specific parsing of immediate mnemonics. The mnemonic is
   /// a string with a leading dot.
-  bool parseImmMnemonic(const unsigned OpCode, const unsigned OpIdx,
-                        StringRef Src, int64_t &Imm,
-                        ErrorCallbackType ErrorCallback) const override;
+  virtual bool parseImmMnemonic(const unsigned OpCode, const unsigned OpIdx,
+                                StringRef Src, int64_t &Imm,
+                                ErrorCallbackType ErrorCallback) const override;
 
   /// Implement target specific parsing of target custom pseudo source value.
   bool

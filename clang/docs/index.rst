@@ -40,13 +40,11 @@ Using Clang as a Compiler
    SanitizerCoverage
    SanitizerStats
    SanitizerSpecialCaseList
-   AllocToken
    BoundsSafety
    BoundsSafetyAdoptionGuide
    BoundsSafetyImplPlans
    ControlFlowIntegrity
    LTOVisibility
-   PointerAuthentication
    SafeStack
    ShadowCallStack
    SourceBasedCodeCoverage
@@ -63,7 +61,6 @@ Using Clang as a Compiler
    APINotes
    DebuggingCoroutines
    AMDGPUSupport
-   CXXTypeAwareAllocators
    CommandGuide/index
    FAQ
 
@@ -102,6 +99,7 @@ Using Clang Tools
    ClangLinkerWrapper
    ClangNVLinkWrapper
    ClangOffloadBundler
+   ClangOffloadPackager
    ClangRepl
    ClangSYCLLinker
 
@@ -118,10 +116,9 @@ Design Documents
    OffloadingDesign
    PCHInternals
    ItaniumMangleAbiTags
-   ControlFlowIntegrityDesign
    HardwareAssistedAddressSanitizerDesign.rst
    ConstantInterpreter
-   ClangIRCodeDuplication
+
 
 Indices and tables
 ==================

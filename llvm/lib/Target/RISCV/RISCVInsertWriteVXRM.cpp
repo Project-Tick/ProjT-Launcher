@@ -48,7 +48,7 @@ class VXRMInfo {
   } State = Uninitialized;
 
 public:
-  VXRMInfo() = default;
+  VXRMInfo() {}
 
   static VXRMInfo getUnknown() {
     VXRMInfo Info;
@@ -170,10 +170,10 @@ struct BlockData {
   // Indicates if the block uses VXRM. Uninitialized means no use.
   VXRMInfo VXRMUse;
 
-  // Indicates the VXRM output from the block. Uninitialized means transparent.
+  // Indicates the VXRM output from the block. Unitialized means transparent.
   VXRMInfo VXRMOut;
 
-  // Keeps track of the available VXRM value at the start of the basic block.
+  // Keeps track of the available VXRM value at the start of the basic bloc.
   VXRMInfo AvailableIn;
 
   // Keeps track of the available VXRM value at the end of the basic block.
@@ -227,13 +227,23 @@ char RISCVInsertWriteVXRM::ID = 0;
 INITIALIZE_PASS(RISCVInsertWriteVXRM, DEBUG_TYPE, RISCV_INSERT_WRITE_VXRM_NAME,
                 false, false)
 
+static bool ignoresVXRM(const MachineInstr &MI) {
+  switch (RISCV::getRVVMCOpcode(MI.getOpcode())) {
+  default:
+    return false;
+  case RISCV::VNCLIP_WI:
+  case RISCV::VNCLIPU_WI:
+    return MI.getOperand(3).getImm() == 0;
+  }
+}
+
 bool RISCVInsertWriteVXRM::computeVXRMChanges(const MachineBasicBlock &MBB) {
   BlockData &BBInfo = BlockInfo[MBB.getNumber()];
 
   bool NeedVXRMWrite = false;
   for (const MachineInstr &MI : MBB) {
     int VXRMIdx = RISCVII::getVXRMOpNum(MI.getDesc());
-    if (VXRMIdx >= 0 && !RISCVInstrInfo::ignoresVXRM(MI)) {
+    if (VXRMIdx >= 0 && !ignoresVXRM(MI)) {
       unsigned NewVXRMImm = MI.getOperand(VXRMIdx).getImm();
 
       if (!BBInfo.VXRMUse.isValid())
@@ -374,8 +384,8 @@ void RISCVInsertWriteVXRM::emitWriteVXRM(MachineBasicBlock &MBB) {
             PInfo.AvailableOut.getVXRMImm() ==
                 BBInfo.AnticipatedIn.getVXRMImm())
           continue;
-        // If the predecessor anticipates this value for all its successors,
-        // then a write to VXRM would have already occurred before this block is
+        // If the predecessor anticipates this value for all its succesors,
+        // then a write to VXRM would have already occured before this block is
         // executed.
         if (PInfo.AnticipatedOut.isStatic() &&
             PInfo.AnticipatedOut.getVXRMImm() ==
@@ -391,7 +401,7 @@ void RISCVInsertWriteVXRM::emitWriteVXRM(MachineBasicBlock &MBB) {
 
   for (MachineInstr &MI : MBB) {
     int VXRMIdx = RISCVII::getVXRMOpNum(MI.getDesc());
-    if (VXRMIdx >= 0 && !RISCVInstrInfo::ignoresVXRM(MI)) {
+    if (VXRMIdx >= 0 && !ignoresVXRM(MI)) {
       unsigned NewVXRMImm = MI.getOperand(VXRMIdx).getImm();
 
       if (PendingInsert || !Info.isStatic() ||
@@ -419,7 +429,7 @@ void RISCVInsertWriteVXRM::emitWriteVXRM(MachineBasicBlock &MBB) {
   // If all our successors anticipate a value, do the insert.
   // NOTE: It's possible that not all predecessors of our successor provide the
   // correct value. This can occur on critical edges. If we don't split the
-  // critical edge we'll also have a write vxrm in the successor that is
+  // critical edge we'll also have a write vxrm in the succesor that is
   // redundant with this one.
   if (PendingInsert ||
       (BBInfo.AnticipatedOut.isStatic() &&

@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- RedundantSmartptrGetCheck.cpp - clang-tidy -----------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -14,8 +14,8 @@ using namespace clang::ast_matchers;
 
 namespace clang::tidy::readability {
 
-static internal::Matcher<Expr>
-callToGet(const internal::Matcher<Decl> &OnClass) {
+namespace {
+internal::Matcher<Expr> callToGet(const internal::Matcher<Decl> &OnClass) {
   return expr(
              anyOf(cxxMemberCallExpr(
                        on(expr(anyOf(hasType(OnClass),
@@ -43,48 +43,35 @@ callToGet(const internal::Matcher<Decl> &OnClass) {
       .bind("redundant_get");
 }
 
-static internal::Matcher<Decl> knownSmartptr() {
+internal::Matcher<Decl> knownSmartptr() {
   return recordDecl(hasAnyName("::std::unique_ptr", "::std::shared_ptr"));
 }
 
-static void
-registerMatchersForGetArrowStart(MatchFinder *Finder,
-                                 MatchFinder::MatchCallback *Callback) {
-  const auto MatchesOpArrow =
-      allOf(hasName("operator->"),
-            returns(qualType(pointsTo(type().bind("op->Type")))));
-  const auto MatchesOpStar =
-      allOf(hasName("operator*"),
-            returns(qualType(references(type().bind("op*Type")))));
-  const auto HasRelevantOps =
-      allOf(anyOf(hasMethod(MatchesOpArrow),
-                  has(functionTemplateDecl(has(functionDecl(MatchesOpArrow))))),
-            anyOf(hasMethod(MatchesOpStar),
-                  has(functionTemplateDecl(has(functionDecl(MatchesOpStar))))));
-
-  const auto QuacksLikeASmartptr =
-      cxxRecordDecl(cxxRecordDecl().bind("duck_typing"), HasRelevantOps);
+void registerMatchersForGetArrowStart(MatchFinder *Finder,
+                                      MatchFinder::MatchCallback *Callback) {
+  const auto QuacksLikeASmartptr = recordDecl(
+      recordDecl().bind("duck_typing"),
+      has(cxxMethodDecl(hasName("operator->"),
+                        returns(qualType(pointsTo(type().bind("op->Type")))))),
+      has(cxxMethodDecl(hasName("operator*"), returns(qualType(references(
+                                                  type().bind("op*Type")))))));
 
   // Make sure we are not missing the known standard types.
-  const auto SmartptrAny = anyOf(knownSmartptr(), QuacksLikeASmartptr);
-  const auto SmartptrWithDeref = anyOf(
-      cxxRecordDecl(knownSmartptr(), HasRelevantOps), QuacksLikeASmartptr);
+  const auto Smartptr = anyOf(knownSmartptr(), QuacksLikeASmartptr);
 
   // Catch 'ptr.get()->Foo()'
-  Finder->addMatcher(
-      memberExpr(expr().bind("memberExpr"), isArrow(),
-                 hasObjectExpression(callToGet(SmartptrWithDeref))),
-      Callback);
+  Finder->addMatcher(memberExpr(expr().bind("memberExpr"), isArrow(),
+                                hasObjectExpression(callToGet(Smartptr))),
+                     Callback);
 
   // Catch '*ptr.get()' or '*ptr->get()'
   Finder->addMatcher(
-      unaryOperator(hasOperatorName("*"),
-                    hasUnaryOperand(callToGet(SmartptrWithDeref))),
+      unaryOperator(hasOperatorName("*"), hasUnaryOperand(callToGet(Smartptr))),
       Callback);
 
   // Catch '!ptr.get()'
   const auto CallToGetAsBool = callToGet(
-      recordDecl(SmartptrAny, has(cxxConversionDecl(returns(booleanType())))));
+      recordDecl(Smartptr, has(cxxConversionDecl(returns(booleanType())))));
   Finder->addMatcher(
       unaryOperator(hasOperatorName("!"), hasUnaryOperand(CallToGetAsBool)),
       Callback);
@@ -97,12 +84,12 @@ registerMatchersForGetArrowStart(MatchFinder *Finder,
                      Callback);
 
   Finder->addMatcher(cxxDependentScopeMemberExpr(hasObjectExpression(
-                         callExpr(has(callToGet(SmartptrAny))))),
+                         callExpr(has(callToGet(Smartptr))).bind("obj"))),
                      Callback);
 }
 
-static void registerMatchersForGetEquals(MatchFinder *Finder,
-                                         MatchFinder::MatchCallback *Callback) {
+void registerMatchersForGetEquals(MatchFinder *Finder,
+                                  MatchFinder::MatchCallback *Callback) {
   // This one is harder to do with duck typing.
   // The operator==/!= that we are looking for might be member or non-member,
   // might be on global namespace or found by ADL, might be a template, etc.
@@ -119,6 +106,8 @@ static void registerMatchersForGetEquals(MatchFinder *Finder,
   // FIXME: Match and fix if (l.get() == r.get()).
 }
 
+} // namespace
+
 void RedundantSmartptrGetCheck::storeOptions(
     ClangTidyOptions::OptionMap &Opts) {
   Options.store(Opts, "IgnoreMacros", IgnoreMacros);
@@ -129,7 +118,8 @@ void RedundantSmartptrGetCheck::registerMatchers(MatchFinder *Finder) {
   registerMatchersForGetEquals(Finder, this);
 }
 
-static bool allReturnTypesMatch(const MatchFinder::MatchResult &Result) {
+namespace {
+bool allReturnTypesMatch(const MatchFinder::MatchResult &Result) {
   if (Result.Nodes.getNodeAs<Decl>("duck_typing") == nullptr)
     return true;
   // Verify that the types match.
@@ -144,14 +134,14 @@ static bool allReturnTypesMatch(const MatchFinder::MatchResult &Result) {
       Result.Nodes.getNodeAs<Type>("getType")->getUnqualifiedDesugaredType();
   return OpArrowType == OpStarType && OpArrowType == GetType;
 }
+} // namespace
 
 void RedundantSmartptrGetCheck::check(const MatchFinder::MatchResult &Result) {
   if (!allReturnTypesMatch(Result))
     return;
 
-  const bool IsPtrToPtr = Result.Nodes.getNodeAs<Decl>("ptr_to_ptr") != nullptr;
-  const bool IsMemberExpr =
-      Result.Nodes.getNodeAs<Expr>("memberExpr") != nullptr;
+  bool IsPtrToPtr = Result.Nodes.getNodeAs<Decl>("ptr_to_ptr") != nullptr;
+  bool IsMemberExpr = Result.Nodes.getNodeAs<Expr>("memberExpr") != nullptr;
   const auto *GetCall = Result.Nodes.getNodeAs<Expr>("redundant_get");
   if (GetCall->getBeginLoc().isMacroID() && IgnoreMacros)
     return;
@@ -175,11 +165,11 @@ void RedundantSmartptrGetCheck::check(const MatchFinder::MatchResult &Result) {
       CharSourceRange::getTokenRange(Smartptr->getSourceRange()),
       *Result.SourceManager, getLangOpts());
   // Check if the last two characters are "->" and remove them
-  if (SmartptrText.ends_with("->"))
+  if (SmartptrText.ends_with("->")) {
     SmartptrText = SmartptrText.drop_back(2);
+  }
   // Replace foo->get() with *foo, and foo.get() with foo.
-  const std::string Replacement =
-      Twine(IsPtrToPtr ? "*" : "", SmartptrText).str();
+  std::string Replacement = Twine(IsPtrToPtr ? "*" : "", SmartptrText).str();
   diag(GetCall->getBeginLoc(), "redundant get() call on smart pointer")
       << FixItHint::CreateReplacement(SR, Replacement);
 }

@@ -13,37 +13,19 @@
 #ifndef LLVM_TABLEGEN_MAIN_H
 #define LLVM_TABLEGEN_MAIN_H
 
-#include "llvm/Support/CommandLine.h"
-#include <map>
+#include <functional>
 
 namespace llvm {
 
 class raw_ostream;
 class RecordKeeper;
 
-struct TableGenOutputFiles {
-  std::string MainFile;
-
-  // Translates additional output file names to their contents.
-  std::map<StringRef, std::string> AdditionalFiles;
-};
-
+/// Perform the action using Records, and write output to OS.
 /// Returns true on error, false otherwise.
-using TableGenMainFn =
-    function_ref<bool(raw_ostream &OS, const RecordKeeper &Records)>;
+using TableGenMainFn = bool(raw_ostream &OS, const RecordKeeper &Records);
 
-/// Perform the action using Records, and store output in OutFiles.
-/// Returns true on error, false otherwise.
-using MultiFileTableGenMainFn = function_ref<bool(TableGenOutputFiles &OutFiles,
-                                                  const RecordKeeper &Records)>;
-
-int TableGenMain(const char *argv0, TableGenMainFn MainFn = nullptr);
-
-int TableGenMain(const char *argv0, MultiFileTableGenMainFn MainFn = nullptr);
-
-/// Controls emitting large character arrays as strings or character arrays.
-/// Typically set to false when building with MSVC.
-extern cl::opt<bool> EmitLongStrLiterals;
+int TableGenMain(const char *argv0,
+                 std::function<TableGenMainFn> MainFn = nullptr);
 
 } // end namespace llvm
 

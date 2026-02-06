@@ -11,7 +11,6 @@
 
 define i32 @foo1() local_unnamed_addr #0 {
 entry:
-  %a = call float @llvm.fma.f32(float 0.0, float 0.0, float 0.0)
   ret i32 42
 }
 
@@ -19,8 +18,6 @@ define i32 @foo2() local_unnamed_addr #1 {
 entry:
   ret i32 42
 }
-
-declare float @llvm.fma.f32(float, float, float)
 
 attributes #0 = { minsize norecurse nounwind optsize readnone "denormal-fp-math"="preserve-sign,preserve-sign"}
 attributes #1 = { minsize norecurse nounwind optsize readnone "denormal-fp-math"="positive-zero,positive-zero"}

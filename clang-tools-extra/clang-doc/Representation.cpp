@@ -20,72 +20,18 @@
 //
 //===----------------------------------------------------------------------===//
 #include "Representation.h"
-#include "llvm/ADT/StringMap.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/Path.h"
 
 namespace clang {
 namespace doc {
 
-CommentKind stringToCommentKind(llvm::StringRef KindStr) {
-  static const llvm::StringMap<CommentKind> KindMap = {
-      {"FullComment", CommentKind::CK_FullComment},
-      {"ParagraphComment", CommentKind::CK_ParagraphComment},
-      {"TextComment", CommentKind::CK_TextComment},
-      {"InlineCommandComment", CommentKind::CK_InlineCommandComment},
-      {"HTMLStartTagComment", CommentKind::CK_HTMLStartTagComment},
-      {"HTMLEndTagComment", CommentKind::CK_HTMLEndTagComment},
-      {"BlockCommandComment", CommentKind::CK_BlockCommandComment},
-      {"ParamCommandComment", CommentKind::CK_ParamCommandComment},
-      {"TParamCommandComment", CommentKind::CK_TParamCommandComment},
-      {"VerbatimBlockComment", CommentKind::CK_VerbatimBlockComment},
-      {"VerbatimBlockLineComment", CommentKind::CK_VerbatimBlockLineComment},
-      {"VerbatimLineComment", CommentKind::CK_VerbatimLineComment},
-  };
-
-  auto It = KindMap.find(KindStr);
-  if (It != KindMap.end()) {
-    return It->second;
-  }
-  return CommentKind::CK_Unknown;
-}
-
-llvm::StringRef commentKindToString(CommentKind Kind) {
-  switch (Kind) {
-  case CommentKind::CK_FullComment:
-    return "FullComment";
-  case CommentKind::CK_ParagraphComment:
-    return "ParagraphComment";
-  case CommentKind::CK_TextComment:
-    return "TextComment";
-  case CommentKind::CK_InlineCommandComment:
-    return "InlineCommandComment";
-  case CommentKind::CK_HTMLStartTagComment:
-    return "HTMLStartTagComment";
-  case CommentKind::CK_HTMLEndTagComment:
-    return "HTMLEndTagComment";
-  case CommentKind::CK_BlockCommandComment:
-    return "BlockCommandComment";
-  case CommentKind::CK_ParamCommandComment:
-    return "ParamCommandComment";
-  case CommentKind::CK_TParamCommandComment:
-    return "TParamCommandComment";
-  case CommentKind::CK_VerbatimBlockComment:
-    return "VerbatimBlockComment";
-  case CommentKind::CK_VerbatimBlockLineComment:
-    return "VerbatimBlockLineComment";
-  case CommentKind::CK_VerbatimLineComment:
-    return "VerbatimLineComment";
-  case CommentKind::CK_Unknown:
-    return "Unknown";
-  }
-  llvm_unreachable("Unhandled CommentKind");
-}
+namespace {
 
 const SymbolID EmptySID = SymbolID();
 
 template <typename T>
-static llvm::Expected<std::unique_ptr<Info>>
+llvm::Expected<std::unique_ptr<Info>>
 reduce(std::vector<std::unique_ptr<Info>> &Values) {
   if (Values.empty() || !Values[0])
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
@@ -100,7 +46,7 @@ reduce(std::vector<std::unique_ptr<Info>> &Values) {
 // Return the index of the matching child in the vector, or -1 if merge is not
 // necessary.
 template <typename T>
-static int getChildIndexIfExists(std::vector<T> &Children, T &ChildToMerge) {
+int getChildIndexIfExists(std::vector<T> &Children, T &ChildToMerge) {
   for (unsigned long I = 0; I < Children.size(); I++) {
     if (ChildToMerge.USR == Children[I].USR)
       return I;
@@ -109,8 +55,8 @@ static int getChildIndexIfExists(std::vector<T> &Children, T &ChildToMerge) {
 }
 
 template <typename T>
-static void reduceChildren(std::vector<T> &Children,
-                           std::vector<T> &&ChildrenToMerge) {
+void reduceChildren(std::vector<T> &Children,
+                    std::vector<T> &&ChildrenToMerge) {
   for (auto &ChildToMerge : ChildrenToMerge) {
     int MergeIdx = getChildIndexIfExists(Children, ChildToMerge);
     if (MergeIdx == -1) {
@@ -120,6 +66,8 @@ static void reduceChildren(std::vector<T> &Children,
     Children[MergeIdx].merge(std::move(ChildToMerge));
   }
 }
+
+} // namespace
 
 // Dispatch function.
 llvm::Expected<std::unique_ptr<Info>>
@@ -139,17 +87,10 @@ mergeInfos(std::vector<std::unique_ptr<Info>> &Values) {
     return reduce<FunctionInfo>(Values);
   case InfoType::IT_typedef:
     return reduce<TypedefInfo>(Values);
-  case InfoType::IT_concept:
-    return reduce<ConceptInfo>(Values);
-  case InfoType::IT_variable:
-    return reduce<VarInfo>(Values);
-  case InfoType::IT_friend:
-    return reduce<FriendInfo>(Values);
-  case InfoType::IT_default:
+  default:
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "unexpected info type");
   }
-  llvm_unreachable("unhandled enumerator");
 }
 
 bool CommentInfo::operator==(const CommentInfo &Other) const {
@@ -243,18 +184,6 @@ void Reference::merge(Reference &&Other) {
     Name = Other.Name;
   if (Path.empty())
     Path = Other.Path;
-  if (DocumentationFileName.empty())
-    DocumentationFileName = Other.DocumentationFileName;
-}
-
-bool FriendInfo::mergeable(const FriendInfo &Other) {
-  return Ref.USR == Other.Ref.USR && Ref.Name == Other.Ref.Name;
-}
-
-void FriendInfo::merge(FriendInfo &&Other) {
-  assert(mergeable(Other));
-  Ref.merge(std::move(Other.Ref));
-  SymbolInfo::merge(std::move(Other));
 }
 
 void Info::mergeBase(Info &&Other) {
@@ -271,12 +200,8 @@ void Info::mergeBase(Info &&Other) {
   std::move(Other.Description.begin(), Other.Description.end(),
             std::back_inserter(Description));
   llvm::sort(Description);
-  auto Last = llvm::unique(Description);
+  auto Last = std::unique(Description.begin(), Description.end());
   Description.erase(Last, Description.end());
-  if (ParentUSR == EmptySID)
-    ParentUSR = Other.ParentUSR;
-  if (DocumentationFileName.empty())
-    DocumentationFileName = Other.DocumentationFileName;
 }
 
 bool Info::mergeable(const Info &Other) {
@@ -290,11 +215,9 @@ void SymbolInfo::merge(SymbolInfo &&Other) {
   // Unconditionally extend the list of locations, since we want all of them.
   std::move(Other.Loc.begin(), Other.Loc.end(), std::back_inserter(Loc));
   llvm::sort(Loc);
-  auto *Last = llvm::unique(Loc);
+  auto Last = std::unique(Loc.begin(), Loc.end());
   Loc.erase(Last, Loc.end());
   mergeBase(std::move(Other));
-  if (MangledName.empty())
-    MangledName = std::move(Other.MangledName);
 }
 
 NamespaceInfo::NamespaceInfo(SymbolID USR, StringRef Name, StringRef Path)
@@ -308,8 +231,6 @@ void NamespaceInfo::merge(NamespaceInfo &&Other) {
   reduceChildren(Children.Functions, std::move(Other.Children.Functions));
   reduceChildren(Children.Enums, std::move(Other.Children.Enums));
   reduceChildren(Children.Typedefs, std::move(Other.Children.Typedefs));
-  reduceChildren(Children.Concepts, std::move(Other.Children.Concepts));
-  reduceChildren(Children.Variables, std::move(Other.Children.Variables));
   mergeBase(std::move(Other));
 }
 
@@ -329,8 +250,6 @@ void RecordInfo::merge(RecordInfo &&Other) {
     Parents = std::move(Other.Parents);
   if (VirtualParents.empty())
     VirtualParents = std::move(Other.VirtualParents);
-  if (Friends.empty())
-    Friends = std::move(Other.Friends);
   // Reduce children if necessary.
   reduceChildren(Children.Records, std::move(Other.Children.Records));
   reduceChildren(Children.Functions, std::move(Other.Children.Functions));
@@ -373,30 +292,6 @@ void TypedefInfo::merge(TypedefInfo &&Other) {
     IsUsing = Other.IsUsing;
   if (Underlying.Type.Name == "")
     Underlying = Other.Underlying;
-  if (!Template)
-    Template = Other.Template;
-  SymbolInfo::merge(std::move(Other));
-}
-
-void ConceptInfo::merge(ConceptInfo &&Other) {
-  assert(mergeable(Other));
-  if (!IsType)
-    IsType = Other.IsType;
-  if (ConstraintExpression.empty())
-    ConstraintExpression = std::move(Other.ConstraintExpression);
-  if (Template.Constraints.empty())
-    Template.Constraints = std::move(Other.Template.Constraints);
-  if (Template.Params.empty())
-    Template.Params = std::move(Other.Template.Params);
-  SymbolInfo::merge(std::move(Other));
-}
-
-void VarInfo::merge(VarInfo &&Other) {
-  assert(mergeable(Other));
-  if (!IsStatic)
-    IsStatic = Other.IsStatic;
-  if (Type.Type.USR == EmptySID && Type.Type.Name == "")
-    Type = std::move(Other.Type);
   SymbolInfo::merge(std::move(Other));
 }
 
@@ -405,7 +300,7 @@ BaseRecordInfo::BaseRecordInfo() : RecordInfo() {}
 BaseRecordInfo::BaseRecordInfo(SymbolID USR, StringRef Name, StringRef Path,
                                bool IsVirtual, AccessSpecifier Access,
                                bool IsParent)
-    : RecordInfo(USR, Name, Path), Access(Access), IsVirtual(IsVirtual),
+    : RecordInfo(USR, Name, Path), IsVirtual(IsVirtual), Access(Access),
       IsParent(IsParent) {}
 
 llvm::SmallString<16> Info::extractName() const {
@@ -435,15 +330,6 @@ llvm::SmallString<16> Info::extractName() const {
                                  toHex(llvm::toStringRef(USR)));
   case InfoType::IT_function:
     return llvm::SmallString<16>("@nonymous_function_" +
-                                 toHex(llvm::toStringRef(USR)));
-  case InfoType::IT_concept:
-    return llvm::SmallString<16>("@nonymous_concept_" +
-                                 toHex(llvm::toStringRef(USR)));
-  case InfoType::IT_variable:
-    return llvm::SmallString<16>("@nonymous_variable_" +
-                                 toHex(llvm::toStringRef(USR)));
-  case InfoType::IT_friend:
-    return llvm::SmallString<16>("@nonymous_friend_" +
                                  toHex(llvm::toStringRef(USR)));
   case InfoType::IT_default:
     return llvm::SmallString<16>("@nonymous_" + toHex(llvm::toStringRef(USR)));
@@ -482,13 +368,9 @@ ClangDocContext::ClangDocContext(tooling::ExecutionContext *ECtx,
                                  StringRef ProjectName, bool PublicOnly,
                                  StringRef OutDirectory, StringRef SourceRoot,
                                  StringRef RepositoryUrl,
-                                 StringRef RepositoryLinePrefix, StringRef Base,
-                                 std::vector<std::string> UserStylesheets,
-                                 clang::DiagnosticsEngine &Diags,
-                                 bool FTimeTrace)
-    : ECtx(ECtx), ProjectName(ProjectName), OutDirectory(OutDirectory),
-      SourceRoot(std::string(SourceRoot)), UserStylesheets(UserStylesheets),
-      Base(Base), Diags(Diags), PublicOnly(PublicOnly), FTimeTrace(FTimeTrace) {
+                                 std::vector<std::string> UserStylesheets)
+    : ECtx(ECtx), ProjectName(ProjectName), PublicOnly(PublicOnly),
+      OutDirectory(OutDirectory), UserStylesheets(UserStylesheets) {
   llvm::SmallString<128> SourceRootDir(SourceRoot);
   if (SourceRoot.empty())
     // If no SourceRoot was provided the current path is used as the default
@@ -499,20 +381,15 @@ ClangDocContext::ClangDocContext(tooling::ExecutionContext *ECtx,
     if (!RepositoryUrl.empty() && !RepositoryUrl.starts_with("http://") &&
         !RepositoryUrl.starts_with("https://"))
       this->RepositoryUrl->insert(0, "https://");
-
-    if (!RepositoryLinePrefix.empty())
-      this->RepositoryLinePrefix = std::string(RepositoryLinePrefix);
   }
 }
 
 void ScopeChildren::sort() {
-  llvm::sort(Namespaces);
-  llvm::sort(Records);
-  llvm::sort(Functions);
-  llvm::sort(Enums);
-  llvm::sort(Typedefs);
-  llvm::sort(Concepts);
-  llvm::sort(Variables);
+  llvm::sort(Namespaces.begin(), Namespaces.end());
+  llvm::sort(Records.begin(), Records.end());
+  llvm::sort(Functions.begin(), Functions.end());
+  llvm::sort(Enums.begin(), Enums.end());
+  llvm::sort(Typedefs.begin(), Typedefs.end());
 }
 } // namespace doc
 } // namespace clang

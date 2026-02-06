@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- MiscTidyModule.cpp - clang-tidy ----------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -8,23 +8,20 @@
 
 #include "../ClangTidy.h"
 #include "../ClangTidyModule.h"
-#include "AnonymousNamespaceInHeaderCheck.h"
+#include "../ClangTidyModuleRegistry.h"
 #include "ConfusableIdentifierCheck.h"
 #include "ConstCorrectnessCheck.h"
 #include "CoroutineHostileRAIICheck.h"
 #include "DefinitionsInHeadersCheck.h"
 #include "HeaderIncludeCycleCheck.h"
 #include "IncludeCleanerCheck.h"
-#include "MisleadingBidirectionalCheck.h"
-#include "MisleadingIdentifierCheck.h"
+#include "MisleadingBidirectional.h"
+#include "MisleadingIdentifier.h"
 #include "MisplacedConstCheck.h"
-#include "MultipleInheritanceCheck.h"
 #include "NewDeleteOverloadsCheck.h"
 #include "NoRecursionCheck.h"
-#include "NonCopyableObjectsCheck.h"
+#include "NonCopyableObjects.h"
 #include "NonPrivateMemberVariablesInClassesCheck.h"
-#include "OverrideWithDifferentVisibilityCheck.h"
-#include "PredictableRandCheck.h"
 #include "RedundantExpressionCheck.h"
 #include "StaticAssertCheck.h"
 #include "ThrowByValueCatchByReferenceCheck.h"
@@ -38,13 +35,10 @@
 
 namespace clang::tidy {
 namespace misc {
-namespace {
 
 class MiscModule : public ClangTidyModule {
 public:
   void addCheckFactories(ClangTidyCheckFactories &CheckFactories) override {
-    CheckFactories.registerCheck<AnonymousNamespaceInHeaderCheck>(
-        "misc-anonymous-namespace-in-header");
     CheckFactories.registerCheck<ConfusableIdentifierCheck>(
         "misc-confusable-identifiers");
     CheckFactories.registerCheck<ConstCorrectnessCheck>(
@@ -61,8 +55,6 @@ public:
     CheckFactories.registerCheck<MisleadingIdentifierCheck>(
         "misc-misleading-identifier");
     CheckFactories.registerCheck<MisplacedConstCheck>("misc-misplaced-const");
-    CheckFactories.registerCheck<MultipleInheritanceCheck>(
-        "misc-multiple-inheritance");
     CheckFactories.registerCheck<NewDeleteOverloadsCheck>(
         "misc-new-delete-overloads");
     CheckFactories.registerCheck<NoRecursionCheck>("misc-no-recursion");
@@ -70,9 +62,6 @@ public:
         "misc-non-copyable-objects");
     CheckFactories.registerCheck<NonPrivateMemberVariablesInClassesCheck>(
         "misc-non-private-member-variables-in-classes");
-    CheckFactories.registerCheck<OverrideWithDifferentVisibilityCheck>(
-        "misc-override-with-different-visibility");
-    CheckFactories.registerCheck<PredictableRandCheck>("misc-predictable-rand");
     CheckFactories.registerCheck<RedundantExpressionCheck>(
         "misc-redundant-expression");
     CheckFactories.registerCheck<StaticAssertCheck>("misc-static-assert");
@@ -95,7 +84,6 @@ public:
   }
 };
 
-} // namespace
 } // namespace misc
 
 // Register the MiscTidyModule using this statically initialized variable.
@@ -104,6 +92,6 @@ static ClangTidyModuleRegistry::Add<misc::MiscModule>
 
 // This anchor is used to force the linker to link in the generated object file
 // and thus register the MiscModule.
-volatile int MiscModuleAnchorSource = 0; // NOLINT(misc-use-internal-linkage)
+volatile int MiscModuleAnchorSource = 0;
 
 } // namespace clang::tidy

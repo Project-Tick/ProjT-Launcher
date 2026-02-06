@@ -14,12 +14,12 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/CodeGen/StackProtector.h"
+#include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/BranchProbabilityInfo.h"
 #include "llvm/Analysis/MemoryLocation.h"
 #include "llvm/Analysis/OptimizationRemarkEmitter.h"
-#include "llvm/CodeGen/Analysis.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/TargetLowering.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
@@ -49,6 +49,7 @@
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include <optional>
+#include <utility>
 
 using namespace llvm;
 
@@ -75,7 +76,7 @@ static bool InsertStackProtectors(const TargetMachine *TM, Function *F,
 
 /// CreateFailBB - Create a basic block to jump to when the stack protector
 /// check fails.
-static BasicBlock *CreateFailBB(Function *F, const TargetLowering &TLI);
+static BasicBlock *CreateFailBB(Function *F, const Triple &Trip);
 
 bool SSPLayoutInfo::shouldEmitSDCheck(const BasicBlock &BB) const {
   return HasPrologue && !HasIRCheck && isa<ReturnInst>(BB.getTerminator());
@@ -135,8 +136,7 @@ PreservedAnalyses StackProtectorPass::run(Function &F,
   bool Changed = InsertStackProtectors(TM, &F, DT ? &DTU : nullptr,
                                        Info.HasPrologue, Info.HasIRCheck);
 #ifdef EXPENSIVE_CHECKS
-  assert((!DT ||
-          DTU.getDomTree().verify(DominatorTree::VerificationLevel::Full)) &&
+  assert((!DT || DT->verify(DominatorTree::VerificationLevel::Full)) &&
          "Failed to maintain validity of domtree!");
 #endif
 
@@ -217,7 +217,7 @@ static bool ContainsProtectableArray(Type *Ty, Module *M, unsigned SSPBufferSize
       // add stack protectors unless the array is a character array.
       // However, in strong mode any array, regardless of type and size,
       // triggers a protector.
-      if (!Strong && (InStruct || !M->getTargetTriple().isOSDarwin()))
+      if (!Strong && (InStruct || !Triple(M->getTargetTriple()).isOSDarwin()))
         return false;
     }
 
@@ -251,21 +251,10 @@ static bool ContainsProtectableArray(Type *Ty, Module *M, unsigned SSPBufferSize
   return NeedsProtector;
 }
 
-/// Maximum remaining allocation size observed for a phi node, and how often
-/// the allocation size has already been decreased. We only allow a limited
-/// number of decreases.
-struct PhiInfo {
-  TypeSize AllocSize;
-  unsigned NumDecreased = 0;
-  static constexpr unsigned MaxNumDecreased = 3;
-  PhiInfo(TypeSize AllocSize) : AllocSize(AllocSize) {}
-};
-using PhiMap = SmallDenseMap<const PHINode *, PhiInfo, 16>;
-
 /// Check whether a stack allocation has its address taken.
 static bool HasAddressTaken(const Instruction *AI, TypeSize AllocSize,
                             Module *M,
-                            PhiMap &VisitedPHIs) {
+                            SmallPtrSet<const PHINode *, 16> &VisitedPHIs) {
   const DataLayout &DL = M->getDataLayout();
   for (const User *U : AI->users()) {
     const auto *I = cast<Instruction>(U);
@@ -284,10 +273,6 @@ static bool HasAddressTaken(const Instruction *AI, TypeSize AllocSize,
       // cmpxchg conceptually includes both a load and store from the same
       // location. So, like store, the value being stored is what matters.
       if (AI == cast<AtomicCmpXchgInst>(I)->getNewValOperand())
-        return true;
-      break;
-    case Instruction::AtomicRMW:
-      if (AI == cast<AtomicRMWInst>(I)->getValOperand())
         return true;
       break;
     case Instruction::PtrToInt:
@@ -336,26 +321,19 @@ static bool HasAddressTaken(const Instruction *AI, TypeSize AllocSize,
       // Keep track of what PHI nodes we have already visited to ensure
       // they are only visited once.
       const auto *PN = cast<PHINode>(I);
-      auto [It, Inserted] = VisitedPHIs.try_emplace(PN, AllocSize);
-      if (!Inserted) {
-        if (TypeSize::isKnownGE(AllocSize, It->second.AllocSize))
-          break;
-
-        // Check again with smaller size.
-        if (It->second.NumDecreased == PhiInfo::MaxNumDecreased)
+      if (VisitedPHIs.insert(PN).second)
+        if (HasAddressTaken(PN, AllocSize, M, VisitedPHIs))
           return true;
-
-        It->second.AllocSize = AllocSize;
-        ++It->second.NumDecreased;
-      }
-      if (HasAddressTaken(PN, AllocSize, M, VisitedPHIs))
-        return true;
       break;
     }
     case Instruction::Load:
+    case Instruction::AtomicRMW:
     case Instruction::Ret:
       // These instructions take an address operand, but have load-like or
       // other innocuous behavior that should not trigger a stack protector.
+      // atomicrmw conceptually has both load and store semantics, but the
+      // value being stored must be integer; so if a pointer is being stored,
+      // we'll catch it in the PtrToInt case above.
       break;
     default:
       // Conservatively return true for any instruction that takes an address
@@ -399,7 +377,7 @@ bool SSPLayoutAnalysis::requiresStackProtector(Function *F,
   // The set of PHI nodes visited when determining if a variable's reference has
   // been taken.  This set is maintained to ensure we don't visit the same PHI
   // node multiple times.
-  PhiMap VisitedPHIs;
+  SmallPtrSet<const PHINode *, 16> VisitedPHIs;
 
   unsigned SSPBufferSize = F->getFnAttributeAsParsedInteger(
       "stack-protector-buffer-size", SSPLayoutInfo::DefaultSSPBufferSize);
@@ -431,11 +409,6 @@ bool SSPLayoutAnalysis::requiresStackProtector(Function *F,
   for (const BasicBlock &BB : *F) {
     for (const Instruction &I : BB) {
       if (const AllocaInst *AI = dyn_cast<AllocaInst>(&I)) {
-        if (const MDNode *MD = AI->getMetadata("stack-protector")) {
-          const auto *CI = mdconst::dyn_extract<ConstantInt>(MD->getOperand(0));
-          if (CI->isZero())
-            continue;
-        }
         if (AI->isArrayAllocation()) {
           auto RemarkBuilder = [&]() {
             return OptimizationRemark(DEBUG_TYPE, "StackProtectorAllocaOrArray",
@@ -546,7 +519,7 @@ static Value *getStackGuard(const TargetLoweringBase *TLI, Module *M,
   if (SupportsSelectionDAGSP)
     *SupportsSelectionDAGSP = true;
   TLI->insertSSPDeclarations(*M);
-  return B.CreateIntrinsic(Intrinsic::stackguard, {});
+  return B.CreateIntrinsic(Intrinsic::stackguard, {}, {});
 }
 
 /// Insert code into the entry block that stores the stack guard
@@ -567,7 +540,7 @@ static bool CreatePrologue(Function *F, Module *M, Instruction *CheckLoc,
   AI = B.CreateAlloca(PtrTy, nullptr, "StackGuardSlot");
 
   Value *GuardSlot = getStackGuard(TLI, M, B, &SupportsSelectionDAGSP);
-  B.CreateIntrinsic(Intrinsic::stackprotector, {GuardSlot, AI});
+  B.CreateIntrinsic(Intrinsic::stackprotector, {}, {GuardSlot, AI});
   return SupportsSelectionDAGSP;
 }
 
@@ -592,14 +565,7 @@ bool InsertStackProtectors(const TargetMachine *TM, Function *F,
       continue;
     Instruction *CheckLoc = dyn_cast<ReturnInst>(BB.getTerminator());
     if (!CheckLoc && !DisableCheckNoReturn)
-      for (auto &Inst : BB) {
-        if (IntrinsicInst *IB = dyn_cast<IntrinsicInst>(&Inst);
-            IB && (IB->getIntrinsicID() == Intrinsic::eh_sjlj_callsite)) {
-          // eh_sjlj_callsite has to be in same BB as the
-          // bb terminator. Don't insert within this range.
-          CheckLoc = IB;
-          break;
-        }
+      for (auto &Inst : BB)
         if (auto *CB = dyn_cast<CallBase>(&Inst))
           // Do stack check before noreturn calls that aren't nounwind (e.g:
           // __cxa_throw).
@@ -607,7 +573,6 @@ bool InsertStackProtectors(const TargetMachine *TM, Function *F,
             CheckLoc = CB;
             break;
           }
-      }
 
     if (!CheckLoc)
       continue;
@@ -637,11 +602,18 @@ bool InsertStackProtectors(const TargetMachine *TM, Function *F,
     HasIRCheck = true;
 
     // If we're instrumenting a block with a tail call, the check has to be
-    // inserted before the call rather than between it and the return.
-    Instruction *Prev = CheckLoc->getPrevNode();
-    if (auto *CI = dyn_cast_if_present<CallInst>(Prev))
-      if (CI->isTailCall() && isInTailCallPosition(*CI, *TM))
+    // inserted before the call rather than between it and the return. The
+    // verifier guarantees that a tail call is either directly before the
+    // return or with a single correct bitcast of the return value in between so
+    // we don't need to worry about many situations here.
+    Instruction *Prev = CheckLoc->getPrevNonDebugInstruction();
+    if (Prev && isa<CallInst>(Prev) && cast<CallInst>(Prev)->isTailCall())
+      CheckLoc = Prev;
+    else if (Prev) {
+      Prev = Prev->getPrevNonDebugInstruction();
+      if (Prev && isa<CallInst>(Prev) && cast<CallInst>(Prev)->isTailCall())
         CheckLoc = Prev;
+    }
 
     // Generate epilogue instrumentation. The epilogue intrumentation can be
     // function-based or inlined depending on which mechanism the target is
@@ -685,7 +657,7 @@ bool InsertStackProtectors(const TargetMachine *TM, Function *F,
       // merge pass will merge together all of the various BB into one including
       // fail BB generated by the stack protector pseudo instruction.
       if (!FailBB)
-        FailBB = CreateFailBB(F, *TLI);
+        FailBB = CreateFailBB(F, TM->getTargetTriple());
 
       IRBuilder<> B(CheckLoc);
       Value *Guard = getStackGuard(TLI, M, B);
@@ -718,7 +690,7 @@ bool InsertStackProtectors(const TargetMachine *TM, Function *F,
   return HasPrologue;
 }
 
-BasicBlock *CreateFailBB(Function *F, const TargetLowering &TLI) {
+BasicBlock *CreateFailBB(Function *F, const Triple &Trip) {
   auto *M = F->getParent();
   LLVMContext &Context = F->getContext();
   BasicBlock *FailBB = BasicBlock::Create(Context, "CallStackCheckFailBlk", F);
@@ -728,25 +700,17 @@ BasicBlock *CreateFailBB(Function *F, const TargetLowering &TLI) {
         DILocation::get(Context, 0, 0, F->getSubprogram()));
   FunctionCallee StackChkFail;
   SmallVector<Value *, 1> Args;
-
-  if (const char *ChkFailName =
-          TLI.getLibcallName(RTLIB::STACKPROTECTOR_CHECK_FAIL)) {
-    StackChkFail =
-        M->getOrInsertFunction(ChkFailName, Type::getVoidTy(Context));
-  } else if (const char *SSHName =
-                 TLI.getLibcallName(RTLIB::STACK_SMASH_HANDLER)) {
-    StackChkFail = M->getOrInsertFunction(SSHName, Type::getVoidTy(Context),
+  if (Trip.isOSOpenBSD()) {
+    StackChkFail = M->getOrInsertFunction("__stack_smash_handler",
+                                          Type::getVoidTy(Context),
                                           PointerType::getUnqual(Context));
     Args.push_back(B.CreateGlobalString(F->getName(), "SSH"));
   } else {
-    Context.emitError("no libcall available for stack protector");
+    StackChkFail =
+        M->getOrInsertFunction("__stack_chk_fail", Type::getVoidTy(Context));
   }
-
-  if (StackChkFail) {
-    CallInst *Call = B.CreateCall(StackChkFail, Args);
-    Call->addFnAttr(Attribute::NoReturn);
-  }
-
+  cast<Function>(StackChkFail.getCallee())->addFnAttr(Attribute::NoReturn);
+  B.CreateCall(StackChkFail, Args);
   B.CreateUnreachable();
   return FailBB;
 }

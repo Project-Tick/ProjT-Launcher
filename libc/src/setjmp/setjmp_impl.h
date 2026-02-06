@@ -29,8 +29,7 @@ namespace LIBC_NAMESPACE_DECL {
 #ifdef LIBC_COMPILER_IS_GCC
 [[gnu::nothrow]]
 #endif
-[[gnu::returns_twice]] int
-setjmp(jmp_buf buf);
+int setjmp(jmp_buf buf);
 
 } // namespace LIBC_NAMESPACE_DECL
 

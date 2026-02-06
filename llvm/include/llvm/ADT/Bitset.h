@@ -16,10 +16,10 @@
 #ifndef LLVM_ADT_BITSET_H
 #define LLVM_ADT_BITSET_H
 
+#include <llvm/ADT/STLExtras.h>
 #include <array>
 #include <climits>
 #include <cstdint>
-#include <llvm/ADT/STLExtras.h>
 
 namespace llvm {
 
@@ -28,37 +28,19 @@ namespace llvm {
 /// initialization.
 template <unsigned NumBits>
 class Bitset {
-  using BitWord = uintptr_t;
+  typedef uintptr_t BitWord;
 
-  static constexpr unsigned BitwordBits = sizeof(BitWord) * CHAR_BIT;
+  enum { BITWORD_SIZE = (unsigned)sizeof(BitWord) * CHAR_BIT };
 
-  static_assert(BitwordBits == 64 || BitwordBits == 32,
+  static_assert(BITWORD_SIZE == 64 || BITWORD_SIZE == 32,
                 "Unsupported word size");
 
-  static constexpr unsigned NumWords =
-      (NumBits + BitwordBits - 1) / BitwordBits;
-
-  using StorageType = std::array<BitWord, NumWords>;
-  StorageType Bits{};
+  static constexpr unsigned NumWords = (NumBits + BITWORD_SIZE-1) / BITWORD_SIZE;
+  std::array<BitWord, NumWords> Bits{};
 
 protected:
-  constexpr Bitset(const std::array<uint64_t, (NumBits + 63) / 64> &B) {
-    if constexpr (sizeof(BitWord) == sizeof(uint64_t)) {
-      for (size_t I = 0; I != B.size(); ++I)
-        Bits[I] = B[I];
-    } else {
-      unsigned BitsToAssign = NumBits;
-      for (size_t I = 0; I != B.size() && BitsToAssign; ++I) {
-        uint64_t Elt = B[I];
-        // On a 32-bit system the storage type will be 32-bit, so we may only
-        // need half of a uint64_t.
-        for (size_t offset = 0; offset != 2 && BitsToAssign; ++offset) {
-          Bits[2 * I + offset] = static_cast<uint32_t>(Elt >> (32 * offset));
-          BitsToAssign = BitsToAssign >= 32 ? BitsToAssign - 32 : 0;
-        }
-      }
-    }
-  }
+  constexpr Bitset(const std::array<BitWord, NumWords> &B)
+      : Bits{B} {}
 
 public:
   constexpr Bitset() = default;
@@ -68,28 +50,28 @@ public:
   }
 
   Bitset &set() {
-    llvm::fill(Bits, -BitWord(0));
+    std::fill(std::begin(Bits), std::end(Bits), -BitWord(0));
     return *this;
   }
 
   constexpr Bitset &set(unsigned I) {
-    Bits[I / BitwordBits] |= BitWord(1) << (I % BitwordBits);
+    Bits[I / BITWORD_SIZE] |= BitWord(1) << (I % BITWORD_SIZE);
     return *this;
   }
 
   constexpr Bitset &reset(unsigned I) {
-    Bits[I / BitwordBits] &= ~(BitWord(1) << (I % BitwordBits));
+    Bits[I / BITWORD_SIZE] &= ~(BitWord(1) << (I % BITWORD_SIZE));
     return *this;
   }
 
   constexpr Bitset &flip(unsigned I) {
-    Bits[I / BitwordBits] ^= BitWord(1) << (I % BitwordBits);
+    Bits[I / BITWORD_SIZE] ^= BitWord(1) << (I % BITWORD_SIZE);
     return *this;
   }
 
   constexpr bool operator[](unsigned I) const {
-    BitWord Mask = BitWord(1) << (I % BitwordBits);
-    return (Bits[I / BitwordBits] & Mask) != 0;
+    BitWord Mask = BitWord(1) << (I % BITWORD_SIZE);
+    return (Bits[I / BITWORD_SIZE] & Mask) != 0;
   }
 
   constexpr bool test(unsigned I) const { return (*this)[I]; }
@@ -155,7 +137,7 @@ public:
 
   bool operator!=(const Bitset &RHS) const { return !(*this == RHS); }
 
-  bool operator<(const Bitset &Other) const {
+  bool operator < (const Bitset &Other) const {
     for (unsigned I = 0, E = size(); I != E; ++I) {
       bool LHS = test(I), RHS = Other.test(I);
       if (LHS != RHS)

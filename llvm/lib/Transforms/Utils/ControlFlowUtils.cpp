@@ -12,8 +12,8 @@
 
 #include "llvm/Transforms/Utils/ControlFlowUtils.h"
 #include "llvm/ADT/SetVector.h"
+#include "llvm/ADT/SmallSet.h"
 #include "llvm/Analysis/DomTreeUpdater.h"
-#include "llvm/Analysis/LoopInfo.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/ValueHandle.h"
@@ -246,14 +246,12 @@ static void reconnectPhis(BasicBlock *Out, BasicBlock *GuardBlock,
     bool AllUndef = true;
     for (auto [BB, Succ0, Succ1] : Incoming) {
       Value *V = PoisonValue::get(Phi->getType());
-      if  (Phi->getBasicBlockIndex(BB) != -1) {
+      if (BB == Out) {
+        V = NewPhi;
+      } else if (Phi->getBasicBlockIndex(BB) != -1) {
         V = Phi->removeIncomingValue(BB, false);
-        if (BB == Out) {
-          V = NewPhi;
-        }
         AllUndef &= isa<UndefValue>(V);
       }
-
       NewPhi->addIncoming(V, BB);
     }
     assert(NewPhi->getNumIncomingValues() == Incoming.size());
@@ -272,19 +270,17 @@ static void reconnectPhis(BasicBlock *Out, BasicBlock *GuardBlock,
   }
 }
 
-std::pair<BasicBlock *, bool> ControlFlowHub::finalize(
+BasicBlock *ControlFlowHub::finalize(
     DomTreeUpdater *DTU, SmallVectorImpl<BasicBlock *> &GuardBlocks,
     const StringRef Prefix, std::optional<unsigned> MaxControlFlowBooleans) {
 #ifndef NDEBUG
-  SmallPtrSet<BasicBlock *, 8> Incoming;
+  SmallSet<BasicBlock *, 8> Incoming;
 #endif
   SetVector<BasicBlock *> Outgoing;
 
   for (auto [BB, Succ0, Succ1] : Branches) {
 #ifndef NDEBUG
-    assert(
-        (Incoming.insert(BB).second || isa<CallBrInst>(BB->getTerminator())) &&
-        "Duplicate entry for incoming block.");
+    assert(Incoming.insert(BB).second && "Duplicate entry for incoming block.");
 #endif
     if (Succ0)
       Outgoing.insert(Succ0);
@@ -293,7 +289,7 @@ std::pair<BasicBlock *, bool> ControlFlowHub::finalize(
   }
 
   if (Outgoing.size() < 2)
-    return {Outgoing.front(), false};
+    return Outgoing.front();
 
   SmallVector<DominatorTree::UpdateType, 16> Updates;
   if (DTU) {
@@ -342,5 +338,5 @@ std::pair<BasicBlock *, bool> ControlFlowHub::finalize(
         Inst->eraseFromParent();
   }
 
-  return {FirstGuardBlock, true};
+  return FirstGuardBlock;
 }

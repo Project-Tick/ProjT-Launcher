@@ -44,12 +44,6 @@ public:
   /// Runs the serialization pipeline, returning `std::nullopt` on error.
   virtual std::optional<SmallVector<char, 0>> run();
 
-  /// Translate LLVM module to textual ISA.
-  static FailureOr<SmallString<0>>
-  translateModuleToISA(llvm::Module &llvmModule,
-                       llvm::TargetMachine &targetMachine,
-                       function_ref<InFlightDiagnostic()> emitError);
-
 protected:
   // Hooks to be implemented by derived classes.
 
@@ -75,13 +69,13 @@ protected:
 
   /// Serializes the LLVM IR bitcode to an object file, by default it serializes
   /// to LLVM bitcode.
-  virtual FailureOr<SmallVector<char, 0>>
+  virtual std::optional<SmallVector<char, 0>>
   moduleToObject(llvm::Module &llvmModule);
 
 protected:
   /// Create the target machine based on the target triple and chip.
   /// This can fail if the target is not available.
-  FailureOr<llvm::TargetMachine *> getOrCreateTargetMachine();
+  std::optional<llvm::TargetMachine *> getOrCreateTargetMachine();
 
   /// Loads a bitcode file from path.
   std::unique_ptr<llvm::Module> loadBitcodeFile(llvm::LLVMContext &context,
@@ -103,6 +97,11 @@ protected:
 
   /// Optimize the module.
   virtual LogicalResult optimizeModule(llvm::Module &module, int optL);
+
+  /// Utility function for translating to ISA, returns `std::nullopt` on
+  /// failure.
+  static std::optional<std::string>
+  translateToISA(llvm::Module &llvmModule, llvm::TargetMachine &targetMachine);
 
 protected:
   /// Module to transform to a binary object.

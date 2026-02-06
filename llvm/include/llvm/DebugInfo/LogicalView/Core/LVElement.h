@@ -15,10 +15,7 @@
 #define LLVM_DEBUGINFO_LOGICALVIEW_CORE_LVELEMENT_H
 
 #include "llvm/DebugInfo/LogicalView/Core/LVObject.h"
-#include "llvm/DebugInfo/LogicalView/Core/LVSourceLanguage.h"
 #include "llvm/Support/Casting.h"
-#include "llvm/Support/Compiler.h"
-#include "llvm/Support/MathExtras.h"
 #include <map>
 #include <set>
 #include <vector>
@@ -45,7 +42,6 @@ enum class LVSubclassID : unsigned char {
   LV_SCOPE_FUNCTION,
   LV_SCOPE_FUNCTION_INLINED,
   LV_SCOPE_FUNCTION_TYPE,
-  LV_SCOPE_MODULE,
   LV_SCOPE_NAMESPACE,
   LV_SCOPE_ROOT,
   LV_SCOPE_TEMPLATE_PACK,
@@ -68,11 +64,7 @@ using LVElementKindSet = std::set<LVElementKind>;
 using LVElementDispatch = std::map<LVElementKind, LVElementGetFunction>;
 using LVElementRequest = std::vector<LVElementGetFunction>;
 
-// Assume 8-bit bytes; this is consistent, e.g. with
-// lldb/source/Plugins/SymbolFile/DWARF/DWARFASTParserClang.cpp.
-constexpr unsigned int DWARF_CHAR_BIT = 8u;
-
-class LLVM_ABI LVElement : public LVObject {
+class LVElement : public LVObject {
   enum class Property {
     IsLine,   // A logical line.
     IsScope,  // A logical scope.
@@ -107,17 +99,17 @@ class LLVM_ABI LVElement : public LVObject {
     IsAnonymous,
     LastEntry
   };
+  // Typed bitvector with properties for this element.
+  LVProperties<Property> Properties;
   static LVElementDispatch Dispatch;
+
+  /// RTTI.
+  const LVSubclassID SubclassID;
 
   // Indexes in the String Pool.
   size_t NameIndex = 0;
   size_t QualifiedNameIndex = 0;
   size_t FilenameIndex = 0;
-
-  // Typed bitvector with properties for this element.
-  LVProperties<Property> Properties;
-  /// RTTI.
-  const LVSubclassID SubclassID;
 
   uint16_t AccessibilityCode : 2; // DW_AT_accessibility.
   uint16_t InlineCode : 2;        // DW_AT_inline.
@@ -143,7 +135,7 @@ public:
         VirtualityCode(0) {}
   LVElement(const LVElement &) = delete;
   LVElement &operator=(const LVElement &) = delete;
-  ~LVElement() override = default;
+  virtual ~LVElement() = default;
 
   LVSubclassID getSubclassID() const { return SubclassID; }
 
@@ -222,9 +214,6 @@ public:
   virtual StringRef getProducer() const { return StringRef(); }
   virtual void setProducer(StringRef ProducerName) {}
 
-  virtual LVSourceLanguage getSourceLanguage() const { return {}; }
-  virtual void setSourceLanguage(LVSourceLanguage SL) {}
-
   virtual bool isCompileUnit() const { return false; }
   virtual bool isRoot() const { return false; }
 
@@ -250,9 +239,6 @@ public:
   virtual bool isBase() const { return false; }
   virtual bool isTemplateParam() const { return false; }
 
-  uint32_t getStorageSizeInBytes() const {
-    return llvm::divideCeil(getBitSize(), DWARF_CHAR_BIT);
-  }
   virtual uint32_t getBitSize() const { return 0; }
   virtual void setBitSize(uint32_t Size) {}
 

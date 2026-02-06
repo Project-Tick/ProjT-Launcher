@@ -13,12 +13,14 @@
 
 #include "polly/MaximalStaticExpansion.h"
 #include "polly/DependenceInfo.h"
-#include "polly/Options.h"
+#include "polly/LinkAllPasses.h"
 #include "polly/ScopInfo.h"
+#include "polly/ScopPass.h"
 #include "polly/Support/ISLTools.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Analysis/OptimizationRemarkEmitter.h"
+#include "llvm/InitializePasses.h"
 #include "isl/isl-noexceptions.h"
 #include "isl/union_map.h"
 #include <cassert>
@@ -33,10 +35,28 @@ using namespace polly;
 
 namespace {
 
-static cl::opt<bool>
-    PollyPrintMSE("polly-print-mse",
-                  cl::desc("Polly - Print Maximal static expansion of SCoP"),
-                  cl::cat(PollyCategory));
+class MaximalStaticExpanderWrapperPass final : public ScopPass {
+public:
+  static char ID;
+
+  explicit MaximalStaticExpanderWrapperPass() : ScopPass(ID) {}
+
+  ~MaximalStaticExpanderWrapperPass() override = default;
+
+  /// Expand the accesses of the SCoP.
+  ///
+  /// @param S The SCoP that must be expanded.
+  bool runOnScop(Scop &S) override;
+
+  /// Print the SCoP.
+  ///
+  /// @param OS The stream where to print.
+  /// @param S The SCop that must be printed.
+  void printScop(raw_ostream &OS, Scop &S) const override;
+
+  /// Register all analyses and transformations required.
+  void getAnalysisUsage(AnalysisUsage &AU) const override;
+};
 
 #ifndef NDEBUG
 /// Whether a dimension of a set is bounded (lower and upper) by a constant,
@@ -119,7 +139,8 @@ class MaximalStaticExpansionImpl {
                     SmallPtrSetImpl<MemoryAccess *> &Reads, Scop &S) {
     if (SAI->isValueKind()) {
       Writes.insert(S.getValueDef(SAI));
-      Reads.insert_range(S.getValueUses(SAI));
+      for (auto MA : S.getValueUses(SAI))
+        Reads.insert(MA);
       return true;
     } else if (SAI->isPHIKind()) {
       auto Read = S.getPHIRead(SAI);
@@ -378,8 +399,9 @@ class MaximalStaticExpansionImpl {
   /// @param Dependences The RAW dependences of the SCop.
   void expandPhi(Scop &S, const ScopArrayInfo *SAI,
                  const isl::union_map &Dependences) {
-    SmallPtrSet<MemoryAccess *, 4> Writes(llvm::from_range,
-                                          S.getPHIIncomings(SAI));
+    SmallPtrSet<MemoryAccess *, 4> Writes;
+    for (auto MA : S.getPHIIncomings(SAI))
+      Writes.insert(MA);
     auto Read = S.getPHIRead(SAI);
     auto ExpandedSAI = expandAccess(Read);
 
@@ -438,8 +460,8 @@ public:
 };
 
 static std::unique_ptr<MaximalStaticExpansionImpl>
-runMaximalStaticExpansionImpl(Scop &S, OptimizationRemarkEmitter &ORE,
-                              const Dependences &D) {
+runMaximalStaticExpansion(Scop &S, OptimizationRemarkEmitter &ORE,
+                          const Dependences &D) {
   auto Dependences = D.getDependences(Dependences::TYPE_RAW);
 
   std::unique_ptr<MaximalStaticExpansionImpl> Impl =
@@ -448,26 +470,85 @@ runMaximalStaticExpansionImpl(Scop &S, OptimizationRemarkEmitter &ORE,
   Impl->expand();
   return Impl;
 }
-} // namespace
 
-void polly::runMaximalStaticExpansion(Scop &S, DependenceAnalysis::Result &DI) {
+static PreservedAnalyses runMSEUsingNPM(Scop &S, ScopAnalysisManager &SAM,
+                                        ScopStandardAnalysisResults &SAR,
+                                        raw_ostream *OS) {
   OptimizationRemarkEmitter ORE(&S.getFunction());
 
+  auto &DI = SAM.getResult<DependenceAnalysis>(S, SAR);
   auto &D = DI.getDependences(Dependences::AL_Reference);
 
   std::unique_ptr<MaximalStaticExpansionImpl> Impl =
-      runMaximalStaticExpansionImpl(S, ORE, D);
+      runMaximalStaticExpansion(S, ORE, D);
 
-  if (PollyPrintMSE) {
-    outs()
-        << "Printing analysis 'Polly - Maximal static expansion of SCoP' for "
+  if (OS) {
+    *OS << "Printing analysis 'Polly - Maximal static expansion of SCoP' for "
            "region: '"
         << S.getName() << "' in function '" << S.getFunction().getName()
         << "':\n";
 
     if (Impl) {
-      outs() << "MSE result:\n";
-      Impl->print(llvm::outs());
+      *OS << "MSE result:\n";
+      Impl->print(*OS);
     }
   }
+
+  return PreservedAnalyses::all();
 }
+
+} // namespace
+
+PreservedAnalyses
+MaximalStaticExpansionPass::run(Scop &S, ScopAnalysisManager &SAM,
+                                ScopStandardAnalysisResults &SAR,
+                                SPMUpdater &) {
+  return runMSEUsingNPM(S, SAM, SAR, nullptr);
+}
+
+PreservedAnalyses
+MaximalStaticExpansionPrinterPass::run(Scop &S, ScopAnalysisManager &SAM,
+                                       ScopStandardAnalysisResults &SAR,
+                                       SPMUpdater &) {
+  return runMSEUsingNPM(S, SAM, SAR, &OS);
+}
+
+char MaximalStaticExpanderWrapperPass::ID = 0;
+
+bool MaximalStaticExpanderWrapperPass::runOnScop(Scop &S) {
+  // Get the ORE from OptimizationRemarkEmitterWrapperPass.
+  OptimizationRemarkEmitter *ORE =
+      &getAnalysis<OptimizationRemarkEmitterWrapperPass>().getORE();
+
+  // Get the RAW Dependences.
+  auto &DI = getAnalysis<DependenceInfo>();
+  auto &D = DI.getDependences(Dependences::AL_Reference);
+
+  std::unique_ptr<MaximalStaticExpansionImpl> Impl =
+      runMaximalStaticExpansion(S, *ORE, D);
+
+  return false;
+}
+
+void MaximalStaticExpanderWrapperPass::printScop(raw_ostream &OS,
+                                                 Scop &S) const {
+  S.print(OS, false);
+}
+
+void MaximalStaticExpanderWrapperPass::getAnalysisUsage(
+    AnalysisUsage &AU) const {
+  ScopPass::getAnalysisUsage(AU);
+  AU.addRequired<DependenceInfo>();
+  AU.addRequired<OptimizationRemarkEmitterWrapperPass>();
+}
+
+Pass *polly::createMaximalStaticExpansionPass() {
+  return new MaximalStaticExpanderWrapperPass();
+}
+
+INITIALIZE_PASS_BEGIN(MaximalStaticExpanderWrapperPass, "polly-mse",
+                      "Polly - Maximal static expansion of SCoP", false, false);
+INITIALIZE_PASS_DEPENDENCY(DependenceInfo);
+INITIALIZE_PASS_DEPENDENCY(OptimizationRemarkEmitterWrapperPass);
+INITIALIZE_PASS_END(MaximalStaticExpanderWrapperPass, "polly-mse",
+                    "Polly - Maximal static expansion of SCoP", false, false)

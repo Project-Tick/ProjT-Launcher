@@ -49,7 +49,7 @@ class StringRef;
     virtual void logd(const DiffLogBuilder &Log) = 0;
 
   protected:
-    virtual ~Consumer() = default;
+    virtual ~Consumer() {}
   };
 
   class DiffConsumer : public Consumer {

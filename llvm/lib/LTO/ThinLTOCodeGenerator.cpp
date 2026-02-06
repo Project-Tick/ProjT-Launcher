@@ -17,6 +17,7 @@
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/StringExtras.h"
+#include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/ModuleSummaryAnalysis.h"
 #include "llvm/Analysis/ProfileSummaryInfo.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
@@ -57,7 +58,10 @@
 #include "llvm/Transforms/IPO/FunctionImport.h"
 #include "llvm/Transforms/IPO/Internalize.h"
 #include "llvm/Transforms/IPO/WholeProgramDevirt.h"
+#include "llvm/Transforms/ObjCARC.h"
 #include "llvm/Transforms/Utils/FunctionImportUtils.h"
+
+#include <numeric>
 
 #if !defined(_MSC_VER) && !defined(__MINGW32__)
 #include <unistd.h>
@@ -101,8 +105,8 @@ static void saveTempBitcode(const Module &TheModule, StringRef TempDir,
   WriteBitcodeToFile(TheModule, OS, /* ShouldPreserveUseListOrder */ true);
 }
 
-static const GlobalValueSummary *getFirstDefinitionForLinker(
-    ArrayRef<std::unique_ptr<GlobalValueSummary>> GVSummaryList) {
+static const GlobalValueSummary *
+getFirstDefinitionForLinker(const GlobalValueSummaryList &GVSummaryList) {
   // If there is any strong definition anywhere, get it.
   auto StrongDefForLinker = llvm::find_if(
       GVSummaryList, [](const std::unique_ptr<GlobalValueSummary> &Summary) {
@@ -131,15 +135,14 @@ static const GlobalValueSummary *getFirstDefinitionForLinker(
 static void computePrevailingCopies(
     const ModuleSummaryIndex &Index,
     DenseMap<GlobalValue::GUID, const GlobalValueSummary *> &PrevailingCopy) {
-  auto HasMultipleCopies =
-      [&](ArrayRef<std::unique_ptr<GlobalValueSummary>> GVSummaryList) {
-        return GVSummaryList.size() > 1;
-      };
+  auto HasMultipleCopies = [&](const GlobalValueSummaryList &GVSummaryList) {
+    return GVSummaryList.size() > 1;
+  };
 
   for (auto &I : Index) {
-    if (HasMultipleCopies(I.second.getSummaryList()))
+    if (HasMultipleCopies(I.second.SummaryList))
       PrevailingCopy[I.first] =
-          getFirstDefinitionForLinker(I.second.getSummaryList());
+          getFirstDefinitionForLinker(I.second.SummaryList);
   }
 }
 
@@ -164,7 +167,7 @@ namespace {
 class ThinLTODiagnosticInfo : public DiagnosticInfo {
   const Twine &Msg;
 public:
-  ThinLTODiagnosticInfo(const Twine &DiagMsg LLVM_LIFETIME_BOUND,
+  ThinLTODiagnosticInfo(const Twine &DiagMsg,
                         DiagnosticSeverity Severity = DS_Error)
       : DiagnosticInfo(DK_Linker, Severity), Msg(DiagMsg) {}
   void print(DiagnosticPrinter &DP) const override { DP << Msg; }
@@ -249,7 +252,7 @@ static void optimizeModule(Module &TheModule, TargetMachine &TM,
   PassBuilder PB(&TM, PTO, PGOOpt, &PIC);
 
   std::unique_ptr<TargetLibraryInfoImpl> TLII(
-      new TargetLibraryInfoImpl(TM.getTargetTriple(), TM.Options.VecLib));
+      new TargetLibraryInfoImpl(Triple(TM.getTargetTriple())));
   if (Freestanding)
     TLII->disableAllFunctions();
   FAM.registerPass([&] { return TargetLibraryAnalysis(*TLII); });
@@ -292,8 +295,7 @@ addUsedSymbolToPreservedGUID(const lto::InputFile &File,
                              DenseSet<GlobalValue::GUID> &PreservedGUID) {
   for (const auto &Sym : File.symbols()) {
     if (Sym.isUsed())
-      PreservedGUID.insert(
-          GlobalValue::getGUIDAssumingExternalLinkage(Sym.getIRName()));
+      PreservedGUID.insert(GlobalValue::getGUID(Sym.getIRName()));
   }
 }
 
@@ -306,9 +308,8 @@ static void computeGUIDPreservedSymbols(const lto::InputFile &File,
   // compute the GUID for the symbol.
   for (const auto &Sym : File.symbols()) {
     if (PreservedSymbols.count(Sym.getName()) && !Sym.getIRName().empty())
-      GUIDs.insert(GlobalValue::getGUIDAssumingExternalLinkage(
-          GlobalValue::getGlobalIdentifier(Sym.getIRName(),
-                                           GlobalValue::ExternalLinkage, "")));
+      GUIDs.insert(GlobalValue::getGUID(GlobalValue::getGlobalIdentifier(
+          Sym.getIRName(), GlobalValue::ExternalLinkage, "")));
   }
 }
 
@@ -576,7 +577,8 @@ void ThinLTOCodeGenerator::crossReferenceSymbol(StringRef Name) {
 // TargetMachine factory
 std::unique_ptr<TargetMachine> TargetMachineBuilder::create() const {
   std::string ErrMsg;
-  const Target *TheTarget = TargetRegistry::lookupTarget(TheTriple, ErrMsg);
+  const Target *TheTarget =
+      TargetRegistry::lookupTarget(TheTriple.str(), ErrMsg);
   if (!TheTarget) {
     report_fatal_error(Twine("Can't load target for this Triple: ") + ErrMsg);
   }
@@ -587,7 +589,7 @@ std::unique_ptr<TargetMachine> TargetMachineBuilder::create() const {
   std::string FeatureStr = Features.getString();
 
   std::unique_ptr<TargetMachine> TM(
-      TheTarget->createTargetMachine(TheTriple, MCpu, FeatureStr, Options,
+      TheTarget->createTargetMachine(TheTriple.str(), MCpu, FeatureStr, Options,
                                      RelocModel, std::nullopt, CGOptLevel));
   assert(TM && "Cannot create target machine");
 
@@ -675,7 +677,7 @@ void ThinLTOCodeGenerator::promote(Module &TheModule, ModuleSummaryIndex &Index,
 
   // Convert the preserved symbols set from string to GUID
   auto GUIDPreservedSymbols = computeGUIDPreservedSymbols(
-      File, PreservedSymbols, TheModule.getTargetTriple());
+      File, PreservedSymbols, Triple(TheModule.getTargetTriple()));
 
   // Add used symbol to the preserved symbols.
   addUsedSymbolToPreservedGUID(File, GUIDPreservedSymbols);
@@ -728,7 +730,7 @@ void ThinLTOCodeGenerator::crossModuleImport(Module &TheModule,
 
   // Convert the preserved symbols set from string to GUID
   auto GUIDPreservedSymbols = computeGUIDPreservedSymbols(
-      File, PreservedSymbols, TheModule.getTargetTriple());
+      File, PreservedSymbols, Triple(TheModule.getTargetTriple()));
 
   addUsedSymbolToPreservedGUID(File, GUIDPreservedSymbols);
 
@@ -768,7 +770,7 @@ void ThinLTOCodeGenerator::gatherImportedSummariesForModule(
 
   // Convert the preserved symbols set from string to GUID
   auto GUIDPreservedSymbols = computeGUIDPreservedSymbols(
-      File, PreservedSymbols, TheModule.getTargetTriple());
+      File, PreservedSymbols, Triple(TheModule.getTargetTriple()));
 
   addUsedSymbolToPreservedGUID(File, GUIDPreservedSymbols);
 
@@ -806,7 +808,7 @@ void ThinLTOCodeGenerator::emitImports(Module &TheModule, StringRef OutputName,
 
   // Convert the preserved symbols set from string to GUID
   auto GUIDPreservedSymbols = computeGUIDPreservedSymbols(
-      File, PreservedSymbols, TheModule.getTargetTriple());
+      File, PreservedSymbols, Triple(TheModule.getTargetTriple()));
 
   addUsedSymbolToPreservedGUID(File, GUIDPreservedSymbols);
 
@@ -826,7 +828,7 @@ void ThinLTOCodeGenerator::emitImports(Module &TheModule, StringRef OutputName,
 
   // 'EmitImportsFiles' emits the list of modules from which to import from, and
   // the set of keys in `ModuleToSummariesForIndex` should be a superset of keys
-  // in `DecSummaries`, so no need to use `DecSummaries` in `EmitImportsFiles`.
+  // in `DecSummaries`, so no need to use `DecSummaries` in `EmitImportFiles`.
   GVSummaryPtrSet DecSummaries;
   ModuleToSummariesForIndexTy ModuleToSummariesForIndex;
   llvm::gatherImportedSummariesForModule(
@@ -846,7 +848,7 @@ void ThinLTOCodeGenerator::emitImports(Module &TheModule, StringRef OutputName,
 void ThinLTOCodeGenerator::internalize(Module &TheModule,
                                        ModuleSummaryIndex &Index,
                                        const lto::InputFile &File) {
-  initTMBuilder(TMBuilder, TheModule.getTargetTriple());
+  initTMBuilder(TMBuilder, Triple(TheModule.getTargetTriple()));
   auto ModuleCount = Index.modulePaths().size();
   auto ModuleIdentifier = TheModule.getModuleIdentifier();
 
@@ -907,7 +909,7 @@ void ThinLTOCodeGenerator::internalize(Module &TheModule,
  * Perform post-importing ThinLTO optimizations.
  */
 void ThinLTOCodeGenerator::optimize(Module &TheModule) {
-  initTMBuilder(TMBuilder, TheModule.getTargetTriple());
+  initTMBuilder(TMBuilder, Triple(TheModule.getTargetTriple()));
 
   // Optimize now
   optimizeModule(TheModule, *TMBuilder.create(), OptLevel, Freestanding,
@@ -956,7 +958,7 @@ ThinLTOCodeGenerator::writeGeneratedObject(int count, StringRef CacheEntryPath,
 // Main entry point for the ThinLTO processing
 void ThinLTOCodeGenerator::run() {
   timeTraceProfilerBegin("ThinLink", StringRef(""));
-  llvm::scope_exit TimeTraceScopeExit([]() {
+  auto TimeTraceScopeExit = llvm::make_scope_exit([]() {
     if (llvm::timeTraceProfilerEnabled())
       llvm::timeTraceProfilerEnd();
   });
@@ -1056,7 +1058,8 @@ void ThinLTOCodeGenerator::run() {
   std::map<ValueInfo, std::vector<VTableSlotSummary>> LocalWPDTargetsMap;
   std::set<GlobalValue::GUID> ExportedGUIDs;
   runWholeProgramDevirtOnIndex(*Index, ExportedGUIDs, LocalWPDTargetsMap);
-  GUIDPreservedSymbols.insert_range(ExportedGUIDs);
+  for (auto GUID : ExportedGUIDs)
+    GUIDPreservedSymbols.insert(GUID);
 
   // Compute prevailing symbols
   DenseMap<GlobalValue::GUID, const GlobalValueSummary *> PrevailingCopy;

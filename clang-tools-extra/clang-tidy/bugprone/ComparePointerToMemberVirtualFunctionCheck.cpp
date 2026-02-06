@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- ComparePointerToMemberVirtualFunctionCheck.cpp - clang-tidy ------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -8,12 +8,14 @@
 
 #include "ComparePointerToMemberVirtualFunctionCheck.h"
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/Type.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchersMacros.h"
+#include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/DiagnosticIDs.h"
 #include "llvm/ADT/SmallVector.h"
 
@@ -25,7 +27,7 @@ namespace {
 
 AST_MATCHER(CXXMethodDecl, isVirtual) { return Node.isVirtual(); }
 
-static constexpr StringRef ErrorMsg =
+static const char *const ErrorMsg =
     "comparing a pointer to member virtual function with other pointer is "
     "unspecified behavior, only compare it with a null-pointer constant for "
     "equality.";
@@ -34,6 +36,7 @@ static constexpr StringRef ErrorMsg =
 
 void ComparePointerToMemberVirtualFunctionCheck::registerMatchers(
     MatchFinder *Finder) {
+
   auto DirectMemberVirtualFunctionPointer = unaryOperator(
       allOf(hasOperatorName("&"),
             hasUnaryOperand(declRefExpr(to(cxxMethodDecl(isVirtual()))))));
@@ -67,7 +70,10 @@ void ComparePointerToMemberVirtualFunctionCheck::check(
   // compare with variable which type is pointer to member function.
   llvm::SmallVector<SourceLocation, 12U> SameSignatureVirtualMethods{};
   const auto *MPT = cast<MemberPointerType>(DRE->getType().getCanonicalType());
-  const CXXRecordDecl *RD = MPT->getMostRecentCXXRecordDecl();
+  const Type *T = MPT->getClass();
+  if (T == nullptr)
+    return;
+  const CXXRecordDecl *RD = T->getAsCXXRecordDecl();
   if (RD == nullptr)
     return;
 
@@ -85,8 +91,9 @@ void ComparePointerToMemberVirtualFunctionCheck::check(
     return Ret;
   };
 
-  if (StopVisit != VisitSameSignatureVirtualMethods(RD))
+  if (StopVisit != VisitSameSignatureVirtualMethods(RD)) {
     RD->forallBases(VisitSameSignatureVirtualMethods);
+  }
 
   if (!SameSignatureVirtualMethods.empty()) {
     diag(BO->getOperatorLoc(), ErrorMsg);

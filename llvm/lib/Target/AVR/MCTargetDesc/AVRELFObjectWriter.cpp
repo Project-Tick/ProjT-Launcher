@@ -7,13 +7,13 @@
 //===----------------------------------------------------------------------===//
 
 #include "MCTargetDesc/AVRFixupKinds.h"
-#include "MCTargetDesc/AVRMCAsmInfo.h"
 #include "MCTargetDesc/AVRMCTargetDesc.h"
 
 #include "llvm/MC/MCAssembler.h"
 #include "llvm/MC/MCELFObjectWriter.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCObjectWriter.h"
+#include "llvm/MC/MCSection.h"
 #include "llvm/MC/MCValue.h"
 #include "llvm/Support/ErrorHandling.h"
 
@@ -24,54 +24,57 @@ class AVRELFObjectWriter : public MCELFObjectTargetWriter {
 public:
   AVRELFObjectWriter(uint8_t OSABI);
 
-  ~AVRELFObjectWriter() override = default;
+  virtual ~AVRELFObjectWriter() = default;
 
-  unsigned getRelocType(const MCFixup &, const MCValue &,
-                        bool IsPCRel) const override;
+  unsigned getRelocType(MCContext &Ctx, const MCValue &Target,
+                        const MCFixup &Fixup, bool IsPCRel) const override;
 };
 
 AVRELFObjectWriter::AVRELFObjectWriter(uint8_t OSABI)
     : MCELFObjectTargetWriter(false, OSABI, ELF::EM_AVR, true) {}
 
-unsigned AVRELFObjectWriter::getRelocType(const MCFixup &Fixup,
-                                          const MCValue &Target,
+unsigned AVRELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target,
+                                          const MCFixup &Fixup,
                                           bool IsPCRel) const {
-  auto Spec = Target.getSpecifier();
+  const unsigned Kind = Fixup.getTargetKind();
+  if (Kind >= FirstLiteralRelocationKind)
+    return Kind - FirstLiteralRelocationKind;
+  MCSymbolRefExpr::VariantKind Modifier = Target.getAccessVariant();
   switch ((unsigned)Fixup.getKind()) {
   case FK_Data_1:
-    switch (Spec) {
+    switch (Modifier) {
     default:
       llvm_unreachable("Unsupported Modifier");
-    case AVR::S_None:
+    case MCSymbolRefExpr::VK_None:
       return ELF::R_AVR_8;
-    case AVR::S_DIFF8:
+    case MCSymbolRefExpr::VK_AVR_DIFF8:
       return ELF::R_AVR_DIFF8;
-    case AVR::S_LO8:
+    case MCSymbolRefExpr::VK_AVR_LO8:
       return ELF::R_AVR_8_LO8;
-    case AVR::S_HI8:
+    case MCSymbolRefExpr::VK_AVR_HI8:
       return ELF::R_AVR_8_HI8;
-    case AVR::S_HH8:
+    case MCSymbolRefExpr::VK_AVR_HLO8:
       return ELF::R_AVR_8_HLO8;
     }
   case FK_Data_4:
-    switch (Spec) {
+    switch (Modifier) {
     default:
       llvm_unreachable("Unsupported Modifier");
-    case AVR::S_None:
+    case MCSymbolRefExpr::VK_None:
       return ELF::R_AVR_32;
-    case AVR::S_DIFF32:
+    case MCSymbolRefExpr::VK_AVR_DIFF32:
       return ELF::R_AVR_DIFF32;
     }
   case FK_Data_2:
-    switch (Spec) {
+    switch (Modifier) {
     default:
       llvm_unreachable("Unsupported Modifier");
-    case AVR::S_None:
+    case MCSymbolRefExpr::VK_None:
       return ELF::R_AVR_16;
-    case AVR::S_AVR_NONE:
-    case AVR::S_PM:
+    case MCSymbolRefExpr::VK_AVR_NONE:
+    case MCSymbolRefExpr::VK_AVR_PM:
       return ELF::R_AVR_16_PM;
-    case AVR::S_DIFF16:
+    case MCSymbolRefExpr::VK_AVR_DIFF16:
       return ELF::R_AVR_DIFF16;
     }
   case AVR::fixup_32:

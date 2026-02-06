@@ -32,8 +32,6 @@ class GCNSubtarget;
 class GCNHazardRecognizer final : public ScheduleHazardRecognizer {
 public:
   typedef function_ref<bool(const MachineInstr &)> IsHazardFn;
-  typedef function_ref<bool(const MachineInstr &, int WaitStates)> IsExpiredFn;
-  typedef function_ref<unsigned int(const MachineInstr &)> GetNumWaitStatesFn;
 
 private:
   // Distinguish if we are called from scheduler or hazard recognizer
@@ -50,6 +48,8 @@ private:
   const SIRegisterInfo &TRI;
   const TargetSchedModel &TSchedModel;
   bool RunLdsBranchVmemWARHazardFixup;
+  BitVector VALUReadHazardSGPRs;
+  bool UseVALUReadHazardExhaustiveSearch;
 
   /// RegUnits of uses in the current soft memory clause.
   BitVector ClauseUses;
@@ -76,8 +76,6 @@ private:
   // used on a newly inserted instruction before returning from PreEmitNoops.
   void runOnInstruction(MachineInstr *MI);
 
-  int getWaitStatesSince(IsHazardFn IsHazard, int Limit,
-                         GetNumWaitStatesFn GetNumWaitStates);
   int getWaitStatesSince(IsHazardFn IsHazard, int Limit);
   int getWaitStatesSinceDef(unsigned Reg, IsHazardFn IsHazardDef, int Limit);
   int getWaitStatesSinceSetReg(IsHazardFn IsHazard, int Limit);
@@ -98,9 +96,6 @@ private:
   int checkReadM0Hazards(MachineInstr *SMovRel);
   int checkNSAtoVMEMHazard(MachineInstr *MI);
   int checkFPAtomicToDenormModeHazard(MachineInstr *MI);
-  // Emit V_NOP instructions. \p WaitStatesNeeded is the number of V_NOPs we
-  // need to insert, negative means not needed.
-  bool emitVNops(MachineInstr *MI, int WaitStatesNeeded);
   void fixHazards(MachineInstr *MI);
   bool fixVcmpxPermlaneHazards(MachineInstr *MI);
   bool fixVMEMtoScalarWriteHazards(MachineInstr *MI);
@@ -111,16 +106,12 @@ private:
   bool fixLdsDirectVMEMHazard(MachineInstr *MI);
   bool fixVALUPartialForwardingHazard(MachineInstr *MI);
   bool fixVALUTransUseHazard(MachineInstr *MI);
-  bool fixVALUTransCoexecutionHazards(MachineInstr *MI);
   bool fixWMMAHazards(MachineInstr *MI);
-  int checkWMMACoexecutionHazards(MachineInstr *MI);
   bool fixShift64HighRegBug(MachineInstr *MI);
   bool fixVALUMaskWriteHazard(MachineInstr *MI);
+  void computeVALUHazardSGPRs(MachineFunction *MMF);
+  bool fixVALUReadSGPRHazard(MachineInstr *MI);
   bool fixRequiredExportPriority(MachineInstr *MI);
-  bool fixGetRegWaitIdle(MachineInstr *MI);
-  bool fixDsAtomicAsyncBarrierArriveB64(MachineInstr *MI);
-  bool fixScratchBaseForwardingHazard(MachineInstr *MI);
-  bool fixSetRegMode(MachineInstr *MI);
 
   int checkMAIHazards(MachineInstr *MI);
   int checkMAIHazards908(MachineInstr *MI);

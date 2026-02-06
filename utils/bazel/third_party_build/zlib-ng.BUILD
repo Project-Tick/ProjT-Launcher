@@ -1,8 +1,8 @@
 # This file is licensed under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -10,18 +10,28 @@ package(
     licenses = ["notice"],
 )
 
-copy_file(
+bool_flag(
+    name = "llvm_enable_zlib",
+    build_setting_default = True,
+)
+
+config_setting(
+    name = "llvm_zlib_enabled",
+    flag_values = {":llvm_enable_zlib": "true"},
+)
+
+genrule(
     # The input template is identical to the CMake output.
     name = "zconf_gen",
-    src = "zconf.h.in",
-    out = "zconf.h",
-    allow_symlink = True,
+    srcs = ["zconf.h.in"],
+    outs = ["zconf.h"],
+    cmd = "cp $(SRCS) $(OUTS)",
 )
 
 cc_library(
     name = "zlib",
     srcs = select({
-        "@llvm-project//third-party:llvm_zlib_enabled": [
+        ":llvm_zlib_enabled": [
             "adler32.c",
             "adler32_p.h",
             "chunkset.c",
@@ -69,7 +79,7 @@ cc_library(
         "//conditions:default": [],
     }),
     hdrs = select({
-        "@llvm-project//third-party:llvm_zlib_enabled": [
+        ":llvm_zlib_enabled": [
             "zlib.h",
             ":zconf_gen",
         ],
@@ -86,7 +96,7 @@ cc_library(
         # the default config for reproducibility.
     ],
     defines = select({
-        "@llvm-project//third-party:llvm_zlib_enabled": [
+        ":llvm_zlib_enabled": [
             "LLVM_ENABLE_ZLIB=1",
         ],
         "//conditions:default": [],
@@ -95,9 +105,4 @@ cc_library(
     # strip_include_prefix here.
     strip_include_prefix = ".",
     visibility = ["//visibility:public"],
-)
-
-alias(
-    name = "zlib-ng",
-    actual = ":zlib",
 )

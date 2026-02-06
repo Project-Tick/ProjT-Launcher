@@ -779,8 +779,9 @@ define void @sdiv_v8i32(ptr %a, ptr %b)  {
 ; CHECK-NEXT:    ptrue p0.s, vl4
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    sdivr z0.s, p0/m, z0.s, z1.s
-; CHECK-NEXT:    sdiv z2.s, p0/m, z2.s, z3.s
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    sdiv z1.s, p0/m, z1.s, z3.s
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: sdiv_v8i32:
@@ -885,8 +886,9 @@ define void @sdiv_v4i64(ptr %a, ptr %b)  {
 ; CHECK-NEXT:    ptrue p0.d, vl2
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    sdivr z0.d, p0/m, z0.d, z1.d
-; CHECK-NEXT:    sdiv z2.d, p0/m, z2.d, z3.d
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    sdiv z1.d, p0/m, z1.d, z3.d
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: sdiv_v4i64:
@@ -1691,8 +1693,9 @@ define void @udiv_v8i32(ptr %a, ptr %b)  {
 ; CHECK-NEXT:    ptrue p0.s, vl4
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    udivr z0.s, p0/m, z0.s, z1.s
-; CHECK-NEXT:    udiv z2.s, p0/m, z2.s, z3.s
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    udiv z1.s, p0/m, z1.s, z3.s
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: udiv_v8i32:
@@ -1797,8 +1800,9 @@ define void @udiv_v4i64(ptr %a, ptr %b)  {
 ; CHECK-NEXT:    ptrue p0.d, vl2
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    udivr z0.d, p0/m, z0.d, z1.d
-; CHECK-NEXT:    udiv z2.d, p0/m, z2.d, z3.d
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    udiv z1.d, p0/m, z1.d, z3.d
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: udiv_v4i64:

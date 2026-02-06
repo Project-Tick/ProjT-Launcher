@@ -36,7 +36,6 @@
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/Specifiers.h"
-#include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/ArrayRef.h"
@@ -46,13 +45,13 @@
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Allocator.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/DOTGraphTraits.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/Format.h"
 #include "llvm/Support/GraphWriter.h"
 #include "llvm/Support/SaveAndRestore.h"
-#include "llvm/Support/TimeProfiler.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
 #include <memory>
@@ -71,19 +70,19 @@ static SourceLocation GetEndLoc(Decl *D) {
   return D->getLocation();
 }
 
-/// Returns true on constant values based around a single IntegerLiteral,
-/// CharacterLiteral, or FloatingLiteral. Allow for use of parentheses, integer
-/// casts, and negative signs.
+/// Returns true on constant values based around a single IntegerLiteral.
+/// Allow for use of parentheses, integer casts, and negative signs.
+/// FIXME: it would be good to unify this function with
+/// getIntegerLiteralSubexpressionValue at some point given the similarity
+/// between the functions.
 
-static bool IsLiteralConstantExpr(const Expr *E) {
+static bool IsIntegerLiteralConstantExpr(const Expr *E) {
   // Allow parentheses
   E = E->IgnoreParens();
 
-  // Allow conversions to different integer kind, and integer to floating point
-  // (to account for float comparing with int).
+  // Allow conversions to different integer kind.
   if (const auto *CE = dyn_cast<CastExpr>(E)) {
-    if (CE->getCastKind() != CK_IntegralCast &&
-        CE->getCastKind() != CK_IntegralToFloating)
+    if (CE->getCastKind() != CK_IntegralCast)
       return false;
     E = CE->getSubExpr();
   }
@@ -94,15 +93,16 @@ static bool IsLiteralConstantExpr(const Expr *E) {
       return false;
     E = UO->getSubExpr();
   }
-  return isa<IntegerLiteral, CharacterLiteral, FloatingLiteral>(E);
+
+  return isa<IntegerLiteral>(E);
 }
 
 /// Helper for tryNormalizeBinaryOperator. Attempts to extract an IntegerLiteral
-/// FloatingLiteral, CharacterLiteral or EnumConstantDecl from the given Expr.
-/// If it fails, returns nullptr.
-static const Expr *tryTransformToLiteralConstant(const Expr *E) {
+/// constant expression or EnumConstantDecl from the given Expr. If it fails,
+/// returns nullptr.
+static const Expr *tryTransformToIntOrEnumConstant(const Expr *E) {
   E = E->IgnoreParens();
-  if (IsLiteralConstantExpr(E))
+  if (IsIntegerLiteralConstantExpr(E))
     return E;
   if (auto *DR = dyn_cast<DeclRefExpr>(E->IgnoreParenImpCasts()))
     return isa<EnumConstantDecl>(DR->getDecl()) ? DR : nullptr;
@@ -119,7 +119,7 @@ tryNormalizeBinaryOperator(const BinaryOperator *B) {
   BinaryOperatorKind Op = B->getOpcode();
 
   const Expr *MaybeDecl = B->getLHS();
-  const Expr *Constant = tryTransformToLiteralConstant(B->getRHS());
+  const Expr *Constant = tryTransformToIntOrEnumConstant(B->getRHS());
   // Expr looked like `0 == Foo` instead of `Foo == 0`
   if (Constant == nullptr) {
     // Flip the operator
@@ -133,7 +133,7 @@ tryNormalizeBinaryOperator(const BinaryOperator *B) {
       Op = BO_GE;
 
     MaybeDecl = B->getRHS();
-    Constant = tryTransformToLiteralConstant(B->getLHS());
+    Constant = tryTransformToIntOrEnumConstant(B->getLHS());
   }
 
   return std::make_tuple(MaybeDecl, Op, Constant);
@@ -433,7 +433,7 @@ class reverse_children {
   ArrayRef<Stmt *> children;
 
 public:
-  reverse_children(Stmt *S, ASTContext &Ctx);
+  reverse_children(Stmt *S);
 
   using iterator = ArrayRef<Stmt *>::reverse_iterator;
 
@@ -443,44 +443,21 @@ public:
 
 } // namespace
 
-reverse_children::reverse_children(Stmt *S, ASTContext &Ctx) {
+reverse_children::reverse_children(Stmt *S) {
   if (CallExpr *CE = dyn_cast<CallExpr>(S)) {
     children = CE->getRawSubExprs();
     return;
   }
-
   switch (S->getStmtClass()) {
-  // Note: Fill in this switch with more cases we want to optimize.
-  case Stmt::InitListExprClass: {
-    InitListExpr *IE = cast<InitListExpr>(S);
-    children = llvm::ArrayRef(reinterpret_cast<Stmt **>(IE->getInits()),
-                              IE->getNumInits());
-    return;
-  }
-
-  case Stmt::AttributedStmtClass: {
-    // For an attributed stmt, the "children()" returns only the NullStmt
-    // (;) but semantically the "children" are supposed to be the
-    // expressions _within_ i.e. the two square brackets i.e. [[ HERE ]]
-    // so we add the subexpressions first, _then_ add the "children"
-    auto *AS = cast<AttributedStmt>(S);
-    for (const auto *Attr : AS->getAttrs()) {
-      if (const auto *AssumeAttr = dyn_cast<CXXAssumeAttr>(Attr)) {
-        Expr *AssumeExpr = AssumeAttr->getAssumption();
-        if (!AssumeExpr->HasSideEffects(Ctx)) {
-          childrenBuf.push_back(AssumeExpr);
-        }
-      }
+    // Note: Fill in this switch with more cases we want to optimize.
+    case Stmt::InitListExprClass: {
+      InitListExpr *IE = cast<InitListExpr>(S);
+      children = llvm::ArrayRef(reinterpret_cast<Stmt **>(IE->getInits()),
+                                IE->getNumInits());
+      return;
     }
-
-    // Visit the actual children AST nodes.
-    // For CXXAssumeAttrs, this is always a NullStmt.
-    llvm::append_range(childrenBuf, AS->children());
-    children = childrenBuf;
-    return;
-  }
-  default:
-    break;
+    default:
+      break;
   }
 
   // Default case for all other statements.
@@ -899,7 +876,8 @@ private:
       return;
     }
 
-    B->appendStmt(ME, cfg->getBumpVectorContext());
+    B->appendStmt(const_cast<ObjCMessageExpr *>(ME),
+                  cfg->getBumpVectorContext());
   }
 
   void appendTemporaryDtor(CFGBlock *B, CXXBindTemporaryExpr *E) {
@@ -1081,10 +1059,10 @@ private:
     return std::nullopt;
   }
 
-  template <typename APFloatOrInt>
   TryResult analyzeLogicOperatorCondition(BinaryOperatorKind Relation,
-                                          const APFloatOrInt &Value1,
-                                          const APFloatOrInt &Value2) {
+                                          const llvm::APSInt &Value1,
+                                          const llvm::APSInt &Value2) {
+    assert(Value1.isSigned() == Value2.isSigned());
     switch (Relation) {
       default:
         return TryResult();
@@ -1169,142 +1147,82 @@ private:
     if (!areExprTypesCompatible(NumExpr1, NumExpr2))
       return {};
 
-    // Check that the two expressions are of the same type.
     Expr::EvalResult L1Result, L2Result;
-    if (!NumExpr1->EvaluateAsRValue(L1Result, *Context) ||
-        !NumExpr2->EvaluateAsRValue(L2Result, *Context))
+    if (!NumExpr1->EvaluateAsInt(L1Result, *Context) ||
+        !NumExpr2->EvaluateAsInt(L2Result, *Context))
       return {};
 
-    // Check whether expression is always true/false by evaluating the
-    // following
+    llvm::APSInt L1 = L1Result.Val.getInt();
+    llvm::APSInt L2 = L2Result.Val.getInt();
+
+    // Can't compare signed with unsigned or with different bit width.
+    if (L1.isSigned() != L2.isSigned() || L1.getBitWidth() != L2.getBitWidth())
+      return {};
+
+    // Values that will be used to determine if result of logical
+    // operator is always true/false
+    const llvm::APSInt Values[] = {
+      // Value less than both Value1 and Value2
+      llvm::APSInt::getMinValue(L1.getBitWidth(), L1.isUnsigned()),
+      // L1
+      L1,
+      // Value between Value1 and Value2
+      ((L1 < L2) ? L1 : L2) + llvm::APSInt(llvm::APInt(L1.getBitWidth(), 1),
+                              L1.isUnsigned()),
+      // L2
+      L2,
+      // Value greater than both Value1 and Value2
+      llvm::APSInt::getMaxValue(L1.getBitWidth(), L1.isUnsigned()),
+    };
+
+    // Check whether expression is always true/false by evaluating the following
     // * variable x is less than the smallest literal.
     // * variable x is equal to the smallest literal.
     // * Variable x is between smallest and largest literal.
     // * Variable x is equal to the largest literal.
     // * Variable x is greater than largest literal.
-    // This isn't technically correct, as it doesn't take into account the
-    // possibility that the variable could be NaN. However, this is a very rare
-    // case.
-    auto AnalyzeConditions = [&](const auto &Values,
-                                 const BinaryOperatorKind *BO1,
-                                 const BinaryOperatorKind *BO2) -> TryResult {
-      bool AlwaysTrue = true, AlwaysFalse = true;
-      // Track value of both subexpressions.  If either side is always
-      // true/false, another warning should have already been emitted.
-      bool LHSAlwaysTrue = true, LHSAlwaysFalse = true;
-      bool RHSAlwaysTrue = true, RHSAlwaysFalse = true;
+    bool AlwaysTrue = true, AlwaysFalse = true;
+    // Track value of both subexpressions.  If either side is always
+    // true/false, another warning should have already been emitted.
+    bool LHSAlwaysTrue = true, LHSAlwaysFalse = true;
+    bool RHSAlwaysTrue = true, RHSAlwaysFalse = true;
+    for (const llvm::APSInt &Value : Values) {
+      TryResult Res1, Res2;
+      Res1 = analyzeLogicOperatorCondition(BO1, Value, L1);
+      Res2 = analyzeLogicOperatorCondition(BO2, Value, L2);
 
-      for (const auto &Value : Values) {
-        TryResult Res1 =
-            analyzeLogicOperatorCondition(*BO1, Value, Values[1] /* L1 */);
-        TryResult Res2 =
-            analyzeLogicOperatorCondition(*BO2, Value, Values[3] /* L2 */);
-
-        if (!Res1.isKnown() || !Res2.isKnown())
-          return {};
-
-        const bool IsAnd = B->getOpcode() == BO_LAnd;
-        const bool Combine = IsAnd ? (Res1.isTrue() && Res2.isTrue())
-                                   : (Res1.isTrue() || Res2.isTrue());
-
-        AlwaysTrue &= Combine;
-        AlwaysFalse &= !Combine;
-
-        LHSAlwaysTrue &= Res1.isTrue();
-        LHSAlwaysFalse &= Res1.isFalse();
-        RHSAlwaysTrue &= Res2.isTrue();
-        RHSAlwaysFalse &= Res2.isFalse();
-      }
-
-      if (AlwaysTrue || AlwaysFalse) {
-        if (!LHSAlwaysTrue && !LHSAlwaysFalse && !RHSAlwaysTrue &&
-            !RHSAlwaysFalse && BuildOpts.Observer) {
-          BuildOpts.Observer->compareAlwaysTrue(B, AlwaysTrue);
-        }
-        return TryResult(AlwaysTrue);
-      }
-      return {};
-    };
-
-    // Handle integer comparison.
-    if (L1Result.Val.getKind() == APValue::Int &&
-        L2Result.Val.getKind() == APValue::Int) {
-      llvm::APSInt L1 = L1Result.Val.getInt();
-      llvm::APSInt L2 = L2Result.Val.getInt();
-
-      // Can't compare signed with unsigned or with different bit width.
-      if (L1.isSigned() != L2.isSigned() ||
-          L1.getBitWidth() != L2.getBitWidth())
+      if (!Res1.isKnown() || !Res2.isKnown())
         return {};
 
-      // Values that will be used to determine if result of logical
-      // operator is always true/false
-      const llvm::APSInt Values[] = {
-          // Value less than both Value1 and Value2
-          llvm::APSInt::getMinValue(L1.getBitWidth(), L1.isUnsigned()),
-          // L1
-          L1,
-          // Value between Value1 and Value2
-          ((L1 < L2) ? L1 : L2) +
-              llvm::APSInt(llvm::APInt(L1.getBitWidth(), 1), L1.isUnsigned()),
-          // L2
-          L2,
-          // Value greater than both Value1 and Value2
-          llvm::APSInt::getMaxValue(L1.getBitWidth(), L1.isUnsigned()),
-      };
+      if (B->getOpcode() == BO_LAnd) {
+        AlwaysTrue &= (Res1.isTrue() && Res2.isTrue());
+        AlwaysFalse &= !(Res1.isTrue() && Res2.isTrue());
+      } else {
+        AlwaysTrue &= (Res1.isTrue() || Res2.isTrue());
+        AlwaysFalse &= !(Res1.isTrue() || Res2.isTrue());
+      }
 
-      return AnalyzeConditions(Values, &BO1, &BO2);
+      LHSAlwaysTrue &= Res1.isTrue();
+      LHSAlwaysFalse &= Res1.isFalse();
+      RHSAlwaysTrue &= Res2.isTrue();
+      RHSAlwaysFalse &= Res2.isFalse();
     }
 
-    // Handle float comparison.
-    if (L1Result.Val.getKind() == APValue::Float &&
-        L2Result.Val.getKind() == APValue::Float) {
-      llvm::APFloat L1 = L1Result.Val.getFloat();
-      llvm::APFloat L2 = L2Result.Val.getFloat();
-      // Note that L1 and L2 do not necessarily have the same type.  For example
-      // `x != 0 || x != 1.0`, if `x` is a float16, the two literals `0` and
-      // `1.0` are float16 and double respectively.  In this case, we should do
-      // a conversion before comparing L1 and L2.  Their types must be
-      // compatible since they are comparing with the same DRE.
-      int Order = Context->getFloatingTypeSemanticOrder(NumExpr1->getType(),
-                                                        NumExpr2->getType());
-      bool Ignored = false;
-
-      if (Order > 0) {
-        // type rank L1 > L2:
-        if (llvm::APFloat::opOK !=
-            L2.convert(L1.getSemantics(), llvm::APFloat::rmNearestTiesToEven,
-                       &Ignored))
-          return {};
-      } else if (Order < 0)
-        // type rank L1 < L2:
-        if (llvm::APFloat::opOK !=
-            L1.convert(L2.getSemantics(), llvm::APFloat::rmNearestTiesToEven,
-                       &Ignored))
-          return {};
-
-      llvm::APFloat MidValue = L1;
-      MidValue.add(L2, llvm::APFloat::rmNearestTiesToEven);
-      MidValue.divide(llvm::APFloat(MidValue.getSemantics(), "2.0"),
-                      llvm::APFloat::rmNearestTiesToEven);
-
-      const llvm::APFloat Values[] = {
-          llvm::APFloat::getSmallest(L1.getSemantics(), true), L1, MidValue, L2,
-          llvm::APFloat::getLargest(L2.getSemantics(), false),
-      };
-
-      return AnalyzeConditions(Values, &BO1, &BO2);
+    if (AlwaysTrue || AlwaysFalse) {
+      if (!LHSAlwaysTrue && !LHSAlwaysFalse && !RHSAlwaysTrue &&
+          !RHSAlwaysFalse && BuildOpts.Observer)
+        BuildOpts.Observer->compareAlwaysTrue(B, AlwaysTrue);
+      return TryResult(AlwaysTrue);
     }
-
     return {};
   }
 
   /// A bitwise-or with a non-zero constant always evaluates to true.
   TryResult checkIncorrectBitwiseOrOperator(const BinaryOperator *B) {
     const Expr *LHSConstant =
-        tryTransformToLiteralConstant(B->getLHS()->IgnoreParenImpCasts());
+        tryTransformToIntOrEnumConstant(B->getLHS()->IgnoreParenImpCasts());
     const Expr *RHSConstant =
-        tryTransformToLiteralConstant(B->getRHS()->IgnoreParenImpCasts());
+        tryTransformToIntOrEnumConstant(B->getRHS()->IgnoreParenImpCasts());
 
     if ((LHSConstant && RHSConstant) || (!LHSConstant && !RHSConstant))
       return {};
@@ -1667,12 +1585,6 @@ std::unique_ptr<CFG> CFGBuilder::buildCFG(const Decl *D, Stmt *Statement) {
   assert(Succ == &cfg->getExit());
   Block = nullptr;  // the EXIT block is empty.  Create all other blocks lazily.
 
-  // Add parameters to the initial scope to handle their dtos and lifetime ends.
-  LocalScope *paramScope = nullptr;
-  if (const auto *FD = dyn_cast_or_null<FunctionDecl>(D))
-    for (ParmVarDecl *PD : FD->parameters())
-      paramScope = addLocalScopeForVarDecl(PD, paramScope);
-
   if (BuildOpts.AddImplicitDtors)
     if (const CXXDestructorDecl *DD = dyn_cast_or_null<CXXDestructorDecl>(D))
       addImplicitDtorsForDestructor(DD);
@@ -1760,9 +1672,10 @@ std::unique_ptr<CFG> CFGBuilder::buildCFG(const Decl *D, Stmt *Statement) {
 
   // Add successors to the Indirect Goto Dispatch block (if we have one).
   if (CFGBlock *B = cfg->getIndirectGotoBlock())
-    for (LabelDecl *LD : AddressTakenLabels) {
+    for (LabelSetTy::iterator I = AddressTakenLabels.begin(),
+                              E = AddressTakenLabels.end(); I != E; ++I ) {
       // Lookup the target block.
-      LabelMapTy::iterator LI = LabelMap.find(LD);
+      LabelMapTy::iterator LI = LabelMap.find(*I);
 
       // If there is no target block that contains label, then we are looking
       // at an incomplete AST.  Handle this by not registering a successor.
@@ -2128,8 +2041,6 @@ void CFGBuilder::addImplicitDtorsForDestructor(const CXXDestructorDecl *DD) {
   }
 
   // First destroy member objects.
-  if (RD->isUnion())
-    return;
   for (auto *FI : RD->fields()) {
     // Check for constant size array. Set type to array element type.
     QualType QT = FI->getType();
@@ -2251,11 +2162,6 @@ LocalScope* CFGBuilder::addLocalScopeForVarDecl(VarDecl *VD,
 
   // Check if variable is local.
   if (!VD->hasLocalStorage())
-    return Scope;
-
-  // Reference parameters are aliases to objects that live elsewhere, so they
-  // don't require automatic destruction or lifetime tracking.
-  if (isa<ParmVarDecl>(VD) && VD->getType()->isReferenceType())
     return Scope;
 
   if (!BuildOpts.AddLifetime && !BuildOpts.AddScopes &&
@@ -2525,7 +2431,7 @@ CFGBlock *CFGBuilder::VisitChildren(Stmt *S) {
 
   // Visit the children in their reverse order so that they appear in
   // left-to-right (natural) order in the CFG.
-  reverse_children RChildren(S, *Context);
+  reverse_children RChildren(S);
   for (Stmt *Child : RChildren) {
     if (Child)
       if (CFGBlock *R = Visit(Child))
@@ -2541,7 +2447,7 @@ CFGBlock *CFGBuilder::VisitInitListExpr(InitListExpr *ILE, AddStmtChoice asc) {
   }
   CFGBlock *B = Block;
 
-  reverse_children RChildren(ILE, *Context);
+  reverse_children RChildren(ILE);
   for (Stmt *Child : RChildren) {
     if (!Child)
       continue;
@@ -2576,14 +2482,6 @@ static bool isFallthroughStatement(const AttributedStmt *A) {
   return isFallthrough;
 }
 
-static bool isCXXAssumeAttr(const AttributedStmt *A) {
-  bool hasAssumeAttr = hasSpecificAttr<CXXAssumeAttr>(A->getAttrs());
-
-  assert((!hasAssumeAttr || isa<NullStmt>(A->getSubStmt())) &&
-         "expected [[assume]] not to have children");
-  return hasAssumeAttr;
-}
-
 CFGBlock *CFGBuilder::VisitAttributedStmt(AttributedStmt *A,
                                           AddStmtChoice asc) {
   // AttributedStmts for [[likely]] can have arbitrary statements as children,
@@ -2594,8 +2492,7 @@ CFGBlock *CFGBuilder::VisitAttributedStmt(AttributedStmt *A,
   // So only add the AttributedStmt for FallThrough, which has CFG effects and
   // also no children, and omit the others. None of the other current StmtAttrs
   // have semantic meaning for the CFG.
-  bool isInterestingAttribute = isFallthroughStatement(A) || isCXXAssumeAttr(A);
-  if (isInterestingAttribute && asc.alwaysAdd(*this, A)) {
+  if (isFallthroughStatement(A) && asc.alwaysAdd(*this, A)) {
     autoCreateBlock();
     appendStmt(Block, A);
   }
@@ -2801,16 +2698,6 @@ static bool CanThrow(Expr *E, ASTContext &Ctx) {
   return true;
 }
 
-static bool isBuiltinAssumeWithSideEffects(const ASTContext &Ctx,
-                                           const CallExpr *CE) {
-  unsigned BuiltinID = CE->getBuiltinCallee();
-  if (BuiltinID != Builtin::BI__assume &&
-      BuiltinID != Builtin::BI__builtin_assume)
-    return false;
-
-  return CE->getArg(0)->HasSideEffects(Ctx);
-}
-
 CFGBlock *CFGBuilder::VisitCallExpr(CallExpr *C, AddStmtChoice asc) {
   // Compute the callee type.
   QualType calleeType = C->getCallee()->getType();
@@ -2845,13 +2732,11 @@ CFGBlock *CFGBuilder::VisitCallExpr(CallExpr *C, AddStmtChoice asc) {
     if (!FD->isVariadic())
       findConstructionContextsForArguments(C);
 
-    if (FD->isNoReturn() || FD->isAnalyzerNoReturn() ||
-        C->isBuiltinAssumeFalse(*Context))
+    if (FD->isNoReturn() || C->isBuiltinAssumeFalse(*Context))
       NoReturn = true;
     if (FD->hasAttr<NoThrowAttr>())
       AddEHEdge = false;
-    if (isBuiltinAssumeWithSideEffects(FD->getASTContext(), C) ||
-        FD->getBuiltinID() == Builtin::BI__builtin_object_size ||
+    if (FD->getBuiltinID() == Builtin::BI__builtin_object_size ||
         FD->getBuiltinID() == Builtin::BI__builtin_dynamic_object_size)
       OmitArguments = true;
   }
@@ -4528,13 +4413,10 @@ CFGBlock *CFGBuilder::VisitSwitchStmt(SwitchStmt *Terminator) {
   //
   // Note: We add a successor to a switch that is considered covered yet has no
   //       case statements if the enumeration has no enumerators.
-  //       We also consider this successor reachable if
-  //       BuildOpts.SwitchReqDefaultCoveredEnum is true.
   bool SwitchAlwaysHasSuccessor = false;
   SwitchAlwaysHasSuccessor |= switchExclusivelyCovered;
-  SwitchAlwaysHasSuccessor |=
-      !BuildOpts.AssumeReachableDefaultInSwitchStatements &&
-      Terminator->isAllEnumCasesCovered() && Terminator->getSwitchCaseList();
+  SwitchAlwaysHasSuccessor |= Terminator->isAllEnumCasesCovered() &&
+                              Terminator->getSwitchCaseList();
   addSuccessor(SwitchTerminatedBlock, DefaultCaseBlock,
                !SwitchAlwaysHasSuccessor);
 
@@ -5360,7 +5242,6 @@ CFGBlock *CFG::createBlock() {
 /// buildCFG - Constructs a CFG from an AST.
 std::unique_ptr<CFG> CFG::buildCFG(const Decl *D, Stmt *Statement,
                                    ASTContext *C, const BuildOptions &BO) {
-  llvm::TimeTraceScope TimeProfile("BuildCFG");
   CFGBuilder Builder(C, BO);
   return Builder.buildCFG(D, Statement);
 }
@@ -5629,15 +5510,8 @@ public:
   bool handleDecl(const Decl *D, raw_ostream &OS) {
     DeclMapTy::iterator I = DeclMap.find(D);
 
-    if (I == DeclMap.end()) {
-      // ParmVarDecls are not declared in the CFG itself, so they do not appear
-      // in DeclMap.
-      if (auto *PVD = dyn_cast_or_null<ParmVarDecl>(D)) {
-        OS << "[Parm: " << PVD->getNameAsString() << "]";
-        return true;
-      }
+    if (I == DeclMap.end())
       return false;
-    }
 
     if (currentBlock >= 0 && I->second.first == (unsigned) currentBlock
                           && I->second.second == currStmt) {
@@ -5884,17 +5758,16 @@ static void print_construction_context(raw_ostream &OS,
 }
 
 static void print_elem(raw_ostream &OS, StmtPrinterHelper &Helper,
-                       const CFGElement &E, bool TerminateWithNewLine = true);
+                       const CFGElement &E);
 
-void CFGElement::dumpToStream(llvm::raw_ostream &OS,
-                              bool TerminateWithNewLine) const {
+void CFGElement::dumpToStream(llvm::raw_ostream &OS) const {
   LangOptions LangOpts;
   StmtPrinterHelper Helper(nullptr, LangOpts);
-  print_elem(OS, Helper, *this, TerminateWithNewLine);
+  print_elem(OS, Helper, *this);
 }
 
 static void print_elem(raw_ostream &OS, StmtPrinterHelper &Helper,
-                       const CFGElement &E, bool TerminateWithNewLine) {
+                       const CFGElement &E) {
   switch (E.getKind()) {
   case CFGElement::Kind::Statement:
   case CFGElement::Kind::CXXRecordTypedCall:
@@ -5911,9 +5784,7 @@ static void print_elem(raw_ostream &OS, StmtPrinterHelper &Helper,
       if (Children.begin() != Children.end()) {
         OS << "({ ... ; ";
         Helper.handledStmt(*SE->getSubStmt()->body_rbegin(),OS);
-        OS << " })";
-        if (TerminateWithNewLine)
-          OS << '\n';
+        OS << " })\n";
         return;
       }
     }
@@ -5922,8 +5793,7 @@ static void print_elem(raw_ostream &OS, StmtPrinterHelper &Helper,
       if (B->getOpcode() == BO_Comma) {
         OS << "... , ";
         Helper.handledStmt(B->getRHS(),OS);
-        if (TerminateWithNewLine)
-          OS << '\n';
+        OS << '\n';
         return;
       }
     }
@@ -5951,14 +5821,15 @@ static void print_elem(raw_ostream &OS, StmtPrinterHelper &Helper,
     }
 
     // Expressions need a newline.
-    if (isa<Expr>(S) && TerminateWithNewLine)
+    if (isa<Expr>(S))
       OS << '\n';
 
-    return;
+    break;
   }
 
   case CFGElement::Kind::Initializer:
     print_initializer(OS, Helper, E.castAs<CFGInitializer>().getInitializer());
+    OS << '\n';
     break;
 
   case CFGElement::Kind::AutomaticObjectDtor: {
@@ -5972,44 +5843,43 @@ static void print_elem(raw_ostream &OS, StmtPrinterHelper &Helper,
 
     OS << ".~";
     T.getUnqualifiedType().print(OS, PrintingPolicy(Helper.getLangOpts()));
-    OS << "() (Implicit destructor)";
+    OS << "() (Implicit destructor)\n";
     break;
   }
 
   case CFGElement::Kind::CleanupFunction:
     OS << "CleanupFunction ("
-       << E.castAs<CFGCleanupFunction>().getFunctionDecl()->getName() << ")";
+       << E.castAs<CFGCleanupFunction>().getFunctionDecl()->getName() << ")\n";
     break;
 
   case CFGElement::Kind::LifetimeEnds:
     Helper.handleDecl(E.castAs<CFGLifetimeEnds>().getVarDecl(), OS);
-    OS << " (Lifetime ends)";
+    OS << " (Lifetime ends)\n";
     break;
 
   case CFGElement::Kind::LoopExit:
-    OS << E.castAs<CFGLoopExit>().getLoopStmt()->getStmtClassName()
-       << " (LoopExit)";
+    OS << E.castAs<CFGLoopExit>().getLoopStmt()->getStmtClassName() << " (LoopExit)\n";
     break;
 
   case CFGElement::Kind::ScopeBegin:
     OS << "CFGScopeBegin(";
     if (const VarDecl *VD = E.castAs<CFGScopeBegin>().getVarDecl())
       OS << VD->getQualifiedNameAsString();
-    OS << ")";
+    OS << ")\n";
     break;
 
   case CFGElement::Kind::ScopeEnd:
     OS << "CFGScopeEnd(";
     if (const VarDecl *VD = E.castAs<CFGScopeEnd>().getVarDecl())
       OS << VD->getQualifiedNameAsString();
-    OS << ")";
+    OS << ")\n";
     break;
 
   case CFGElement::Kind::NewAllocator:
     OS << "CFGNewAllocator(";
     if (const CXXNewExpr *AllocExpr = E.castAs<CFGNewAllocator>().getAllocatorExpr())
       AllocExpr->getType().print(OS, PrintingPolicy(Helper.getLangOpts()));
-    OS << ")";
+    OS << ")\n";
     break;
 
   case CFGElement::Kind::DeleteDtor: {
@@ -6021,14 +5891,14 @@ static void print_elem(raw_ostream &OS, StmtPrinterHelper &Helper,
         const_cast<CXXDeleteExpr*>(DE.getDeleteExpr());
     Helper.handledStmt(cast<Stmt>(DelExpr->getArgument()), OS);
     OS << "->~" << RD->getName().str() << "()";
-    OS << " (Implicit destructor)";
+    OS << " (Implicit destructor)\n";
     break;
   }
 
   case CFGElement::Kind::BaseDtor: {
     const CXXBaseSpecifier *BS = E.castAs<CFGBaseDtor>().getBaseSpecifier();
     OS << "~" << BS->getType()->getAsCXXRecordDecl()->getName() << "()";
-    OS << " (Base object destructor)";
+    OS << " (Base object destructor)\n";
     break;
   }
 
@@ -6037,7 +5907,7 @@ static void print_elem(raw_ostream &OS, StmtPrinterHelper &Helper,
     const Type *T = FD->getType()->getBaseElementTypeUnsafe();
     OS << "this->" << FD->getName();
     OS << ".~" << T->getAsCXXRecordDecl()->getName() << "()";
-    OS << " (Member object destructor)";
+    OS << " (Member object destructor)\n";
     break;
   }
 
@@ -6046,12 +5916,10 @@ static void print_elem(raw_ostream &OS, StmtPrinterHelper &Helper,
         E.castAs<CFGTemporaryDtor>().getBindTemporaryExpr();
     OS << "~";
     BT->getType().print(OS, PrintingPolicy(Helper.getLangOpts()));
-    OS << "() (Temporary object destructor)";
+    OS << "() (Temporary object destructor)\n";
     break;
   }
   }
-  if (TerminateWithNewLine)
-    OS << '\n';
 }
 
 static void print_block(raw_ostream &OS, const CFG* cfg,
@@ -6345,7 +6213,8 @@ bool CFGBlock::isInevitablySinking() const {
 
   DFSWorkList.push_back(StartBlk);
   while (!DFSWorkList.empty()) {
-    const CFGBlock *Blk = DFSWorkList.pop_back_val();
+    const CFGBlock *Blk = DFSWorkList.back();
+    DFSWorkList.pop_back();
     Visited.insert(Blk);
 
     // If at least one path reaches the CFG exit, it means that control is
@@ -6398,12 +6267,12 @@ const Expr *CFGBlock::getLastCondition() const {
   return cast<Expr>(Cond)->IgnoreParens();
 }
 
-const Stmt *CFGBlock::getTerminatorCondition(bool StripParens) const {
-  const Stmt *Terminator = getTerminatorStmt();
+Stmt *CFGBlock::getTerminatorCondition(bool StripParens) {
+  Stmt *Terminator = getTerminatorStmt();
   if (!Terminator)
     return nullptr;
 
-  const Expr *E = nullptr;
+  Expr *E = nullptr;
 
   switch (Terminator->getStmtClass()) {
     default:

@@ -111,12 +111,16 @@ SUnit *ScheduleDAGSDNodes::Clone(SUnit *Old) {
 static void CheckForPhysRegDependency(SDNode *Def, SDNode *User, unsigned Op,
                                       const TargetRegisterInfo *TRI,
                                       const TargetInstrInfo *TII,
-                                      MCRegister &PhysReg, int &Cost) {
+                                      const TargetLowering &TLI,
+                                      unsigned &PhysReg, int &Cost) {
   if (Op != 2 || User->getOpcode() != ISD::CopyToReg)
     return;
 
-  Register Reg = cast<RegisterSDNode>(User->getOperand(1))->getReg();
-  if (Reg.isVirtual())
+  unsigned Reg = cast<RegisterSDNode>(User->getOperand(1))->getReg();
+  if (TLI.checkForPhysRegDependency(Def, User, Op, TRI, TII, PhysReg, Cost))
+    return;
+
+  if (Register::isVirtualRegister(Reg))
     return;
 
   unsigned ResNo = User->getOperand(2).getResNo();
@@ -129,10 +133,10 @@ static void CheckForPhysRegDependency(SDNode *Def, SDNode *User, unsigned Op,
       PhysReg = Reg;
   }
 
-  if (PhysReg) {
+  if (PhysReg != 0) {
     const TargetRegisterClass *RC =
         TRI->getMinimalPhysRegClass(Reg, Def->getSimpleValueType(ResNo));
-    Cost = RC->expensiveOrImpossibleToCopy() ? -1 : RC->getCopyCost();
+    Cost = RC->getCopyCost();
   }
 }
 
@@ -483,18 +487,20 @@ void ScheduleDAGSDNodes::AddSchedEdges() {
         assert(OpVT != MVT::Glue && "Glued nodes should be in same sunit!");
         bool isChain = OpVT == MVT::Other;
 
-        MCRegister PhysReg;
+        unsigned PhysReg = 0;
         int Cost = 1;
         // Determine if this is a physical register dependency.
-        CheckForPhysRegDependency(OpN, N, i, TRI, TII, PhysReg, Cost);
-        assert((!PhysReg || !isChain) && "Chain dependence via physreg data?");
+        const TargetLowering &TLI = DAG->getTargetLoweringInfo();
+        CheckForPhysRegDependency(OpN, N, i, TRI, TII, TLI, PhysReg, Cost);
+        assert((PhysReg == 0 || !isChain) &&
+               "Chain dependence via physreg data?");
         // FIXME: See ScheduleDAGSDNodes::EmitCopyFromReg. For now, scheduler
         // emits a copy from the physical register to a virtual register unless
         // it requires a cross class copy (cost < 0). That means we are only
         // treating "expensive to copy" register dependency as physical register
         // dependency. This may change in the future though.
         if (Cost >= 0 && !StressSched)
-          PhysReg = MCRegister();
+          PhysReg = 0;
 
         // If this is a ctrl dep, latency is 1.
         unsigned OpLatency = isChain ? 1 : OpSU->Latency;
@@ -658,8 +664,8 @@ void ScheduleDAGSDNodes::computeOperandLatency(SDNode *Def, SDNode *Use,
       TII->getOperandLatency(InstrItins, Def, DefIdx, Use, OpIdx);
   if (Latency > 1U && Use->getOpcode() == ISD::CopyToReg &&
       !BB->succ_empty()) {
-    Register Reg = cast<RegisterSDNode>(Use->getOperand(1))->getReg();
-    if (Reg.isVirtual())
+    unsigned Reg = cast<RegisterSDNode>(Use->getOperand(1))->getReg();
+    if (Register::isVirtualRegister(Reg))
       // This copy is a liveout value. It is likely coalesced, so reduce the
       // latency so not to penalize the def.
       // FIXME: need target specific adjustment here?
@@ -883,8 +889,7 @@ EmitSchedule(MachineBasicBlock::iterator &InsertPos) {
     }
 
     if (MI->isCandidateForAdditionalCallInfo()) {
-      if (DAG->getTarget().Options.EmitCallSiteInfo ||
-          DAG->getTarget().Options.EmitCallGraphSection)
+      if (DAG->getTarget().Options.EmitCallSiteInfo)
         MF.addCallSiteInfo(MI, DAG->getCallSiteInfo(Node));
 
       if (auto CalledGlobal = DAG->getCalledGlobal(Node))

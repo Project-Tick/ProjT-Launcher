@@ -398,7 +398,7 @@ public:
   }
 
   explicit Complex19(int) {
-    // CHECK-FIXES: explicit Complex19(int) : n(12) {
+    // CHECK-FIXES: Complex19(int) : n(12) {
     n = 12;
     // CHECK-MESSAGES: :[[@LINE-1]]:5: warning: 'n' should be initialized in a member initializer of the constructor [cppcoreguidelines-prefer-member-initializer]
     // CHECK-FIXES: {{^\ *$}}
@@ -650,16 +650,3 @@ struct InitFromBindingDecl {
   }
 };
 } // namespace GH82970
-
-struct A {
-  int m;
-};
-
-struct B : A {
-  B() { m = 0; }
-};
-
-template <class T>
-struct C : A {
-  C() { m = 0; }
-};

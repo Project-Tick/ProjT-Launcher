@@ -13,42 +13,55 @@
 //   getline(basic_istream<charT,traits>& is,
 //           basic_string<charT,traits,Allocator>& str);
 
-#include <cassert>
-#include <sstream>
 #include <string>
+#include <sstream>
+#include <cassert>
 
-#include "make_string.h"
 #include "min_allocator.h"
-#include "stream_types.h"
 #include "test_macros.h"
 
-template <class CharT, class Alloc, class Stream, class Streambuf>
-void test() {
-  using string_type    = std::basic_string<CharT, std::char_traits<CharT>, Alloc>;
-  using stream_type    = std::basic_istream<CharT>;
-  using streambuf_type = Streambuf;
-
+template <template <class> class Alloc>
+void test_string() {
+  using S = std::basic_string<char, std::char_traits<char>, Alloc<char> >;
+#ifndef TEST_HAS_NO_WIDE_CHARACTERS
+  using WS = std::basic_string<wchar_t, std::char_traits<wchar_t>, Alloc<wchar_t> >;
+#endif
   {
-    streambuf_type sb(MAKE_CSTRING(CharT, " abc\n  def\n   ghij"));
-    stream_type in(&sb);
-    string_type s(MAKE_CSTRING(CharT, "initial text"));
+    std::istringstream in(" abc\n  def\n   ghij");
+    S s("initial text");
     std::getline(in, s);
     assert(in.good());
-    assert(s == MAKE_CSTRING(CharT, " abc"));
+    assert(s == " abc");
     std::getline(in, s);
     assert(in.good());
-    assert(s == MAKE_CSTRING(CharT, "  def"));
+    assert(s == "  def");
     std::getline(in, s);
     assert(in.eof());
-    assert(s == MAKE_CSTRING(CharT, "   ghij"));
+    assert(s == "   ghij");
   }
+#ifndef TEST_HAS_NO_WIDE_CHARACTERS
+  {
+    std::wistringstream in(L" abc\n  def\n   ghij");
+    WS s(L"initial text");
+    std::getline(in, s);
+    assert(in.good());
+    assert(s == L" abc");
+    std::getline(in, s);
+    assert(in.good());
+    assert(s == L"  def");
+    std::getline(in, s);
+    assert(in.eof());
+    assert(s == L"   ghij");
+  }
+#endif
+
 #ifndef TEST_HAS_NO_EXCEPTIONS
   {
-    streambuf_type sb(MAKE_CSTRING(CharT, "hello"));
-    stream_type is(&sb);
+    std::basic_stringbuf<char> sb("hello");
+    std::basic_istream<char> is(&sb);
     is.exceptions(std::ios_base::eofbit);
 
-    string_type s;
+    S s;
     bool threw = false;
     try {
       std::getline(is, s);
@@ -60,14 +73,36 @@ void test() {
     assert(!is.fail());
     assert(is.eof());
     assert(threw);
-    assert(s == MAKE_CSTRING(CharT, "hello"));
+    assert(s == "hello");
   }
+#  ifndef TEST_HAS_NO_WIDE_CHARACTERS
   {
-    streambuf_type sb(MAKE_CSTRING(CharT, ""));
-    stream_type is(&sb);
+    std::basic_stringbuf<wchar_t> sb(L"hello");
+    std::basic_istream<wchar_t> is(&sb);
+    is.exceptions(std::ios_base::eofbit);
+
+    WS s;
+    bool threw = false;
+    try {
+      std::getline(is, s);
+    } catch (std::ios::failure const&) {
+      threw = true;
+    }
+
+    assert(!is.bad());
+    assert(!is.fail());
+    assert(is.eof());
+    assert(threw);
+    assert(s == L"hello");
+  }
+#  endif
+
+  {
+    std::basic_stringbuf<char> sb;
+    std::basic_istream<char> is(&sb);
     is.exceptions(std::ios_base::failbit);
 
-    string_type s;
+    S s;
     bool threw = false;
     try {
       std::getline(is, s);
@@ -79,48 +114,37 @@ void test() {
     assert(is.fail());
     assert(is.eof());
     assert(threw);
-    assert(s == MAKE_CSTRING(CharT, ""));
+    assert(s == "");
   }
+#  ifndef TEST_HAS_NO_WIDE_CHARACTERS
+  {
+    std::basic_stringbuf<wchar_t> sb;
+    std::basic_istream<wchar_t> is(&sb);
+    is.exceptions(std::ios_base::failbit);
+
+    WS s;
+    bool threw = false;
+    try {
+      std::getline(is, s);
+    } catch (std::ios::failure const&) {
+      threw = true;
+    }
+
+    assert(!is.bad());
+    assert(is.fail());
+    assert(is.eof());
+    assert(threw);
+    assert(s == L"");
+  }
+#  endif
 #endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-template <template <class> class Alloc>
-void test_alloc() {
-  test<char, Alloc<char>, std::basic_istringstream<char>, std::basic_stringbuf<char> >();
-  test<char, Alloc<char>, std::basic_istringstream<char>, non_buffering_streambuf<char> >();
-#ifndef TEST_HAS_NO_WIDE_CHARACTERS
-  test<wchar_t, Alloc<wchar_t>, std::basic_istringstream<wchar_t>, std::basic_stringbuf<wchar_t> >();
-  test<wchar_t, Alloc<wchar_t>, std::basic_istringstream<wchar_t>, non_buffering_streambuf<wchar_t> >();
-#endif
-}
-
-void test_tiny_allocator() {
-  {
-    std::string in_str =
-        "this is a too long line for the string that has to be longer because the implementation is broken\n";
-    std::istringstream iss(in_str);
-    std::basic_string<char, std::char_traits<char>, tiny_size_allocator<40, char> > str;
-    std::getline(iss, str);
-    assert(iss.rdstate() & std::ios::failbit);
-    assert(str == in_str.substr(0, str.max_size()).c_str());
-  }
-  {
-    std::string in_str =
-        "this is a too long line for the string that has to be longer because the implementation is broken";
-    std::istringstream iss(in_str);
-    std::basic_string<char, std::char_traits<char>, tiny_size_allocator<40, char> > str;
-    std::getline(iss, str);
-    assert(iss.rdstate() & std::ios::failbit);
-    assert(str == in_str.substr(0, str.max_size()).c_str());
-  }
-}
-
 int main(int, char**) {
-  test_alloc<std::allocator>();
+  test_string<std::allocator>();
 #if TEST_STD_VER >= 11
-  test_alloc<min_allocator>();
+  test_string<min_allocator>();
 #endif
-  test_tiny_allocator();
 
   return 0;
 }

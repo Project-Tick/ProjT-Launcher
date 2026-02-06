@@ -15,7 +15,6 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/Analysis/BlockFrequencyInfoImpl.h"
-#include "llvm/CodeGen/MIRFSDiscriminatorOptions.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/Function.h"
@@ -36,10 +35,13 @@ using namespace sampleprofutil;
 
 // TODO(xur): Remove this option and related code once we make true as the
 // default.
-cl::opt<bool> llvm::ImprovedFSDiscriminator(
+namespace llvm {
+cl::opt<bool> ImprovedFSDiscriminator(
     "improved-fs-discriminator", cl::Hidden, cl::init(false),
     cl::desc("New FS discriminators encoding (incompatible with the original "
              "encoding)"));
+}
+
 char MIRAddFSDiscriminators::ID = 0;
 
 INITIALIZE_PASS(MIRAddFSDiscriminators, DEBUG_TYPE,

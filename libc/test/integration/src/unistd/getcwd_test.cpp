@@ -7,18 +7,17 @@
 //===----------------------------------------------------------------------===//
 
 #include "src/__support/CPP/string_view.h"
+#include "src/errno/libc_errno.h"
 #include "src/stdlib/getenv.h"
 #include "src/unistd/getcwd.h"
 
 #include "test/IntegrationTest/test.h"
 
-#include <errno.h>
 #include <stdlib.h> // For malloc and free
 
 using LIBC_NAMESPACE::cpp::string_view;
 
-TEST_MAIN([[maybe_unused]] int argc, [[maybe_unused]] char **argv,
-          [[maybe_unused]] char **envp) {
+TEST_MAIN(int argc, char **argv, char **envp) {
   char buffer[1024];
   ASSERT_TRUE(string_view(LIBC_NAMESPACE::getenv("PWD")) ==
               LIBC_NAMESPACE::getcwd(buffer, 1024));
@@ -32,12 +31,13 @@ TEST_MAIN([[maybe_unused]] int argc, [[maybe_unused]] char **argv,
   cwd = LIBC_NAMESPACE::getcwd(buffer, 0);
   ASSERT_TRUE(cwd == nullptr);
   ASSERT_ERRNO_EQ(EINVAL);
+  LIBC_NAMESPACE::libc_errno = 0;
 
   // Insufficient size
-  errno = 0;
   cwd = LIBC_NAMESPACE::getcwd(buffer, 2);
   ASSERT_TRUE(cwd == nullptr);
-  ASSERT_ERRNO_EQ(ERANGE);
+  int err = LIBC_NAMESPACE::libc_errno;
+  ASSERT_EQ(err, ERANGE);
 
   return 0;
 }

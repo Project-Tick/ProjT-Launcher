@@ -161,7 +161,7 @@ lldb::addr_t OptionArgParser::ToRawAddress(const ExecutionContext *exe_ctx,
                                            lldb::addr_t fail_value,
                                            Status *error_ptr) {
   std::optional<lldb::addr_t> maybe_addr = DoToAddress(exe_ctx, s, error_ptr);
-  return maybe_addr.value_or(fail_value);
+  return maybe_addr ? *maybe_addr : fail_value;
 }
 
 lldb::addr_t OptionArgParser::ToAddress(const ExecutionContext *exe_ctx,
@@ -175,7 +175,8 @@ lldb::addr_t OptionArgParser::ToAddress(const ExecutionContext *exe_ctx,
   lldb::addr_t addr = *maybe_addr;
 
   if (Process *process = exe_ctx->GetProcessPtr())
-    addr = process->FixAnyAddress(addr);
+    if (ABISP abi_sp = process->GetABI())
+      addr = abi_sp->FixCodeAddress(addr);
 
   return addr;
 }
@@ -261,10 +262,8 @@ OptionArgParser::DoToAddress(const ExecutionContext *exe_ctx, llvm::StringRef s,
   // 3: The symbol/reg name if there is an offset
   // 4: +/-
   // 5: The offset value.
-  // clang-format off
   static RegularExpression g_symbol_plus_offset_regex(
-      "^(\\$[^ +-]+)|(([^ +-]+)[[:space:]]*([-\\+])[[:space:]]*(0x[0-9A-Fa-f]+|[0-9]+)[[:space:]]*)$");
-  // clang-format on
+      "^(\\$[^ +-]+)|(([^ +-]+)([-\\+])[[:space:]]*(0x[0-9A-Fa-f]+|[0-9]+)[[:space:]]*)$");
 
   llvm::SmallVector<llvm::StringRef, 4> matches;
   if (g_symbol_plus_offset_regex.Execute(sref, &matches)) {

@@ -13,8 +13,9 @@
 #include "TestDenseDataFlowAnalysis.h"
 #include "TestDialect.h"
 #include "TestOps.h"
+#include "mlir/Analysis/DataFlow/ConstantPropagationAnalysis.h"
+#include "mlir/Analysis/DataFlow/DeadCodeAnalysis.h"
 #include "mlir/Analysis/DataFlow/DenseAnalysis.h"
-#include "mlir/Analysis/DataFlow/Utils.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Support/LLVM.h"
@@ -70,11 +71,6 @@ public:
                                             std::optional<unsigned> regionTo,
                                             const LastModification &before,
                                             LastModification *after) override;
-
-  /// Visit an operation. If this analysis can confirm that lattice content
-  /// of lattice anchors around operation are necessarily identical, join
-  /// them into the same equivalent class.
-  void buildOperationEquivalentLatticeAnchor(Operation *op) override;
 
   /// At an entry point, the last modifications of all memory resources are
   /// unknown.
@@ -149,14 +145,6 @@ LogicalResult LastModifiedAnalysis::visitOperation(
   }
   propagateIfChanged(after, result);
   return success();
-}
-
-void LastModifiedAnalysis::buildOperationEquivalentLatticeAnchor(
-    Operation *op) {
-  if (isMemoryEffectFree(op)) {
-    unionLatticeAnchors<LastModification>(getProgramPointBefore(op),
-                                          getProgramPointAfter(op));
-  }
 }
 
 void LastModifiedAnalysis::visitCallControlFlowTransfer(
@@ -239,7 +227,8 @@ struct TestLastModifiedPass
     Operation *op = getOperation();
 
     DataFlowSolver solver(DataFlowConfig().setInterprocedural(interprocedural));
-    loadBaselineAnalyses(solver);
+    solver.load<DeadCodeAnalysis>();
+    solver.load<SparseConstantPropagation>();
     solver.load<LastModifiedAnalysis>(assumeFuncWrites);
     solver.load<UnderlyingValueAnalysis>();
     if (failed(solver.initializeAndRun(op)))

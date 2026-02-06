@@ -27,22 +27,21 @@ template <typename PA>
 inline constexpr auto unterminatedStatement(const PA &p) {
   return skipStuffBeforeStatement >>
       sourced(construct<Statement<typename PA::resultType>>(
-          maybe(label / space), p));
+          maybe(label), space >> p));
 }
 
 constexpr auto atEndOfStmt{space >>
     withMessage("expected end of statement"_err_en_US, lookAhead(";\n"_ch))};
 constexpr auto checkEndOfKnownStmt{recovery(atEndOfStmt, SkipTo<'\n'>{})};
 
-constexpr auto endOfLine{consumedAllInput ||
-    withMessage("expected end of line"_err_en_US, "\n"_ch >> ok)};
+constexpr auto endOfLine{
+    "\n"_ch >> ok || fail("expected end of line"_err_en_US)};
 
 constexpr auto semicolons{";"_ch >> skipMany(";"_tok) / space / maybe("\n"_ch)};
 constexpr auto endOfStmt{
     space >> withMessage("expected end of statement"_err_en_US,
                  semicolons || endOfLine)};
-constexpr auto skipToNextLineIfAny{consumedAllInput || SkipPast<'\n'>{}};
-constexpr auto forceEndOfStmt{recovery(endOfStmt, skipToNextLineIfAny)};
+constexpr auto forceEndOfStmt{recovery(endOfStmt, SkipPast<'\n'>{})};
 
 template <typename PA> inline constexpr auto statement(const PA &p) {
   return unterminatedStatement(p) / endOfStmt;
@@ -71,17 +70,17 @@ constexpr auto ignoredStatementPrefix{
 // Error recovery within a statement() call: skip *to* the end of the line,
 // unless at an END or CONTAINS statement.
 constexpr auto inStmtErrorRecovery{!"END"_tok >> !"CONTAINS"_tok >>
-    (consumedAllInput || SkipTo<'\n'>{}) >> construct<ErrorRecovery>()};
+    SkipTo<'\n'>{} >> construct<ErrorRecovery>()};
 
 // Error recovery within statement sequences: skip *past* the end of the line,
 // but not over an END or CONTAINS statement.
 constexpr auto skipStmtErrorRecovery{!"END"_tok >> !"CONTAINS"_tok >>
-    (consumedAllInput || SkipPast<'\n'>{}) >> construct<ErrorRecovery>()};
+    SkipPast<'\n'>{} >> construct<ErrorRecovery>()};
 
 // Error recovery across statements: skip the line, unless it looks
 // like it might end the containing construct.
 constexpr auto stmtErrorRecoveryStart{ignoredStatementPrefix};
-constexpr auto skipBadLine{skipToNextLineIfAny >> construct<ErrorRecovery>()};
+constexpr auto skipBadLine{SkipPast<'\n'>{} >> construct<ErrorRecovery>()};
 constexpr auto executionPartErrorRecovery{stmtErrorRecoveryStart >>
     !"END"_tok >> !"CONTAINS"_tok >> !"ELSE"_tok >> !"CASE"_tok >>
     !"TYPE IS"_tok >> !"CLASS"_tok >> !"RANK"_tok >>
@@ -94,7 +93,7 @@ constexpr auto noNameEnd{"END" >> missingOptionalName};
 
 // For unrecognizable construct END statements.  Be sure to not consume
 // a program unit's END statement.
-constexpr auto progUnitEndStmt{consumedAllInput ||
+constexpr auto progUnitEndStmt{
     "END" >> (lookAhead("\n"_ch) || "SUBROUTINE"_tok || "FUNCTION"_tok ||
                  "PROCEDURE"_tok || "MODULE"_tok || "SUBMODULE"_tok ||
                  "PROGRAM"_tok || "BLOCK DATA"_tok)};
@@ -104,8 +103,9 @@ constexpr auto namedConstructEndStmtErrorRecovery{
     constructEndStmtErrorRecovery >> missingOptionalName};
 
 constexpr auto progUnitEndStmtErrorRecovery{
-    many(!"END"_tok >> SkipPast<'\n'>{}) >>
-    maybe("END"_tok >> SkipTo<'\n'>{}) >> missingOptionalName};
+    (many(!"END"_tok >> SkipPast<'\n'>{}) >>
+        ("END"_tok >> SkipTo<'\n'>{} || consumedAllInput)) >>
+    missingOptionalName};
 
 constexpr auto beginDirective{skipStuffBeforeStatement >> "!"_ch};
 constexpr auto endDirective{space >> endOfLine};

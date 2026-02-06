@@ -1,6 +1,5 @@
 // This fails when optimized for now.
 // RUN: %libomptarget-compile-run-and-check-generic
-// XFAIL: intelgpu
 // XUN: %libomptarget-compileopt-run-and-check-generic
 
 #include <omp.h>

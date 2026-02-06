@@ -19,12 +19,12 @@
 #include "llvm/DebugInfo/DWARF/DWARFDebugRangeList.h"
 #include "llvm/DebugInfo/DWARF/DWARFDebugRnglists.h"
 #include "llvm/DebugInfo/DWARF/DWARFDie.h"
+#include "llvm/DebugInfo/DWARF/DWARFExpression.h"
 #include "llvm/DebugInfo/DWARF/DWARFFormValue.h"
 #include "llvm/DebugInfo/DWARF/DWARFListTable.h"
 #include "llvm/DebugInfo/DWARF/DWARFObject.h"
 #include "llvm/DebugInfo/DWARF/DWARFSection.h"
 #include "llvm/DebugInfo/DWARF/DWARFTypeUnit.h"
-#include "llvm/DebugInfo/DWARF/LowLevel/DWARFExpression.h"
 #include "llvm/Object/ObjectFile.h"
 #include "llvm/Support/DataExtractor.h"
 #include "llvm/Support/Errc.h"
@@ -161,24 +161,17 @@ DWARFUnit *DWARFUnitVector::getUnitForOffset(uint64_t Offset) const {
   return nullptr;
 }
 
-DWARFUnit *DWARFUnitVector::getUnitForIndexEntry(const DWARFUnitIndex::Entry &E,
-                                                 DWARFSectionKind Sec,
-                                                 const DWARFSection *Section) {
-  const auto *CUOff = E.getContribution(Sec);
+DWARFUnit *
+DWARFUnitVector::getUnitForIndexEntry(const DWARFUnitIndex::Entry &E) {
+  const auto *CUOff = E.getContribution(DW_SECT_INFO);
   if (!CUOff)
     return nullptr;
 
   uint64_t Offset = CUOff->getOffset();
-  auto begin = this->begin();
-  auto end = begin + getNumInfoUnits();
-
-  if (Sec == DW_SECT_EXT_TYPES) {
-    begin = end;
-    end = this->end();
-  }
+  auto end = begin() + getNumInfoUnits();
 
   auto *CU =
-      std::upper_bound(begin, end, CUOff->getOffset(),
+      std::upper_bound(begin(), end, CUOff->getOffset(),
                        [](uint64_t LHS, const std::unique_ptr<DWARFUnit> &RHS) {
                          return LHS < RHS->getNextUnitOffset();
                        });
@@ -188,14 +181,13 @@ DWARFUnit *DWARFUnitVector::getUnitForIndexEntry(const DWARFUnitIndex::Entry &E,
   if (!Parser)
     return nullptr;
 
-  auto U = Parser(Offset, Sec, Section, &E);
+  auto U = Parser(Offset, DW_SECT_INFO, nullptr, &E);
   if (!U)
     return nullptr;
 
   auto *NewCU = U.get();
   this->insert(CU, std::move(U));
-  if (Sec == DW_SECT_INFO)
-    ++NumInfoUnits;
+  ++NumInfoUnits;
   return NewCU;
 }
 
@@ -504,7 +496,8 @@ void DWARFUnit::extractDIEsIfNeeded(bool CUDieOnly) {
 }
 
 Error DWARFUnit::tryExtractDIEsIfNeeded(bool CUDieOnly) {
-  if ((CUDieOnly && !DieArray.empty()) || DieArray.size() > 1)
+  if ((CUDieOnly && !DieArray.empty()) ||
+      DieArray.size() > 1)
     return Error::success(); // Already parsed.
 
   bool HasCUDie = !DieArray.empty();
@@ -1187,15 +1180,9 @@ DWARFUnit::determineStringOffsetsTableContributionDWO(DWARFDataExtractor &DA) {
   if (getVersion() >= 5) {
     if (DA.getData().data() == nullptr)
       return std::nullopt;
-    // FYI: The .debug_str_offsets.dwo section may use DWARF64 even when the
-    // rest of the file uses DWARF32, so respect whichever encoding the
-    // header/length uses.
-    uint64_t Length = 0;
-    DwarfFormat Format = dwarf::DwarfFormat::DWARF32;
-    std::tie(Length, Format) = DA.getInitialLength(&Offset);
-    Offset += 4; // Skip the DWARF version uint16_t and the uint16_t padding.
+    Offset += Header.getFormat() == dwarf::DwarfFormat::DWARF32 ? 8 : 16;
     // Look for a valid contribution at the given offset.
-    auto DescOrError = parseDWARFStringOffsetsTableHeader(DA, Format, Offset);
+    auto DescOrError = parseDWARFStringOffsetsTableHeader(DA, Header.getFormat(), Offset);
     if (!DescOrError)
       return DescOrError.takeError();
     return *DescOrError;

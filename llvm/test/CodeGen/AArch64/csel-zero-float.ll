@@ -1,4 +1,4 @@
-; RUN: llc -mtriple=aarch64-none-linux-gnu < %s
+; RUN: llc -mtriple=aarch64-none-linux-gnu -enable-unsafe-fp-math < %s
 ; There is no invocation to FileCheck as this
 ; caused a crash in "Post-RA pseudo instruction expansion"
 

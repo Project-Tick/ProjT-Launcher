@@ -14,16 +14,16 @@
 #define LLVM_XRAY_BLOCKINDEXER_H
 
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/XRay/FDRRecords.h"
 #include <cstdint>
 #include <vector>
 
-namespace llvm::xray {
+namespace llvm {
+namespace xray {
 
 // The BlockIndexer will gather all related records associated with a
 // process+thread and group them by 'Block'.
-class LLVM_ABI BlockIndexer : public RecordVisitor {
+class BlockIndexer : public RecordVisitor {
 public:
   struct Block {
     uint64_t ProcessID;
@@ -62,6 +62,7 @@ public:
   Error flush();
 };
 
-} // namespace llvm::xray
+} // namespace xray
+} // namespace llvm
 
 #endif // LLVM_XRAY_BLOCKINDEXER_H

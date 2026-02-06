@@ -77,9 +77,7 @@
     .text
     .seh_endprologue
 func:
-    .seh_startepilogue
     pop %r13
     pop %r12
-    .seh_endepilogue
     ret
     .seh_endproc

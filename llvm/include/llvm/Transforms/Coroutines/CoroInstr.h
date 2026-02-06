@@ -27,7 +27,6 @@
 
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/IntrinsicInst.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace llvm {
@@ -218,8 +217,8 @@ public:
     return cast<Function>(getArgOperand(CoroutineArg)->stripPointerCasts());
   }
   void setCoroutineSelf() {
-    if (!isa<ConstantPointerNull>(getArgOperand(CoroutineArg)))
-      assert(getCoroutine() == getFunction() && "Don't change coroutine.");
+    assert(isa<ConstantPointerNull>(getArgOperand(CoroutineArg)) &&
+           "Coroutine argument is already assigned");
     setArgOperand(CoroutineArg, getFunction());
   }
 
@@ -238,7 +237,7 @@ class AnyCoroIdRetconInst : public AnyCoroIdInst {
   enum { SizeArg, AlignArg, StorageArg, PrototypeArg, AllocArg, DeallocArg };
 
 public:
-  LLVM_ABI void checkWellFormed() const;
+  void checkWellFormed() const;
 
   uint64_t getStorageSize() const {
     return cast<ConstantInt>(getArgOperand(SizeArg))->getZExtValue();
@@ -307,7 +306,7 @@ class CoroIdAsyncInst : public AnyCoroIdInst {
   enum { SizeArg, AlignArg, StorageArg, AsyncFuncPtrArg };
 
 public:
-  LLVM_ABI void checkWellFormed() const;
+  void checkWellFormed() const;
 
   /// The initial async function context size. The fields of which are reserved
   /// for use by the frontend. The frame will be allocated as a tail of this
@@ -422,18 +421,6 @@ public:
   // Methods to support type inquiry through isa, cast, and dyn_cast:
   static bool classof(const IntrinsicInst *I) {
     return I->getIntrinsicID() == Intrinsic::coro_frame;
-  }
-  static bool classof(const Value *V) {
-    return isa<IntrinsicInst>(V) && classof(cast<IntrinsicInst>(V));
-  }
-};
-
-/// This represents the llvm.coro.is_in_ramp instruction.
-class CoroIsInRampInst : public IntrinsicInst {
-public:
-  // Methods to support type inquiry through isa, cast, and dyn_cast:
-  static bool classof(const IntrinsicInst *I) {
-    return I->getIntrinsicID() == Intrinsic::coro_is_in_ramp;
   }
   static bool classof(const Value *V) {
     return isa<IntrinsicInst>(V) && classof(cast<IntrinsicInst>(V));
@@ -581,7 +568,7 @@ public:
     MustTailCallFuncArg
   };
 
-  LLVM_ABI void checkWellFormed() const;
+  void checkWellFormed() const;
 
   unsigned getStorageArgumentIndex() const {
     auto *Arg = cast<ConstantInt>(getArgOperand(StorageArgNoArg));
@@ -735,7 +722,7 @@ class CoroAsyncEndInst : public AnyCoroEndInst {
   enum { FrameArg, UnwindArg, MustTailCallFuncArg };
 
 public:
-  LLVM_ABI void checkWellFormed() const;
+  void checkWellFormed() const;
 
   Function *getMustTailCallFunction() const {
     if (arg_size() < 3)

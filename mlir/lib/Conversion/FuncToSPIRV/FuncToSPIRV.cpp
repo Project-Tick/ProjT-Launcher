@@ -11,11 +11,14 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Conversion/FuncToSPIRV/FuncToSPIRV.h"
+#include "../SPIRVCommon/Pattern.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/SPIRV/IR/SPIRVDialect.h"
 #include "mlir/Dialect/SPIRV/IR/SPIRVOps.h"
 #include "mlir/Dialect/SPIRV/Transforms/SPIRVConversion.h"
 #include "mlir/Dialect/SPIRV/Utils/LayoutUtils.h"
 #include "mlir/IR/AffineMap.h"
+#include "llvm/Support/Debug.h"
 
 #define DEBUG_TYPE "func-to-spirv-pattern"
 
@@ -34,7 +37,7 @@ namespace {
 /// Converts func.return to spirv.Return.
 class ReturnOpPattern final : public OpConversionPattern<func::ReturnOp> {
 public:
-  using Base::Base;
+  using OpConversionPattern<func::ReturnOp>::OpConversionPattern;
 
   LogicalResult
   matchAndRewrite(func::ReturnOp returnOp, OpAdaptor adaptor,
@@ -55,7 +58,7 @@ public:
 /// Converts func.call to spirv.FunctionCall.
 class CallOpPattern final : public OpConversionPattern<func::CallOp> {
 public:
-  using Base::Base;
+  using OpConversionPattern<func::CallOp>::OpConversionPattern;
 
   LogicalResult
   matchAndRewrite(func::CallOp callOp, OpAdaptor adaptor,

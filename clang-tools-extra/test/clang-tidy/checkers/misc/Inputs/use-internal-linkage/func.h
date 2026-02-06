@@ -1,5 +1,5 @@
 #pragma once
 
-void func_header(void);
+void func_header();
 
 #include "func_h.inc"

@@ -34,7 +34,6 @@ const char *const KindEnumeration = "Enumeration";
 const char *const KindFile = "File";
 const char *const KindFunction = "Function";
 const char *const KindInlinedFunction = "InlinedFunction";
-const char *const KindModule = "Module";
 const char *const KindNamespace = "Namespace";
 const char *const KindStruct = "Struct";
 const char *const KindTemplateAlias = "TemplateAlias";
@@ -51,8 +50,6 @@ const char *LVScope::kind() const {
   const char *Kind = KindUndefined;
   if (getIsArray())
     Kind = KindArray;
-  else if (getIsModule())
-    Kind = KindModule;
   else if (getIsBlock())
     Kind = KindBlock;
   else if (getIsCallSite())
@@ -97,7 +94,6 @@ LVScopeDispatch LVScope::Dispatch = {
     {LVScopeKind::IsInlinedFunction, &LVScope::getIsInlinedFunction},
     {LVScopeKind::IsLabel, &LVScope::getIsLabel},
     {LVScopeKind::IsLexicalBlock, &LVScope::getIsLexicalBlock},
-    {LVScopeKind::IsModule, &LVScope::getIsModule},
     {LVScopeKind::IsNamespace, &LVScope::getIsNamespace},
     {LVScopeKind::IsRoot, &LVScope::getIsRoot},
     {LVScopeKind::IsStructure, &LVScope::getIsStructure},
@@ -107,16 +103,10 @@ LVScopeDispatch LVScope::Dispatch = {
     {LVScopeKind::IsTryBlock, &LVScope::getIsTryBlock},
     {LVScopeKind::IsUnion, &LVScope::getIsUnion}};
 
-const LVTypes LVScope::EmptyTypes{};
-const LVSymbols LVScope::EmptySymbols{};
-const LVScopes LVScope::EmptyScopes{};
-
-LVElements LVScope::getSortedChildren(LVSortFunction SortFunction) const {
-  const auto UnsortedChildren = getChildren();
-  LVElements Elements{UnsortedChildren.begin(), UnsortedChildren.end()};
-  if (SortFunction)
-    llvm::stable_sort(Elements, SortFunction);
-  return Elements;
+void LVScope::addToChildren(LVElement *Element) {
+  if (!Children)
+    Children = std::make_unique<LVElements>();
+  Children->push_back(Element);
 }
 
 void LVScope::addElement(LVElement *Element) {
@@ -181,6 +171,7 @@ void LVScope::addElement(LVScope *Scope) {
 
   // Add it to parent.
   Scopes->push_back(Scope);
+  addToChildren(Scope);
   Scope->setParent(this);
 
   // Notify the reader about the new element being added.
@@ -207,6 +198,7 @@ void LVScope::addElement(LVSymbol *Symbol) {
 
   // Add it to parent.
   Symbols->push_back(Symbol);
+  addToChildren(Symbol);
   Symbol->setParent(this);
 
   // Notify the reader about the new element being added.
@@ -233,6 +225,7 @@ void LVScope::addElement(LVType *Type) {
 
   // Add it to parent.
   Types->push_back(Type);
+  addToChildren(Type);
   Type->setParent(this);
 
   // Notify the reader about the new element being added.
@@ -266,7 +259,7 @@ bool LVScope::removeElement(LVElement *Element) {
     return Item == Element;
   };
   auto RemoveElement = [Element, Predicate](auto &Container) -> bool {
-    auto Iter = llvm::remove_if(*Container, Predicate);
+    auto Iter = std::remove_if(Container->begin(), Container->end(), Predicate);
     if (Iter != Container->end()) {
       Container->erase(Iter, Container->end());
       Element->resetParent();
@@ -280,12 +273,15 @@ bool LVScope::removeElement(LVElement *Element) {
   if (Element->getIsLine())
     return RemoveElement(Lines);
 
-  if (Element->getIsSymbol())
-    return RemoveElement(Symbols);
-  if (Element->getIsType())
-    return RemoveElement(Types);
-  if (Element->getIsScope())
-    return RemoveElement(Scopes);
+  if (RemoveElement(Children)) {
+    if (Element->getIsSymbol())
+      return RemoveElement(Symbols);
+    if (Element->getIsType())
+      return RemoveElement(Types);
+    if (Element->getIsScope())
+      return RemoveElement(Scopes);
+    llvm_unreachable("Invalid element.");
+  }
 
   return false;
 }
@@ -334,16 +330,13 @@ void LVScope::addMissingElements(LVScope *Reference) {
       Symbol->setIsOptimized();
       Symbol->setReference(Reference);
 
-      // The symbol can be a constant, parameter, variable or unspecified
-      // parameters (i.e. `...`).
+      // The symbol can be a constant, parameter or variable.
       if (Reference->getIsConstant())
         Symbol->setIsConstant();
       else if (Reference->getIsParameter())
         Symbol->setIsParameter();
       else if (Reference->getIsVariable())
         Symbol->setIsVariable();
-      else if (Reference->getIsUnspecified())
-        Symbol->setIsUnspecified();
       else
         llvm_unreachable("Invalid symbol kind.");
     }
@@ -356,8 +349,9 @@ void LVScope::updateLevel(LVScope *Parent, bool Moved) {
   setLevel(Parent->getLevel() + 1);
 
   // Update the children.
-  for (LVElement *Element : getChildren())
-    Element->updateLevel(this, Moved);
+  if (Children)
+    for (LVElement *Element : *Children)
+      Element->updateLevel(this, Moved);
 
   // Update any lines.
   if (Lines)
@@ -373,12 +367,13 @@ void LVScope::resolve() {
   LVElement::resolve();
 
   // Resolve the children.
-  for (LVElement *Element : getChildren()) {
-    if (getIsGlobalReference())
-      // If the scope is a global reference, mark all its children as well.
-      Element->setIsGlobalReference();
-    Element->resolve();
-  }
+  if (Children)
+    for (LVElement *Element : *Children) {
+      if (getIsGlobalReference())
+        // If the scope is a global reference, mark all its children as well.
+        Element->setIsGlobalReference();
+      Element->resolve();
+    }
 }
 
 void LVScope::resolveName() {
@@ -631,13 +626,14 @@ Error LVScope::doPrint(bool Split, bool Match, bool Print, raw_ostream &OS,
         options().getPrintFormatting() &&
         getLevel() < options().getOutputLevel()) {
       // Print the children.
-      for (const LVElement *Element : getSortedChildren()) {
-        if (Match && !Element->getHasPattern())
-          continue;
-        if (Error Err =
-                Element->doPrint(Split, Match, Print, *StreamSplit, Full))
-          return Err;
-      }
+      if (Children)
+        for (const LVElement *Element : *Children) {
+          if (Match && !Element->getHasPattern())
+            continue;
+          if (Error Err =
+                  Element->doPrint(Split, Match, Print, *StreamSplit, Full))
+            return Err;
+        }
 
       // Print the line records.
       if (Lines)
@@ -683,12 +679,13 @@ void LVScope::sort() {
         [&](LVScope *Parent, LVSortFunction SortFunction) {
           auto Traverse = [&](auto &Set, LVSortFunction SortFunction) {
             if (Set)
-              llvm::stable_sort(*Set, SortFunction);
+              std::stable_sort(Set->begin(), Set->end(), SortFunction);
           };
           Traverse(Parent->Types, SortFunction);
           Traverse(Parent->Symbols, SortFunction);
           Traverse(Parent->Scopes, SortFunction);
           Traverse(Parent->Ranges, compareRange);
+          Traverse(Parent->Children, SortFunction);
 
           if (Parent->Scopes)
             for (LVScope *Scope : *Parent->Scopes)
@@ -974,8 +971,9 @@ bool LVScope::equals(const LVScopes *References, const LVScopes *Targets) {
 void LVScope::report(LVComparePass Pass) {
   getComparator().printItem(this, Pass);
   getComparator().push(this);
-  for (LVElement *Element : getSortedChildren())
-    Element->report(Pass);
+  if (Children)
+    for (LVElement *Element : *Children)
+      Element->report(Pass);
 
   if (Lines)
     for (LVLine *Line : *Lines)
@@ -1013,13 +1011,9 @@ void LVScope::printExtra(raw_ostream &OS, bool Full) const {
   // Do not print any type or name for a lexical block.
   if (!getIsBlock()) {
     OS << " " << formattedName(getName());
-    if (!getIsAggregate()) {
+    if (!getIsAggregate())
       OS << " -> " << typeOffsetAsString()
          << formattedNames(getTypeQualifiedName(), typeAsString());
-    }
-    if (options().getAttributeSize())
-      if (uint32_t Size = getStorageSizeInBytes())
-        OS << " [Size = " << Size << "]";
   }
   OS << "\n";
 
@@ -1633,7 +1627,8 @@ void LVScopeCompileUnit::printMatchedElements(raw_ostream &OS,
                                               bool UseMatchedElements) {
   LVSortFunction SortFunction = getSortFunction();
   if (SortFunction)
-    llvm::stable_sort(MatchedElements, SortFunction);
+    std::stable_sort(MatchedElements.begin(), MatchedElements.end(),
+                     SortFunction);
 
   // Check the type of elements required to be printed. 'MatchedElements'
   // contains generic elements (lines, scopes, symbols, types). If we have a
@@ -1651,8 +1646,9 @@ void LVScopeCompileUnit::printMatchedElements(raw_ostream &OS,
       // Print the view for the matched scopes.
       for (const LVScope *Scope : MatchedScopes) {
         Scope->print(OS);
-        for (LVElement *Element : Scope->getSortedChildren())
-          Element->print(OS);
+        if (const LVElements *Elements = Scope->getChildren())
+          for (LVElement *Element : *Elements)
+            Element->print(OS);
       }
     }
 
@@ -1711,19 +1707,11 @@ void LVScopeCompileUnit::print(raw_ostream &OS, bool Full) const {
 
 void LVScopeCompileUnit::printExtra(raw_ostream &OS, bool Full) const {
   OS << formattedKind(kind()) << " '" << getName() << "'\n";
-  if (options().getPrintFormatting()) {
-    if (options().getAttributeProducer())
-      printAttributes(OS, Full, "{Producer} ",
-                      const_cast<LVScopeCompileUnit *>(this), getProducer(),
-                      /*UseQuotes=*/true,
-                      /*PrintRef=*/false);
-    if (options().getAttributeLanguage())
-      if (auto SL = getSourceLanguage(); SL.isValid())
-        printAttributes(OS, Full, "{Language} ",
-                        const_cast<LVScopeCompileUnit *>(this), SL.getName(),
-                        /*UseQuotes=*/true,
-                        /*PrintRef=*/false);
-  }
+  if (options().getPrintFormatting() && options().getAttributeProducer())
+    printAttributes(OS, Full, "{Producer} ",
+                    const_cast<LVScopeCompileUnit *>(this), getProducer(),
+                    /*UseQuotes=*/true,
+                    /*PrintRef=*/false);
 
   // Reset file index, to allow its children to print the correct filename.
   options().resetFilenameIndex();
@@ -1973,18 +1961,6 @@ void LVScopeFunctionType::resolveExtra() {
 }
 
 //===----------------------------------------------------------------------===//
-// DWARF module (DW_TAG_module).
-//===----------------------------------------------------------------------===//
-bool LVScopeModule::equals(const LVScope *Scope) const {
-  // For lexical blocks, LVScope::equals() compares the parent scope.
-  return LVScope::equals(Scope) && (Scope->getName() == getName());
-}
-
-void LVScopeModule::printExtra(raw_ostream &OS, bool Full) const {
-  OS << formattedKind(kind()) << " " << formattedName(getName()) << "\n";
-}
-
-//===----------------------------------------------------------------------===//
 // DWARF namespace (DW_TAG_namespace).
 //===----------------------------------------------------------------------===//
 bool LVScopeNamespace::equals(const LVScope *Scope) const {
@@ -2091,7 +2067,7 @@ Error LVScopeRoot::doPrintMatches(bool Split, raw_ostream &OS,
     print(OS);
 
     for (LVScope *Scope : *Scopes) {
-      getReader().setCompileUnit(Scope);
+      getReader().setCompileUnit(const_cast<LVScope *>(Scope));
 
       // If 'Split', we use the scope name (CU name) as the ouput file; the
       // delimiters in the pathname, must be replaced by a normal character.

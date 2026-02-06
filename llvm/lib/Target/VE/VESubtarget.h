@@ -16,6 +16,7 @@
 #include "VEFrameLowering.h"
 #include "VEISelLowering.h"
 #include "VEInstrInfo.h"
+#include "llvm/CodeGen/SelectionDAGTargetInfo.h"
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/DataLayout.h"
@@ -40,14 +41,12 @@ class VESubtarget : public VEGenSubtargetInfo {
 
   VEInstrInfo InstrInfo;
   VETargetLowering TLInfo;
-  std::unique_ptr<const SelectionDAGTargetInfo> TSInfo;
+  SelectionDAGTargetInfo TSInfo;
   VEFrameLowering FrameLowering;
 
 public:
   VESubtarget(const Triple &TT, const std::string &CPU, const std::string &FS,
               const TargetMachine &TM);
-
-  ~VESubtarget() override;
 
   const VEInstrInfo *getInstrInfo() const override { return &InstrInfo; }
   const VEFrameLowering *getFrameLowering() const override {
@@ -57,8 +56,9 @@ public:
     return &InstrInfo.getRegisterInfo();
   }
   const VETargetLowering *getTargetLowering() const override { return &TLInfo; }
-
-  const SelectionDAGTargetInfo *getSelectionDAGInfo() const override;
+  const SelectionDAGTargetInfo *getSelectionDAGInfo() const override {
+    return &TSInfo;
+  }
 
   bool enableMachineScheduler() const override;
 

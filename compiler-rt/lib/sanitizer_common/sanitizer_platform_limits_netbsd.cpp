@@ -498,6 +498,7 @@ struct urio_command {
 #include <md5.h>
 #include <rmd160.h>
 #include <soundcard.h>
+#include <term.h>
 #include <termios.h>
 #include <time.h>
 #include <ttyent.h>
@@ -514,7 +515,7 @@ struct urio_command {
 #include <stringlist.h>
 
 #if defined(__x86_64__)
-#include <dev/nvmm/nvmm_ioctl.h>
+#include <nvmm.h>
 #endif
 // clang-format on
 

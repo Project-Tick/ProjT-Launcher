@@ -20,13 +20,12 @@
 #include "SPIRVGenInstrInfo.inc"
 
 namespace llvm {
-class SPIRVSubtarget;
 
 class SPIRVInstrInfo : public SPIRVGenInstrInfo {
   const SPIRVRegisterInfo RI;
 
 public:
-  explicit SPIRVInstrInfo(const SPIRVSubtarget &STI);
+  SPIRVInstrInfo();
 
   const SPIRVRegisterInfo &getRegisterInfo() const { return RI; }
   bool isHeaderInstr(const MachineInstr &MI) const;
@@ -35,9 +34,7 @@ public:
   bool isInlineAsmDefInstr(const MachineInstr &MI) const;
   bool isTypeDeclInstr(const MachineInstr &MI) const;
   bool isDecorationInstr(const MachineInstr &MI) const;
-  bool isAliasingInstr(const MachineInstr &MI) const;
-  bool canUseFastMathFlags(const MachineInstr &MI,
-                           bool KHRFloatControls2) const;
+  bool canUseFastMathFlags(const MachineInstr &MI) const;
   bool canUseNSW(const MachineInstr &MI) const;
   bool canUseNUW(const MachineInstr &MI) const;
 
@@ -54,17 +51,16 @@ public:
                         const DebugLoc &DL,
                         int *BytesAdded = nullptr) const override;
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
-                   const DebugLoc &DL, Register DestReg, Register SrcReg,
+                   const DebugLoc &DL, MCRegister DestReg, MCRegister SrcReg,
                    bool KillSrc, bool RenamableDest = false,
                    bool RenamableSrc = false) const override;
+  bool expandPostRAPseudo(MachineInstr &MI) const override;
 };
 
 namespace SPIRV {
 enum AsmComments {
   // It is a half type
-  ASM_PRINTER_WIDTH16 = MachineInstr::TAsmComments,
-  // It is a 64 bit type
-  ASM_PRINTER_WIDTH64 = ASM_PRINTER_WIDTH16 << 1,
+  ASM_PRINTER_WIDTH16 = MachineInstr::TAsmComments
 };
 } // namespace SPIRV
 

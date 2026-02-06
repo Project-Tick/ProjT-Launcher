@@ -1,6 +1,7 @@
 // Only run this test where ulimit is known to work well.
 // (There's nothing really platform-specific being tested, this is just ulimit).
 //
+// REQUIRES: shell
 // REQUIRES: system-linux
 // UNSUPPORTED: msan
 // UNSUPPORTED: asan

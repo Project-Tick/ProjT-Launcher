@@ -30,12 +30,13 @@
 #define LLVM_ANALYSIS_LOOPANALYSISMANAGER_H
 
 #include "llvm/IR/PassManager.h"
-#include "llvm/Support/Compiler.h"
 
 namespace llvm {
 
 class AAResults;
 class AssumptionCache;
+class BlockFrequencyInfo;
+class BranchProbabilityInfo;
 class DominatorTree;
 class Function;
 class Loop;
@@ -57,14 +58,15 @@ struct LoopStandardAnalysisResults {
   ScalarEvolution &SE;
   TargetLibraryInfo &TLI;
   TargetTransformInfo &TTI;
+  BlockFrequencyInfo *BFI;
+  BranchProbabilityInfo *BPI;
   MemorySSA *MSSA;
 };
 
 /// Extern template declaration for the analysis set for this IR unit.
-extern template class LLVM_TEMPLATE_ABI AllAnalysesOn<Loop>;
+extern template class AllAnalysesOn<Loop>;
 
-extern template class LLVM_TEMPLATE_ABI
-    AnalysisManager<Loop, LoopStandardAnalysisResults &>;
+extern template class AnalysisManager<Loop, LoopStandardAnalysisResults &>;
 /// The loop analysis manager.
 ///
 /// See the documentation for the AnalysisManager template for detail
@@ -90,7 +92,7 @@ public:
   Result(Result &&Arg)
       : InnerAM(std::move(Arg.InnerAM)), LI(Arg.LI), MSSAUsed(Arg.MSSAUsed) {
     // We have to null out the analysis manager in the moved-from state
-    // because we are taking ownership of the responsibility to clear the
+    // because we are taking ownership of the responsibilty to clear the
     // analysis state.
     Arg.InnerAM = nullptr;
   }
@@ -99,7 +101,7 @@ public:
     LI = RHS.LI;
     MSSAUsed = RHS.MSSAUsed;
     // We have to null out the analysis manager in the moved-from state
-    // because we are taking ownership of the responsibility to clear the
+    // because we are taking ownership of the responsibilty to clear the
     // analysis state.
     RHS.InnerAM = nullptr;
     return *this;
@@ -129,8 +131,8 @@ public:
   /// If the necessary loop infrastructure is not preserved, this will forcibly
   /// clear all of the cached analysis results that are keyed on the \c
   /// LoopInfo for this function.
-  LLVM_ABI bool invalidate(Function &F, const PreservedAnalyses &PA,
-                           FunctionAnalysisManager::Invalidator &Inv);
+  bool invalidate(Function &F, const PreservedAnalyses &PA,
+                  FunctionAnalysisManager::Invalidator &Inv);
 
 private:
   LoopAnalysisManager *InnerAM;
@@ -141,22 +143,22 @@ private:
 /// Provide a specialized run method for the \c LoopAnalysisManagerFunctionProxy
 /// so it can pass the \c LoopInfo to the result.
 template <>
-LLVM_ABI LoopAnalysisManagerFunctionProxy::Result
+LoopAnalysisManagerFunctionProxy::Result
 LoopAnalysisManagerFunctionProxy::run(Function &F, FunctionAnalysisManager &AM);
 
 // Ensure the \c LoopAnalysisManagerFunctionProxy is provided as an extern
 // template.
 extern template class InnerAnalysisManagerProxy<LoopAnalysisManager, Function>;
 
-extern template class LLVM_TEMPLATE_ABI OuterAnalysisManagerProxy<
-    FunctionAnalysisManager, Loop, LoopStandardAnalysisResults &>;
+extern template class OuterAnalysisManagerProxy<FunctionAnalysisManager, Loop,
+                                                LoopStandardAnalysisResults &>;
 /// A proxy from a \c FunctionAnalysisManager to a \c Loop.
 typedef OuterAnalysisManagerProxy<FunctionAnalysisManager, Loop,
                                   LoopStandardAnalysisResults &>
     FunctionAnalysisManagerLoopProxy;
 
 /// Returns the minimum set of Analyses that all loop passes must preserve.
-LLVM_ABI PreservedAnalyses getLoopPassPreservedAnalyses();
+PreservedAnalyses getLoopPassPreservedAnalyses();
 }
 
 #endif // LLVM_ANALYSIS_LOOPANALYSISMANAGER_H

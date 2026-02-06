@@ -19,41 +19,37 @@
 #include <string.h>
 
 int llvm_add_named_metadata_operand(void) {
-  LLVMContextRef C = LLVMContextCreate();
-  LLVMModuleRef M = LLVMModuleCreateWithNameInContext("Mod", C);
-  LLVMValueRef Int = LLVMConstInt(LLVMInt32TypeInContext(C), 0, 0);
+  LLVMModuleRef M = LLVMModuleCreateWithName("Mod");
+  LLVMValueRef Int = LLVMConstInt(LLVMInt32Type(), 0, 0);
 
   // This used to trigger an assertion
-  LLVMAddNamedMetadataOperand(M, "name", LLVMMDNodeInContext(C, &Int, 1));
+  LLVMAddNamedMetadataOperand(M, "name", LLVMMDNode(&Int, 1));
 
   LLVMDisposeModule(M);
-  LLVMContextDispose(C);
 
   return 0;
 }
 
 int llvm_set_metadata(void) {
-  LLVMContextRef C = LLVMContextCreate();
-  LLVMBuilderRef Builder = LLVMCreateBuilderInContext(C);
+  LLVMBuilderRef Builder = LLVMCreateBuilder();
 
   // This used to trigger an assertion
   LLVMValueRef Return = LLVMBuildRetVoid(Builder);
 
   const char Name[] = "kind";
-  LLVMValueRef Int = LLVMConstInt(LLVMInt32TypeInContext(C), 0, 0);
-  LLVMSetMetadata(Return, LLVMGetMDKindIDInContext(C, Name, strlen(Name)),
-                  LLVMMDNodeInContext(C, &Int, 1));
+  LLVMValueRef Int = LLVMConstInt(LLVMInt32Type(), 0, 0);
+  LLVMSetMetadata(Return, LLVMGetMDKindID(Name, strlen(Name)),
+                  LLVMMDNode(&Int, 1));
 
   LLVMDisposeBuilder(Builder);
   LLVMDeleteInstruction(Return);
-  LLVMContextDispose(C);
 
   return 0;
 }
 
 int llvm_replace_md_operand(void) {
-  LLVMContextRef Context = LLVMContextCreate();
-  LLVMModuleRef M = LLVMModuleCreateWithNameInContext("Mod", Context);
+  LLVMModuleRef M = LLVMModuleCreateWithName("Mod");
+  LLVMContextRef Context = LLVMGetModuleContext(M);
 
   const char String1[] = "foo";
   LLVMMetadataRef String1MD =
@@ -75,18 +71,17 @@ int llvm_replace_md_operand(void) {
   (void)String;
 
   LLVMDisposeModule(M);
-  LLVMContextDispose(Context);
 
   return 0;
 }
 
 int llvm_is_a_value_as_metadata(void) {
-  LLVMContextRef Context = LLVMContextCreate();
-  LLVMModuleRef M = LLVMModuleCreateWithNameInContext("Mod", Context);
+  LLVMModuleRef M = LLVMModuleCreateWithName("Mod");
+  LLVMContextRef Context = LLVMGetModuleContext(M);
 
   {
-    LLVMValueRef Int = LLVMConstInt(LLVMInt32TypeInContext(Context), 0, 0);
-    LLVMValueRef NodeMD = LLVMMDNodeInContext(Context, &Int, 1);
+    LLVMValueRef Int = LLVMConstInt(LLVMInt32Type(), 0, 0);
+    LLVMValueRef NodeMD = LLVMMDNode(&Int, 1);
     assert(LLVMIsAValueAsMetadata(NodeMD) == NodeMD);
     (void)NodeMD;
   }
@@ -100,9 +95,6 @@ int llvm_is_a_value_as_metadata(void) {
     assert(LLVMIsAValueAsMetadata(Value) == NULL);
     (void)Value;
   }
-
-  LLVMDisposeModule(M);
-  LLVMContextDispose(Context);
 
   return 0;
 }

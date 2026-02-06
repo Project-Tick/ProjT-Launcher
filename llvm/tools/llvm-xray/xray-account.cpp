@@ -118,16 +118,18 @@ static cl::opt<std::string>
 static cl::alias AccountInstrMap2("m", cl::aliasopt(AccountInstrMap),
                                   cl::desc("Alias for -instr_map"));
 
-template <class T, class U> static void setMinMax(std::pair<T, T> &MM, U &&V) {
+namespace {
+
+template <class T, class U> void setMinMax(std::pair<T, T> &MM, U &&V) {
   if (MM.first == 0 || MM.second == 0)
     MM = std::make_pair(std::forward<U>(V), std::forward<U>(V));
   else
     MM = std::make_pair(std::min(MM.first, V), std::max(MM.second, V));
 }
 
-template <class T> static T diff(T L, T R) {
-  return std::max(L, R) - std::min(L, R);
-}
+template <class T> T diff(T L, T R) { return std::max(L, R) - std::min(L, R); }
+
+} // namespace
 
 using RecursionStatus = LatencyAccountant::FunctionStack::RecursionStatus;
 RecursionStatus &RecursionStatus::operator++() {
@@ -141,7 +143,6 @@ RecursionStatus &RecursionStatus::operator++() {
                                                 true); // Storage |= INT_MIN
   return *this;
 }
-
 RecursionStatus &RecursionStatus::operator--() {
   auto Depth = Bitfield::get<RecursionStatus::Depth>(Storage);
   assert(Depth > 0);
@@ -152,7 +153,6 @@ RecursionStatus &RecursionStatus::operator--() {
     Bitfield::set<RecursionStatus::IsRecursive>(Storage, false); // Storage = 0
   return *this;
 }
-
 bool RecursionStatus::isRecursive() const {
   return Bitfield::get<RecursionStatus::IsRecursive>(Storage); // Storage s< 0
 }
@@ -270,9 +270,8 @@ struct ResultRow {
   std::string DebugInfo;
   std::string Function;
 };
-} // namespace
 
-static ResultRow getStats(MutableArrayRef<uint64_t> Timings) {
+ResultRow getStats(MutableArrayRef<uint64_t> Timings) {
   assert(!Timings.empty());
   ResultRow R;
   R.Sum = std::accumulate(Timings.begin(), Timings.end(), 0.0);
@@ -296,6 +295,8 @@ static ResultRow getStats(MutableArrayRef<uint64_t> Timings) {
   R.Pct99 = Timings[Pct99Off];
   return R;
 }
+
+} // namespace
 
 using TupleType = std::tuple<int32_t, uint64_t, ResultRow>;
 
@@ -416,8 +417,11 @@ void LatencyAccountant::exportStatsAsCSV(raw_ostream &OS,
   });
 }
 
-template <> struct llvm::format_provider<RecordTypes> {
-  static void format(const RecordTypes &T, raw_ostream &Stream,
+using namespace llvm::xray;
+
+namespace llvm {
+template <> struct format_provider<llvm::xray::RecordTypes> {
+  static void format(const llvm::xray::RecordTypes &T, raw_ostream &Stream,
                      StringRef Style) {
     switch (T) {
     case RecordTypes::ENTER:
@@ -441,6 +445,7 @@ template <> struct llvm::format_provider<RecordTypes> {
     }
   }
 };
+} // namespace llvm
 
 static CommandRegistration Unused(&Account, []() -> Error {
   InstrumentationMap Map;
@@ -463,10 +468,10 @@ static CommandRegistration Unused(&Account, []() -> Error {
 
   const auto &FunctionAddresses = Map.getFunctionAddresses();
   symbolize::LLVMSymbolizer Symbolizer;
-  FuncIdConversionHelper FuncIdHelper(AccountInstrMap, Symbolizer,
-                                      FunctionAddresses);
-  LatencyAccountant FCA(FuncIdHelper, AccountRecursiveCallsOnly,
-                        AccountDeduceSiblingCalls);
+  llvm::xray::FuncIdConversionHelper FuncIdHelper(AccountInstrMap, Symbolizer,
+                                                  FunctionAddresses);
+  xray::LatencyAccountant FCA(FuncIdHelper, AccountRecursiveCallsOnly,
+                              AccountDeduceSiblingCalls);
   auto TraceOrErr = loadTraceFile(AccountInput);
   if (!TraceOrErr)
     return joinErrors(

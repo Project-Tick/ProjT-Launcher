@@ -21,7 +21,10 @@
 #include "InputSection.h"
 #include "Relocations.h"
 #include "Target.h"
+#include "lld/Common/ErrorHandler.h"
+#include "lld/Common/Strings.h"
 #include "llvm/BinaryFormat/Dwarf.h"
+#include "llvm/Object/ELF.h"
 
 using namespace llvm;
 using namespace llvm::ELF;

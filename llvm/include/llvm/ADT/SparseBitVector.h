@@ -119,8 +119,8 @@ public:
 
   size_type count() const {
     unsigned NumBits = 0;
-    for (BitWord Bit : Bits)
-      NumBits += llvm::popcount(Bit);
+    for (unsigned i = 0; i < BITWORDS_PER_ELEMENT; ++i)
+      NumBits += llvm::popcount(Bits[i]);
     return NumBits;
   }
 
@@ -799,8 +799,11 @@ public:
 
   unsigned count() const {
     unsigned BitCount = 0;
-    for (const SparseBitVectorElement<ElementSize> &Elem : Elements)
-      BitCount += Elem.count();
+    for (ElementListConstIter Iter = Elements.begin();
+         Iter != Elements.end();
+         ++Iter)
+      BitCount += Iter->count();
+
     return BitCount;
   }
 

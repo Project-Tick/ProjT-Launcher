@@ -15,11 +15,8 @@
 #define MLIR_DIALECT_LLVMIR_NVVMDIALECT_H_
 
 #include "mlir/Bytecode/BytecodeOpInterface.h"
-#include "mlir/Dialect/GPU/IR/GPUDialect.h"
 #include "mlir/Dialect/LLVMIR/BasicPtxBuilderInterface.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Dialect/LLVMIR/NVVMRequiresSMTraits.h"
-#include "mlir/Dialect/Ptr/IR/MemorySpaceInterfaces.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/Interfaces/InferIntRangeInterface.h"
@@ -31,27 +28,19 @@
 
 namespace mlir {
 namespace NVVM {
-/// Utility functions to compare NVVMMemorySpace with unsigned values.
-inline bool operator==(unsigned as, NVVMMemorySpace memSpace) {
-  return as == static_cast<unsigned>(memSpace);
-}
-inline bool operator==(NVVMMemorySpace memSpace, unsigned as) {
-  return static_cast<unsigned>(memSpace) == as;
-}
-inline bool operator!=(unsigned as, NVVMMemorySpace memSpace) {
-  return as != static_cast<unsigned>(memSpace);
-}
-inline bool operator!=(NVVMMemorySpace memSpace, unsigned as) {
-  return static_cast<unsigned>(memSpace) != as;
-}
 
 // Shared memory has 128-bit alignment
 constexpr int kSharedMemoryAlignmentBit = 128;
 
-/// A pair type of LLVM's Intrinsic ID and args (which are llvm values).
-/// This type is returned by the getIntrinsicIDAndArgs() methods.
-using IDArgPair =
-    std::pair<llvm::Intrinsic::ID, llvm::SmallVector<llvm::Value *>>;
+/// NVVM memory space identifiers.
+enum NVVMMemorySpace {
+  /// Global memory space identifier.
+  kGlobalMemorySpace = 1,
+  /// Shared memory space identifier.
+  kSharedMemorySpace = 3,
+  /// Constant memory space identifier.
+  kConstantMemorySpace = 4
+};
 
 /// Return the element type and number of elements associated with a wmma matrix
 /// of given chracteristics. This matches the logic in IntrinsicsNVVM.td

@@ -1,13 +1,12 @@
 // RUN: %clangxx_asan -O0 %s -o %t && not %run %t 2>&1 | FileCheck %s
 
-#include "defines.h"
 #include <functional>
 
 int main() {
   std::function<int()> f;
   {
     int x = 0;
-    f = [&x]() ATTRIBUTE_NOINLINE {
+    f = [&x]() __attribute__((noinline)) {
       return x;  // BOOM
       // CHECK: ERROR: AddressSanitizer: stack-use-after-scope
       // We cannot assert the line, after the argument promotion pass this crashes

@@ -13,7 +13,6 @@
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringTable.h"
-#include "llvm/IR/ConstantRange.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IntrinsicsAArch64.h"
 #include "llvm/IR/IntrinsicsAMDGPU.h"
@@ -27,12 +26,10 @@
 #include "llvm/IR/IntrinsicsR600.h"
 #include "llvm/IR/IntrinsicsRISCV.h"
 #include "llvm/IR/IntrinsicsS390.h"
-#include "llvm/IR/IntrinsicsSPIRV.h"
 #include "llvm/IR/IntrinsicsVE.h"
 #include "llvm/IR/IntrinsicsX86.h"
 #include "llvm/IR/IntrinsicsXCore.h"
 #include "llvm/IR/Module.h"
-#include "llvm/IR/NVVMIntrinsicUtils.h"
 #include "llvm/IR/Type.h"
 
 using namespace llvm;
@@ -208,6 +205,7 @@ DecodeIITType(unsigned &NextElt, ArrayRef<unsigned char> Infos,
   bool IsScalableVector = (LastInfo == IIT_SCALABLE_VEC);
 
   IIT_Info Info = IIT_Info(Infos[NextElt++]);
+  unsigned StructElts = 2;
 
   switch (Info) {
   case IIT_Done:
@@ -329,14 +327,6 @@ DecodeIITType(unsigned &NextElt, ArrayRef<unsigned char> Infos,
     OutputTable.push_back(IITDescriptor::getVector(1024, IsScalableVector));
     DecodeIITType(NextElt, Infos, Info, OutputTable);
     return;
-  case IIT_V2048:
-    OutputTable.push_back(IITDescriptor::getVector(2048, IsScalableVector));
-    DecodeIITType(NextElt, Infos, Info, OutputTable);
-    return;
-  case IIT_V4096:
-    OutputTable.push_back(IITDescriptor::getVector(4096, IsScalableVector));
-    DecodeIITType(NextElt, Infos, Info, OutputTable);
-    return;
   case IIT_EXTERNREF:
     OutputTable.push_back(IITDescriptor::get(IITDescriptor::Pointer, 10));
     return;
@@ -367,11 +357,10 @@ DecodeIITType(unsigned &NextElt, ArrayRef<unsigned char> Infos,
         IITDescriptor::get(IITDescriptor::TruncArgument, ArgInfo));
     return;
   }
-  case IIT_ONE_NTH_ELTS_VEC_ARG: {
-    unsigned short ArgNo = (NextElt == Infos.size() ? 0 : Infos[NextElt++]);
-    unsigned short N = (NextElt == Infos.size() ? 0 : Infos[NextElt++]);
+  case IIT_HALF_VEC_ARG: {
+    unsigned ArgInfo = (NextElt == Infos.size() ? 0 : Infos[NextElt++]);
     OutputTable.push_back(
-        IITDescriptor::get(IITDescriptor::OneNthEltsVecArgument, N, ArgNo));
+        IITDescriptor::get(IITDescriptor::HalfVecArgument, ArgInfo));
     return;
   }
   case IIT_SAME_VEC_WIDTH_ARG: {
@@ -390,9 +379,28 @@ DecodeIITType(unsigned &NextElt, ArrayRef<unsigned char> Infos,
   case IIT_EMPTYSTRUCT:
     OutputTable.push_back(IITDescriptor::get(IITDescriptor::Struct, 0));
     return;
-  case IIT_STRUCT: {
-    unsigned StructElts = Infos[NextElt++] + 2;
-
+  case IIT_STRUCT9:
+    ++StructElts;
+    [[fallthrough]];
+  case IIT_STRUCT8:
+    ++StructElts;
+    [[fallthrough]];
+  case IIT_STRUCT7:
+    ++StructElts;
+    [[fallthrough]];
+  case IIT_STRUCT6:
+    ++StructElts;
+    [[fallthrough]];
+  case IIT_STRUCT5:
+    ++StructElts;
+    [[fallthrough]];
+  case IIT_STRUCT4:
+    ++StructElts;
+    [[fallthrough]];
+  case IIT_STRUCT3:
+    ++StructElts;
+    [[fallthrough]];
+  case IIT_STRUCT2: {
     OutputTable.push_back(
         IITDescriptor::get(IITDescriptor::Struct, StructElts));
 
@@ -545,9 +553,9 @@ static Type *DecodeFixedType(ArrayRef<Intrinsic::IITDescriptor> &Infos,
     int SubDivs = D.Kind == IITDescriptor::Subdivide2Argument ? 1 : 2;
     return VectorType::getSubdividedVectorType(VTy, SubDivs);
   }
-  case IITDescriptor::OneNthEltsVecArgument:
-    return VectorType::getOneNthElementsVectorType(
-        cast<VectorType>(Tys[D.getRefArgNumber()]), D.getVectorDivisor());
+  case IITDescriptor::HalfVecArgument:
+    return VectorType::getHalfElementsVectorType(
+        cast<VectorType>(Tys[D.getArgumentNumber()]));
   case IITDescriptor::SameVecWidthArgument: {
     Type *EltTy = DecodeFixedType(Infos, Tys, Context);
     Type *Ty = Tys[D.getArgumentNumber()];
@@ -602,12 +610,6 @@ bool Intrinsic::isOverloaded(ID id) {
 #undef GET_INTRINSIC_OVERLOAD_TABLE
 }
 
-bool Intrinsic::hasPrettyPrintedArgs(ID id){
-#define GET_INTRINSIC_PRETTY_PRINT_TABLE
-#include "llvm/IR/IntrinsicImpl.inc"
-#undef GET_INTRINSIC_PRETTY_PRINT_TABLE
-}
-
 /// Table of per-target intrinsic name tables.
 #define GET_INTRINSIC_TARGET_DATA
 #include "llvm/IR/IntrinsicImpl.inc"
@@ -648,20 +650,20 @@ static int lookupLLVMIntrinsicByName(ArrayRef<unsigned> NameOffsetTable,
       // `equal_range` requires the comparison to work with either side being an
       // offset or the value. Detect which kind each side is to set up the
       // compared strings.
-      const char *LHSStr;
-      if constexpr (std::is_integral_v<decltype(LHS)>)
-        LHSStr = IntrinsicNameTable.getCString(LHS);
-      else
+      StringRef LHSStr;
+      if constexpr (std::is_integral_v<decltype(LHS)>) {
+        LHSStr = IntrinsicNameTable[LHS];
+      } else {
         LHSStr = LHS;
-
-      const char *RHSStr;
-      if constexpr (std::is_integral_v<decltype(RHS)>)
-        RHSStr = IntrinsicNameTable.getCString(RHS);
-      else
+      }
+      StringRef RHSStr;
+      if constexpr (std::is_integral_v<decltype(RHS)>) {
+        RHSStr = IntrinsicNameTable[RHS];
+      } else {
         RHSStr = RHS;
-
-      return strncmp(LHSStr + CmpStart, RHSStr + CmpStart, CmpEnd - CmpStart) <
-             0;
+      }
+      return strncmp(LHSStr.data() + CmpStart, RHSStr.data() + CmpStart,
+                     CmpEnd - CmpStart) < 0;
     };
     LastLow = Low;
     std::tie(Low, High) = std::equal_range(Low, High, Name.data(), Cmp);
@@ -727,66 +729,15 @@ Intrinsic::ID Intrinsic::lookupIntrinsicID(StringRef Name) {
 #include "llvm/IR/IntrinsicImpl.inc"
 #undef GET_INTRINSIC_ATTRIBUTES
 
-static Function *getOrInsertIntrinsicDeclarationImpl(Module *M,
-                                                     Intrinsic::ID id,
-                                                     ArrayRef<Type *> Tys,
-                                                     FunctionType *FT) {
-  Function *F = cast<Function>(
-      M->getOrInsertFunction(Tys.empty() ? Intrinsic::getName(id)
-                                         : Intrinsic::getName(id, Tys, M, FT),
-                             FT)
-          .getCallee());
-  if (F->getFunctionType() == FT)
-    return F;
-
-  // It's possible that a declaration for this intrinsic already exists with an
-  // incorrect signature, if the signature has changed, but this particular
-  // declaration has not been auto-upgraded yet. In that case, rename the
-  // invalid declaration and insert a new one with the correct signature. The
-  // invalid declaration will get upgraded later.
-  F->setName(F->getName() + ".invalid");
-  return cast<Function>(
-      M->getOrInsertFunction(Tys.empty() ? Intrinsic::getName(id)
-                                         : Intrinsic::getName(id, Tys, M, FT),
-                             FT)
-          .getCallee());
-}
-
 Function *Intrinsic::getOrInsertDeclaration(Module *M, ID id,
                                             ArrayRef<Type *> Tys) {
   // There can never be multiple globals with the same name of different types,
   // because intrinsics must be a specific type.
-  FunctionType *FT = getType(M->getContext(), id, Tys);
-  return getOrInsertIntrinsicDeclarationImpl(M, id, Tys, FT);
-}
-
-Function *Intrinsic::getOrInsertDeclaration(Module *M, ID id, Type *RetTy,
-                                            ArrayRef<Type *> ArgTys) {
-  // If the intrinsic is not overloaded, use the non-overloaded version.
-  if (!Intrinsic::isOverloaded(id))
-    return getOrInsertDeclaration(M, id);
-
-  // Get the intrinsic signature metadata.
-  SmallVector<Intrinsic::IITDescriptor, 8> Table;
-  getIntrinsicInfoTableEntries(id, Table);
-  ArrayRef<Intrinsic::IITDescriptor> TableRef = Table;
-
-  FunctionType *FTy = FunctionType::get(RetTy, ArgTys, /*isVarArg=*/false);
-
-  // Automatically determine the overloaded types.
-  SmallVector<Type *, 4> OverloadTys;
-  [[maybe_unused]] Intrinsic::MatchIntrinsicTypesResult Res =
-      matchIntrinsicSignature(FTy, TableRef, OverloadTys);
-  assert(Res == Intrinsic::MatchIntrinsicTypes_Match &&
-         "intrinsic signature mismatch");
-
-  // If intrinsic requires vararg, recreate the FunctionType accordingly.
-  if (!matchIntrinsicVarArg(/*isVarArg=*/true, TableRef))
-    FTy = FunctionType::get(RetTy, ArgTys, /*isVarArg=*/true);
-
-  assert(TableRef.empty() && "Unprocessed descriptors remain");
-
-  return getOrInsertIntrinsicDeclarationImpl(M, id, OverloadTys, FTy);
+  auto *FT = getType(M->getContext(), id, Tys);
+  return cast<Function>(
+      M->getOrInsertFunction(
+           Tys.empty() ? getName(id) : getName(id, Tys, M, FT), FT)
+          .getCallee());
 }
 
 Function *Intrinsic::getDeclarationIfExists(const Module *M, ID id) {
@@ -974,14 +925,13 @@ matchIntrinsicType(Type *Ty, ArrayRef<Intrinsic::IITDescriptor> &Infos,
 
     return Ty != NewTy;
   }
-  case IITDescriptor::OneNthEltsVecArgument:
+  case IITDescriptor::HalfVecArgument:
     // If this is a forward reference, defer the check for later.
-    if (D.getRefArgNumber() >= ArgTys.size())
+    if (D.getArgumentNumber() >= ArgTys.size())
       return IsDeferredCheck || DeferCheck(Ty);
-    return !isa<VectorType>(ArgTys[D.getRefArgNumber()]) ||
-           VectorType::getOneNthElementsVectorType(
-               cast<VectorType>(ArgTys[D.getRefArgNumber()]),
-               D.getVectorDivisor()) != Ty;
+    return !isa<VectorType>(ArgTys[D.getArgumentNumber()]) ||
+           VectorType::getHalfElementsVectorType(
+               cast<VectorType>(ArgTys[D.getArgumentNumber()])) != Ty;
   case IITDescriptor::SameVecWidthArgument: {
     if (D.getArgumentNumber() >= ArgTys.size()) {
       // Defer check and subsequent check for the vector element type.
@@ -1163,31 +1113,3 @@ std::optional<Function *> Intrinsic::remangleIntrinsicFunction(Function *F) {
          "Shouldn't change the signature");
   return NewDecl;
 }
-
-struct InterleaveIntrinsic {
-  Intrinsic::ID Interleave, Deinterleave;
-};
-
-static InterleaveIntrinsic InterleaveIntrinsics[] = {
-    {Intrinsic::vector_interleave2, Intrinsic::vector_deinterleave2},
-    {Intrinsic::vector_interleave3, Intrinsic::vector_deinterleave3},
-    {Intrinsic::vector_interleave4, Intrinsic::vector_deinterleave4},
-    {Intrinsic::vector_interleave5, Intrinsic::vector_deinterleave5},
-    {Intrinsic::vector_interleave6, Intrinsic::vector_deinterleave6},
-    {Intrinsic::vector_interleave7, Intrinsic::vector_deinterleave7},
-    {Intrinsic::vector_interleave8, Intrinsic::vector_deinterleave8},
-};
-
-Intrinsic::ID Intrinsic::getInterleaveIntrinsicID(unsigned Factor) {
-  assert(Factor >= 2 && Factor <= 8 && "Unexpected factor");
-  return InterleaveIntrinsics[Factor - 2].Interleave;
-}
-
-Intrinsic::ID Intrinsic::getDeinterleaveIntrinsicID(unsigned Factor) {
-  assert(Factor >= 2 && Factor <= 8 && "Unexpected factor");
-  return InterleaveIntrinsics[Factor - 2].Deinterleave;
-}
-
-#define GET_INTRINSIC_PRETTY_PRINT_ARGUMENTS
-#include "llvm/IR/IntrinsicImpl.inc"
-#undef GET_INTRINSIC_PRETTY_PRINT_ARGUMENTS

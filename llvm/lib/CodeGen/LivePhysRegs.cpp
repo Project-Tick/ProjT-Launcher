@@ -90,7 +90,7 @@ void LivePhysRegs::stepForward(const MachineInstr &MI,
       if (O->isDef()) {
         // Note, dead defs are still recorded.  The caller should decide how to
         // handle them.
-        Clobbers.push_back(std::make_pair(Reg.id(), &*O));
+        Clobbers.push_back(std::make_pair(Reg, &*O));
       } else {
         assert(O->isUse());
         if (O->isKill())
@@ -139,8 +139,8 @@ LLVM_DUMP_METHOD void LivePhysRegs::dump() const {
 #endif
 
 bool LivePhysRegs::available(const MachineRegisterInfo &MRI,
-                             MCRegister Reg) const {
-  if (LiveRegs.count(Reg.id()))
+                             MCPhysReg Reg) const {
+  if (LiveRegs.count(Reg))
     return false;
   if (MRI.isReserved(Reg))
     return false;
@@ -151,34 +151,23 @@ bool LivePhysRegs::available(const MachineRegisterInfo &MRI,
   return true;
 }
 
-/// Adds a register, taking associated lane masks into consideration.
-void LivePhysRegs::addRegMaskPair(
-    const MachineBasicBlock::RegisterMaskPair &Pair) {
-  MCRegister Reg = Pair.PhysReg;
-  LaneBitmask Mask = Pair.LaneMask;
-  MCSubRegIndexIterator S(Reg, TRI);
-  assert(Mask.any() && "Invalid livein mask");
-  if (Mask.all() || !S.isValid()) {
-    addReg(Reg);
-    return;
-  }
-  for (; S.isValid(); ++S) {
-    unsigned SI = S.getSubRegIndex();
-    if ((Mask & TRI->getSubRegIndexLaneMask(SI)).any())
-      addReg(S.getSubReg());
-  }
-}
-
 /// Add live-in registers of basic block \p MBB to \p LiveRegs.
 void LivePhysRegs::addBlockLiveIns(const MachineBasicBlock &MBB) {
-  for (const auto &LI : MBB.liveins())
-    addRegMaskPair(LI);
-}
-
-/// Add live-out registers of basic block \p MBB to \p LiveRegs.
-void LivePhysRegs::addBlockLiveOuts(const MachineBasicBlock &MBB) {
-  for (const auto &LO : MBB.liveouts())
-    addRegMaskPair(LO);
+  for (const auto &LI : MBB.liveins()) {
+    MCRegister Reg = LI.PhysReg;
+    LaneBitmask Mask = LI.LaneMask;
+    MCSubRegIndexIterator S(Reg, TRI);
+    assert(Mask.any() && "Invalid livein mask");
+    if (Mask.all() || !S.isValid()) {
+      addReg(Reg);
+      continue;
+    }
+    for (; S.isValid(); ++S) {
+      unsigned SI = S.getSubRegIndex();
+      if ((Mask & TRI->getSubRegIndexLaneMask(SI)).any())
+        addReg(S.getSubReg());
+    }
+  }
 }
 
 /// Adds all callee saved registers to \p LiveRegs.
@@ -218,7 +207,9 @@ void LivePhysRegs::addPristines(const MachineFunction &MF) {
 }
 
 void LivePhysRegs::addLiveOutsNoPristines(const MachineBasicBlock &MBB) {
-  addBlockLiveOuts(MBB);
+  // To get the live-outs we simply merge the live-ins of all successors.
+  for (const MachineBasicBlock *Succ : MBB.successors())
+    addBlockLiveIns(*Succ);
   if (MBB.isReturnBlock()) {
     // Return blocks are a special case because we currently don't mark up
     // return instructions completely: specifically, there is no explicit
@@ -310,7 +301,7 @@ void llvm::recomputeLivenessFlags(MachineBasicBlock &MBB) {
       // the last instruction in the block.
       if (MI.isReturn() && MFI.isCalleeSavedInfoValid()) {
         for (const CalleeSavedInfo &Info : MFI.getCalleeSavedInfo()) {
-          if (Info.getReg() == Reg.asMCReg()) {
+          if (Info.getReg() == Reg) {
             IsNotLive = !Info.isRestored();
             break;
           }
@@ -346,28 +337,4 @@ void llvm::computeAndAddLiveIns(LivePhysRegs &LiveRegs,
                                 MachineBasicBlock &MBB) {
   computeLiveIns(LiveRegs, MBB);
   addLiveIns(MBB, LiveRegs);
-}
-
-// Returns true if `Reg` is used after this iterator in the rest of the
-// basic block or any successors of the basic block.
-bool llvm::isPhysRegUsedAfter(Register Reg, MachineBasicBlock::iterator MBI) {
-  assert(Reg.isPhysical() && "Apply to physical register only");
-
-  MachineBasicBlock *MBB = MBI->getParent();
-  // Scan forward through BB for a use/def of Reg
-  for (const MachineInstr &MI : llvm::make_range(std::next(MBI), MBB->end())) {
-    if (MI.readsRegister(Reg, /*TRI=*/nullptr))
-      return true;
-    // If we found a def, we can stop searching.
-    if (MI.definesRegister(Reg, /*TRI=*/nullptr))
-      return false;
-  }
-
-  // If we hit the end of the block, check whether Reg is live into a
-  //  successor.
-  for (const auto &LO : MBB->liveouts())
-    if (LO.PhysReg == Reg.asMCReg() && LO.LaneMask.any())
-      return true;
-
-  return false;
 }

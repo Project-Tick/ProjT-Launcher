@@ -793,21 +793,21 @@ static int linkAndVerify() {
   TripleName = TheTriple.getTriple();
 
   std::unique_ptr<MCSubtargetInfo> STI(
-      TheTarget->createMCSubtargetInfo(TheTriple, MCPU, ""));
+    TheTarget->createMCSubtargetInfo(TripleName, MCPU, ""));
   if (!STI)
     ErrorAndExit("Unable to create subtarget info!");
 
-  std::unique_ptr<MCRegisterInfo> MRI(TheTarget->createMCRegInfo(TheTriple));
+  std::unique_ptr<MCRegisterInfo> MRI(TheTarget->createMCRegInfo(TripleName));
   if (!MRI)
     ErrorAndExit("Unable to create target register info!");
 
   MCTargetOptions MCOptions;
   std::unique_ptr<MCAsmInfo> MAI(
-      TheTarget->createMCAsmInfo(*MRI, TheTriple, MCOptions));
+      TheTarget->createMCAsmInfo(*MRI, TripleName, MCOptions));
   if (!MAI)
     ErrorAndExit("Unable to create target asm info!");
 
-  MCContext Ctx(TheTriple, MAI.get(), MRI.get(), STI.get());
+  MCContext Ctx(Triple(TripleName), MAI.get(), MRI.get(), STI.get());
 
   std::unique_ptr<MCDisassembler> Disassembler(
     TheTarget->createMCDisassembler(*STI, Ctx));
@@ -819,7 +819,7 @@ static int linkAndVerify() {
     ErrorAndExit("Unable to create target instruction info!");
 
   std::unique_ptr<MCInstPrinter> InstPrinter(
-      TheTarget->createMCInstPrinter(TheTriple, 0, *MAI, *MII, *MRI));
+      TheTarget->createMCInstPrinter(Triple(TripleName), 0, *MAI, *MII, *MRI));
 
   // Load any dylibs requested on the command line.
   loadDylibs();
@@ -921,7 +921,7 @@ static int linkAndVerify() {
     RuntimeDyldChecker::MemoryRegionInfo SecInfo;
     SecInfo.setTargetAddress(Dyld.getSectionLoadAddress(*SectionID));
     StringRef SecContent = Dyld.getSectionContent(*SectionID);
-    SecInfo.setContent(ArrayRef<char>(SecContent));
+    SecInfo.setContent(ArrayRef<char>(SecContent.data(), SecContent.size()));
     return SecInfo;
   };
 
@@ -929,23 +929,22 @@ static int linkAndVerify() {
                                        StringRef SymbolName,
                                        StringRef KindNameFilter)
       -> Expected<RuntimeDyldChecker::MemoryRegionInfo> {
-    auto SMIt = StubMap.find(StubContainer);
-    if (SMIt == StubMap.end())
+    if (!StubMap.count(StubContainer))
       return make_error<StringError>("Stub container not found: " +
                                          StubContainer,
                                      inconvertibleErrorCode());
-    auto It = SMIt->second.find(SymbolName);
-    if (It == SMIt->second.end())
+    if (!StubMap[StubContainer].count(SymbolName))
       return make_error<StringError>("Symbol name " + SymbolName +
                                          " in stub container " + StubContainer,
                                      inconvertibleErrorCode());
-    auto &SI = It->second;
+    auto &SI = StubMap[StubContainer][SymbolName];
     RuntimeDyldChecker::MemoryRegionInfo StubMemInfo;
     StubMemInfo.setTargetAddress(Dyld.getSectionLoadAddress(SI.SectionID) +
                                  SI.Offset);
     StringRef SecContent =
         Dyld.getSectionContent(SI.SectionID).substr(SI.Offset);
-    StubMemInfo.setContent(ArrayRef<char>(SecContent));
+    StubMemInfo.setContent(
+        ArrayRef<char>(SecContent.data(), SecContent.size()));
     return StubMemInfo;
   };
 

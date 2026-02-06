@@ -20,7 +20,6 @@
 #include "clang/Analysis/FlowSensitive/CachedConstAccessorsLattice.h"
 #include "clang/Analysis/FlowSensitive/DataflowAnalysis.h"
 #include "clang/Analysis/FlowSensitive/DataflowEnvironment.h"
-#include "clang/Analysis/FlowSensitive/MatchSwitch.h"
 #include "clang/Analysis/FlowSensitive/NoopLattice.h"
 #include "clang/Basic/SourceLocation.h"
 #include "llvm/ADT/SmallVector.h"
@@ -46,9 +45,6 @@ struct UncheckedOptionalAccessModelOptions {
   /// are confident in this const accessor caching, we shouldn't need the
   /// IgnoreSmartPointerDereference option anymore.
   bool IgnoreSmartPointerDereference = false;
-
-  /// In generating diagnostics, ignore calls to `optional::value()`.
-  bool IgnoreValueCalls = false;
 };
 
 using UncheckedOptionalAccessLattice = CachedConstAccessorsLattice<NoopLattice>;
@@ -75,17 +71,12 @@ private:
       TransferMatchSwitch;
 };
 
-/// Diagnostic information for an unchecked optional access.
-struct UncheckedOptionalAccessDiagnostic {
-  CharSourceRange Range;
-};
-
 class UncheckedOptionalAccessDiagnoser {
 public:
   UncheckedOptionalAccessDiagnoser(
       UncheckedOptionalAccessModelOptions Options = {});
 
-  llvm::SmallVector<UncheckedOptionalAccessDiagnostic>
+  llvm::SmallVector<SourceLocation>
   operator()(const CFGElement &Elt, ASTContext &Ctx,
              const TransferStateForDiagnostics<UncheckedOptionalAccessLattice>
                  &State) {
@@ -93,8 +84,7 @@ public:
   }
 
 private:
-  CFGMatchSwitch<const Environment,
-                 llvm::SmallVector<UncheckedOptionalAccessDiagnostic>>
+  CFGMatchSwitch<const Environment, llvm::SmallVector<SourceLocation>>
       DiagnoseMatchSwitch;
 };
 

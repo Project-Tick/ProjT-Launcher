@@ -16,13 +16,13 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Error.h"
 #include <list>
 #include <utility>
 #include <vector>
 
-namespace llvm::xray {
+namespace llvm {
+namespace xray {
 
 class Profile;
 
@@ -34,18 +34,18 @@ class Trace;
 ///
 /// For any errors encountered in the loading of the profile data from
 /// |Filename|, this function will return an Error condition appropriately.
-LLVM_ABI Expected<Profile> loadProfile(StringRef Filename);
+Expected<Profile> loadProfile(StringRef Filename);
 
 /// This algorithm will merge two Profile instances into a single Profile
 /// instance, aggregating blocks by Thread ID.
-LLVM_ABI Profile mergeProfilesByThread(const Profile &L, const Profile &R);
+Profile mergeProfilesByThread(const Profile &L, const Profile &R);
 
 /// This algorithm will merge two Profile instances into a single Profile
 /// instance, aggregating blocks by function call stack.
-LLVM_ABI Profile mergeProfilesByStack(const Profile &L, const Profile &R);
+Profile mergeProfilesByStack(const Profile &L, const Profile &R);
 
 /// This function takes a Trace and creates a Profile instance from it.
-LLVM_ABI Expected<Profile> profileFromTrace(const Trace &T);
+Expected<Profile> profileFromTrace(const Trace &T);
 
 /// Profile instances are thread-compatible.
 class Profile {
@@ -68,11 +68,11 @@ public:
   ///
   /// Returns an error if |P| had not been interned before into the Profile.
   ///
-  LLVM_ABI Expected<std::vector<FuncID>> expandPath(PathID P) const;
+  Expected<std::vector<FuncID>> expandPath(PathID P) const;
 
   /// The stack represented in |P| must be in stack order (leaf to root). This
   /// will always return the same PathID for |P| that has the same sequence.
-  LLVM_ABI PathID internPath(ArrayRef<FuncID> P);
+  PathID internPath(ArrayRef<FuncID> P);
 
   /// Appends a fully-formed Block instance into the Profile.
   ///
@@ -80,7 +80,7 @@ public:
   ///
   ///    - The PathData component of the Block is empty
   ///
-  LLVM_ABI Error addBlock(Block &&B);
+  Error addBlock(Block &&B);
 
   Profile() = default;
   ~Profile() = default;
@@ -99,8 +99,8 @@ public:
     return *this;
   }
 
-  LLVM_ABI Profile(const Profile &);
-  LLVM_ABI Profile &operator=(const Profile &);
+  Profile(const Profile &);
+  Profile &operator=(const Profile &);
 
   friend void swap(Profile &L, Profile &R) {
     using std::swap;
@@ -143,6 +143,7 @@ public:
   bool empty() const { return Blocks.empty(); }
 };
 
-} // namespace llvm::xray
+} // namespace xray
+} // namespace llvm
 
 #endif

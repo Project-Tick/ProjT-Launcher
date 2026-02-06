@@ -62,6 +62,9 @@
 namespace clang {
 namespace clangd {
 
+constexpr int FuzzyMatcher::MaxPat;
+constexpr int FuzzyMatcher::MaxWord;
+
 static char lower(char C) { return C >= 'A' && C <= 'Z' ? C + ('a' - 'A') : C; }
 // A "negative infinity" score that won't overflow.
 // We use this to mark unreachable states and forbidden solutions.

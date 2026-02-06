@@ -48,8 +48,7 @@ inline std::array<int64_t, N> makeStrides(ArrayRef<int64_t> shape) {
   std::array<int64_t, N> res;
   int64_t running = 1;
   for (int64_t idx = N - 1; idx >= 0; --idx) {
-    assert(shape[idx] >= 0 &&
-           "size must be non-negative for all shape dimensions");
+    assert(shape[idx] && "size must be non-negative for all shape dimensions");
     res[idx] = running;
     running *= shape[idx];
   }
@@ -68,8 +67,8 @@ makeStridedMemRefDescriptor(T *ptr, T *alignedPtr, ArrayRef<int64_t> shape,
   assert(shape.size() == N);
   assert(shapeAlloc.size() == N);
   StridedMemRefType<T, N> descriptor;
-  descriptor.basePtr = ptr;
-  descriptor.data = alignedPtr;
+  descriptor.basePtr = static_cast<T *>(ptr);
+  descriptor.data = static_cast<T *>(alignedPtr);
   descriptor.offset = 0;
   std::copy(shape.begin(), shape.end(), descriptor.sizes);
   auto strides = makeStrides<N>(shapeAlloc);
@@ -89,8 +88,8 @@ makeStridedMemRefDescriptor(T *ptr, T *alignedPtr, ArrayRef<int64_t> shape = {},
   assert(shape.size() == N);
   assert(shapeAlloc.size() == N);
   StridedMemRefType<T, 0> descriptor;
-  descriptor.basePtr = ptr;
-  descriptor.data = alignedPtr;
+  descriptor.basePtr = static_cast<T *>(ptr);
+  descriptor.data = static_cast<T *>(alignedPtr);
   descriptor.offset = 0;
   return descriptor;
 }
@@ -151,7 +150,7 @@ public:
       AllocFunType allocFun = &::malloc,
       std::function<void(StridedMemRefType<T, Rank>)> freeFun =
           [](StridedMemRefType<T, Rank> descriptor) {
-            ::free(descriptor.basePtr);
+            ::free(descriptor.data);
           })
       : freeFunc(freeFun) {
     if (shapeAlloc.empty())
@@ -164,17 +163,19 @@ public:
     int64_t nElements = 1;
     for (int64_t s : shapeAlloc)
       nElements *= s;
-    auto [allocatedPtr, alignedData] =
+    auto [data, alignedData] =
         detail::allocAligned<T>(nElements, allocFun, alignment);
-    descriptor = detail::makeStridedMemRefDescriptor<Rank>(
-        allocatedPtr, alignedData, shape, shapeAlloc);
+    descriptor = detail::makeStridedMemRefDescriptor<Rank>(data, alignedData,
+                                                           shape, shapeAlloc);
     if (init) {
       for (StridedMemrefIterator<T, Rank> it = descriptor.begin(),
                                           end = descriptor.end();
            it != end; ++it)
         init(*it, it.getIndices());
     } else {
-      memset(alignedData, 0, nElements * sizeof(T));
+      memset(descriptor.data, 0,
+             nElements * sizeof(T) +
+                 alignment.value_or(detail::nextPowerOf2(sizeof(T))));
     }
   }
   /// Take ownership of an existing descriptor with a custom deleter.

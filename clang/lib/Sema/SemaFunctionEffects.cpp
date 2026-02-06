@@ -990,7 +990,7 @@ private:
         followDestructor(dyn_cast<CXXRecordDecl>(Dtor->getParent()), Dtor);
 
       if (auto *FD = dyn_cast<FunctionDecl>(CurrentCaller.CDecl)) {
-        TrailingRequiresClause = FD->getTrailingRequiresClause().ConstraintExpr;
+        TrailingRequiresClause = FD->getTrailingRequiresClause();
 
         // Note that FD->getType->getAs<FunctionProtoType>() can yield a
         // noexcept Expr which has been boiled down to a constant expression.
@@ -1208,16 +1208,8 @@ private:
         return true;
       }
 
-      // No Decl, just an Expr. Just check based on its type. Bound member
-      // functions are a special expression type and need to be specially
-      // unpacked.
-      QualType CalleeExprQT = CalleeExpr->getType();
-      if (CalleeExpr->isBoundMemberFunction(Outer.S.getASTContext())) {
-        QualType QT = Expr::findBoundMemberType(CalleeExpr);
-        if (!QT.isNull())
-          CalleeExprQT = QT;
-      }
-      checkIndirectCall(Call, CalleeExprQT);
+      // No Decl, just an Expr. Just check based on its type.
+      checkIndirectCall(Call, CalleeExpr->getType());
 
       return true;
     }
@@ -1279,15 +1271,7 @@ private:
       const CXXConstructorDecl *Ctor = Construct->getConstructor();
       CallableInfo CI(*Ctor);
       followCall(CI, Construct->getLocation());
-      return true;
-    }
 
-    bool VisitCXXBindTemporaryExpr(CXXBindTemporaryExpr *BTE) override {
-      const CXXDestructorDecl *Dtor = BTE->getTemporary()->getDestructor();
-      if (Dtor != nullptr) {
-        CallableInfo CI(*Dtor);
-        followCall(CI, BTE->getBeginLoc());
-      }
       return true;
     }
 
@@ -1299,14 +1283,6 @@ private:
       // should suffice.
       if (Statement != TrailingRequiresClause && Statement != NoexceptExpr)
         return DynamicRecursiveASTVisitor::TraverseStmt(Statement);
-      return true;
-    }
-
-    bool TraverseCXXRecordDecl(CXXRecordDecl *D) override {
-      // Completely skip local struct/class/union declarations since their
-      // methods would otherwise be incorrectly interpreted as part of the
-      // function we are currently traversing. The initial Sema pass will have
-      // already recorded any nonblocking methods needing analysis.
       return true;
     }
 
@@ -1376,15 +1352,11 @@ private:
       return true;
     }
 
-    bool TraverseTypeOfExprTypeLoc(TypeOfExprTypeLoc Node,
-                                   bool TraverseQualifier) override {
+    bool TraverseTypeOfExprTypeLoc(TypeOfExprTypeLoc Node) override {
       return true;
     }
 
-    bool TraverseDecltypeTypeLoc(DecltypeTypeLoc Node,
-                                 bool TraverseQualifier) override {
-      return true;
-    }
+    bool TraverseDecltypeTypeLoc(DecltypeTypeLoc Node) override { return true; }
 
     bool TraverseCXXNoexceptExpr(CXXNoexceptExpr *Node) override {
       return true;

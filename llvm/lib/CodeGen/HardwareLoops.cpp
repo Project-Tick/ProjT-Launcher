@@ -90,7 +90,7 @@ static void debugHWLoopFailure(const StringRef DebugMsg,
 
 static OptimizationRemarkAnalysis
 createHWLoopAnalysis(StringRef RemarkName, Loop *L, Instruction *I) {
-  BasicBlock *CodeRegion = L->getHeader();
+  Value *CodeRegion = L->getHeader();
   DebugLoc DL = L->getStartLoc();
 
   if (I) {
@@ -143,11 +143,12 @@ namespace {
   class HardwareLoopsImpl {
   public:
     HardwareLoopsImpl(ScalarEvolution &SE, LoopInfo &LI, bool PreserveLCSSA,
-                      DominatorTree &DT, const TargetTransformInfo &TTI,
-                      TargetLibraryInfo *TLI, AssumptionCache &AC,
-                      OptimizationRemarkEmitter *ORE, HardwareLoopOptions &Opts)
-        : SE(SE), LI(LI), PreserveLCSSA(PreserveLCSSA), DT(DT), TTI(TTI),
-          TLI(TLI), AC(AC), ORE(ORE), Opts(Opts) {}
+                      DominatorTree &DT, const DataLayout &DL,
+                      const TargetTransformInfo &TTI, TargetLibraryInfo *TLI,
+                      AssumptionCache &AC, OptimizationRemarkEmitter *ORE,
+                      HardwareLoopOptions &Opts)
+      : SE(SE), LI(LI), PreserveLCSSA(PreserveLCSSA), DT(DT), DL(DL), TTI(TTI),
+        TLI(TLI), AC(AC), ORE(ORE), Opts(Opts) { }
 
     bool run(Function &F);
 
@@ -163,6 +164,7 @@ namespace {
     LoopInfo &LI;
     bool PreserveLCSSA;
     DominatorTree &DT;
+    const DataLayout &DL;
     const TargetTransformInfo &TTI;
     TargetLibraryInfo *TLI = nullptr;
     AssumptionCache &AC;
@@ -195,17 +197,22 @@ namespace {
 
   public:
     HardwareLoop(HardwareLoopInfo &Info, ScalarEvolution &SE,
-                 OptimizationRemarkEmitter *ORE, HardwareLoopOptions &Opts)
-        : SE(SE), ORE(ORE), Opts(Opts), L(Info.L),
-          M(L->getHeader()->getModule()), ExitCount(Info.ExitCount),
-          CountType(Info.CountType), ExitBranch(Info.ExitBranch),
-          LoopDecrement(Info.LoopDecrement), UsePHICounter(Info.CounterInReg),
-          UseLoopGuard(Info.PerformEntryTest) {}
+                 const DataLayout &DL,
+                 OptimizationRemarkEmitter *ORE,
+                 HardwareLoopOptions &Opts) :
+      SE(SE), DL(DL), ORE(ORE), Opts(Opts), L(Info.L), M(L->getHeader()->getModule()),
+      ExitCount(Info.ExitCount),
+      CountType(Info.CountType),
+      ExitBranch(Info.ExitBranch),
+      LoopDecrement(Info.LoopDecrement),
+      UsePHICounter(Info.CounterInReg),
+      UseLoopGuard(Info.PerformEntryTest) { }
 
     void Create();
 
   private:
     ScalarEvolution &SE;
+    const DataLayout &DL;
     OptimizationRemarkEmitter *ORE = nullptr;
     HardwareLoopOptions &Opts;
     Loop *L                 = nullptr;
@@ -232,6 +239,7 @@ bool HardwareLoopsLegacy::runOnFunction(Function &F) {
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>().getSE();
   auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
   auto &TTI = getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);
+  auto &DL = F.getDataLayout();
   auto *ORE = &getAnalysis<OptimizationRemarkEmitterWrapperPass>().getORE();
   auto *TLIP = getAnalysisIfAvailable<TargetLibraryInfoWrapperPass>();
   auto *TLI = TLIP ? &TLIP->getTLI(F) : nullptr;
@@ -252,7 +260,8 @@ bool HardwareLoopsLegacy::runOnFunction(Function &F) {
   if (CounterBitWidth.getNumOccurrences())
     Opts.setCounterBitwidth(CounterBitWidth);
 
-  HardwareLoopsImpl Impl(SE, LI, PreserveLCSSA, DT, TTI, TLI, AC, ORE, Opts);
+  HardwareLoopsImpl Impl(SE, LI, PreserveLCSSA, DT, DL, TTI, TLI, AC, ORE,
+                         Opts);
   return Impl.run(F);
 }
 
@@ -265,8 +274,9 @@ PreservedAnalyses HardwareLoopsPass::run(Function &F,
   auto *TLI = &AM.getResult<TargetLibraryAnalysis>(F);
   auto &AC = AM.getResult<AssumptionAnalysis>(F);
   auto *ORE = &AM.getResult<OptimizationRemarkEmitterAnalysis>(F);
+  auto &DL = F.getDataLayout();
 
-  HardwareLoopsImpl Impl(SE, LI, true, DT, TTI, TLI, AC, ORE, Opts);
+  HardwareLoopsImpl Impl(SE, LI, true, DT, DL, TTI, TLI, AC, ORE, Opts);
   bool Changed = Impl.run(F);
   if (!Changed)
     return PreservedAnalyses::all();
@@ -355,7 +365,7 @@ bool HardwareLoopsImpl::TryConvertLoop(HardwareLoopInfo &HWLoopInfo) {
   if (!Preheader)
     return false;
 
-  HardwareLoop HWLoop(HWLoopInfo, SE, ORE, Opts);
+  HardwareLoop HWLoop(HWLoopInfo, SE, DL, ORE, Opts);
   HWLoop.Create();
   ++NumHWLoops;
   return true;
@@ -434,7 +444,7 @@ Value *HardwareLoop::InitLoopCount() {
   // Can we replace a conditional branch with an intrinsic that sets the
   // loop counter and tests that is not zero?
 
-  SCEVExpander SCEVE(SE, "loopcnt");
+  SCEVExpander SCEVE(SE, DL, "loopcnt");
   if (!ExitCount->getType()->isPointerTy() &&
       ExitCount->getType() != CountType)
     ExitCount = SE.getZeroExtendExpr(ExitCount, CountType);

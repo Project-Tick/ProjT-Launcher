@@ -11,6 +11,7 @@ from lldbsuite.test import lldbutil
 
 
 class TestCorefileExceptionReason(TestBase):
+    @skipIfOutOfTreeDebugserver  # newer debugserver required for these qMemoryRegionInfo types
     @no_debug_info_test
     @skipUnlessDarwin
     @skipIf(archs=no_match(["arm64", "arm64e"]))
@@ -44,7 +45,7 @@ class TestCorefileExceptionReason(TestBase):
             self.runCmd("fr v")
 
         self.assertEqual(
-            thread.stop_description, "ESR_EC_DABORT_EL0 (fault address: 0x0)"
+            thread.GetStopDescription(256), "ESR_EC_DABORT_EL0 (fault address: 0x0)"
         )
 
         if self.TraceOn():

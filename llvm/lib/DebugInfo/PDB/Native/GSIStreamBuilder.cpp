@@ -25,7 +25,6 @@
 #include "llvm/DebugInfo/PDB/Native/RawTypes.h"
 #include "llvm/Support/BinaryItemStream.h"
 #include "llvm/Support/BinaryStreamWriter.h"
-#include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/Parallel.h"
 #include "llvm/Support/TimeProfiler.h"
 #include "llvm/Support/xxhash.h"
@@ -40,7 +39,7 @@ using namespace llvm::codeview;
 // Helper class for building the public and global PDB hash table buckets.
 struct llvm::pdb::GSIHashStreamBuilder {
   // Sum of the size of all public or global records.
-  uint64_t RecordByteSize = 0;
+  uint32_t RecordByteSize = 0;
 
   std::vector<PSHashRecord> HashRecords;
 
@@ -119,7 +118,7 @@ static CVSymbol serializePublic(uint8_t *Mem, const BulkPublic &Pub) {
   memcpy(NameMem, Pub.Name, NameLen);
   // Zero the null terminator and remaining bytes.
   memset(&NameMem[NameLen], 0, Size - sizeof(PublicSym32Layout) - NameLen);
-  return CVSymbol(ArrayRef(Mem, Size));
+  return CVSymbol(ArrayRef(reinterpret_cast<uint8_t *>(Mem), Size));
 }
 
 uint32_t GSIHashStreamBuilder::calculateSerializedLength() const {
@@ -320,14 +319,7 @@ Error GSIStreamBuilder::finalizeMsfLayout() {
     return Idx.takeError();
   PublicsStreamIndex = *Idx;
 
-  uint64_t RecordBytes = PSH->RecordByteSize + GSH->RecordByteSize;
-  if (RecordBytes > UINT32_MAX)
-    return make_error<StringError>(
-        formatv("the public symbols ({0} bytes) and global symbols ({1} bytes) "
-                "are too large to fit in a PDB file; "
-                "the maximum total is {2} bytes.",
-                PSH->RecordByteSize, GSH->RecordByteSize, UINT32_MAX),
-        inconvertibleErrorCode());
+  uint32_t RecordBytes = PSH->RecordByteSize + GSH->RecordByteSize;
 
   Idx = Msf.addStream(RecordBytes);
   if (!Idx)

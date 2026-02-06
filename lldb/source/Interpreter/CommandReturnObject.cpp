@@ -8,7 +8,7 @@
 
 #include "lldb/Interpreter/CommandReturnObject.h"
 
-#include "lldb/Host/common/DiagnosticsRendering.h"
+#include "lldb/Utility/DiagnosticsRendering.h"
 #include "lldb/Utility/Status.h"
 #include "lldb/Utility/StreamString.h"
 
@@ -147,8 +147,7 @@ void CommandReturnObject::SetError(llvm::Error error) {
   }
 }
 
-std::string
-CommandReturnObject::GetInlineDiagnosticString(unsigned indent) const {
+std::string CommandReturnObject::GetInlineDiagnosticString(unsigned indent) {
   StreamString diag_stream(m_colors);
   RenderDiagnosticDetails(diag_stream, indent, true, m_diagnostics);
   // Duplex the diagnostics to the secondary stream (but not inlined).
@@ -158,7 +157,7 @@ CommandReturnObject::GetInlineDiagnosticString(unsigned indent) const {
   return diag_stream.GetString().str();
 }
 
-std::string CommandReturnObject::GetErrorString(bool with_diagnostics) const {
+std::string CommandReturnObject::GetErrorString(bool with_diagnostics) {
   StreamString stream(m_colors);
   if (with_diagnostics)
     RenderDiagnosticDetails(stream, std::nullopt, false, m_diagnostics);
@@ -171,6 +170,15 @@ std::string CommandReturnObject::GetErrorString(bool with_diagnostics) const {
 
 StructuredData::ObjectSP CommandReturnObject::GetErrorData() {
   return Serialize(m_diagnostics);
+}
+
+// Similar to AppendError, but do not prepend 'Status: ' to message, and don't
+// append "\n" to the end of it.
+
+void CommandReturnObject::AppendRawError(llvm::StringRef in_string) {
+  SetStatus(eReturnStatusFailed);
+  assert(!in_string.empty() && "Expected a non-empty error message");
+  GetErrorStream() << in_string;
 }
 
 void CommandReturnObject::SetStatus(ReturnStatus status) { m_status = status; }

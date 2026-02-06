@@ -49,6 +49,7 @@ ParseResult
 parseEnumKeywordAttr(EnumClass &value, ParserType &parser,
                      StringRef attrName = spirv::attributeName<EnumClass>()) {
   StringRef keyword;
+  SmallVector<NamedAttribute, 1> attr;
   auto loc = parser.getCurrentLocation();
   if (parser.parseKeyword(&keyword))
     return failure();
@@ -75,11 +76,11 @@ parseEnumStrAttr(EnumClass &value, OpAsmParser &parser,
   if (parser.parseAttribute(attrVal, parser.getBuilder().getNoneType(),
                             attrName, attr))
     return failure();
-  if (!isa<StringAttr>(attrVal))
+  if (!llvm::isa<StringAttr>(attrVal))
     return parser.emitError(loc, "expected ")
            << attrName << " attribute specified as string";
-  auto attrOptional =
-      spirv::symbolizeEnum<EnumClass>(cast<StringAttr>(attrVal).getValue());
+  auto attrOptional = spirv::symbolizeEnum<EnumClass>(
+      llvm::cast<StringAttr>(attrVal).getValue());
   if (!attrOptional)
     return parser.emitError(loc, "invalid ")
            << attrName << " attribute specification: " << attrVal;

@@ -241,10 +241,9 @@ bool DataDependenceGraph::addNode(DDGNode &N) {
 }
 
 const PiBlockDDGNode *DataDependenceGraph::getPiBlock(const NodeType &N) const {
-  auto It = PiBlockMap.find(&N);
-  if (It == PiBlockMap.end())
+  if (!PiBlockMap.contains(&N))
     return nullptr;
-  auto *Pi = It->second;
+  auto *Pi = PiBlockMap.find(&N)->second;
   assert(!PiBlockMap.contains(Pi) && "Nested pi-blocks detected.");
   return Pi;
 }

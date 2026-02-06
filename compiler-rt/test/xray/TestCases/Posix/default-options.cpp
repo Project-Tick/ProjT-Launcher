@@ -4,8 +4,6 @@
 
 // REQUIRES: built-in-llvm-tree
 
-// UNSUPPORTED: ppc
-
 extern "C" __attribute__((xray_never_instrument)) const char *
 __xray_default_options() {
   return "patch_premain=true:verbosity=1:xray_mode=xray-basic";

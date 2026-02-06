@@ -1,10 +1,10 @@
-! RUN: bbc -emit-fir %s -o - | FileCheck %s
-! RUN: bbc --math-runtime=precise -emit-fir %s -o - | FileCheck %s --check-prefix=PRECISE
-! RUN: bbc --force-mlir-complex -emit-fir %s -o - | FileCheck %s
-! RUN: %flang_fc1 -emit-fir %s -o - | FileCheck %s
-! RUN: %flang_fc1 -fapprox-func -emit-fir %s -o - | FileCheck %s
-! RUN: %flang_fc1 -emit-fir -mllvm --math-runtime=precise %s -o - | FileCheck %s --check-prefix=PRECISE
-! RUN: %flang_fc1 -emit-fir -mllvm --force-mlir-complex %s -o - | FileCheck %s
+! RUN: bbc -emit-fir %s -o - | FileCheck %s --check-prefixes="CHECK,PRECISE"
+! RUN: bbc --math-runtime=precise -emit-fir %s -o - | FileCheck %s --check-prefixes="PRECISE"
+! RUN: bbc --force-mlir-complex -emit-fir %s -o - | FileCheck %s --check-prefixes="FAST"
+! RUN: %flang_fc1 -emit-fir %s -o - | FileCheck %s --check-prefixes="CHECK,PRECISE"
+! RUN: %flang_fc1 -fapprox-func -emit-fir %s -o - | FileCheck %s --check-prefixes="CHECK,FAST"
+! RUN: %flang_fc1 -emit-fir -mllvm --math-runtime=precise %s -o - | FileCheck %s --check-prefixes="PRECISE"
+! RUN: %flang_fc1 -emit-fir -mllvm --force-mlir-complex %s -o - | FileCheck %s --check-prefixes="FAST"
 
 ! Test power operation lowering
 
@@ -96,8 +96,7 @@ subroutine pow_c4_i4(x, y, z)
   complex :: x, z
   integer :: y
   z = x ** y
-  ! CHECK: complex.powi %{{.*}}, %{{.*}} : complex<f32>, i32
-  ! PRECISE: fir.call @_FortranAcpowi
+  ! CHECK: call @_FortranAcpowi
 end subroutine
 
 ! CHECK-LABEL: pow_c4_i8
@@ -105,8 +104,7 @@ subroutine pow_c4_i8(x, y, z)
   complex :: x, z
   integer(8) :: y
   z = x ** y
-  ! CHECK: complex.powi %{{.*}}, %{{.*}} : complex<f32>, i64
-  ! PRECISE: fir.call @_FortranAcpowk
+  ! CHECK: call @_FortranAcpowk
 end subroutine
 
 ! CHECK-LABEL: pow_c8_i4
@@ -114,8 +112,7 @@ subroutine pow_c8_i4(x, y, z)
   complex(8) :: x, z
   integer :: y
   z = x ** y
-  ! CHECK: complex.powi %{{.*}}, %{{.*}} : complex<f64>, i32
-  ! PRECISE: fir.call @_FortranAzpowi
+  ! CHECK: call @_FortranAzpowi
 end subroutine
 
 ! CHECK-LABEL: pow_c8_i8
@@ -123,22 +120,22 @@ subroutine pow_c8_i8(x, y, z)
   complex(8) :: x, z
   integer(8) :: y
   z = x ** y
-  ! CHECK: complex.powi %{{.*}}, %{{.*}} : complex<f64>, i64
-  ! PRECISE: fir.call @_FortranAzpowk
+  ! CHECK: call @_FortranAzpowk
 end subroutine
 
 ! CHECK-LABEL: pow_c4_c4
 subroutine pow_c4_c4(x, y, z)
   complex :: x, y, z
   z = x ** y
-  ! CHECK: complex.pow %{{.*}}, %{{.*}} : complex<f32>
-  ! PRECISE: fir.call @cpowf
+  ! FAST: complex.pow %{{.*}}, %{{.*}} : complex<f32>
+  ! PRECISE: call @cpowf
 end subroutine
 
 ! CHECK-LABEL: pow_c8_c8
 subroutine pow_c8_c8(x, y, z)
   complex(8) :: x, y, z
   z = x ** y
-  ! CHECK: complex.pow %{{.*}}, %{{.*}} : complex<f64>
-  ! PRECISE: fir.call @cpow
+  ! FAST: complex.pow %{{.*}}, %{{.*}} : complex<f64>
+  ! PRECISE: call @cpow
 end subroutine
+

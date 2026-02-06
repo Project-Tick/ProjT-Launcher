@@ -7,8 +7,8 @@
 //===----------------------------------------------------------------------===//
 #include "llvm/XRay/BlockPrinter.h"
 
-using namespace llvm;
-using namespace llvm::xray;
+namespace llvm {
+namespace xray {
 
 Error BlockPrinter::visit(BufferExtents &R) {
   OS << "\n[New Block]\n";
@@ -108,3 +108,6 @@ Error BlockPrinter::visit(EndBufferRecord &R) {
     auto E = RP.visit(R);
     return E;
 }
+
+} // namespace xray
+} // namespace llvm

@@ -9,12 +9,11 @@
 #ifndef LLVM_SUPPORT_WINDOWSERROR_H
 #define LLVM_SUPPORT_WINDOWSERROR_H
 
-#include "llvm/Support/Compiler.h"
 #include <system_error>
 
 namespace llvm {
-LLVM_ABI std::error_code mapLastWindowsError();
-LLVM_ABI std::error_code mapWindowsError(unsigned EV);
+std::error_code mapLastWindowsError();
+std::error_code mapWindowsError(unsigned EV);
 }
 
 #endif

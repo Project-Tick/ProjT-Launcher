@@ -39,10 +39,6 @@ inline bool isImmUnsignedi4Value(uint64_t Value) {
   return isUInt<4>(Value);
 }
 
-inline bool isImmUnsignedi6Value(uint64_t Value) {
-  return isUInt<6>(Value);
-}
-
 } // End of namespace llvm
 
 #endif

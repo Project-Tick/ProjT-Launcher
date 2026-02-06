@@ -10,8 +10,7 @@
 
 #include <stddef.h> // For size_t
 
-#include "array.h" // For array
-#include "limits.h"
+#include "array.h"       // For array
 #include "src/__support/macros/config.h"
 #include "type_traits.h" // For remove_cv_t, enable_if_t, is_same_v, is_const_v
 
@@ -49,18 +48,15 @@ public:
   using const_reference = const T &;
   using iterator = T *;
 
-  LIBC_INLINE_VAR static constexpr size_type dynamic_extent =
-      cpp::numeric_limits<size_type>::max();
+  LIBC_INLINE_VAR static constexpr size_type dynamic_extent = -1;
 
   LIBC_INLINE constexpr span() : span_data(nullptr), span_size(0) {}
-
-  LIBC_INLINE constexpr span(const span &) = default;
 
   LIBC_INLINE constexpr span(pointer first, size_type count)
       : span_data(first), span_size(count) {}
 
   LIBC_INLINE constexpr span(pointer first, pointer end)
-      : span_data(first), span_size(static_cast<size_t>(end - first)) {}
+      : span_data(first), span_size(end - first) {}
 
   template <typename U, size_t N,
             cpp::enable_if_t<is_compatible_v<U>, bool> = true>

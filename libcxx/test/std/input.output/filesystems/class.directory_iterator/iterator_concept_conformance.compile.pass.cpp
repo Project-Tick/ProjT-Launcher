@@ -8,6 +8,7 @@
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
 // UNSUPPORTED: no-filesystem
+// UNSUPPORTED: availability-filesystem-missing
 
 // directory_iterator, recursive_directory_iterator
 

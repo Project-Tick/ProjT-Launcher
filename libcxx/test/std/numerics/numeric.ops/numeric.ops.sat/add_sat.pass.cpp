@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// REQUIRES: std-at-least-c++26
+// UNSUPPORTED: c++03, c++11, c++14, c++17, c++20, c++23
 
 // <numeric>
 
@@ -25,7 +25,8 @@ constexpr bool test_signed() {
   constexpr auto minVal = std::numeric_limits<IntegerT>::min();
   constexpr auto maxVal = std::numeric_limits<IntegerT>::max();
 
-  std::same_as<IntegerT> decltype(auto) _ = std::add_sat(minVal, maxVal);
+  // TODO(LLVM-20) remove [[maybe_unused]]  since all supported compilers support "Placeholder variables with no name"
+  [[maybe_unused]] std::same_as<IntegerT> decltype(auto) _ = std::add_sat(minVal, maxVal);
 
   static_assert(noexcept(std::add_sat(minVal, maxVal)));
 
@@ -96,7 +97,8 @@ constexpr bool test_unsigned() {
   constexpr auto minVal = std::numeric_limits<IntegerT>::min();
   constexpr auto maxVal = std::numeric_limits<IntegerT>::max();
 
-  std::same_as<IntegerT> decltype(auto) _ = std::add_sat(minVal, maxVal);
+  // TODO(LLVM-20) remove [[maybe_unused]]  since all supported compilers support "Placeholder variables with no name"
+  [[maybe_unused]] std::same_as<IntegerT> decltype(auto) _ = std::add_sat(minVal, maxVal);
 
   static_assert(noexcept(std::add_sat(minVal, maxVal)));
 

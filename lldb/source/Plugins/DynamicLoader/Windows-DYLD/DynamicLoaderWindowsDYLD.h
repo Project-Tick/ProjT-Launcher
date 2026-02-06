@@ -45,8 +45,7 @@ protected:
   lldb::addr_t GetLoadAddress(lldb::ModuleSP executable);
 
 private:
-  std::map<lldb::ModuleWP, lldb::addr_t, std::owner_less<lldb::ModuleWP>>
-      m_loaded_modules;
+  std::map<lldb::ModuleSP, lldb::addr_t> m_loaded_modules;
 };
 
 } // namespace lldb_private

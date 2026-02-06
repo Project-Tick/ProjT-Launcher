@@ -1,20 +1,17 @@
-! This tests that the plugin is correctly added to and executed as part of the
-! optimization pipeline.
+! Verify that the static and dynamically loaded pass plugins work as expected.
 
 ! UNSUPPORTED: system-windows
 
-! REQUIRES: plugins, examples
-! Plugins are currently broken on AIX, at least in the CI.
-! XFAIL: system-aix
+! REQUIRES: plugins, shell, examples
 
-! RUN: %flang -S %s %loadbye -mllvm -wave-goodbye -o /dev/null \
+! RUN: %flang -S %s %loadbye -Xflang -fdebug-pass-manager -o /dev/null \
 ! RUN: 2>&1 | FileCheck %s
 
-! RUN: %flang_fc1 -S %s %loadbye -mllvm -wave-goodbye -o /dev/null \
+! RUN: %flang_fc1 -S %s %loadbye -fdebug-pass-manager -o /dev/null \
 ! RUN: 2>&1 | FileCheck %s
 
 
-! CHECK: Bye: empty_
+! CHECK: Running pass: {{.*}}Bye on empty_
 
 subroutine empty
 end subroutine empty

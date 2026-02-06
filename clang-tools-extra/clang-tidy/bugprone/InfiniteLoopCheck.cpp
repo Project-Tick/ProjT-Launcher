@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- InfiniteLoopCheck.cpp - clang-tidy -------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -18,7 +18,8 @@ using namespace clang::ast_matchers;
 using clang::ast_matchers::internal::Matcher;
 using clang::tidy::utils::hasPtrOrReferenceInFunc;
 
-namespace clang::tidy::bugprone {
+namespace clang {
+namespace tidy::bugprone {
 
 namespace {
 /// matches a Decl if it has a  "no return" attribute of any kind
@@ -34,7 +35,7 @@ AST_MATCHER(FunctionType, typeHasNoReturnAttr) {
 } // namespace
 
 static Matcher<Stmt> loopEndingStmt(Matcher<Stmt> Internal) {
-  const Matcher<QualType> IsNoReturnFunType =
+  Matcher<QualType> IsNoReturnFunType =
       ignoringParens(functionType(typeHasNoReturnAttr()));
   Matcher<Decl> IsNoReturnDecl =
       anyOf(declHasNoReturnAttr(), functionDecl(hasType(IsNoReturnFunType)),
@@ -49,7 +50,7 @@ static Matcher<Stmt> loopEndingStmt(Matcher<Stmt> Internal) {
 }
 
 /// Return whether `Var` was changed in `LoopStmt`.
-static bool isChanged(const Stmt *LoopStmt, const ValueDecl *Var,
+static bool isChanged(const Stmt *LoopStmt, const VarDecl *Var,
                       ASTContext *Context) {
   if (const auto *ForLoop = dyn_cast<ForStmt>(LoopStmt))
     return (ForLoop->getInc() &&
@@ -64,37 +65,26 @@ static bool isChanged(const Stmt *LoopStmt, const ValueDecl *Var,
   return ExprMutationAnalyzer(*LoopStmt, *Context).isMutated(Var);
 }
 
-static bool isVarPossiblyChanged(const Decl *Func, const Stmt *LoopStmt,
-                                 const ValueDecl *VD, ASTContext *Context) {
-  const VarDecl *Var = nullptr;
-  if (const auto *VarD = dyn_cast<VarDecl>(VD)) {
-    Var = VarD;
-  } else if (const auto *BD = dyn_cast<BindingDecl>(VD)) {
-    if (const auto *DD = dyn_cast<DecompositionDecl>(BD->getDecomposedDecl()))
-      Var = DD;
-  }
-
-  if (!Var)
-    return false;
-
-  if (!Var->isLocalVarDeclOrParm() || Var->getType().isVolatileQualified())
-    return true;
-
-  if (!VD->getType().getTypePtr()->isIntegerType())
-    return true;
-
-  return hasPtrOrReferenceInFunc(Func, VD) || isChanged(LoopStmt, VD, Context);
-  // FIXME: Track references.
-}
-
 /// Return whether `Cond` is a variable that is possibly changed in `LoopStmt`.
 static bool isVarThatIsPossiblyChanged(const Decl *Func, const Stmt *LoopStmt,
                                        const Stmt *Cond, ASTContext *Context) {
   if (const auto *DRE = dyn_cast<DeclRefExpr>(Cond)) {
-    if (const auto *VD = dyn_cast<ValueDecl>(DRE->getDecl()))
-      return isVarPossiblyChanged(Func, LoopStmt, VD, Context);
-  } else if (isa<MemberExpr, CallExpr, ObjCIvarRefExpr, ObjCPropertyRefExpr,
-                 ObjCMessageExpr>(Cond)) {
+    if (const auto *Var = dyn_cast<VarDecl>(DRE->getDecl())) {
+      if (!Var->isLocalVarDeclOrParm())
+        return true;
+
+      if (Var->getType().isVolatileQualified())
+        return true;
+
+      if (!Var->getType().getTypePtr()->isIntegerType())
+        return true;
+
+      return hasPtrOrReferenceInFunc(Func, Var) ||
+             isChanged(LoopStmt, Var, Context);
+      // FIXME: Track references.
+    }
+  } else if (isa<MemberExpr, CallExpr,
+                 ObjCIvarRefExpr, ObjCPropertyRefExpr, ObjCMessageExpr>(Cond)) {
     // FIXME: Handle MemberExpr.
     return true;
   } else if (const auto *CE = dyn_cast<CastExpr>(Cond)) {
@@ -119,9 +109,14 @@ static bool isAtLeastOneCondVarChanged(const Decl *Func, const Stmt *LoopStmt,
   if (isVarThatIsPossiblyChanged(Func, LoopStmt, Cond, Context))
     return true;
 
-  return llvm::any_of(Cond->children(), [&](const Stmt *Child) {
-    return Child && isAtLeastOneCondVarChanged(Func, LoopStmt, Child, Context);
-  });
+  for (const Stmt *Child : Cond->children()) {
+    if (!Child)
+      continue;
+
+    if (isAtLeastOneCondVarChanged(Func, LoopStmt, Child, Context))
+      return true;
+  }
+  return false;
 }
 
 /// Return the variable names in `Cond`.
@@ -129,9 +124,6 @@ static std::string getCondVarNames(const Stmt *Cond) {
   if (const auto *DRE = dyn_cast<DeclRefExpr>(Cond)) {
     if (const auto *Var = dyn_cast<VarDecl>(DRE->getDecl()))
       return std::string(Var->getName());
-
-    if (const auto *BD = dyn_cast<BindingDecl>(DRE->getDecl()))
-      return std::string(BD->getName());
   }
 
   std::string Result;
@@ -139,7 +131,7 @@ static std::string getCondVarNames(const Stmt *Cond) {
     if (!Child)
       continue;
 
-    const std::string NewNames = getCondVarNames(Child);
+    std::string NewNames = getCondVarNames(Child);
     if (!Result.empty() && !NewNames.empty())
       Result += ", ";
     Result += NewNames;
@@ -182,7 +174,7 @@ static bool isKnownToHaveValue(const Expr &Cond, const ASTContext &Ctx,
 /// \return true iff all `CallExprs` visited have callees; false otherwise
 ///         indicating there is an unresolved indirect call.
 static bool populateCallees(const Stmt *StmtNode,
-                            llvm::SmallPtrSet<const Decl *, 16> &Callees) {
+                            llvm::SmallSet<const Decl *, 16> &Callees) {
   if (const auto *Call = dyn_cast<CallExpr>(StmtNode)) {
     const Decl *Callee = Call->getDirectCallee();
 
@@ -203,10 +195,10 @@ static bool populateCallees(const Stmt *StmtNode,
   return true;
 }
 
-/// returns true iff `SCC` contains `Func` and its function set overlaps with
+/// returns true iff `SCC` contains `Func` and its' function set overlaps with
 /// `Callees`
 static bool overlap(ArrayRef<CallGraphNode *> SCC,
-                    const llvm::SmallPtrSet<const Decl *, 16> &Callees,
+                    const llvm::SmallSet<const Decl *, 16> &Callees,
                     const Decl *Func) {
   bool ContainsFunc = false, Overlap = false;
 
@@ -223,20 +215,14 @@ static bool overlap(ArrayRef<CallGraphNode *> SCC,
 
 /// returns true iff `Cond` involves at least one static local variable.
 static bool hasStaticLocalVariable(const Stmt *Cond) {
-  if (const auto *DRE = dyn_cast<DeclRefExpr>(Cond)) {
+  if (const auto *DRE = dyn_cast<DeclRefExpr>(Cond))
     if (const auto *VD = dyn_cast<VarDecl>(DRE->getDecl()))
       if (VD->isStaticLocal())
         return true;
-
-    if (const auto *BD = dyn_cast<BindingDecl>(DRE->getDecl()))
-      if (const auto *DD = dyn_cast<DecompositionDecl>(BD->getDecomposedDecl()))
-        if (DD->isStaticLocal())
-          return true;
-  }
-
-  return llvm::any_of(Cond->children(), [](const Stmt *Child) {
-    return Child && hasStaticLocalVariable(Child);
-  });
+  for (const Stmt *Child : Cond->children())
+    if (Child && hasStaticLocalVariable(Child))
+      return true;
+  return false;
 }
 
 /// Tests if the loop condition `Cond` involves static local variables and
@@ -257,7 +243,7 @@ static bool hasRecursionOverStaticLoopCondVariables(const Expr *Cond,
   if (!hasStaticLocalVariable(Cond))
     return false;
 
-  llvm::SmallPtrSet<const Decl *, 16> CalleesInLoop;
+  llvm::SmallSet<const Decl *, 16> CalleesInLoop;
 
   if (!populateCallees(LoopStmt, CalleesInLoop)) {
     // If there are unresolved indirect calls, we assume there could
@@ -288,7 +274,8 @@ static bool hasRecursionOverStaticLoopCondVariables(const Expr *Cond,
 
 void InfiniteLoopCheck::registerMatchers(MatchFinder *Finder) {
   const auto LoopCondition = allOf(
-      hasCondition(expr(forCallable(decl().bind("func"))).bind("condition")),
+      hasCondition(
+          expr(forCallable(decl().bind("func"))).bind("condition")),
       unless(hasBody(hasDescendant(
           loopEndingStmt(forCallable(equalsBoundNode("func")))))));
 
@@ -325,7 +312,7 @@ void InfiniteLoopCheck::check(const MatchFinder::MatchResult &Result) {
                                               Result.Context))
     return;
 
-  const std::string CondVarNames = getCondVarNames(Cond);
+  std::string CondVarNames = getCondVarNames(Cond);
   if (ShouldHaveConditionVariables && CondVarNames.empty())
     return;
 
@@ -337,8 +324,9 @@ void InfiniteLoopCheck::check(const MatchFinder::MatchResult &Result) {
     diag(LoopStmt->getBeginLoc(),
          "this loop is infinite; none of its condition variables (%0)"
          " are updated in the loop body")
-        << CondVarNames;
+      << CondVarNames;
   }
 }
 
-} // namespace clang::tidy::bugprone
+} // namespace tidy::bugprone
+} // namespace clang

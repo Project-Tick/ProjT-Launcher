@@ -1,4 +1,5 @@
 ! RUN: %python %S/../test_errors.py %s  %flang -fopenmp -fopenmp-version=50
+! REQUIRES: shell
 ! Check OpenMP clause validity for NONTEMPORAL clause
 
 program omp_simd
@@ -18,7 +19,7 @@ program omp_simd
     a(i) = i
   end do
   !$omp end parallel do simd
-
+ 
   !$omp parallel do simd nontemporal(a)
   do i = 1, 10
     a(i) = i
@@ -90,5 +91,5 @@ program omp_simd
   end do
   !$omp end target teams distribute simd
 
-
+  
 end program omp_simd

@@ -246,7 +246,7 @@ void test_integer(void) {
   // CHECK-ASM: vctzq
 
   vslll = vec_abs(vslll);
-  // CHECK-ASM: vlpq
+  // CHECK-ASM: vlcq
 
   vslll = vec_avg(vslll, vslll);
   // CHECK: call i128 @llvm.s390.vavgq(i128 %{{.*}}, i128 %{{.*}})

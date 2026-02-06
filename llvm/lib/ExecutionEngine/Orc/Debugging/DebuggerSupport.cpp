@@ -7,8 +7,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/ExecutionEngine/Orc/Debugging/DebuggerSupport.h"
+#include "llvm/ExecutionEngine/Orc/DebugObjectManagerPlugin.h"
 #include "llvm/ExecutionEngine/Orc/Debugging/DebuggerSupportPlugin.h"
-#include "llvm/ExecutionEngine/Orc/Debugging/ELFDebugObjectPlugin.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 
 #define DEBUG_TYPE "orc"
@@ -35,10 +35,12 @@ Error enableDebuggerSupport(LLJIT &J) {
 
   switch (TT.getObjectFormat()) {
   case Triple::ELF: {
-    Error TargetSymErr = Error::success();
-    ObjLinkingLayer->addPlugin(
-        std::make_unique<ELFDebugObjectPlugin>(ES, false, true, TargetSymErr));
-    return TargetSymErr;
+    auto Registrar = createJITLoaderGDBRegistrar(ES);
+    if (!Registrar)
+      return Registrar.takeError();
+    ObjLinkingLayer->addPlugin(std::make_unique<DebugObjectManagerPlugin>(
+        ES, std::move(*Registrar), false, true));
+    return Error::success();
   }
   case Triple::MachO: {
     auto DS = GDBJITDebugInfoRegistrationPlugin::Create(ES, *ProcessSymsJD, TT);

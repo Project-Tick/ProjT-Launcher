@@ -209,7 +209,9 @@ public:
       Name = "const " + Name;
     return Name + " *";
   }
-  std::string llvmName() const override { return "Builder.getPtrTy()"; }
+  std::string llvmName() const override {
+    return "llvm::PointerType::getUnqual(" + Pointee->llvmName() + ")";
+  }
   const Type *getPointeeType() const { return Pointee; }
 
   static bool classof(const Type *T) {
@@ -753,27 +755,7 @@ public:
     OS << "})";
   }
   void morePrerequisites(std::vector<Ptr> &output) const override {
-    llvm::append_range(output, Args);
-  }
-};
-
-// Result subclass that generates
-// Builder.getIsFPConstrained() ? <Standard> : <StrictFp>
-class StrictFpAltResult : public Result {
-public:
-  Ptr Standard;
-  Ptr StrictFp;
-  StrictFpAltResult(Ptr Standard, Ptr StrictFp)
-      : Standard(Standard), StrictFp(StrictFp) {}
-  void genCode(raw_ostream &OS,
-               CodeGenParamAllocator &ParamAlloc) const override {
-    OS << "!Builder.getIsFPConstrained() ? ";
-    Standard->genCode(OS, ParamAlloc);
-    OS << " : ";
-    StrictFp->genCode(OS, ParamAlloc);
-  }
-  void morePrerequisites(std::vector<Ptr> &output) const override {
-    Standard->morePrerequisites(output);
+    output.insert(output.end(), Args.begin(), Args.end());
   }
 };
 
@@ -1259,10 +1241,7 @@ Result::Ptr EmitterBase::getCodeForDag(const DagInit *D,
     std::vector<Result::Ptr> Args;
     for (unsigned i = 0, e = D->getNumArgs(); i < e; ++i)
       Args.push_back(getCodeForDagArg(D, i, Scope, Param));
-
-    auto GenIRBuilderBase = [&](const Record *Op) -> Result::Ptr {
-      assert(Op->isSubClassOf("IRBuilderBase") &&
-             "Expected IRBuilderBase in GenIRBuilderBase\n");
+    if (Op->isSubClassOf("IRBuilderBase")) {
       std::set<unsigned> AddressArgs;
       std::map<unsigned, std::string> IntegerArgs;
       for (const Record *sp : Op->getValueAsListOfDefs("special_params")) {
@@ -1275,10 +1254,7 @@ Result::Ptr EmitterBase::getCodeForDag(const DagInit *D,
       }
       return std::make_shared<IRBuilderResult>(Op->getValueAsString("prefix"),
                                                Args, AddressArgs, IntegerArgs);
-    };
-    auto GenIRIntBase = [&](const Record *Op) -> Result::Ptr {
-      assert(Op->isSubClassOf("IRIntBase") &&
-             "Expected IRIntBase in GenIRIntBase\n");
+    } else if (Op->isSubClassOf("IRIntBase")) {
       std::vector<const Type *> ParamTypes;
       for (const Record *RParam : Op->getValueAsListOfDefs("params"))
         ParamTypes.push_back(getType(RParam, Param));
@@ -1286,22 +1262,6 @@ Result::Ptr EmitterBase::getCodeForDag(const DagInit *D,
       if (Op->getValueAsBit("appendKind"))
         IntName += "_" + toLetter(cast<ScalarType>(Param)->kind());
       return std::make_shared<IRIntrinsicResult>(IntName, ParamTypes, Args);
-    };
-
-    if (Op->isSubClassOf("IRBuilderBase")) {
-      return GenIRBuilderBase(Op);
-    } else if (Op->isSubClassOf("IRIntBase")) {
-      return GenIRIntBase(Op);
-    } else if (Op->isSubClassOf("strictFPAlt")) {
-      auto StardardBuilder = Op->getValueAsDef("standard");
-      Result::Ptr Standard = StardardBuilder->isSubClassOf("IRBuilderBase")
-                                 ? GenIRBuilderBase(StardardBuilder)
-                                 : GenIRIntBase(StardardBuilder);
-      auto StrictBuilder = Op->getValueAsDef("strictfp");
-      Result::Ptr StrictFp = StrictBuilder->isSubClassOf("IRBuilderBase")
-                                 ? GenIRBuilderBase(StrictBuilder)
-                                 : GenIRIntBase(StrictBuilder);
-      return std::make_shared<StrictFpAltResult>(Standard, StrictFp);
     } else {
       PrintFatalError("Unsupported dag node " + Op->getName());
     }
@@ -1592,14 +1552,18 @@ struct OutputIntrinsic {
   std::string Name;
   ComparableStringVector ParamValues;
   bool operator<(const OutputIntrinsic &rhs) const {
-    return std::tie(Name, ParamValues) < std::tie(rhs.Name, rhs.ParamValues);
+    if (Name != rhs.Name)
+      return Name < rhs.Name;
+    return ParamValues < rhs.ParamValues;
   }
 };
 struct MergeableGroup {
   std::string Code;
   ComparableStringVector ParamTypes;
   bool operator<(const MergeableGroup &rhs) const {
-    return std::tie(Code, ParamTypes) < std::tie(rhs.Code, rhs.ParamTypes);
+    if (Code != rhs.Code)
+      return Code < rhs.Code;
+    return ParamTypes < rhs.ParamTypes;
   }
 };
 
@@ -1667,10 +1631,17 @@ void EmitterBase::EmitBuiltinCG(raw_ostream &OS) {
       for (const auto &OI : kv.second)
         key.push_back(OI.ParamValues[i]);
 
-      // Obtain a new parameter variable if we don't have one.
-      int ParamNum =
-          ParamNumberMap.try_emplace(key, ParamNumberMap.size()).first->second;
-      ParamNumbers.push_back(ParamNum);
+      auto Found = ParamNumberMap.find(key);
+      if (Found != ParamNumberMap.end()) {
+        // Yes, an existing parameter variable can be reused for this.
+        ParamNumbers.push_back(Found->second);
+        continue;
+      }
+
+      // No, we need a new parameter variable.
+      int ExistingIndex = ParamNumberMap.size();
+      ParamNumberMap[key] = ExistingIndex;
+      ParamNumbers.push_back(ExistingIndex);
     }
 
     // Now we're ready to do the pass 2 code generation, which will emit the
@@ -1726,8 +1697,7 @@ void EmitterBase::EmitBuiltinCG(raw_ostream &OS) {
         OS << "  case ARM::BI__builtin_arm_" << OI.Int->builtinExtension()
            << "_" << OI.Name << ":\n";
         for (size_t i = 0, e = MG.ParamTypes.size(); i < e; ++i)
-          OS << "    Param" << utostr(i) << " = static_cast<"
-             << MG.ParamTypes[i] << ">(" << OI.ParamValues[i] << ");\n";
+          OS << "    Param" << utostr(i) << " = " << OI.ParamValues[i] << ";\n";
         OS << "    break;\n";
       }
       OS << "  }\n";
@@ -1979,53 +1949,26 @@ void MveEmitter::EmitHeader(raw_ostream &OS) {
 }
 
 void MveEmitter::EmitBuiltinDef(raw_ostream &OS) {
-  llvm::StringToOffsetTable Table;
-  Table.GetOrAddStringOffset("n");
-  Table.GetOrAddStringOffset("nt");
-  Table.GetOrAddStringOffset("ntu");
-  Table.GetOrAddStringOffset("vi.");
-
-  for (const auto &[_, Int] : ACLEIntrinsics)
-    Table.GetOrAddStringOffset(Int->fullName());
-
-  std::map<std::string, ACLEIntrinsic *> ShortNameIntrinsics;
-  for (const auto &[_, Int] : ACLEIntrinsics) {
-    if (!Int->polymorphic())
-      continue;
-
-    StringRef Name = Int->shortName();
-    if (ShortNameIntrinsics.insert({Name.str(), Int.get()}).second)
-      Table.GetOrAddStringOffset(Name);
+  for (const auto &kv : ACLEIntrinsics) {
+    const ACLEIntrinsic &Int = *kv.second;
+    OS << "BUILTIN(__builtin_arm_mve_" << Int.fullName()
+       << ", \"\", \"n\")\n";
   }
 
-  OS << "#ifdef GET_MVE_BUILTIN_ENUMERATORS\n";
-  for (const auto &[_, Int] : ACLEIntrinsics) {
-    OS << "  BI__builtin_arm_mve_" << Int->fullName() << ",\n";
-  }
-  for (const auto &[Name, _] : ShortNameIntrinsics) {
-    OS << "  BI__builtin_arm_mve_" << Name << ",\n";
-  }
-  OS << "#endif // GET_MVE_BUILTIN_ENUMERATORS\n\n";
+  DenseSet<StringRef> ShortNamesSeen;
 
-  OS << "#ifdef GET_MVE_BUILTIN_STR_TABLE\n";
-  Table.EmitStringTableDef(OS, "BuiltinStrings");
-  OS << "#endif // GET_MVE_BUILTIN_STR_TABLE\n\n";
-
-  OS << "#ifdef GET_MVE_BUILTIN_INFOS\n";
-  for (const auto &[_, Int] : ACLEIntrinsics) {
-    OS << "    Builtin::Info{Builtin::Info::StrOffsets{"
-       << Table.GetStringOffset(Int->fullName()) << " /* " << Int->fullName()
-       << " */, " << Table.GetStringOffset("") << ", "
-       << Table.GetStringOffset("n") << " /* n */}},\n";
+  for (const auto &kv : ACLEIntrinsics) {
+    const ACLEIntrinsic &Int = *kv.second;
+    if (Int.polymorphic()) {
+      StringRef Name = Int.shortName();
+      if (ShortNamesSeen.insert(Name).second) {
+        OS << "BUILTIN(__builtin_arm_mve_" << Name << ", \"vi.\", \"nt";
+        if (Int.nonEvaluating())
+          OS << "u"; // indicate that this builtin doesn't evaluate its args
+        OS << "\")\n";
+      }
+    }
   }
-  for (const auto &[Name, Int] : ShortNameIntrinsics) {
-    StringRef Attrs = Int->nonEvaluating() ? "ntu" : "nt";
-    OS << "    Builtin::Info{Builtin::Info::StrOffsets{"
-       << Table.GetStringOffset(Name) << " /* " << Name << " */, "
-       << Table.GetStringOffset("vi.") << " /* vi. */, "
-       << Table.GetStringOffset(Attrs) << " /* " << Attrs << " */}},\n";
-  }
-  OS << "#endif // GET_MVE_BUILTIN_INFOS\n\n";
 }
 
 void MveEmitter::EmitBuiltinSema(raw_ostream &OS) {
@@ -2213,31 +2156,13 @@ void CdeEmitter::EmitHeader(raw_ostream &OS) {
 }
 
 void CdeEmitter::EmitBuiltinDef(raw_ostream &OS) {
-  llvm::StringToOffsetTable Table;
-  Table.GetOrAddStringOffset("ncU");
-
-  for (const auto &[_, Int] : ACLEIntrinsics)
-    if (!Int->headerOnly())
-      Table.GetOrAddStringOffset(Int->fullName());
-
-  OS << "#ifdef GET_CDE_BUILTIN_ENUMERATORS\n";
-  for (const auto &[_, Int] : ACLEIntrinsics)
-    if (!Int->headerOnly())
-      OS << "  BI__builtin_arm_cde_" << Int->fullName() << ",\n";
-  OS << "#endif // GET_CDE_BUILTIN_ENUMERATORS\n\n";
-
-  OS << "#ifdef GET_CDE_BUILTIN_STR_TABLE\n";
-  Table.EmitStringTableDef(OS, "BuiltinStrings");
-  OS << "#endif // GET_CDE_BUILTIN_STR_TABLE\n\n";
-
-  OS << "#ifdef GET_CDE_BUILTIN_INFOS\n";
-  for (const auto &[_, Int] : ACLEIntrinsics)
-    if (!Int->headerOnly())
-      OS << "    Builtin::Info{Builtin::Info::StrOffsets{"
-         << Table.GetStringOffset(Int->fullName()) << " /* " << Int->fullName()
-         << " */, " << Table.GetStringOffset("") << ", "
-         << Table.GetStringOffset("ncU") << " /* ncU */}},\n";
-  OS << "#endif // GET_CDE_BUILTIN_INFOS\n\n";
+  for (const auto &kv : ACLEIntrinsics) {
+    if (kv.second->headerOnly())
+      continue;
+    const ACLEIntrinsic &Int = *kv.second;
+    OS << "BUILTIN(__builtin_arm_cde_" << Int.fullName()
+       << ", \"\", \"ncU\")\n";
+  }
 }
 
 void CdeEmitter::EmitBuiltinSema(raw_ostream &OS) {

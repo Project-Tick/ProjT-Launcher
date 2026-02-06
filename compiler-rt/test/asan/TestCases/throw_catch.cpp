@@ -1,18 +1,17 @@
 // RUN: %clangxx_asan -fsanitize-address-use-after-return=never -O %s -o %t && %run %t
 
-#include "defines.h"
 #include <assert.h>
-#include <sanitizer/asan_interface.h>
 #include <stdio.h>
+#include <sanitizer/asan_interface.h>
 
-ATTRIBUTE_NOINLINE
+__attribute__((noinline))
 void Throw() {
   int local;
   fprintf(stderr, "Throw:  %p\n", &local);
   throw 1;
 }
 
-ATTRIBUTE_NOINLINE
+__attribute__((noinline))
 void ThrowAndCatch() {
   int local;
   try {
@@ -22,7 +21,7 @@ void ThrowAndCatch() {
   }
 }
 
-ATTRIBUTE_NOINLINE
+__attribute__((noinline))
 void TestThrow() {
   char x[32];
   fprintf(stderr, "Before: %p poisoned: %d\n", &x,
@@ -34,7 +33,7 @@ void TestThrow() {
   assert(!__asan_address_is_poisoned(x + 32));
 }
 
-ATTRIBUTE_NOINLINE
+__attribute__((noinline))
 void TestThrowInline() {
   char x[32];
   fprintf(stderr, "Before: %p poisoned: %d\n", &x,

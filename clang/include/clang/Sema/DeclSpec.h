@@ -44,7 +44,8 @@ namespace clang {
   class TypeLoc;
   class LangOptions;
   class IdentifierInfo;
-  class NamespaceBaseDecl;
+  class NamespaceAliasDecl;
+  class NamespaceDecl;
   class ObjCDeclSpec;
   class Sema;
   class Declarator;
@@ -91,11 +92,12 @@ public:
   }
 
   /// Retrieve the representation of the nested-name-specifier.
-  NestedNameSpecifier getScopeRep() const {
+  NestedNameSpecifier *getScopeRep() const {
     return Builder.getRepresentation();
   }
 
-  /// Make a nested-name-specifier of the form 'type::'.
+  /// Extend the current nested-name-specifier by another
+  /// nested-name-specifier component of the form 'type::'.
   ///
   /// \param Context The AST context in which this nested-name-specifier
   /// resides.
@@ -105,7 +107,22 @@ public:
   /// \param TL The TypeLoc that describes the type preceding the '::'.
   ///
   /// \param ColonColonLoc The location of the trailing '::'.
-  void Make(ASTContext &Context, TypeLoc TL, SourceLocation ColonColonLoc);
+  void Extend(ASTContext &Context, SourceLocation TemplateKWLoc, TypeLoc TL,
+              SourceLocation ColonColonLoc);
+
+  /// Extend the current nested-name-specifier by another
+  /// nested-name-specifier component of the form 'identifier::'.
+  ///
+  /// \param Context The AST context in which this nested-name-specifier
+  /// resides.
+  ///
+  /// \param Identifier The identifier.
+  ///
+  /// \param IdentifierLoc The location of the identifier.
+  ///
+  /// \param ColonColonLoc The location of the trailing '::'.
+  void Extend(ASTContext &Context, IdentifierInfo *Identifier,
+              SourceLocation IdentifierLoc, SourceLocation ColonColonLoc);
 
   /// Extend the current nested-name-specifier by another
   /// nested-name-specifier component of the form 'namespace::'.
@@ -113,14 +130,28 @@ public:
   /// \param Context The AST context in which this nested-name-specifier
   /// resides.
   ///
-  /// \param Namespace The namespace or the namespace alias.
+  /// \param Namespace The namespace.
   ///
-  /// \param NamespaceLoc The location of the namespace name or the namespace
-  /// alias.
+  /// \param NamespaceLoc The location of the namespace name.
   ///
   /// \param ColonColonLoc The location of the trailing '::'.
-  void Extend(ASTContext &Context, NamespaceBaseDecl *Namespace,
+  void Extend(ASTContext &Context, NamespaceDecl *Namespace,
               SourceLocation NamespaceLoc, SourceLocation ColonColonLoc);
+
+  /// Extend the current nested-name-specifier by another
+  /// nested-name-specifier component of the form 'namespace-alias::'.
+  ///
+  /// \param Context The AST context in which this nested-name-specifier
+  /// resides.
+  ///
+  /// \param Alias The namespace alias.
+  ///
+  /// \param AliasLoc The location of the namespace alias
+  /// name.
+  ///
+  /// \param ColonColonLoc The location of the trailing '::'.
+  void Extend(ASTContext &Context, NamespaceAliasDecl *Alias,
+              SourceLocation AliasLoc, SourceLocation ColonColonLoc);
 
   /// Turn this (empty) nested-name-specifier into the global
   /// nested-name-specifier '::'.
@@ -139,9 +170,8 @@ public:
   /// name.
   ///
   /// \param ColonColonLoc The location of the trailing '::'.
-  void MakeMicrosoftSuper(ASTContext &Context, CXXRecordDecl *RD,
-                          SourceLocation SuperLoc,
-                          SourceLocation ColonColonLoc);
+  void MakeSuper(ASTContext &Context, CXXRecordDecl *RD,
+                 SourceLocation SuperLoc, SourceLocation ColonColonLoc);
 
   /// Make a new nested-name-specifier from incomplete source-location
   /// information.
@@ -149,7 +179,7 @@ public:
   /// FIXME: This routine should be used very, very rarely, in cases where we
   /// need to synthesize a nested-name-specifier. Most code should instead use
   /// \c Adopt() with a proper \c NestedNameSpecifierLoc.
-  void MakeTrivial(ASTContext &Context, NestedNameSpecifier Qualifier,
+  void MakeTrivial(ASTContext &Context, NestedNameSpecifier *Qualifier,
                    SourceRange R);
 
   /// Adopt an existing nested-name-specifier (with source-range
@@ -175,14 +205,14 @@ public:
   SourceLocation getLastQualifierNameLoc() const;
 
   /// No scope specifier.
-  bool isEmpty() const { return Range.isInvalid() && !getScopeRep(); }
+  bool isEmpty() const { return Range.isInvalid() && getScopeRep() == nullptr; }
   /// A scope specifier is present, but may be valid or invalid.
   bool isNotEmpty() const { return !isEmpty(); }
 
   /// An error occurred during parsing of the scope specifier.
-  bool isInvalid() const { return Range.isValid() && !getScopeRep(); }
+  bool isInvalid() const { return Range.isValid() && getScopeRep() == nullptr; }
   /// A scope specifier is present, and it refers to a real scope.
-  bool isValid() const { return bool(getScopeRep()); }
+  bool isValid() const { return getScopeRep() != nullptr; }
 
   /// Indicate that this nested-name-specifier is invalid.
   void SetInvalid(SourceRange R) {
@@ -195,7 +225,7 @@ public:
 
   /// Deprecated.  Some call sites intend isNotEmpty() while others intend
   /// isValid().
-  bool isSet() const { return bool(getScopeRep()); }
+  bool isSet() const { return getScopeRep() != nullptr; }
 
   void clear() {
     Range = SourceRange();
@@ -835,7 +865,7 @@ public:
   /// \endcode
   ///
   void addAttributes(const ParsedAttributesView &AL) {
-    Attrs.prepend(AL.begin(), AL.end());
+    Attrs.addAll(AL.begin(), AL.end());
   }
 
   bool hasAttributes() const { return !Attrs.empty(); }
@@ -843,8 +873,8 @@ public:
   ParsedAttributes &getAttributes() { return Attrs; }
   const ParsedAttributes &getAttributes() const { return Attrs; }
 
-  void takeAttributesAppendingingFrom(ParsedAttributes &attrs) {
-    Attrs.takeAllAppendingFrom(attrs);
+  void takeAttributesFrom(ParsedAttributes &attrs) {
+    Attrs.takeAllFrom(attrs);
   }
 
   /// Finish - This does final analysis of the declspec, issuing diagnostics for
@@ -1765,7 +1795,6 @@ public:
     IdentifierInfo *Name;
     SourceLocation NameLoc;
     std::optional<ParsedAttributes> Attrs;
-    SourceLocation EllipsisLoc;
   };
 
 private:
@@ -1792,8 +1821,8 @@ public:
     if (DeleteBindings)
       delete[] Bindings;
     else
-      for (Binding &B : llvm::MutableArrayRef(Bindings, NumBindings))
-        B.Attrs.reset();
+      llvm::for_each(llvm::MutableArrayRef(Bindings, NumBindings),
+                     [](Binding &B) { B.Attrs.reset(); });
     Bindings = nullptr;
     NumBindings = 0;
     DeleteBindings = false;
@@ -1889,7 +1918,7 @@ private:
   /// parsed.  This is pushed from the identifier out, which means that element
   /// #0 will be the most closely bound to the identifier, and
   /// DeclTypeInfo.back() will be the least closely bound.
-  SmallVector<DeclaratorChunk, 4> DeclTypeInfo;
+  SmallVector<DeclaratorChunk, 8> DeclTypeInfo;
 
   /// InvalidType - Set by Sema::GetTypeForDeclarator().
   LLVM_PREFERRED_TYPE(bool)
@@ -2327,7 +2356,7 @@ public:
   void AddTypeInfo(const DeclaratorChunk &TI, ParsedAttributes &&attrs,
                    SourceLocation EndLoc) {
     DeclTypeInfo.push_back(TI);
-    DeclTypeInfo.back().getAttrs().prepend(attrs.begin(), attrs.end());
+    DeclTypeInfo.back().getAttrs().addAll(attrs.begin(), attrs.end());
     getAttributePool().takeAllFrom(attrs.getPool());
 
     if (!EndLoc.isInvalid())
@@ -2638,8 +2667,8 @@ public:
     return InventedTemplateParameterList;
   }
 
-  /// takeAttributesAppending - Takes attributes from the given
-  /// ParsedAttributes set and add them to this declarator.
+  /// takeAttributes - Takes attributes from the given parsed-attributes
+  /// set and add them to this declarator.
   ///
   /// These examples both add 3 attributes to "var":
   ///  short int var __attribute__((aligned(16),common,deprecated));
@@ -2647,8 +2676,8 @@ public:
   ///                                 __attribute__((common,deprecated));
   ///
   /// Also extends the range of the declarator.
-  void takeAttributesAppending(ParsedAttributes &attrs) {
-    Attrs.takeAllAppendingFrom(attrs);
+  void takeAttributes(ParsedAttributes &attrs) {
+    Attrs.takeAllFrom(attrs);
 
     if (attrs.Range.getEnd().isValid())
       SetRangeEnd(attrs.Range.getEnd());

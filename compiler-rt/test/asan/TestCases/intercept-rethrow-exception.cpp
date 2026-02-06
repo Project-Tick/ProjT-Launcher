@@ -15,7 +15,6 @@
 // https://reviews.llvm.org/D111703 made compiler incompatible with released NDK.
 // UNSUPPORTED: android && arm-target-arch
 
-#include "defines.h"
 #include <assert.h>
 #include <exception>
 #include <sanitizer/asan_interface.h>
@@ -29,7 +28,7 @@ namespace {
 // [[noreturn]] because the scenario we're emulating doesn't always throw. If it
 // were [[noreturn]], the calling code would emit a call to
 // __asan_handle_no_return.
-void ATTRIBUTE_NO_SANITIZE_ADDRESS
+void __attribute__((no_sanitize("address")))
 uninstrumented_rethrow_exception(std::exception_ptr const &exc_ptr) {
   std::rethrow_exception(exc_ptr);
 }

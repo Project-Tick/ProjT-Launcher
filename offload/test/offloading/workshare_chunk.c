@@ -2,7 +2,6 @@
 // RUN: %libomptarget-compileopt-run-and-check-generic
 
 // REQUIRES: gpu
-// XFAIL: intelgpu
 
 // clang-format off
 

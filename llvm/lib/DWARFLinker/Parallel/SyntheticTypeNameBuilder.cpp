@@ -10,6 +10,7 @@
 #include "DWARFLinkerCompileUnit.h"
 #include "llvm/DebugInfo/DWARF/DWARFAcceleratorTable.h"
 #include "llvm/DebugInfo/DWARF/DWARFDebugInfoEntry.h"
+#include "llvm/Support/ScopedPrinter.h"
 
 using namespace llvm;
 using namespace dwarf_linker;
@@ -377,10 +378,8 @@ Error SyntheticTypeNameBuilder::addTypeName(UnitEntryPairTy InputUnitEntryPair,
   } break;
   }
 
-  // If name for the DIE is not determined yet or if the DIE is a typedef, add
-  // referenced types to the name.
-  if ((!HasLinkageName && !HasShortName && !HasDeclFileName) ||
-      InputUnitEntryPair.DieEntry->getTag() == dwarf::DW_TAG_typedef) {
+  // If name for the DIE is not determined yet add referenced types to the name.
+  if (!HasLinkageName && !HasShortName && !HasDeclFileName) {
     if (InputUnitEntryPair.CU->find(InputUnitEntryPair.DieEntry,
                                     getODRAttributes()))
       if (Error Err = addReferencedODRDies(InputUnitEntryPair, AddParentNames,

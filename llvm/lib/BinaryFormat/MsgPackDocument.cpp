@@ -104,10 +104,6 @@ DocNode &DocNode::operator=(uint64_t Val) {
   *this = getDocument()->getNode(Val);
   return *this;
 }
-DocNode &DocNode::operator=(double Val) {
-  *this = getDocument()->getNode(Val);
-  return *this;
-}
 
 // A level in the document reading stack.
 struct StackLevel {
@@ -296,9 +292,6 @@ void Document::writeToBlob(std::string &Blob) {
       break;
     case Type::Binary:
       MPWriter.write(Node.getBinary());
-      break;
-    case Type::Float:
-      MPWriter.write(Node.getFloat());
       break;
     case Type::Empty:
       llvm_unreachable("unhandled empty msgpack node");

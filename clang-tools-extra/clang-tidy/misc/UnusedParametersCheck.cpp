@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- UnusedParametersCheck.cpp - clang-tidy----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -15,24 +15,32 @@
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Lexer.h"
+#include "llvm/ADT/STLExtras.h"
+#include <unordered_map>
+#include <unordered_set>
 
 using namespace clang::ast_matchers;
 
 namespace clang::tidy::misc {
 
-static bool isOverrideMethod(const FunctionDecl *Function) {
+namespace {
+bool isOverrideMethod(const FunctionDecl *Function) {
   if (const auto *MD = dyn_cast<CXXMethodDecl>(Function))
     return MD->size_overridden_methods() > 0 || MD->hasAttr<OverrideAttr>();
   return false;
 }
 
-static bool hasAttrAfterParam(const SourceManager *SourceManager,
-                              const ParmVarDecl *Param) {
-  return llvm::any_of(Param->attrs(), [&](const Attr *Attr) {
-    return SourceManager->isBeforeInTranslationUnit(Param->getLocation(),
-                                                    Attr->getLocation());
-  });
+bool hasAttrAfterParam(const SourceManager *SourceManager,
+                       const ParmVarDecl *Param) {
+  for (const auto *Attr : Param->attrs()) {
+    if (SourceManager->isBeforeInTranslationUnit(Param->getLocation(),
+                                                 Attr->getLocation())) {
+      return true;
+    }
+  }
+  return false;
 }
+} // namespace
 
 void UnusedParametersCheck::registerMatchers(MatchFinder *Finder) {
   Finder->addMatcher(functionDecl(isDefinition(), hasBody(stmt()),
@@ -82,12 +90,12 @@ class UnusedParametersCheck::IndexerVisitor
 public:
   IndexerVisitor(ASTContext &Ctx) { TraverseAST(Ctx); }
 
-  const llvm::SmallPtrSetImpl<const CallExpr *> &
+  const std::unordered_set<const CallExpr *> &
   getFnCalls(const FunctionDecl *Fn) {
     return Index[Fn->getCanonicalDecl()].Calls;
   }
 
-  const llvm::SmallPtrSetImpl<const DeclRefExpr *> &
+  const std::unordered_set<const DeclRefExpr *> &
   getOtherRefs(const FunctionDecl *Fn) {
     return Index[Fn->getCanonicalDecl()].OtherRefs;
   }
@@ -117,11 +125,11 @@ public:
 
 private:
   struct IndexEntry {
-    llvm::SmallPtrSet<const CallExpr *, 2> Calls;
-    llvm::SmallPtrSet<const DeclRefExpr *, 2> OtherRefs;
+    std::unordered_set<const CallExpr *> Calls;
+    std::unordered_set<const DeclRefExpr *> OtherRefs;
   };
 
-  llvm::DenseMap<const FunctionDecl *, IndexEntry> Index;
+  std::unordered_map<const FunctionDecl *, IndexEntry> Index;
 };
 
 UnusedParametersCheck::~UnusedParametersCheck() = default;
@@ -129,7 +137,7 @@ UnusedParametersCheck::~UnusedParametersCheck() = default;
 UnusedParametersCheck::UnusedParametersCheck(StringRef Name,
                                              ClangTidyContext *Context)
     : ClangTidyCheck(Name, Context),
-      StrictMode(Options.get("StrictMode", false)),
+      StrictMode(Options.getLocalOrGlobal("StrictMode", false)),
       IgnoreVirtual(Options.get("IgnoreVirtual", false)) {}
 
 void UnusedParametersCheck::storeOptions(ClangTidyOptions::OptionMap &Opts) {
@@ -146,19 +154,21 @@ void UnusedParametersCheck::warnOnUnusedParameter(
     return;
   auto MyDiag = diag(Param->getLocation(), "parameter %0 is unused") << Param;
 
-  if (!Indexer)
+  if (!Indexer) {
     Indexer = std::make_unique<IndexerVisitor>(*Result.Context);
+  }
 
   // Cannot remove parameter for non-local functions.
   if (Function->isExternallyVisible() ||
       !Result.SourceManager->isInMainFile(Function->getLocation()) ||
       !Indexer->getOtherRefs(Function).empty() || isOverrideMethod(Function) ||
       isLambdaCallOperator(Function)) {
+
     // It is illegal to omit parameter name here in C code, so early-out.
     if (!Result.Context->getLangOpts().CPlusPlus)
       return;
 
-    const SourceRange RemovalRange(Param->getLocation());
+    SourceRange RemovalRange(Param->getLocation());
     // Note: We always add a space before the '/*' to not accidentally create
     // a '*/*' for pointer types, which doesn't start a comment. clang-format
     // will clean this up afterwards.

@@ -1,5 +1,9 @@
 import os
-import configparser
+
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
 
 import lit.formats
 import lit.Test
@@ -12,7 +16,7 @@ class DummyFormat(lit.formats.FileBasedTest):
 
         source_path = test.getSourcePath()
 
-        cfg = configparser.ConfigParser()
+        cfg = ConfigParser.ConfigParser()
         cfg.read(source_path)
 
         # Create the basic test result.

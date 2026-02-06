@@ -7,11 +7,12 @@
 //===----------------------------------------------------------------------===//
 
 #include "VEToolchain.h"
-#include "clang/Driver/CommonArgs.h"
+#include "CommonArgs.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
-#include "clang/Options/Options.h"
+#include "clang/Driver/Options.h"
 #include "llvm/Option/ArgList.h"
+#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 #include <cstdlib> // ::getenv
 
@@ -78,7 +79,7 @@ bool VEToolChain::hasBlocksRuntime() const { return false; }
 
 void VEToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                             ArgStringList &CC1Args) const {
-  if (DriverArgs.hasArg(options::OPT_nostdinc))
+  if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc))
     return;
 
   if (DriverArgs.hasArg(options::OPT_nobuiltininc) &&
@@ -117,7 +118,7 @@ void VEToolChain::addClangTargetOptions(const ArgList &DriverArgs,
 
 void VEToolChain::AddClangCXXStdlibIncludeArgs(const ArgList &DriverArgs,
                                                ArgStringList &CC1Args) const {
-  if (DriverArgs.hasArg(options::OPT_nostdinc) ||
+  if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc) ||
       DriverArgs.hasArg(options::OPT_nostdlibinc) ||
       DriverArgs.hasArg(options::OPT_nostdincxx))
     return;

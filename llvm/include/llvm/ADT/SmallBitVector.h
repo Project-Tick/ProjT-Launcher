@@ -393,9 +393,8 @@ public:
       uintptr_t IMask = ((uintptr_t)1) << I;
       uintptr_t Mask = EMask - IMask;
       setSmallBits(getSmallBits() | Mask);
-    } else {
+    } else
       getPointer()->set(I, E);
-    }
     return *this;
   }
 
@@ -425,9 +424,8 @@ public:
       uintptr_t IMask = ((uintptr_t)1) << I;
       uintptr_t Mask = EMask - IMask;
       setSmallBits(getSmallBits() & ~Mask);
-    } else {
+    } else
       getPointer()->reset(I, E);
-    }
     return *this;
   }
 
@@ -552,8 +550,7 @@ public:
     return *this;
   }
 
-  /// Check if (This - RHS) is non-zero.
-  /// This is the same as reset(RHS) and any().
+  /// Check if (This - RHS) is zero. This is the same as reset(RHS) and any().
   bool test(const SmallBitVector &RHS) const {
     if (isSmall() && RHS.isSmall())
       return (getSmallBits() & ~RHS.getSmallBits()) != 0;
@@ -571,9 +568,6 @@ public:
 
     return false;
   }
-
-  /// Check if This is a subset of RHS.
-  bool subsetOf(const SmallBitVector &RHS) const { return !test(RHS); }
 
   SmallBitVector &operator|=(const SmallBitVector &RHS) {
     resize(std::max(size(), RHS.size()));

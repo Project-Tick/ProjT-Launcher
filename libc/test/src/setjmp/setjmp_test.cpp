@@ -10,8 +10,6 @@
 #include "src/setjmp/setjmp_impl.h"
 #include "test/UnitTest/Test.h"
 
-namespace {
-
 constexpr int MAX_LOOP = 123;
 int longjmp_called = 0;
 
@@ -29,7 +27,7 @@ TEST(LlvmLibcSetJmpTest, SetAndJumpBack) {
   // The first time setjmp is called, it should return 0.
   // Subsequent calls will return the value passed to jump_back below.
   if (LIBC_NAMESPACE::setjmp(buf) <= MAX_LOOP) {
-    n = n + 1;
+    ++n;
     jump_back(buf, n);
   }
   ASSERT_EQ(longjmp_called, n);
@@ -47,5 +45,3 @@ TEST(LlvmLibcSetJmpTest, SetAndJumpBackValOne) {
   ASSERT_EQ(longjmp_called, 1);
   ASSERT_EQ(val, 1);
 }
-
-} // namespace

@@ -14,7 +14,6 @@
 #include <cassert>
 #include <ios>
 #include <type_traits>
-#include <utility>
 
 #include "test_macros.h"
 

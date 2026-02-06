@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "Preamble.h"
-#include "AST.h"
 #include "CollectMacros.h"
 #include "Compiler.h"
 #include "Config.h"
@@ -165,6 +164,27 @@ public:
     return std::make_unique<PPChainedCallbacks>(
         std::make_unique<CollectMainFileMacros>(*PP, Macros),
         collectPragmaMarksCallback(*SourceMgr, Marks));
+  }
+
+  static bool isLikelyForwardingFunction(FunctionTemplateDecl *FT) {
+    const auto *FD = FT->getTemplatedDecl();
+    const auto NumParams = FD->getNumParams();
+    // Check whether its last parameter is a parameter pack...
+    if (NumParams > 0) {
+      const auto *LastParam = FD->getParamDecl(NumParams - 1);
+      if (const auto *PET = dyn_cast<PackExpansionType>(LastParam->getType())) {
+        // ... of the type T&&... or T...
+        const auto BaseType = PET->getPattern().getNonReferenceType();
+        if (const auto *TTPT =
+                dyn_cast<TemplateTypeParmType>(BaseType.getTypePtr())) {
+          // ... whose template parameter comes from the function directly
+          if (FT->getTemplateParameters()->getDepth() == TTPT->getDepth()) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   bool shouldSkipFunctionBody(Decl *D) override {
@@ -595,7 +615,7 @@ buildPreamble(PathRef FileName, CompilerInvocation CI,
       });
   auto VFS = Inputs.TFS->view(Inputs.CompileCommand.Directory);
   llvm::IntrusiveRefCntPtr<DiagnosticsEngine> PreambleDiagsEngine =
-      CompilerInstance::createDiagnostics(*VFS, CI.getDiagnosticOpts(),
+      CompilerInstance::createDiagnostics(*VFS, &CI.getDiagnosticOpts(),
                                           &PreambleDiagnostics,
                                           /*ShouldOwnClient=*/false);
   const Config &Cfg = Config::current();
@@ -607,8 +627,10 @@ buildPreamble(PathRef FileName, CompilerInvocation CI,
       return DiagnosticsEngine::Ignored;
     switch (Info.getID()) {
     case diag::warn_no_newline_eof:
+    case diag::warn_cxx98_compat_no_newline_eof:
+    case diag::ext_no_newline_eof:
       // If the preamble doesn't span the whole file, drop the no newline at
-      // eof warning.
+      // eof warnings.
       return Bounds.Size != ContentsBuffer->getBufferSize()
                  ? DiagnosticsEngine::Level::Ignored
                  : DiagLevel;
@@ -639,7 +661,7 @@ buildPreamble(PathRef FileName, CompilerInvocation CI,
   WallTimer PreambleTimer;
   PreambleTimer.startTimer();
   auto BuiltPreamble = PrecompiledPreamble::Build(
-      CI, ContentsBuffer.get(), Bounds, PreambleDiagsEngine,
+      CI, ContentsBuffer.get(), Bounds, *PreambleDiagsEngine,
       Stats ? TimedFS : StatCacheFS, std::make_shared<PCHContainerOperations>(),
       StoreInMemory, /*StoragePath=*/"", CapturedInfo);
 
@@ -651,6 +673,7 @@ buildPreamble(PathRef FileName, CompilerInvocation CI,
   // Reset references to ref-counted-ptrs before executing the callbacks, to
   // prevent resetting them concurrently.
   PreambleDiagsEngine.reset();
+  CI.DiagnosticOpts.reset();
 
   // When building the AST for the main file, we do want the function
   // bodies.
@@ -691,10 +714,7 @@ buildPreamble(PathRef FileName, CompilerInvocation CI,
     Result->Marks = CapturedInfo.takeMarks();
     Result->StatCache = StatCache;
     Result->MainIsIncludeGuarded = CapturedInfo.isMainFileIncludeGuarded();
-    // Move the options instead of copying them. The invocation doesn't need
-    // them anymore.
-    Result->TargetOpts =
-        std::make_unique<TargetOptions>(std::move(CI.getTargetOpts()));
+    Result->TargetOpts = CI.TargetOpts;
     if (PreambleCallback) {
       trace::Span Tracer("Running PreambleCallback");
       auto Ctx = CapturedInfo.takeLife();
@@ -915,7 +935,7 @@ void PreamblePatch::apply(CompilerInvocation &CI) const {
   // ParsedASTTest.PreambleWithDifferentTarget.
   // Make sure this is a deep copy, as the same Baseline might be used
   // concurrently.
-  CI.getTargetOpts() = *Baseline->TargetOpts;
+  *CI.TargetOpts = *Baseline->TargetOpts;
 
   // No need to map an empty file.
   if (PatchContents.empty())

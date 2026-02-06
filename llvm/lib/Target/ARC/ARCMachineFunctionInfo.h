@@ -14,6 +14,7 @@
 #define LLVM_LIB_TARGET_ARC_ARCMACHINEFUNCTIONINFO_H
 
 #include "llvm/CodeGen/MachineFunction.h"
+#include <vector>
 
 namespace llvm {
 

@@ -29,7 +29,6 @@ int main(int argc, char const *argv[]) {
   fun(vec);
   bar bar1 = {2};
   bar *bar2 = &bar1;
-  int ƒake_f = 200;
   foo foo1 = {3, &bar1, bar1, NULL};
   return 0; // breakpoint 2
 }

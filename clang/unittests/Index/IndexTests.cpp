@@ -35,7 +35,9 @@ struct Position {
 
   static Position fromSourceLocation(SourceLocation Loc,
                                      const SourceManager &SM) {
-    auto [FID, Offset] = SM.getDecomposedSpellingLoc(Loc);
+    FileID FID;
+    unsigned Offset;
+    std::tie(FID, Offset) = SM.getDecomposedSpellingLoc(Loc);
     Position P;
     P.Line = SM.getLineNumber(FID, Offset);
     P.Column = SM.getColumnNumber(FID, Offset);
@@ -347,7 +349,7 @@ TEST(IndexTest, Constructors) {
                 WrittenAt(Position(4, 8)))));
 }
 
-TEST(IndexTest, InjectedNameClass) {
+TEST(IndexTest, InjecatedNameClass) {
   std::string Code = R"cpp(
     template <typename T>
     class Foo {

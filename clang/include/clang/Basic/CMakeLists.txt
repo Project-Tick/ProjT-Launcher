@@ -8,16 +8,6 @@ macro(clang_diag_gen component)
     -gen-clang-diags-enums -clang-component=${component}
     SOURCE Diagnostic.td
     TARGET ClangDiagnostic${component}Enums)
-
-  clang_tablegen(Diagnostic${component}CompatIDs.inc
-    -gen-clang-diags-compat-ids -clang-component=${component}
-    SOURCE Diagnostic.td
-    TARGET ClangDiagnostic${component}CompatIDs)
-
-  clang_tablegen(Diagnostic${component}Interface.inc
-    -gen-clang-diags-iface -clang-component=${component}
-    SOURCE Diagnostic.td
-    TARGET ClangDiagnostic${component}Interface)
 endmacro(clang_diag_gen)
 
 clang_diag_gen(Analysis)
@@ -33,7 +23,6 @@ clang_diag_gen(Parse)
 clang_diag_gen(Refactoring)
 clang_diag_gen(Sema)
 clang_diag_gen(Serialization)
-clang_diag_gen(Trap)
 clang_tablegen(DiagnosticGroups.inc -gen-clang-diag-groups
   SOURCE Diagnostic.td
   TARGET ClangDiagnosticGroups)
@@ -41,11 +30,6 @@ clang_tablegen(DiagnosticGroups.inc -gen-clang-diag-groups
 clang_tablegen(DiagnosticIndexName.inc -gen-clang-diags-index-name
   SOURCE Diagnostic.td
   TARGET ClangDiagnosticIndexName)
-
-clang_tablegen(DiagnosticAllCompatIDs.inc
-  -gen-clang-diags-compat-ids
-  SOURCE Diagnostic.td
-  TARGET ClangDiagnosticAllCompatIDs)
 
 clang_tablegen(AttrList.inc -gen-clang-attr-list
   -I ${CMAKE_CURRENT_SOURCE_DIR}/../../
@@ -80,12 +64,6 @@ clang_tablegen(CXX11AttributeInfo.inc -gen-cxx11-attribute-info
   TARGET CXX11AttributeInfo
   )
 
-  clang_tablegen(AttributeSpellingList.inc -gen-attribute-spelling-list
-  -I ${CMAKE_CURRENT_SOURCE_DIR}/../../
-  SOURCE Attr.td
-  TARGET AttributeSpellingList
-  )
-
 clang_tablegen(Builtins.inc -gen-clang-builtins
   SOURCE Builtins.td
   TARGET ClangBuiltins)
@@ -93,10 +71,6 @@ clang_tablegen(Builtins.inc -gen-clang-builtins
 clang_tablegen(BuiltinsBPF.inc -gen-clang-builtins
   SOURCE BuiltinsBPF.td
   TARGET ClangBuiltinsBPF)
-
-clang_tablegen(BuiltinsDirectX.inc -gen-clang-builtins
-  SOURCE BuiltinsDirectX.td
-  TARGET ClangBuiltinsDirectX)
 
 clang_tablegen(BuiltinsHexagon.inc -gen-clang-builtins
   SOURCE BuiltinsHexagon.td
@@ -110,17 +84,9 @@ clang_tablegen(BuiltinsRISCV.inc -gen-clang-builtins
   SOURCE BuiltinsRISCV.td
   TARGET ClangBuiltinsRISCV)
 
-clang_tablegen(BuiltinsSPIRVCommon.inc -gen-clang-builtins
-  SOURCE BuiltinsSPIRVCommon.td
-  TARGET ClangBuiltinsSPIRVCommon)
-
-clang_tablegen(BuiltinsSPIRVVK.inc -gen-clang-builtins
-  SOURCE BuiltinsSPIRVVK.td
-  TARGET ClangBuiltinsSPIRVVK)
-
-clang_tablegen(BuiltinsSPIRVCL.inc -gen-clang-builtins
-  SOURCE BuiltinsSPIRVCL.td
-  TARGET ClangBuiltinsSPIRVCL)
+clang_tablegen(BuiltinsSPIRV.inc -gen-clang-builtins
+  SOURCE BuiltinsSPIRV.td
+  TARGET ClangBuiltinsSPIRV)
 
 clang_tablegen(BuiltinsX86.inc -gen-clang-builtins
   SOURCE BuiltinsX86.td
@@ -129,10 +95,6 @@ clang_tablegen(BuiltinsX86.inc -gen-clang-builtins
 clang_tablegen(BuiltinsX86_64.inc -gen-clang-builtins
   SOURCE BuiltinsX86_64.td
   TARGET ClangBuiltinsX86_64)
-
-clang_tablegen(BuiltinTemplates.inc -gen-clang-builtin-templates
-  SOURCE BuiltinTemplates.td
-  TARGET ClangBuiltinTemplates)
 
 # ARM NEON and MVE
 clang_tablegen(arm_neon.inc -gen-arm-neon-sema
@@ -159,9 +121,6 @@ clang_tablegen(arm_mve_builtin_aliases.inc -gen-arm-mve-builtin-aliases
 clang_tablegen(arm_sve_builtins.inc -gen-arm-sve-builtins
   SOURCE arm_sve.td
   TARGET ClangARMSveBuiltins)
-clang_tablegen(arm_sve_builtins.json -gen-arm-sve-builtins-json
-  SOURCE arm_sve.td
-  TARGET ClangARMSveBuiltinsJSON)
 clang_tablegen(arm_sve_builtin_cg.inc -gen-arm-sve-builtin-codegen
   SOURCE arm_sve.td
   TARGET ClangARMSveBuiltinCG)
@@ -177,9 +136,6 @@ clang_tablegen(arm_sve_streaming_attrs.inc -gen-arm-sve-streaming-attrs
 clang_tablegen(arm_sme_builtins.inc -gen-arm-sme-builtins
   SOURCE arm_sme.td
   TARGET ClangARMSmeBuiltins)
-clang_tablegen(arm_sme_builtins.json -gen-arm-sme-builtins-json
-  SOURCE arm_sme.td
-  TARGET ClangARMSmeBuiltinsJSON)
 clang_tablegen(arm_sme_builtin_cg.inc -gen-arm-sme-builtin-codegen
   SOURCE arm_sme.td
   TARGET ClangARMSmeBuiltinCG)
@@ -222,12 +178,3 @@ clang_tablegen(riscv_sifive_vector_builtin_cg.inc -gen-riscv-sifive-vector-built
 clang_tablegen(riscv_sifive_vector_builtin_sema.inc -gen-riscv-sifive-vector-builtin-sema
   SOURCE riscv_sifive_vector.td
   TARGET ClangRISCVSiFiveVectorBuiltinSema)
-clang_tablegen(riscv_andes_vector_builtins.inc -gen-riscv-andes-vector-builtins
-  SOURCE riscv_andes_vector.td
-  TARGET ClangRISCVAndesVectorBuiltins)
-clang_tablegen(riscv_andes_vector_builtin_cg.inc -gen-riscv-andes-vector-builtin-codegen
-  SOURCE riscv_andes_vector.td
-  TARGET ClangRISCVAndesVectorBuiltinCG)
-clang_tablegen(riscv_andes_vector_builtin_sema.inc -gen-riscv-andes-vector-builtin-sema
-  SOURCE riscv_andes_vector.td
-  TARGET ClangRISCVAndesVectorBuiltinSema)

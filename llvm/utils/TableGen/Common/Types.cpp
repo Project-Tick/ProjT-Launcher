@@ -8,12 +8,16 @@
 
 #include "Types.h"
 
+// For LLVM_ATTRIBUTE_UNUSED
+#include "llvm/Support/Compiler.h"
+
 #include <cassert>
 
 using namespace llvm;
 
-const char *llvm::getMinimalTypeForRange(uint64_t Range,
-                                         [[maybe_unused]] unsigned MaxSize) {
+const char *
+llvm::getMinimalTypeForRange(uint64_t Range,
+                             unsigned MaxSize LLVM_ATTRIBUTE_UNUSED) {
   // TODO: The original callers only used 32 and 64 so these are the only
   //       values permitted. Rather than widen the supported values we should
   //       allow 64 for the callers that currently use 32 and remove the

@@ -1,9 +1,6 @@
-// clang-format off
 // RUN: %libomptarget-compile-generic -DLIBRARY -c -o %t.o
 // RUN: ar rcs %t.a %t.o
 // RUN: %libomptarget-compile-generic %t.a && %libomptarget-run-generic 2>&1 | %fcheck-generic
-// XFAIL: intelgpu
-// clang-format on
 
 #ifdef LIBRARY
 int x = 42;
@@ -17,7 +14,7 @@ int foo() {
 }
 #else
 #include <stdio.h>
-int foo(void);
+int foo();
 
 int main() {
   int x = foo();

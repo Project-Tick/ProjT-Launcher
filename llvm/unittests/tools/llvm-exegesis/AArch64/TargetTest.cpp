@@ -28,20 +28,18 @@ using testing::IsEmpty;
 using testing::Not;
 using testing::NotNull;
 
-constexpr char kTriple[] = "aarch64-unknown-linux";
+constexpr const char kTriple[] = "aarch64-unknown-linux";
 
 class AArch64TargetTest : public ::testing::Test {
 protected:
-  const Triple TT;
-
   AArch64TargetTest()
-      : TT(kTriple), ExegesisTarget_(ExegesisTarget::lookup(TT)) {
+      : ExegesisTarget_(ExegesisTarget::lookup(Triple(kTriple))) {
     EXPECT_THAT(ExegesisTarget_, NotNull());
     std::string error;
-    Target_ = TargetRegistry::lookupTarget(TT, error);
+    Target_ = TargetRegistry::lookupTarget(kTriple, error);
     EXPECT_THAT(Target_, NotNull());
     STI_.reset(
-        Target_->createMCSubtargetInfo(TT, "generic", /*no features*/ ""));
+        Target_->createMCSubtargetInfo(kTriple, "generic", /*no features*/ ""));
   }
 
   static void SetUpTestCase() {
@@ -67,7 +65,7 @@ TEST_F(AArch64TargetTest, SetRegToConstant) {
 }
 
 TEST_F(AArch64TargetTest, DefaultPfmCounters) {
-  const std::string Expected = "CYCLES";
+  const std::string Expected = "CPU_CYCLES";
   EXPECT_EQ(ExegesisTarget_->getPfmCounters("").CycleCounter, Expected);
   EXPECT_EQ(ExegesisTarget_->getPfmCounters("unknown_cpu").CycleCounter,
             Expected);

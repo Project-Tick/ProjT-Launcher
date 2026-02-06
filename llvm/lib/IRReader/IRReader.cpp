@@ -8,7 +8,6 @@
 
 #include "llvm/IRReader/IRReader.h"
 #include "llvm-c/IRReader.h"
-#include "llvm/AsmParser/AsmParserContext.h"
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/IR/LLVMContext.h"
@@ -17,7 +16,6 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/Support/raw_ostream.h"
-#include <cstring>
 #include <optional>
 #include <system_error>
 
@@ -70,8 +68,7 @@ std::unique_ptr<Module> llvm::getLazyIRFileModule(StringRef Filename,
 
 std::unique_ptr<Module> llvm::parseIR(MemoryBufferRef Buffer, SMDiagnostic &Err,
                                       LLVMContext &Context,
-                                      ParserCallbacks Callbacks,
-                                      llvm::AsmParserContext *ParserContext) {
+                                      ParserCallbacks Callbacks) {
   NamedRegionTimer T(TimeIRParsingName, TimeIRParsingDescription,
                      TimeIRParsingGroupName, TimeIRParsingGroupDescription,
                      TimePassesIsEnabled);
@@ -91,14 +88,12 @@ std::unique_ptr<Module> llvm::parseIR(MemoryBufferRef Buffer, SMDiagnostic &Err,
 
   return parseAssembly(Buffer, Err, Context, nullptr,
                        Callbacks.DataLayout.value_or(
-                           [](StringRef, StringRef) { return std::nullopt; }),
-                       ParserContext);
+                           [](StringRef, StringRef) { return std::nullopt; }));
 }
 
 std::unique_ptr<Module> llvm::parseIRFile(StringRef Filename, SMDiagnostic &Err,
                                           LLVMContext &Context,
-                                          ParserCallbacks Callbacks,
-                                          AsmParserContext *ParserContext) {
+                                          ParserCallbacks Callbacks) {
   ErrorOr<std::unique_ptr<MemoryBuffer>> FileOrErr =
       MemoryBuffer::getFileOrSTDIN(Filename, /*IsText=*/true);
   if (std::error_code EC = FileOrErr.getError()) {
@@ -107,8 +102,7 @@ std::unique_ptr<Module> llvm::parseIRFile(StringRef Filename, SMDiagnostic &Err,
     return nullptr;
   }
 
-  return parseIR(FileOrErr.get()->getMemBufferRef(), Err, Context, Callbacks,
-                 ParserContext);
+  return parseIR(FileOrErr.get()->getMemBufferRef(), Err, Context, Callbacks);
 }
 
 //===----------------------------------------------------------------------===//
@@ -118,26 +112,23 @@ std::unique_ptr<Module> llvm::parseIRFile(StringRef Filename, SMDiagnostic &Err,
 LLVMBool LLVMParseIRInContext(LLVMContextRef ContextRef,
                               LLVMMemoryBufferRef MemBuf, LLVMModuleRef *OutM,
                               char **OutMessage) {
-  std::unique_ptr<MemoryBuffer> MB(unwrap(MemBuf));
-  return LLVMParseIRInContext2(ContextRef, wrap(MB.get()), OutM, OutMessage);
-}
-
-LLVMBool LLVMParseIRInContext2(LLVMContextRef ContextRef,
-                               LLVMMemoryBufferRef MemBuf, LLVMModuleRef *OutM,
-                               char **OutMessage) {
   SMDiagnostic Diag;
 
-  *OutM = wrap(parseIR(*unwrap(MemBuf), Diag, *unwrap(ContextRef)).release());
+  std::unique_ptr<MemoryBuffer> MB(unwrap(MemBuf));
+  *OutM =
+      wrap(parseIR(MB->getMemBufferRef(), Diag, *unwrap(ContextRef)).release());
 
-  if (*OutM)
-    return 0;
+  if(!*OutM) {
+    if (OutMessage) {
+      std::string buf;
+      raw_string_ostream os(buf);
 
-  if (OutMessage) {
-    std::string Buf;
-    raw_string_ostream OS(Buf);
-    Diag.print(nullptr, OS, /*ShowColors=*/false);
-    *OutMessage = strdup(Buf.c_str());
+      Diag.print(nullptr, os, false);
+
+      *OutMessage = strdup(buf.c_str());
+    }
+    return 1;
   }
 
-  return 1;
+  return 0;
 }

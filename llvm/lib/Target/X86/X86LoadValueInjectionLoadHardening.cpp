@@ -115,9 +115,9 @@ struct MachineGadgetGraph : ImmutableGraph<MachineInstr *, int> {
   static constexpr MachineInstr *const ArgNodeSentinel = nullptr;
 
   using GraphT = ImmutableGraph<MachineInstr *, int>;
-  using Node = GraphT::Node;
-  using Edge = GraphT::Edge;
-  using size_type = GraphT::size_type;
+  using Node = typename GraphT::Node;
+  using Edge = typename GraphT::Edge;
+  using size_type = typename GraphT::size_type;
   MachineGadgetGraph(std::unique_ptr<Node[]> Nodes,
                      std::unique_ptr<Edge[]> Edges, size_type NodesSize,
                      size_type EdgesSize, int NumFences = 0, int NumGadgets = 0)
@@ -171,8 +171,8 @@ private:
   trimMitigatedEdges(std::unique_ptr<MachineGadgetGraph> Graph) const;
   int insertFences(MachineFunction &MF, MachineGadgetGraph &G,
                    EdgeSet &CutEdges /* in, out */) const;
-  bool instrUsesRegToAccessMemory(const MachineInstr &I, Register Reg) const;
-  bool instrUsesRegToBranch(const MachineInstr &I, Register Reg) const;
+  bool instrUsesRegToAccessMemory(const MachineInstr &I, unsigned Reg) const;
+  bool instrUsesRegToBranch(const MachineInstr &I, unsigned Reg) const;
   inline bool isFence(const MachineInstr *MI) const {
     return MI && (MI->getOpcode() == X86::LFENCE ||
                   (STI->useLVIControlFlowIntegrity() && MI->isCall()));
@@ -191,10 +191,10 @@ template <>
 struct DOTGraphTraits<MachineGadgetGraph *> : DefaultDOTGraphTraits {
   using GraphType = MachineGadgetGraph;
   using Traits = llvm::GraphTraits<GraphType *>;
-  using NodeRef = Traits::NodeRef;
-  using EdgeRef = Traits::EdgeRef;
-  using ChildIteratorType = Traits::ChildIteratorType;
-  using ChildEdgeIteratorType = Traits::ChildEdgeIteratorType;
+  using NodeRef = typename Traits::NodeRef;
+  using EdgeRef = typename Traits::EdgeRef;
+  using ChildIteratorType = typename Traits::ChildIteratorType;
+  using ChildEdgeIteratorType = typename Traits::ChildEdgeIteratorType;
 
   DOTGraphTraits(bool IsSimple = false) : DefaultDOTGraphTraits(IsSimple) {}
 
@@ -226,6 +226,9 @@ struct DOTGraphTraits<MachineGadgetGraph *> : DefaultDOTGraphTraits {
 };
 
 } // end namespace llvm
+
+constexpr MachineInstr *MachineGadgetGraph::ArgNodeSentinel;
+constexpr int MachineGadgetGraph::GadgetEdgeSentinel;
 
 char X86LoadValueInjectionLoadHardeningPass::ID = 0;
 
@@ -332,14 +335,14 @@ X86LoadValueInjectionLoadHardeningPass::getGadgetGraph(
   L.computePhiInfo();
 
   GraphBuilder Builder;
-  using GraphIter = GraphBuilder::BuilderNodeRef;
+  using GraphIter = typename GraphBuilder::BuilderNodeRef;
   DenseMap<MachineInstr *, GraphIter> NodeMap;
   int FenceCount = 0, GadgetCount = 0;
   auto MaybeAddNode = [&NodeMap, &Builder](MachineInstr *MI) {
-    auto [Ref, Inserted] = NodeMap.try_emplace(MI);
-    if (Inserted) {
+    auto Ref = NodeMap.find(MI);
+    if (Ref == NodeMap.end()) {
       auto I = Builder.addVertex(MI);
-      Ref->second = I;
+      NodeMap[MI] = I;
       return std::pair<GraphIter, bool>{I, true};
     }
     return std::pair<GraphIter, bool>{Ref->getSecond(), false};
@@ -411,6 +414,7 @@ X86LoadValueInjectionLoadHardeningPass::getGadgetGraph(
 
             // Check whether the use propagates to more defs.
             NodeAddr<InstrNode *> Owner{Use.Addr->getOwner(DFG)};
+            rdf::NodeList AnalyzedChildDefs;
             for (const auto &ChildDef :
                  Owner.Addr->members_if(DataFlowGraph::IsDef, DFG)) {
               if (!DefsVisited.insert(ChildDef.Id).second)
@@ -488,7 +492,7 @@ X86LoadValueInjectionLoadHardeningPass::getGadgetGraph(
   NumGadgets += GadgetCount;
 
   // Traverse CFG to build the rest of the graph
-  SmallPtrSet<MachineBasicBlock *, 8> BlocksVisited;
+  SmallSet<MachineBasicBlock *, 8> BlocksVisited;
   std::function<void(MachineBasicBlock *, GraphIter, unsigned)> TraverseCFG =
       [&](MachineBasicBlock *MBB, GraphIter GI, unsigned ParentDepth) {
         unsigned LoopDepth = MLI.getLoopDepth(MBB);
@@ -759,7 +763,7 @@ int X86LoadValueInjectionLoadHardeningPass::insertFences(
 }
 
 bool X86LoadValueInjectionLoadHardeningPass::instrUsesRegToAccessMemory(
-    const MachineInstr &MI, Register Reg) const {
+    const MachineInstr &MI, unsigned Reg) const {
   if (!MI.mayLoadOrStore() || MI.getOpcode() == X86::MFENCE ||
       MI.getOpcode() == X86::SFENCE || MI.getOpcode() == X86::LFENCE)
     return false;
@@ -776,14 +780,14 @@ bool X86LoadValueInjectionLoadHardeningPass::instrUsesRegToAccessMemory(
       MI.getOperand(MemRefBeginIdx + X86::AddrBaseReg);
   const MachineOperand &IndexMO =
       MI.getOperand(MemRefBeginIdx + X86::AddrIndexReg);
-  return (BaseMO.isReg() && BaseMO.getReg().isValid() &&
+  return (BaseMO.isReg() && BaseMO.getReg() != X86::NoRegister &&
           TRI->regsOverlap(BaseMO.getReg(), Reg)) ||
-         (IndexMO.isReg() && IndexMO.getReg().isValid() &&
+         (IndexMO.isReg() && IndexMO.getReg() != X86::NoRegister &&
           TRI->regsOverlap(IndexMO.getReg(), Reg));
 }
 
 bool X86LoadValueInjectionLoadHardeningPass::instrUsesRegToBranch(
-    const MachineInstr &MI, Register Reg) const {
+    const MachineInstr &MI, unsigned Reg) const {
   if (!MI.isConditionalBranch())
     return false;
   for (const MachineOperand &Use : MI.uses())

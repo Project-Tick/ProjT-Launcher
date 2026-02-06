@@ -124,9 +124,8 @@ static bool haveNoReadsAfterWriteExceptSameIndex(
                   OperationEquivalence::Flags::IgnoreLocations)) {
             return WalkResult::interrupt();
           }
-        } else {
+        } else
           return WalkResult::interrupt();
-        }
       }
     }
     return WalkResult::advance();
@@ -190,8 +189,8 @@ static void fuseIfLegal(ParallelOp firstPloop, ParallelOp &secondPloop,
 
   IRRewriter b(builder);
   b.setInsertionPoint(secondPloop);
-  auto newSecondPloop = ParallelOp::create(
-      b, secondPloop.getLoc(), secondPloop.getLowerBound(),
+  auto newSecondPloop = b.create<ParallelOp>(
+      secondPloop.getLoc(), secondPloop.getLowerBound(),
       secondPloop.getUpperBound(), secondPloop.getStep(), newInitVars);
 
   Block *newBlock = newSecondPloop.getBody();
@@ -212,7 +211,7 @@ static void fuseIfLegal(ParallelOp firstPloop, ParallelOp &secondPloop,
     SmallVector<Value> newReduceArgs(reduceArgs1.begin(), reduceArgs1.end());
     newReduceArgs.append(reduceArgs2.begin(), reduceArgs2.end());
 
-    auto newReduceOp = scf::ReduceOp::create(b, term2.getLoc(), newReduceArgs);
+    auto newReduceOp = b.create<scf::ReduceOp>(term2.getLoc(), newReduceArgs);
 
     for (auto &&[i, reg] : llvm::enumerate(llvm::concat<Region>(
              term1.getReductions(), term2.getReductions()))) {
@@ -269,10 +268,10 @@ namespace {
 struct ParallelLoopFusion
     : public impl::SCFParallelLoopFusionBase<ParallelLoopFusion> {
   void runOnOperation() override {
-    auto &aa = getAnalysis<AliasAnalysis>();
+    auto &AA = getAnalysis<AliasAnalysis>();
 
     auto mayAlias = [&](Value val1, Value val2) -> bool {
-      return !aa.alias(val1, val2).isNo();
+      return !AA.alias(val1, val2).isNo();
     };
 
     getOperation()->walk([&](Operation *child) {

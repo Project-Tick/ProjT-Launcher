@@ -8,6 +8,7 @@
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
 // UNSUPPORTED: no-filesystem
+// UNSUPPORTED: availability-filesystem-missing
 
 // directory_iterator
 
@@ -40,3 +41,4 @@ static_assert(!std::ranges::view<const fs::directory_iterator&>);
 static_assert(!std::ranges::sized_range<const fs::directory_iterator&>);
 static_assert(std::ranges::borrowed_range<const fs::directory_iterator&>);
 static_assert(std::ranges::viewable_range<const fs::directory_iterator&>);
+

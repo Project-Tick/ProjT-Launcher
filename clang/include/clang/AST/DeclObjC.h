@@ -371,7 +371,7 @@ public:
   // ArrayRef access to formal parameters.  This should eventually
   // replace the iterator interface above.
   ArrayRef<ParmVarDecl*> parameters() const {
-    return {const_cast<ParmVarDecl **>(getParams()), NumParams};
+    return llvm::ArrayRef(const_cast<ParmVarDecl **>(getParams()), NumParams);
   }
 
   ParmVarDecl *getParamDecl(unsigned Idx) {
@@ -643,9 +643,6 @@ public:
   /// from the explicitly-specified bound.
   SourceLocation getColonLoc() const { return ColonLoc; }
 
-  using TypeDecl::getTypeForDecl;
-  using TypeDecl::setTypeForDecl;
-
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
   static bool classofKind(Kind K) { return K == ObjCTypeParam; }
@@ -681,7 +678,7 @@ public:
   /// Iterate through the type parameters in the list.
   using iterator = ObjCTypeParamDecl **;
 
-  iterator begin() { return getTrailingObjects(); }
+  iterator begin() { return getTrailingObjects<ObjCTypeParamDecl *>(); }
 
   iterator end() { return begin() + size(); }
 
@@ -691,7 +688,9 @@ public:
   // Iterate through the type parameters in the list.
   using const_iterator = ObjCTypeParamDecl * const *;
 
-  const_iterator begin() const { return getTrailingObjects(); }
+  const_iterator begin() const {
+    return getTrailingObjects<ObjCTypeParamDecl *>();
+  }
 
   const_iterator end() const {
     return begin() + size();

@@ -17,10 +17,10 @@ namespace {
 
 class Parent {};
 
-using RawNode = ilist_node_base<false, void>;
-using TrackingNode = ilist_node_base<true, void>;
-using ParentNode = ilist_node_base<false, Parent>;
-using ParentTrackingNode = ilist_node_base<true, Parent>;
+typedef ilist_node_base<false, void> RawNode;
+typedef ilist_node_base<true, void> TrackingNode;
+typedef ilist_node_base<false, Parent> ParentNode;
+typedef ilist_node_base<true, Parent> ParentTrackingNode;
 
 TEST(IListNodeBaseTest, DefaultConstructor) {
   RawNode A;

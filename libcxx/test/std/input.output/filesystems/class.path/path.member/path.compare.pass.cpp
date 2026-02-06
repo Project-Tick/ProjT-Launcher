@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: availability-filesystem-missing
 
 // <filesystem>
 
@@ -131,7 +132,7 @@ void test_compare_basic() {
       AssertOrderReturn<std::strong_ordering, path>();
 #endif
 
-      // check comparison results
+      // check comarison results
       assert(testComparisons(p1, p2, /*isEqual*/ E == 0, /*isLess*/ E < 0));
 #if TEST_STD_VER > 17
       assert(testOrder(p1, p2, E <=> 0));

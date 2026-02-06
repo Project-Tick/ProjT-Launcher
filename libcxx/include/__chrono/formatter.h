@@ -21,7 +21,6 @@
 #  include <__chrono/day.h>
 #  include <__chrono/duration.h>
 #  include <__chrono/file_clock.h>
-#  include <__chrono/gps_clock.h>
 #  include <__chrono/hh_mm_ss.h>
 #  include <__chrono/local_info.h>
 #  include <__chrono/month.h>
@@ -32,7 +31,6 @@
 #  include <__chrono/statically_widen.h>
 #  include <__chrono/sys_info.h>
 #  include <__chrono/system_clock.h>
-#  include <__chrono/tai_clock.h>
 #  include <__chrono/time_point.h>
 #  include <__chrono/utc_clock.h>
 #  include <__chrono/weekday.h>
@@ -50,14 +48,12 @@
 #  include <__format/formatter.h>
 #  include <__format/parser_std_format_spec.h>
 #  include <__format/write_escaped.h>
-#  include <__iterator/istreambuf_iterator.h>
-#  include <__iterator/ostreambuf_iterator.h>
-#  include <__locale_dir/time.h>
 #  include <__memory/addressof.h>
 #  include <__type_traits/is_specialization.h>
 #  include <cmath>
 #  include <ctime>
 #  include <limits>
+#  include <locale>
 #  include <sstream>
 #  include <string_view>
 
@@ -236,13 +232,9 @@ _LIBCPP_HIDE_FROM_ABI __time_zone __convert_to_time_zone([[maybe_unused]] const 
   if constexpr (same_as<_Tp, chrono::sys_info>)
     return {__value.abbrev, __value.offset};
 #      if _LIBCPP_HAS_TIME_ZONE_DATABASE && _LIBCPP_HAS_FILESYSTEM
-  else if constexpr (__is_time_point<_Tp> && requires { requires same_as<typename _Tp::clock, chrono::tai_clock>; })
-    return {"TAI", chrono::seconds{0}};
-  else if constexpr (__is_time_point<_Tp> && requires { requires same_as<typename _Tp::clock, chrono::gps_clock>; })
-    return {"GPS", chrono::seconds{0}};
   else if constexpr (__is_specialization_v<_Tp, chrono::zoned_time>)
     return __formatter::__convert_to_time_zone(__value.get_info());
-#      endif // _LIBCPP_HAS_TIME_ZONE_DATABASE && _LIBCPP_HAS_FILESYSTEM
+#      endif
   else
 #    endif // _LIBCPP_HAS_EXPERIMENTAL_TZDB
     return {"UTC", chrono::seconds{0}};
@@ -320,7 +312,7 @@ _LIBCPP_HIDE_FROM_ABI void __format_chrono_using_chrono_specs(
       case _CharT('T'):
         __facet.put(
             {__sstr}, __sstr, _CharT(' '), std::addressof(__t), std::to_address(__s), std::to_address(__it + 1));
-        if constexpr (__formatter::__use_fraction<_Tp>())
+        if constexpr (__use_fraction<_Tp>())
           __formatter::__format_sub_seconds(__sstr, __value);
         break;
 
@@ -383,7 +375,7 @@ _LIBCPP_HIDE_FROM_ABI void __format_chrono_using_chrono_specs(
         break;
 
       case _CharT('O'):
-        if constexpr (__formatter::__use_fraction<_Tp>()) {
+        if constexpr (__use_fraction<_Tp>()) {
           // Handle OS using the normal representation for the non-fractional
           // part. There seems to be no locale information regarding how the
           // fractional part should be formatted.
@@ -700,7 +692,7 @@ __format_chrono(const _Tp& __value,
 } // namespace __formatter
 
 template <__fmt_char_type _CharT>
-struct __formatter_chrono {
+struct _LIBCPP_TEMPLATE_VIS __formatter_chrono {
 public:
   template <class _ParseContext>
   _LIBCPP_HIDE_FROM_ABI constexpr typename _ParseContext::iterator
@@ -718,7 +710,7 @@ public:
 };
 
 template <class _Duration, __fmt_char_type _CharT>
-struct formatter<chrono::sys_time<_Duration>, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::sys_time<_Duration>, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -732,29 +724,7 @@ public:
 #      if _LIBCPP_HAS_EXPERIMENTAL_TZDB
 
 template <class _Duration, __fmt_char_type _CharT>
-struct formatter<chrono::utc_time<_Duration>, _CharT> : public __formatter_chrono<_CharT> {
-public:
-  using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
-
-  template <class _ParseContext>
-  _LIBCPP_HIDE_FROM_ABI constexpr typename _ParseContext::iterator parse(_ParseContext& __ctx) {
-    return _Base::__parse(__ctx, __format_spec::__fields_chrono, __format_spec::__flags::__clock);
-  }
-};
-
-template <class _Duration, __fmt_char_type _CharT>
-struct formatter<chrono::tai_time<_Duration>, _CharT> : public __formatter_chrono<_CharT> {
-public:
-  using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
-
-  template <class _ParseContext>
-  _LIBCPP_HIDE_FROM_ABI constexpr typename _ParseContext::iterator parse(_ParseContext& __ctx) {
-    return _Base::__parse(__ctx, __format_spec::__fields_chrono, __format_spec::__flags::__clock);
-  }
-};
-
-template <class _Duration, __fmt_char_type _CharT>
-struct formatter<chrono::gps_time<_Duration>, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::utc_time<_Duration>, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -768,7 +738,7 @@ public:
 #    endif   // _LIBCPP_HAS_TIME_ZONE_DATABASE && _LIBCPP_HAS_FILESYSTEM
 
 template <class _Duration, __fmt_char_type _CharT>
-struct formatter<chrono::file_time<_Duration>, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::file_time<_Duration>, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -779,7 +749,7 @@ public:
 };
 
 template <class _Duration, __fmt_char_type _CharT>
-struct formatter<chrono::local_time<_Duration>, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::local_time<_Duration>, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -813,7 +783,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::day, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::day, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -824,7 +794,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::month, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::month, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -835,7 +805,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::year, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::year, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -846,7 +816,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::weekday, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::weekday, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -857,7 +827,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::weekday_indexed, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::weekday_indexed, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -868,7 +838,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::weekday_last, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::weekday_last, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -879,7 +849,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::month_day, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::month_day, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -890,7 +860,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::month_day_last, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::month_day_last, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -901,7 +871,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::month_weekday, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::month_weekday, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -912,7 +882,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::month_weekday_last, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::month_weekday_last, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -923,7 +893,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::year_month, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::year_month, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -934,7 +904,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::year_month_day, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::year_month_day, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -945,7 +915,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::year_month_day_last, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::year_month_day_last, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -956,7 +926,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::year_month_weekday, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::year_month_weekday, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 
@@ -967,7 +937,7 @@ public:
 };
 
 template <__fmt_char_type _CharT>
-struct formatter<chrono::year_month_weekday_last, _CharT> : public __formatter_chrono<_CharT> {
+struct _LIBCPP_TEMPLATE_VIS formatter<chrono::year_month_weekday_last, _CharT> : public __formatter_chrono<_CharT> {
 public:
   using _Base _LIBCPP_NODEBUG = __formatter_chrono<_CharT>;
 

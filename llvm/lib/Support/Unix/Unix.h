@@ -22,6 +22,7 @@
 #include "llvm/Support/Chrono.h"
 #include "llvm/Support/Errno.h"
 #include "llvm/Support/ErrorHandling.h"
+#include <algorithm>
 #include <assert.h>
 #include <cerrno>
 #include <cstdio>

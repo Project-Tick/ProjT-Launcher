@@ -20,7 +20,6 @@
 #include "llvm/DebugInfo/DWARF/DWARFUnit.h"
 #include "llvm/Object/Binary.h"
 #include "llvm/Object/ObjectFile.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/DataExtractor.h"
 #include "llvm/Support/Error.h"
 #include "llvm/TargetParser/Host.h"
@@ -46,7 +45,7 @@ class DWARFUnitIndex;
 /// DWARFContext
 /// This data structure is the top level entity that deals with dwarf debug
 /// information parsing. The actual data is supplied through DWARFObj.
-class LLVM_ABI DWARFContext : public DIContext {
+class DWARFContext : public DIContext {
 public:
   /// DWARFContextState
   /// This structure contains all member variables for DWARFContext that need
@@ -101,8 +100,9 @@ public:
     virtual bool isThreadSafe() const = 0;
 
     /// Parse a macro[.dwo] or macinfo[.dwo] section.
-    LLVM_ABI std::unique_ptr<DWARFDebugMacro>
+    std::unique_ptr<DWARFDebugMacro>
     parseMacroOrMacinfo(MacroSecType SectionType);
+
   };
   friend class DWARFContextState;
 
@@ -195,7 +195,7 @@ public:
   /// Get all normal compile/type units in this context.
   unit_iterator_range normal_units() {
     DWARFUnitVector &NormalUnits = State->getNormalUnits();
-    return NormalUnits;
+    return unit_iterator_range(NormalUnits.begin(), NormalUnits.end());
   }
 
   /// Get units from .debug_info..dwo in the DWO context.
@@ -231,7 +231,7 @@ public:
   /// Get all units in the DWO context.
   unit_iterator_range dwo_units() {
     DWARFUnitVector &DWOUnits = State->getDWOUnits();
-    return DWOUnits;
+    return unit_iterator_range(DWOUnits.begin(), DWOUnits.end());
   }
 
   /// Get the number of compile units in this context.
@@ -386,10 +386,10 @@ public:
   ///            executable's debug info.
   DIEsForAddress getDIEsForAddress(uint64_t Address, bool CheckDWO = false);
 
-  std::optional<DILineInfo> getLineInfoForAddress(
+  DILineInfo getLineInfoForAddress(
       object::SectionedAddress Address,
       DILineInfoSpecifier Specifier = DILineInfoSpecifier()) override;
-  std::optional<DILineInfo>
+  DILineInfo
   getLineInfoForDataAddress(object::SectionedAddress Address) override;
   DILineInfoTable getLineInfoForAddressRange(
       object::SectionedAddress Address, uint64_t Size,

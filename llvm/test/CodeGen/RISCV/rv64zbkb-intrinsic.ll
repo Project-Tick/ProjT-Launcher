@@ -2,6 +2,8 @@
 ; RUN: llc -mtriple=riscv64 -mattr=+zbkb -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s -check-prefix=RV64ZBKB
 
+declare i64 @llvm.riscv.brev8.i64(i64)
+
 define i64 @brev8(i64 %a) nounwind {
 ; RV64ZBKB-LABEL: brev8:
 ; RV64ZBKB:       # %bb.0:
@@ -23,6 +25,8 @@ define zeroext i16 @brev8_knownbits(i16 zeroext %a) nounwind {
   ret i16 %trunc
 }
 
+declare i64 @llvm.bswap.i64(i64)
+
 define i64 @rev8_i64(i64 %a) {
 ; RV64ZBKB-LABEL: rev8_i64:
 ; RV64ZBKB:       # %bb.0:
@@ -31,6 +35,8 @@ define i64 @rev8_i64(i64 %a) {
   %1 = call i64 @llvm.bswap.i64(i64 %a)
   ret i64 %1
 }
+
+declare i32 @llvm.riscv.brev8.i32(i32)
 
 define signext i32 @brev8_i32(i32 signext %a) nounwind {
 ; RV64ZBKB-LABEL: brev8_i32:
@@ -53,6 +59,8 @@ define zeroext i16 @brev8_i32_knownbits(i16 zeroext %a) nounwind {
   %trunc = trunc i32 %val to i16
   ret i16 %trunc
 }
+
+declare i32 @llvm.bswap.i32(i32)
 
 define signext i32 @rev8_i32(i32 signext %a) {
 ; RV64ZBKB-LABEL: rev8_i32:

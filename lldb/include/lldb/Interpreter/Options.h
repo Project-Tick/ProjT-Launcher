@@ -76,19 +76,19 @@ public:
   // This gets passed the short option as an integer...
   void OptionSeen(int short_option);
 
-  llvm::Error VerifyOptions();
+  bool VerifyOptions(CommandReturnObject &result);
 
   // Verify that the options given are in the options table and can be used
   // together, but there may be some required options that are missing (used to
   // verify options that get folded into command aliases).
-  llvm::Error VerifyPartialOptions();
+  bool VerifyPartialOptions(CommandReturnObject &result);
 
   void OutputFormattedUsageText(Stream &strm,
                                 const OptionDefinition &option_def,
-                                uint32_t output_max_columns, bool use_color);
+                                uint32_t output_max_columns);
 
   void GenerateOptionUsage(Stream &strm, CommandObject &cmd,
-                           uint32_t screen_width, bool use_color);
+                           uint32_t screen_width);
 
   bool SupportsLongOption(const char *long_option);
 

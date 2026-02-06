@@ -79,6 +79,8 @@ falseblock:
   ret void
 }
 
+declare half @llvm.fma.f16(half, half, half)
+
 define void @commute_fmadd_f16(half %x, half %y, half %z, ptr %p1, ptr %p2, i1 zeroext %cond) {
 ; RV32-LABEL: commute_fmadd_f16:
 ; RV32:       # %bb.0:
@@ -112,6 +114,8 @@ falseblock:
   ret void
 }
 
+declare float @llvm.fma.f32(float, float, float)
+
 define void @commute_fmadd_f32(float %x, float %y, float %z, ptr %p1, ptr %p2, i1 zeroext %cond) {
 ; RV32-LABEL: commute_fmadd_f32:
 ; RV32:       # %bb.0:
@@ -144,6 +148,8 @@ trueblock:
 falseblock:
   ret void
 }
+
+declare double @llvm.fma.f64(double, double, double)
 
 define void @commute_fmadd_f64(double %x, double %y, double %z, ptr %p1, ptr %p2, i1 zeroext %cond) {
 ; RV32-LABEL: commute_fmadd_f64:

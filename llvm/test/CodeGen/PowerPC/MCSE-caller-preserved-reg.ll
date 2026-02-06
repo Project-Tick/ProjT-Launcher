@@ -4,7 +4,7 @@
 ; thread local variables. These TLS access code sequences are generated
 ; repeatedly every time the thread local variable is accessed. By communicating
 ; to Machine CSE that X2 is guaranteed to have the same value within the same
-; function call (so called Caller Preserved Physical Register), the redundant
+; function call (so called Caller Preserved Physical Register), the redudant
 ; TLS access code sequences are cleaned up.
 
 %"struct.CC::TT" = type { i64, i32 }

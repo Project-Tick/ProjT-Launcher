@@ -22,6 +22,7 @@
 #include "dwarf2.h"
 #include "libunwind_ext.h"
 
+
 namespace libunwind {
 
 
@@ -33,10 +34,8 @@ public:
   typedef typename A::pint_t pint_t;
   typedef typename A::sint_t sint_t;
 
-  static int stepWithDwarf(A &addressSpace,
-                           typename R::link_hardened_reg_arg_t pc,
-                           pint_t fdeStart, R &registers, bool &isSignalFrame,
-                           bool stage2);
+  static int stepWithDwarf(A &addressSpace, pint_t pc, pint_t fdeStart,
+                           R &registers, bool &isSignalFrame, bool stage2);
 
 private:
 
@@ -65,10 +64,9 @@ private:
 
   static pint_t getCFA(A &addressSpace, const PrologInfo &prolog,
                        const R &registers) {
-    if (prolog.cfaRegister != 0) {
-      uintptr_t cfaRegister = registers.getRegister((int)prolog.cfaRegister);
-      return (pint_t)(cfaRegister + prolog.cfaRegisterOffset);
-    }
+    if (prolog.cfaRegister != 0)
+      return (pint_t)((sint_t)registers.getRegister((int)prolog.cfaRegister) +
+             prolog.cfaRegisterOffset);
     if (prolog.cfaExpression != 0)
       return evaluateExpression((pint_t)prolog.cfaExpression, addressSpace,
                                 registers, 0);
@@ -209,16 +207,16 @@ bool DwarfInstructions<A, R>::isReturnAddressSignedWithPC(A &addressSpace,
 #endif
 
 template <typename A, typename R>
-int DwarfInstructions<A, R>::stepWithDwarf(
-    A &addressSpace, typename R::link_hardened_reg_arg_t pc, pint_t fdeStart,
-    R &registers, bool &isSignalFrame, bool stage2) {
+int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
+                                           pint_t fdeStart, R &registers,
+                                           bool &isSignalFrame, bool stage2) {
   FDE_Info fdeInfo;
   CIE_Info cieInfo;
   if (CFI_Parser<A>::decodeFDE(addressSpace, fdeStart, &fdeInfo,
                                &cieInfo) == NULL) {
     PrologInfo prolog;
-    if (CFI_Parser<A>::template parseFDEInstructions<R>(
-            addressSpace, fdeInfo, cieInfo, pc, R::getArch(), &prolog)) {
+    if (CFI_Parser<A>::parseFDEInstructions(addressSpace, fdeInfo, cieInfo, pc,
+                                            R::getArch(), &prolog)) {
       // get pointer to cfa (architecture specific)
       pint_t cfa = getCFA(addressSpace, prolog, registers);
 
@@ -266,7 +264,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(
       // by a CFI directive later on.
       newRegisters.setSP(cfa);
 
-      typename R::reg_t returnAddress = 0;
+      pint_t returnAddress = 0;
       constexpr int lastReg = R::lastDwarfRegNum();
       static_assert(static_cast<int>(CFI_Parser<A>::kMaxRegisterNumber) >=
                         lastReg,
@@ -302,16 +300,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(
 
       isSignalFrame = cieInfo.isSignalFrame;
 
-#if defined(_LIBUNWIND_TARGET_AARCH64) &&                                      \
-    !defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-      // There are two ways of return address signing: pac-ret (enabled via
-      // -mbranch-protection=pac-ret) and ptrauth-returns (enabled as part of
-      // Apple's arm64e or experimental pauthtest ABI on Linux). The code
-      // below handles signed RA for pac-ret, while ptrauth-returns uses
-      // different logic.
-      // TODO: unify logic for both cases, see
-      // https://github.com/llvm/llvm-project/issues/160110
-      //
+#if defined(_LIBUNWIND_TARGET_AARCH64)
       // If the target is aarch64 then the return address may have been signed
       // using the v8.3 pointer authentication extensions. The original
       // return address needs to be authenticated before the return address is

@@ -25,6 +25,6 @@ target_include_directories(MLIRTableGenTests
 )
 
 target_link_libraries(MLIRTableGenTests
-  PRIVATE LLVMTableGen MLIRTableGen MLIRIR
+  PRIVATE MLIRTableGen MLIRIR
   PUBLIC MLIRTestDialect
 )

@@ -13,13 +13,13 @@
 
 #include "TypeDetail.h"
 
-#include "mlir/Dialect/LLVMIR/LLVMAttrs.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/DialectImplementation.h"
 #include "mlir/IR/TypeSupport.h"
 
+#include "llvm/ADT/ScopeExit.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/TypeSize.h"
 #include <optional>
@@ -134,10 +134,10 @@ static void printExtTypeParams(AsmPrinter &p, ArrayRef<Type> typeParams,
 
 /// These are unused for now.
 /// TODO: Move over to these once more types have been migrated to TypeDef.
-[[maybe_unused]] static OptionalParseResult
+LLVM_ATTRIBUTE_UNUSED static OptionalParseResult
 generatedTypeParser(AsmParser &parser, StringRef *mnemonic, Type &value);
-[[maybe_unused]] static LogicalResult generatedTypePrinter(Type def,
-                                                           AsmPrinter &printer);
+LLVM_ATTRIBUTE_UNUSED static LogicalResult
+generatedTypePrinter(Type def, AsmPrinter &printer);
 
 #include "mlir/Dialect/LLVMIR/LLVMTypeInterfaces.cpp.inc"
 
@@ -150,7 +150,8 @@ generatedTypeParser(AsmParser &parser, StringRef *mnemonic, Type &value);
 
 bool LLVMArrayType::isValidElementType(Type type) {
   return !llvm::isa<LLVMVoidType, LLVMLabelType, LLVMMetadataType,
-                    LLVMFunctionType, LLVMTokenType>(type);
+                    LLVMFunctionType, LLVMTokenType, LLVMScalableVectorType>(
+      type);
 }
 
 LLVMArrayType LLVMArrayType::get(Type elementType, uint64_t numElements) {
@@ -176,7 +177,6 @@ LLVMArrayType::verify(function_ref<InFlightDiagnostic()> emitError,
 
 //===----------------------------------------------------------------------===//
 // DataLayoutTypeInterface
-//===----------------------------------------------------------------------===//
 
 llvm::TypeSize
 LLVMArrayType::getTypeSizeInBits(const DataLayout &dataLayout,
@@ -232,10 +232,7 @@ LLVMFunctionType::getChecked(function_ref<InFlightDiagnostic()> emitError,
 
 LLVMFunctionType LLVMFunctionType::clone(TypeRange inputs,
                                          TypeRange results) const {
-  if (results.size() != 1 || !isValidResultType(results[0]))
-    return {};
-  if (!llvm::all_of(inputs, isValidArgumentType))
-    return {};
+  assert(results.size() == 1 && "expected a single result type");
   return get(results[0], llvm::to_vector(inputs), isVarArg());
 }
 
@@ -258,7 +255,6 @@ LLVMFunctionType::verify(function_ref<InFlightDiagnostic()> emitError,
 
 //===----------------------------------------------------------------------===//
 // DataLayoutTypeInterface
-//===----------------------------------------------------------------------===//
 
 constexpr const static uint64_t kDefaultPointerSizeBits = 64;
 constexpr const static uint64_t kDefaultPointerAlignment = 8;
@@ -353,10 +349,8 @@ LLVMPointerType::getIndexBitwidth(const DataLayout &dataLayout,
   return dataLayout.getTypeIndexBitwidth(get(getContext()));
 }
 
-bool LLVMPointerType::areCompatible(
-    DataLayoutEntryListRef oldLayout, DataLayoutEntryListRef newLayout,
-    DataLayoutSpecInterface newSpec,
-    const DataLayoutIdentifiedEntryMap &map) const {
+bool LLVMPointerType::areCompatible(DataLayoutEntryListRef oldLayout,
+                                    DataLayoutEntryListRef newLayout) const {
   for (DataLayoutEntryInterface newEntry : newLayout) {
     if (!newEntry.isTypeEntry())
       continue;
@@ -603,10 +597,8 @@ static uint64_t extractStructSpecValue(Attribute attr, StructDLEntryPos pos) {
       .getValues<uint64_t>()[static_cast<size_t>(pos)];
 }
 
-bool LLVMStructType::areCompatible(
-    DataLayoutEntryListRef oldLayout, DataLayoutEntryListRef newLayout,
-    DataLayoutSpecInterface newSpec,
-    const DataLayoutIdentifiedEntryMap &map) const {
+bool LLVMStructType::areCompatible(DataLayoutEntryListRef oldLayout,
+                                   DataLayoutEntryListRef newLayout) const {
   for (DataLayoutEntryInterface newEntry : newLayout) {
     if (!newEntry.isTypeEntry())
       continue;
@@ -662,12 +654,87 @@ LogicalResult LLVMStructType::verifyEntries(DataLayoutEntryListRef entries,
 }
 
 //===----------------------------------------------------------------------===//
+// Vector types.
+//===----------------------------------------------------------------------===//
+
+/// Verifies that the type about to be constructed is well-formed.
+template <typename VecTy>
+static LogicalResult
+verifyVectorConstructionInvariants(function_ref<InFlightDiagnostic()> emitError,
+                                   Type elementType, unsigned numElements) {
+  if (numElements == 0)
+    return emitError() << "the number of vector elements must be positive";
+
+  if (!VecTy::isValidElementType(elementType))
+    return emitError() << "invalid vector element type";
+
+  return success();
+}
+
+LLVMFixedVectorType LLVMFixedVectorType::get(Type elementType,
+                                             unsigned numElements) {
+  assert(elementType && "expected non-null subtype");
+  return Base::get(elementType.getContext(), elementType, numElements);
+}
+
+LLVMFixedVectorType
+LLVMFixedVectorType::getChecked(function_ref<InFlightDiagnostic()> emitError,
+                                Type elementType, unsigned numElements) {
+  assert(elementType && "expected non-null subtype");
+  return Base::getChecked(emitError, elementType.getContext(), elementType,
+                          numElements);
+}
+
+bool LLVMFixedVectorType::isValidElementType(Type type) {
+  return llvm::isa<LLVMPointerType, LLVMPPCFP128Type>(type);
+}
+
+LogicalResult
+LLVMFixedVectorType::verify(function_ref<InFlightDiagnostic()> emitError,
+                            Type elementType, unsigned numElements) {
+  return verifyVectorConstructionInvariants<LLVMFixedVectorType>(
+      emitError, elementType, numElements);
+}
+
+//===----------------------------------------------------------------------===//
+// LLVMScalableVectorType.
+//===----------------------------------------------------------------------===//
+
+LLVMScalableVectorType LLVMScalableVectorType::get(Type elementType,
+                                                   unsigned minNumElements) {
+  assert(elementType && "expected non-null subtype");
+  return Base::get(elementType.getContext(), elementType, minNumElements);
+}
+
+LLVMScalableVectorType
+LLVMScalableVectorType::getChecked(function_ref<InFlightDiagnostic()> emitError,
+                                   Type elementType, unsigned minNumElements) {
+  assert(elementType && "expected non-null subtype");
+  return Base::getChecked(emitError, elementType.getContext(), elementType,
+                          minNumElements);
+}
+
+bool LLVMScalableVectorType::isValidElementType(Type type) {
+  if (auto intType = llvm::dyn_cast<IntegerType>(type))
+    return intType.isSignless();
+
+  return isCompatibleFloatingPointType(type) ||
+         llvm::isa<LLVMPointerType>(type);
+}
+
+LogicalResult
+LLVMScalableVectorType::verify(function_ref<InFlightDiagnostic()> emitError,
+                               Type elementType, unsigned numElements) {
+  return verifyVectorConstructionInvariants<LLVMScalableVectorType>(
+      emitError, elementType, numElements);
+}
+
+//===----------------------------------------------------------------------===//
 // LLVMTargetExtType.
 //===----------------------------------------------------------------------===//
 
 static constexpr llvm::StringRef kSpirvPrefix = "spirv.";
 static constexpr llvm::StringRef kArmSVCount = "aarch64.svcount";
-static constexpr llvm::StringRef kAMDGCNNamedBarrier = "amdgcn.named.barrier";
 
 bool LLVM::LLVMTargetExtType::hasProperty(Property prop) const {
   // See llvm/lib/IR/Type.cpp for reference.
@@ -676,9 +743,6 @@ bool LLVM::LLVMTargetExtType::hasProperty(Property prop) const {
   if (getExtTypeName().starts_with(kSpirvPrefix))
     properties |=
         (LLVMTargetExtType::HasZeroInit | LLVM::LLVMTargetExtType::CanBeGlobal);
-
-  if (getExtTypeName() == kAMDGCNNamedBarrier)
-    properties |= LLVMTargetExtType::CanBeGlobal;
 
   return (properties & prop) == prop;
 }
@@ -695,27 +759,8 @@ bool LLVM::LLVMTargetExtType::supportsMemOps() const {
 }
 
 //===----------------------------------------------------------------------===//
-// LLVMPPCFP128Type
-//===----------------------------------------------------------------------===//
-
-const llvm::fltSemantics &LLVMPPCFP128Type::getFloatSemantics() const {
-  return APFloat::PPCDoubleDouble();
-}
-
-//===----------------------------------------------------------------------===//
 // Utility functions.
 //===----------------------------------------------------------------------===//
-
-/// Check whether type is a compatible ptr type. These are pointer-like types
-/// with no element type, no metadata, and using the LLVM
-/// LLVMAddrSpaceAttrInterface memory space.
-static bool isCompatiblePtrType(Type type) {
-  auto ptrTy = dyn_cast<PtrLikeTypeInterface>(type);
-  if (!ptrTy)
-    return false;
-  return !ptrTy.hasPtrMetadata() && ptrTy.getElementType() == nullptr &&
-         isa<LLVMAddrSpaceAttrInterface>(ptrTy.getMemorySpace());
-}
 
 bool mlir::LLVM::isCompatibleOuterType(Type type) {
   // clang-format off
@@ -734,6 +779,8 @@ bool mlir::LLVM::isCompatibleOuterType(Type type) {
       LLVMPointerType,
       LLVMStructType,
       LLVMTokenType,
+      LLVMFixedVectorType,
+      LLVMScalableVectorType,
       LLVMTargetExtType,
       LLVMVoidType,
       LLVMX86AMXType
@@ -750,7 +797,7 @@ bool mlir::LLVM::isCompatibleOuterType(Type type) {
   if (auto vecType = llvm::dyn_cast<VectorType>(type))
     return vecType.getRank() == 1;
 
-  return isCompatiblePtrType(type);
+  return false;
 }
 
 static bool isCompatibleImpl(Type type, DenseSet<Type> &compatibleTypes) {
@@ -781,6 +828,8 @@ static bool isCompatibleImpl(Type type, DenseSet<Type> &compatibleTypes) {
           })
           // clang-format off
           .Case<
+              LLVMFixedVectorType,
+              LLVMScalableVectorType,
               LLVMArrayType
           >([&](auto containerType) {
             return isCompatible(containerType.getElementType());
@@ -800,9 +849,7 @@ static bool isCompatibleImpl(Type type, DenseSet<Type> &compatibleTypes) {
             LLVMX86AMXType
           >([](Type) { return true; })
           // clang-format on
-          .Case<PtrLikeTypeInterface>(
-              [](Type type) { return isCompatiblePtrType(type); })
-          .Default(false);
+          .Default([](Type) { return false; });
 
   if (!result)
     compatibleTypes.erase(type);
@@ -823,24 +870,15 @@ bool mlir::LLVM::isCompatibleType(Type type) {
   return LLVMDialect::isCompatibleType(type);
 }
 
-bool mlir::LLVM::isLoadableType(Type type) {
-  return /*LLVM_PrimitiveType*/ (
-             LLVM::isCompatibleOuterType(type) &&
-             !isa<LLVM::LLVMVoidType, LLVM::LLVMFunctionType>(type)) &&
-         /*LLVM_OpaqueStruct*/
-         !(isa<LLVM::LLVMStructType>(type) &&
-           cast<LLVM::LLVMStructType>(type).isOpaque()) &&
-         /*LLVM_AnyTargetExt*/
-         !(isa<LLVM::LLVMTargetExtType>(type) &&
-           !cast<LLVM::LLVMTargetExtType>(type).supportsMemOps());
-}
-
 bool mlir::LLVM::isCompatibleFloatingPointType(Type type) {
   return llvm::isa<BFloat16Type, Float16Type, Float32Type, Float64Type,
                    Float80Type, Float128Type, LLVMPPCFP128Type>(type);
 }
 
 bool mlir::LLVM::isCompatibleVectorType(Type type) {
+  if (llvm::isa<LLVMFixedVectorType, LLVMScalableVectorType>(type))
+    return true;
+
   if (auto vecType = llvm::dyn_cast<VectorType>(type)) {
     if (vecType.getRank() != 1)
       return false;
@@ -848,30 +886,62 @@ bool mlir::LLVM::isCompatibleVectorType(Type type) {
     if (auto intType = llvm::dyn_cast<IntegerType>(elementType))
       return intType.isSignless();
     return llvm::isa<BFloat16Type, Float16Type, Float32Type, Float64Type,
-                     Float80Type, Float128Type, LLVMPointerType>(elementType) ||
-           isCompatiblePtrType(elementType);
+                     Float80Type, Float128Type>(elementType);
   }
   return false;
 }
 
+Type mlir::LLVM::getVectorElementType(Type type) {
+  return llvm::TypeSwitch<Type, Type>(type)
+      .Case<LLVMFixedVectorType, LLVMScalableVectorType, VectorType>(
+          [](auto ty) { return ty.getElementType(); })
+      .Default([](Type) -> Type {
+        llvm_unreachable("incompatible with LLVM vector type");
+      });
+}
+
 llvm::ElementCount mlir::LLVM::getVectorNumElements(Type type) {
-  auto vecTy = dyn_cast<VectorType>(type);
-  assert(vecTy && "incompatible with LLVM vector type");
-  if (vecTy.isScalable())
-    return llvm::ElementCount::getScalable(vecTy.getNumElements());
-  return llvm::ElementCount::getFixed(vecTy.getNumElements());
+  return llvm::TypeSwitch<Type, llvm::ElementCount>(type)
+      .Case([](VectorType ty) {
+        if (ty.isScalable())
+          return llvm::ElementCount::getScalable(ty.getNumElements());
+        return llvm::ElementCount::getFixed(ty.getNumElements());
+      })
+      .Case([](LLVMFixedVectorType ty) {
+        return llvm::ElementCount::getFixed(ty.getNumElements());
+      })
+      .Case([](LLVMScalableVectorType ty) {
+        return llvm::ElementCount::getScalable(ty.getMinNumElements());
+      })
+      .Default([](Type) -> llvm::ElementCount {
+        llvm_unreachable("incompatible with LLVM vector type");
+      });
 }
 
 bool mlir::LLVM::isScalableVectorType(Type vectorType) {
-  assert(llvm::isa<VectorType>(vectorType) &&
+  assert((llvm::isa<LLVMFixedVectorType, LLVMScalableVectorType, VectorType>(
+             vectorType)) &&
          "expected LLVM-compatible vector type");
-  return llvm::cast<VectorType>(vectorType).isScalable();
+  return !llvm::isa<LLVMFixedVectorType>(vectorType) &&
+         (llvm::isa<LLVMScalableVectorType>(vectorType) ||
+          llvm::cast<VectorType>(vectorType).isScalable());
 }
 
 Type mlir::LLVM::getVectorType(Type elementType, unsigned numElements,
                                bool isScalable) {
-  assert(VectorType::isValidElementType(elementType) &&
-         "incompatible element type");
+  bool useLLVM = LLVMFixedVectorType::isValidElementType(elementType);
+  bool useBuiltIn = VectorType::isValidElementType(elementType);
+  (void)useBuiltIn;
+  assert((useLLVM ^ useBuiltIn) && "expected LLVM-compatible fixed-vector type "
+                                   "to be either builtin or LLVM dialect type");
+  if (useLLVM) {
+    if (isScalable)
+      return LLVMScalableVectorType::get(elementType, numElements);
+    return LLVMFixedVectorType::get(elementType, numElements);
+  }
+
+  // LLVM vectors are always 1-D, hence only 1 bool is required to mark it as
+  // scalable/non-scalable.
   return VectorType::get(numElements, elementType, {isScalable});
 }
 
@@ -882,6 +952,32 @@ Type mlir::LLVM::getVectorType(Type elementType,
                          /*isScalable=*/true);
   return getVectorType(elementType, numElements.getFixedValue(),
                        /*isScalable=*/false);
+}
+
+Type mlir::LLVM::getFixedVectorType(Type elementType, unsigned numElements) {
+  bool useLLVM = LLVMFixedVectorType::isValidElementType(elementType);
+  bool useBuiltIn = VectorType::isValidElementType(elementType);
+  (void)useBuiltIn;
+  assert((useLLVM ^ useBuiltIn) && "expected LLVM-compatible fixed-vector type "
+                                   "to be either builtin or LLVM dialect type");
+  if (useLLVM)
+    return LLVMFixedVectorType::get(elementType, numElements);
+  return VectorType::get(numElements, elementType);
+}
+
+Type mlir::LLVM::getScalableVectorType(Type elementType, unsigned numElements) {
+  bool useLLVM = LLVMScalableVectorType::isValidElementType(elementType);
+  bool useBuiltIn = VectorType::isValidElementType(elementType);
+  (void)useBuiltIn;
+  assert((useLLVM ^ useBuiltIn) && "expected LLVM-compatible scalable-vector "
+                                   "type to be either builtin or LLVM dialect "
+                                   "type");
+  if (useLLVM)
+    return LLVMScalableVectorType::get(elementType, numElements);
+
+  // LLVM vectors are always 1-D, hence only 1 bool is required to mark it as
+  // scalable/non-scalable.
+  return VectorType::get(numElements, elementType, /*scalableDims=*/true);
 }
 
 llvm::TypeSize mlir::LLVM::getPrimitiveTypeSizeInBits(Type type) {
@@ -900,6 +996,12 @@ llvm::TypeSize mlir::LLVM::getPrimitiveTypeSizeInBits(Type type) {
       })
       .Case<LLVMPPCFP128Type>(
           [](Type) { return llvm::TypeSize::getFixed(128); })
+      .Case<LLVMFixedVectorType>([](LLVMFixedVectorType t) {
+        llvm::TypeSize elementSize =
+            getPrimitiveTypeSizeInBits(t.getElementType());
+        return llvm::TypeSize(elementSize.getFixedValue() * t.getNumElements(),
+                              elementSize.isScalable());
+      })
       .Case<VectorType>([](VectorType t) {
         assert(isCompatibleVectorType(t) &&
                "unexpected incompatible with LLVM vector type");

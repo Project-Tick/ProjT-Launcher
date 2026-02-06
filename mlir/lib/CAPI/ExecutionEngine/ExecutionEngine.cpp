@@ -22,7 +22,7 @@ using namespace mlir;
 extern "C" MlirExecutionEngine
 mlirExecutionEngineCreate(MlirModule op, int optLevel, int numPaths,
                           const MlirStringRef *sharedLibPaths,
-                          bool enableObjectDump, bool enablePIC) {
+                          bool enableObjectDump) {
   static bool initOnce = [] {
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmParser(); // needed for inline_asm
@@ -38,14 +38,12 @@ mlirExecutionEngineCreate(MlirModule op, int optLevel, int numPaths,
 
   auto tmBuilderOrError = llvm::orc::JITTargetMachineBuilder::detectHost();
   if (!tmBuilderOrError) {
-    consumeError(tmBuilderOrError.takeError());
+    llvm::errs() << "Failed to create a JITTargetMachineBuilder for the host\n";
     return MlirExecutionEngine{nullptr};
   }
-  if (enablePIC)
-    tmBuilderOrError->setRelocationModel(llvm::Reloc::PIC_);
   auto tmOrError = tmBuilderOrError->createTargetMachine();
   if (!tmOrError) {
-    consumeError(tmOrError.takeError());
+    llvm::errs() << "Failed to create a TargetMachine for the host\n";
     return MlirExecutionEngine{nullptr};
   }
 
@@ -62,17 +60,12 @@ mlirExecutionEngineCreate(MlirModule op, int optLevel, int numPaths,
   jitOptions.jitCodeGenOptLevel = static_cast<llvm::CodeGenOptLevel>(optLevel);
   jitOptions.sharedLibPaths = libPaths;
   jitOptions.enableObjectDump = enableObjectDump;
-  auto jitOrError = ExecutionEngine::create(unwrap(op), jitOptions,
-                                            std::move(tmOrError.get()));
+  auto jitOrError = ExecutionEngine::create(unwrap(op), jitOptions);
   if (!jitOrError) {
     consumeError(jitOrError.takeError());
     return MlirExecutionEngine{nullptr};
   }
   return wrap(jitOrError->release());
-}
-
-extern "C" void mlirExecutionEngineInitialize(MlirExecutionEngine jit) {
-  unwrap(jit)->initialize();
 }
 
 extern "C" void mlirExecutionEngineDestroy(MlirExecutionEngine jit) {
@@ -92,20 +85,18 @@ mlirExecutionEngineInvokePacked(MlirExecutionEngine jit, MlirStringRef name,
 
 extern "C" void *mlirExecutionEngineLookupPacked(MlirExecutionEngine jit,
                                                  MlirStringRef name) {
-  auto optionalFPtr =
-      llvm::expectedToOptional(unwrap(jit)->lookupPacked(unwrap(name)));
-  if (!optionalFPtr)
+  auto expectedFPtr = unwrap(jit)->lookupPacked(unwrap(name));
+  if (!expectedFPtr)
     return nullptr;
-  return reinterpret_cast<void *>(*optionalFPtr);
+  return reinterpret_cast<void *>(*expectedFPtr);
 }
 
 extern "C" void *mlirExecutionEngineLookup(MlirExecutionEngine jit,
                                            MlirStringRef name) {
-  auto optionalFPtr =
-      llvm::expectedToOptional(unwrap(jit)->lookup(unwrap(name)));
-  if (!optionalFPtr)
+  auto expectedFPtr = unwrap(jit)->lookup(unwrap(name));
+  if (!expectedFPtr)
     return nullptr;
-  return *optionalFPtr;
+  return reinterpret_cast<void *>(*expectedFPtr);
 }
 
 extern "C" void mlirExecutionEngineRegisterSymbol(MlirExecutionEngine jit,
@@ -113,8 +104,9 @@ extern "C" void mlirExecutionEngineRegisterSymbol(MlirExecutionEngine jit,
                                                   void *sym) {
   unwrap(jit)->registerSymbols([&](llvm::orc::MangleAndInterner interner) {
     llvm::orc::SymbolMap symbolMap;
-    symbolMap[interner(unwrap(name))] = {llvm::orc::ExecutorAddr::fromPtr(sym),
-                                         llvm::JITSymbolFlags::Exported};
+    symbolMap[interner(unwrap(name))] =
+        { llvm::orc::ExecutorAddr::fromPtr(sym),
+          llvm::JITSymbolFlags::Exported };
     return symbolMap;
   });
 }

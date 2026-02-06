@@ -66,7 +66,8 @@ public:
   }
 
   MachineFunctionProperties getClearedProperties() const override {
-    return MachineFunctionProperties().setNoPHIs();
+    return MachineFunctionProperties()
+      .set(MachineFunctionProperties::Property::NoPHIs);
   }
 };
 

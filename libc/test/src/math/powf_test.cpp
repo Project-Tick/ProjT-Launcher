@@ -7,19 +7,13 @@
 //===----------------------------------------------------------------------===//
 
 #include "hdr/math_macros.h"
-#include "hdr/stdint_proxy.h"
 #include "src/__support/FPUtil/FPBits.h"
-#include "src/__support/macros/optimization.h"
 #include "src/math/powf.h"
 #include "test/UnitTest/FPMatcher.h"
 #include "test/UnitTest/Test.h"
 #include "utils/MPFRWrapper/MPFRUtils.h"
 
-#ifdef LIBC_MATH_HAS_SKIP_ACCURATE_PASS
-#define TOLERANCE 1
-#else
-#define TOLERANCE 0
-#endif // LIBC_MATH_HAS_SKIP_ACCURATE_PASS
+#include <stdint.h>
 
 using LlvmLibcPowfTest = LIBC_NAMESPACE::testing::FPTest<float>;
 using LIBC_NAMESPACE::testing::tlog;
@@ -48,7 +42,7 @@ TEST_F(LlvmLibcPowfTest, TrickyInputs) {
     float x = INPUTS[i].x;
     float y = INPUTS[i].y;
     EXPECT_MPFR_MATCH_ALL_ROUNDING(mpfr::Operation::Pow, INPUTS[i],
-                                   LIBC_NAMESPACE::powf(x, y), TOLERANCE + 0.5);
+                                   LIBC_NAMESPACE::powf(x, y), 0.5);
   }
 }
 
@@ -84,7 +78,7 @@ TEST_F(LlvmLibcPowfTest, InFloatRange) {
         if (FPBits(w).is_nan() || FPBits(w).is_inf())
           continue;
 
-        libc_errno = 0;
+        LIBC_NAMESPACE::libc_errno = 0;
         float result = LIBC_NAMESPACE::powf(x, y);
         ++cc;
         if (FPBits(result).is_nan() || FPBits(result).is_inf())
@@ -94,8 +88,7 @@ TEST_F(LlvmLibcPowfTest, InFloatRange) {
         mpfr::BinaryInput<float> inputs{x, y};
 
         if (!TEST_MPFR_MATCH_ROUNDING_SILENTLY(mpfr::Operation::Pow, inputs,
-                                               result, TOLERANCE + 0.5,
-                                               rounding_mode)) {
+                                               result, 0.5, rounding_mode)) {
           ++fails;
           while (!TEST_MPFR_MATCH_ROUNDING_SILENTLY(
               mpfr::Operation::Pow, inputs, result, tol, rounding_mode)) {

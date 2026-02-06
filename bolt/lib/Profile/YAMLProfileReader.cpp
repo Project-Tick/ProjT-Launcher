@@ -28,7 +28,7 @@ extern cl::OptionCategory BoltOptCategory;
 extern cl::opt<bool> InferStaleProfile;
 extern cl::opt<bool> Lite;
 
-static cl::opt<unsigned> NameSimilarityFunctionMatchingThreshold(
+cl::opt<unsigned> NameSimilarityFunctionMatchingThreshold(
     "name-similarity-function-matching-threshold",
     cl::desc("Match functions using namespace and edit distance"), cl::init(0),
     cl::Hidden, cl::cat(BoltOptCategory));
@@ -38,11 +38,11 @@ static llvm::cl::opt<bool>
                cl::desc("ignore hash while reading function profile"),
                cl::Hidden, cl::cat(BoltOptCategory));
 
-static llvm::cl::opt<bool>
+llvm::cl::opt<bool>
     MatchProfileWithFunctionHash("match-profile-with-function-hash",
                                  cl::desc("Match profile with function hash"),
                                  cl::Hidden, cl::cat(BoltOptCategory));
-static llvm::cl::opt<bool>
+llvm::cl::opt<bool>
     MatchWithCallGraph("match-with-call-graph",
                        cl::desc("Match functions with call graph"), cl::Hidden,
                        cl::cat(BoltOptCategory));
@@ -176,13 +176,12 @@ bool YAMLProfileReader::parseFunctionProfile(
   uint64_t FunctionExecutionCount = 0;
 
   BF.setExecutionCount(YamlBF.ExecCount);
-  BF.setExternEntryCount(YamlBF.ExternEntryCount);
 
   uint64_t FuncRawBranchCount = 0;
   for (const yaml::bolt::BinaryBasicBlockProfile &YamlBB : YamlBF.Blocks)
     for (const yaml::bolt::SuccessorInfo &YamlSI : YamlBB.Successors)
       FuncRawBranchCount += YamlSI.Count;
-  BF.setRawSampleCount(FuncRawBranchCount);
+  BF.setRawBranchCount(FuncRawBranchCount);
 
   if (BF.empty())
     return true;
@@ -222,7 +221,7 @@ bool YAMLProfileReader::parseFunctionProfile(
 
     // Basic samples profile (without LBR) does not have branches information
     // and needs a special processing.
-    if (YamlBP.Header.Flags & BinaryFunction::PF_BASIC) {
+    if (YamlBP.Header.Flags & BinaryFunction::PF_SAMPLE) {
       if (!YamlBB.EventCount) {
         BB.setExecutionCount(0);
         continue;
@@ -339,7 +338,7 @@ bool YAMLProfileReader::parseFunctionProfile(
     if (BB.getExecutionCount() == BinaryBasicBlock::COUNT_NO_PROFILE)
       BB.setExecutionCount(0);
 
-  if (YamlBP.Header.Flags & BinaryFunction::PF_BASIC)
+  if (YamlBP.Header.Flags & BinaryFunction::PF_SAMPLE)
     BF.setExecutionCount(FunctionExecutionCount);
 
   ProfileMatched &= !MismatchedBlocks && !MismatchedCalls && !MismatchedEdges;
@@ -349,6 +348,9 @@ bool YAMLProfileReader::parseFunctionProfile(
       errs() << "BOLT-WARNING: " << MismatchedBlocks << " blocks, "
              << MismatchedCalls << " calls, and " << MismatchedEdges
              << " edges in profile did not match function " << BF << '\n';
+
+    if (YamlBF.NumBasicBlocks != BF.size())
+      ++BC.Stats.NumStaleFuncsWithEqualBlockCount;
 
     if (!opts::InferStaleProfile)
       return false;
@@ -559,7 +561,7 @@ size_t YAMLProfileReader::matchWithCallGraph(BinaryContext &BC) {
     auto BFsWithSameHashOpt = CGMatcher.getBFsWithNeighborHash(Hash);
     if (!BFsWithSameHashOpt)
       continue;
-    BinaryFunctionListType BFsWithSameHash = BFsWithSameHashOpt.value();
+    std::vector<BinaryFunction *> BFsWithSameHash = BFsWithSameHashOpt.value();
     // Finds the binary function with the longest common prefix to the profiled
     // function and matches.
     BinaryFunction *ClosestBF = nullptr;
@@ -725,7 +727,7 @@ size_t YAMLProfileReader::matchWithNameSimilarity(BinaryContext &BC) {
     NamespaceToProfiledBFSizes[YamlBFNamespace].insert(YamlBF.NumBasicBlocks);
   }
 
-  StringMap<BinaryFunctionListType> NamespaceToBFs;
+  StringMap<std::vector<BinaryFunction *>> NamespaceToBFs;
 
   // Maps namespaces to BFs excluding binary functions with no equal sized
   // profiled functions belonging to the same namespace.
@@ -760,7 +762,7 @@ size_t YAMLProfileReader::matchWithNameSimilarity(BinaryContext &BC) {
       continue;
 
     std::string &YamlBFDemangledName = ProfileBFDemangledNames[I];
-    BinaryFunctionListType BFs = It->second;
+    std::vector<BinaryFunction *> BFs = It->second;
     unsigned MinEditDistance = UINT_MAX;
     BinaryFunction *ClosestNameBF = nullptr;
 
@@ -885,7 +887,7 @@ Error YAMLProfileReader::readProfile(BinaryContext &BC) {
 }
 
 bool YAMLProfileReader::usesEvent(StringRef Name) const {
-  return StringRef(YamlBP.Header.EventNames).contains(Name);
+  return YamlBP.Header.EventNames.find(std::string(Name)) != StringRef::npos;
 }
 
 } // end namespace bolt

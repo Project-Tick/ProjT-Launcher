@@ -38,10 +38,6 @@ bool AMDGPUSubtarget::useRealTrue16Insts() const {
   return hasTrue16BitInsts() && EnableRealTrue16Insts;
 }
 
-bool AMDGPUSubtarget::hasD16Writes32BitVgpr() const {
-  return EnableD16Writes32BitVgpr;
-}
-
 // Returns the maximum per-workgroup LDS allocation size (in bytes) that still
 // allows the given function to achieve an occupancy of NWaves waves per
 // SIMD / EU, taking into account only the function's *maximum* workgroup size.
@@ -59,9 +55,9 @@ AMDGPUSubtarget::getMaxLocalMemSizeWithWaveCount(unsigned NWaves,
   return getLocalMemorySize() / WorkGroupsPerCU;
 }
 
-std::pair<unsigned, unsigned> AMDGPUSubtarget::getOccupancyWithWorkGroupSizes(
-    uint32_t LDSBytes, std::pair<unsigned, unsigned> FlatWorkGroupSizes) const {
-
+std::pair<unsigned, unsigned>
+AMDGPUSubtarget::getOccupancyWithWorkGroupSizes(uint32_t LDSBytes,
+                                                const Function &F) const {
   // FIXME: We should take into account the LDS allocation granularity.
   const unsigned MaxWGsLDS = getLocalMemorySize() / std::max(LDSBytes, 1u);
 
@@ -85,7 +81,7 @@ std::pair<unsigned, unsigned> AMDGPUSubtarget::getOccupancyWithWorkGroupSizes(
   // workgroups, maximum number of waves, and minimum occupancy. The opposite is
   // generally true for the minimum group size. LDS or barrier ressource
   // limitations can flip those minimums/maximums.
-  const auto [MinWGSize, MaxWGSize] = FlatWorkGroupSizes;
+  const auto [MinWGSize, MaxWGSize] = getFlatWorkGroupSizes(F);
   auto [MinWavesPerWG, MaxWGsPerCU, MaxWavesPerCU] = PropsFromWGSize(MinWGSize);
   auto [MaxWavesPerWG, MinWGsPerCU, MinWavesPerCU] = PropsFromWGSize(MaxWGSize);
 
@@ -184,80 +180,52 @@ std::pair<unsigned, unsigned> AMDGPUSubtarget::getFlatWorkGroupSizes(
 }
 
 std::pair<unsigned, unsigned> AMDGPUSubtarget::getEffectiveWavesPerEU(
-    std::pair<unsigned, unsigned> RequestedWavesPerEU,
-    std::pair<unsigned, unsigned> FlatWorkGroupSizes, unsigned LDSBytes) const {
-  // Default minimum/maximum number of waves per EU. The range of flat workgroup
-  // sizes limits the achievable maximum, and we aim to support enough waves per
-  // EU so that we can concurrently execute all waves of a single workgroup of
-  // maximum size on a CU.
-  std::pair<unsigned, unsigned> Default = {
-      getWavesPerEUForWorkGroup(FlatWorkGroupSizes.second),
-      getOccupancyWithWorkGroupSizes(LDSBytes, FlatWorkGroupSizes).second};
-  Default.first = std::min(Default.first, Default.second);
+    std::pair<unsigned, unsigned> Requested,
+    std::pair<unsigned, unsigned> FlatWorkGroupSizes) const {
+  // Default minimum/maximum number of waves per execution unit.
+  std::pair<unsigned, unsigned> Default(1, getMaxWavesPerEU());
 
-  // Make sure requested minimum is within the default range and lower than the
-  // requested maximum. The latter must not violate target specification.
-  if (RequestedWavesPerEU.first < Default.first ||
-      RequestedWavesPerEU.first > Default.second ||
-      RequestedWavesPerEU.first > RequestedWavesPerEU.second ||
-      RequestedWavesPerEU.second > getMaxWavesPerEU())
+  // If minimum/maximum flat work group sizes were explicitly requested using
+  // "amdgpu-flat-workgroup-size" attribute, then set default minimum/maximum
+  // number of waves per execution unit to values implied by requested
+  // minimum/maximum flat work group sizes.
+  unsigned MinImpliedByFlatWorkGroupSize =
+    getWavesPerEUForWorkGroup(FlatWorkGroupSizes.second);
+  Default.first = MinImpliedByFlatWorkGroupSize;
+
+  // Make sure requested minimum is less than requested maximum.
+  if (Requested.second && Requested.first > Requested.second)
     return Default;
 
-  // We cannot exceed maximum occupancy implied by flat workgroup size and LDS.
-  RequestedWavesPerEU.second =
-      std::min(RequestedWavesPerEU.second, Default.second);
-  return RequestedWavesPerEU;
+  // Make sure requested values do not violate subtarget's specifications.
+  if (Requested.first < getMinWavesPerEU() ||
+      Requested.second > getMaxWavesPerEU())
+    return Default;
+
+  // Make sure requested values are compatible with values implied by requested
+  // minimum/maximum flat work group sizes.
+  if (Requested.first < MinImpliedByFlatWorkGroupSize)
+    return Default;
+
+  return Requested;
 }
 
-std::pair<unsigned, unsigned>
-AMDGPUSubtarget::getWavesPerEU(const Function &F) const {
-  // Default/requested minimum/maximum flat work group sizes.
-  std::pair<unsigned, unsigned> FlatWorkGroupSizes = getFlatWorkGroupSizes(F);
-  // Minimum number of bytes allocated in the LDS.
-  unsigned LDSBytes =
-      AMDGPU::getIntegerPairAttribute(F, "amdgpu-lds-size", {0, UINT32_MAX},
-                                      /*OnlyFirstRequired=*/true)
-          .first;
-  return getWavesPerEU(FlatWorkGroupSizes, LDSBytes, F);
-}
-
-std::pair<unsigned, unsigned>
-AMDGPUSubtarget::getWavesPerEU(std::pair<unsigned, unsigned> FlatWorkGroupSizes,
-                               unsigned LDSBytes, const Function &F) const {
+std::pair<unsigned, unsigned> AMDGPUSubtarget::getWavesPerEU(
+    const Function &F, std::pair<unsigned, unsigned> FlatWorkGroupSizes) const {
   // Default minimum/maximum number of waves per execution unit.
   std::pair<unsigned, unsigned> Default(1, getMaxWavesPerEU());
 
   // Requested minimum/maximum number of waves per execution unit.
   std::pair<unsigned, unsigned> Requested =
       AMDGPU::getIntegerPairAttribute(F, "amdgpu-waves-per-eu", Default, true);
-  return getEffectiveWavesPerEU(Requested, FlatWorkGroupSizes, LDSBytes);
+  return getEffectiveWavesPerEU(Requested, FlatWorkGroupSizes);
 }
 
-std::optional<unsigned>
-AMDGPUSubtarget::getReqdWorkGroupSize(const Function &Kernel,
-                                      unsigned Dim) const {
+static unsigned getReqdWorkGroupSize(const Function &Kernel, unsigned Dim) {
   auto *Node = Kernel.getMetadata("reqd_work_group_size");
   if (Node && Node->getNumOperands() == 3)
     return mdconst::extract<ConstantInt>(Node->getOperand(Dim))->getZExtValue();
-  return std::nullopt;
-}
-
-bool AMDGPUSubtarget::hasWavefrontsEvenlySplittingXDim(
-    const Function &F, bool RequiresUniformYZ) const {
-  auto *Node = F.getMetadata("reqd_work_group_size");
-  if (!Node || Node->getNumOperands() != 3)
-    return false;
-  unsigned XLen =
-      mdconst::extract<ConstantInt>(Node->getOperand(0))->getZExtValue();
-  unsigned YLen =
-      mdconst::extract<ConstantInt>(Node->getOperand(1))->getZExtValue();
-  unsigned ZLen =
-      mdconst::extract<ConstantInt>(Node->getOperand(2))->getZExtValue();
-
-  bool Is1D = YLen <= 1 && ZLen <= 1;
-  bool IsXLargeEnough =
-      isPowerOf2_32(XLen) && (!RequiresUniformYZ || XLen >= getWavefrontSize());
-  return Is1D || IsXLargeEnough;
+  return std::numeric_limits<unsigned>::max();
 }
 
 bool AMDGPUSubtarget::isMesaKernel(const Function &F) const {
@@ -266,9 +234,9 @@ bool AMDGPUSubtarget::isMesaKernel(const Function &F) const {
 
 unsigned AMDGPUSubtarget::getMaxWorkitemID(const Function &Kernel,
                                            unsigned Dimension) const {
-  std::optional<unsigned> ReqdSize = getReqdWorkGroupSize(Kernel, Dimension);
-  if (ReqdSize)
-    return *ReqdSize - 1;
+  unsigned ReqdSize = getReqdWorkGroupSize(Kernel, Dimension);
+  if (ReqdSize != std::numeric_limits<unsigned>::max())
+    return ReqdSize - 1;
   return getFlatWorkGroupSizes(Kernel).second - 1;
 }
 
@@ -282,7 +250,7 @@ bool AMDGPUSubtarget::isSingleLaneExecution(const Function &Func) const {
 }
 
 bool AMDGPUSubtarget::makeLIDRangeMetadata(Instruction *I) const {
-  Function *Kernel = I->getFunction();
+  Function *Kernel = I->getParent()->getParent();
   unsigned MinSize = 0;
   unsigned MaxSize = getFlatWorkGroupSizes(*Kernel).second;
   bool IdQuery = false;
@@ -319,9 +287,9 @@ bool AMDGPUSubtarget::makeLIDRangeMetadata(Instruction *I) const {
       }
 
       if (Dim <= 3) {
-        std::optional<unsigned> ReqdSize = getReqdWorkGroupSize(*Kernel, Dim);
-        if (ReqdSize)
-          MinSize = MaxSize = *ReqdSize;
+        unsigned ReqdSize = getReqdWorkGroupSize(*Kernel, Dim);
+        if (ReqdSize != std::numeric_limits<unsigned>::max())
+          MinSize = MaxSize = ReqdSize;
       }
     }
   }
@@ -350,7 +318,7 @@ bool AMDGPUSubtarget::makeLIDRangeMetadata(Instruction *I) const {
 }
 
 unsigned AMDGPUSubtarget::getImplicitArgNumBytes(const Function &F) const {
-  assert(AMDGPU::isKernel(F));
+  assert(AMDGPU::isKernel(F.getCallingConv()));
 
   // We don't allocate the segment if we know the implicit arguments weren't
   // used, even if the ABI implies we need them.
@@ -421,13 +389,13 @@ AMDGPUDwarfFlavour AMDGPUSubtarget::getAMDGPUDwarfFlavour() const {
 }
 
 const AMDGPUSubtarget &AMDGPUSubtarget::get(const MachineFunction &MF) {
-  if (MF.getTarget().getTargetTriple().isAMDGCN())
+  if (MF.getTarget().getTargetTriple().getArch() == Triple::amdgcn)
     return static_cast<const AMDGPUSubtarget&>(MF.getSubtarget<GCNSubtarget>());
   return static_cast<const AMDGPUSubtarget &>(MF.getSubtarget<R600Subtarget>());
 }
 
 const AMDGPUSubtarget &AMDGPUSubtarget::get(const TargetMachine &TM, const Function &F) {
-  if (TM.getTargetTriple().isAMDGCN())
+  if (TM.getTargetTriple().getArch() == Triple::amdgcn)
     return static_cast<const AMDGPUSubtarget&>(TM.getSubtarget<GCNSubtarget>(F));
   return static_cast<const AMDGPUSubtarget &>(
       TM.getSubtarget<R600Subtarget>(F));

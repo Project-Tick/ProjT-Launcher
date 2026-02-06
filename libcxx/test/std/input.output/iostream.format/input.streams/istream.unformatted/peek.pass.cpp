@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// Requires 396145d in the built library.
+// XFAIL: using-built-library-before-llvm-9
+
 // <istream>
 
 // int_type peek();
@@ -77,7 +80,7 @@ int main(int, char**)
         is.exceptions(std::ios_base::eofbit);
         bool threw = false;
         try {
-          (void)is.peek();
+            is.peek();
         } catch (std::ios_base::failure&) {
             threw = true;
         }
@@ -93,7 +96,7 @@ int main(int, char**)
         is.exceptions(std::ios_base::eofbit);
         bool threw = false;
         try {
-          (void)is.peek();
+            is.peek();
         } catch (std::ios_base::failure&) {
             threw = true;
         }

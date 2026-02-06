@@ -18,7 +18,7 @@ include "ARCInstrFormats.td"
 
 // Operand for printing out a condition code.
 let PrintMethod = "printCCOperand" in
-  def CCOp : PredicateOperand<i32, (ops), (ops)>;
+  def CCOp : PredicateOperand<i32, (ops i32imm), (ops)>;
 
 // The "u6" operand of a RRU6-type instruction
 let PrintMethod = "printU6" in {

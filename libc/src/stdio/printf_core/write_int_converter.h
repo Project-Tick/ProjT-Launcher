@@ -19,8 +19,7 @@
 namespace LIBC_NAMESPACE_DECL {
 namespace printf_core {
 
-template <WriteMode write_mode>
-LIBC_INLINE int convert_write_int(Writer<write_mode> *writer,
+LIBC_INLINE int convert_write_int(Writer *writer,
                                   const FormatSection &to_conv) {
 
 #ifndef LIBC_COPT_PRINTF_NO_NULLPTR_CHECKS
@@ -29,11 +28,11 @@ LIBC_INLINE int convert_write_int(Writer<write_mode> *writer,
     return NULLPTR_WRITE_ERROR;
 #endif // LIBC_COPT_PRINTF_NO_NULLPTR_CHECKS
 
-  size_t written = writer->get_chars_written();
+  int written = writer->get_chars_written();
 
   switch (to_conv.length_modifier) {
   case LengthModifier::none:
-    *reinterpret_cast<int *>(to_conv.conv_val_ptr) = static_cast<int>(written);
+    *reinterpret_cast<int *>(to_conv.conv_val_ptr) = written;
     break;
   case LengthModifier::l:
     *reinterpret_cast<long *>(to_conv.conv_val_ptr) = written;

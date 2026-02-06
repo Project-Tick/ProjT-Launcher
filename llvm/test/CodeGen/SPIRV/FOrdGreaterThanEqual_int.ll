@@ -5,10 +5,9 @@
 
 ;; LLVM IR was generated with -cl-std=c++ option
 
-define spir_kernel void @test(float %op1, float %op2, ptr addrspace(1) %out) {
+define spir_kernel void @test(float %op1, float %op2) {
 entry:
   %call = call spir_func i32 @_Z14isgreaterequalff(float %op1, float %op2)
-  store i32 %call, ptr addrspace(1) %out
   ret void
 }
 

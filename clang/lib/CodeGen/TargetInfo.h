@@ -38,9 +38,7 @@ namespace CodeGen {
 class ABIInfo;
 class CallArgList;
 class CodeGenFunction;
-class CGHLSLOffsetInfo;
 class CGBlockInfo;
-class CGHLSLOffsetInfo;
 class SwiftABIInfo;
 
 /// TargetCodeGenInfo - This class organizes various target-specific
@@ -72,10 +70,6 @@ public:
     assert(SwiftInfo && "Swift ABI info has not been initialized");
     return *SwiftInfo;
   }
-
-  /// supportsLibCall - Query to whether or not target supports all
-  /// lib calls.
-  virtual bool supportsLibCall() const { return true; }
 
   /// setTargetAttributes - Provides a convenient hook to handle extra
   /// target-specific attributes for the given global.
@@ -300,8 +294,8 @@ public:
                                        llvm::StringRef Value,
                                        llvm::SmallString<32> &Opt) const {}
 
-  /// Get LLVM calling convention for device kernels.
-  virtual unsigned getDeviceKernelCallingConv() const;
+  /// Get LLVM calling convention for OpenCL kernel.
+  virtual unsigned getOpenCLKernelCallingConv() const;
 
   /// Get target specific null pointer.
   /// \param T is the LLVM type of the null pointer.
@@ -322,7 +316,8 @@ public:
   virtual LangAS getASTAllocaAddressSpace() const { return LangAS::Default; }
 
   Address performAddrSpaceCast(CodeGen::CodeGenFunction &CGF, Address Addr,
-                               LangAS SrcAddr, llvm::Type *DestTy,
+                               LangAS SrcAddr, LangAS DestAddr,
+                               llvm::Type *DestTy,
                                bool IsNonNull = false) const;
 
   /// Perform address space cast of an expression of pointer type.
@@ -333,7 +328,7 @@ public:
   /// \param IsNonNull is the flag indicating \p V is known to be non null.
   virtual llvm::Value *performAddrSpaceCast(CodeGen::CodeGenFunction &CGF,
                                             llvm::Value *V, LangAS SrcAddr,
-                                            llvm::Type *DestTy,
+                                            LangAS DestAddr, llvm::Type *DestTy,
                                             bool IsNonNull = false) const;
 
   /// Perform address space cast of a constant expression of pointer type.
@@ -343,7 +338,7 @@ public:
   /// \param DestTy is the destination LLVM pointer type.
   virtual llvm::Constant *performAddrSpaceCast(CodeGenModule &CGM,
                                                llvm::Constant *V,
-                                               LangAS SrcAddr,
+                                               LangAS SrcAddr, LangAS DestAddr,
                                                llvm::Type *DestTy) const;
 
   /// Get address space of pointer parameter for __cxa_atexit.
@@ -405,7 +400,7 @@ public:
   virtual bool shouldEmitDWARFBitFieldSeparators() const { return false; }
 
   virtual void setCUDAKernelCallingConvention(const FunctionType *&FT) const {}
-  virtual void setOCLKernelStubCallingConvention(const FunctionType *&FT) const;
+
   /// Return the device-side type for the CUDA device builtin surface type.
   virtual llvm::Type *getCUDADeviceBuiltinSurfaceDeviceType() const {
     // By default, no change from the original one.
@@ -444,19 +439,9 @@ public:
   }
 
   /// Return an LLVM type that corresponds to a HLSL type
-  virtual llvm::Type *getHLSLType(CodeGenModule &CGM, const Type *T,
-                                  const CGHLSLOffsetInfo &OffsetInfo) const {
+  virtual llvm::Type *getHLSLType(CodeGenModule &CGM, const Type *T) const {
     return nullptr;
   }
-
-  /// Return an LLVM type that corresponds to padding in HLSL types
-  virtual llvm::Type *getHLSLPadding(CodeGenModule &CGM,
-                                     CharUnits NumBytes) const {
-    return nullptr;
-  }
-
-  /// Return true if this is an HLSL padding type.
-  virtual bool isHLSLPadding(llvm::Type *Ty) const { return false; }
 
   // Set the Branch Protection Attributes of the Function accordingly to the
   // BPI. Remove attributes that contradict with current BPI.
@@ -468,15 +453,6 @@ public:
   static void
   initBranchProtectionFnAttributes(const TargetInfo::BranchProtectionInfo &BPI,
                                    llvm::AttrBuilder &FuncAttrs);
-
-  // Set the ptrauth-* attributes of the Function accordingly to the Opts.
-  // Remove attributes that contradict with current Opts.
-  static void setPointerAuthFnAttributes(const PointerAuthOptions &Opts,
-                                         llvm::Function &F);
-
-  // Add the ptrauth-* Attributes to the FuncAttrs.
-  static void initPointerAuthFnAttributes(const PointerAuthOptions &Opts,
-                                          llvm::AttrBuilder &FuncAttrs);
 
 protected:
   static std::string qualifyWindowsLibrary(StringRef Lib);
@@ -493,6 +469,7 @@ enum class AArch64ABIKind {
   DarwinPCS,
   Win64,
   AAPCSSoft,
+  PAuthTest,
 };
 
 std::unique_ptr<TargetCodeGenInfo>
@@ -553,6 +530,9 @@ createMSP430TargetCodeGenInfo(CodeGenModule &CGM);
 
 std::unique_ptr<TargetCodeGenInfo>
 createNVPTXTargetCodeGenInfo(CodeGenModule &CGM);
+
+std::unique_ptr<TargetCodeGenInfo>
+createPNaClTargetCodeGenInfo(CodeGenModule &CGM);
 
 enum class PPC64_SVR4_ABIKind {
   ELFv1 = 0,

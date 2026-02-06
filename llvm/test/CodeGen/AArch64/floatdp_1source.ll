@@ -7,6 +7,21 @@ declare double @fabs(double) readonly
 declare float @llvm.sqrt.f32(float %Val)
 declare double @llvm.sqrt.f64(double %Val)
 
+declare float @ceilf(float) readonly
+declare double @ceil(double) readonly
+
+declare float @floorf(float) readonly
+declare double @floor(double) readonly
+
+declare float @truncf(float) readonly
+declare double @trunc(double) readonly
+
+declare float @rintf(float) readonly
+declare double @rint(double) readonly
+
+declare float @nearbyintf(float) readonly
+declare double @nearbyint(double) readonly
+
 define float @fabs_f(float %v) {
 ; CHECK-LABEL: fabs_f:
 ; CHECK:       ; %bb.0:
@@ -39,7 +54,7 @@ define float @ceil_f(float %v) {
 ; CHECK:       ; %bb.0:
 ; CHECK-NEXT:    frintp s0, s0
 ; CHECK-NEXT:    ret
-  %r = call float @llvm.ceil.f32(float %v)
+  %r = call float @ceilf(float %v)
   ret float %r
 }
 
@@ -48,7 +63,7 @@ define float @floor_f(float %v) {
 ; CHECK:       ; %bb.0:
 ; CHECK-NEXT:    frintm s0, s0
 ; CHECK-NEXT:    ret
-  %r = call float @llvm.floor.f32(float %v)
+  %r = call float @floorf(float %v)
   ret float %r
 }
 
@@ -57,7 +72,7 @@ define float @trunc_f(float %v) {
 ; CHECK:       ; %bb.0:
 ; CHECK-NEXT:    frintz s0, s0
 ; CHECK-NEXT:    ret
-  %r = call float @llvm.trunc.f32(float %v)
+  %r = call float @truncf(float %v)
   ret float %r
 }
 
@@ -66,7 +81,7 @@ define float @rint_f(float %v) {
 ; CHECK:       ; %bb.0:
 ; CHECK-NEXT:    frintx s0, s0
 ; CHECK-NEXT:    ret
-  %r = call float @llvm.rint.f32(float %v)
+  %r = call float @rintf(float %v)
   ret float %r
 }
 
@@ -75,7 +90,7 @@ define float @nearbyint_f(float %v) {
 ; CHECK:       ; %bb.0:
 ; CHECK-NEXT:    frinti s0, s0
 ; CHECK-NEXT:    ret
-  %r = call float @llvm.nearbyint.f32(float %v)
+  %r = call float @nearbyintf(float %v)
   ret float %r
 }
 
@@ -111,7 +126,7 @@ define double @ceil_d(double %v) {
 ; CHECK:       ; %bb.0:
 ; CHECK-NEXT:    frintp d0, d0
 ; CHECK-NEXT:    ret
-  %r = call double @llvm.ceil.f64(double %v)
+  %r = call double @ceil(double %v)
   ret double %r
 }
 
@@ -120,7 +135,7 @@ define double @floor_d(double %v) {
 ; CHECK:       ; %bb.0:
 ; CHECK-NEXT:    frintm d0, d0
 ; CHECK-NEXT:    ret
-  %r = call double @llvm.floor.f64(double %v)
+  %r = call double @floor(double %v)
   ret double %r
 }
 
@@ -129,7 +144,7 @@ define double @trunc_d(double %v) {
 ; CHECK:       ; %bb.0:
 ; CHECK-NEXT:    frintz d0, d0
 ; CHECK-NEXT:    ret
-  %r = call double @llvm.trunc.f64(double %v)
+  %r = call double @trunc(double %v)
   ret double %r
 }
 
@@ -138,7 +153,7 @@ define double @rint_d(double %v) {
 ; CHECK:       ; %bb.0:
 ; CHECK-NEXT:    frintx d0, d0
 ; CHECK-NEXT:    ret
-  %r = call double @llvm.rint.f64(double %v)
+  %r = call double @rint(double %v)
   ret double %r
 }
 
@@ -147,7 +162,7 @@ define double @nearbyint_d(double %v) {
 ; CHECK:       ; %bb.0:
 ; CHECK-NEXT:    frinti d0, d0
 ; CHECK-NEXT:    ret
-  %r = call double @llvm.nearbyint.f64(double %v)
+  %r = call double @nearbyint(double %v)
   ret double %r
 }
 

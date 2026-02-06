@@ -2,7 +2,6 @@
 
 // UNSUPPORTED: nvidiagpu
 // UNSUPPORTED: amdgpu
-// XFAIL: intelgpu
 
 #include <assert.h>
 #include <omp.h>

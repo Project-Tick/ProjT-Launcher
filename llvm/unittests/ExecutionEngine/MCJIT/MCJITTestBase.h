@@ -33,14 +33,14 @@ class TrivialModuleBuilder {
 protected:
   LLVMContext Context;
   IRBuilder<> Builder;
-  const Triple &BuilderTriple;
+  std::string BuilderTriple;
 
-  TrivialModuleBuilder(const Triple &TT)
-      : Builder(Context), BuilderTriple(TT) {}
+  TrivialModuleBuilder(const std::string &Triple)
+    : Builder(Context), BuilderTriple(Triple) {}
 
   Module *createEmptyModule(StringRef Name = StringRef()) {
     Module * M = new Module(Name, Context);
-    M->setTargetTriple(BuilderTriple);
+    M->setTargetTriple(Triple::normalize(BuilderTriple));
     return M;
   }
 
@@ -63,7 +63,10 @@ protected:
   Function *insertSimpleCallFunction(Module *M, Function *Callee) {
     Function *Result = startFunction(M, Callee->getFunctionType(), "caller");
 
-    SmallVector<Value *, 1> CallArgs(llvm::make_pointer_range(Result->args()));
+    SmallVector<Value*, 1> CallArgs;
+
+    for (Argument &A : Result->args())
+      CallArgs.push_back(&A);
 
     Value *ReturnCode = Builder.CreateCall(Callee, CallArgs);
     Builder.CreateRet(ReturnCode);

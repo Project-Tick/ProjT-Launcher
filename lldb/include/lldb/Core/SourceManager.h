@@ -11,7 +11,6 @@
 
 #include "lldb/Utility/Checksum.h"
 #include "lldb/Utility/FileSpec.h"
-#include "lldb/Utility/SupportFile.h"
 #include "lldb/lldb-defines.h"
 #include "lldb/lldb-forward.h"
 
@@ -39,8 +38,8 @@ public:
                            const SourceManager::File &rhs);
 
   public:
-    File(SupportFileNSP support_file_nsp, lldb::TargetSP target_sp);
-    File(SupportFileNSP support_file_nsp, lldb::DebuggerSP debugger_sp);
+    File(lldb::SupportFileSP support_file_sp, lldb::TargetSP target_sp);
+    File(lldb::SupportFileSP support_file_sp, lldb::DebuggerSP debugger_sp);
 
     bool ModificationTimeIsStale() const;
     bool PathRemappingIsStale() const;
@@ -58,9 +57,9 @@ public:
 
     bool LineIsValid(uint32_t line);
 
-    SupportFileNSP GetSupportFile() const {
-      assert(m_support_file_nsp && "SupportFileNSP must always be valid");
-      return m_support_file_nsp;
+    lldb::SupportFileSP GetSupportFile() const {
+      assert(m_support_file_sp && "SupportFileSP must always be valid");
+      return m_support_file_sp;
     }
 
     uint32_t GetSourceMapModificationID() const { return m_source_map_mod_id; }
@@ -81,13 +80,13 @@ public:
 
   protected:
     /// Set file and update modification time.
-    void SetSupportFile(SupportFileNSP support_file_nsp);
+    void SetSupportFile(lldb::SupportFileSP support_file_sp);
 
     bool CalculateLineOffsets(uint32_t line = UINT32_MAX);
 
     /// The support file. If the target has source mappings, this might be
     /// different from the original support file passed to the constructor.
-    SupportFileNSP m_support_file_nsp;
+    lldb::SupportFileSP m_support_file_sp;
 
     /// Keep track of the on-disk checksum.
     Checksum m_checksum;
@@ -108,10 +107,8 @@ public:
     lldb::TargetWP m_target_wp;
 
   private:
-    void CommonInitializer(SupportFileNSP support_file_nsp,
+    void CommonInitializer(lldb::SupportFileSP support_file_sp,
                            lldb::TargetSP target_sp);
-    void CommonInitializerImpl(SupportFileNSP support_file_nsp,
-                               lldb::TargetSP target_sp);
   };
 
   typedef std::shared_ptr<File> FileSP;
@@ -157,13 +154,10 @@ public:
 
   ~SourceManager();
 
-  FileSP GetLastFile() { return GetFile(m_last_support_file_nsp); }
-  bool AtLastLine(bool reverse) {
-    return m_last_line == UINT32_MAX || (reverse && m_last_line == 1);
-  }
+  FileSP GetLastFile() { return GetFile(m_last_support_file_sp); }
 
   size_t DisplaySourceLinesWithLineNumbers(
-      SupportFileNSP support_file_nsp, uint32_t line, uint32_t column,
+      lldb::SupportFileSP support_file_sp, uint32_t line, uint32_t column,
       uint32_t context_before, uint32_t context_after,
       const char *current_line_cstr, Stream *s,
       const SymbolContextList *bp_locs = nullptr);
@@ -177,30 +171,31 @@ public:
   size_t DisplayMoreWithLineNumbers(Stream *s, uint32_t count, bool reverse,
                                     const SymbolContextList *bp_locs = nullptr);
 
-  bool SetDefaultFileAndLine(SupportFileNSP support_file_nsp, uint32_t line);
+  bool SetDefaultFileAndLine(lldb::SupportFileSP support_file_sp,
+                             uint32_t line);
 
   struct SupportFileAndLine {
-    SupportFileNSP support_file_nsp;
+    lldb::SupportFileSP support_file_sp;
     uint32_t line;
-    SupportFileAndLine(SupportFileNSP support_file_nsp, uint32_t line)
-        : support_file_nsp(support_file_nsp), line(line) {}
+    SupportFileAndLine(lldb::SupportFileSP support_file_sp, uint32_t line)
+        : support_file_sp(support_file_sp), line(line) {}
   };
 
   std::optional<SupportFileAndLine> GetDefaultFileAndLine();
 
   bool DefaultFileAndLineSet() {
-    return (GetFile(m_last_support_file_nsp).get() != nullptr);
+    return (GetFile(m_last_support_file_sp).get() != nullptr);
   }
 
-  void FindLinesMatchingRegex(SupportFileNSP support_file_nsp,
+  void FindLinesMatchingRegex(lldb::SupportFileSP support_file_sp,
                               RegularExpression &regex, uint32_t start_line,
                               uint32_t end_line,
                               std::vector<uint32_t> &match_lines);
 
-  FileSP GetFile(SupportFileNSP support_file_nsp);
+  FileSP GetFile(lldb::SupportFileSP support_file_sp);
 
 protected:
-  SupportFileNSP m_last_support_file_nsp;
+  lldb::SupportFileSP m_last_support_file_sp;
   uint32_t m_last_line;
   uint32_t m_last_count;
   bool m_default_set;

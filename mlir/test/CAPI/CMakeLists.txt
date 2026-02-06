@@ -31,13 +31,6 @@ if(MLIR_ENABLE_EXECUTION_ENGINE)
     MLIRCAPIExecutionEngine
     MLIRCAPIRegisterEverything
 )
-  _add_capi_test_executable(mlir-capi-global-constructors-test
-    global_constructors.c
-  LINK_LIBS PRIVATE
-    MLIRCAPIConversion
-    MLIRCAPIExecutionEngine
-    MLIRCAPIRegisterEverything
-)
 endif()
 
 _add_capi_test_executable(mlir-capi-ir-test
@@ -129,14 +122,4 @@ _add_capi_test_executable(mlir-capi-translation-test
     MLIRCAPILLVM
     MLIRCAPIRegisterEverything
     MLIRCAPITarget
-)
-
-_add_capi_test_executable(mlir-capi-smt-test
-  smt.c
-
-  LINK_LIBS PRIVATE
-    MLIRCAPIIR
-    MLIRCAPIFunc
-    MLIRCAPISMT
-    MLIRCAPIExportSMTLIB
 )

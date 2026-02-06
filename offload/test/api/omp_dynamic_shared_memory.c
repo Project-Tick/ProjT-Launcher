@@ -7,7 +7,6 @@
 // RUN:   %libomptarget-run-generic | %fcheck-generic
 
 // REQUIRES: gpu
-// XFAIL: intelgpu
 
 #include <omp.h>
 #include <stdio.h>

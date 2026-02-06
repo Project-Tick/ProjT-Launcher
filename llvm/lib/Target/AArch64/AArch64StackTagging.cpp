@@ -46,6 +46,7 @@
 #include "llvm/Transforms/Utils/MemoryTaggingSupport.h"
 #include <cassert>
 #include <memory>
+#include <utility>
 
 using namespace llvm;
 
@@ -308,7 +309,9 @@ public:
       : FunctionPass(ID),
         MergeInit(ClMergeInit.getNumOccurrences() ? ClMergeInit : !IsOptNone),
         UseStackSafety(ClUseStackSafety.getNumOccurrences() ? ClUseStackSafety
-                                                            : !IsOptNone) {}
+                                                            : !IsOptNone) {
+    initializeAArch64StackTaggingPass(*PassRegistry::getPassRegistry());
+  }
 
   void tagAlloca(AllocaInst *AI, Instruction *InsertBefore, Value *Ptr,
                  uint64_t Size);
@@ -368,7 +371,8 @@ Instruction *AArch64StackTagging::collectInitializers(Instruction *StartInst,
 
   unsigned Count = 0;
   for (; Count < ClScanLimit && !BI->isTerminator(); ++BI) {
-    ++Count;
+    if (!isa<DbgInfoIntrinsic>(*BI))
+      ++Count;
 
     if (isNoModRef(AA->getModRefInfo(&*BI, AllocaLoc)))
       continue;
@@ -426,7 +430,8 @@ void AArch64StackTagging::tagAlloca(AllocaInst *AI, Instruction *InsertBefore,
                                                     Intrinsic::aarch64_stgp);
 
   InitializerBuilder IB(Size, DL, Ptr, SetTagFunc, SetTagZeroFunc, StgpFunc);
-  bool LittleEndian = AI->getModule()->getTargetTriple().isLittleEndian();
+  bool LittleEndian =
+      Triple(AI->getModule()->getTargetTriple()).isLittleEndian();
   // Current implementation of initializer merging assumes little endianness.
   if (MergeInit && !F->hasOptNone() && LittleEndian &&
       Size < ClMergeInitSizeLimit) {
@@ -468,7 +473,7 @@ Instruction *AArch64StackTagging::insertBaseTaggedPointer(
       IRB.CreateIntrinsic(Intrinsic::aarch64_irg_sp, {},
                           {Constant::getNullValue(IRB.getInt64Ty())});
   Base->setName("basetag");
-  const Triple &TargetTriple = M.getTargetTriple();
+  auto TargetTriple = Triple(M.getTargetTriple());
   // This ABI will make it into Android API level 35.
   // The ThreadLong format is the same as with HWASan, but the entries for
   // stack MTE take two slots (16 bytes).
@@ -570,7 +575,7 @@ bool AArch64StackTagging::runOnFunction(Function &Fn) {
       TagPCall->setName(Info.AI->getName() + ".tag");
     // Does not replace metadata, so we don't have to handle DbgVariableRecords.
     Info.AI->replaceUsesWithIf(TagPCall, [&](const Use &U) {
-      return !isa<LifetimeIntrinsic>(U.getUser());
+      return !memtag::isLifetimeIntrinsic(U.getUser());
     });
     TagPCall->setOperand(0, Info.AI);
 
@@ -580,11 +585,13 @@ bool AArch64StackTagging::runOnFunction(Function &Fn) {
     // statement if return_twice functions are called.
     bool StandardLifetime =
         !SInfo.CallsReturnTwice &&
+        SInfo.UnrecognizedLifetimes.empty() &&
         memtag::isStandardLifetime(Info.LifetimeStart, Info.LifetimeEnd, DT, LI,
                                    ClMaxLifetimes);
     if (StandardLifetime) {
       IntrinsicInst *Start = Info.LifetimeStart[0];
-      uint64_t Size = *Info.AI->getAllocationSize(*DL);
+      uint64_t Size =
+          cast<ConstantInt>(Start->getArgOperand(0))->getZExtValue();
       Size = alignTo(Size, kTagGranuleSize);
       tagAlloca(AI, Start->getNextNode(), TagPCall, Size);
 
@@ -612,6 +619,11 @@ bool AArch64StackTagging::runOnFunction(Function &Fn) {
 
     memtag::annotateDebugRecords(Info, Tag);
   }
+
+  // If we have instrumented at least one alloca, all unrecognized lifetime
+  // intrinsics have to go.
+  for (auto *I : SInfo.UnrecognizedLifetimes)
+    I->eraseFromParent();
 
   return true;
 }

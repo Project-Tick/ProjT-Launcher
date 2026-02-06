@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "hdr/errno_macros.h"
+#include "src/errno/libc_errno.h"
 #include "src/math/tanf16.h"
 #include "test/UnitTest/FPMatcher.h"
 #include "test/UnitTest/Test.h"
@@ -15,8 +15,7 @@
 using LlvmLibcTanf16Test = LIBC_NAMESPACE::testing::FPTest<float16>;
 
 TEST_F(LlvmLibcTanf16Test, SpecialNumbers) {
-  EXPECT_FP_EQ_WITH_EXCEPTION(aNaN, LIBC_NAMESPACE::tanf16(sNaN), FE_INVALID);
-  EXPECT_MATH_ERRNO(0);
+  LIBC_NAMESPACE::libc_errno = 0;
 
   EXPECT_FP_EQ(aNaN, LIBC_NAMESPACE::tanf16(aNaN));
   EXPECT_MATH_ERRNO(0);

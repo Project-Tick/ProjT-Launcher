@@ -31,7 +31,6 @@ expand_template(
             "//llvm:FileCheck",
             "//llvm:count",
             "//llvm:not",
-            "//llvm:split-file",
         ] + glob(["Inputs/**"]),
     )
     for src in glob(

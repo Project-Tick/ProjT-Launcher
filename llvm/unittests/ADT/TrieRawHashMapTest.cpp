@@ -64,7 +64,7 @@ public:
   }
 
   void destroyTrie() { Trie.reset(); }
-  ~SimpleTrieHashMapTest() override { destroyTrie(); }
+  ~SimpleTrieHashMapTest() { destroyTrie(); }
 
   // Use the number itself as hash to test the pathological case.
   static HashType hash(uint64_t Num) {

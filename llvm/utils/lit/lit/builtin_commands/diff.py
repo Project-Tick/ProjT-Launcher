@@ -8,6 +8,7 @@ import re
 import sys
 
 import util
+from util import to_string
 
 
 class DiffFlags:
@@ -58,17 +59,33 @@ def compareTwoFiles(flags, filepaths):
 
 def compareTwoBinaryFiles(flags, filepaths, filelines):
     exitCode = 0
-    diffs = difflib.diff_bytes(
-        difflib.unified_diff,
-        filelines[0],
-        filelines[1],
-        filepaths[0].encode(),
-        filepaths[1].encode(),
-        n=flags.num_context_lines,
-    )
+    if hasattr(difflib, "diff_bytes"):
+        # python 3.5 or newer
+        diffs = difflib.diff_bytes(
+            difflib.unified_diff,
+            filelines[0],
+            filelines[1],
+            filepaths[0].encode(),
+            filepaths[1].encode(),
+            n=flags.num_context_lines,
+        )
+        diffs = [diff.decode(errors="backslashreplace") for diff in diffs]
+    else:
+        # python 2.7
+        if flags.unified_diff:
+            func = difflib.unified_diff
+        else:
+            func = difflib.context_diff
+        diffs = func(
+            filelines[0],
+            filelines[1],
+            filepaths[0],
+            filepaths[1],
+            n=flags.num_context_lines,
+        )
 
     for diff in diffs:
-        sys.stdout.write(diff.decode(errors="backslashreplace"))
+        sys.stdout.write(to_string(diff))
         exitCode = 1
     return exitCode
 
@@ -115,7 +132,7 @@ def compareTwoTextFiles(flags, filepaths, filelines_bin, encoding):
         filepaths[1],
         n=flags.num_context_lines,
     ):
-        sys.stdout.write(diff)
+        sys.stdout.write(to_string(diff))
         exitCode = 1
     return exitCode
 
@@ -213,8 +230,14 @@ def compareDirTrees(flags, dir_trees, base_paths=["", ""]):
 
 def main(argv):
     if sys.platform == "win32":
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, newline="\n")
+        if hasattr(sys.stdout, "buffer"):
+            # python 3
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, newline="\n")
+        else:
+            # python 2.7
+            import msvcrt
 
+            msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
     args = argv[1:]
     try:
         opts, args = getopt.gnu_getopt(args, "wbuI:U:r", ["strip-trailing-cr"])

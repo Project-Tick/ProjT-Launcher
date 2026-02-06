@@ -36,8 +36,8 @@ int main(int, char**)
         support::make_test_thread(func, std::move(p)).detach();
         try
         {
-          (void)f.get();
-          assert(false);
+            f.get();
+            assert(false);
         }
         catch (int i)
         {

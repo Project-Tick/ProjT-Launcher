@@ -15,14 +15,15 @@
 #define LLVM_UTILS_TABLEGEN_BASIC_SEQUENCETOOFFSETTABLE_H
 
 #include "llvm/ADT/StringExtras.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/TableGen/Main.h"
 #include <algorithm>
 #include <cassert>
 #include <functional>
 #include <map>
 
 namespace llvm {
+extern cl::opt<bool> EmitLongStrLiterals;
 
 inline void printChar(raw_ostream &OS, char C) {
   unsigned char UC(C);
@@ -44,7 +45,7 @@ inline void printChar(raw_ostream &OS, char C) {
 /// @tparam Less A stable comparator for SeqT elements.
 template <typename SeqT, typename Less = std::less<typename SeqT::value_type>>
 class SequenceToOffsetTable {
-  using ElemT = typename SeqT::value_type;
+  typedef typename SeqT::value_type ElemT;
 
   // Define a comparator for SeqT that sorts a suffix immediately before a
   // sequence with that suffix.
@@ -58,7 +59,7 @@ class SequenceToOffsetTable {
 
   // Keep sequences ordered according to SeqLess so suffixes are easy to find.
   // Map each sequence to its offset in the table.
-  using SeqMap = std::map<SeqT, unsigned, SeqLess>;
+  typedef std::map<SeqT, unsigned, SeqLess> SeqMap;
 
   // Sequences added so far, with suffixes removed.
   SeqMap Seqs;
@@ -162,8 +163,7 @@ public:
 
   /// emit - Print out the table as the body of an array initializer.
   /// Use the Print function to print elements.
-  void emit(raw_ostream &OS,
-            function_ref<void(raw_ostream &, ElemT)> Print) const {
+  void emit(raw_ostream &OS, void (*Print)(raw_ostream &, ElemT)) const {
     assert(IsLaidOut && "Call layout() before emit()");
     for (const auto &[Seq, Offset] : Seqs) {
       OS << "  /* " << Offset << " */ ";

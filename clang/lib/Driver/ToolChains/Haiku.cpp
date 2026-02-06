@@ -7,10 +7,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "Haiku.h"
+#include "CommonArgs.h"
 #include "clang/Config/config.h"
-#include "clang/Driver/CommonArgs.h"
 #include "clang/Driver/Compilation.h"
-#include "clang/Driver/SanitizerArgs.h"
 #include "llvm/Support/Path.h"
 
 using namespace clang::driver;
@@ -87,11 +86,20 @@ void haiku::Linker::ConstructJob(Compilation &C, const JobAction &JA,
                             options::OPT_s, options::OPT_t});
   ToolChain.AddFilePathLibArgs(Args, CmdArgs);
 
-  if (D.isUsingLTO())
-    addLTOOptions(ToolChain, Args, CmdArgs, Output, Inputs,
-                  D.getLTOMode() == LTOK_Thin);
+  if (D.isUsingLTO()) {
+    assert(!Inputs.empty() && "Must have at least one input.");
+    // Find the first filename InputInfo object.
+    auto Input = llvm::find_if(
+        Inputs, [](const InputInfo &II) -> bool { return II.isFilename(); });
+    if (Input == Inputs.end())
+      // For a very rare case, all of the inputs to the linker are
+      // InputArg. If that happens, just use the first InputInfo.
+      Input = Inputs.begin();
 
-  bool NeedsSanitizerDeps = addSanitizerRuntimes(ToolChain, Args, CmdArgs);
+    addLTOOptions(ToolChain, Args, CmdArgs, Output, *Input,
+                  D.getLTOMode() == LTOK_Thin);
+  }
+
   addLinkerCompressDebugSectionsOption(ToolChain, Args, CmdArgs);
   AddLinkerInputs(ToolChain, Inputs, Args, CmdArgs, JA);
 
@@ -113,12 +121,9 @@ void haiku::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     // AddRunTimeLibs).
     if (D.IsFlangMode() &&
         !Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
-      ToolChain.addFortranRuntimeLibraryPath(Args, CmdArgs);
-      ToolChain.addFortranRuntimeLibs(Args, CmdArgs);
+      addFortranRuntimeLibraryPath(ToolChain, Args, CmdArgs);
+      addFortranRuntimeLibs(ToolChain, Args, CmdArgs);
     }
-
-    if (NeedsSanitizerDeps)
-      linkSanitizerRuntimeDeps(ToolChain, Args, CmdArgs);
 
     CmdArgs.push_back("-lgcc");
 
@@ -264,8 +269,6 @@ void Haiku::AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
   addSystemInclude(DriverArgs, CC1Args, concat(D.SysRoot,
                    "/boot/system/develop/headers/posix"));
   addSystemInclude(DriverArgs, CC1Args, concat(D.SysRoot,
-                   "/boot/system/develop/headers/gcc/include"));
-  addSystemInclude(DriverArgs, CC1Args, concat(D.SysRoot,
                    "/boot/system/develop/headers"));
 }
 
@@ -278,11 +281,3 @@ void Haiku::addLibCxxIncludePaths(const llvm::opt::ArgList &DriverArgs,
 Tool *Haiku::buildLinker() const { return new tools::haiku::Linker(*this); }
 
 bool Haiku::HasNativeLLVMSupport() const { return true; }
-
-SanitizerMask Haiku::getSupportedSanitizers() const {
-  SanitizerMask Res = ToolChain::getSupportedSanitizers();
-
-  Res |= SanitizerKind::Address;
-
-  return Res;
-}

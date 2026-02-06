@@ -195,8 +195,9 @@ define void @ashr_v32i8(ptr %a, ptr %b) {
 ; CHECK-NEXT:    ptrue p0.b, vl16
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    asrr z0.b, p0/m, z0.b, z1.b
-; CHECK-NEXT:    asr z2.b, p0/m, z2.b, z3.b
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    asr z1.b, p0/m, z1.b, z3.b
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: ashr_v32i8:
@@ -475,8 +476,9 @@ define void @ashr_v16i16(ptr %a, ptr %b) {
 ; CHECK-NEXT:    ptrue p0.h, vl8
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    asrr z0.h, p0/m, z0.h, z1.h
-; CHECK-NEXT:    asr z2.h, p0/m, z2.h, z3.h
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    asr z1.h, p0/m, z1.h, z3.h
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: ashr_v16i16:
@@ -630,8 +632,9 @@ define void @ashr_v8i32(ptr %a, ptr %b) {
 ; CHECK-NEXT:    ptrue p0.s, vl4
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    asrr z0.s, p0/m, z0.s, z1.s
-; CHECK-NEXT:    asr z2.s, p0/m, z2.s, z3.s
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    asr z1.s, p0/m, z1.s, z3.s
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: ashr_v8i32:
@@ -736,8 +739,9 @@ define void @ashr_v4i64(ptr %a, ptr %b) {
 ; CHECK-NEXT:    ptrue p0.d, vl2
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    asrr z0.d, p0/m, z0.d, z1.d
-; CHECK-NEXT:    asr z2.d, p0/m, z2.d, z3.d
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    asr z1.d, p0/m, z1.d, z3.d
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: ashr_v4i64:
@@ -961,8 +965,9 @@ define void @lshr_v32i8(ptr %a, ptr %b) {
 ; CHECK-NEXT:    ptrue p0.b, vl16
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    lsrr z0.b, p0/m, z0.b, z1.b
-; CHECK-NEXT:    lsr z2.b, p0/m, z2.b, z3.b
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    lsr z1.b, p0/m, z1.b, z3.b
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: lshr_v32i8:
@@ -1241,8 +1246,9 @@ define void @lshr_v16i16(ptr %a, ptr %b) {
 ; CHECK-NEXT:    ptrue p0.h, vl8
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    lsrr z0.h, p0/m, z0.h, z1.h
-; CHECK-NEXT:    lsr z2.h, p0/m, z2.h, z3.h
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    lsr z1.h, p0/m, z1.h, z3.h
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: lshr_v16i16:
@@ -1396,8 +1402,9 @@ define void @lshr_v8i32(ptr %a, ptr %b) {
 ; CHECK-NEXT:    ptrue p0.s, vl4
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    lsrr z0.s, p0/m, z0.s, z1.s
-; CHECK-NEXT:    lsr z2.s, p0/m, z2.s, z3.s
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    lsr z1.s, p0/m, z1.s, z3.s
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: lshr_v8i32:
@@ -1502,8 +1509,9 @@ define void @lshr_v4i64(ptr %a, ptr %b) {
 ; CHECK-NEXT:    ptrue p0.d, vl2
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    lsrr z0.d, p0/m, z0.d, z1.d
-; CHECK-NEXT:    lsr z2.d, p0/m, z2.d, z3.d
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    lsr z1.d, p0/m, z1.d, z3.d
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: lshr_v4i64:
@@ -1756,8 +1764,9 @@ define void @shl_v32i8(ptr %a, ptr %b) {
 ; CHECK-NEXT:    ptrue p0.b, vl16
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    lslr z0.b, p0/m, z0.b, z1.b
-; CHECK-NEXT:    lsl z2.b, p0/m, z2.b, z3.b
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    lsl z1.b, p0/m, z1.b, z3.b
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: shl_v32i8:
@@ -2005,8 +2014,9 @@ define void @shl_v16i16(ptr %a, ptr %b) {
 ; CHECK-NEXT:    ptrue p0.h, vl8
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    lslr z0.h, p0/m, z0.h, z1.h
-; CHECK-NEXT:    lsl z2.h, p0/m, z2.h, z3.h
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    lsl z1.h, p0/m, z1.h, z3.h
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: shl_v16i16:
@@ -2160,8 +2170,9 @@ define void @shl_v8i32(ptr %a, ptr %b) {
 ; CHECK-NEXT:    ptrue p0.s, vl4
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    lslr z0.s, p0/m, z0.s, z1.s
-; CHECK-NEXT:    lsl z2.s, p0/m, z2.s, z3.s
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    lsl z1.s, p0/m, z1.s, z3.s
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: shl_v8i32:
@@ -2266,8 +2277,9 @@ define void @shl_v4i64(ptr %a, ptr %b) {
 ; CHECK-NEXT:    ptrue p0.d, vl2
 ; CHECK-NEXT:    ldp q1, q2, [x0]
 ; CHECK-NEXT:    lslr z0.d, p0/m, z0.d, z1.d
-; CHECK-NEXT:    lsl z2.d, p0/m, z2.d, z3.d
-; CHECK-NEXT:    stp q0, q2, [x0]
+; CHECK-NEXT:    movprfx z1, z2
+; CHECK-NEXT:    lsl z1.d, p0/m, z1.d, z3.d
+; CHECK-NEXT:    stp q0, q1, [x0]
 ; CHECK-NEXT:    ret
 ;
 ; NONEON-NOSVE-LABEL: shl_v4i64:

@@ -13,12 +13,14 @@
 #include "mlir/Conversion/VectorToSCF/VectorToSCF.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Transform/IR/TransformDialect.h"
+#include "mlir/Dialect/Transform/IR/TransformOps.h"
 #include "mlir/Dialect/Transform/Interfaces/TransformInterfaces.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/Dialect/Vector/Transforms/LoweringPatterns.h"
 #include "mlir/Dialect/Vector/Transforms/VectorRewritePatterns.h"
 #include "mlir/Dialect/Vector/Transforms/VectorTransforms.h"
 #include "mlir/Dialect/X86Vector/Transforms.h"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 using namespace mlir;
 using namespace mlir::vector;
@@ -32,8 +34,7 @@ void transform::ApplyVectorToLLVMConversionPatternsOp::populatePatterns(
     TypeConverter &typeConverter, RewritePatternSet &patterns) {
   populateVectorToLLVMConversionPatterns(
       static_cast<LLVMTypeConverter &>(typeConverter), patterns,
-      getReassociateFpReductions(), getForce_32bitVectorIndices(),
-      getUseVectorAlignment());
+      getReassociateFpReductions(), getForce_32bitVectorIndices());
 }
 
 LogicalResult
@@ -66,6 +67,7 @@ void transform::ApplyFoldElementwiseToVectorPatternsOp::populatePatterns(
 void transform::ApplyVectorReductionToContractPatternsOp::populatePatterns(
     RewritePatternSet &patterns) {
   vector::populateVectorReductionToContractPatterns(patterns);
+  vector::populateSinkVectorOpsPatterns(patterns);
 }
 
 void transform::ApplyLowerCreateMaskPatternsOp::populatePatterns(
@@ -88,11 +90,6 @@ void transform::ApplyDropUnitDimWithShapeCastPatternsOp::populatePatterns(
   vector::populateDropUnitDimWithShapeCastPatterns(patterns);
 }
 
-void transform::ApplyDropInnerMostUnitDimsFromXferOpsPatternsOp::
-    populatePatterns(RewritePatternSet &patterns) {
-  vector::populateDropInnerMostUnitDimsXferOpPatterns(patterns);
-}
-
 void transform::ApplyLowerBitCastPatternsOp::populatePatterns(
     RewritePatternSet &patterns) {
   vector::populateVectorBitCastLoweringPatterns(patterns);
@@ -105,7 +102,9 @@ void transform::ApplyLowerBroadcastPatternsOp::populatePatterns(
 
 void transform::ApplyLowerContractionPatternsOp::populatePatterns(
     RewritePatternSet &patterns) {
-  populateVectorContractLoweringPatterns(patterns, getLoweringStrategy(),
+  vector::VectorTransformsOptions vectorTransformOptions;
+  vectorTransformOptions.setVectorTransformsOptions(getLoweringStrategy());
+  populateVectorContractLoweringPatterns(patterns, vectorTransformOptions,
                                          /*benefit=*/1,
                                          /*disableOuterProductLowering=*/true);
 }
@@ -144,16 +143,6 @@ void transform::ApplyLowerGatherPatternsOp::populatePatterns(
   vector::populateVectorGatherLoweringPatterns(patterns);
 }
 
-void transform::ApplyUnrollFromElementsPatternsOp::populatePatterns(
-    RewritePatternSet &patterns) {
-  vector::populateVectorFromElementsUnrollPatterns(patterns);
-}
-
-void transform::ApplyUnrollToElementsPatternsOp::populatePatterns(
-    RewritePatternSet &patterns) {
-  vector::populateVectorToElementsUnrollPatterns(patterns);
-}
-
 void transform::ApplyLowerScanPatternsOp::populatePatterns(
     RewritePatternSet &patterns) {
   vector::populateVectorScanLoweringPatterns(patterns);
@@ -172,8 +161,9 @@ void transform::ApplyLowerTransferPatternsOp::populatePatterns(
 
 void transform::ApplyLowerTransposePatternsOp::populatePatterns(
     RewritePatternSet &patterns) {
-  vector::populateVectorTransposeLoweringPatterns(patterns,
-                                                  getLoweringStrategy());
+  vector::populateVectorTransposeLoweringPatterns(
+      patterns, vector::VectorTransformsOptions().setVectorTransposeLowering(
+                    getLoweringStrategy()));
   if (getAvx2LoweringStrategy()) {
     auto avx2LoweringOptions =
         x86vector::avx2::LoweringOptions().setTransposeOptions(
@@ -215,16 +205,6 @@ void transform::ApplyTransferToScfPatternsOp::populatePatterns(
           .enableFullUnroll(getFullUnroll())
           .setTargetRank(getMaxTransferRank());
   populateVectorToSCFConversionPatterns(patterns, vectorTransferToSCFOptions);
-}
-
-void transform::ApplySinkVectorPatternsOp::populatePatterns(
-    RewritePatternSet &patterns) {
-  vector::populateSinkVectorOpsPatterns(patterns);
-}
-
-void transform::ApplySinkVectorMemPatternsOp::populatePatterns(
-    RewritePatternSet &patterns) {
-  vector::populateSinkVectorMemOpsPatterns(patterns);
 }
 
 //===----------------------------------------------------------------------===//

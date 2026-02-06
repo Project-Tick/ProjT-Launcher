@@ -22,15 +22,6 @@ class PlatformProcessCrashInfoTestCase(TestBase):
         self.runCmd("settings clear auto-confirm")
         TestBase.tearDown(self)
 
-    def containsLibmallocError(self, output):
-        for error in [
-            "pointer being freed was not allocated",
-            "not an allocated block",
-        ]:
-            if error in output:
-                return True
-        return False
-
     @skipIfAsan  # The test process intentionally double-frees.
     @skipUnlessDarwin
     def test_cli(self):
@@ -42,14 +33,14 @@ class PlatformProcessCrashInfoTestCase(TestBase):
 
         self.expect("process launch", patterns=["Process .* launched: .*a.out"])
 
-        result = lldb.SBCommandReturnObject()
-        self.dbg.GetCommandInterpreter().HandleCommand(
-            "process status --verbose", result
+        self.expect(
+            "process status --verbose",
+            patterns=[
+                "Extended Crash Information",
+                "Crash-Info Annotations",
+                "pointer being freed was not allocated",
+            ],
         )
-
-        self.assertIn("Extended Crash Information", result.GetOutput())
-        self.assertIn("Crash-Info Annotations", result.GetOutput())
-        self.assertTrue(self.containsLibmallocError(result.GetOutput()))
 
     @skipIfAsan  # The test process intentionally hits a memory bug.
     @skipUnlessDarwin
@@ -76,7 +67,7 @@ class PlatformProcessCrashInfoTestCase(TestBase):
 
         self.assertTrue(crash_info.IsValid())
 
-        self.assertTrue(self.containsLibmallocError(stream.GetData()))
+        self.assertIn("pointer being freed was not allocated", stream.GetData())
 
     # dyld leaves permanent crash_info records when testing on device.
     @skipIfDarwinEmbedded

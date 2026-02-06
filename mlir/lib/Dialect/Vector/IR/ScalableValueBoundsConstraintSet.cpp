@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Dialect/Vector/IR/ScalableValueBoundsConstraintSet.h"
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
 
 namespace mlir::vector {
 
@@ -43,7 +44,7 @@ FailureOr<ConstantOrScalableBound>
 ScalableValueBoundsConstraintSet::computeScalableBound(
     Value value, std::optional<int64_t> dim, unsigned vscaleMin,
     unsigned vscaleMax, presburger::BoundType boundType, bool closedUB,
-    const StopConditionFn &stopCondition) {
+    StopConditionFn stopCondition) {
   using namespace presburger;
   assert(vscaleMin <= vscaleMax);
 
@@ -106,12 +107,13 @@ ScalableValueBoundsConstraintSet::computeScalableBound(
 
   AffineMap bound = [&] {
     if (boundType == BoundType::EQ && !invalidBound(lowerBound) &&
-        lowerBound[0] == upperBound[0])
+        lowerBound[0] == upperBound[0]) {
       return lowerBound[0];
-    if (boundType == BoundType::LB && !invalidBound(lowerBound))
+    } else if (boundType == BoundType::LB && !invalidBound(lowerBound)) {
       return lowerBound[0];
-    if (boundType == BoundType::UB && !invalidBound(upperBound))
+    } else if (boundType == BoundType::UB && !invalidBound(upperBound)) {
       return upperBound[0];
+    }
     return AffineMap{};
   }();
 

@@ -112,7 +112,7 @@ BitVector RegScavenger::getRegsAvailable(const TargetRegisterClass *RC) {
   BitVector Mask(TRI->getNumRegs());
   for (Register Reg : *RC)
     if (!isRegUsed(Reg))
-      Mask.set(Reg.id());
+      Mask.set(Reg);
   return Mask;
 }
 
@@ -276,14 +276,14 @@ RegScavenger::spill(Register Reg, const TargetRegisterClass &RC, int SPAdj,
                          ": Cannot scavenge register without an emergency "
                          "spill slot!");
     }
-    TII->storeRegToStackSlot(*MBB, Before, Reg, true, FI, &RC, Register());
+    TII->storeRegToStackSlot(*MBB, Before, Reg, true, FI, &RC, TRI, Register());
     MachineBasicBlock::iterator II = std::prev(Before);
 
     unsigned FIOperandNum = getFrameIndexOperandNum(*II);
     TRI->eliminateFrameIndex(II, SPAdj, FIOperandNum, this);
 
     // Restore the scavenged register before its use (or first terminator).
-    TII->loadRegFromStackSlot(*MBB, UseMI, Reg, FI, &RC, Register());
+    TII->loadRegFromStackSlot(*MBB, UseMI, Reg, FI, &RC, TRI, Register());
     II = std::prev(UseMI);
 
     FIOperandNum = getFrameIndexOperandNum(*II);
@@ -300,6 +300,7 @@ Register RegScavenger::scavengeRegisterBackwards(const TargetRegisterClass &RC,
   const MachineFunction &MF = *MBB.getParent();
 
   // Find the register whose use is furthest away.
+  MachineBasicBlock::iterator UseMI;
   ArrayRef<MCPhysReg> AllocationOrder = RC.getRawAllocationOrder(MF);
   std::pair<MCPhysReg, MachineBasicBlock::iterator> P = findSurvivorBackwards(
       *MRI, std::prev(MBBI), To, LiveUnits, AllocationOrder, RestoreAfter);
@@ -411,7 +412,8 @@ static bool scavengeFrameVirtualRegsInBlock(MachineRegisterInfo &MRI,
         // We only care about virtual registers and ignore virtual registers
         // created by the target callbacks in the process (those will be handled
         // in a scavenging round).
-        if (!Reg.isVirtual() || Reg.virtRegIndex() >= InitialNumVirtRegs)
+        if (!Reg.isVirtual() ||
+            Register::virtReg2Index(Reg) >= InitialNumVirtRegs)
           continue;
         if (!MO.readsReg())
           continue;
@@ -430,7 +432,8 @@ static bool scavengeFrameVirtualRegsInBlock(MachineRegisterInfo &MRI,
         continue;
       Register Reg = MO.getReg();
       // Only vregs, no newly created vregs (see above).
-      if (!Reg.isVirtual() || Reg.virtRegIndex() >= InitialNumVirtRegs)
+      if (!Reg.isVirtual() ||
+          Register::virtReg2Index(Reg) >= InitialNumVirtRegs)
         continue;
       // We have to look at all operands anyway so we can precalculate here
       // whether there is a reading operand. This allows use to skip the use
@@ -466,7 +469,7 @@ void llvm::scavengeFrameVirtualRegs(MachineFunction &MF, RegScavenger &RS) {
   MachineRegisterInfo &MRI = MF.getRegInfo();
   // Shortcut.
   if (MRI.getNumVirtRegs() == 0) {
-    MF.getProperties().setNoVRegs();
+    MF.getProperties().set(MachineFunctionProperties::Property::NoVRegs);
     return;
   }
 
@@ -488,7 +491,7 @@ void llvm::scavengeFrameVirtualRegs(MachineFunction &MF, RegScavenger &RS) {
   }
 
   MRI.clearVirtRegs();
-  MF.getProperties().setNoVRegs();
+  MF.getProperties().set(MachineFunctionProperties::Property::NoVRegs);
 }
 
 namespace {

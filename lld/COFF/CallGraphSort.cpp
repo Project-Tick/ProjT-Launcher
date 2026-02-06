@@ -16,6 +16,7 @@
 #include "InputFiles.h"
 #include "SymbolTable.h"
 #include "Symbols.h"
+#include "lld/Common/ErrorHandler.h"
 
 #include <numeric>
 

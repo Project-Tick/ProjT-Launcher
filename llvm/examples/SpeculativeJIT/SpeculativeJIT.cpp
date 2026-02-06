@@ -7,7 +7,6 @@
 #include "llvm/ExecutionEngine/Orc/IndirectionUtils.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
-#include "llvm/ExecutionEngine/Orc/SelfExecutorProcessControl.h"
 #include "llvm/ExecutionEngine/Orc/SpeculateAnalyses.h"
 #include "llvm/ExecutionEngine/Orc/Speculation.h"
 #include "llvm/ExecutionEngine/Orc/TargetProcess/TargetExecutionUtils.h"
@@ -20,6 +19,7 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ThreadPool.h"
 
+#include <list>
 #include <string>
 
 using namespace llvm;
@@ -125,8 +125,7 @@ private:
     ExitOnErr(CXXRuntimeoverrides.enable(MainJD, Mangle));
   }
 
-  static std::unique_ptr<SectionMemoryManager>
-  createMemMgr(const MemoryBuffer &) {
+  static std::unique_ptr<SectionMemoryManager> createMemMgr() {
     return std::make_unique<SectionMemoryManager>();
   }
 
@@ -184,4 +183,6 @@ int main(int argc, char *argv[]) {
   auto Main = MainSym.getAddress().toPtr<int (*)(int, char *[])>();
 
   return runAsMain(Main, InputArgv, StringRef(InputFiles.front()));
+
+  return 0;
 }

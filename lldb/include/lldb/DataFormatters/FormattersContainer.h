@@ -23,6 +23,7 @@
 #include "lldb/DataFormatters/TypeSynthetic.h"
 #include "lldb/Symbol/CompilerType.h"
 #include "lldb/Utility/RegularExpression.h"
+#include "lldb/Utility/StringLexer.h"
 #include "lldb/ValueObject/ValueObject.h"
 
 namespace lldb_private {
@@ -58,15 +59,18 @@ class TypeMatcher {
     if (type.IsEmpty())
       return type;
 
-    llvm::StringRef type_lexer(type.AsCString());
+    std::string type_cstr(type.AsCString());
+    StringLexer type_lexer(type_cstr);
 
-    type_lexer.consume_front("class ");
-    type_lexer.consume_front("enum ");
-    type_lexer.consume_front("struct ");
-    type_lexer.consume_front("union ");
-    type_lexer = type_lexer.ltrim();
+    type_lexer.AdvanceIf("class ");
+    type_lexer.AdvanceIf("enum ");
+    type_lexer.AdvanceIf("struct ");
+    type_lexer.AdvanceIf("union ");
 
-    return ConstString(type_lexer);
+    while (type_lexer.NextIf({' ', '\t', '\v', '\f'}).first)
+      ;
+
+    return ConstString(type_lexer.GetUnlexed());
   }
 
 public:
@@ -189,10 +193,12 @@ public:
   bool Get(const FormattersMatchVector &candidates, ValueSP &entry) {
     for (const FormattersMatchCandidate &candidate : candidates) {
       if (Get(candidate, entry)) {
-        if (candidate.IsMatch(entry))
+        if (candidate.IsMatch(entry) == false) {
+          entry.reset();
+          continue;
+        } else {
           return true;
-        entry.reset();
-        continue;
+        }
       }
     }
     return false;

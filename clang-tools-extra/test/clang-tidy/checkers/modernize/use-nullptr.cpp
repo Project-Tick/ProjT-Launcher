@@ -91,7 +91,7 @@ template <typename T> struct pear {
   // it is often defined as __null and the check will catch it.)
   void f() { x = __null; }
   // CHECK-MESSAGES: :[[@LINE-1]]:18: warning: use nullptr [modernize-use-nullptr]
-  // CHECK-FIXES: void f() { x = nullptr; }
+  // CHECK-FIXES: x = nullptr;
 
   // But if you say 0, we allow the possibility that T can be used with integral
   // and pointer types, and "0" is an acceptable initializer (even if "{}" might
@@ -118,13 +118,11 @@ void test_macro_args() {
   // CHECK-MESSAGES: :[[@LINE-1]]:27: warning: use nullptr
   // CHECK-FIXES: IS_EQ(static_cast<int*>(nullptr), Ptr);
 
-  // literal
-  IS_EQ(0, Ptr);
+  IS_EQ(0, Ptr);    // literal
   // CHECK-MESSAGES: :[[@LINE-1]]:9: warning: use nullptr
   // CHECK-FIXES: IS_EQ(nullptr, Ptr);
 
-  // macro
-  IS_EQ(NULL, Ptr);
+  IS_EQ(NULL, Ptr); // macro
   // CHECK-MESSAGES: :[[@LINE-1]]:9: warning: use nullptr
   // CHECK-FIXES: IS_EQ(nullptr, Ptr);
 
@@ -207,7 +205,7 @@ void test_macro_args() {
   } a[2] = {ENTRY(0), {0}};
   // CHECK-MESSAGES: :[[@LINE-1]]:19: warning: use nullptr
   // CHECK-MESSAGES: :[[@LINE-2]]:24: warning: use nullptr
-  // CHECK-FIXES: } a[2] = {ENTRY(nullptr), {nullptr}};
+  // CHECK-FIXES: a[2] = {ENTRY(nullptr), {nullptr}};
 #undef ENTRY
 
 #define assert1(expr) (expr) ? 0 : 1

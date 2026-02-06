@@ -143,35 +143,19 @@ void Scope::add_crayPointer(const SourceName &name, Symbol &pointer) {
   crayPointers_.emplace(name, pointer);
 }
 
-Symbol &Scope::MakeCommonBlock(SourceName name, SourceName location) {
-  if (auto *cb{FindCommonBlock(name)}) {
-    return *cb;
+Symbol &Scope::MakeCommonBlock(const SourceName &name) {
+  const auto it{commonBlocks_.find(name)};
+  if (it != commonBlocks_.end()) {
+    return *it->second;
   } else {
-    Symbol &symbol{MakeSymbol(
-        name, Attrs{}, CommonBlockDetails{name.empty() ? location : name})};
+    Symbol &symbol{MakeSymbol(name, Attrs{}, CommonBlockDetails{})};
     commonBlocks_.emplace(name, symbol);
     return symbol;
   }
 }
-
-Symbol *Scope::FindCommonBlockInVisibleScopes(const SourceName &name) const {
-  if (Symbol * cb{FindCommonBlock(name)}) {
-    return cb;
-  } else if (Symbol * cb{FindCommonBlockUse(name)}) {
-    return &cb->GetUltimate();
-  } else if (IsSubmodule()) {
-    if (const Scope *parent{
-            symbol_ ? symbol_->get<ModuleDetails>().parent() : nullptr}) {
-      if (auto *cb{parent->FindCommonBlockInVisibleScopes(name)}) {
-        return cb;
-      }
-    }
-  } else if (!IsTopLevel() && parent_) {
-    if (auto *cb{parent_->FindCommonBlockInVisibleScopes(name)}) {
-      return cb;
-    }
-  }
-  return nullptr;
+Symbol *Scope::FindCommonBlock(const SourceName &name) const {
+  const auto it{commonBlocks_.find(name)};
+  return it != commonBlocks_.end() ? &*it->second : nullptr;
 }
 
 Scope *Scope::FindSubmodule(const SourceName &name) const {
@@ -182,31 +166,6 @@ Scope *Scope::FindSubmodule(const SourceName &name) const {
     return &*it->second;
   }
 }
-
-bool Scope::AddCommonBlockUse(
-    const SourceName &name, Attrs attrs, Symbol &cbUltimate) {
-  CHECK(cbUltimate.has<CommonBlockDetails>());
-  // Make a symbol, but don't add it to the Scope, since it needs to
-  // be added to the USE-associated COMMON blocks
-  Symbol &useCB{MakeSymbol(name, attrs, UseDetails{name, cbUltimate})};
-  return commonBlockUses_.emplace(name, useCB).second;
-}
-
-Symbol *Scope::FindCommonBlock(const SourceName &name) const {
-  if (const auto it{commonBlocks_.find(name)}; it != commonBlocks_.end()) {
-    return &*it->second;
-  }
-  return nullptr;
-}
-
-Symbol *Scope::FindCommonBlockUse(const SourceName &name) const {
-  if (const auto it{commonBlockUses_.find(name)};
-      it != commonBlockUses_.end()) {
-    return &*it->second;
-  }
-  return nullptr;
-}
-
 bool Scope::AddSubmodule(const SourceName &name, Scope &submodule) {
   return submodules_.emplace(name, submodule).second;
 }

@@ -480,7 +480,7 @@ public:
 
   ConstString GetBaseName();
 
-  llvm::Expected<uint64_t> GetByteSize(ExecutionContextScope *exe_scope);
+  std::optional<uint64_t> GetByteSize(ExecutionContextScope *exe_scope);
 
   llvm::Expected<uint32_t> GetNumChildren(bool omit_empty_base_classes);
 
@@ -507,7 +507,7 @@ public:
 
   lldb::Format GetFormat();
 
-  lldb::Encoding GetEncoding();
+  lldb::Encoding GetEncoding(uint64_t &count);
 
   SymbolContextScope *GetSymbolContextScope() { return m_context; }
   const SymbolContextScope *GetSymbolContextScope() const { return m_context; }

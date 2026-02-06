@@ -4,6 +4,7 @@
 ; RUN: llc -verify-machineinstrs -mtriple=riscv64 -mattr=+m,+v %s -o - \
 ; RUN:   | FileCheck %s --check-prefixes=CHECK,CHECK-RV64
 
+declare <1 x i8> @llvm.masked.expandload.v1i8(ptr, <1 x i1>, <1 x i8>)
 define <1 x i8> @expandload_v1i8(ptr %base, <1 x i8> %src0, <1 x i1> %mask) {
 ; CHECK-LABEL: expandload_v1i8:
 ; CHECK:       # %bb.0:
@@ -19,6 +20,7 @@ define <1 x i8> @expandload_v1i8(ptr %base, <1 x i8> %src0, <1 x i1> %mask) {
   ret <1 x i8>%res
 }
 
+declare <2 x i8> @llvm.masked.expandload.v2i8(ptr, <2 x i1>, <2 x i8>)
 define <2 x i8> @expandload_v2i8(ptr %base, <2 x i8> %src0, <2 x i1> %mask) {
 ; CHECK-LABEL: expandload_v2i8:
 ; CHECK:       # %bb.0:
@@ -34,6 +36,7 @@ define <2 x i8> @expandload_v2i8(ptr %base, <2 x i8> %src0, <2 x i1> %mask) {
   ret <2 x i8>%res
 }
 
+declare <4 x i8> @llvm.masked.expandload.v4i8(ptr, <4 x i1>, <4 x i8>)
 define <4 x i8> @expandload_v4i8(ptr %base, <4 x i8> %src0, <4 x i1> %mask) {
 ; CHECK-LABEL: expandload_v4i8:
 ; CHECK:       # %bb.0:
@@ -49,6 +52,7 @@ define <4 x i8> @expandload_v4i8(ptr %base, <4 x i8> %src0, <4 x i1> %mask) {
   ret <4 x i8>%res
 }
 
+declare <8 x i8> @llvm.masked.expandload.v8i8(ptr, <8 x i1>, <8 x i8>)
 define <8 x i8> @expandload_v8i8(ptr %base, <8 x i8> %src0, <8 x i1> %mask) {
 ; CHECK-LABEL: expandload_v8i8:
 ; CHECK:       # %bb.0:
@@ -64,6 +68,7 @@ define <8 x i8> @expandload_v8i8(ptr %base, <8 x i8> %src0, <8 x i1> %mask) {
   ret <8 x i8>%res
 }
 
+declare <1 x i16> @llvm.masked.expandload.v1i16(ptr, <1 x i1>, <1 x i16>)
 define <1 x i16> @expandload_v1i16(ptr %base, <1 x i16> %src0, <1 x i1> %mask) {
 ; CHECK-LABEL: expandload_v1i16:
 ; CHECK:       # %bb.0:
@@ -79,6 +84,7 @@ define <1 x i16> @expandload_v1i16(ptr %base, <1 x i16> %src0, <1 x i1> %mask) {
   ret <1 x i16>%res
 }
 
+declare <2 x i16> @llvm.masked.expandload.v2i16(ptr, <2 x i1>, <2 x i16>)
 define <2 x i16> @expandload_v2i16(ptr %base, <2 x i16> %src0, <2 x i1> %mask) {
 ; CHECK-LABEL: expandload_v2i16:
 ; CHECK:       # %bb.0:
@@ -94,6 +100,7 @@ define <2 x i16> @expandload_v2i16(ptr %base, <2 x i16> %src0, <2 x i1> %mask) {
   ret <2 x i16>%res
 }
 
+declare <4 x i16> @llvm.masked.expandload.v4i16(ptr, <4 x i1>, <4 x i16>)
 define <4 x i16> @expandload_v4i16(ptr %base, <4 x i16> %src0, <4 x i1> %mask) {
 ; CHECK-LABEL: expandload_v4i16:
 ; CHECK:       # %bb.0:
@@ -109,6 +116,7 @@ define <4 x i16> @expandload_v4i16(ptr %base, <4 x i16> %src0, <4 x i1> %mask) {
   ret <4 x i16>%res
 }
 
+declare <8 x i16> @llvm.masked.expandload.v8i16(ptr, <8 x i1>, <8 x i16>)
 define <8 x i16> @expandload_v8i16(ptr %base, <8 x i16> %src0, <8 x i1> %mask) {
 ; CHECK-LABEL: expandload_v8i16:
 ; CHECK:       # %bb.0:
@@ -124,6 +132,7 @@ define <8 x i16> @expandload_v8i16(ptr %base, <8 x i16> %src0, <8 x i1> %mask) {
   ret <8 x i16>%res
 }
 
+declare <1 x i32> @llvm.masked.expandload.v1i32(ptr, <1 x i1>, <1 x i32>)
 define <1 x i32> @expandload_v1i32(ptr %base, <1 x i32> %src0, <1 x i1> %mask) {
 ; CHECK-LABEL: expandload_v1i32:
 ; CHECK:       # %bb.0:
@@ -139,6 +148,7 @@ define <1 x i32> @expandload_v1i32(ptr %base, <1 x i32> %src0, <1 x i1> %mask) {
   ret <1 x i32>%res
 }
 
+declare <2 x i32> @llvm.masked.expandload.v2i32(ptr, <2 x i1>, <2 x i32>)
 define <2 x i32> @expandload_v2i32(ptr %base, <2 x i32> %src0, <2 x i1> %mask) {
 ; CHECK-LABEL: expandload_v2i32:
 ; CHECK:       # %bb.0:
@@ -154,6 +164,7 @@ define <2 x i32> @expandload_v2i32(ptr %base, <2 x i32> %src0, <2 x i1> %mask) {
   ret <2 x i32>%res
 }
 
+declare <4 x i32> @llvm.masked.expandload.v4i32(ptr, <4 x i1>, <4 x i32>)
 define <4 x i32> @expandload_v4i32(ptr %base, <4 x i32> %src0, <4 x i1> %mask) {
 ; CHECK-LABEL: expandload_v4i32:
 ; CHECK:       # %bb.0:
@@ -169,6 +180,7 @@ define <4 x i32> @expandload_v4i32(ptr %base, <4 x i32> %src0, <4 x i1> %mask) {
   ret <4 x i32>%res
 }
 
+declare <8 x i32> @llvm.masked.expandload.v8i32(ptr, <8 x i1>, <8 x i32>)
 define <8 x i32> @expandload_v8i32(ptr %base, <8 x i32> %src0, <8 x i1> %mask) {
 ; CHECK-LABEL: expandload_v8i32:
 ; CHECK:       # %bb.0:
@@ -184,6 +196,7 @@ define <8 x i32> @expandload_v8i32(ptr %base, <8 x i32> %src0, <8 x i1> %mask) {
   ret <8 x i32>%res
 }
 
+declare <1 x i64> @llvm.masked.expandload.v1i64(ptr, <1 x i1>, <1 x i64>)
 define <1 x i64> @expandload_v1i64(ptr %base, <1 x i64> %src0, <1 x i1> %mask) {
 ; CHECK-LABEL: expandload_v1i64:
 ; CHECK:       # %bb.0:
@@ -199,6 +212,7 @@ define <1 x i64> @expandload_v1i64(ptr %base, <1 x i64> %src0, <1 x i1> %mask) {
   ret <1 x i64>%res
 }
 
+declare <2 x i64> @llvm.masked.expandload.v2i64(ptr, <2 x i1>, <2 x i64>)
 define <2 x i64> @expandload_v2i64(ptr %base, <2 x i64> %src0, <2 x i1> %mask) {
 ; CHECK-LABEL: expandload_v2i64:
 ; CHECK:       # %bb.0:
@@ -214,6 +228,7 @@ define <2 x i64> @expandload_v2i64(ptr %base, <2 x i64> %src0, <2 x i1> %mask) {
   ret <2 x i64>%res
 }
 
+declare <4 x i64> @llvm.masked.expandload.v4i64(ptr, <4 x i1>, <4 x i64>)
 define <4 x i64> @expandload_v4i64(ptr %base, <4 x i64> %src0, <4 x i1> %mask) {
 ; CHECK-LABEL: expandload_v4i64:
 ; CHECK:       # %bb.0:
@@ -229,6 +244,7 @@ define <4 x i64> @expandload_v4i64(ptr %base, <4 x i64> %src0, <4 x i1> %mask) {
   ret <4 x i64>%res
 }
 
+declare <8 x i64> @llvm.masked.expandload.v8i64(ptr, <8 x i1>, <8 x i64>)
 define <8 x i64> @expandload_v8i64(ptr %base, <8 x i64> %src0, <8 x i1> %mask) {
 ; CHECK-LABEL: expandload_v8i64:
 ; CHECK:       # %bb.0:

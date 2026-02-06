@@ -41,13 +41,9 @@ STRING_EXTENSION_OUTSIDE(SBThread)
         def get_thread_frames(self):
             '''An accessor function that returns a list() that contains all frames in a lldb.SBThread object.'''
             frames = []
-            frame_list = self.GetFrames()
-            for frame in frame_list:
+            for frame in self:
                 frames.append(frame)
             return frames
-
-        def get_stop_description(self):
-            return self.GetStopDescription(1024)
 
         def get_stop_reason_data(self):
             return [
@@ -73,7 +69,6 @@ STRING_EXTENSION_OUTSIDE(SBThread)
         name = property(GetName, None, doc='''A read only property that returns the name of this thread as a string.''')
         queue = property(GetQueueName, None, doc='''A read only property that returns the dispatch queue name of this thread as a string.''')
         queue_id = property(GetQueueID, None, doc='''A read only property that returns the dispatch queue id of this thread as an integer.''')
-        stop_description = property(get_stop_description, None, doc='''A read only property that returns a string describing the reason this thread stopped.''')
         stop_reason = property(GetStopReason, None, doc='''A read only property that returns an lldb enumeration value (see enumerations that start with "lldb.eStopReason") that represents the reason this thread stopped.''')
         stop_reason_data = property(get_stop_reason_data, None, doc='''A read only property that returns the stop reason data as a list.''')
         is_suspended = property(IsSuspended, None, doc='''A read only property that returns a boolean value that indicates if this thread is suspended.''')

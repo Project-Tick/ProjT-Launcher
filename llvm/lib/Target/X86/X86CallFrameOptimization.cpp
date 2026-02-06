@@ -58,9 +58,13 @@ static cl::opt<bool>
 
 namespace {
 
-class X86CallFrameOptimizationImpl {
+class X86CallFrameOptimization : public MachineFunctionPass {
 public:
-  bool runOnMachineFunction(MachineFunction &MF);
+  X86CallFrameOptimization() : MachineFunctionPass(ID) { }
+
+  bool runOnMachineFunction(MachineFunction &MF) override;
+
+  static char ID;
 
 private:
   // Information we know about a particular call site
@@ -108,7 +112,9 @@ private:
   InstClassification classifyInstruction(MachineBasicBlock &MBB,
                                          MachineBasicBlock::iterator MI,
                                          const X86RegisterInfo &RegInfo,
-                                         const DenseSet<MCRegister> &UsedRegs);
+                                         DenseSet<unsigned int> &UsedRegs);
+
+  StringRef getPassName() const override { return "X86 Optimize Call Frame"; }
 
   const X86InstrInfo *TII = nullptr;
   const X86FrameLowering *TFL = nullptr;
@@ -118,27 +124,15 @@ private:
   unsigned Log2SlotSize = 0;
 };
 
-class X86CallFrameOptimizationLegacy : public MachineFunctionPass {
-public:
-  X86CallFrameOptimizationLegacy() : MachineFunctionPass(ID) {}
-
-  bool runOnMachineFunction(MachineFunction &MF) override;
-
-  static char ID;
-
-private:
-  StringRef getPassName() const override { return "X86 Optimize Call Frame"; }
-};
-
 } // end anonymous namespace
-char X86CallFrameOptimizationLegacy::ID = 0;
-INITIALIZE_PASS(X86CallFrameOptimizationLegacy, DEBUG_TYPE,
+char X86CallFrameOptimization::ID = 0;
+INITIALIZE_PASS(X86CallFrameOptimization, DEBUG_TYPE,
                 "X86 Call Frame Optimization", false, false)
 
 // This checks whether the transformation is legal.
 // Also returns false in cases where it's potentially legal, but
 // we don't even want to try.
-bool X86CallFrameOptimizationImpl::isLegal(MachineFunction &MF) {
+bool X86CallFrameOptimization::isLegal(MachineFunction &MF) {
   if (NoX86CFOpt.getValue())
     return false;
 
@@ -196,8 +190,8 @@ bool X86CallFrameOptimizationImpl::isLegal(MachineFunction &MF) {
 
 // Check whether this transformation is profitable for a particular
 // function - in terms of code size.
-bool X86CallFrameOptimizationImpl::isProfitable(MachineFunction &MF,
-                                                ContextVector &CallSeqVector) {
+bool X86CallFrameOptimization::isProfitable(MachineFunction &MF,
+                                            ContextVector &CallSeqVector) {
   // This transformation is always a win when we do not expect to have
   // a reserved call frame. Under other circumstances, it may be either
   // a win or a loss, and requires a heuristic.
@@ -239,18 +233,19 @@ bool X86CallFrameOptimizationImpl::isProfitable(MachineFunction &MF,
   return Advantage >= 0;
 }
 
-bool X86CallFrameOptimizationImpl::runOnMachineFunction(MachineFunction &MF) {
+bool X86CallFrameOptimization::runOnMachineFunction(MachineFunction &MF) {
   STI = &MF.getSubtarget<X86Subtarget>();
   TII = STI->getInstrInfo();
   TFL = STI->getFrameLowering();
   MRI = &MF.getRegInfo();
 
-  const X86RegisterInfo &RegInfo = *STI->getRegisterInfo();
+  const X86RegisterInfo &RegInfo =
+      *static_cast<const X86RegisterInfo *>(STI->getRegisterInfo());
   SlotSize = RegInfo.getSlotSize();
   assert(isPowerOf2_32(SlotSize) && "Expect power of 2 stack slot size");
   Log2SlotSize = Log2_32(SlotSize);
 
-  if (!isLegal(MF))
+  if (skipFunction(MF.getFunction()) || !isLegal(MF))
     return false;
 
   unsigned FrameSetupOpcode = TII->getCallFrameSetupOpcode();
@@ -280,10 +275,10 @@ bool X86CallFrameOptimizationImpl::runOnMachineFunction(MachineFunction &MF) {
   return Changed;
 }
 
-X86CallFrameOptimizationImpl::InstClassification
-X86CallFrameOptimizationImpl::classifyInstruction(
+X86CallFrameOptimization::InstClassification
+X86CallFrameOptimization::classifyInstruction(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
-    const X86RegisterInfo &RegInfo, const DenseSet<MCRegister> &UsedRegs) {
+    const X86RegisterInfo &RegInfo, DenseSet<unsigned int> &UsedRegs) {
   if (MI == MBB.end())
     return Exit;
 
@@ -346,7 +341,7 @@ X86CallFrameOptimizationImpl::classifyInstruction(
     if (RegInfo.regsOverlap(Reg, RegInfo.getStackRegister()))
       return Exit;
     if (MO.isDef()) {
-      for (MCRegister U : UsedRegs)
+      for (unsigned int U : UsedRegs)
         if (RegInfo.regsOverlap(Reg, U))
           return Exit;
     }
@@ -355,12 +350,14 @@ X86CallFrameOptimizationImpl::classifyInstruction(
   return Skip;
 }
 
-void X86CallFrameOptimizationImpl::collectCallInfo(
-    MachineFunction &MF, MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
-    CallContext &Context) {
+void X86CallFrameOptimization::collectCallInfo(MachineFunction &MF,
+                                               MachineBasicBlock &MBB,
+                                               MachineBasicBlock::iterator I,
+                                               CallContext &Context) {
   // Check that this particular call sequence is amenable to the
   // transformation.
-  const X86RegisterInfo &RegInfo = *STI->getRegisterInfo();
+  const X86RegisterInfo &RegInfo =
+      *static_cast<const X86RegisterInfo *>(STI->getRegisterInfo());
 
   // We expect to enter this at the beginning of a call sequence
   assert(I->getOpcode() == TII->getCallFrameSetupOpcode());
@@ -409,7 +406,7 @@ void X86CallFrameOptimizationImpl::collectCallInfo(
   if (MaxAdjust > 4)
     Context.ArgStoreVector.resize(MaxAdjust, nullptr);
 
-  DenseSet<MCRegister> UsedRegs;
+  DenseSet<unsigned int> UsedRegs;
 
   for (InstClassification Classification = Skip; Classification != Exit; ++I) {
     // If this is the COPY of the stack pointer, it's ok to ignore.
@@ -458,7 +455,7 @@ void X86CallFrameOptimizationImpl::collectCallInfo(
         continue;
       Register Reg = MO.getReg();
       if (Reg.isPhysical())
-        UsedRegs.insert(Reg.asMCReg());
+        UsedRegs.insert(Reg);
     }
   }
 
@@ -493,8 +490,8 @@ void X86CallFrameOptimizationImpl::collectCallInfo(
   Context.UsePush = true;
 }
 
-void X86CallFrameOptimizationImpl::adjustCallSequence(
-    MachineFunction &MF, const CallContext &Context) {
+void X86CallFrameOptimization::adjustCallSequence(MachineFunction &MF,
+                                                  const CallContext &Context) {
   // Ok, we can in fact do the transformation for this call.
   // Do not remove the FrameSetup instruction, but adjust the parameters.
   // PEI will end up finalizing the handling of this.
@@ -592,7 +589,7 @@ void X86CallFrameOptimizationImpl::adjustCallSequence(
   FuncInfo->setHasPushSequences(true);
 }
 
-MachineInstr *X86CallFrameOptimizationImpl::canFoldIntoRegPush(
+MachineInstr *X86CallFrameOptimization::canFoldIntoRegPush(
     MachineBasicBlock::iterator FrameSetup, Register Reg) {
   // Do an extremely restricted form of load folding.
   // ISel will often create patterns like:
@@ -629,22 +626,6 @@ MachineInstr *X86CallFrameOptimizationImpl::canFoldIntoRegPush(
   return &DefMI;
 }
 
-FunctionPass *llvm::createX86CallFrameOptimizationLegacyPass() {
-  return new X86CallFrameOptimizationLegacy();
-}
-
-bool X86CallFrameOptimizationLegacy::runOnMachineFunction(MachineFunction &MF) {
-  if (skipFunction(MF.getFunction()))
-    return false;
-  X86CallFrameOptimizationImpl Impl;
-  return Impl.runOnMachineFunction(MF);
-}
-
-PreservedAnalyses
-X86CallFrameOptimizationPass::run(MachineFunction &MF,
-                                  MachineFunctionAnalysisManager &MFAM) {
-  X86CallFrameOptimizationImpl Impl;
-  bool Changed = Impl.runOnMachineFunction(MF);
-  return Changed ? getMachineFunctionPassPreservedAnalyses()
-                 : PreservedAnalyses::all();
+FunctionPass *llvm::createX86CallFrameOptimization() {
+  return new X86CallFrameOptimization();
 }

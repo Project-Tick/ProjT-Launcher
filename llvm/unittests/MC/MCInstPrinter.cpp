@@ -31,22 +31,22 @@ public:
     llvm::InitializeAllTargetInfos();
     llvm::InitializeAllTargetMCs();
 
-    StringRef TripleName = "x86_64-pc-linux";
-    Triple TT(TripleName);
+    std::string TripleName = "x86_64-pc-linux";
     std::string ErrorStr;
 
-    const Target *TheTarget = TargetRegistry::lookupTarget(TT, ErrorStr);
+    const Target *TheTarget =
+        TargetRegistry::lookupTarget(TripleName, ErrorStr);
 
     // If we didn't build x86, do not run the test.
     if (!TheTarget)
       return;
 
-    MRI.reset(TheTarget->createMCRegInfo(TT));
+    MRI.reset(TheTarget->createMCRegInfo(TripleName));
     MCTargetOptions MCOptions;
-    MAI.reset(TheTarget->createMCAsmInfo(*MRI, TT, MCOptions));
+    MAI.reset(TheTarget->createMCAsmInfo(*MRI, TripleName, MCOptions));
     MII.reset(TheTarget->createMCInstrInfo());
-    Printer.reset(TheTarget->createMCInstPrinter(TT, MAI->getAssemblerDialect(),
-                                                 *MAI, *MII, *MRI));
+    Printer.reset(TheTarget->createMCInstPrinter(
+        Triple(TripleName), MAI->getAssemblerDialect(), *MAI, *MII, *MRI));
   }
 
   template <typename T> std::string formatHex(T i) {

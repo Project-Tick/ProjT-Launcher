@@ -17,6 +17,8 @@
 #include <memory>
 
 namespace llvm {
+class DataLayout;
+class LLVMContext;
 class Type;
 } // namespace llvm
 
@@ -36,8 +38,7 @@ class TypeFromLLVMIRTranslatorImpl;
 /// reused across translations.
 class TypeFromLLVMIRTranslator {
 public:
-  TypeFromLLVMIRTranslator(MLIRContext &context,
-                           bool importStructsAsLiterals = false);
+  TypeFromLLVMIRTranslator(MLIRContext &context);
   ~TypeFromLLVMIRTranslator();
 
   /// Translates the given LLVM IR type to the MLIR LLVM dialect.

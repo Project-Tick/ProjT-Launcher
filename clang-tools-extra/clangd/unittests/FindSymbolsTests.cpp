@@ -106,14 +106,14 @@ TEST(WorkspaceSymbols, Unnamed) {
               ElementsAre(AllOf(qName("UnnamedStruct"),
                                 withKind(SymbolKind::Variable))));
   EXPECT_THAT(getSymbols(TU, "InUnnamed"),
-              ElementsAre(AllOf(qName("(unnamed struct)::InUnnamed"),
+              ElementsAre(AllOf(qName("(anonymous struct)::InUnnamed"),
                                 withKind(SymbolKind::Field))));
 }
 
 TEST(WorkspaceSymbols, InMainFile) {
   TestTU TU;
   TU.Code = R"cpp(
-      int test() { return 0; }
+      int test() {}
       static void test2() {}
       )cpp";
   EXPECT_THAT(getSymbols(TU, "test"),
@@ -335,7 +335,6 @@ TEST(DocumentSymbols, BasicSymbols) {
         Foo(int a) {}
         void $decl[[f]]();
         friend void f1();
-        friend void f2() {}
         friend class Friend;
         Foo& operator=(const Foo&);
         ~Foo();
@@ -347,7 +346,7 @@ TEST(DocumentSymbols, BasicSymbols) {
       };
 
       void f1();
-      void f2();
+      inline void f2() {}
       static const int KInt = 2;
       const char* kStr = "123";
 
@@ -386,8 +385,6 @@ TEST(DocumentSymbols, BasicSymbols) {
                      AllOf(withName("Foo"), withKind(SymbolKind::Constructor),
                            withDetail("(int)"), children()),
                      AllOf(withName("f"), withKind(SymbolKind::Method),
-                           withDetail("void ()"), children()),
-                     AllOf(withName("f2"), withKind(SymbolKind::Function),
                            withDetail("void ()"), children()),
                      AllOf(withName("operator="), withKind(SymbolKind::Method),
                            withDetail("Foo &(const Foo &)"), children()),
@@ -540,14 +537,12 @@ TEST(DocumentSymbols, InHeaderFile) {
   TestTU TU;
   TU.AdditionalFiles["bar.h"] = R"cpp(
       int foo() {
-        return 0;
       }
       )cpp";
   TU.Code = R"cpp(
       int i; // declaration to finish preamble
       #include "bar.h"
       int test() {
-        return 0;
       }
       )cpp";
   EXPECT_THAT(getSymbols(TU.build()),
@@ -656,16 +651,15 @@ TEST(DocumentSymbols, Enums) {
       getSymbols(TU.build()),
       ElementsAre(
           AllOf(withName("(anonymous enum)"), withDetail("enum"),
-                children(AllOf(withName("Red"), withDetail("(unnamed enum)")))),
+                children(AllOf(withName("Red"), withDetail("(unnamed)")))),
           AllOf(withName("Color"), withDetail("enum"),
                 children(AllOf(withName("Green"), withDetail("Color")))),
           AllOf(withName("Color2"), withDetail("enum"),
                 children(AllOf(withName("Yellow"), withDetail("Color2")))),
-          AllOf(
-              withName("ns"),
-              children(AllOf(withName("(anonymous enum)"), withDetail("enum"),
-                             children(AllOf(withName("Black"),
-                                            withDetail("(unnamed enum)"))))))));
+          AllOf(withName("ns"),
+                children(AllOf(withName("(anonymous enum)"), withDetail("enum"),
+                               children(AllOf(withName("Black"),
+                                              withDetail("(unnamed)"))))))));
 }
 
 TEST(DocumentSymbols, Macro) {
@@ -786,7 +780,7 @@ TEST(DocumentSymbols, FuncTemplates) {
   TestTU TU;
   Annotations Source(R"cpp(
     template <class T>
-    T foo() { return T{}; }
+    T foo() {}
 
     auto x = foo<int>();
     auto y = foo<double>();

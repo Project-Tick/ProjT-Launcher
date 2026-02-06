@@ -49,7 +49,8 @@ protected:
     // Check that it got renamed.
     bool calleeFound = false;
     fooOp->walk([&](CallOpInterface callOp) {
-      StringAttr callee = dyn_cast<SymbolRefAttr>(callOp.getCallableForCallee())
+      StringAttr callee = callOp.getCallableForCallee()
+                              .dyn_cast<SymbolRefAttr>()
                               .getLeafReference();
       EXPECT_EQ(callee, "baz");
       calleeFound = true;
@@ -77,7 +78,7 @@ namespace {
 
 TEST_F(ReplaceAllSymbolUsesTest, OperationInModuleOp) {
   // Symbol as `Operation *`, rename within module.
-  testReplaceAllSymbolUses([&](const auto &symbolTable, auto module, auto fooOp,
+  testReplaceAllSymbolUses([&](auto symbolTable, auto module, auto fooOp,
                                auto barOp) -> LogicalResult {
     return symbolTable.replaceAllSymbolUses(
         barOp, StringAttr::get(context.get(), "baz"), module);
@@ -86,7 +87,7 @@ TEST_F(ReplaceAllSymbolUsesTest, OperationInModuleOp) {
 
 TEST_F(ReplaceAllSymbolUsesTest, StringAttrInModuleOp) {
   // Symbol as `StringAttr`, rename within module.
-  testReplaceAllSymbolUses([&](const auto &symbolTable, auto module, auto fooOp,
+  testReplaceAllSymbolUses([&](auto symbolTable, auto module, auto fooOp,
                                auto barOp) -> LogicalResult {
     return symbolTable.replaceAllSymbolUses(
         StringAttr::get(context.get(), "bar"),
@@ -96,7 +97,7 @@ TEST_F(ReplaceAllSymbolUsesTest, StringAttrInModuleOp) {
 
 TEST_F(ReplaceAllSymbolUsesTest, OperationInModuleBody) {
   // Symbol as `Operation *`, rename within module body.
-  testReplaceAllSymbolUses([&](const auto &symbolTable, auto module, auto fooOp,
+  testReplaceAllSymbolUses([&](auto symbolTable, auto module, auto fooOp,
                                auto barOp) -> LogicalResult {
     return symbolTable.replaceAllSymbolUses(
         barOp, StringAttr::get(context.get(), "baz"), &module->getRegion(0));
@@ -105,7 +106,7 @@ TEST_F(ReplaceAllSymbolUsesTest, OperationInModuleBody) {
 
 TEST_F(ReplaceAllSymbolUsesTest, StringAttrInModuleBody) {
   // Symbol as `StringAttr`, rename within module body.
-  testReplaceAllSymbolUses([&](const auto &symbolTable, auto module, auto fooOp,
+  testReplaceAllSymbolUses([&](auto symbolTable, auto module, auto fooOp,
                                auto barOp) -> LogicalResult {
     return symbolTable.replaceAllSymbolUses(
         StringAttr::get(context.get(), "bar"),
@@ -115,7 +116,7 @@ TEST_F(ReplaceAllSymbolUsesTest, StringAttrInModuleBody) {
 
 TEST_F(ReplaceAllSymbolUsesTest, OperationInFuncOp) {
   // Symbol as `Operation *`, rename within function.
-  testReplaceAllSymbolUses([&](const auto &symbolTable, auto module, auto fooOp,
+  testReplaceAllSymbolUses([&](auto symbolTable, auto module, auto fooOp,
                                auto barOp) -> LogicalResult {
     return symbolTable.replaceAllSymbolUses(
         barOp, StringAttr::get(context.get(), "baz"), fooOp);
@@ -124,46 +125,12 @@ TEST_F(ReplaceAllSymbolUsesTest, OperationInFuncOp) {
 
 TEST_F(ReplaceAllSymbolUsesTest, StringAttrInFuncOp) {
   // Symbol as `StringAttr`, rename within function.
-  testReplaceAllSymbolUses([&](const auto &symbolTable, auto module, auto fooOp,
+  testReplaceAllSymbolUses([&](auto symbolTable, auto module, auto fooOp,
                                auto barOp) -> LogicalResult {
     return symbolTable.replaceAllSymbolUses(
         StringAttr::get(context.get(), "bar"),
         StringAttr::get(context.get(), "baz"), fooOp);
   });
-}
-
-TEST(SymbolOpInterface, Visibility) {
-  DialectRegistry registry;
-  ::test::registerTestDialect(registry);
-  MLIRContext context(registry);
-
-  constexpr static StringLiteral kInput = R"MLIR(
-    "test.overridden_symbol_visibility"() {sym_name = "symbol_name"} : () -> ()
-  )MLIR";
-  OwningOpRef<ModuleOp> module = parseSourceString<ModuleOp>(kInput, &context);
-  auto symOp = cast<SymbolOpInterface>(module->getBody()->front());
-
-  ASSERT_TRUE(symOp.isPrivate());
-  ASSERT_FALSE(symOp.isPublic());
-  ASSERT_FALSE(symOp.isNested());
-  ASSERT_TRUE(symOp.canDiscardOnUseEmpty());
-
-  std::string diagStr;
-  context.getDiagEngine().registerHandler(
-      [&](Diagnostic &diag) { diagStr += diag.str(); });
-
-  std::string expectedDiag;
-  symOp.setPublic();
-  expectedDiag += "'test.overridden_symbol_visibility' op cannot change "
-                  "visibility of symbol to public";
-  symOp.setNested();
-  expectedDiag += "'test.overridden_symbol_visibility' op cannot change "
-                  "visibility of symbol to nested";
-  symOp.setPrivate();
-  expectedDiag += "'test.overridden_symbol_visibility' op cannot change "
-                  "visibility of symbol to private";
-
-  ASSERT_EQ(diagStr, expectedDiag);
 }
 
 } // namespace

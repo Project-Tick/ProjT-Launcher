@@ -107,8 +107,10 @@ public:
 
 namespace {
 
-class SIModeRegister {
+class SIModeRegister : public MachineFunctionPass {
 public:
+  static char ID;
+
   std::vector<std::unique_ptr<BlockData>> BlockInfo;
   std::queue<MachineBasicBlock *> Phase2List;
 
@@ -123,7 +125,15 @@ public:
 
   bool Changed = false;
 
-  bool run(MachineFunction &MF);
+public:
+  SIModeRegister() : MachineFunctionPass(ID) {}
+
+  bool runOnMachineFunction(MachineFunction &MF) override;
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.setPreservesCFG();
+    MachineFunctionPass::getAnalysisUsage(AU);
+  }
 
   void processBlockPhase1(MachineBasicBlock &MBB, const SIInstrInfo *TII);
 
@@ -136,32 +146,16 @@ public:
   void insertSetreg(MachineBasicBlock &MBB, MachineInstr *I,
                     const SIInstrInfo *TII, Status InstrMode);
 };
-
-class SIModeRegisterLegacy : public MachineFunctionPass {
-public:
-  static char ID;
-
-  SIModeRegisterLegacy() : MachineFunctionPass(ID) {}
-
-  bool runOnMachineFunction(MachineFunction &MF) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.setPreservesCFG();
-    MachineFunctionPass::getAnalysisUsage(AU);
-  }
-};
 } // End anonymous namespace.
 
-INITIALIZE_PASS(SIModeRegisterLegacy, DEBUG_TYPE,
+INITIALIZE_PASS(SIModeRegister, DEBUG_TYPE,
                 "Insert required mode register values", false, false)
 
-char SIModeRegisterLegacy::ID = 0;
+char SIModeRegister::ID = 0;
 
-char &llvm::SIModeRegisterID = SIModeRegisterLegacy::ID;
+char &llvm::SIModeRegisterID = SIModeRegister::ID;
 
-FunctionPass *llvm::createSIModeRegisterPass() {
-  return new SIModeRegisterLegacy();
-}
+FunctionPass *llvm::createSIModeRegisterPass() { return new SIModeRegister(); }
 
 // Determine the Mode register setting required for this instruction.
 // Instructions which don't use the Mode register return a null Status.
@@ -172,8 +166,6 @@ Status SIModeRegister::getInstructionMode(MachineInstr &MI,
   unsigned Opcode = MI.getOpcode();
   if (TII->usesFPDPRounding(MI) ||
       Opcode == AMDGPU::FPTRUNC_ROUND_F16_F32_PSEUDO ||
-      Opcode == AMDGPU::FPTRUNC_ROUND_F16_F32_PSEUDO_fake16_e32 ||
-      Opcode == AMDGPU::FPTRUNC_ROUND_F16_F32_PSEUDO_t16_e64 ||
       Opcode == AMDGPU::FPTRUNC_ROUND_F32_F64_PSEUDO) {
     switch (Opcode) {
     case AMDGPU::V_INTERP_P1LL_F16:
@@ -185,19 +177,19 @@ Status SIModeRegister::getInstructionMode(MachineInstr &MI,
     case AMDGPU::FPTRUNC_ROUND_F16_F32_PSEUDO: {
       unsigned Mode = MI.getOperand(2).getImm();
       MI.removeOperand(2);
-      MI.setDesc(TII->get(AMDGPU::V_CVT_F16_F32_e32));
-      return Status(FP_ROUND_MODE_DP(3), FP_ROUND_MODE_DP(Mode));
-    }
-    case AMDGPU::FPTRUNC_ROUND_F16_F32_PSEUDO_fake16_e32: {
-      unsigned Mode = MI.getOperand(2).getImm();
-      MI.removeOperand(2);
-      MI.setDesc(TII->get(AMDGPU::V_CVT_F16_F32_fake16_e32));
-      return Status(FP_ROUND_MODE_DP(3), FP_ROUND_MODE_DP(Mode));
-    }
-    case AMDGPU::FPTRUNC_ROUND_F16_F32_PSEUDO_t16_e64: {
-      unsigned Mode = MI.getOperand(6).getImm();
-      MI.removeOperand(6);
-      MI.setDesc(TII->get(AMDGPU::V_CVT_F16_F32_t16_e64));
+      // Replacing the pseudo by a real instruction in place
+      if (TII->getSubtarget().hasTrue16BitInsts()) {
+        MachineBasicBlock &MBB = *MI.getParent();
+        MachineInstrBuilder B(*MBB.getParent(), MI);
+        MI.setDesc(TII->get(AMDGPU::V_CVT_F16_F32_fake16_e64));
+        MachineOperand Src0 = MI.getOperand(1);
+        MI.removeOperand(1);
+        B.addImm(0); // src0_modifiers
+        B.add(Src0); // re-add src0 operand
+        B.addImm(0); // clamp
+        B.addImm(0); // omod
+      } else
+        MI.setDesc(TII->get(AMDGPU::V_CVT_F16_F32_e32));
       return Status(FP_ROUND_MODE_DP(3), FP_ROUND_MODE_DP(Mode));
     }
     case AMDGPU::FPTRUNC_ROUND_F32_F64_PSEUDO: {
@@ -428,20 +420,7 @@ void SIModeRegister::processBlockPhase3(MachineBasicBlock &MBB,
   }
 }
 
-bool SIModeRegisterLegacy::runOnMachineFunction(MachineFunction &MF) {
-  return SIModeRegister().run(MF);
-}
-
-PreservedAnalyses SIModeRegisterPass::run(MachineFunction &MF,
-                                          MachineFunctionAnalysisManager &AM) {
-  if (!SIModeRegister().run(MF))
-    return PreservedAnalyses::all();
-  auto PA = getMachineFunctionPassPreservedAnalyses();
-  PA.preserveSet<CFGAnalyses>();
-  return PA;
-}
-
-bool SIModeRegister::run(MachineFunction &MF) {
+bool SIModeRegister::runOnMachineFunction(MachineFunction &MF) {
   // Constrained FP intrinsics are used to support non-default rounding modes.
   // strictfp attribute is required to mark functions with strict FP semantics
   // having constrained FP intrinsics. This pass fixes up operations that uses

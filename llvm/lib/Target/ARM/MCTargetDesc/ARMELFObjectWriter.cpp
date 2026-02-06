@@ -7,14 +7,13 @@
 //===----------------------------------------------------------------------===//
 
 #include "MCTargetDesc/ARMFixupKinds.h"
-#include "MCTargetDesc/ARMMCAsmInfo.h"
 #include "MCTargetDesc/ARMMCTargetDesc.h"
 #include "llvm/BinaryFormat/ELF.h"
-#include "llvm/MC/MCAssembler.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCELFObjectWriter.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCFixup.h"
+#include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCObjectWriter.h"
 #include "llvm/MC/MCValue.h"
 #include "llvm/Object/ELF.h"
@@ -25,20 +24,23 @@ using namespace llvm;
 
 namespace {
 
-class ARMELFObjectWriter : public MCELFObjectTargetWriter {
-  enum { DefaultEABIVersion = 0x05000000U };
+  class ARMELFObjectWriter : public MCELFObjectTargetWriter {
+    enum { DefaultEABIVersion = 0x05000000U };
 
-public:
-  ARMELFObjectWriter(uint8_t OSABI);
+    unsigned GetRelocTypeInner(const MCValue &Target, const MCFixup &Fixup,
+                               bool IsPCRel, MCContext &Ctx) const;
 
-  ~ARMELFObjectWriter() override = default;
+  public:
+    ARMELFObjectWriter(uint8_t OSABI);
 
-  unsigned getRelocType(const MCFixup &, const MCValue &,
-                        bool IsPCRel) const override;
+    ~ARMELFObjectWriter() override = default;
 
-  bool needsRelocateWithSymbol(const MCValue &Val,
-                               unsigned Type) const override;
-};
+    unsigned getRelocType(MCContext &Ctx, const MCValue &Target,
+                          const MCFixup &Fixup, bool IsPCRel) const override;
+
+    bool needsRelocateWithSymbol(const MCValue &Val, const MCSymbol &Sym,
+                                 unsigned Type) const override;
+  };
 
 } // end anonymous namespace
 
@@ -47,15 +49,9 @@ ARMELFObjectWriter::ARMELFObjectWriter(uint8_t OSABI)
                             ELF::EM_ARM,
                             /*HasRelocationAddend*/ false) {}
 
-bool ARMELFObjectWriter::needsRelocateWithSymbol(const MCValue &V,
+bool ARMELFObjectWriter::needsRelocateWithSymbol(const MCValue &,
+                                                 const MCSymbol &,
                                                  unsigned Type) const {
-  // If the symbol is a thumb function the final relocation must set the lowest
-  // bit. With a symbol that is done by just having the symbol have that bit
-  // set, so we would lose the bit if we relocated with the section.
-  // We could use the section but add the bit to the relocation value.
-  if (Asm->isThumbFunc(V.getAddSym()))
-    return true;
-
   // FIXME: This is extremely conservative. This really needs to use an
   // explicit list with a clear explanation for why each realocation needs to
   // point to the symbol, not to the section.
@@ -72,71 +68,62 @@ bool ARMELFObjectWriter::needsRelocateWithSymbol(const MCValue &V,
 // Need to examine the Fixup when determining whether to
 // emit the relocation as an explicit symbol or as a section relative
 // offset
-unsigned ARMELFObjectWriter::getRelocType(const MCFixup &Fixup,
-                                          const MCValue &Target,
+unsigned ARMELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target,
+                                          const MCFixup &Fixup,
                                           bool IsPCRel) const {
-  auto Kind = Fixup.getKind();
-  uint8_t Specifier = Target.getSpecifier();
+  return GetRelocTypeInner(Target, Fixup, IsPCRel, Ctx);
+}
+
+unsigned ARMELFObjectWriter::GetRelocTypeInner(const MCValue &Target,
+                                               const MCFixup &Fixup,
+                                               bool IsPCRel,
+                                               MCContext &Ctx) const {
+  unsigned Kind = Fixup.getTargetKind();
+  if (Kind >= FirstLiteralRelocationKind)
+    return Kind - FirstLiteralRelocationKind;
+  MCSymbolRefExpr::VariantKind Modifier = Target.getAccessVariant();
   auto CheckFDPIC = [&](uint32_t Type) {
     if (getOSABI() != ELF::ELFOSABI_ARM_FDPIC)
-      reportError(Fixup.getLoc(),
-                  "relocation " +
-                      object::getELFRelocationTypeName(ELF::EM_ARM, Type) +
-                      " only supported in FDPIC mode");
+      Ctx.reportError(Fixup.getLoc(),
+                      "relocation " +
+                          object::getELFRelocationTypeName(ELF::EM_ARM, Type) +
+                          " only supported in FDPIC mode");
     return Type;
   };
 
-  switch (Specifier) {
-  case ARM::S_GOTTPOFF:
-  case ARM::S_GOTTPOFF_FDPIC:
-  case ARM::S_TLSCALL:
-  case ARM::S_TLSDESC:
-  case ARM::S_TLSGD:
-  case ARM::S_TLSGD_FDPIC:
-  case ARM::S_TLSLDM:
-  case ARM::S_TLSLDM_FDPIC:
-  case ARM::S_TLSLDO:
-  case ARM::S_TPOFF:
-    if (auto *SA = const_cast<MCSymbol *>(Target.getAddSym()))
-      static_cast<MCSymbolELF *>(SA)->setType(ELF::STT_TLS);
-    break;
-  default:
-    break;
-  }
-
   if (IsPCRel) {
-    switch (Fixup.getKind()) {
+    switch (Fixup.getTargetKind()) {
     default:
-      reportError(Fixup.getLoc(), "unsupported relocation type");
+      Ctx.reportError(Fixup.getLoc(), "unsupported relocation type");
       return ELF::R_ARM_NONE;
     case FK_Data_4:
-      switch (Specifier) {
+      switch (Modifier) {
       default:
-        reportError(Fixup.getLoc(),
-                    "invalid fixup for 4-byte pc-relative data relocation");
+        Ctx.reportError(Fixup.getLoc(),
+                        "invalid fixup for 4-byte pc-relative data relocation");
         return ELF::R_ARM_NONE;
-      case ARM::S_None: {
-        if (const auto *SA = Target.getAddSym()) {
+      case MCSymbolRefExpr::VK_None: {
+        if (const MCSymbolRefExpr *SymRef = Target.getSymA()) {
           // For GNU AS compatibility expressions such as
           // _GLOBAL_OFFSET_TABLE_ - label emit a R_ARM_BASE_PREL relocation.
-          if (SA->getName() == "_GLOBAL_OFFSET_TABLE_")
+          if (SymRef->getSymbol().getName() == "_GLOBAL_OFFSET_TABLE_")
             return ELF::R_ARM_BASE_PREL;
         }
         return ELF::R_ARM_REL32;
       }
-      case ARM::S_GOTTPOFF:
+      case MCSymbolRefExpr::VK_GOTTPOFF:
         return ELF::R_ARM_TLS_IE32;
-      case ARM::S_GOT_PREL:
+      case MCSymbolRefExpr::VK_ARM_GOT_PREL:
         return ELF::R_ARM_GOT_PREL;
-      case ARM::S_PREL31:
+      case MCSymbolRefExpr::VK_ARM_PREL31:
         return ELF::R_ARM_PREL31;
       }
     case ARM::fixup_arm_blx:
     case ARM::fixup_arm_uncondbl:
-      switch (Specifier) {
-      case ARM::S_PLT:
+      switch (Modifier) {
+      case MCSymbolRefExpr::VK_PLT:
         return ELF::R_ARM_CALL;
-      case ARM::S_TLSCALL:
+      case MCSymbolRefExpr::VK_TLSCALL:
         return ELF::R_ARM_TLS_CALL;
       default:
         return ELF::R_ARM_CALL;
@@ -171,8 +158,8 @@ unsigned ARMELFObjectWriter::getRelocType(const MCFixup &Fixup,
       return ELF::R_ARM_THM_JUMP8;
     case ARM::fixup_arm_thumb_bl:
     case ARM::fixup_arm_thumb_blx:
-      switch (Specifier) {
-      case ARM::S_TLSCALL:
+      switch (Modifier) {
+      case MCSymbolRefExpr::VK_TLSCALL:
         return ELF::R_ARM_THM_TLS_CALL;
       default:
         return ELF::R_ARM_THM_CALL;
@@ -199,117 +186,122 @@ unsigned ARMELFObjectWriter::getRelocType(const MCFixup &Fixup,
   }
   switch (Kind) {
   default:
-    reportError(Fixup.getLoc(), "unsupported relocation type");
+    Ctx.reportError(Fixup.getLoc(), "unsupported relocation type");
     return ELF::R_ARM_NONE;
   case FK_Data_1:
-    switch (Specifier) {
+    switch (Modifier) {
     default:
-      reportError(Fixup.getLoc(), "invalid fixup for 1-byte data relocation");
+      Ctx.reportError(Fixup.getLoc(),
+                      "invalid fixup for 1-byte data relocation");
       return ELF::R_ARM_NONE;
-    case ARM::S_None:
+    case MCSymbolRefExpr::VK_None:
       return ELF::R_ARM_ABS8;
     }
   case FK_Data_2:
-    switch (Specifier) {
+    switch (Modifier) {
     default:
-      reportError(Fixup.getLoc(), "invalid fixup for 2-byte data relocation");
+      Ctx.reportError(Fixup.getLoc(),
+                      "invalid fixup for 2-byte data relocation");
       return ELF::R_ARM_NONE;
-    case ARM::S_None:
+    case MCSymbolRefExpr::VK_None:
       return ELF::R_ARM_ABS16;
     }
   case FK_Data_4:
-    switch (Specifier) {
+    switch (Modifier) {
     default:
-      reportError(Fixup.getLoc(), "invalid fixup for 4-byte data relocation");
+      Ctx.reportError(Fixup.getLoc(),
+                      "invalid fixup for 4-byte data relocation");
       return ELF::R_ARM_NONE;
-    case ARM::S_ARM_NONE:
+    case MCSymbolRefExpr::VK_ARM_NONE:
       return ELF::R_ARM_NONE;
-    case ARM::S_GOT:
+    case MCSymbolRefExpr::VK_GOT:
       return ELF::R_ARM_GOT_BREL;
-    case ARM::S_TLSGD:
+    case MCSymbolRefExpr::VK_TLSGD:
       return ELF::R_ARM_TLS_GD32;
-    case ARM::S_TPOFF:
+    case MCSymbolRefExpr::VK_TPOFF:
       return ELF::R_ARM_TLS_LE32;
-    case ARM::S_GOTTPOFF:
+    case MCSymbolRefExpr::VK_GOTTPOFF:
       return ELF::R_ARM_TLS_IE32;
-    case ARM::S_None:
+    case MCSymbolRefExpr::VK_None:
       return ELF::R_ARM_ABS32;
-    case ARM::S_GOTOFF:
+    case MCSymbolRefExpr::VK_GOTOFF:
       return ELF::R_ARM_GOTOFF32;
-    case ARM::S_GOT_PREL:
+    case MCSymbolRefExpr::VK_ARM_GOT_PREL:
       return ELF::R_ARM_GOT_PREL;
-    case ARM::S_TARGET1:
+    case MCSymbolRefExpr::VK_ARM_TARGET1:
       return ELF::R_ARM_TARGET1;
-    case ARM::S_TARGET2:
+    case MCSymbolRefExpr::VK_ARM_TARGET2:
       return ELF::R_ARM_TARGET2;
-    case ARM::S_PREL31:
+    case MCSymbolRefExpr::VK_ARM_PREL31:
       return ELF::R_ARM_PREL31;
-    case ARM::S_SBREL:
+    case MCSymbolRefExpr::VK_ARM_SBREL:
       return ELF::R_ARM_SBREL32;
-    case ARM::S_TLSLDO:
+    case MCSymbolRefExpr::VK_ARM_TLSLDO:
       return ELF::R_ARM_TLS_LDO32;
-    case ARM::S_TLSCALL:
+    case MCSymbolRefExpr::VK_TLSCALL:
       return ELF::R_ARM_TLS_CALL;
-    case ARM::S_TLSDESC:
+    case MCSymbolRefExpr::VK_TLSDESC:
       return ELF::R_ARM_TLS_GOTDESC;
-    case ARM::S_TLSLDM:
+    case MCSymbolRefExpr::VK_TLSLDM:
       return ELF::R_ARM_TLS_LDM32;
-    case ARM::S_TLSDESCSEQ:
+    case MCSymbolRefExpr::VK_ARM_TLSDESCSEQ:
       return ELF::R_ARM_TLS_DESCSEQ;
-    case ARM::S_FUNCDESC:
+    case MCSymbolRefExpr::VK_FUNCDESC:
       return CheckFDPIC(ELF::R_ARM_FUNCDESC);
-    case ARM::S_GOTFUNCDESC:
+    case MCSymbolRefExpr::VK_GOTFUNCDESC:
       return CheckFDPIC(ELF::R_ARM_GOTFUNCDESC);
-    case ARM::S_GOTOFFFUNCDESC:
+    case MCSymbolRefExpr::VK_GOTOFFFUNCDESC:
       return CheckFDPIC(ELF::R_ARM_GOTOFFFUNCDESC);
-    case ARM::S_TLSGD_FDPIC:
+    case MCSymbolRefExpr::VK_TLSGD_FDPIC:
       return CheckFDPIC(ELF::R_ARM_TLS_GD32_FDPIC);
-    case ARM::S_TLSLDM_FDPIC:
+    case MCSymbolRefExpr::VK_TLSLDM_FDPIC:
       return CheckFDPIC(ELF::R_ARM_TLS_LDM32_FDPIC);
-    case ARM::S_GOTTPOFF_FDPIC:
+    case MCSymbolRefExpr::VK_GOTTPOFF_FDPIC:
       return CheckFDPIC(ELF::R_ARM_TLS_IE32_FDPIC);
     }
   case ARM::fixup_arm_condbranch:
   case ARM::fixup_arm_uncondbranch:
     return ELF::R_ARM_JUMP24;
   case ARM::fixup_arm_movt_hi16:
-    switch (Specifier) {
+    switch (Modifier) {
     default:
-      reportError(Fixup.getLoc(), "invalid fixup for ARM MOVT instruction");
+      Ctx.reportError(Fixup.getLoc(), "invalid fixup for ARM MOVT instruction");
       return ELF::R_ARM_NONE;
-    case ARM::S_None:
+    case MCSymbolRefExpr::VK_None:
       return ELF::R_ARM_MOVT_ABS;
-    case ARM::S_SBREL:
+    case MCSymbolRefExpr::VK_ARM_SBREL:
       return ELF::R_ARM_MOVT_BREL;
     }
   case ARM::fixup_arm_movw_lo16:
-    switch (Specifier) {
+    switch (Modifier) {
     default:
-      reportError(Fixup.getLoc(), "invalid fixup for ARM MOVW instruction");
+      Ctx.reportError(Fixup.getLoc(), "invalid fixup for ARM MOVW instruction");
       return ELF::R_ARM_NONE;
-    case ARM::S_None:
+    case MCSymbolRefExpr::VK_None:
       return ELF::R_ARM_MOVW_ABS_NC;
-    case ARM::S_SBREL:
+    case MCSymbolRefExpr::VK_ARM_SBREL:
       return ELF::R_ARM_MOVW_BREL_NC;
     }
   case ARM::fixup_t2_movt_hi16:
-    switch (Specifier) {
+    switch (Modifier) {
     default:
-      reportError(Fixup.getLoc(), "invalid fixup for Thumb MOVT instruction");
+      Ctx.reportError(Fixup.getLoc(),
+                      "invalid fixup for Thumb MOVT instruction");
       return ELF::R_ARM_NONE;
-    case ARM::S_None:
+    case MCSymbolRefExpr::VK_None:
       return ELF::R_ARM_THM_MOVT_ABS;
-    case ARM::S_SBREL:
+    case MCSymbolRefExpr::VK_ARM_SBREL:
       return ELF::R_ARM_THM_MOVT_BREL;
     }
   case ARM::fixup_t2_movw_lo16:
-    switch (Specifier) {
+    switch (Modifier) {
     default:
-      reportError(Fixup.getLoc(), "invalid fixup for Thumb MOVW instruction");
+      Ctx.reportError(Fixup.getLoc(),
+                      "invalid fixup for Thumb MOVW instruction");
       return ELF::R_ARM_NONE;
-    case ARM::S_None:
+    case MCSymbolRefExpr::VK_None:
       return ELF::R_ARM_THM_MOVW_ABS_NC;
-    case ARM::S_SBREL:
+    case MCSymbolRefExpr::VK_ARM_SBREL:
       return ELF::R_ARM_THM_MOVW_BREL_NC;
     }
 

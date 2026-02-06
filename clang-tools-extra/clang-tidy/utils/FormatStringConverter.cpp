@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- FormatStringConverter.cpp - clang-tidy----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -14,7 +14,6 @@
 
 #include "FormatStringConverter.h"
 #include "../utils/FixItHintUtils.h"
-#include "../utils/LexerUtils.h"
 #include "clang/AST/Expr.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Basic/LangOptions.h"
@@ -208,9 +207,13 @@ FormatStringConverter::FormatStringConverter(
       ArgsOffset(FormatArgOffset + 1), LangOpts(LO) {
   assert(ArgsOffset <= NumArgs);
   FormatExpr = llvm::dyn_cast<StringLiteral>(
-      Args[FormatArgOffset]->IgnoreUnlessSpelledInSource());
+      Args[FormatArgOffset]->IgnoreImplicitAsWritten());
 
-  assert(FormatExpr && FormatExpr->isOrdinary());
+  if (!FormatExpr || !FormatExpr->isOrdinary()) {
+    // Function must have a narrow string literal as its first argument.
+    conversionNotPossible("first argument is not a narrow string literal");
+    return;
+  }
 
   if (const std::optional<StringRef> MaybeMacroName =
           formatStringContainsUnreplaceableMacro(Call, FormatExpr, SM, PP);
@@ -246,7 +249,7 @@ FormatStringConverter::formatStringContainsUnreplaceableMacro(
   // inhibit conversion. The whole format string will appear to come from that
   // macro, as will the function call.
   std::optional<StringRef> MaybeSurroundingMacroName;
-  if (const SourceLocation BeginCallLoc = Call->getBeginLoc();
+  if (SourceLocation BeginCallLoc = Call->getBeginLoc();
       BeginCallLoc.isMacroID())
     MaybeSurroundingMacroName =
         Lexer::getImmediateMacroName(BeginCallLoc, SM, PP.getLangOpts());
@@ -284,8 +287,7 @@ FormatStringConverter::formatStringContainsUnreplaceableMacro(
 
 void FormatStringConverter::emitAlignment(const PrintfSpecifier &FS,
                                           std::string &FormatSpec) {
-  const ConversionSpecifier::Kind ArgKind =
-      FS.getConversionSpecifier().getKind();
+  ConversionSpecifier::Kind ArgKind = FS.getConversionSpecifier().getKind();
 
   // We only care about alignment if a field width is specified
   if (FS.getFieldWidth().getHowSpecified() != OptionalAmount::NotSpecified) {
@@ -462,9 +464,9 @@ bool FormatStringConverter::emitIntegerArgument(
     // be passed as its underlying type. However, printf will have forced
     // the signedness based on the format string, so we need to do the
     // same.
-    if (const auto *ED = ArgType->getAsEnumDecl()) {
+    if (const auto *ET = ArgType->getAs<EnumType>()) {
       if (const std::optional<std::string> MaybeCastType =
-              castTypeForArgument(ArgKind, ED->getIntegerType()))
+              castTypeForArgument(ArgKind, ET->getDecl()->getIntegerType()))
         ArgFixes.emplace_back(
             ArgIndex, (Twine("static_cast<") + *MaybeCastType + ">(").str());
       else
@@ -501,8 +503,7 @@ bool FormatStringConverter::emitIntegerArgument(
 /// @returns true on success, false on failure
 bool FormatStringConverter::emitType(const PrintfSpecifier &FS, const Expr *Arg,
                                      std::string &FormatSpec) {
-  const ConversionSpecifier::Kind ArgKind =
-      FS.getConversionSpecifier().getKind();
+  ConversionSpecifier::Kind ArgKind = FS.getConversionSpecifier().getKind();
   switch (ArgKind) {
   case ConversionSpecifier::Kind::sArg:
     emitStringArgument(FS.getArgIndex() + ArgsOffset, Arg);
@@ -625,6 +626,7 @@ bool FormatStringConverter::HandlePrintfSpecifier(const PrintfSpecifier &FS,
                                                   const char *StartSpecifier,
                                                   unsigned SpecifierLen,
                                                   const TargetInfo &Target) {
+
   const size_t StartSpecifierPos = StartSpecifier - PrintfFormatString.data();
   assert(StartSpecifierPos + SpecifierLen <= PrintfFormatString.size());
 
@@ -701,7 +703,6 @@ void FormatStringConverter::finalizeFormatText() {
 /// Append literal parts of the format text, reinstating escapes as required.
 void FormatStringConverter::appendFormatText(const StringRef Text) {
   for (const char Ch : Text) {
-    const auto UCh = static_cast<unsigned char>(Ch);
     if (Ch == '\a')
       StandardFormatString += "\\a";
     else if (Ch == '\b')
@@ -726,10 +727,10 @@ void FormatStringConverter::appendFormatText(const StringRef Text) {
     } else if (Ch == '}') {
       StandardFormatString += "}}";
       FormatStringNeededRewriting = true;
-    } else if (UCh < 32) {
+    } else if (Ch < 32) {
       StandardFormatString += "\\x";
-      StandardFormatString += llvm::hexdigit(UCh >> 4, true);
-      StandardFormatString += llvm::hexdigit(UCh & 0xf, true);
+      StandardFormatString += llvm::hexdigit(Ch >> 4, true);
+      StandardFormatString += llvm::hexdigit(Ch & 0xf, true);
     } else
       StandardFormatString += Ch;
   }
@@ -794,15 +795,15 @@ void FormatStringConverter::applyFixes(DiagnosticBuilder &Diag,
     // Now we need to modify the ArgFix index too so that we fix the right
     // argument. We don't need to care about the width and precision indices
     // since they never need fixing.
-    for (auto &ArgFix : ArgFixes)
+    for (auto &ArgFix : ArgFixes) {
       if (ArgFix.ArgIndex == ValueArgIndex)
         ArgFix.ArgIndex = ValueArgIndex - ArgCount;
+    }
   }
 
   for (const auto &[ArgIndex, Replacement] : ArgFixes) {
-    const SourceLocation AfterOtherSide =
-        utils::lexer::findNextTokenSkippingComments(Args[ArgIndex]->getEndLoc(),
-                                                    SM, LangOpts)
+    SourceLocation AfterOtherSide =
+        Lexer::findNextToken(Args[ArgIndex]->getEndLoc(), SM, LangOpts)
             ->getLocation();
 
     Diag << FixItHint::CreateInsertion(Args[ArgIndex]->getBeginLoc(),

@@ -40,45 +40,64 @@ Properties::~Properties() = default;
 lldb::OptionValueSP
 Properties::GetPropertyValue(const ExecutionContext *exe_ctx,
                              llvm::StringRef path, Status &error) const {
-  return m_collection_sp->GetSubValue(exe_ctx, path, error);
+  OptionValuePropertiesSP properties_sp(GetValueProperties());
+  if (properties_sp)
+    return properties_sp->GetSubValue(exe_ctx, path, error);
+  return lldb::OptionValueSP();
 }
 
 Status Properties::SetPropertyValue(const ExecutionContext *exe_ctx,
                                     VarSetOperationType op,
                                     llvm::StringRef path,
                                     llvm::StringRef value) {
-  return m_collection_sp->SetSubValue(exe_ctx, op, path, value);
+  OptionValuePropertiesSP properties_sp(GetValueProperties());
+  if (properties_sp)
+    return properties_sp->SetSubValue(exe_ctx, op, path, value);
+  return Status::FromErrorString("no properties");
 }
 
 void Properties::DumpAllPropertyValues(const ExecutionContext *exe_ctx,
                                        Stream &strm, uint32_t dump_mask,
                                        bool is_json) {
+  OptionValuePropertiesSP properties_sp(GetValueProperties());
+  if (!properties_sp)
+    return;
+
   if (is_json) {
-    llvm::json::Value json = m_collection_sp->ToJSON(exe_ctx);
+    llvm::json::Value json = properties_sp->ToJSON(exe_ctx);
     strm.Printf("%s", llvm::formatv("{0:2}", json).str().c_str());
   } else
-    m_collection_sp->DumpValue(exe_ctx, strm, dump_mask);
+    properties_sp->DumpValue(exe_ctx, strm, dump_mask);
 }
 
 void Properties::DumpAllDescriptions(CommandInterpreter &interpreter,
                                      Stream &strm) const {
   strm.PutCString("Top level variables:\n\n");
 
-  return m_collection_sp->DumpAllDescriptions(interpreter, strm);
+  OptionValuePropertiesSP properties_sp(GetValueProperties());
+  if (properties_sp)
+    return properties_sp->DumpAllDescriptions(interpreter, strm);
 }
 
 Status Properties::DumpPropertyValue(const ExecutionContext *exe_ctx,
                                      Stream &strm,
                                      llvm::StringRef property_path,
                                      uint32_t dump_mask, bool is_json) {
-  return m_collection_sp->DumpPropertyValue(exe_ctx, strm, property_path,
+  OptionValuePropertiesSP properties_sp(GetValueProperties());
+  if (properties_sp) {
+    return properties_sp->DumpPropertyValue(exe_ctx, strm, property_path,
                                             dump_mask, is_json);
+  }
+  return Status::FromErrorString("empty property list");
 }
 
 size_t
 Properties::Apropos(llvm::StringRef keyword,
                     std::vector<const Property *> &matching_properties) const {
-  m_collection_sp->Apropos(keyword, matching_properties);
+  OptionValuePropertiesSP properties_sp(GetValueProperties());
+  if (properties_sp) {
+    properties_sp->Apropos(keyword, matching_properties);
+  }
   return matching_properties.size();
 }
 

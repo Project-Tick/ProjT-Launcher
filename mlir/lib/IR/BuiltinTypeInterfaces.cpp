@@ -7,7 +7,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/Diagnostics.h"
 #include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/Sequence.h"
 
 using namespace mlir;
 using namespace mlir::detail;
@@ -33,6 +35,8 @@ unsigned FloatType::getFPMantissaWidth() {
 //===----------------------------------------------------------------------===//
 // ShapedType
 //===----------------------------------------------------------------------===//
+
+constexpr int64_t ShapedType::kDynamic;
 
 int64_t ShapedType::getNumElements(ArrayRef<int64_t> shape) {
   int64_t num = 1;

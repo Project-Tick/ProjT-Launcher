@@ -15,7 +15,6 @@
 #ifndef LLVM_SUPPORT_SHA1_H
 #define LLVM_SUPPORT_SHA1_H
 
-#include "llvm/Support/Compiler.h"
 #include <array>
 #include <cstdint>
 
@@ -29,28 +28,28 @@ public:
   SHA1() { init(); }
 
   /// Reinitialize the internal state
-  LLVM_ABI void init();
+  void init();
 
   /// Digest more data.
-  LLVM_ABI void update(ArrayRef<uint8_t> Data);
+  void update(ArrayRef<uint8_t> Data);
 
   /// Digest more data.
-  LLVM_ABI void update(StringRef Str);
+  void update(StringRef Str);
 
   /// Return the current raw 160-bits SHA1 for the digested data
   /// since the last call to init(). This call will add data to the internal
   /// state and as such is not suited for getting an intermediate result
   /// (see result()).
-  LLVM_ABI std::array<uint8_t, 20> final();
+  std::array<uint8_t, 20> final();
 
   /// Return the current raw 160-bits SHA1 for the digested data
   /// since the last call to init(). This is suitable for getting the SHA1 at
   /// any time without invalidating the internal state so that more calls can be
   /// made into update.
-  LLVM_ABI std::array<uint8_t, 20> result();
+  std::array<uint8_t, 20> result();
 
   /// Returns a raw 160-bit SHA1 hash for the given data.
-  LLVM_ABI static std::array<uint8_t, 20> hash(ArrayRef<uint8_t> Data);
+  static std::array<uint8_t, 20> hash(ArrayRef<uint8_t> Data);
 
 private:
   /// Define some constants.

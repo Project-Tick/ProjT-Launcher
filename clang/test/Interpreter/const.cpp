@@ -1,3 +1,4 @@
+// UNSUPPORTED: system-aix, system-zos
 // see https://github.com/llvm/llvm-project/issues/68092
 // XFAIL: host={{.*}}-windows-msvc
 

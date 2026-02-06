@@ -15,12 +15,11 @@
 #ifndef LLVM_LIBC_SRC___SUPPORT_HIGH_PRECISION_DECIMAL_H
 #define LLVM_LIBC_SRC___SUPPORT_HIGH_PRECISION_DECIMAL_H
 
-#include "hdr/stdint_proxy.h"
 #include "src/__support/CPP/limits.h"
 #include "src/__support/ctype_utils.h"
 #include "src/__support/macros/config.h"
 #include "src/__support/str_to_integer.h"
-#include "src/__support/wctype_utils.h"
+#include <stdint.h>
 
 namespace LIBC_NAMESPACE_DECL {
 namespace internal {
@@ -38,24 +37,6 @@ struct LShiftTableEntry {
 // This is used in both this file and in the main str_to_float.h.
 // TODO: Figure out where to put this.
 enum class RoundDirection { Up, Down, Nearest };
-
-// These constants are used in both this file and in the main str_to_float.h.
-// TODO: Figure out where to put this.
-template <typename CharType> struct constants;
-template <> struct constants<char> {
-  static constexpr char DECIMAL_POINT = '.';
-  static constexpr char DECIMAL_EXPONENT_MARKER = 'e';
-  static constexpr char HEX_EXPONENT_MARKER = 'p';
-  static constexpr char INF_STRING[] = "infinity";
-  static constexpr char NAN_STRING[] = "nan";
-};
-template <> struct constants<wchar_t> {
-  static constexpr wchar_t DECIMAL_POINT = L'.';
-  static constexpr wchar_t DECIMAL_EXPONENT_MARKER = L'e';
-  static constexpr wchar_t HEX_EXPONENT_MARKER = L'p';
-  static constexpr wchar_t INF_STRING[] = L"infinity";
-  static constexpr wchar_t NAN_STRING[] = L"nan";
-};
 
 // This is based on the HPD data structure described as part of the Simple
 // Decimal Conversion algorithm by Nigel Tao, described at this link:
@@ -283,7 +264,7 @@ private:
   LIBC_INLINE void left_shift(uint32_t shift_amount) {
     uint32_t new_digits = this->get_num_new_digits(shift_amount);
 
-    int32_t read_index = static_cast<int32_t>(this->num_digits - 1);
+    int32_t read_index = this->num_digits - 1;
     uint32_t write_index = this->num_digits + new_digits;
 
     uint64_t accumulator = 0;
@@ -333,9 +314,9 @@ private:
 public:
   // num_string is assumed to be a string of numeric characters. It doesn't
   // handle leading spaces.
-  template <typename CharType>
-  LIBC_INLINE HighPrecisionDecimal(
-      const CharType *__restrict num_string,
+  LIBC_INLINE
+  HighPrecisionDecimal(
+      const char *__restrict num_string,
       const size_t num_len = cpp::numeric_limits<size_t>::max()) {
     bool saw_dot = false;
     size_t num_cur = 0;
@@ -343,26 +324,25 @@ public:
     // them all.
     uint32_t total_digits = 0;
     while (num_cur < num_len &&
-           (isdigit(num_string[num_cur]) ||
-            num_string[num_cur] == constants<CharType>::DECIMAL_POINT)) {
-      if (num_string[num_cur] == constants<CharType>::DECIMAL_POINT) {
+           (isdigit(num_string[num_cur]) || num_string[num_cur] == '.')) {
+      if (num_string[num_cur] == '.') {
         if (saw_dot) {
           break;
         }
-        this->decimal_point = static_cast<int32_t>(total_digits);
+        this->decimal_point = total_digits;
         saw_dot = true;
       } else {
-        int digit = b36_char_to_int(num_string[num_cur]);
-        if (digit == 0 && this->num_digits == 0) {
+        if (num_string[num_cur] == '0' && this->num_digits == 0) {
           --this->decimal_point;
           ++num_cur;
           continue;
         }
         ++total_digits;
         if (this->num_digits < MAX_NUM_DIGITS) {
-          this->digits[this->num_digits] = static_cast<uint8_t>(digit);
+          this->digits[this->num_digits] = static_cast<uint8_t>(
+              internal::b36_char_to_int(num_string[num_cur]));
           ++this->num_digits;
-        } else if (digit != 0) {
+        } else if (num_string[num_cur] != '0') {
           this->truncated = true;
         }
       }
@@ -370,12 +350,13 @@ public:
     }
 
     if (!saw_dot)
-      this->decimal_point = static_cast<int32_t>(total_digits);
+      this->decimal_point = total_digits;
 
-    if (num_cur < num_len && tolower(num_string[num_cur]) ==
-                                 constants<CharType>::DECIMAL_EXPONENT_MARKER) {
+    if (num_cur < num_len &&
+        (num_string[num_cur] == 'e' || num_string[num_cur] == 'E')) {
       ++num_cur;
-      if (isdigit(num_string[num_cur]) || get_sign(num_string + num_cur) != 0) {
+      if (isdigit(num_string[num_cur]) || num_string[num_cur] == '+' ||
+          num_string[num_cur] == '-') {
         auto result =
             strtointeger<int32_t>(num_string + num_cur, 10, num_len - num_cur);
         if (result.has_error()) {
@@ -412,7 +393,7 @@ public:
         this->left_shift(MAX_SHIFT_AMOUNT);
         shift_amount -= MAX_SHIFT_AMOUNT;
       }
-      this->left_shift(static_cast<uint32_t>(shift_amount));
+      this->left_shift(shift_amount);
     }
     // Right
     else {
@@ -420,7 +401,7 @@ public:
         this->right_shift(MAX_SHIFT_AMOUNT);
         shift_amount += MAX_SHIFT_AMOUNT;
       }
-      this->right_shift(static_cast<uint32_t>(-shift_amount));
+      this->right_shift(-shift_amount);
     }
   }
 
@@ -443,8 +424,8 @@ public:
       result *= 10;
       ++cur_digit;
     }
-    return result +
-           static_cast<T>(this->should_round_up(this->decimal_point, round));
+    return result + static_cast<unsigned int>(
+                        this->should_round_up(this->decimal_point, round));
   }
 
   // Extra functions for testing.

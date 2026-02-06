@@ -1,6 +1,5 @@
 # AsmParser
 add_llvm_component_library(LLVMAsmParser
-  AsmParserContext.cpp
   LLLexer.cpp
   LLParser.cpp
   Parser.cpp
@@ -15,5 +14,4 @@ add_llvm_component_library(LLVMAsmParser
   BinaryFormat
   Core
   Support
-  TargetParser
   )

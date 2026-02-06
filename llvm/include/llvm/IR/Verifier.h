@@ -22,7 +22,6 @@
 
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/IR/PassManager.h"
-#include "llvm/Support/Compiler.h"
 #include <utility>
 
 namespace llvm {
@@ -60,13 +59,12 @@ class TBAAVerifier {
 
   /// \name Helper functions used by \c visitTBAAMetadata.
   /// @{
-  MDNode *getFieldNodeFromTBAABaseNode(const Instruction *I,
-                                       const MDNode *BaseNode, APInt &Offset,
-                                       bool IsNewFormat);
-  TBAAVerifier::TBAABaseNodeSummary verifyTBAABaseNode(const Instruction *I,
+  MDNode *getFieldNodeFromTBAABaseNode(Instruction &I, const MDNode *BaseNode,
+                                       APInt &Offset, bool IsNewFormat);
+  TBAAVerifier::TBAABaseNodeSummary verifyTBAABaseNode(Instruction &I,
                                                        const MDNode *BaseNode,
                                                        bool IsNewFormat);
-  TBAABaseNodeSummary verifyTBAABaseNodeImpl(const Instruction *I,
+  TBAABaseNodeSummary verifyTBAABaseNodeImpl(Instruction &I,
                                              const MDNode *BaseNode,
                                              bool IsNewFormat);
 
@@ -76,9 +74,9 @@ class TBAAVerifier {
 public:
   TBAAVerifier(VerifierSupport *Diagnostic = nullptr)
       : Diagnostic(Diagnostic) {}
-  /// Visit an instruction, or a TBAA node itself as part of a metadata, and
-  /// return true if it is valid, return false if an invalid TBAA is attached.
-  LLVM_ABI bool visitTBAAMetadata(const Instruction *I, const MDNode *MD);
+  /// Visit an instruction and return true if it is valid, return false if an
+  /// invalid TBAA is attached.
+  bool visitTBAAMetadata(Instruction &I, const MDNode *MD);
 };
 
 /// Check a function for errors, useful for use when debugging a
@@ -87,7 +85,7 @@ public:
 /// If there are no errors, the function returns false. If an error is found,
 /// a message describing the error is written to OS (if non-null) and true is
 /// returned.
-LLVM_ABI bool verifyFunction(const Function &F, raw_ostream *OS = nullptr);
+bool verifyFunction(const Function &F, raw_ostream *OS = nullptr);
 
 /// Check a module for errors.
 ///
@@ -99,25 +97,25 @@ LLVM_ABI bool verifyFunction(const Function &F, raw_ostream *OS = nullptr);
 /// supplied, DebugInfo verification failures won't be considered as
 /// error and instead *BrokenDebugInfo will be set to true. Debug
 /// info errors can be "recovered" from by stripping the debug info.
-LLVM_ABI bool verifyModule(const Module &M, raw_ostream *OS = nullptr,
-                           bool *BrokenDebugInfo = nullptr);
+bool verifyModule(const Module &M, raw_ostream *OS = nullptr,
+                  bool *BrokenDebugInfo = nullptr);
 
-LLVM_ABI FunctionPass *createVerifierPass(bool FatalErrors = true);
+FunctionPass *createVerifierPass(bool FatalErrors = true);
 
 /// Check a module for errors, and report separate error states for IR
 /// and debug info errors.
 class VerifierAnalysis : public AnalysisInfoMixin<VerifierAnalysis> {
   friend AnalysisInfoMixin<VerifierAnalysis>;
 
-  LLVM_ABI static AnalysisKey Key;
+  static AnalysisKey Key;
 
 public:
   struct Result {
     bool IRBroken, DebugInfoBroken;
   };
 
-  LLVM_ABI Result run(Module &M, ModuleAnalysisManager &);
-  LLVM_ABI Result run(Function &F, FunctionAnalysisManager &);
+  Result run(Module &M, ModuleAnalysisManager &);
+  Result run(Function &F, FunctionAnalysisManager &);
   static bool isRequired() { return true; }
 };
 
@@ -137,8 +135,8 @@ class VerifierPass : public PassInfoMixin<VerifierPass> {
 public:
   explicit VerifierPass(bool FatalErrors = true) : FatalErrors(FatalErrors) {}
 
-  LLVM_ABI PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);
-  LLVM_ABI PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
   static bool isRequired() { return true; }
 };
 

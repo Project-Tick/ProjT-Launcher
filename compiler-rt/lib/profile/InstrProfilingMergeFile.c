@@ -13,6 +13,7 @@
 
 #include "InstrProfiling.h"
 #include "InstrProfilingInternal.h"
+#include "InstrProfilingUtil.h"
 
 #define INSTR_PROF_VALUE_PROF_DATA
 #include "profile/InstrProfData.inc"

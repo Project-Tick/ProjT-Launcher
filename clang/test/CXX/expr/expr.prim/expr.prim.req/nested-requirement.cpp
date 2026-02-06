@@ -41,16 +41,9 @@ namespace std_example {
   template<typename T>
   concept C2 = requires (T a) {
       requires sizeof(a) == 4; // OK
-      requires a == 0; // expected-error{{substitution into constraint expression resulted in a non-constant expression}}
-      // expected-note@-1{{while checking the satisfaction of nested requirement requested here}}
-      // expected-note@-2{{while checking the satisfaction of nested requirement requested here}}
-      // expected-note@-5{{while substituting template arguments into constraint expression here}}
-      // expected-note@-4{{function parameter 'a' with unknown value cannot be used in a constant expression}}
-      // expected-note@-7{{declared here}}
+      requires a == 0; // expected-note{{because 'a == 0' would be invalid: constraint variable 'a' cannot be used in an evaluated context}}
     };
-    static_assert(C2<int>); // expected-error{{static assertion failed}}
-    // expected-note@-1{{while checking the satisfaction of concept 'C2<int>' requested here}}
-    // expected-note@-2{{because 'int' does not satisfy 'C2'}}
+  static_assert(C2<int>); // expected-note{{because 'int' does not satisfy 'C2'}} expected-error{{static assertion failed}}
 }
 
 template<typename T>
@@ -83,26 +76,31 @@ static_assert(Pipes<S>);
 static_assert(Pipes<double>);
 
 static_assert(Amps1<S>);
-static_assert(Amps1<double>);
+static_assert(!Amps1<double>);
 
 static_assert(Amps2<S>);
-static_assert(Amps2<double>);
+static_assert(!Amps2<double>);
 
 template<class T>
-void foo1() requires requires (T x) {
+void foo1() requires requires (T x) { // #foo1
   requires
-  True<decltype(x.value)>
+  True<decltype(x.value)> // #foo1Value
   && True<T>;
 } {}
 template<class T> void fooPipes() requires Pipes<T> {}
-template<class T> void fooAmps1() requires Amps1<T> {}
+template<class T> void fooAmps1() requires Amps1<T> {} // #fooAmps1
 void foo() {
   foo1<S>();
-  foo1<int>();
+  foo1<int>(); // expected-error {{no matching function for call to 'foo1'}}
+  // expected-note@#foo1Value {{because 'True<decltype(x.value)> && True<T>' would be invalid: member reference base type 'int' is not a structure or union}}
+  // expected-note@#foo1 {{candidate template ignored: constraints not satisfied [with T = int]}}
   fooPipes<S>();
   fooPipes<int>();
   fooAmps1<S>();
-  fooAmps1<int>();
+  fooAmps1<int>(); // expected-error {{no matching function for call to 'fooAmps1'}}
+  // expected-note@#fooAmps1 {{candidate template ignored: constraints not satisfied [with T = int]}}
+  // expected-note@#fooAmps1 {{because 'int' does not satisfy 'Amps1'}}
+  // expected-note@#Amps1 {{because 'True<decltype(x.value)> && True<T> && !False<T>' would be invalid: member reference base type 'int' is not a structure or union}}
 }
 
 template<class T>
@@ -155,13 +153,12 @@ void func() {
   // expected-note@#bar {{because 'X<False>::value' evaluated to false}}
 
   bar<int>();
-  // expected-error@-1 {{no matching function for call to 'bar'}} \
   // expected-note@-1 {{while checking constraint satisfaction for template 'bar<int>' required here}} \
-  // expected-note@-1 {{while substituting deduced template arguments into function template 'bar' [with T = int]}} \
+  // expected-note@-1 {{in instantiation of function template specialization}}
   // expected-note@#bar {{in instantiation of static data member}}
+  // expected-note@#bar {{in instantiation of requirement here}}
   // expected-note@#bar {{while checking the satisfaction of nested requirement requested here}}
   // expected-note@#bar {{while substituting template arguments into constraint expression here}}
-  // expected-note@#bar {{candidate template ignored}}
   // expected-error@#X_Value {{type 'int' cannot be used prior to '::' because it has no members}}
 }
 }

@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- UseStdPrintCheck.cpp - clang-tidy-----------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -12,6 +12,7 @@
 #include "../utils/OptionsUtils.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Lex/Lexer.h"
+#include "clang/Tooling/FixIt.h"
 
 using namespace clang::ast_matchers;
 
@@ -23,7 +24,7 @@ AST_MATCHER(StringLiteral, isOrdinary) { return Node.isOrdinary(); }
 
 UseStdPrintCheck::UseStdPrintCheck(StringRef Name, ClangTidyContext *Context)
     : ClangTidyCheck(Name, Context), PP(nullptr),
-      StrictMode(Options.get("StrictMode", false)),
+      StrictMode(Options.getLocalOrGlobal("StrictMode", false)),
       PrintfLikeFunctions(utils::options::parseStringList(
           Options.get("PrintfLikeFunctions", ""))),
       FprintfLikeFunctions(utils::options::parseStringList(
@@ -36,6 +37,7 @@ UseStdPrintCheck::UseStdPrintCheck(StringRef Name, ClangTidyContext *Context)
                                                utils::IncludeSorter::IS_LLVM),
                       areDiagsSelfContained()),
       MaybeHeaderToInclude(Options.get("PrintHeader")) {
+
   if (PrintfLikeFunctions.empty() && FprintfLikeFunctions.empty()) {
     PrintfLikeFunctions.emplace_back("::printf");
     PrintfLikeFunctions.emplace_back("absl::PrintF");
@@ -69,8 +71,8 @@ void UseStdPrintCheck::registerPPCallbacks(const SourceManager &SM,
   this->PP = PP;
 }
 
-static clang::ast_matchers::StatementMatcher unusedReturnValue(
-    const clang::ast_matchers::StatementMatcher &MatchedCallExpr) {
+static clang::ast_matchers::StatementMatcher
+unusedReturnValue(clang::ast_matchers::StatementMatcher MatchedCallExpr) {
   auto UnusedInCompoundStmt =
       compoundStmt(forEach(MatchedCallExpr),
                    // The checker can't currently differentiate between the
@@ -99,7 +101,7 @@ void UseStdPrintCheck::registerMatchers(MatchFinder *Finder) {
         unusedReturnValue(
             callExpr(argumentCountAtLeast(1),
                      hasArgument(0, stringLiteral(isOrdinary())),
-                     callee(functionDecl(matchers::matchesAnyListedRegexName(
+                     callee(functionDecl(matchers::matchesAnyListedName(
                                              PrintfLikeFunctions))
                                 .bind("func_decl")))
                 .bind("printf")),
@@ -110,7 +112,7 @@ void UseStdPrintCheck::registerMatchers(MatchFinder *Finder) {
         unusedReturnValue(
             callExpr(argumentCountAtLeast(2),
                      hasArgument(1, stringLiteral(isOrdinary())),
-                     callee(functionDecl(matchers::matchesAnyListedRegexName(
+                     callee(functionDecl(matchers::matchesAnyListedName(
                                              FprintfLikeFunctions))
                                 .bind("func_decl")))
                 .bind("fprintf")),

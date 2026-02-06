@@ -1225,11 +1225,10 @@ int main() {
   InitializeAllAsmPrinters();
 
   auto TargetTriple = sys::getDefaultTargetTriple();
-  TheModule->setTargetTriple(Triple(TargetTriple));
+  TheModule->setTargetTriple(TargetTriple);
 
   std::string Error;
-  auto Target =
-      TargetRegistry::lookupTarget(TheModule->getTargetTriple(), Error);
+  auto Target = TargetRegistry::lookupTarget(TargetTriple, Error);
 
   // Print an error and exit if we couldn't find the requested target.
   // This generally occurs if we've forgotten to initialise the
@@ -1244,7 +1243,7 @@ int main() {
 
   TargetOptions opt;
   auto TheTargetMachine = Target->createTargetMachine(
-      Triple(TargetTriple), CPU, Features, opt, Reloc::PIC_);
+      TargetTriple, CPU, Features, opt, Reloc::PIC_);
 
   TheModule->setDataLayout(TheTargetMachine->createDataLayout());
 

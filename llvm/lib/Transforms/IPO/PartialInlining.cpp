@@ -109,7 +109,7 @@ static cl::opt<float> MinRegionSizeRatio(
              "outline candidate and original function"));
 // Used to tune the minimum number of execution counts needed in the predecessor
 // block to the cold edge. ie. confidence interval.
-cl::opt<unsigned>
+static cl::opt<unsigned>
     MinBlockCounterExecution("min-block-execution", cl::init(100), cl::Hidden,
                              cl::desc("Minimum block executions to consider "
                                       "its BranchProbabilityInfo valid"));
@@ -412,9 +412,9 @@ PartialInlinerImpl::computeOutliningColdRegionsInfo(
   bool ColdCandidateFound = false;
   BasicBlock *CurrEntry = EntryBlock;
   std::vector<BasicBlock *> DFS;
-  SmallPtrSet<BasicBlock *, 8> VisitedSet;
+  DenseMap<BasicBlock *, bool> VisitedMap;
   DFS.push_back(CurrEntry);
-  VisitedSet.insert(CurrEntry);
+  VisitedMap[CurrEntry] = true;
 
   // Use Depth First Search on the basic blocks to find CFG edges that are
   // considered cold.
@@ -432,8 +432,9 @@ PartialInlinerImpl::computeOutliningColdRegionsInfo(
         BBProfileCount(ThisBB) < MinBlockCounterExecution)
       continue;
     for (auto SI = succ_begin(ThisBB); SI != succ_end(ThisBB); ++SI) {
-      if (!VisitedSet.insert(*SI).second)
+      if (VisitedMap[*SI])
         continue;
+      VisitedMap[*SI] = true;
       DFS.push_back(*SI);
       // If branch isn't cold, we skip to the next one.
       BranchProbability SuccProb = BPI.getEdgeProbability(ThisBB, *SI);
@@ -490,7 +491,8 @@ PartialInlinerImpl::computeOutliningColdRegionsInfo(
       // candidate for outlining.  In the future, we may want to look
       // at inner regions because the outer region may have live-exit
       // variables.
-      VisitedSet.insert_range(DominateVector);
+      for (auto *BB : DominateVector)
+        VisitedMap[BB] = true;
 
       // ReturnBlock here means the block after the outline call
       BasicBlock *ReturnBlock = ExitBlock->getSingleSuccessor();
@@ -592,7 +594,9 @@ PartialInlinerImpl::computeOutliningInfo(Function &F) const {
   // {ReturnBlock, NonReturnBlock}
   assert(OutliningInfo->Entries[0] == &F.front() &&
          "Function Entry must be the first in Entries vector");
-  DenseSet<BasicBlock *> Entries(llvm::from_range, OutliningInfo->Entries);
+  DenseSet<BasicBlock *> Entries;
+  for (BasicBlock *E : OutliningInfo->Entries)
+    Entries.insert(E);
 
   // Returns true of BB has Predecessor which is not
   // in Entries set.
@@ -916,6 +920,9 @@ void PartialInlinerImpl::computeCallsiteToProfCountMap(
   };
 
   for (User *User : Users) {
+    // Don't bother with BlockAddress used by CallBr for asm goto.
+    if (isa<BlockAddress>(User))
+      continue;
     CallBase *CB = getSupportedCallBase(User);
     Function *Caller = CB->getCaller();
     if (CurrentCaller != Caller) {
@@ -1317,7 +1324,7 @@ bool PartialInlinerImpl::tryPartialInline(FunctionCloner &Cloner) {
     RelativeToEntryFreq = BranchProbability(0, 1);
 
   BlockFrequency WeightedRcost =
-      BlockFrequency(NonWeightedRcost.getValue()) * RelativeToEntryFreq;
+      BlockFrequency(*NonWeightedRcost.getValue()) * RelativeToEntryFreq;
 
   // The call sequence(s) to the outlined function(s) are larger than the sum of
   // the original outlined region size(s), it does not increase the chances of
@@ -1356,6 +1363,10 @@ bool PartialInlinerImpl::tryPartialInline(FunctionCloner &Cloner) {
 
   bool AnyInline = false;
   for (User *User : Users) {
+    // Don't bother with BlockAddress used by CallBr for asm goto.
+    if (isa<BlockAddress>(User))
+      continue;
+
     CallBase *CB = getSupportedCallBase(User);
 
     if (isLimitReached())
@@ -1383,12 +1394,9 @@ bool PartialInlinerImpl::tryPartialInline(FunctionCloner &Cloner) {
     CallerORE.emit(OR);
 
     // Now update the entry count:
-    if (CalleeEntryCountV) {
-      if (auto It = CallSiteToProfCountMap.find(User);
-          It != CallSiteToProfCountMap.end()) {
-        uint64_t CallSiteCount = It->second;
-        CalleeEntryCountV -= std::min(CalleeEntryCountV, CallSiteCount);
-      }
+    if (CalleeEntryCountV && CallSiteToProfCountMap.count(User)) {
+      uint64_t CallSiteCount = CallSiteToProfCountMap[User];
+      CalleeEntryCountV -= std::min(CalleeEntryCountV, CallSiteCount);
     }
 
     AnyInline = true;

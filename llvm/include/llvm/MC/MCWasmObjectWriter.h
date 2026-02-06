@@ -27,7 +27,7 @@ protected:
   explicit MCWasmObjectTargetWriter(bool Is64Bit_, bool IsEmscripten);
 
 public:
-  ~MCWasmObjectTargetWriter() override;
+  virtual ~MCWasmObjectTargetWriter();
 
   Triple::ObjectFormatType getFormat() const override { return Triple::Wasm; }
   static bool classof(const MCObjectTargetWriter *W) {

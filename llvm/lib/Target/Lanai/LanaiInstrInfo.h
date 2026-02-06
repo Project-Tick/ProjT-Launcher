@@ -22,13 +22,11 @@
 
 namespace llvm {
 
-class LanaiSubtarget;
-
 class LanaiInstrInfo : public LanaiGenInstrInfo {
   const LanaiRegisterInfo RegisterInfo;
 
 public:
-  LanaiInstrInfo(const LanaiSubtarget &STI);
+  LanaiInstrInfo();
 
   // getRegisterInfo - TargetInstrInfo is a superset of MRegister info.  As
   // such, whenever a client has an instance of instruction info, it should
@@ -50,22 +48,23 @@ public:
                               int &FrameIndex) const override;
 
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator Position,
-                   const DebugLoc &DL, Register DestinationRegister,
-                   Register SourceRegister, bool KillSource,
+                   const DebugLoc &DL, MCRegister DestinationRegister,
+                   MCRegister SourceRegister, bool KillSource,
                    bool RenamableDest = false,
                    bool RenamableSrc = false) const override;
 
   void storeRegToStackSlot(
       MachineBasicBlock &MBB, MachineBasicBlock::iterator Position,
       Register SourceRegister, bool IsKill, int FrameIndex,
-      const TargetRegisterClass *RegisterClass, Register VReg,
+      const TargetRegisterClass *RegisterClass,
+      const TargetRegisterInfo *RegisterInfo, Register VReg,
       MachineInstr::MIFlag Flags = MachineInstr::NoFlags) const override;
 
   void loadRegFromStackSlot(
       MachineBasicBlock &MBB, MachineBasicBlock::iterator Position,
       Register DestinationRegister, int FrameIndex,
-      const TargetRegisterClass *RegisterClass, Register VReg,
-      unsigned SubReg = 0,
+      const TargetRegisterClass *RegisterClass,
+      const TargetRegisterInfo *RegisterInfo, Register VReg,
       MachineInstr::MIFlag Flags = MachineInstr::NoFlags) const override;
 
   bool expandPostRAPseudo(MachineInstr &MI) const override;

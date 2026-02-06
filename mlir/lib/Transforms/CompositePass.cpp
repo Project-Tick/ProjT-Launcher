@@ -35,9 +35,7 @@ struct CompositeFixedPointPass final
     populateFunc(dynamicPM);
 
     llvm::raw_string_ostream os(pipelineStr);
-    llvm::interleave(
-        dynamicPM, [&](mlir::Pass &pass) { pass.printAsTextualPipeline(os); },
-        [&]() { os << ","; });
+    dynamicPM.printAsTextualPipeline(os);
   }
 
   LogicalResult initializeOptions(
@@ -66,7 +64,7 @@ struct CompositeFixedPointPass final
   }
 
   void runOnOperation() override {
-    auto *op = getOperation();
+    auto op = getOperation();
     OperationFingerPrint fp(op);
 
     int currentIter = 0;

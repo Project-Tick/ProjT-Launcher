@@ -18,9 +18,13 @@
 #include "llvm/ADT/PointerIntPair.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SetVector.h"
+#include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/TrailingObjects.h"
 #include <cassert>
+#include <iterator>
+#include <memory>
+#include <optional>
 #include <tuple>
 #include <utility>
 
@@ -30,8 +34,7 @@ using namespace mlir::detail;
 namespace mlir::detail {
 struct FileLineColRangeAttrStorage final
     : public ::mlir::AttributeStorage,
-      private llvm::TrailingObjects<FileLineColRangeAttrStorage, unsigned> {
-  friend llvm::TrailingObjects<FileLineColRangeAttrStorage, unsigned>;
+      public llvm::TrailingObjects<FileLineColRangeAttrStorage, unsigned> {
   using PointerPair = llvm::PointerIntPair<StringAttr, 2>;
   using KeyTy = std::tuple<StringAttr, ::llvm::ArrayRef<unsigned>>;
 
@@ -52,14 +55,14 @@ struct FileLineColRangeAttrStorage final
         FileLineColRangeAttrStorage::totalSizeToAlloc<unsigned>(locEnc - 1);
     auto *rawMem =
         allocator.allocate(byteSize, alignof(FileLineColRangeAttrStorage));
-    auto *result = ::new (rawMem)
-        FileLineColRangeAttrStorage(std::get<0>(tblgenKey), locEnc - 1);
+    auto *result = ::new (rawMem) FileLineColRangeAttrStorage(
+        std::move(std::get<0>(tblgenKey)), locEnc - 1);
     if (numInArray > 0) {
-      ArrayRef<unsigned> elements = std::get<1>(tblgenKey);
-      result->startLine = elements[0];
+      result->startLine = std::get<1>(tblgenKey)[0];
       // Copy in the element types into the trailing storage.
-      llvm::uninitialized_copy(elements.drop_front(),
-                               result->getTrailingObjects());
+      std::uninitialized_copy(std::next(std::get<1>(tblgenKey).begin()),
+                              std::get<1>(tblgenKey).end(),
+                              result->getTrailingObjects<unsigned>());
     }
     return result;
   }
@@ -71,12 +74,12 @@ struct FileLineColRangeAttrStorage final
     return (filenameAndTrailing.getPointer() == std::get<0>(tblgenKey)) &&
            (size() == std::get<1>(tblgenKey).size()) &&
            (startLine == std::get<1>(tblgenKey)[0]) &&
-           (getTrailingObjects(size() - 1) ==
-            std::get<1>(tblgenKey).drop_front());
+           (ArrayRef<unsigned>{getTrailingObjects<unsigned>(), size() - 1} ==
+            ArrayRef<unsigned>{std::get<1>(tblgenKey)}.drop_front());
   }
 
   unsigned getLineCols(unsigned index) const {
-    return getTrailingObjects()[index - 1];
+    return getTrailingObjects<unsigned>()[index - 1];
   }
 
   unsigned getStartLine() const { return startLine; }
@@ -216,7 +219,8 @@ Location FusedLoc::get(ArrayRef<Location> locs, Attribute metadata,
       if (fusedLoc.getMetadata() == metadata) {
         // UnknownLoc's have already been removed from FusedLocs so we can
         // simply add all of the internal locations.
-        decomposedLocs.insert_range(fusedLoc.getLocations());
+        decomposedLocs.insert(fusedLoc.getLocations().begin(),
+                              fusedLoc.getLocations().end());
         continue;
       }
     }

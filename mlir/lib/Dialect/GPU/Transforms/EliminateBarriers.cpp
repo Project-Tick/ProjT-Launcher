@@ -22,10 +22,10 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/Operation.h"
+#include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Support/DebugLog.h"
 
 namespace mlir {
 #define GEN_PASS_DEF_GPUELIMINATEBARRIERS
@@ -38,8 +38,18 @@ using namespace mlir::gpu;
 #define DEBUG_TYPE "gpu-erase-barriers"
 #define DEBUG_TYPE_ALIAS "gpu-erase-barries-alias"
 
+#define DBGS() (llvm::dbgs() << '[' << DEBUG_TYPE << "] ")
+#define DBGS_ALIAS() (llvm::dbgs() << '[' << DEBUG_TYPE_ALIAS << "] ")
+
 // The functions below provide interface-like verification, but are too specific
 // to barrier elimination to become interfaces.
+
+/// Implement the MemoryEffectsOpInterface in the suitable way.
+static bool isKnownNoEffectsOpWithoutInterface(Operation *op) {
+  // memref::AssumeAlignment is conceptually pure, but marking it as such would
+  // make DCE immediately remove it.
+  return isa<memref::AssumeAlignmentOp>(op);
+}
 
 /// Returns `true` if the op is defines the parallel region that is subject to
 /// barrier synchronization.
@@ -58,7 +68,7 @@ static bool isSequentialLoopLike(Operation *op) { return isa<scf::ForOp>(op); }
 /// most once. Thus, if an operation in one of the nested regions of `op` is
 /// executed than so are all the other operations in this region.
 static bool hasSingleExecutionBody(Operation *op) {
-  return isa<FunctionOpInterface, scf::IfOp, memref::AllocaScopeOp>(op);
+  return isa<scf::IfOp, memref::AllocaScopeOp>(op);
 }
 
 /// Returns `true` if the operation is known to produce a pointer-like object
@@ -89,6 +99,10 @@ collectEffects(Operation *op,
   // Skip over barriers to avoid infinite recursion (those barriers would ask
   // this barrier again).
   if (ignoreBarriers && isa<BarrierOp>(op))
+    return true;
+
+  // Skip over ops that we know have no effects.
+  if (isKnownNoEffectsOpWithoutInterface(op))
     return true;
 
   // Collect effect instances the operation. Note that the implementation of
@@ -156,7 +170,7 @@ getEffectsBefore(Operation *op,
 
   // If there is a non-structured control flow, bail.
   Region *region = op->getBlock()->getParent();
-  if (region && !region->hasOneBlock()) {
+  if (region && !llvm::hasSingleElement(region->getBlocks())) {
     addAllValuelessEffects(effects);
     return false;
   }
@@ -168,10 +182,8 @@ getEffectsBefore(Operation *op,
   if (isParallelRegionBoundary(op->getParentOp()))
     return true;
 
-  Operation *parent = op->getParentOp();
   // Otherwise, keep collecting above the parent operation.
-  if (!parent->hasTrait<OpTrait::IsIsolatedFromAbove>() &&
-      !getEffectsBefore(parent, effects, stopAtBarrier))
+  if (!getEffectsBefore(op->getParentOp(), effects, stopAtBarrier))
     return false;
 
   // If the op is loop-like, collect effects from the trailing operations until
@@ -188,7 +200,7 @@ getEffectsBefore(Operation *op,
   // the operation `op2` at iteration `i` is known to be executed before the
   // operation `op1` at iteration `i+1` and the side effects must be ordered
   // appropriately.
-  if (isSequentialLoopLike(parent)) {
+  if (isSequentialLoopLike(op->getParentOp())) {
     // Assuming loop terminators have no side effects.
     return getEffectsBeforeInBlock(op->getBlock()->getTerminator(), effects,
                                    /*stopAtBarrier=*/true);
@@ -248,7 +260,7 @@ getEffectsAfter(Operation *op,
 
   // If there is a non-structured control flow, bail.
   Region *region = op->getBlock()->getParent();
-  if (region && !region->hasOneBlock()) {
+  if (region && !llvm::hasSingleElement(region->getBlocks())) {
     addAllValuelessEffects(effects);
     return false;
   }
@@ -256,15 +268,12 @@ getEffectsAfter(Operation *op,
   // Collect all effects after the op.
   getEffectsAfterInBlock(op, effects, stopAtBarrier);
 
-  Operation *parent = op->getParentOp();
   // Stop if reached the parallel region boundary.
-  if (isParallelRegionBoundary(parent))
+  if (isParallelRegionBoundary(op->getParentOp()))
     return true;
 
   // Otherwise, keep collecting below the parent operation.
-  // Don't look into, for example, neighboring functions
-  if (!parent->hasTrait<OpTrait::IsIsolatedFromAbove>() &&
-      !getEffectsAfter(parent, effects, stopAtBarrier))
+  if (!getEffectsAfter(op->getParentOp(), effects, stopAtBarrier))
     return false;
 
   // If the op is loop-like, collect effects from the leading operations until
@@ -281,7 +290,7 @@ getEffectsAfter(Operation *op,
   // the operation `op1` at iteration `i` is known to be executed after the
   // operation `op2` at iteration `i-1` and the side effects must be ordered
   // appropriately.
-  if (isSequentialLoopLike(parent)) {
+  if (isSequentialLoopLike(op->getParentOp())) {
     if (isa<BarrierOp>(op->getBlock()->front()))
       return true;
 
@@ -330,7 +339,7 @@ static Value getBase(Value v) {
               v = op.getSrc();
               return true;
             })
-            .Default(false);
+            .Default([](Operation *) { return false; });
     if (!shouldContinue)
       break;
   }
@@ -354,7 +363,7 @@ static Value propagatesCapture(Operation *op) {
       .Case([](memref::TransposeOp transpose) { return transpose.getIn(); })
       .Case<memref::ExpandShapeOp, memref::CollapseShapeOp>(
           [](auto op) { return op.getSrc(); })
-      .Default(nullptr);
+      .Default([](Operation *) { return Value(); });
 }
 
 /// Returns `true` if the given operation is known to capture the given value,
@@ -371,7 +380,7 @@ static std::optional<bool> getKnownCapturingStatus(Operation *op, Value v) {
       // These operations are known not to capture.
       .Case([](memref::DeallocOp) { return false; })
       // By default, we don't know anything.
-      .Default(std::nullopt);
+      .Default([](Operation *) { return std::nullopt; });
 }
 
 /// Returns `true` if the value may be captured by any of its users, i.e., if
@@ -422,18 +431,27 @@ static bool maybeCaptured(Value v) {
 /// everything. This seems sufficient to achieve barrier removal in structured
 /// control flow, more complex cases would require a proper dataflow analysis.
 static bool mayAlias(Value first, Value second) {
-  LDBG(DEBUG_TYPE_ALIAS, 1)
-      << "checking aliasing between " << first << " and " << second;
+  DEBUG_WITH_TYPE(DEBUG_TYPE_ALIAS, {
+    DBGS_ALIAS() << "checking aliasing between ";
+    DBGS_ALIAS() << first << "\n";
+    DBGS_ALIAS() << "                      and ";
+    DBGS_ALIAS() << second << "\n";
+  });
 
   first = getBase(first);
   second = getBase(second);
 
-  LDBG(DEBUG_TYPE_ALIAS, 1) << "base " << first << " and " << second;
+  DEBUG_WITH_TYPE(DEBUG_TYPE_ALIAS, {
+    DBGS_ALIAS() << "base ";
+    DBGS_ALIAS() << first << "\n";
+    DBGS_ALIAS() << " and ";
+    DBGS_ALIAS() << second << "\n";
+  });
 
   // Values derived from the same base memref do alias (unless we do a more
   // advanced analysis to prove non-overlapping accesses).
   if (first == second) {
-    LDBG(DEBUG_TYPE_ALIAS, 1) << "-> do alias!";
+    DEBUG_WITH_TYPE(DEBUG_TYPE_ALIAS, DBGS_ALIAS() << "-> do alias!\n");
     return true;
   }
 
@@ -482,7 +500,7 @@ static bool mayAlias(Value first, Value second) {
     return false;
 
   // Otherwise, conservatively assume aliasing.
-  LDBG(DEBUG_TYPE_ALIAS, 1) << "-> may alias!";
+  DEBUG_WITH_TYPE(DEBUG_TYPE_ALIAS, DBGS_ALIAS() << "-> may alias!\n");
   return true;
 }
 
@@ -556,16 +574,20 @@ haveConflictingEffects(ArrayRef<MemoryEffects::EffectInstance> beforeEffects,
         continue;
 
       // Other kinds of effects create a conflict, e.g. read-after-write.
-      LDBG() << "found a conflict between (before): " << before.getValue()
-             << " read:" << isa<MemoryEffects::Read>(before.getEffect())
-             << " write:" << isa<MemoryEffects::Write>(before.getEffect())
-             << " alloc:" << isa<MemoryEffects::Allocate>(before.getEffect())
-             << " free:" << isa<MemoryEffects::Free>(before.getEffect());
-      LDBG() << "and (after):                " << after.getValue()
-             << " read:" << isa<MemoryEffects::Read>(after.getEffect())
-             << " write:" << isa<MemoryEffects::Write>(after.getEffect())
-             << " alloc:" << isa<MemoryEffects::Allocate>(after.getEffect())
-             << " free:" << isa<MemoryEffects::Free>(after.getEffect());
+      LLVM_DEBUG(
+          DBGS() << "found a conflict between (before): " << before.getValue()
+                 << " read:" << isa<MemoryEffects::Read>(before.getEffect())
+                 << " write:" << isa<MemoryEffects::Write>(before.getEffect())
+                 << " alloc:"
+                 << isa<MemoryEffects::Allocate>(before.getEffect()) << " free:"
+                 << isa<MemoryEffects::Free>(before.getEffect()) << "\n");
+      LLVM_DEBUG(
+          DBGS() << "and (after):                " << after.getValue()
+                 << " read:" << isa<MemoryEffects::Read>(after.getEffect())
+                 << " write:" << isa<MemoryEffects::Write>(after.getEffect())
+                 << " alloc:" << isa<MemoryEffects::Allocate>(after.getEffect())
+                 << " free:" << isa<MemoryEffects::Free>(after.getEffect())
+                 << "\n");
       return true;
     }
   }
@@ -580,8 +602,8 @@ public:
 
   LogicalResult matchAndRewrite(BarrierOp barrier,
                                 PatternRewriter &rewriter) const override {
-    LDBG() << "checking the necessity of: " << barrier << " "
-           << barrier.getLoc();
+    LLVM_DEBUG(DBGS() << "checking the necessity of: " << barrier << " "
+                      << barrier.getLoc() << "\n");
 
     SmallVector<MemoryEffects::EffectInstance> beforeEffects;
     getEffectsBefore(barrier, beforeEffects, /*stopAtBarrier=*/true);
@@ -590,12 +612,14 @@ public:
     getEffectsAfter(barrier, afterEffects, /*stopAtBarrier=*/true);
 
     if (!haveConflictingEffects(beforeEffects, afterEffects)) {
-      LDBG() << "the surrounding barriers are sufficient, removing " << barrier;
+      LLVM_DEBUG(DBGS() << "the surrounding barriers are sufficient, removing "
+                        << barrier << "\n");
       rewriter.eraseOp(barrier);
       return success();
     }
 
-    LDBG() << "barrier is necessary: " << barrier << " " << barrier.getLoc();
+    LLVM_DEBUG(DBGS() << "barrier is necessary: " << barrier << " "
+                      << barrier.getLoc() << "\n");
     return failure();
   }
 };

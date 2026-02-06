@@ -141,7 +141,7 @@ namespace clang {
       /// Among other things, this promises that
       /// self.alignTo(N) will just return self.
       bool isMultipleOf(CharUnits N) const {
-        return (*this % N) == CharUnits::Zero();
+        return (*this % N) == 0;
       }
 
       // Arithmetic operators.
@@ -165,8 +165,8 @@ namespace clang {
       CharUnits operator% (QuantityType N) const {
         return CharUnits(Quantity % N);
       }
-      CharUnits operator%(const CharUnits &Other) const {
-        return CharUnits(Quantity % Other.Quantity);
+      QuantityType operator% (const CharUnits &Other) const {
+        return Quantity % Other.Quantity;
       }
       CharUnits operator+ (const CharUnits &Other) const {
         return CharUnits(Quantity + Other.Quantity);

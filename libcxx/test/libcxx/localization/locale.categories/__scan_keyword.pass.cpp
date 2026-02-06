@@ -35,9 +35,8 @@
 //                const _Ctype& __ct, ios_base::iostate& __err,
 //                bool __case_sensitive = true);
 
-#include <__locale_dir/scan_keyword.h>
-#include <cassert>
 #include <locale>
+#include <cassert>
 
 #include "test_macros.h"
 

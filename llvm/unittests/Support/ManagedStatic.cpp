@@ -15,6 +15,8 @@
 #include <pthread.h>
 #endif
 
+#include "gtest/gtest.h"
+
 using namespace llvm;
 
 namespace {

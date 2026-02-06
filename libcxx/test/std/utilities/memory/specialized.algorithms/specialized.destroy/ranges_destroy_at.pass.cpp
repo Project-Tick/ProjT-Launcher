@@ -52,7 +52,10 @@ struct VirtualCountedBase {
 
 struct VirtualCountedDerived : VirtualCountedBase {
   constexpr VirtualCountedDerived(int& count_ref) : VirtualCountedBase(count_ref) {}
-  constexpr ~VirtualCountedDerived() override = default;
+
+  // Without a definition, GCC gives an error when the destructor is invoked in a constexpr context (see
+  // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413).
+  constexpr ~VirtualCountedDerived() override {}
 };
 
 constexpr bool test() {

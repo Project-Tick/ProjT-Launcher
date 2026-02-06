@@ -20,7 +20,6 @@
 
 #include "test_iterators.h"
 #include "test_execution_policies.h"
-#include "type_algorithms.h"
 
 template <class Iter>
 struct Test {

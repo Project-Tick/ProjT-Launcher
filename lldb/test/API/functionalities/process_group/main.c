@@ -1,7 +1,6 @@
-#include "attach.h"
 #include <stdio.h>
-#include <sys/wait.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 volatile int release_child_flag = 0;
 

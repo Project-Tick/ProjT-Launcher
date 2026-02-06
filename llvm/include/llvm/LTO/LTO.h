@@ -15,8 +15,6 @@
 #ifndef LLVM_LTO_LTO_H
 #define LLVM_LTO_LTO_H
 
-#include "llvm/IR/LLVMRemarkStreamer.h"
-#include "llvm/Support/Compiler.h"
 #include <memory>
 
 #include "llvm/ADT/DenseMap.h"
@@ -49,7 +47,7 @@ class ToolOutputFile;
 ///
 /// This is done for correctness (if value exported, ensure we always
 /// emit a copy), and compile-time optimization (allow drop of duplicates).
-LLVM_ABI void thinLTOResolvePrevailingInIndex(
+void thinLTOResolvePrevailingInIndex(
     const lto::Config &C, ModuleSummaryIndex &Index,
     function_ref<bool(GlobalValue::GUID, const GlobalValueSummary *)>
         isPrevailing,
@@ -60,7 +58,7 @@ LLVM_ABI void thinLTOResolvePrevailingInIndex(
 /// Update the linkages in the given \p Index to mark exported values
 /// as external and non-exported values as internal. The ThinLTO backends
 /// must apply the changes to the Module via thinLTOInternalizeModule.
-LLVM_ABI void thinLTOInternalizeAndPromoteInIndex(
+void thinLTOInternalizeAndPromoteInIndex(
     ModuleSummaryIndex &Index,
     function_ref<bool(StringRef, ValueInfo)> isExported,
     function_ref<bool(GlobalValue::GUID, const GlobalValueSummary *)>
@@ -68,7 +66,7 @@ LLVM_ABI void thinLTOInternalizeAndPromoteInIndex(
 
 /// Computes a unique hash for the Module considering the current list of
 /// export/import and other global analysis results.
-LLVM_ABI std::string computeLTOCacheKey(
+std::string computeLTOCacheKey(
     const lto::Config &Conf, const ModuleSummaryIndex &Index,
     StringRef ModuleID, const FunctionImporter::ImportMapTy &ImportList,
     const FunctionImporter::ExportSetTy &ExportList,
@@ -78,32 +76,36 @@ LLVM_ABI std::string computeLTOCacheKey(
     const DenseSet<GlobalValue::GUID> &CfiFunctionDecls = {});
 
 /// Recomputes the LTO cache key for a given key with an extra identifier.
-LLVM_ABI std::string recomputeLTOCacheKey(const std::string &Key,
-                                          StringRef ExtraID);
+std::string recomputeLTOCacheKey(const std::string &Key, StringRef ExtraID);
 
 namespace lto {
 
-LLVM_ABI StringLiteral getThinLTODefaultCPU(const Triple &TheTriple);
+StringLiteral getThinLTODefaultCPU(const Triple &TheTriple);
 
 /// Given the original \p Path to an output file, replace any path
 /// prefix matching \p OldPrefix with \p NewPrefix. Also, create the
 /// resulting directory if it does not yet exist.
-LLVM_ABI std::string getThinLTOOutputFile(StringRef Path, StringRef OldPrefix,
-                                          StringRef NewPrefix);
+std::string getThinLTOOutputFile(StringRef Path, StringRef OldPrefix,
+                                 StringRef NewPrefix);
 
 /// Setup optimization remarks.
-LLVM_ABI Expected<LLVMRemarkFileHandle> setupLLVMOptimizationRemarks(
+Expected<std::unique_ptr<ToolOutputFile>> setupLLVMOptimizationRemarks(
     LLVMContext &Context, StringRef RemarksFilename, StringRef RemarksPasses,
     StringRef RemarksFormat, bool RemarksWithHotness,
     std::optional<uint64_t> RemarksHotnessThreshold = 0, int Count = -1);
 
 /// Setups the output file for saving statistics.
-LLVM_ABI Expected<std::unique_ptr<ToolOutputFile>>
+Expected<std::unique_ptr<ToolOutputFile>>
 setupStatsFile(StringRef StatsFilename);
 
 /// Produces a container ordering for optimal multi-threaded processing. Returns
 /// ordered indices to elements in the input array.
-LLVM_ABI std::vector<int> generateModulesOrdering(ArrayRef<BitcodeModule *> R);
+std::vector<int> generateModulesOrdering(ArrayRef<BitcodeModule *> R);
+
+/// Updates MemProf attributes (and metadata) based on whether the index
+/// has recorded that we are linking with allocation libraries containing
+/// the necessary APIs for downstream transformations.
+void updateMemProfAttributes(Module &Mod, const ModuleSummaryIndex &Index);
 
 class LTO;
 struct SymbolResolution;
@@ -130,23 +132,11 @@ private:
   std::vector<StringRef> DependentLibraries;
   std::vector<std::pair<StringRef, Comdat::SelectionKind>> ComdatTable;
 
-  MemoryBufferRef MbRef;
-  bool IsFatLTOObject = false;
-  // For distributed compilation, each input must exist as an individual bitcode
-  // file on disk and be identified by its ModuleID. Archive members and FatLTO
-  // objects violate this. So, in these cases we flag that the bitcode must be
-  // written out to a new standalone file.
-  bool SerializeForDistribution = false;
-  bool IsThinLTO = false;
-  StringRef ArchivePath;
-  StringRef MemberName;
-
 public:
-  LLVM_ABI ~InputFile();
+  ~InputFile();
 
   /// Create an InputFile.
-  LLVM_ABI static Expected<std::unique_ptr<InputFile>>
-  create(MemoryBufferRef Object);
+  static Expected<std::unique_ptr<InputFile>> create(MemoryBufferRef Object);
 
   /// The purpose of this struct is to only expose the symbol information that
   /// an LTO client should need in order to do symbol resolution.
@@ -184,7 +174,7 @@ public:
   ArrayRef<StringRef> getDependentLibraries() const { return DependentLibraries; }
 
   /// Returns the path to the InputFile.
-  LLVM_ABI StringRef getName() const;
+  StringRef getName() const;
 
   /// Returns the input file's target triple.
   StringRef getTargetTriple() const { return TargetTriple; }
@@ -198,32 +188,7 @@ public:
   }
 
   // Returns the only BitcodeModule from InputFile.
-  LLVM_ABI BitcodeModule &getSingleBitcodeModule();
-  // Returns the primary BitcodeModule from InputFile.
-  LLVM_ABI BitcodeModule &getPrimaryBitcodeModule();
-  // Returns the memory buffer reference for this input file.
-  MemoryBufferRef getFileBuffer() const { return MbRef; }
-  // Returns true if this input should be serialized to disk for distribution.
-  // See the comment on SerializeForDistribution for details.
-  bool getSerializeForDistribution() const { return SerializeForDistribution; }
-  // Mark whether this input should be serialized to disk for distribution.
-  // See the comment on SerializeForDistribution for details.
-  void setSerializeForDistribution(bool SFD) { SerializeForDistribution = SFD; }
-  // Returns true if this bitcode came from a FatLTO object.
-  bool isFatLTOObject() const { return IsFatLTOObject; }
-  // Mark this bitcode as coming from a FatLTO object.
-  void fatLTOObject(bool FO) { IsFatLTOObject = FO; }
-
-  // Returns true if bitcode is ThinLTO.
-  bool isThinLTO() const { return IsThinLTO; }
-
-  // Store an archive path and a member name.
-  void setArchivePathAndName(StringRef Path, StringRef Name) {
-    ArchivePath = Path;
-    MemberName = Name;
-  }
-  StringRef getArchivePath() const { return ArchivePath; }
-  StringRef getMemberName() const { return MemberName; }
+  BitcodeModule &getSingleBitcodeModule();
 
 private:
   ArrayRef<Symbol> module_symbols(unsigned I) const {
@@ -233,8 +198,6 @@ private:
 };
 
 using IndexWriteCallback = std::function<void(const std::string &)>;
-
-using ImportsFilesContainer = llvm::SmallVector<std::string>;
 
 /// This class defines the interface to the ThinLTO backend.
 class ThinBackendProc {
@@ -260,15 +223,13 @@ public:
         BackendThreadPool(ThinLTOParallelism) {}
 
   virtual ~ThinBackendProc() = default;
-  virtual void setup(unsigned ThinLTONumTasks, unsigned ThinLTOTaskOffset,
-                     Triple Triple) {}
   virtual Error start(
       unsigned Task, BitcodeModule BM,
       const FunctionImporter::ImportMapTy &ImportList,
       const FunctionImporter::ExportSetTy &ExportList,
       const std::map<GlobalValue::GUID, GlobalValue::LinkageTypes> &ResolvedODR,
       MapVector<StringRef, BitcodeModule> &ModuleMap) = 0;
-  virtual Error wait() {
+  Error wait() {
     BackendThreadPool.wait();
     if (Err)
       return std::move(*Err);
@@ -278,17 +239,9 @@ public:
   virtual bool isSensitiveToInputOrder() { return false; }
 
   // Write sharded indices and (optionally) imports to disk
-  LLVM_ABI Error emitFiles(const FunctionImporter::ImportMapTy &ImportList,
-                           StringRef ModulePath,
-                           const std::string &NewModulePath) const;
-
-  // Write sharded indices to SummaryPath, (optionally) imports to disk, and
-  // (optionally) record imports in ImportsFiles.
-  LLVM_ABI Error emitFiles(
-      const FunctionImporter::ImportMapTy &ImportList, StringRef ModulePath,
-      const std::string &NewModulePath, StringRef SummaryPath,
-      std::optional<std::reference_wrapper<ImportsFilesContainer>> ImportsFiles)
-      const;
+  Error emitFiles(const FunctionImporter::ImportMapTy &ImportList,
+                  llvm::StringRef ModulePath,
+                  const std::string &NewModulePath) const;
 };
 
 /// This callable defines the behavior of a ThinLTO backend after the thin-link
@@ -336,36 +289,10 @@ private:
 /// to the same path as the input module, with suffix ".thinlto.bc"
 /// ShouldEmitImportsFiles is true it also writes a list of imported files to a
 /// similar path with ".imports" appended instead.
-LLVM_ABI ThinBackend createInProcessThinBackend(
-    ThreadPoolStrategy Parallelism, IndexWriteCallback OnWrite = nullptr,
-    bool ShouldEmitIndexFiles = false, bool ShouldEmitImportsFiles = false);
-
-/// This ThinBackend generates the index shards and then runs the individual
-/// backend jobs via an external process. It takes the same parameters as the
-/// InProcessThinBackend; however, these parameters only control the behavior
-/// when generating the index files for the modules. Additionally:
-/// LinkerOutputFile is a string that should identify this LTO invocation in
-/// the context of a wider build. It's used for naming to aid the user in
-/// identifying activity related to a specific LTO invocation.
-/// Distributor specifies the path to a process to invoke to manage the backend
-/// job execution.
-/// DistributorArgs specifies a list of arguments to be applied to the
-/// distributor.
-/// RemoteCompiler specifies the path to a Clang executable to be invoked for
-/// the backend jobs.
-/// RemoteCompilerPrependArgs specifies a list of prepend arguments to be
-/// applied to the backend compilations.
-/// RemoteCompilerArgs specifies a list of arguments to be applied to the
-/// backend compilations.
-/// SaveTemps is a debugging tool that prevents temporary files created by this
-/// backend from being cleaned up.
-LLVM_ABI ThinBackend createOutOfProcessThinBackend(
-    ThreadPoolStrategy Parallelism, IndexWriteCallback OnWrite,
-    bool ShouldEmitIndexFiles, bool ShouldEmitImportsFiles,
-    StringRef LinkerOutputFile, StringRef Distributor,
-    ArrayRef<StringRef> DistributorArgs, StringRef RemoteCompiler,
-    ArrayRef<StringRef> RemoteCompilerPrependArgs,
-    ArrayRef<StringRef> RemoteCompilerArgs, bool SaveTemps);
+ThinBackend createInProcessThinBackend(ThreadPoolStrategy Parallelism,
+                                       IndexWriteCallback OnWrite = nullptr,
+                                       bool ShouldEmitIndexFiles = false,
+                                       bool ShouldEmitImportsFiles = false);
 
 /// This ThinBackend writes individual module indexes to files, instead of
 /// running the individual backend jobs. This backend is for distributed builds
@@ -382,11 +309,13 @@ LLVM_ABI ThinBackend createOutOfProcessThinBackend(
 /// the objects with NativeObjectPrefix instead of NewPrefix. OnWrite is
 /// callback which receives module identifier and notifies LTO user that index
 /// file for the module (and optionally imports file) was created.
-LLVM_ABI ThinBackend createWriteIndexesThinBackend(
-    ThreadPoolStrategy Parallelism, std::string OldPrefix,
-    std::string NewPrefix, std::string NativeObjectPrefix,
-    bool ShouldEmitImportsFiles, raw_fd_ostream *LinkedObjectsFile,
-    IndexWriteCallback OnWrite);
+ThinBackend createWriteIndexesThinBackend(ThreadPoolStrategy Parallelism,
+                                          std::string OldPrefix,
+                                          std::string NewPrefix,
+                                          std::string NativeObjectPrefix,
+                                          bool ShouldEmitImportsFiles,
+                                          raw_fd_ostream *LinkedObjectsFile,
+                                          IndexWriteCallback OnWrite);
 
 /// This class implements a resolution-based interface to LLVM's LTO
 /// functionality. It supports regular LTO, parallel LTO code generation and
@@ -425,21 +354,20 @@ public:
   /// this constructor.
   /// FIXME: We do currently require the DiagHandler field to be set in Conf.
   /// Until that is fixed, a Config argument is required.
-  LLVM_ABI LTO(Config Conf, ThinBackend Backend = {},
-               unsigned ParallelCodeGenParallelismLevel = 1,
-               LTOKind LTOMode = LTOK_Default);
-  LLVM_ABI virtual ~LTO();
+  LTO(Config Conf, ThinBackend Backend = {},
+      unsigned ParallelCodeGenParallelismLevel = 1,
+      LTOKind LTOMode = LTOK_Default);
+  ~LTO();
 
   /// Add an input file to the LTO link, using the provided symbol resolutions.
   /// The symbol resolutions must appear in the enumeration order given by
   /// InputFile::symbols().
-  LLVM_ABI Error add(std::unique_ptr<InputFile> Obj,
-                     ArrayRef<SymbolResolution> Res);
+  Error add(std::unique_ptr<InputFile> Obj, ArrayRef<SymbolResolution> Res);
 
   /// Returns an upper bound on the number of tasks that the client may expect.
   /// This may only be called after all IR object files have been added. For a
   /// full description of tasks see LTOBackend.h.
-  LLVM_ABI unsigned getMaxTasks() const;
+  unsigned getMaxTasks() const;
 
   /// Runs the LTO pipeline. This function calls the supplied AddStream
   /// function to add native object files to the link.
@@ -449,26 +377,18 @@ public:
   ///
   /// The client will receive at most one callback (via either AddStream or
   /// Cache) for each task identifier.
-  LLVM_ABI Error run(AddStreamFn AddStream, FileCache Cache = {});
+  Error run(AddStreamFn AddStream, FileCache Cache = {});
 
   /// Static method that returns a list of libcall symbols that can be generated
   /// by LTO but might not be visible from bitcode symbol table.
-  LLVM_ABI static SmallVector<const char *>
-  getRuntimeLibcallSymbols(const Triple &TT);
-
-protected:
-  // Called at the start of run().
-  virtual Error handleArchiveInputs() { return Error::success(); }
-
-  // Called before returning from run().
-  virtual void cleanup() {}
+  static SmallVector<const char *> getRuntimeLibcallSymbols(const Triple &TT);
 
 private:
   Config Conf;
 
   struct RegularLTOState {
-    LLVM_ABI RegularLTOState(unsigned ParallelCodeGenParallelismLevel,
-                             const Config &Conf);
+    RegularLTOState(unsigned ParallelCodeGenParallelismLevel,
+                    const Config &Conf);
     struct CommonResolution {
       uint64_t Size = 0;
       Align Alignment;
@@ -497,7 +417,7 @@ private:
   using ModuleMapType = MapVector<StringRef, BitcodeModule>;
 
   struct ThinLTOState {
-    LLVM_ABI ThinLTOState(ThinBackend Backend);
+    ThinLTOState(ThinBackend Backend);
 
     ThinBackend Backend;
     ModuleSummaryIndex CombinedIndex;
@@ -505,19 +425,6 @@ private:
     ModuleMapType ModuleMap;
     // The bitcode modules to compile, if specified by the LTO Config.
     std::optional<ModuleMapType> ModulesToCompile;
-
-    void setPrevailingModuleForGUID(GlobalValue::GUID GUID, StringRef Module) {
-      PrevailingModuleForGUID[GUID] = Module;
-    }
-    bool isPrevailingModuleForGUID(GlobalValue::GUID GUID,
-                                   StringRef Module) const {
-      auto It = PrevailingModuleForGUID.find(GUID);
-      return It != PrevailingModuleForGUID.end() && It->second == Module;
-    }
-
-  private:
-    // Make this private so all accesses must go through above accessor methods
-    // to avoid inadvertently creating new entries on lookups.
     DenseMap<GlobalValue::GUID, StringRef> PrevailingModuleForGUID;
   } ThinLTO;
 
@@ -596,23 +503,21 @@ private:
                             ArrayRef<SymbolResolution> Res, unsigned Partition,
                             bool InSummary);
 
-  // These functions take a range of symbol resolutions and consume the
-  // resolutions used by a single input module. Functions return ranges refering
-  // to the resolutions for the remaining modules in the InputFile.
-  Expected<ArrayRef<SymbolResolution>>
-  addModule(InputFile &Input, ArrayRef<SymbolResolution> InputRes,
-            unsigned ModI, ArrayRef<SymbolResolution> Res);
+  // These functions take a range of symbol resolutions [ResI, ResE) and consume
+  // the resolutions used by a single input module by incrementing ResI. After
+  // these functions return, [ResI, ResE) will refer to the resolution range for
+  // the remaining modules in the InputFile.
+  Error addModule(InputFile &Input, unsigned ModI,
+                  const SymbolResolution *&ResI, const SymbolResolution *ResE);
 
-  Expected<std::pair<RegularLTOState::AddedModule, ArrayRef<SymbolResolution>>>
-  addRegularLTO(InputFile &Input, ArrayRef<SymbolResolution> InputRes,
-                BitcodeModule BM, ArrayRef<InputFile::Symbol> Syms,
-                ArrayRef<SymbolResolution> Res);
+  Expected<RegularLTOState::AddedModule>
+  addRegularLTO(BitcodeModule BM, ArrayRef<InputFile::Symbol> Syms,
+                const SymbolResolution *&ResI, const SymbolResolution *ResE);
   Error linkRegularLTO(RegularLTOState::AddedModule Mod,
                        bool LivenessFromIndex);
 
-  Expected<ArrayRef<SymbolResolution>>
-  addThinLTO(BitcodeModule BM, ArrayRef<InputFile::Symbol> Syms,
-             ArrayRef<SymbolResolution> Res);
+  Error addThinLTO(BitcodeModule BM, ArrayRef<InputFile::Symbol> Syms,
+                   const SymbolResolution *&ResI, const SymbolResolution *ResE);
 
   Error runRegularLTO(AddStreamFn AddStream);
   Error runThinLTO(AddStreamFn AddStream, FileCache Cache,
@@ -633,13 +538,7 @@ private:
   DenseSet<GlobalValue::GUID> DynamicExportSymbols;
 
   // Diagnostic optimization remarks file
-  LLVMRemarkFileHandle DiagnosticOutputFile;
-
-public:
-  virtual Expected<std::shared_ptr<lto::InputFile>>
-  addInput(std::unique_ptr<lto::InputFile> InputPtr) {
-    return std::shared_ptr<lto::InputFile>(InputPtr.release());
-  }
+  std::unique_ptr<ToolOutputFile> DiagnosticOutputFile;
 };
 
 /// The resolution for a symbol. The linker must provide a SymbolResolution for

@@ -16,14 +16,11 @@
 #include "llvm/CodeGen/SelectionDAGTargetInfo.h"
 #include "llvm/Target/TargetMachine.h"
 
-#define GET_SDNODE_ENUM
-#include "LanaiGenSDNodeInfo.inc"
-
 namespace llvm {
 
-class LanaiSelectionDAGInfo : public SelectionDAGGenTargetInfo {
+class LanaiSelectionDAGInfo : public SelectionDAGTargetInfo {
 public:
-  LanaiSelectionDAGInfo();
+  LanaiSelectionDAGInfo() = default;
 
   SDValue EmitTargetCodeForMemcpy(SelectionDAG &DAG, const SDLoc &dl,
                                   SDValue Chain, SDValue Dst, SDValue Src,

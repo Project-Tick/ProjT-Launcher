@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- DanglingHandleCheck.cpp - clang-tidy------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -7,15 +7,19 @@
 //===----------------------------------------------------------------------===//
 
 #include "DanglingHandleCheck.h"
+#include "../utils/Matchers.h"
 #include "../utils/OptionsUtils.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
 using namespace clang::ast_matchers;
+using namespace clang::tidy::matchers;
 
 namespace clang::tidy::bugprone {
 
-static ast_matchers::internal::BindableMatcher<Stmt>
+namespace {
+
+ast_matchers::internal::BindableMatcher<Stmt>
 handleFrom(const ast_matchers::internal::Matcher<RecordDecl> &IsAHandle,
            const ast_matchers::internal::Matcher<Expr> &Arg) {
   return expr(
@@ -27,8 +31,9 @@ handleFrom(const ast_matchers::internal::Matcher<RecordDecl> &IsAHandle,
                               on(Arg))));
 }
 
-static ast_matchers::internal::Matcher<Stmt> handleFromTemporaryValue(
+ast_matchers::internal::Matcher<Stmt> handleFromTemporaryValue(
     const ast_matchers::internal::Matcher<RecordDecl> &IsAHandle) {
+
   const auto TemporaryExpr = anyOf(
       cxxBindTemporaryExpr(),
       cxxFunctionalCastExpr(
@@ -44,22 +49,22 @@ static ast_matchers::internal::Matcher<Stmt> handleFromTemporaryValue(
   return handleFrom(IsAHandle, anyOf(TemporaryExpr, TemporaryTernary));
 }
 
-static ast_matchers::internal::Matcher<RecordDecl> isASequence() {
+ast_matchers::internal::Matcher<RecordDecl> isASequence() {
   return hasAnyName("::std::deque", "::std::forward_list", "::std::list",
                     "::std::vector");
 }
 
-static ast_matchers::internal::Matcher<RecordDecl> isASet() {
+ast_matchers::internal::Matcher<RecordDecl> isASet() {
   return hasAnyName("::std::set", "::std::multiset", "::std::unordered_set",
                     "::std::unordered_multiset");
 }
 
-static ast_matchers::internal::Matcher<RecordDecl> isAMap() {
+ast_matchers::internal::Matcher<RecordDecl> isAMap() {
   return hasAnyName("::std::map", "::std::multimap", "::std::unordered_map",
                     "::std::unordered_multimap");
 }
 
-static ast_matchers::internal::BindableMatcher<Stmt> makeContainerMatcher(
+ast_matchers::internal::BindableMatcher<Stmt> makeContainerMatcher(
     const ast_matchers::internal::Matcher<RecordDecl> &IsAHandle) {
   // This matcher could be expanded to detect:
   //  - Constructors: eg. vector<string_view>(3, string("A"));
@@ -85,6 +90,8 @@ static ast_matchers::internal::BindableMatcher<Stmt> makeContainerMatcher(
           cxxOperatorCallExpr(callee(cxxMethodDecl(ofClass(isAMap()))),
                               hasOverloadedOperatorName("[]"))));
 }
+
+} // anonymous namespace
 
 DanglingHandleCheck::DanglingHandleCheck(StringRef Name,
                                          ClangTidyContext *Context)

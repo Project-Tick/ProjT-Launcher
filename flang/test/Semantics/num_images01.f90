@@ -15,7 +15,8 @@ subroutine test
   print *, num_images(team=my_team)
 
   ! incorrectly typed argument
-  !ERROR: Actual argument for 'team=' has bad type 'REAL(4)'
+  ! the error is seen as too many arguments to the num_images() call with no arguments
+  !ERROR: too many actual arguments for intrinsic 'num_images'
   print *, num_images(3.4)
 
   ! call with too many arguments

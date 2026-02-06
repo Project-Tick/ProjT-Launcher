@@ -15,7 +15,6 @@
 
 #include "llvm/ADT/STLFunctionalExtras.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/TableGen/Main.h"
 #include "llvm/TableGen/Record.h"
 
 namespace llvm {
@@ -24,27 +23,7 @@ class RecordKeeper;
 class raw_ostream;
 
 namespace TableGen::Emitter {
-
-/// Represents the emitting function. Can produce a single or multple output
-/// files.
-struct FnT {
-  using SingleFileGeneratorType = void(const RecordKeeper &Records,
-                                       raw_ostream &OS);
-  using MultiFileGeneratorType = TableGenOutputFiles(
-      StringRef FilenamePrefix, const RecordKeeper &Records);
-
-  SingleFileGeneratorType *SingleFileGenerator = nullptr;
-  MultiFileGeneratorType *MultiFileGenerator = nullptr;
-
-  FnT() = default;
-  FnT(SingleFileGeneratorType *Gen) : SingleFileGenerator(Gen) {}
-  FnT(MultiFileGeneratorType *Gen) : MultiFileGenerator(Gen) {}
-
-  bool operator==(const FnT &Other) const {
-    return SingleFileGenerator == Other.SingleFileGenerator &&
-           MultiFileGenerator == Other.MultiFileGenerator;
-  }
-};
+using FnT = function_ref<void(const RecordKeeper &Records, raw_ostream &OS)>;
 
 /// Creating an `Opt` object registers the command line option \p Name with
 /// TableGen backend and associates the callback \p CB with that option. If
@@ -57,33 +36,17 @@ struct Opt {
 /// Convienence wrapper around `Opt` that registers `EmitterClass::run` as the
 /// callback.
 template <class EmitterC> class OptClass : Opt {
-  static TableGenOutputFiles run(StringRef /*FilenamePrefix*/,
-                                 const RecordKeeper &RK) {
-    std::string S;
-    raw_string_ostream OS(S);
+  static void run(const RecordKeeper &RK, raw_ostream &OS) {
     EmitterC(RK).run(OS);
-    return {S, {}};
   }
 
 public:
   OptClass(StringRef Name, StringRef Desc) : Opt(Name, run, Desc) {}
 };
 
-/// A version of the wrapper for backends emitting multiple files.
-template <class EmitterC> class MultiFileOptClass : Opt {
-  static TableGenOutputFiles run(StringRef FilenamePrefix,
-                                 const RecordKeeper &RK) {
-    return EmitterC(RK).run(FilenamePrefix);
-  }
-
-public:
-  MultiFileOptClass(StringRef Name, StringRef Desc) : Opt(Name, run, Desc) {}
-};
-
 /// Apply callback for any command line option registered above. Returns false
 /// is no callback was applied.
-bool ApplyCallback(const RecordKeeper &Records, TableGenOutputFiles &OutFiles,
-                   StringRef FilenamePrefix);
+bool ApplyCallback(const RecordKeeper &Records, raw_ostream &OS);
 
 } // namespace TableGen::Emitter
 

@@ -10,9 +10,7 @@
 #include "Representation.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/FileSystem.h"
-#include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/raw_ostream.h"
 #include <string>
 
 using namespace llvm;
@@ -52,72 +50,56 @@ static void writeHeader(const Twine &Text, unsigned int Num, raw_ostream &OS) {
   OS << std::string(Num, '#') + " " + Text << "\n\n";
 }
 
-static void writeSourceFileRef(const ClangDocContext &CDCtx, const Location &L,
-                               raw_ostream &OS) {
+static void writeFileDefinition(const ClangDocContext &CDCtx, const Location &L,
+                                raw_ostream &OS) {
 
   if (!CDCtx.RepositoryUrl) {
-    OS << "*Defined at " << L.Filename << "#"
-       << std::to_string(L.StartLineNumber) << "*";
+    OS << "*Defined at " << L.Filename << "#" << std::to_string(L.LineNumber)
+       << "*";
   } else {
-
-    OS << formatv("*Defined at [#{0}{1}{2}](#{0}{1}{3})*",
-                  CDCtx.RepositoryLinePrefix.value_or(""), L.StartLineNumber,
-                  L.Filename, *CDCtx.RepositoryUrl);
+    OS << "*Defined at [" << L.Filename << "#" << std::to_string(L.LineNumber)
+       << "](" << StringRef{*CDCtx.RepositoryUrl}
+       << llvm::sys::path::relative_path(L.Filename) << "#"
+       << std::to_string(L.LineNumber) << ")"
+       << "*";
   }
   OS << "\n\n";
 }
 
-static void maybeWriteSourceFileRef(llvm::raw_ostream &OS,
-                                    const ClangDocContext &CDCtx,
-                                    const std::optional<Location> &DefLoc) {
-  if (DefLoc)
-    writeSourceFileRef(CDCtx, *DefLoc, OS);
-}
-
 static void writeDescription(const CommentInfo &I, raw_ostream &OS) {
-  switch (I.Kind) {
-  case CommentKind::CK_FullComment:
+  if (I.Kind == "FullComment") {
     for (const auto &Child : I.Children)
       writeDescription(*Child, OS);
-    break;
-
-  case CommentKind::CK_ParagraphComment:
+  } else if (I.Kind == "ParagraphComment") {
     for (const auto &Child : I.Children)
       writeDescription(*Child, OS);
     writeNewLine(OS);
-    break;
-
-  case CommentKind::CK_BlockCommandComment:
+  } else if (I.Kind == "BlockCommandComment") {
     OS << genEmphasis(I.Name);
     for (const auto &Child : I.Children)
       writeDescription(*Child, OS);
-    break;
-
-  case CommentKind::CK_InlineCommandComment:
+  } else if (I.Kind == "InlineCommandComment") {
     OS << genEmphasis(I.Name) << " " << I.Text;
-    break;
-
-  case CommentKind::CK_ParamCommandComment:
-  case CommentKind::CK_TParamCommandComment: {
+  } else if (I.Kind == "ParamCommandComment") {
     std::string Direction = I.Explicit ? (" " + I.Direction).str() : "";
     OS << genEmphasis(I.ParamName) << I.Text << Direction;
     for (const auto &Child : I.Children)
       writeDescription(*Child, OS);
-    break;
-  }
-
-  case CommentKind::CK_VerbatimBlockComment:
+  } else if (I.Kind == "TParamCommandComment") {
+    std::string Direction = I.Explicit ? (" " + I.Direction).str() : "";
+    OS << genEmphasis(I.ParamName) << I.Text << Direction;
     for (const auto &Child : I.Children)
       writeDescription(*Child, OS);
-    break;
-
-  case CommentKind::CK_VerbatimBlockLineComment:
-  case CommentKind::CK_VerbatimLineComment:
+  } else if (I.Kind == "VerbatimBlockComment") {
+    for (const auto &Child : I.Children)
+      writeDescription(*Child, OS);
+  } else if (I.Kind == "VerbatimBlockLineComment") {
     OS << I.Text;
     writeNewLine(OS);
-    break;
-
-  case CommentKind::CK_HTMLStartTagComment: {
+  } else if (I.Kind == "VerbatimLineComment") {
+    OS << I.Text;
+    writeNewLine(OS);
+  } else if (I.Kind == "HTMLStartTagComment") {
     if (I.AttrKeys.size() != I.AttrValues.size())
       return;
     std::string Buffer;
@@ -127,20 +109,12 @@ static void writeDescription(const CommentInfo &I, raw_ostream &OS) {
 
     std::string CloseTag = I.SelfClosing ? "/>" : ">";
     writeLine("<" + I.Name + Attrs.str() + CloseTag, OS);
-    break;
-  }
-
-  case CommentKind::CK_HTMLEndTagComment:
+  } else if (I.Kind == "HTMLEndTagComment") {
     writeLine("</" + I.Name + ">", OS);
-    break;
-
-  case CommentKind::CK_TextComment:
+  } else if (I.Kind == "TextComment") {
     OS << I.Text;
-    break;
-
-  case CommentKind::CK_Unknown:
-    OS << "Unknown comment kind: " << static_cast<int>(I.Kind) << ".\n\n";
-    break;
+  } else {
+    OS << "Unknown comment kind: " << I.Kind << ".\n\n";
   }
 }
 
@@ -168,8 +142,8 @@ static void genMarkdown(const ClangDocContext &CDCtx, const EnumInfo &I,
     for (const auto &N : I.Members)
       Members << "| " << N.Name << " |\n";
   writeLine(Members.str(), OS);
-
-  maybeWriteSourceFileRef(OS, CDCtx, I.DefLoc);
+  if (I.DefLoc)
+    writeFileDefinition(CDCtx, *I.DefLoc, OS);
 
   for (const auto &C : I.Description)
     writeDescription(C, OS);
@@ -187,14 +161,17 @@ static void genMarkdown(const ClangDocContext &CDCtx, const FunctionInfo &I,
     First = false;
   }
   writeHeader(I.Name, 3, OS);
-  StringRef Access = getAccessSpelling(I.Access);
-  writeLine(genItalic(Twine(Access) + (!Access.empty() ? " " : "") +
-                      (I.IsStatic ? "static " : "") +
-                      I.ReturnType.Type.QualName.str() + " " + I.Name.str() +
-                      "(" + Twine(Stream.str()) + ")"),
-            OS);
-
-  maybeWriteSourceFileRef(OS, CDCtx, I.DefLoc);
+  std::string Access = getAccessSpelling(I.Access).str();
+  if (Access != "")
+    writeLine(genItalic(Access + " " + I.ReturnType.Type.QualName + " " +
+                        I.Name + "(" + Stream.str() + ")"),
+              OS);
+  else
+    writeLine(genItalic(I.ReturnType.Type.QualName + " " + I.Name + "(" +
+                        Stream.str() + ")"),
+              OS);
+  if (I.DefLoc)
+    writeFileDefinition(CDCtx, *I.DefLoc, OS);
 
   for (const auto &C : I.Description)
     writeDescription(C, OS);
@@ -253,8 +230,8 @@ static void genMarkdown(const ClangDocContext &CDCtx, const NamespaceInfo &I,
 static void genMarkdown(const ClangDocContext &CDCtx, const RecordInfo &I,
                         llvm::raw_ostream &OS) {
   writeHeader(getTagType(I.TagType) + " " + I.Name, 1, OS);
-
-  maybeWriteSourceFileRef(OS, CDCtx, I.DefLoc);
+  if (I.DefLoc)
+    writeFileDefinition(CDCtx, *I.DefLoc, OS);
 
   if (!I.Description.empty()) {
     for (const auto &C : I.Description)
@@ -277,11 +254,11 @@ static void genMarkdown(const ClangDocContext &CDCtx, const RecordInfo &I,
   if (!I.Members.empty()) {
     writeHeader("Members", 2, OS);
     for (const auto &Member : I.Members) {
-      StringRef Access = getAccessSpelling(Member.Access);
-      writeLine(Twine(Access) + (Access.empty() ? "" : " ") +
-                    (Member.IsStatic ? "static " : "") +
-                    Member.Type.Name.str() + " " + Member.Name.str(),
-                OS);
+      std::string Access = getAccessSpelling(Member.Access).str();
+      if (Access != "")
+        writeLine(Access + " " + Member.Type.Name + " " + Member.Name, OS);
+      else
+        writeLine(Member.Type.Name + " " + Member.Name, OS);
     }
     writeNewLine(OS);
   }
@@ -323,7 +300,7 @@ static llvm::Error serializeIndex(ClangDocContext &CDCtx) {
   llvm::SmallString<128> FilePath;
   llvm::sys::path::native(CDCtx.OutDirectory, FilePath);
   llvm::sys::path::append(FilePath, "all_files.md");
-  llvm::raw_fd_ostream OS(FilePath, FileErr, llvm::sys::fs::OF_Text);
+  llvm::raw_fd_ostream OS(FilePath, FileErr, llvm::sys::fs::OF_None);
   if (FileErr)
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "error creating index file: " +
@@ -346,7 +323,7 @@ static llvm::Error genIndex(ClangDocContext &CDCtx) {
   llvm::SmallString<128> FilePath;
   llvm::sys::path::native(CDCtx.OutDirectory, FilePath);
   llvm::sys::path::append(FilePath, "index.md");
-  llvm::raw_fd_ostream OS(FilePath, FileErr, llvm::sys::fs::OF_Text);
+  llvm::raw_fd_ostream OS(FilePath, FileErr, llvm::sys::fs::OF_None);
   if (FileErr)
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "error creating index file: " +
@@ -372,15 +349,6 @@ static llvm::Error genIndex(ClangDocContext &CDCtx) {
       case InfoType::IT_typedef:
         Type = "Typedef";
         break;
-      case InfoType::IT_concept:
-        Type = "Concept";
-        break;
-      case InfoType::IT_variable:
-        Type = "Variable";
-        break;
-      case InfoType::IT_friend:
-        Type = "Friend";
-        break;
       case InfoType::IT_default:
         Type = "Other";
       }
@@ -398,9 +366,9 @@ class MDGenerator : public Generator {
 public:
   static const char *Format;
 
-  llvm::Error generateDocumentation(
-      StringRef RootDir, llvm::StringMap<std::unique_ptr<doc::Info>> Infos,
-      const ClangDocContext &CDCtx, std::string DirName) override;
+  llvm::Error generateDocs(StringRef RootDir,
+                           llvm::StringMap<std::unique_ptr<doc::Info>> Infos,
+                           const ClangDocContext &CDCtx) override;
   llvm::Error createResources(ClangDocContext &CDCtx) override;
   llvm::Error generateDocForInfo(Info *I, llvm::raw_ostream &OS,
                                  const ClangDocContext &CDCtx) override;
@@ -408,9 +376,10 @@ public:
 
 const char *MDGenerator::Format = "md";
 
-llvm::Error MDGenerator::generateDocumentation(
-    StringRef RootDir, llvm::StringMap<std::unique_ptr<doc::Info>> Infos,
-    const ClangDocContext &CDCtx, std::string DirName) {
+llvm::Error
+MDGenerator::generateDocs(StringRef RootDir,
+                          llvm::StringMap<std::unique_ptr<doc::Info>> Infos,
+                          const ClangDocContext &CDCtx) {
   // Track which directories we already tried to create.
   llvm::StringSet<> CreatedDirs;
 
@@ -438,7 +407,7 @@ llvm::Error MDGenerator::generateDocumentation(
   for (const auto &Group : FileToInfos) {
     std::error_code FileErr;
     llvm::raw_fd_ostream InfoOS(Group.getKey(), FileErr,
-                                llvm::sys::fs::OF_Text);
+                                llvm::sys::fs::OF_None);
     if (FileErr) {
       return llvm::createStringError(FileErr, "Error opening file '%s'",
                                      Group.getKey().str().c_str());
@@ -471,10 +440,6 @@ llvm::Error MDGenerator::generateDocForInfo(Info *I, llvm::raw_ostream &OS,
     break;
   case InfoType::IT_typedef:
     genMarkdown(CDCtx, *static_cast<clang::doc::TypedefInfo *>(I), OS);
-    break;
-  case InfoType::IT_concept:
-  case InfoType::IT_variable:
-  case InfoType::IT_friend:
     break;
   case InfoType::IT_default:
     return createStringError(llvm::inconvertibleErrorCode(),

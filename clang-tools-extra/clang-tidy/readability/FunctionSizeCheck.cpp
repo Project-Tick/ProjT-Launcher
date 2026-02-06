@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===-- FunctionSizeCheck.cpp - clang-tidy --------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -108,14 +108,6 @@ public:
     return true;
   }
 
-  bool TraverseConstructorInitializer(CXXCtorInitializer *Init) {
-    if (CountMemberInitAsStmt)
-      ++Info.Statements;
-
-    Base::TraverseConstructorInitializer(Init);
-    return true;
-  }
-
   struct FunctionInfo {
     unsigned Lines = 0;
     unsigned Statements = 0;
@@ -128,7 +120,6 @@ public:
   llvm::BitVector TrackedParent;
   unsigned StructNesting = 0;
   unsigned CurrentNestingLevel = 0;
-  bool CountMemberInitAsStmt;
 };
 
 } // namespace
@@ -144,9 +135,7 @@ FunctionSizeCheck::FunctionSizeCheck(StringRef Name, ClangTidyContext *Context)
       NestingThreshold(
           Options.get("NestingThreshold", DefaultNestingThreshold)),
       VariableThreshold(
-          Options.get("VariableThreshold", DefaultVariableThreshold)),
-      CountMemberInitAsStmt(
-          Options.get("CountMemberInitAsStmt", DefaultCountMemberInitAsStmt)) {}
+          Options.get("VariableThreshold", DefaultVariableThreshold)) {}
 
 void FunctionSizeCheck::storeOptions(ClangTidyOptions::OptionMap &Opts) {
   Options.store(Opts, "LineThreshold", LineThreshold);
@@ -155,7 +144,6 @@ void FunctionSizeCheck::storeOptions(ClangTidyOptions::OptionMap &Opts) {
   Options.store(Opts, "ParameterThreshold", ParameterThreshold);
   Options.store(Opts, "NestingThreshold", NestingThreshold);
   Options.store(Opts, "VariableThreshold", VariableThreshold);
-  Options.store(Opts, "CountMemberInitAsStmt", CountMemberInitAsStmt);
 }
 
 void FunctionSizeCheck::registerMatchers(MatchFinder *Finder) {
@@ -172,7 +160,6 @@ void FunctionSizeCheck::check(const MatchFinder::MatchResult &Result) {
 
   FunctionASTVisitor Visitor;
   Visitor.Info.NestingThreshold = NestingThreshold.value_or(-1);
-  Visitor.CountMemberInitAsStmt = CountMemberInitAsStmt;
   Visitor.TraverseDecl(const_cast<FunctionDecl *>(Func));
   auto &FI = Visitor.Info;
 
@@ -181,14 +168,14 @@ void FunctionSizeCheck::check(const MatchFinder::MatchResult &Result) {
 
   // Count the lines including whitespace and comments. Really simple.
   if (const Stmt *Body = Func->getBody()) {
-    const SourceManager *SM = Result.SourceManager;
+    SourceManager *SM = Result.SourceManager;
     if (SM->isWrittenInSameFile(Body->getBeginLoc(), Body->getEndLoc())) {
       FI.Lines = SM->getSpellingLineNumber(Body->getEndLoc()) -
                  SM->getSpellingLineNumber(Body->getBeginLoc());
     }
   }
 
-  const unsigned ActualNumberParameters = Func->getNumParams();
+  unsigned ActualNumberParameters = Func->getNumParams();
 
   if ((LineThreshold && FI.Lines > LineThreshold) ||
       (StatementThreshold && FI.Statements > StatementThreshold) ||

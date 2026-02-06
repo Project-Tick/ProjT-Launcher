@@ -1,4 +1,5 @@
-! RUN: %flang_fc1 -emit-hlfir %s -o - | FileCheck %s --check-prefixes=CHECK%if target=x86_64{{.*}} %{,CHECK-KIND10%}
+! RUN: bbc -emit-fir %s -o - | FileCheck %s
+! RUN: %flang_fc1 -emit-fir %s -o - | FileCheck %s
 
 ! CHECK-LABEL: func @_QPspacing_test(
 real*4 function spacing_test(x)
@@ -8,13 +9,12 @@ real*4 function spacing_test(x)
 ! CHECK: %{{.*}} = fir.call @_FortranASpacing4(%[[a1]]) {{.*}}: (f32) -> f32
 end function
 
-! CHECK-KIND10-LABEL: func @_QPspacing_test2(
-function spacing_test2(x)
-  integer, parameter :: kind10 = merge(10, 4, selected_real_kind(p=18).eq.10)
-  real(kind10) :: x, spacing_test2
+! CHECK-LABEL: func @_QPspacing_test2(
+real*10 function spacing_test2(x)
+  real*10 :: x
   spacing_test2 = spacing(x)
-! CHECK-KIND10: %[[a1:.*]] = fir.load %{{.*}} : !fir.ref<f80>
-! CHECK-KIND10: %{{.*}} = fir.call @_FortranASpacing10(%[[a1]]) {{.*}}: (f80) -> f80
+! CHECK: %[[a1:.*]] = fir.load %{{.*}} : !fir.ref<f80>
+! CHECK: %{{.*}} = fir.call @_FortranASpacing10(%[[a1]]) {{.*}}: (f80) -> f80
 end function
 
 ! CHECK-LABEL: test_real2

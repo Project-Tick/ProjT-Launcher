@@ -311,12 +311,12 @@ enum GlobalValueSummarySymtabCodes {
   // [nummib x (numcontext x total size)]?]
   FS_PERMODULE_ALLOC_INFO = 27,
   // Summary of combined index memprof callsite metadata.
-  // [valueid, numstackindices, numver,
-  //  numstackindices x stackidindex, numver x version]
+  // [valueid, context radix tree index, numver,
+  //  numver x version]
   FS_COMBINED_CALLSITE_INFO = 28,
   // Summary of combined index allocation memprof metadata.
   // [nummib, numver,
-  //  nummib x (alloc type, context radix tree index),
+  //  nummib x (alloc type, numstackids, numstackids x stackidindex),
   //  numver x version]
   FS_COMBINED_ALLOC_INFO = 29,
   // List of all stack ids referenced by index in the callsite and alloc infos.
@@ -335,11 +335,6 @@ enum GlobalValueSummarySymtabCodes {
   // CallStackRadixTreeBuilder class in ProfileData/MemProf.h for format.
   // [n x entry]
   FS_CONTEXT_RADIX_TREE_ARRAY = 32,
-  // Summary of combined index allocation memprof metadata, without context.
-  // [nummib, numver,
-  //  nummib x alloc type,
-  //  numver x version]
-  FS_COMBINED_ALLOC_INFO_NO_CONTEXT = 33,
 };
 
 enum MetadataCodes {
@@ -390,8 +385,6 @@ enum MetadataCodes {
   METADATA_GENERIC_SUBRANGE = 45, // [distinct, count, lo, up, stride]
   METADATA_ARG_LIST = 46,         // [n x [type num, value num]]
   METADATA_ASSIGN_ID = 47,        // [distinct, ...]
-  METADATA_SUBRANGE_TYPE = 48,    // [distinct, ...]
-  METADATA_FIXED_POINT_TYPE = 49, // [distinct, ...]
 };
 
 // The constants block (CONSTANTS_BLOCK_ID) describes emission for each
@@ -437,8 +430,6 @@ enum ConstantsCodes {
   CST_CODE_CE_GEP_WITH_INRANGE = 31,  // [opty, flags, range, n x operands]
   CST_CODE_CE_GEP = 32,               // [opty, flags, n x operands]
   CST_CODE_PTRAUTH = 33,              // [ptr, key, disc, addrdisc]
-  CST_CODE_PTRAUTH2 = 34,             // [ptr, key, disc, addrdisc,
-                                      //  deactivation_symbol]
 };
 
 /// CastOpcodes - These are values used in the bitcode files to encode which
@@ -458,8 +449,7 @@ enum CastOpcodes {
   CAST_PTRTOINT = 9,
   CAST_INTTOPTR = 10,
   CAST_BITCAST = 11,
-  CAST_ADDRSPACECAST = 12,
-  CAST_PTRTOADDR = 13,
+  CAST_ADDRSPACECAST = 12
 };
 
 /// UnaryOpcodes - These are values used in the bitcode files to encode which
@@ -512,9 +502,7 @@ enum RMWOperations {
   RMW_UINC_WRAP = 15,
   RMW_UDEC_WRAP = 16,
   RMW_USUB_COND = 17,
-  RMW_USUB_SAT = 18,
-  RMW_FMAXIMUM = 19,
-  RMW_FMINIMUM = 20,
+  RMW_USUB_SAT = 18
 };
 
 /// OverflowingBinaryOperatorOptionalFlags - Flags for serializing
@@ -641,25 +629,25 @@ enum FunctionCodes {
   FUNC_CODE_INST_CALL = 34, // CALL:    [attr, cc, fnty, fnid, args...]
 
   FUNC_CODE_DEBUG_LOC = 35,          // DEBUG_LOC:  [Line,Col,ScopeVal, IAVal]
-  FUNC_CODE_INST_FENCE = 36,         // FENCE: [ordering, syncscope]
+  FUNC_CODE_INST_FENCE = 36,         // FENCE: [ordering, synchscope]
   FUNC_CODE_INST_CMPXCHG_OLD = 37,   // CMPXCHG: [ptrty, ptr, cmp, val, vol,
-                                     //            ordering, syncscope,
+                                     //            ordering, synchscope,
                                      //            failure_ordering?, weak?]
   FUNC_CODE_INST_ATOMICRMW_OLD = 38, // ATOMICRMW: [ptrty,ptr,val, operation,
                                      //             align, vol,
-                                     //             ordering, syncscope]
+                                     //             ordering, synchscope]
   FUNC_CODE_INST_RESUME = 39,        // RESUME:     [opval]
   FUNC_CODE_INST_LANDINGPAD_OLD =
       40,                         // LANDINGPAD: [ty,val,val,num,id0,val0...]
   FUNC_CODE_INST_LOADATOMIC = 41, // LOAD: [opty, op, align, vol,
-                                  //        ordering, syncscope]
+                                  //        ordering, synchscope]
   FUNC_CODE_INST_STOREATOMIC_OLD = 42, // STORE: [ptrty,ptr,val, align, vol
-                                       //         ordering, syncscope]
+                                       //         ordering, synchscope]
   FUNC_CODE_INST_GEP = 43,             // GEP:  [inbounds, n x operands]
   FUNC_CODE_INST_STORE = 44,       // STORE: [ptrty,ptr,valty,val, align, vol]
   FUNC_CODE_INST_STOREATOMIC = 45, // STORE: [ptrty,ptr,val, align, vol
   FUNC_CODE_INST_CMPXCHG = 46,     // CMPXCHG: [ptrty, ptr, cmp, val, vol,
-                                   //           success_ordering, syncscope,
+                                   //           success_ordering, synchscope,
                                    //           failure_ordering, weak]
   FUNC_CODE_INST_LANDINGPAD = 47,  // LANDINGPAD: [ty,val,num,id0,val0...]
   FUNC_CODE_INST_CLEANUPRET = 48,  // CLEANUPRET: [val] or [val,bb#]
@@ -677,7 +665,7 @@ enum FunctionCodes {
   FUNC_CODE_INST_FREEZE = 58,     // FREEZE: [opty, opval]
   FUNC_CODE_INST_ATOMICRMW = 59,  // ATOMICRMW: [ptrty, ptr, valty, val,
                                   //             operation, align, vol,
-                                  //             ordering, syncscope]
+                                  //             ordering, synchscope]
   FUNC_CODE_BLOCKADDR_USERS = 60, // BLOCKADDR_USERS: [value...]
 
   FUNC_CODE_DEBUG_RECORD_VALUE =
@@ -690,8 +678,6 @@ enum FunctionCodes {
   FUNC_CODE_DEBUG_RECORD_VALUE_SIMPLE =
       64, // [DILocation, DILocalVariable, DIExpression, Value]
   FUNC_CODE_DEBUG_RECORD_LABEL = 65, // [DILocation, DILabel]
-  FUNC_CODE_DEBUG_RECORD_DECLARE_VALUE =
-      66, // [DILocation, DILocalVariable, DIExpression, ValueAsMetadata]
 };
 
 enum UseListCodes {
@@ -803,9 +789,6 @@ enum AttributeKindCodes {
   ATTR_KIND_NO_DIVERGENCE_SOURCE = 100,
   ATTR_KIND_SANITIZE_TYPE = 101,
   ATTR_KIND_CAPTURES = 102,
-  ATTR_KIND_DEAD_ON_RETURN = 103,
-  ATTR_KIND_SANITIZE_ALLOC_TOKEN = 104,
-  ATTR_KIND_NO_CREATE_UNDEF_OR_POISON = 105,
 };
 
 enum ComdatSelectionKindCodes {

@@ -28,5 +28,6 @@ DeclGroup* DeclGroup::Create(ASTContext &C, Decl **Decls, unsigned NumDecls) {
 DeclGroup::DeclGroup(unsigned numdecls, Decl** decls) : NumDecls(numdecls) {
   assert(numdecls > 0);
   assert(decls);
-  std::uninitialized_copy(decls, decls + numdecls, getTrailingObjects());
+  std::uninitialized_copy(decls, decls + numdecls,
+                          getTrailingObjects<Decl *>());
 }

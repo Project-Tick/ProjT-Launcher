@@ -19,8 +19,9 @@
 #include "llvm/IR/PassInstrumentation.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/PrettyStackTrace.h"
+
+extern llvm::cl::opt<bool> UseNewDbgInfoFormat;
 
 namespace llvm {
 
@@ -62,6 +63,10 @@ PreservedAnalyses PassManager<IRUnitT, AnalysisManagerT, ExtraArgTs...>::run(
   PassInstrumentation PI =
       detail::getAnalysisResult<PassInstrumentationAnalysis>(
           AM, IR, std::tuple<ExtraArgTs...>(ExtraArgs...));
+
+  // RemoveDIs: if requested, convert debug-info to DbgRecord representation
+  // for duration of these passes.
+  ScopedDbgInfoFormatSetter FormatSetter(IR, UseNewDbgInfoFormat);
 
   StackTraceEntry Entry(PI, IR);
   for (auto &Pass : Passes) {
@@ -131,7 +136,10 @@ template <typename IRUnitT, typename... ExtraArgTs>
 inline typename AnalysisManager<IRUnitT, ExtraArgTs...>::ResultConceptT &
 AnalysisManager<IRUnitT, ExtraArgTs...>::getResultImpl(
     AnalysisKey *ID, IRUnitT &IR, ExtraArgTs... ExtraArgs) {
-  auto [RI, Inserted] = AnalysisResults.try_emplace(std::make_pair(ID, &IR));
+  typename AnalysisResultMapT::iterator RI;
+  bool Inserted;
+  std::tie(RI, Inserted) = AnalysisResults.insert(std::make_pair(
+      std::make_pair(ID, &IR), typename AnalysisResultListT::iterator()));
 
   // If we don't have a cached result for this function, look up the pass and
   // run it to produce a result, which we then add to the cache.

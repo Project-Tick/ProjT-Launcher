@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "SPIRVRegisterInfo.h"
+#include "SPIRV.h"
 #include "SPIRVSubtarget.h"
 #include "llvm/CodeGen/MachineFunction.h"
 

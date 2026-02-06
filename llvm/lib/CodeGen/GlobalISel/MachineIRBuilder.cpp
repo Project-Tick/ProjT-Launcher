@@ -38,10 +38,8 @@ void MachineIRBuilder::setMF(MachineFunction &MF) {
 //------------------------------------------------------------------------------
 
 MachineInstrBuilder MachineIRBuilder::buildInstrNoInsert(unsigned Opcode) {
-  return BuildMI(
-      getMF(),
-      {getDL(), getPCSections(), getMMRAMetadata(), getDeactivationSymbol()},
-      getTII().get(Opcode));
+  return BuildMI(getMF(), {getDL(), getPCSections(), getMMRAMetadata()},
+                 getTII().get(Opcode));
 }
 
 MachineInstrBuilder MachineIRBuilder::insertInstr(MachineInstrBuilder MIB) {
@@ -111,10 +109,8 @@ MachineInstrBuilder MachineIRBuilder::buildConstDbgValue(const Constant &C,
   if (auto *CI = dyn_cast<ConstantInt>(NumericConstant)) {
     if (CI->getBitWidth() > 64)
       MIB.addCImm(CI);
-    else if (CI->getBitWidth() == 1)
-      MIB.addImm(CI->getZExtValue());
     else
-      MIB.addImm(CI->getSExtValue());
+      MIB.addImm(CI->getZExtValue());
   } else if (auto *CFP = dyn_cast<ConstantFP>(NumericConstant)) {
     MIB.addFPImm(CFP);
   } else if (isa<ConstantPointerNull>(NumericConstant)) {
@@ -212,20 +208,11 @@ MachineIRBuilder::buildPtrAdd(const DstOp &Res, const SrcOp &Op0,
   return buildInstr(TargetOpcode::G_PTR_ADD, {Res}, {Op0, Op1}, Flags);
 }
 
-MachineInstrBuilder MachineIRBuilder::buildObjectPtrOffset(const DstOp &Res,
-                                                           const SrcOp &Op0,
-                                                           const SrcOp &Op1) {
-  return buildPtrAdd(Res, Op0, Op1,
-                     MachineInstr::MIFlag::NoUWrap |
-                         MachineInstr::MIFlag::InBounds);
-}
-
 std::optional<MachineInstrBuilder>
 MachineIRBuilder::materializePtrAdd(Register &Res, Register Op0,
-                                    const LLT ValueTy, uint64_t Value,
-                                    std::optional<unsigned> Flags) {
+                                    const LLT ValueTy, uint64_t Value) {
   assert(Res == 0 && "Res is a result argument");
-  assert(ValueTy.isScalar() && "invalid offset type");
+  assert(ValueTy.isScalar()  && "invalid offset type");
 
   if (Value == 0) {
     Res = Op0;
@@ -234,14 +221,7 @@ MachineIRBuilder::materializePtrAdd(Register &Res, Register Op0,
 
   Res = getMRI()->createGenericVirtualRegister(getMRI()->getType(Op0));
   auto Cst = buildConstant(ValueTy, Value);
-  return buildPtrAdd(Res, Op0, Cst.getReg(0), Flags);
-}
-
-std::optional<MachineInstrBuilder> MachineIRBuilder::materializeObjectPtrOffset(
-    Register &Res, Register Op0, const LLT ValueTy, uint64_t Value) {
-  return materializePtrAdd(Res, Op0, ValueTy, Value,
-                           MachineInstr::MIFlag::NoUWrap |
-                               MachineInstr::MIFlag::InBounds);
+  return buildPtrAdd(Res, Op0, Cst.getReg(0));
 }
 
 MachineInstrBuilder MachineIRBuilder::buildMaskLowPtrBits(const DstOp &Res,
@@ -336,7 +316,6 @@ MachineInstrBuilder MachineIRBuilder::buildCopy(const DstOp &Res,
 
 MachineInstrBuilder MachineIRBuilder::buildConstant(const DstOp &Res,
                                                     const ConstantInt &Val) {
-  assert(!isa<VectorType>(Val.getType()) && "Unexpected vector constant!");
   LLT Ty = Res.getLLTTy(*getMRI());
   LLT EltTy = Ty.getScalarType();
   assert(EltTy.getScalarSizeInBits() == Val.getBitWidth() &&
@@ -363,15 +342,12 @@ MachineInstrBuilder MachineIRBuilder::buildConstant(const DstOp &Res,
                                                     int64_t Val) {
   auto IntN = IntegerType::get(getMF().getFunction().getContext(),
                                Res.getLLTTy(*getMRI()).getScalarSizeInBits());
-  // TODO: Avoid implicit trunc?
-  // See https://github.com/llvm/llvm-project/issues/112510.
-  ConstantInt *CI = ConstantInt::getSigned(IntN, Val, /*implicitTrunc=*/true);
+  ConstantInt *CI = ConstantInt::get(IntN, Val, true);
   return buildConstant(Res, *CI);
 }
 
 MachineInstrBuilder MachineIRBuilder::buildFConstant(const DstOp &Res,
                                                      const ConstantFP &Val) {
-  assert(!isa<VectorType>(Val.getType()) && "Unexpected vector constant!");
   LLT Ty = Res.getLLTTy(*getMRI());
   LLT EltTy = Ty.getScalarType();
 
@@ -806,11 +782,10 @@ MachineInstrBuilder MachineIRBuilder::buildShuffleVector(const DstOp &Res,
   LLT DstTy = Res.getLLTTy(*getMRI());
   LLT Src1Ty = Src1.getLLTTy(*getMRI());
   LLT Src2Ty = Src2.getLLTTy(*getMRI());
-  const LLT DstElemTy = DstTy.getScalarType();
-  const LLT ElemTy1 = Src1Ty.getScalarType();
-  const LLT ElemTy2 = Src2Ty.getScalarType();
+  const LLT DstElemTy = DstTy.isVector() ? DstTy.getElementType() : DstTy;
+  const LLT ElemTy1 = Src1Ty.isVector() ? Src1Ty.getElementType() : Src1Ty;
+  const LLT ElemTy2 = Src2Ty.isVector() ? Src2Ty.getElementType() : Src2Ty;
   assert(DstElemTy == ElemTy1 && DstElemTy == ElemTy2);
-  assert(Mask.size() > 1 && "Scalar G_SHUFFLE_VECTOR are not supported");
   (void)DstElemTy;
   (void)ElemTy1;
   (void)ElemTy2;
@@ -896,7 +871,7 @@ MachineIRBuilder::buildIntrinsic(Intrinsic::ID ID,
                                  ArrayRef<Register> ResultRegs,
                                  bool HasSideEffects, bool isConvergent) {
   auto MIB = buildInstr(getIntrinsicOpcode(HasSideEffects, isConvergent));
-  for (Register ResultReg : ResultRegs)
+  for (unsigned ResultReg : ResultRegs)
     MIB.addDef(ResultReg);
   MIB.addIntrinsicID(ID);
   return MIB;
@@ -905,9 +880,9 @@ MachineIRBuilder::buildIntrinsic(Intrinsic::ID ID,
 MachineInstrBuilder
 MachineIRBuilder::buildIntrinsic(Intrinsic::ID ID,
                                  ArrayRef<Register> ResultRegs) {
-  AttributeSet Attrs = Intrinsic::getFnAttributes(getContext(), ID);
+  auto Attrs = Intrinsic::getAttributes(getContext(), ID);
   bool HasSideEffects = !Attrs.getMemoryEffects().doesNotAccessMemory();
-  bool isConvergent = Attrs.hasAttribute(Attribute::Convergent);
+  bool isConvergent = Attrs.hasFnAttr(Attribute::Convergent);
   return buildIntrinsic(ID, ResultRegs, HasSideEffects, isConvergent);
 }
 
@@ -924,9 +899,9 @@ MachineInstrBuilder MachineIRBuilder::buildIntrinsic(Intrinsic::ID ID,
 
 MachineInstrBuilder MachineIRBuilder::buildIntrinsic(Intrinsic::ID ID,
                                                      ArrayRef<DstOp> Results) {
-  AttributeSet Attrs = Intrinsic::getFnAttributes(getContext(), ID);
+  auto Attrs = Intrinsic::getAttributes(getContext(), ID);
   bool HasSideEffects = !Attrs.getMemoryEffects().doesNotAccessMemory();
-  bool isConvergent = Attrs.hasAttribute(Attribute::Convergent);
+  bool isConvergent = Attrs.hasFnAttr(Attribute::Convergent);
   return buildIntrinsic(ID, Results, HasSideEffects, isConvergent);
 }
 
@@ -1178,22 +1153,6 @@ MachineIRBuilder::buildAtomicRMWFMin(const DstOp &OldValRes, const SrcOp &Addr,
                                      const SrcOp &Val, MachineMemOperand &MMO) {
   return buildAtomicRMW(TargetOpcode::G_ATOMICRMW_FMIN, OldValRes, Addr, Val,
                         MMO);
-}
-
-MachineInstrBuilder
-MachineIRBuilder::buildAtomicRMWFMaximum(const DstOp &OldValRes,
-                                         const SrcOp &Addr, const SrcOp &Val,
-                                         MachineMemOperand &MMO) {
-  return buildAtomicRMW(TargetOpcode::G_ATOMICRMW_FMAXIMUM, OldValRes, Addr,
-                        Val, MMO);
-}
-
-MachineInstrBuilder
-MachineIRBuilder::buildAtomicRMWFMinimum(const DstOp &OldValRes,
-                                         const SrcOp &Addr, const SrcOp &Val,
-                                         MachineMemOperand &MMO) {
-  return buildAtomicRMW(TargetOpcode::G_ATOMICRMW_FMINIMUM, OldValRes, Addr,
-                        Val, MMO);
 }
 
 MachineInstrBuilder

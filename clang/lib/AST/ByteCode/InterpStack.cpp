@@ -19,45 +19,52 @@
 using namespace clang;
 using namespace clang::interp;
 
-InterpStack::~InterpStack() {
+InterpStack::~InterpStack() { clear(); }
+
+void InterpStack::clear() {
   if (Chunk && Chunk->Next)
     std::free(Chunk->Next);
   if (Chunk)
     std::free(Chunk);
-}
-
-// We keep the last chunk around to reuse.
-void InterpStack::clear() {
-  for (PrimType Item : llvm::reverse(ItemTypes)) {
-    TYPE_SWITCH(Item, { this->discard<T>(); });
-  }
-  assert(ItemTypes.empty());
-  assert(empty());
+  Chunk = nullptr;
+  StackSize = 0;
+#ifndef NDEBUG
+  ItemTypes.clear();
+#endif
 }
 
 void InterpStack::clearTo(size_t NewSize) {
-  if (NewSize == 0)
-    return clear();
-  if (NewSize == size())
+  assert(NewSize <= size());
+  size_t ToShrink = size() - NewSize;
+  if (ToShrink == 0)
     return;
 
-  assert(NewSize <= size());
-  for (PrimType Item : llvm::reverse(ItemTypes)) {
-    TYPE_SWITCH(Item, { this->discard<T>(); });
+  shrink(ToShrink);
+  assert(size() == NewSize);
+}
 
-    if (size() == NewSize)
-      break;
+void *InterpStack::grow(size_t Size) {
+  assert(Size < ChunkSize - sizeof(StackChunk) && "Object too large");
+
+  if (!Chunk || sizeof(StackChunk) + Chunk->size() + Size > ChunkSize) {
+    if (Chunk && Chunk->Next) {
+      Chunk = Chunk->Next;
+    } else {
+      StackChunk *Next = new (std::malloc(ChunkSize)) StackChunk(Chunk);
+      if (Chunk)
+        Chunk->Next = Next;
+      Chunk = Next;
+    }
   }
 
-  // Note: discard() above already removed the types from ItemTypes.
-  assert(size() == NewSize);
+  auto *Object = reinterpret_cast<void *>(Chunk->End);
+  Chunk->End += Size;
+  StackSize += Size;
+  return Object;
 }
 
 void *InterpStack::peekData(size_t Size) const {
   assert(Chunk && "Stack is empty!");
-
-  if (LLVM_LIKELY(Size <= Chunk->size()))
-    return reinterpret_cast<void *>(Chunk->start() + Chunk->Size - Size);
 
   StackChunk *Ptr = Chunk;
   while (Size > Ptr->size()) {
@@ -66,18 +73,11 @@ void *InterpStack::peekData(size_t Size) const {
     assert(Ptr && "Offset too large");
   }
 
-  return reinterpret_cast<void *>(Ptr->start() + Ptr->Size - Size);
+  return reinterpret_cast<void *>(Ptr->End - Size);
 }
 
 void InterpStack::shrink(size_t Size) {
   assert(Chunk && "Chunk is empty!");
-
-  // Likely case is that we simply remove something from the current chunk.
-  if (LLVM_LIKELY(Size <= Chunk->size())) {
-    Chunk->Size -= Size;
-    StackSize -= Size;
-    return;
-  }
 
   while (Size > Chunk->size()) {
     Size -= Chunk->size();
@@ -85,16 +85,32 @@ void InterpStack::shrink(size_t Size) {
       std::free(Chunk->Next);
       Chunk->Next = nullptr;
     }
-    Chunk->Size = 0;
+    Chunk->End = Chunk->start();
     Chunk = Chunk->Prev;
     assert(Chunk && "Offset too large");
   }
 
-  Chunk->Size -= Size;
+  Chunk->End -= Size;
   StackSize -= Size;
+
+#ifndef NDEBUG
+  size_t TypesSize = 0;
+  for (PrimType T : ItemTypes)
+    TYPE_SWITCH(T, { TypesSize += aligned_size<T>(); });
+
+  size_t StackSize = size();
+  while (TypesSize > StackSize) {
+    TYPE_SWITCH(ItemTypes.back(), {
+      TypesSize -= aligned_size<T>();
+      ItemTypes.pop_back();
+    });
+  }
+  assert(TypesSize == StackSize);
+#endif
 }
 
 void InterpStack::dump() const {
+#ifndef NDEBUG
   llvm::errs() << "Items: " << ItemTypes.size() << ". Size: " << size() << '\n';
   if (ItemTypes.empty())
     return;
@@ -104,11 +120,11 @@ void InterpStack::dump() const {
 
   // The type of the item on the top of the stack is inserted to the back
   // of the vector, so the iteration has to happen backwards.
-  for (PrimType Item : llvm::reverse(ItemTypes)) {
-    Offset += align(primSize(Item));
+  for (auto TyIt = ItemTypes.rbegin(); TyIt != ItemTypes.rend(); ++TyIt) {
+    Offset += align(primSize(*TyIt));
 
     llvm::errs() << Index << '/' << Offset << ": ";
-    TYPE_SWITCH(Item, {
+    TYPE_SWITCH(*TyIt, {
       const T &V = peek<T>(Offset);
       llvm::errs() << V;
     });
@@ -116,4 +132,5 @@ void InterpStack::dump() const {
 
     ++Index;
   }
+#endif
 }

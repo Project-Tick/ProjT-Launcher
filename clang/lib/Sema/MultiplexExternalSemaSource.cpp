@@ -20,19 +20,26 @@ char MultiplexExternalSemaSource::ID;
 /// given element to it.
 ///
 MultiplexExternalSemaSource::MultiplexExternalSemaSource(
-    llvm::IntrusiveRefCntPtr<ExternalSemaSource> S1,
-    llvm::IntrusiveRefCntPtr<ExternalSemaSource> S2) {
-  Sources.push_back(std::move(S1));
-  Sources.push_back(std::move(S2));
+    ExternalSemaSource *S1, ExternalSemaSource *S2) {
+  S1->Retain();
+  S2->Retain();
+  Sources.push_back(S1);
+  Sources.push_back(S2);
+}
+
+// pin the vtable here.
+MultiplexExternalSemaSource::~MultiplexExternalSemaSource() {
+  for (auto *S : Sources)
+    S->Release();
 }
 
 /// Appends new source to the source list.
 ///
 ///\param[in] source - An ExternalSemaSource.
 ///
-void MultiplexExternalSemaSource::AddSource(
-    llvm::IntrusiveRefCntPtr<ExternalSemaSource> Source) {
-  Sources.push_back(std::move(Source));
+void MultiplexExternalSemaSource::AddSource(ExternalSemaSource *Source) {
+  Source->Retain();
+  Sources.push_back(Source);
 }
 
 //===----------------------------------------------------------------------===//
@@ -85,7 +92,7 @@ CXXBaseSpecifier *MultiplexExternalSemaSource::GetExternalCXXBaseSpecifiers(
 
 CXXCtorInitializer **
 MultiplexExternalSemaSource::GetExternalCXXCtorInitializers(uint64_t Offset) {
-  for (auto &S : Sources)
+  for (auto *S : Sources)
     if (auto *R = S->GetExternalCXXCtorInitializers(Offset))
       return R;
   return nullptr;
@@ -98,14 +105,6 @@ MultiplexExternalSemaSource::hasExternalDefinitions(const Decl *D) {
       if (EK != EK_ReplyHazy)
         return EK;
   return EK_ReplyHazy;
-}
-
-bool MultiplexExternalSemaSource::wasThisDeclarationADefinition(
-    const FunctionDecl *FD) {
-  for (const auto &S : Sources)
-    if (S->wasThisDeclarationADefinition(FD))
-      return true;
-  return false;
 }
 
 bool MultiplexExternalSemaSource::FindExternalVisibleDeclsByName(
@@ -364,6 +363,6 @@ bool MultiplexExternalSemaSource::MaybeDiagnoseMissingCompleteType(
 
 void MultiplexExternalSemaSource::AssignedLambdaNumbering(
     CXXRecordDecl *Lambda) {
-  for (auto &Source : Sources)
+  for (auto *Source : Sources)
     Source->AssignedLambdaNumbering(Lambda);
 }

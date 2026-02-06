@@ -22,8 +22,7 @@ public:
                               SymbolDependenceMap &Deps)
       : MR(MR), Deps(Deps) {}
 
-  void lookup(const LookupSet &Symbols,
-              OnResolvedFunction OnResolved) override {
+  void lookup(const LookupSet &Symbols, OnResolvedFunction OnResolved) override {
     auto &ES = MR.getTargetJITDylib().getExecutionSession();
     SymbolLookupSet InternedSymbols;
 
@@ -89,10 +88,7 @@ RTDyldObjectLinkingLayer::RTDyldObjectLinkingLayer(
 }
 
 RTDyldObjectLinkingLayer::~RTDyldObjectLinkingLayer() {
-  assert(MemMgrs.empty() &&
-         "Layer destroyed with resources still attached"
-         "(ExecutionSession::endSession() must be called prior to "
-         "destruction)");
+  assert(MemMgrs.empty() && "Layer destroyed with resources still attached");
 }
 
 void RTDyldObjectLinkingLayer::emit(
@@ -182,7 +178,7 @@ void RTDyldObjectLinkingLayer::emit(
     }
   }
 
-  auto MemMgr = GetMemoryManager(*O);
+  auto MemMgr = GetMemoryManager();
   auto &MemMgrRef = *MemMgr;
 
   // Switch to shared ownership of MR so that it can be captured by both

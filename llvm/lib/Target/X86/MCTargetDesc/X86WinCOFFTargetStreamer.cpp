@@ -31,10 +31,6 @@ public:
                               MCInstPrinter &InstPrinter)
       : X86TargetStreamer(S), OS(OS), InstPrinter(InstPrinter) {}
 
-  void emitCode16() override;
-  void emitCode32() override;
-  void emitCode64() override;
-
   bool emitFPOProc(const MCSymbol *ProcSym, unsigned ParamsSize,
                    SMLoc L) override;
   bool emitFPOEndPrologue(SMLoc L) override;
@@ -55,7 +51,6 @@ struct FPOInstruction {
     StackAlign,
     SetFrame,
   } Op;
-  // FIXME: This should be a union of MCRegister and unsigned.
   unsigned RegOrOffset;
 };
 
@@ -85,6 +80,8 @@ class X86WinCOFFTargetStreamer : public X86TargetStreamer {
 
   MCSymbol *emitFPOLabel();
 
+  MCContext &getContext() { return getStreamer().getContext(); }
+
 public:
   X86WinCOFFTargetStreamer(MCStreamer &S) : X86TargetStreamer(S) {}
 
@@ -100,16 +97,10 @@ public:
 };
 } // end namespace
 
-void X86WinCOFFAsmTargetStreamer::emitCode16() { OS << "\t.code16\n"; }
-
-void X86WinCOFFAsmTargetStreamer::emitCode32() { OS << "\t.code32\n"; }
-
-void X86WinCOFFAsmTargetStreamer::emitCode64() { OS << "\t.code64\n"; }
-
 bool X86WinCOFFAsmTargetStreamer::emitFPOProc(const MCSymbol *ProcSym,
                                               unsigned ParamsSize, SMLoc L) {
   OS << "\t.cv_fpo_proc\t";
-  ProcSym->print(OS, getContext().getAsmInfo());
+  ProcSym->print(OS, getStreamer().getContext().getAsmInfo());
   OS << ' ' << ParamsSize << '\n';
   return false;
 }
@@ -216,7 +207,7 @@ bool X86WinCOFFTargetStreamer::emitFPOSetFrame(MCRegister Reg, SMLoc L) {
   FPOInstruction Inst;
   Inst.Label = emitFPOLabel();
   Inst.Op = FPOInstruction::SetFrame;
-  Inst.RegOrOffset = Reg.id();
+  Inst.RegOrOffset = Reg;
   CurFPOData->Instructions.push_back(Inst);
   return false;
 }
@@ -227,7 +218,7 @@ bool X86WinCOFFTargetStreamer::emitFPOPushReg(MCRegister Reg, SMLoc L) {
   FPOInstruction Inst;
   Inst.Label = emitFPOLabel();
   Inst.Op = FPOInstruction::PushReg;
-  Inst.RegOrOffset = Reg.id();
+  Inst.RegOrOffset = Reg;
   CurFPOData->Instructions.push_back(Inst);
   return false;
 }
@@ -462,9 +453,9 @@ MCTargetStreamer *llvm::createX86AsmTargetStreamer(MCStreamer &S,
 
 MCTargetStreamer *
 llvm::createX86ObjectTargetStreamer(MCStreamer &S, const MCSubtargetInfo &STI) {
-  // No need for a special target streamer.
+  // No need to register a target streamer.
   if (!STI.getTargetTriple().isOSBinFormatCOFF())
-    return new X86TargetStreamer(S);
+    return nullptr;
   // Registers itself to the MCStreamer.
   return new X86WinCOFFTargetStreamer(S);
 }

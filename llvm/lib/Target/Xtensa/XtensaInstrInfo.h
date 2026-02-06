@@ -35,7 +35,7 @@ class XtensaInstrInfo : public XtensaGenInstrInfo {
 public:
   XtensaInstrInfo(const XtensaSubtarget &STI);
 
-  void adjustStackPtr(MCRegister SP, int64_t Amount, MachineBasicBlock &MBB,
+  void adjustStackPtr(unsigned SP, int64_t Amount, MachineBasicBlock &MBB,
                       MachineBasicBlock::iterator I) const;
 
   unsigned getInstSizeInBytes(const MachineInstr &MI) const override;
@@ -50,19 +50,20 @@ public:
                               int &FrameIndex) const override;
 
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
-                   const DebugLoc &DL, Register DestReg, Register SrcReg,
+                   const DebugLoc &DL, MCRegister DestReg, MCRegister SrcReg,
                    bool KillSrc, bool RenamableDest = false,
                    bool RenamableSrc = false) const override;
 
   void storeRegToStackSlot(
       MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI, Register SrcReg,
-      bool isKill, int FrameIndex, const TargetRegisterClass *RC, Register VReg,
+      bool isKill, int FrameIndex, const TargetRegisterClass *RC,
+      const TargetRegisterInfo *TRI, Register VReg,
       MachineInstr::MIFlag Flags = MachineInstr::NoFlags) const override;
 
   void loadRegFromStackSlot(
       MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
       Register DestReg, int FrameIdx, const TargetRegisterClass *RC,
-      Register VReg, unsigned SubReg = 0,
+      const TargetRegisterInfo *TRI, Register VReg,
       MachineInstr::MIFlag Flags = MachineInstr::NoFlags) const override;
 
   // Get the load and store opcodes for a given register class and offset.
@@ -72,7 +73,7 @@ public:
   // Emit code before MBBI in MI to move immediate value Value into
   // physical register Reg.
   void loadImmediate(MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
-                     MCRegister *Reg, int64_t Value) const;
+                     unsigned *Reg, int64_t Value) const;
 
   bool
   reverseBranchCondition(SmallVectorImpl<MachineOperand> &Cond) const override;

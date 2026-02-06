@@ -16,6 +16,7 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/DLTI/DLTI.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/GPU/IR/GPUDialect.h"
 #include "mlir/Dialect/GPU/Utils/GPUUtils.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
@@ -29,8 +30,8 @@
 #include <limits>
 
 namespace mlir {
-#define GEN_PASS_DEF_GPULAUNCHSINKINDEXCOMPUTATIONSPASS
-#define GEN_PASS_DEF_GPUKERNELOUTLININGPASS
+#define GEN_PASS_DEF_GPULAUNCHSINKINDEXCOMPUTATIONS
+#define GEN_PASS_DEF_GPUKERNELOUTLINING
 #include "mlir/Dialect/GPU/Transforms/Passes.h.inc"
 } // namespace mlir
 
@@ -40,7 +41,7 @@ template <typename OpTy>
 static void createForAllDimensions(OpBuilder &builder, Location loc,
                                    SmallVectorImpl<Value> &values) {
   for (auto dim : {gpu::Dimension::x, gpu::Dimension::y, gpu::Dimension::z})
-    values.push_back(OpTy::create(builder, loc, builder.getIndexType(), dim));
+    values.push_back(builder.create<OpTy>(loc, builder.getIndexType(), dim));
 }
 
 /// Adds operations generating block/thread ids and grid/block dimensions at the
@@ -195,8 +196,8 @@ static gpu::GPUFuncOp outlineKernelFuncImpl(gpu::LaunchOp launchOp,
   }
   FunctionType type =
       FunctionType::get(launchOp.getContext(), kernelOperandTypes, {});
-  auto outlinedFunc = gpu::GPUFuncOp::create(
-      builder, loc, kernelFnName, type,
+  auto outlinedFunc = builder.create<gpu::GPUFuncOp>(
+      loc, kernelFnName, type,
       TypeRange(ValueRange(launchOp.getWorkgroupAttributions())),
       TypeRange(ValueRange(launchOp.getPrivateAttributions())));
   outlinedFunc->setAttr(gpu::GPUDialect::getKernelFuncAttrName(),
@@ -247,7 +248,7 @@ static gpu::GPUFuncOp outlineKernelFuncImpl(gpu::LaunchOp launchOp,
     if (!terminator)
       continue;
     OpBuilder replacer(terminator);
-    gpu::ReturnOp::create(replacer, terminator->getLoc());
+    replacer.create<gpu::ReturnOp>(terminator->getLoc());
     terminator->erase();
   }
 
@@ -265,8 +266,8 @@ gpu::GPUFuncOp mlir::outlineKernelFunc(gpu::LaunchOp launchOp,
                                        StringRef kernelFnName,
                                        llvm::SmallVectorImpl<Value> &operands) {
   DenseSet<Value> inputOperandSet;
-  inputOperandSet.insert_range(operands);
-  SetVector<Value> operandSet(llvm::from_range, operands);
+  inputOperandSet.insert(operands.begin(), operands.end());
+  SetVector<Value> operandSet(operands.begin(), operands.end());
   auto funcOp = outlineKernelFuncImpl(launchOp, kernelFnName, operandSet);
   for (auto operand : operandSet) {
     if (!inputOperandSet.count(operand))
@@ -287,9 +288,9 @@ static void convertToLaunchFuncOp(gpu::LaunchOp launchOp,
   Value asyncToken = launchOp.getAsyncToken();
   std::optional<gpu::KernelDim3> clusterSize =
       launchOp.getClusterSizeOperandValues();
-  auto launchFunc = gpu::LaunchFuncOp::create(
-      builder, launchOp.getLoc(), kernelFunc,
-      launchOp.getGridSizeOperandValues(), launchOp.getBlockSizeOperandValues(),
+  auto launchFunc = builder.create<gpu::LaunchFuncOp>(
+      launchOp.getLoc(), kernelFunc, launchOp.getGridSizeOperandValues(),
+      launchOp.getBlockSizeOperandValues(),
       launchOp.getDynamicSharedMemorySize(), operands,
       asyncToken ? asyncToken.getType() : nullptr,
       launchOp.getAsyncDependencies(), clusterSize);
@@ -301,7 +302,7 @@ namespace {
 /// Pass that moves ops which are likely an index computation into gpu.launch
 /// body.
 class GpuLaunchSinkIndexComputationsPass
-    : public impl::GpuLaunchSinkIndexComputationsPassBase<
+    : public impl::GpuLaunchSinkIndexComputationsBase<
           GpuLaunchSinkIndexComputationsPass> {
 public:
   void runOnOperation() override {
@@ -328,9 +329,17 @@ public:
 /// a separate pass. The external functions can then be annotated with the
 /// symbol of the cubin accessor function.
 class GpuKernelOutliningPass
-    : public impl::GpuKernelOutliningPassBase<GpuKernelOutliningPass> {
+    : public impl::GpuKernelOutliningBase<GpuKernelOutliningPass> {
 public:
-  using Base::Base;
+  GpuKernelOutliningPass(StringRef dlStr) {
+    if (!dlStr.empty() && !dataLayoutStr.hasValue())
+      dataLayoutStr = dlStr.str();
+  }
+
+  GpuKernelOutliningPass(const GpuKernelOutliningPass &other)
+      : GpuKernelOutliningBase(other), dataLayoutSpec(other.dataLayoutSpec) {
+    dataLayoutStr = other.dataLayoutStr.getValue();
+  }
 
   LogicalResult initialize(MLIRContext *context) override {
     // Initialize the data layout specification from the data layout string.
@@ -356,8 +365,8 @@ public:
       auto funcWalkResult = func.walk([&](gpu::LaunchOp op) {
         SetVector<Value> operands;
         std::string kernelFnName;
-        if (op.getFunction()) {
-          kernelFnName = op.getFunction()->str();
+        if (op.getKernelFunc()) {
+          kernelFnName = op.getKernelFunc()->getRootReference().str();
         } else {
           kernelFnName =
               Twine(op->getParentOfType<SymbolOpInterface>().getName(),
@@ -403,8 +412,9 @@ private:
     OpBuilder builder(context);
     std::string kernelModuleName;
     gpu::GPUModuleOp kernelModule;
-    if (gpuLaunchOp.getModule()) {
-      kernelModuleName = gpuLaunchOp.getModule()->str();
+    if (gpuLaunchOp.getKernelModule()) {
+      kernelModuleName =
+          gpuLaunchOp.getKernelModule()->getRootReference().str();
       kernelModule =
           parentSymbolTable.lookup<gpu::GPUModuleOp>(kernelModuleName);
     } else {
@@ -414,8 +424,8 @@ private:
     // Check if the module already exists in the symbol table
     if (!kernelModule) {
       // If not found, create a new GPU module
-      kernelModule = gpu::GPUModuleOp::create(builder, kernelFunc.getLoc(),
-                                              kernelModuleName);
+      kernelModule = builder.create<gpu::GPUModuleOp>(kernelFunc.getLoc(),
+                                                      kernelModuleName);
     }
 
     // If a valid data layout spec was provided, attach it to the kernel module.
@@ -431,7 +441,8 @@ private:
       if (std::optional<SymbolTable::UseRange> symbolUses =
               SymbolTable::getSymbolUses(symbolDefWorklist.pop_back_val())) {
         for (SymbolTable::SymbolUse symbolUse : *symbolUses) {
-          StringAttr symbolName = symbolUse.getSymbolRef().getLeafReference();
+          StringRef symbolName =
+              cast<FlatSymbolRefAttr>(symbolUse.getSymbolRef()).getValue();
           if (symbolTable.lookup(symbolName))
             continue;
 
@@ -446,7 +457,21 @@ private:
     return kernelModule;
   }
 
+  Option<std::string> dataLayoutStr{
+      *this, "data-layout-str",
+      llvm::cl::desc("String containing the data layout specification to be "
+                     "attached to the GPU kernel module")};
+
   DataLayoutSpecInterface dataLayoutSpec;
 };
 
 } // namespace
+
+std::unique_ptr<Pass> mlir::createGpuLauchSinkIndexComputationsPass() {
+  return std::make_unique<GpuLaunchSinkIndexComputationsPass>();
+}
+
+std::unique_ptr<OperationPass<ModuleOp>>
+mlir::createGpuKernelOutliningPass(StringRef dataLayoutStr) {
+  return std::make_unique<GpuKernelOutliningPass>(dataLayoutStr);
+}

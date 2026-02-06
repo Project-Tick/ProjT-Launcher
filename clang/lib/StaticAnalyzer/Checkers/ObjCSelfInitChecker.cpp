@@ -73,8 +73,7 @@ public:
   void checkPreStmt(const ReturnStmt *S, CheckerContext &C) const;
   void checkLocation(SVal location, bool isLoad, const Stmt *S,
                      CheckerContext &C) const;
-  void checkBind(SVal loc, SVal val, const Stmt *S, bool AtDeclInit,
-                 CheckerContext &C) const;
+  void checkBind(SVal loc, SVal val, const Stmt *S, CheckerContext &C) const;
 
   void checkPreCall(const CallEvent &CE, CheckerContext &C) const;
   void checkPostCall(const CallEvent &CE, CheckerContext &C) const;
@@ -312,8 +311,9 @@ void ObjCSelfInitChecker::checkLocation(SVal location, bool isLoad,
                 C);
 }
 
+
 void ObjCSelfInitChecker::checkBind(SVal loc, SVal val, const Stmt *S,
-                                    bool AtDeclInit, CheckerContext &C) const {
+                                    CheckerContext &C) const {
   // Allow assignment of anything to self. Self is a local variable in the
   // initializer, so it is legal to assign anything to it, like results of
   // static functions/method calls. After self is assigned something we cannot
@@ -342,7 +342,7 @@ void ObjCSelfInitChecker::printState(raw_ostream &Out, ProgramStateRef State,
   if (FlagMap.isEmpty() && !DidCallInit && !PreCallFlags)
     return;
 
-  Out << Sep << NL << "ObjCSelfInitChecker:" << NL;
+  Out << Sep << NL << *this << " :" << NL;
 
   if (DidCallInit)
     Out << "  An init method has been called." << NL;

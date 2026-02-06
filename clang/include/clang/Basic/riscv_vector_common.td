@@ -83,8 +83,6 @@
 //      elements of the same width
 //   F: given a vector type, compute the vector type with floating-point type
 //      elements of the same width
-//   Y: given a vector type, compute the vector type with bfloat16 type elements
-//      of the same width
 //   S: given a vector type, computes its equivalent one for LMUL=1. This is a
 //      no-op if the vector was already LMUL=1
 //   (Log2EEW:Value): Log2EEW value could be 3/4/5/6 (8/16/32/64), given a
@@ -181,9 +179,6 @@ class RVVBuiltin<string suffix, string prototype, string type_range,
   // This builtin has a masked form.
   bit HasMasked = true;
 
-  // This is used by intrinsics that need vtype.altfmt
-  bit AltFmt = false;
-
   // If HasMasked, this flag states that this builtin has a maskedoff operand. It
   // is always the first operand in builtin and IR intrinsic.
   bit HasMaskedOffOperand = true;
@@ -250,9 +245,6 @@ class RVVBuiltin<string suffix, string prototype, string type_range,
   // Set to true if the builtin has a parameter that models floating-point
   // rounding mode control
   bit HasFRMRoundModeOp = false;
-
-  // TWiden for XSfmm.
-  int TWiden = 0;
 }
 
 // This is the code emitted in the header.
@@ -272,11 +264,6 @@ class RVVOutBuiltin<string suffix, string prototype, string type_range>
 class RVVOp0Builtin<string suffix, string prototype, string type_range>
     : RVVBuiltin<suffix, prototype, type_range> {
   let IntrinsicTypes = [0];
-}
-
-class RVVOutOp0Builtin<string suffix, string prototype, string type_range>
-    : RVVBuiltin<suffix, prototype, type_range> {
-  let IntrinsicTypes = [-1, 0];
 }
 
 class RVVOutOp1Builtin<string suffix, string prototype, string type_range>
@@ -474,12 +461,8 @@ let HasMaskedOffOperand = false in {
     defm "" : RVVOutOp1BuiltinSet<NAME, "fd",
                                   [["vv", "v", "vvvv"],
                                    ["vf", "v", "vvev"]]>;
-    let RequiredFeatures = ["zvfh"] in
+    let RequiredFeatures = ["Zvfh"] in
       defm "" : RVVOutOp1BuiltinSet<NAME, "x",
-                                    [["vv", "v", "vvvv"],
-                                     ["vf", "v", "vvev"]]>;
-    let RequiredFeatures = ["zvfbfa"] in
-      defm "" : RVVOutOp1BuiltinSet<NAME, "y",
                                     [["vv", "v", "vvvv"],
                                      ["vf", "v", "vvev"]]>;
   }
@@ -487,12 +470,8 @@ let HasMaskedOffOperand = false in {
     defm "" : RVVOutOp1BuiltinSet<NAME, "fd",
                                   [["vv", "v", "vvvvu"],
                                    ["vf", "v", "vvevu"]]>;
-    let RequiredFeatures = ["zvfh"] in
+    let RequiredFeatures = ["Zvfh"] in
       defm "" : RVVOutOp1BuiltinSet<NAME, "x",
-                                    [["vv", "v", "vvvvu"],
-                                     ["vf", "v", "vvevu"]]>;
-    let RequiredFeatures = ["zvfbfa"] in
-      defm "" : RVVOutOp1BuiltinSet<NAME, "y",
                                     [["vv", "v", "vvvvu"],
                                      ["vf", "v", "vvevu"]]>;
   }
@@ -503,98 +482,64 @@ let HasMaskedOffOperand = false, Log2LMUL = [-2, -1, 0, 1, 2] in {
     defm ""  : RVVOutOp1Op2BuiltinSet<NAME, "f",
                                       [["vv", "w", "wwvv"],
                                        ["vf", "w", "wwev"]]>;
-    let RequiredFeatures = ["zvfh"] in
+    let RequiredFeatures = ["Zvfh"] in
       defm ""  : RVVOutOp1Op2BuiltinSet<NAME, "x",
                                         [["vv", "w", "wwvv"],
                                          ["vf", "w", "wwev"]]>;
-    let RequiredFeatures = ["zvfbfa"] in
-      defm ""  : RVVOutOp1Op2BuiltinSet<NAME, "y",
-                                        [["vv", "vw", "wwvv"],
-                                         ["vf", "vw", "wwev"]]>;
   }
   multiclass RVVFloatingWidenTerBuiltinSetRoundingMode {
     defm ""  : RVVOutOp1Op2BuiltinSet<NAME, "f",
                                       [["vv", "w", "wwvvu"],
                                        ["vf", "w", "wwevu"]]>;
-    let RequiredFeatures = ["zvfh"] in
+    let RequiredFeatures = ["Zvfh"] in
       defm ""  : RVVOutOp1Op2BuiltinSet<NAME, "x",
                                         [["vv", "w", "wwvvu"],
                                          ["vf", "w", "wwevu"]]>;
-    let RequiredFeatures = ["zvfbfa"] in
-      defm ""  : RVVOutOp1Op2BuiltinSet<NAME, "y",
-                                        [["vv", "vw", "wwvvu"],
-                                         ["vf", "vw", "wwevu"]]>;
   }
 }
 
-multiclass RVVFloatingBinBuiltinSet<bit HasBF = 0> {
+multiclass RVVFloatingBinBuiltinSet {
   defm "" : RVVOutOp1BuiltinSet<NAME, "fd",
                                 [["vv", "v", "vvv"],
                                  ["vf", "v", "vve"]]>;
-  let RequiredFeatures = ["zvfh"] in
+  let RequiredFeatures = ["Zvfh"] in
     defm "" : RVVOutOp1BuiltinSet<NAME, "x",
                                   [["vv", "v", "vvv"],
                                    ["vf", "v", "vve"]]>;
-  if HasBF then {
-    let RequiredFeatures = ["zvfbfa"] in
-      defm "" : RVVOutOp1BuiltinSet<NAME, "y",
-                                    [["vv", "v", "vvv"],
-                                     ["vf", "v", "vve"]]>;
-  }
 }
 
-multiclass RVVFloatingBinBuiltinSetRoundingMode<bit HasBF = 0> {
+multiclass RVVFloatingBinBuiltinSetRoundingMode {
   defm "" : RVVOutOp1BuiltinSet<NAME, "fd",
                                 [["vv", "v", "vvvu"],
                                  ["vf", "v", "vveu"]]>;
-  let RequiredFeatures = ["zvfh"] in
+  let RequiredFeatures = ["Zvfh"] in
     defm "" : RVVOutOp1BuiltinSet<NAME, "x",
                                   [["vv", "v", "vvvu"],
                                    ["vf", "v", "vveu"]]>;
-  if HasBF then {
-    let RequiredFeatures = ["zvfbfa"] in
-      defm "" : RVVOutOp1BuiltinSet<NAME, "y",
-                                    [["vv", "v", "vvvu"],
-                                     ["vf", "v", "vveu"]]>;
-  }
 }
 
-multiclass RVVFloatingBinVFBuiltinSet<bit HasBF = 0> {
+multiclass RVVFloatingBinVFBuiltinSet {
   defm "" : RVVOutOp1BuiltinSet<NAME, "fd",
                                 [["vf", "v", "vve"]]>;
-  let RequiredFeatures = ["zvfh"] in
+  let RequiredFeatures = ["Zvfh"] in
     defm "" : RVVOutOp1BuiltinSet<NAME, "x",
                                   [["vf", "v", "vve"]]>;
-  if HasBF then {
-    let RequiredFeatures = ["zvfbfa"] in
-      defm "" : RVVOutOp1BuiltinSet<NAME, "y",
-                                    [["vf", "v", "vve"]]>;
-  }
 }
 
-multiclass RVVFloatingBinVFBuiltinSetRoundingMode<bit HasBF = 0> {
+multiclass RVVFloatingBinVFBuiltinSetRoundingMode {
   defm "" : RVVOutOp1BuiltinSet<NAME, "fd",
                                 [["vf", "v", "vveu"]]>;
-  let RequiredFeatures = ["zvfh"] in
+  let RequiredFeatures = ["Zvfh"] in
     defm "" : RVVOutOp1BuiltinSet<NAME, "x",
                                   [["vf", "v", "vveu"]]>;
-  if HasBF then {
-    let RequiredFeatures = ["zvfbfa"] in
-      defm "" : RVVOutOp1BuiltinSet<NAME, "y",
-                                    [["vf", "v", "vveu"]]>;
-  }
 }
 
 multiclass RVVFloatingMaskOutBuiltinSet {
   defm "" : RVVOp0Op1BuiltinSet<NAME, "fd",
                                 [["vv", "vm", "mvv"],
                                  ["vf", "vm", "mve"]]>;
-  let RequiredFeatures = ["zvfh"] in
+  let RequiredFeatures = ["Zvfh"] in
     defm "" : RVVOp0Op1BuiltinSet<NAME, "x",
-                                  [["vv", "vm", "mvv"],
-                                   ["vf", "vm", "mve"]]>;
-  let RequiredFeatures = ["zvfbfa"] in
-    defm "" : RVVOp0Op1BuiltinSet<NAME, "y",
                                   [["vv", "vm", "mvv"],
                                    ["vf", "vm", "mve"]]>;
 }
@@ -641,8 +586,11 @@ class RVVMaskOp0Builtin<string prototype> : RVVOp0Builtin<"m", prototype, "c"> {
 let UnMaskedPolicyScheme = HasPolicyOperand,
     HasMaskedOffOperand = false in {
   multiclass RVVSlideUpBuiltinSet {
-    defm "" : RVVOutBuiltinSet<NAME, "csilxfdy",
+    defm "" : RVVOutBuiltinSet<NAME, "csilfd",
                                [["vx","v", "vvvz"]]>;
+    let RequiredFeatures = ["Zvfh"] in
+      defm "" : RVVOutBuiltinSet<NAME, "x",
+                                 [["vx","v", "vvvz"]]>;
     defm "" : RVVOutBuiltinSet<NAME, "csil",
                                [["vx","Uv", "UvUvUvz"]]>;
   }
@@ -663,8 +611,11 @@ let UnMaskedPolicyScheme = HasPassthruOperand,
       IntrinsicTypes = {ResultType, Ops.back()->getType()};
     }] in {
   multiclass RVVSlideDownBuiltinSet {
-    defm "" : RVVOutBuiltinSet<NAME, "csilxfdy",
+    defm "" : RVVOutBuiltinSet<NAME, "csilfd",
                                [["vx","v", "vvz"]]>;
+    let RequiredFeatures = ["Zvfh"] in
+      defm "" : RVVOutBuiltinSet<NAME, "x",
+                                 [["vx","v", "vvz"]]>;
     defm "" : RVVOutBuiltinSet<NAME, "csil",
                                [["vx","Uv", "UvUvz"]]>;
   }
@@ -707,28 +658,28 @@ let HasMaskedOffOperand = true in {
   multiclass RVVFloatingReductionBuiltin {
     defm "" : RVVOutOp0BuiltinSet<NAME, "fd",
                                   [["vs", "vSv", "SvvSv"]]>;
-    let RequiredFeatures = ["zvfh"] in
+    let RequiredFeatures = ["Zvfh"] in
       defm "" : RVVOutOp0BuiltinSet<NAME, "x",
                                     [["vs", "vSv", "SvvSv"]]>;
   }
   multiclass RVVFloatingReductionBuiltinRoundingMode {
     defm "" : RVVOutOp0BuiltinSet<NAME, "fd",
                                   [["vs", "vSv", "SvvSvu"]]>;
-    let RequiredFeatures = ["zvfh"] in
+    let RequiredFeatures = ["Zvfh"] in
       defm "" : RVVOutOp0BuiltinSet<NAME, "x",
                                     [["vs", "vSv", "SvvSvu"]]>;
   }
   multiclass RVVFloatingWidenReductionBuiltin {
     defm "" : RVVOutOp0BuiltinSet<NAME, "f",
                                   [["vs", "vSw", "SwvSw"]]>;
-    let RequiredFeatures = ["zvfh"] in
+    let RequiredFeatures = ["Zvfh"] in
       defm "" : RVVOutOp0BuiltinSet<NAME, "x",
                                     [["vs", "vSw", "SwvSw"]]>;
   }
   multiclass RVVFloatingWidenReductionBuiltinRoundingMode {
     defm "" : RVVOutOp0BuiltinSet<NAME, "f",
                                   [["vs", "vSw", "SwvSwu"]]>;
-    let RequiredFeatures = ["zvfh"] in
+    let RequiredFeatures = ["Zvfh"] in
       defm "" : RVVOutOp0BuiltinSet<NAME, "x",
                                     [["vs", "vSw", "SwvSwu"]]>;
   }
@@ -794,54 +745,38 @@ multiclass RVVFloatingWidenBinBuiltinSet {
   defm "" : RVVWidenBuiltinSet<NAME, "f",
                                [["vv", "w", "wvv"],
                                 ["vf", "w", "wve"]]>;
-  let RequiredFeatures = ["zvfh"] in
+  let RequiredFeatures = ["Zvfh"] in
     defm "" : RVVWidenBuiltinSet<NAME, "x",
                                  [["vv", "w", "wvv"],
                                   ["vf", "w", "wve"]]>;
-  let RequiredFeatures = ["zvfbfa"] in
-    defm "" : RVVWidenBuiltinSet<NAME, "y",
-                                 [["vv", "vw", "wvv"],
-                                  ["vf", "vw", "wve"]]>;
 }
 
 multiclass RVVFloatingWidenBinBuiltinSetRoundingMode {
   defm "" : RVVWidenBuiltinSet<NAME, "f",
                                [["vv", "w", "wvvu"],
                                 ["vf", "w", "wveu"]]>;
-  let RequiredFeatures = ["zvfh"] in
+  let RequiredFeatures = ["Zvfh"] in
     defm "" : RVVWidenBuiltinSet<NAME, "x",
                                  [["vv", "w", "wvvu"],
                                   ["vf", "w", "wveu"]]>;
-  let RequiredFeatures = ["zvfbfa"] in
-    defm "" : RVVWidenBuiltinSet<NAME, "y",
-                                 [["vv", "vw", "wvvu"],
-                                  ["vf", "vw", "wveu"]]>;
 }
 
 multiclass RVVFloatingWidenOp0BinBuiltinSet {
   defm "" : RVVWidenWOp0BuiltinSet<NAME # "_w", "f",
                                    [["wv", "w", "wwv"],
                                     ["wf", "w", "wwe"]]>;
-  let RequiredFeatures = ["zvfh"] in
+  let RequiredFeatures = ["Zvfh"] in
     defm "" : RVVWidenWOp0BuiltinSet<NAME # "_w", "x",
                                      [["wv", "w", "wwv"],
                                       ["wf", "w", "wwe"]]>;
-  let RequiredFeatures = ["zvfbfa"] in
-    defm "" : RVVWidenWOp0BuiltinSet<NAME # "_w", "y",
-                                     [["wv", "vw", "wwv"],
-                                      ["wf", "ew", "wwe"]]>;
 }
 
 multiclass RVVFloatingWidenOp0BinBuiltinSetRoundingMode {
   defm "" : RVVWidenWOp0BuiltinSet<NAME # "_w", "f",
                                    [["wv", "w", "wwvu"],
                                     ["wf", "w", "wweu"]]>;
-  let RequiredFeatures = ["zvfh"] in
+  let RequiredFeatures = ["Zvfh"] in
     defm "" : RVVWidenWOp0BuiltinSet<NAME # "_w", "x",
                                      [["wv", "w", "wwvu"],
                                       ["wf", "w", "wweu"]]>;
-  let RequiredFeatures = ["zvfbfa"] in
-    defm "" : RVVWidenWOp0BuiltinSet<NAME # "_w", "y",
-                                     [["wv", "vw", "wwvu"],
-                                      ["wf", "ew", "wweu"]]>;
 }

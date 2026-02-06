@@ -6,7 +6,6 @@ add_clang_library(clangAnalysisFlowSensitive
   DataflowAnalysisContext.cpp
   DataflowEnvironment.cpp
   Formula.cpp
-  FormulaSerialization.cpp
   HTMLLogger.cpp
   Logger.cpp
   RecordOps.cpp

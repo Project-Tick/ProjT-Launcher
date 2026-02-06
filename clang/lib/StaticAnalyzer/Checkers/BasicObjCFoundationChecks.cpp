@@ -31,6 +31,7 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/MemRegion.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/Support/raw_ostream.h"
 #include <optional>
@@ -99,7 +100,7 @@ class NilArgChecker : public Checker<check::PreObjCMessage,
                                      check::PostStmt<ObjCDictionaryLiteral>,
                                      check::PostStmt<ObjCArrayLiteral>,
                                      EventDispatcher<ImplicitNullDerefEvent>> {
-  const APIMisuse BT{this, "nil argument"};
+  mutable std::unique_ptr<APIMisuse> BT;
 
   mutable llvm::SmallDenseMap<Selector, unsigned, 16> StringSelectors;
   mutable Selector ArrayWithObjectSel;
@@ -218,7 +219,10 @@ void NilArgChecker::generateBugReport(ExplodedNode *N,
                                       SourceRange Range,
                                       const Expr *E,
                                       CheckerContext &C) const {
-  auto R = std::make_unique<PathSensitiveBugReport>(BT, Msg, N);
+  if (!BT)
+    BT.reset(new APIMisuse(this, "nil argument"));
+
+  auto R = std::make_unique<PathSensitiveBugReport>(*BT, Msg, N);
   R->addRange(Range);
   bugreporter::trackExpressionValue(N, E, *R);
   C.emitReport(std::move(R));
@@ -347,7 +351,7 @@ void NilArgChecker::checkPostStmt(const ObjCDictionaryLiteral *DL,
 
 namespace {
 class CFNumberChecker : public Checker< check::PreStmt<CallExpr> > {
-  const APIMisuse BT{this, "Bad use of CFNumber APIs"};
+  mutable std::unique_ptr<APIMisuse> BT;
   mutable IdentifierInfo *ICreate = nullptr, *IGetValue = nullptr;
 public:
   CFNumberChecker() = default;
@@ -521,7 +525,10 @@ void CFNumberChecker::checkPreStmt(const CallExpr *CE,
       << " bits of the integer value will be "
       << (isCreate ? "lost." : "garbage.");
 
-    auto report = std::make_unique<PathSensitiveBugReport>(BT, os.str(), N);
+    if (!BT)
+      BT.reset(new APIMisuse(this, "Bad use of CFNumber APIs"));
+
+    auto report = std::make_unique<PathSensitiveBugReport>(*BT, os.str(), N);
     report->addRange(CE->getArg(2)->getSourceRange());
     C.emitReport(std::move(report));
   }
@@ -533,7 +540,7 @@ void CFNumberChecker::checkPreStmt(const CallExpr *CE,
 
 namespace {
 class CFRetainReleaseChecker : public Checker<check::PreCall> {
-  const APIMisuse BT{this, "null passed to CF memory management function"};
+  mutable APIMisuse BT{this, "null passed to CF memory management function"};
   const CallDescriptionSet ModelledCalls = {
       {CDM::CLibrary, {"CFRetain"}, 1},
       {CDM::CLibrary, {"CFRelease"}, 1},
@@ -594,8 +601,7 @@ class ClassReleaseChecker : public Checker<check::PreObjCMessage> {
   mutable Selector retainS;
   mutable Selector autoreleaseS;
   mutable Selector drainS;
-  const APIMisuse BT{
-      this, "message incorrectly sent to class instead of class instance"};
+  mutable std::unique_ptr<BugType> BT;
 
 public:
   void checkPreObjCMessage(const ObjCMethodCall &msg, CheckerContext &C) const;
@@ -604,7 +610,10 @@ public:
 
 void ClassReleaseChecker::checkPreObjCMessage(const ObjCMethodCall &msg,
                                               CheckerContext &C) const {
-  if (releaseS.isNull()) {
+  if (!BT) {
+    BT.reset(new APIMisuse(
+        this, "message incorrectly sent to class instead of class instance"));
+
     ASTContext &Ctx = C.getASTContext();
     releaseS = GetNullarySelector("release", Ctx);
     retainS = GetNullarySelector("retain", Ctx);
@@ -631,7 +640,7 @@ void ClassReleaseChecker::checkPreObjCMessage(const ObjCMethodCall &msg,
           "of class '" << Class->getName()
        << "' and not the class directly";
 
-    auto report = std::make_unique<PathSensitiveBugReport>(BT, os.str(), N);
+    auto report = std::make_unique<PathSensitiveBugReport>(*BT, os.str(), N);
     report->addRange(msg.getSourceRange());
     C.emitReport(std::move(report));
   }
@@ -650,8 +659,7 @@ class VariadicMethodTypeChecker : public Checker<check::PreObjCMessage> {
   mutable Selector orderedSetWithObjectsS;
   mutable Selector initWithObjectsS;
   mutable Selector initWithObjectsAndKeysS;
-  const APIMisuse BT{this, "Arguments passed to variadic method aren't all "
-                           "Objective-C pointer types"};
+  mutable std::unique_ptr<BugType> BT;
 
   bool isVariadicMessage(const ObjCMethodCall &msg) const;
 
@@ -710,7 +718,11 @@ VariadicMethodTypeChecker::isVariadicMessage(const ObjCMethodCall &msg) const {
 
 void VariadicMethodTypeChecker::checkPreObjCMessage(const ObjCMethodCall &msg,
                                                     CheckerContext &C) const {
-  if (arrayWithObjectsS.isNull()) {
+  if (!BT) {
+    BT.reset(new APIMisuse(this,
+                           "Arguments passed to variadic method aren't all "
+                           "Objective-C pointer types"));
+
     ASTContext &Ctx = C.getASTContext();
     arrayWithObjectsS = GetUnarySelector("arrayWithObjects", Ctx);
     dictionaryWithObjectsAndKeysS =
@@ -781,7 +793,8 @@ void VariadicMethodTypeChecker::checkPreObjCMessage(const ObjCMethodCall &msg,
     ArgTy.print(os, C.getLangOpts());
     os << "'";
 
-    auto R = std::make_unique<PathSensitiveBugReport>(BT, os.str(), *errorNode);
+    auto R =
+        std::make_unique<PathSensitiveBugReport>(*BT, os.str(), *errorNode);
     R->addRange(msg.getArgSourceRange(I));
     C.emitReport(std::move(R));
   }

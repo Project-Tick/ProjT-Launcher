@@ -16,13 +16,11 @@
 #include "llvm/Testing/Support/Error.h"
 
 #include "Plugins/ObjectFile/PECOFF/ObjectFilePECOFF.h"
-#include "Plugins/Platform/Windows/PlatformWindows.h"
 #include "Plugins/SymbolFile/DWARF/SymbolFileDWARF.h"
 #include "Plugins/SymbolFile/PDB/SymbolFilePDB.h"
 #include "Plugins/TypeSystem/Clang/TypeSystemClang.h"
 #include "TestingSupport/TestUtilities.h"
 #include "lldb/Core/Address.h"
-#include "lldb/Core/Debugger.h"
 #include "lldb/Core/Module.h"
 #include "lldb/Core/ModuleSpec.h"
 #include "lldb/Host/FileSystem.h"
@@ -61,13 +59,6 @@ public:
 
     m_pdb_test_exe = GetInputFilePath("test-pdb.exe");
     m_types_test_exe = GetInputFilePath("test-pdb-types.exe");
-
-    ArchSpec arch("x86_64-pc-windows-msvc");
-    Platform::SetHostPlatform(PlatformWindows::CreateInstance(true, &arch));
-    m_debugger_sp = Debugger::CreateInstance();
-    m_debugger_sp->SetPropertyValue(nullptr,
-                                    lldb_private::eVarSetOperationAssign,
-                                    "plugin.symbol-file.pdb.reader", "dia");
   }
 
   void TearDown() override {
@@ -86,7 +77,6 @@ public:
 protected:
   std::string m_pdb_test_exe;
   std::string m_types_test_exe;
-  lldb::DebuggerSP m_debugger_sp;
 
   bool FileSpecMatchesAsBaseOrFull(const FileSpec &left,
                                    const FileSpec &right) const {
@@ -381,7 +371,7 @@ TEST_F(SymbolFilePDBTests, TestSimpleClassTypes) {
   CompilerType compiler_type = udt_type->GetForwardCompilerType();
   EXPECT_TRUE(TypeSystemClang::IsClassType(compiler_type.GetOpaqueQualType()));
   EXPECT_EQ(GetGlobalConstantInteger(session, "sizeof_Class"),
-            llvm::expectedToOptional(udt_type->GetByteSize(nullptr)));
+            udt_type->GetByteSize(nullptr));
 }
 
 TEST_F(SymbolFilePDBTests, TestNestedClassTypes) {
@@ -437,7 +427,7 @@ TEST_F(SymbolFilePDBTests, TestNestedClassTypes) {
   EXPECT_TRUE(TypeSystemClang::IsClassType(compiler_type.GetOpaqueQualType()));
 
   EXPECT_EQ(GetGlobalConstantInteger(session, "sizeof_NestedClass"),
-            llvm::expectedToOptional(udt_type->GetByteSize(nullptr)));
+            udt_type->GetByteSize(nullptr));
 }
 
 TEST_F(SymbolFilePDBTests, TestClassInNamespace) {
@@ -481,7 +471,7 @@ TEST_F(SymbolFilePDBTests, TestClassInNamespace) {
   EXPECT_TRUE(TypeSystemClang::IsClassType(compiler_type.GetOpaqueQualType()));
 
   EXPECT_EQ(GetGlobalConstantInteger(session, "sizeof_NSClass"),
-            llvm::expectedToOptional(udt_type->GetByteSize(nullptr)));
+            udt_type->GetByteSize(nullptr));
 }
 
 TEST_F(SymbolFilePDBTests, TestEnumTypes) {
@@ -511,7 +501,7 @@ TEST_F(SymbolFilePDBTests, TestEnumTypes) {
     std::string sizeof_var = "sizeof_";
     sizeof_var.append(Enum);
     EXPECT_EQ(GetGlobalConstantInteger(session, sizeof_var),
-              llvm::expectedToOptional(enum_type->GetByteSize(nullptr)));
+              enum_type->GetByteSize(nullptr));
   }
 }
 
@@ -557,7 +547,7 @@ TEST_F(SymbolFilePDBTests, TestTypedefs) {
     std::string sizeof_var = "sizeof_";
     sizeof_var.append(Typedef);
     EXPECT_EQ(GetGlobalConstantInteger(session, sizeof_var),
-              llvm::expectedToOptional(typedef_type->GetByteSize(nullptr)));
+              typedef_type->GetByteSize(nullptr));
   }
 }
 

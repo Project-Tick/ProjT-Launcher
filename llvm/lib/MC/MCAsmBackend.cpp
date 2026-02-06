@@ -8,9 +8,9 @@
 
 #include "llvm/MC/MCAsmBackend.h"
 #include "llvm/MC/MCAssembler.h"
-#include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCDXContainerWriter.h"
 #include "llvm/MC/MCELFObjectWriter.h"
+#include "llvm/MC/MCFixupKindInfo.h"
 #include "llvm/MC/MCGOFFObjectWriter.h"
 #include "llvm/MC/MCMachObjectWriter.h"
 #include "llvm/MC/MCObjectWriter.h"
@@ -24,9 +24,10 @@
 
 using namespace llvm;
 
-MCAsmBackend::~MCAsmBackend() = default;
+MCAsmBackend::MCAsmBackend(llvm::endianness Endian, unsigned RelaxFixupKind)
+    : Endian(Endian), RelaxFixupKind(RelaxFixupKind) {}
 
-MCContext &MCAsmBackend::getContext() const { return Asm->getContext(); }
+MCAsmBackend::~MCAsmBackend() = default;
 
 std::unique_ptr<MCObjectWriter>
 MCAsmBackend::createObjectWriter(raw_pwrite_stream &OS) const {
@@ -86,8 +87,7 @@ std::optional<MCFixupKind> MCAsmBackend::getFixupKind(StringRef Name) const {
   return std::nullopt;
 }
 
-MCFixupKindInfo MCAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
-  // clang-format off
+const MCFixupKindInfo &MCAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
   static const MCFixupKindInfo Builtins[] = {
       {"FK_NONE", 0, 0, 0},
       {"FK_Data_1", 0, 8, 0},
@@ -95,50 +95,50 @@ MCFixupKindInfo MCAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
       {"FK_Data_4", 0, 32, 0},
       {"FK_Data_8", 0, 64, 0},
       {"FK_Data_leb128", 0, 0, 0},
+      {"FK_PCRel_1", 0, 8, MCFixupKindInfo::FKF_IsPCRel},
+      {"FK_PCRel_2", 0, 16, MCFixupKindInfo::FKF_IsPCRel},
+      {"FK_PCRel_4", 0, 32, MCFixupKindInfo::FKF_IsPCRel},
+      {"FK_PCRel_8", 0, 64, MCFixupKindInfo::FKF_IsPCRel},
+      {"FK_GPRel_1", 0, 8, 0},
+      {"FK_GPRel_2", 0, 16, 0},
+      {"FK_GPRel_4", 0, 32, 0},
+      {"FK_GPRel_8", 0, 64, 0},
+      {"FK_DTPRel_4", 0, 32, 0},
+      {"FK_DTPRel_8", 0, 64, 0},
+      {"FK_TPRel_4", 0, 32, 0},
+      {"FK_TPRel_8", 0, 64, 0},
       {"FK_SecRel_1", 0, 8, 0},
       {"FK_SecRel_2", 0, 16, 0},
       {"FK_SecRel_4", 0, 32, 0},
       {"FK_SecRel_8", 0, 64, 0},
   };
-  // clang-format on
 
-  assert(size_t(Kind - FK_NONE) < std::size(Builtins) && "Unknown fixup kind");
-  return Builtins[Kind - FK_NONE];
+  assert((size_t)Kind <= std::size(Builtins) && "Unknown fixup kind");
+  return Builtins[Kind];
 }
 
-bool MCAsmBackend::fixupNeedsRelaxationAdvanced(const MCFragment &,
+bool MCAsmBackend::fixupNeedsRelaxationAdvanced(const MCAssembler &Asm,
                                                 const MCFixup &Fixup,
-                                                const MCValue &, uint64_t Value,
-                                                bool Resolved) const {
+                                                bool Resolved, uint64_t Value,
+                                                const MCRelaxableFragment *DF,
+                                                const bool WasForced) const {
   if (!Resolved)
     return true;
   return fixupNeedsRelaxation(Fixup, Value);
 }
 
-void MCAsmBackend::maybeAddReloc(const MCFragment &F, const MCFixup &Fixup,
-                                 const MCValue &Target, uint64_t &Value,
-                                 bool IsResolved) {
-  if (!IsResolved)
-    Asm->getWriter().recordRelocation(F, Fixup, Target, Value);
-}
-
 bool MCAsmBackend::isDarwinCanonicalPersonality(const MCSymbol *Sym) const {
-  assert(getContext().isMachO());
   // Consider a NULL personality (ie., no personality encoding) to be canonical
   // because it's always at 0.
   if (!Sym)
     return true;
+
+  if (!Sym->isMachO())
+    llvm_unreachable("Expected MachO symbols only");
 
   StringRef name = Sym->getName();
   // XXX: We intentionally leave out "___gcc_personality_v0" because, despite
   // being system-defined like these two, it is not very commonly-used.
   // Reserving an empty slot for it seems silly.
   return name == "___gxx_personality_v0" || name == "___objc_personality_v0";
-}
-
-const MCSubtargetInfo *MCAsmBackend::getSubtargetInfo(const MCFragment &F) {
-  const MCSubtargetInfo *STI = nullptr;
-  STI = F.getSubtargetInfo();
-  assert(!F.hasInstructions() || STI != nullptr);
-  return STI;
 }

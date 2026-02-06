@@ -26,7 +26,7 @@ struct BPOrdererMachO;
 }
 template <> struct lld::BPOrdererTraits<struct BPOrdererMachO> {
   using Section = macho::InputSection;
-  using Defined = macho::Defined;
+  using Symbol = macho::Symbol;
 };
 namespace {
 struct BPOrdererMachO : lld::BPOrderer<BPOrdererMachO> {
@@ -34,8 +34,12 @@ struct BPOrdererMachO : lld::BPOrderer<BPOrdererMachO> {
   static bool isCodeSection(const Section &sec) {
     return macho::isCodeSection(&sec);
   }
-  static ArrayRef<Defined *> getSymbols(const Section &sec) {
-    return sec.symbols;
+  static SmallVector<Symbol *, 0> getSymbols(const Section &sec) {
+    SmallVector<Symbol *, 0> symbols;
+    for (auto *sym : sec.symbols)
+      if (auto *d = llvm::dyn_cast_or_null<Defined>(sym))
+        symbols.emplace_back(d);
+    return symbols;
   }
 
   // Linkage names can be prefixed with "_" or "l_" on Mach-O. See
@@ -61,31 +65,36 @@ struct BPOrdererMachO : lld::BPOrderer<BPOrdererMachO> {
 
     // Calculate relocation hashes
     for (const auto &r : sec.relocs) {
-      uint32_t relocLength = 1 << r.length;
-      if (r.referent.isNull() || r.offset + relocLength > data.size())
+      if (r.length == 0 || r.referent.isNull() || r.offset >= data.size())
         continue;
 
       uint64_t relocHash = getRelocHash(r, sectionToIdx);
       uint32_t start = (r.offset < windowSize) ? 0 : r.offset - windowSize + 1;
-      for (uint32_t i = start; i < r.offset + relocLength; i++) {
+      for (uint32_t i = start; i < r.offset + r.length; i++) {
         auto window = data.drop_front(i).take_front(windowSize);
         hashes.push_back(xxh3_64bits(window) ^ relocHash);
       }
     }
 
     llvm::sort(hashes);
-    hashes.erase(llvm::unique(hashes), hashes.end());
+    hashes.erase(std::unique(hashes.begin(), hashes.end()), hashes.end());
   }
 
-  static llvm::StringRef getSymName(const Defined &sym) {
-    return sym.getName();
+  static llvm::StringRef getSymName(const Symbol &sym) { return sym.getName(); }
+  static uint64_t getSymValue(const Symbol &sym) {
+    if (auto *d = dyn_cast<Defined>(&sym))
+      return d->value;
+    return 0;
   }
-  static uint64_t getSymValue(const Defined &sym) { return sym.value; }
-  static uint64_t getSymSize(const Defined &sym) { return sym.size; }
+  static uint64_t getSymSize(const Symbol &sym) {
+    if (auto *d = dyn_cast<Defined>(&sym))
+      return d->size;
+    return 0;
+  }
 
 private:
   static uint64_t
-  getRelocHash(const Relocation &reloc,
+  getRelocHash(const Reloc &reloc,
                const llvm::DenseMap<const void *, uint64_t> &sectionToIdx) {
     auto *isec = reloc.getReferentInputSection();
     std::optional<uint64_t> sectionIdx;
@@ -111,25 +120,17 @@ DenseMap<const InputSection *, int> lld::macho::runBalancedPartitioning(
     bool compressionSortStartupFunctions, bool verbose) {
   // Collect candidate sections and associated symbols.
   SmallVector<InputSection *> sections;
-  DenseMap<CachedHashStringRef, std::set<unsigned>> rootSymbolToSectionIdxs;
+  DenseMap<CachedHashStringRef, DenseSet<unsigned>> rootSymbolToSectionIdxs;
   for (const auto *file : inputFiles) {
     for (auto *sec : file->sections) {
       for (auto &subsec : sec->subsections) {
         auto *isec = subsec.isec;
-        if (!isec || isec->data.empty() || !isec->data.data())
-          continue;
-        // CString section order is handled by
-        // {Deduplicated}CStringSection::finalizeContents()
-        if (isa<CStringInputSection>(isec) || isec->isFinal)
-          continue;
-        // ConcatInputSections are entirely live or dead, so the offset is
-        // irrelevant.
-        if (isa<ConcatInputSection>(isec) && !isec->isLive(0))
+        if (!isec || isec->data.empty())
           continue;
         size_t idx = sections.size();
         sections.emplace_back(isec);
         for (auto *sym : BPOrdererMachO::getSymbols(*isec)) {
-          auto rootName = lld::utils::getRootSymbol(sym->getName());
+          auto rootName = getRootSymbol(sym->getName());
           rootSymbolToSectionIdxs[CachedHashStringRef(rootName)].insert(idx);
           if (auto linkageName =
                   BPOrdererMachO::getResolvedLinkageName(rootName))
@@ -140,8 +141,8 @@ DenseMap<const InputSection *, int> lld::macho::runBalancedPartitioning(
     }
   }
 
-  return BPOrdererMachO().computeOrder(profilePath, forFunctionCompression,
-                                       forDataCompression,
-                                       compressionSortStartupFunctions, verbose,
-                                       sections, rootSymbolToSectionIdxs);
+  return BPOrdererMachO::computeOrder(profilePath, forFunctionCompression,
+                                      forDataCompression,
+                                      compressionSortStartupFunctions, verbose,
+                                      sections, rootSymbolToSectionIdxs);
 }

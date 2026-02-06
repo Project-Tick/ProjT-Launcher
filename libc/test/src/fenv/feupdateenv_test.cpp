@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#undef LIBC_MATH_USE_SYSTEM_FENV
-
 #include "hdr/types/fenv_t.h"
 #include "src/fenv/feupdateenv.h"
 

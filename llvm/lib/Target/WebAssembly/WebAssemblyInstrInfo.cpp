@@ -34,37 +34,37 @@ using namespace llvm;
 #include "WebAssemblyGenInstrInfo.inc"
 
 WebAssemblyInstrInfo::WebAssemblyInstrInfo(const WebAssemblySubtarget &STI)
-    : WebAssemblyGenInstrInfo(STI, RI, WebAssembly::ADJCALLSTACKDOWN,
+    : WebAssemblyGenInstrInfo(WebAssembly::ADJCALLSTACKDOWN,
                               WebAssembly::ADJCALLSTACKUP,
                               WebAssembly::CATCHRET),
       RI(STI.getTargetTriple()) {}
 
-bool WebAssemblyInstrInfo::isReMaterializableImpl(
+bool WebAssemblyInstrInfo::isReallyTriviallyReMaterializable(
     const MachineInstr &MI) const {
   switch (MI.getOpcode()) {
   case WebAssembly::CONST_I32:
   case WebAssembly::CONST_I64:
   case WebAssembly::CONST_F32:
   case WebAssembly::CONST_F64:
-    // TargetInstrInfo::isReMaterializableImpl misses these
+    // TargetInstrInfo::isReallyTriviallyReMaterializable misses these
     // because of the ARGUMENTS implicit def, so we manualy override it here.
     return true;
   default:
-    return TargetInstrInfo::isReMaterializableImpl(MI);
+    return TargetInstrInfo::isReallyTriviallyReMaterializable(MI);
   }
 }
 
 void WebAssemblyInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                        MachineBasicBlock::iterator I,
-                                       const DebugLoc &DL, Register DestReg,
-                                       Register SrcReg, bool KillSrc,
+                                       const DebugLoc &DL, MCRegister DestReg,
+                                       MCRegister SrcReg, bool KillSrc,
                                        bool RenamableDest,
                                        bool RenamableSrc) const {
   // This method is called by post-RA expansion, which expects only pregs to
   // exist. However we need to handle both here.
   auto &MRI = MBB.getParent()->getRegInfo();
   const TargetRegisterClass *RC =
-      DestReg.isVirtual()
+      Register::isVirtualRegister(DestReg)
           ? MRI.getRegClass(DestReg)
           : MRI.getTargetRegisterInfo()->getMinimalPhysRegClass(DestReg);
 

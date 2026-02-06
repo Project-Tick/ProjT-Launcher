@@ -26,5 +26,5 @@ class MultiwordCommandsTestCase(TestBase):
         self.expect(
             'platform ""',
             error=True,
-            substrs=["need to specify a non-empty subcommand"],
+            substrs=["Need to specify a non-empty subcommand."],
         )

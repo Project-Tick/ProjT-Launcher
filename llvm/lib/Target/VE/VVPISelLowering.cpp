@@ -13,7 +13,6 @@
 
 #include "VECustomDAG.h"
 #include "VEISelLowering.h"
-#include "VESelectionDAGInfo.h"
 
 using namespace llvm;
 

@@ -22,27 +22,26 @@ using namespace llvm;
 
 namespace {
 struct Context {
-  static constexpr char TripleName[] = "x86_64-pc-linux";
-  Triple TT;
+  const char *TripleName = "x86_64-pc-linux";
   std::unique_ptr<MCRegisterInfo> MRI;
   std::unique_ptr<MCAsmInfo> MAI;
   std::unique_ptr<MCContext> Ctx;
 
-  Context() : TT(TripleName) {
+  Context() {
     llvm::InitializeAllTargetInfos();
     llvm::InitializeAllTargetMCs();
     llvm::InitializeAllDisassemblers();
 
     // If we didn't build x86, do not run the test.
     std::string Error;
-    const Target *TheTarget = TargetRegistry::lookupTarget(TT, Error);
+    const Target *TheTarget = TargetRegistry::lookupTarget(TripleName, Error);
     if (!TheTarget)
       return;
 
-    MRI.reset(TheTarget->createMCRegInfo(TT));
+    MRI.reset(TheTarget->createMCRegInfo(TripleName));
     MCTargetOptions MCOptions;
-    MAI.reset(TheTarget->createMCAsmInfo(*MRI, TT, MCOptions));
-    Ctx = std::make_unique<MCContext>(TT, MAI.get(), MRI.get(),
+    MAI.reset(TheTarget->createMCAsmInfo(*MRI, TripleName, MCOptions));
+    Ctx = std::make_unique<MCContext>(Triple(TripleName), MAI.get(), MRI.get(),
                                       /*MSTI=*/nullptr);
   }
 

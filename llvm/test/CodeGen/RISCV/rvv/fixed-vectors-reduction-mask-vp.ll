@@ -2,6 +2,8 @@
 ; RUN: llc -mtriple=riscv32 -mattr=+v -verify-machineinstrs < %s | FileCheck %s
 ; RUN: llc -mtriple=riscv64 -mattr=+v -verify-machineinstrs < %s | FileCheck %s
 
+declare i1 @llvm.vp.reduce.and.v1i1(i1, <1 x i1>, <1 x i1>, i32)
+
 define zeroext i1 @vpreduce_and_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_and_v1i1:
 ; CHECK:       # %bb.0:
@@ -15,6 +17,8 @@ define zeroext i1 @vpreduce_and_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i3
   %r = call i1 @llvm.vp.reduce.and.v1i1(i1 %s, <1 x i1> %v, <1 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.or.v1i1(i1, <1 x i1>, <1 x i1>, i32)
 
 define zeroext i1 @vpreduce_or_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_or_v1i1:
@@ -30,6 +34,8 @@ define zeroext i1 @vpreduce_or_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i32
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.xor.v1i1(i1, <1 x i1>, <1 x i1>, i32)
+
 define zeroext i1 @vpreduce_xor_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_xor_v1i1:
 ; CHECK:       # %bb.0:
@@ -43,6 +49,8 @@ define zeroext i1 @vpreduce_xor_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i3
   %r = call i1 @llvm.vp.reduce.xor.v1i1(i1 %s, <1 x i1> %v, <1 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.and.v2i1(i1, <2 x i1>, <2 x i1>, i32)
 
 define zeroext i1 @vpreduce_and_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_and_v2i1:
@@ -58,6 +66,8 @@ define zeroext i1 @vpreduce_and_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i3
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.or.v2i1(i1, <2 x i1>, <2 x i1>, i32)
+
 define zeroext i1 @vpreduce_or_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_or_v2i1:
 ; CHECK:       # %bb.0:
@@ -71,6 +81,8 @@ define zeroext i1 @vpreduce_or_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i32
   %r = call i1 @llvm.vp.reduce.or.v2i1(i1 %s, <2 x i1> %v, <2 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.xor.v2i1(i1, <2 x i1>, <2 x i1>, i32)
 
 define zeroext i1 @vpreduce_xor_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_xor_v2i1:
@@ -86,6 +98,8 @@ define zeroext i1 @vpreduce_xor_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i3
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.and.v4i1(i1, <4 x i1>, <4 x i1>, i32)
+
 define zeroext i1 @vpreduce_and_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_and_v4i1:
 ; CHECK:       # %bb.0:
@@ -99,6 +113,8 @@ define zeroext i1 @vpreduce_and_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i3
   %r = call i1 @llvm.vp.reduce.and.v4i1(i1 %s, <4 x i1> %v, <4 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.or.v4i1(i1, <4 x i1>, <4 x i1>, i32)
 
 define zeroext i1 @vpreduce_or_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_or_v4i1:
@@ -114,6 +130,8 @@ define zeroext i1 @vpreduce_or_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i32
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.xor.v4i1(i1, <4 x i1>, <4 x i1>, i32)
+
 define zeroext i1 @vpreduce_xor_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_xor_v4i1:
 ; CHECK:       # %bb.0:
@@ -127,6 +145,8 @@ define zeroext i1 @vpreduce_xor_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i3
   %r = call i1 @llvm.vp.reduce.xor.v4i1(i1 %s, <4 x i1> %v, <4 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.and.v8i1(i1, <8 x i1>, <8 x i1>, i32)
 
 define zeroext i1 @vpreduce_and_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_and_v8i1:
@@ -142,6 +162,8 @@ define zeroext i1 @vpreduce_and_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i3
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.or.v8i1(i1, <8 x i1>, <8 x i1>, i32)
+
 define zeroext i1 @vpreduce_or_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_or_v8i1:
 ; CHECK:       # %bb.0:
@@ -155,6 +177,8 @@ define zeroext i1 @vpreduce_or_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i32
   %r = call i1 @llvm.vp.reduce.or.v8i1(i1 %s, <8 x i1> %v, <8 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.xor.v8i1(i1, <8 x i1>, <8 x i1>, i32)
 
 define zeroext i1 @vpreduce_xor_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_xor_v8i1:
@@ -170,6 +194,8 @@ define zeroext i1 @vpreduce_xor_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i3
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.and.v10i1(i1, <10 x i1>, <10 x i1>, i32)
+
 define zeroext i1 @vpreduce_and_v10i1(i1 zeroext %s, <10 x i1> %v, <10 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_and_v10i1:
 ; CHECK:       # %bb.0:
@@ -184,6 +210,8 @@ define zeroext i1 @vpreduce_and_v10i1(i1 zeroext %s, <10 x i1> %v, <10 x i1> %m,
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.and.v16i1(i1, <16 x i1>, <16 x i1>, i32)
+
 define zeroext i1 @vpreduce_and_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_and_v16i1:
 ; CHECK:       # %bb.0:
@@ -197,6 +225,8 @@ define zeroext i1 @vpreduce_and_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m,
   %r = call i1 @llvm.vp.reduce.and.v16i1(i1 %s, <16 x i1> %v, <16 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.and.v256i1(i1, <256 x i1>, <256 x i1>, i32)
 
 define zeroext i1 @vpreduce_and_v256i1(i1 zeroext %s, <256 x i1> %v, <256 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_and_v256i1:
@@ -231,6 +261,8 @@ define zeroext i1 @vpreduce_and_v256i1(i1 zeroext %s, <256 x i1> %v, <256 x i1> 
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.or.v16i1(i1, <16 x i1>, <16 x i1>, i32)
+
 define zeroext i1 @vpreduce_or_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_or_v16i1:
 ; CHECK:       # %bb.0:
@@ -244,6 +276,8 @@ define zeroext i1 @vpreduce_or_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m, 
   %r = call i1 @llvm.vp.reduce.or.v16i1(i1 %s, <16 x i1> %v, <16 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.xor.v16i1(i1, <16 x i1>, <16 x i1>, i32)
 
 define zeroext i1 @vpreduce_xor_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_xor_v16i1:
@@ -259,6 +293,8 @@ define zeroext i1 @vpreduce_xor_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m,
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.add.v1i1(i1, <1 x i1>, <1 x i1>, i32)
+
 define zeroext i1 @vpreduce_add_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_add_v1i1:
 ; CHECK:       # %bb.0:
@@ -272,6 +308,8 @@ define zeroext i1 @vpreduce_add_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i3
   %r = call i1 @llvm.vp.reduce.add.v1i1(i1 %s, <1 x i1> %v, <1 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.add.v2i1(i1, <2 x i1>, <2 x i1>, i32)
 
 define zeroext i1 @vpreduce_add_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_add_v2i1:
@@ -287,6 +325,8 @@ define zeroext i1 @vpreduce_add_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i3
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.add.v4i1(i1, <4 x i1>, <4 x i1>, i32)
+
 define zeroext i1 @vpreduce_add_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_add_v4i1:
 ; CHECK:       # %bb.0:
@@ -300,6 +340,8 @@ define zeroext i1 @vpreduce_add_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i3
   %r = call i1 @llvm.vp.reduce.add.v4i1(i1 %s, <4 x i1> %v, <4 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.add.v8i1(i1, <8 x i1>, <8 x i1>, i32)
 
 define zeroext i1 @vpreduce_add_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_add_v8i1:
@@ -315,6 +357,8 @@ define zeroext i1 @vpreduce_add_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i3
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.add.v16i1(i1, <16 x i1>, <16 x i1>, i32)
+
 define zeroext i1 @vpreduce_add_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_add_v16i1:
 ; CHECK:       # %bb.0:
@@ -328,6 +372,8 @@ define zeroext i1 @vpreduce_add_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m,
   %r = call i1 @llvm.vp.reduce.add.v16i1(i1 %s, <16 x i1> %v, <16 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.smax.v1i1(i1, <1 x i1>, <1 x i1>, i32)
 
 define zeroext i1 @vpreduce_smax_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smax_v1i1:
@@ -343,6 +389,8 @@ define zeroext i1 @vpreduce_smax_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.smax.v2i1(i1, <2 x i1>, <2 x i1>, i32)
+
 define zeroext i1 @vpreduce_smax_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smax_v2i1:
 ; CHECK:       # %bb.0:
@@ -356,6 +404,8 @@ define zeroext i1 @vpreduce_smax_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i
   %r = call i1 @llvm.vp.reduce.smax.v2i1(i1 %s, <2 x i1> %v, <2 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.smax.v4i1(i1, <4 x i1>, <4 x i1>, i32)
 
 define zeroext i1 @vpreduce_smax_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smax_v4i1:
@@ -371,6 +421,8 @@ define zeroext i1 @vpreduce_smax_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.smax.v8i1(i1, <8 x i1>, <8 x i1>, i32)
+
 define zeroext i1 @vpreduce_smax_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smax_v8i1:
 ; CHECK:       # %bb.0:
@@ -384,6 +436,8 @@ define zeroext i1 @vpreduce_smax_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i
   %r = call i1 @llvm.vp.reduce.smax.v8i1(i1 %s, <8 x i1> %v, <8 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.smax.v16i1(i1, <16 x i1>, <16 x i1>, i32)
 
 define zeroext i1 @vpreduce_smax_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smax_v16i1:
@@ -399,6 +453,8 @@ define zeroext i1 @vpreduce_smax_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.smax.v32i1(i1, <32 x i1>, <32 x i1>, i32)
+
 define zeroext i1 @vpreduce_smax_v32i1(i1 zeroext %s, <32 x i1> %v, <32 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smax_v32i1:
 ; CHECK:       # %bb.0:
@@ -412,6 +468,8 @@ define zeroext i1 @vpreduce_smax_v32i1(i1 zeroext %s, <32 x i1> %v, <32 x i1> %m
   %r = call i1 @llvm.vp.reduce.smax.v32i1(i1 %s, <32 x i1> %v, <32 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.smax.v64i1(i1, <64 x i1>, <64 x i1>, i32)
 
 define zeroext i1 @vpreduce_smax_v64i1(i1 zeroext %s, <64 x i1> %v, <64 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smax_v64i1:
@@ -427,6 +485,8 @@ define zeroext i1 @vpreduce_smax_v64i1(i1 zeroext %s, <64 x i1> %v, <64 x i1> %m
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.smin.v1i1(i1, <1 x i1>, <1 x i1>, i32)
+
 define zeroext i1 @vpreduce_smin_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smin_v1i1:
 ; CHECK:       # %bb.0:
@@ -440,6 +500,8 @@ define zeroext i1 @vpreduce_smin_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i
   %r = call i1 @llvm.vp.reduce.smin.v1i1(i1 %s, <1 x i1> %v, <1 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.smin.v2i1(i1, <2 x i1>, <2 x i1>, i32)
 
 define zeroext i1 @vpreduce_smin_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smin_v2i1:
@@ -455,6 +517,8 @@ define zeroext i1 @vpreduce_smin_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.smin.v4i1(i1, <4 x i1>, <4 x i1>, i32)
+
 define zeroext i1 @vpreduce_smin_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smin_v4i1:
 ; CHECK:       # %bb.0:
@@ -468,6 +532,8 @@ define zeroext i1 @vpreduce_smin_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i
   %r = call i1 @llvm.vp.reduce.smin.v4i1(i1 %s, <4 x i1> %v, <4 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.smin.v8i1(i1, <8 x i1>, <8 x i1>, i32)
 
 define zeroext i1 @vpreduce_smin_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smin_v8i1:
@@ -483,6 +549,8 @@ define zeroext i1 @vpreduce_smin_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.smin.v16i1(i1, <16 x i1>, <16 x i1>, i32)
+
 define zeroext i1 @vpreduce_smin_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smin_v16i1:
 ; CHECK:       # %bb.0:
@@ -496,6 +564,8 @@ define zeroext i1 @vpreduce_smin_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m
   %r = call i1 @llvm.vp.reduce.smin.v16i1(i1 %s, <16 x i1> %v, <16 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.smin.v32i1(i1, <32 x i1>, <32 x i1>, i32)
 
 define zeroext i1 @vpreduce_smin_v32i1(i1 zeroext %s, <32 x i1> %v, <32 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smin_v32i1:
@@ -511,6 +581,8 @@ define zeroext i1 @vpreduce_smin_v32i1(i1 zeroext %s, <32 x i1> %v, <32 x i1> %m
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.smin.v64i1(i1, <64 x i1>, <64 x i1>, i32)
+
 define zeroext i1 @vpreduce_smin_v64i1(i1 zeroext %s, <64 x i1> %v, <64 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_smin_v64i1:
 ; CHECK:       # %bb.0:
@@ -524,6 +596,8 @@ define zeroext i1 @vpreduce_smin_v64i1(i1 zeroext %s, <64 x i1> %v, <64 x i1> %m
   %r = call i1 @llvm.vp.reduce.smin.v64i1(i1 %s, <64 x i1> %v, <64 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.umax.v1i1(i1, <1 x i1>, <1 x i1>, i32)
 
 define zeroext i1 @vpreduce_umax_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umax_v1i1:
@@ -539,6 +613,8 @@ define zeroext i1 @vpreduce_umax_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.umax.v2i1(i1, <2 x i1>, <2 x i1>, i32)
+
 define zeroext i1 @vpreduce_umax_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umax_v2i1:
 ; CHECK:       # %bb.0:
@@ -552,6 +628,8 @@ define zeroext i1 @vpreduce_umax_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i
   %r = call i1 @llvm.vp.reduce.umax.v2i1(i1 %s, <2 x i1> %v, <2 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.umax.v4i1(i1, <4 x i1>, <4 x i1>, i32)
 
 define zeroext i1 @vpreduce_umax_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umax_v4i1:
@@ -567,6 +645,8 @@ define zeroext i1 @vpreduce_umax_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.umax.v8i1(i1, <8 x i1>, <8 x i1>, i32)
+
 define zeroext i1 @vpreduce_umax_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umax_v8i1:
 ; CHECK:       # %bb.0:
@@ -580,6 +660,8 @@ define zeroext i1 @vpreduce_umax_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i
   %r = call i1 @llvm.vp.reduce.umax.v8i1(i1 %s, <8 x i1> %v, <8 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.umax.v16i1(i1, <16 x i1>, <16 x i1>, i32)
 
 define zeroext i1 @vpreduce_umax_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umax_v16i1:
@@ -595,6 +677,8 @@ define zeroext i1 @vpreduce_umax_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.umax.v32i1(i1, <32 x i1>, <32 x i1>, i32)
+
 define zeroext i1 @vpreduce_umax_v32i1(i1 zeroext %s, <32 x i1> %v, <32 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umax_v32i1:
 ; CHECK:       # %bb.0:
@@ -608,6 +692,8 @@ define zeroext i1 @vpreduce_umax_v32i1(i1 zeroext %s, <32 x i1> %v, <32 x i1> %m
   %r = call i1 @llvm.vp.reduce.umax.v32i1(i1 %s, <32 x i1> %v, <32 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.umax.v64i1(i1, <64 x i1>, <64 x i1>, i32)
 
 define zeroext i1 @vpreduce_umax_v64i1(i1 zeroext %s, <64 x i1> %v, <64 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umax_v64i1:
@@ -623,6 +709,8 @@ define zeroext i1 @vpreduce_umax_v64i1(i1 zeroext %s, <64 x i1> %v, <64 x i1> %m
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.umin.v1i1(i1, <1 x i1>, <1 x i1>, i32)
+
 define zeroext i1 @vpreduce_umin_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umin_v1i1:
 ; CHECK:       # %bb.0:
@@ -636,6 +724,8 @@ define zeroext i1 @vpreduce_umin_v1i1(i1 zeroext %s, <1 x i1> %v, <1 x i1> %m, i
   %r = call i1 @llvm.vp.reduce.umin.v1i1(i1 %s, <1 x i1> %v, <1 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.umin.v2i1(i1, <2 x i1>, <2 x i1>, i32)
 
 define zeroext i1 @vpreduce_umin_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umin_v2i1:
@@ -651,6 +741,8 @@ define zeroext i1 @vpreduce_umin_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.umin.v4i1(i1, <4 x i1>, <4 x i1>, i32)
+
 define zeroext i1 @vpreduce_umin_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umin_v4i1:
 ; CHECK:       # %bb.0:
@@ -664,6 +756,8 @@ define zeroext i1 @vpreduce_umin_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i
   %r = call i1 @llvm.vp.reduce.umin.v4i1(i1 %s, <4 x i1> %v, <4 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.umin.v8i1(i1, <8 x i1>, <8 x i1>, i32)
 
 define zeroext i1 @vpreduce_umin_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umin_v8i1:
@@ -679,6 +773,8 @@ define zeroext i1 @vpreduce_umin_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.umin.v16i1(i1, <16 x i1>, <16 x i1>, i32)
+
 define zeroext i1 @vpreduce_umin_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umin_v16i1:
 ; CHECK:       # %bb.0:
@@ -692,6 +788,8 @@ define zeroext i1 @vpreduce_umin_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m
   %r = call i1 @llvm.vp.reduce.umin.v16i1(i1 %s, <16 x i1> %v, <16 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.umin.v32i1(i1, <32 x i1>, <32 x i1>, i32)
 
 define zeroext i1 @vpreduce_umin_v32i1(i1 zeroext %s, <32 x i1> %v, <32 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umin_v32i1:
@@ -707,6 +805,8 @@ define zeroext i1 @vpreduce_umin_v32i1(i1 zeroext %s, <32 x i1> %v, <32 x i1> %m
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.umin.v64i1(i1, <64 x i1>, <64 x i1>, i32)
+
 define zeroext i1 @vpreduce_umin_v64i1(i1 zeroext %s, <64 x i1> %v, <64 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_umin_v64i1:
 ; CHECK:       # %bb.0:
@@ -720,6 +820,8 @@ define zeroext i1 @vpreduce_umin_v64i1(i1 zeroext %s, <64 x i1> %v, <64 x i1> %m
   %r = call i1 @llvm.vp.reduce.umin.v64i1(i1 %s, <64 x i1> %v, <64 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.mul.v1i1(i1, <1 x i1>, <1 x i1>, i32)
 
 define i1 @vpreduce_mul_v1i1(i1 %s, <1 x i1> %v, <1 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_mul_v1i1:
@@ -735,6 +837,8 @@ define i1 @vpreduce_mul_v1i1(i1 %s, <1 x i1> %v, <1 x i1> %m, i32 zeroext %evl) 
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.mul.v2i1(i1, <2 x i1>, <2 x i1>, i32)
+
 define zeroext i1 @vpreduce_mul_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_mul_v2i1:
 ; CHECK:       # %bb.0:
@@ -748,6 +852,8 @@ define zeroext i1 @vpreduce_mul_v2i1(i1 zeroext %s, <2 x i1> %v, <2 x i1> %m, i3
   %r = call i1 @llvm.vp.reduce.mul.v2i1(i1 %s, <2 x i1> %v, <2 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.mul.v4i1(i1, <4 x i1>, <4 x i1>, i32)
 
 define zeroext i1 @vpreduce_mul_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_mul_v4i1:
@@ -763,6 +869,8 @@ define zeroext i1 @vpreduce_mul_v4i1(i1 zeroext %s, <4 x i1> %v, <4 x i1> %m, i3
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.mul.v8i1(i1, <8 x i1>, <8 x i1>, i32)
+
 define zeroext i1 @vpreduce_mul_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_mul_v8i1:
 ; CHECK:       # %bb.0:
@@ -776,6 +884,8 @@ define zeroext i1 @vpreduce_mul_v8i1(i1 zeroext %s, <8 x i1> %v, <8 x i1> %m, i3
   %r = call i1 @llvm.vp.reduce.mul.v8i1(i1 %s, <8 x i1> %v, <8 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.mul.v16i1(i1, <16 x i1>, <16 x i1>, i32)
 
 define zeroext i1 @vpreduce_mul_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_mul_v16i1:
@@ -791,6 +901,8 @@ define zeroext i1 @vpreduce_mul_v16i1(i1 zeroext %s, <16 x i1> %v, <16 x i1> %m,
   ret i1 %r
 }
 
+declare i1 @llvm.vp.reduce.mul.v32i1(i1, <32 x i1>, <32 x i1>, i32)
+
 define zeroext i1 @vpreduce_mul_v32i1(i1 zeroext %s, <32 x i1> %v, <32 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_mul_v32i1:
 ; CHECK:       # %bb.0:
@@ -804,6 +916,8 @@ define zeroext i1 @vpreduce_mul_v32i1(i1 zeroext %s, <32 x i1> %v, <32 x i1> %m,
   %r = call i1 @llvm.vp.reduce.mul.v32i1(i1 %s, <32 x i1> %v, <32 x i1> %m, i32 %evl)
   ret i1 %r
 }
+
+declare i1 @llvm.vp.reduce.mul.v64i1(i1, <64 x i1>, <64 x i1>, i32)
 
 define zeroext i1 @vpreduce_mul_v64i1(i1 zeroext %s, <64 x i1> %v, <64 x i1> %m, i32 zeroext %evl) {
 ; CHECK-LABEL: vpreduce_mul_v64i1:

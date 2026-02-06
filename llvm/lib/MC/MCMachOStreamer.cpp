@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/BinaryFormat/MachO.h"
@@ -17,6 +18,7 @@
 #include "llvm/MC/MCDirectives.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCFixup.h"
+#include "llvm/MC/MCFragment.h"
 #include "llvm/MC/MCLinkerOptimizationHint.h"
 #include "llvm/MC/MCMachObjectWriter.h"
 #include "llvm/MC/MCObjectFileInfo.h"
@@ -57,6 +59,8 @@ private:
   /// labels in the middle of the section.
   DenseMap<const MCSection*, bool> HasSectionLabel;
 
+  void emitInstToData(const MCInst &Inst, const MCSubtargetInfo &STI) override;
+
   void emitDataRegion(MachO::DataRegionType Kind);
   void emitDataRegionEnd();
 
@@ -85,7 +89,7 @@ public:
   void emitLabel(MCSymbol *Symbol, SMLoc Loc = SMLoc()) override;
   void emitAssignment(MCSymbol *Symbol, const MCExpr *Value) override;
   void emitEHSymAttributes(const MCSymbol *Symbol, MCSymbol *EHSymbol) override;
-  void emitSubsectionsViaSymbols() override;
+  void emitAssemblerFlag(MCAssemblerFlag Flag) override;
   void emitLinkerOptions(ArrayRef<std::string> Options) override;
   void emitDataRegion(MCDataRegionType Kind) override;
   void emitVersionMin(MCVersionMinType Kind, unsigned Major, unsigned Minor,
@@ -95,6 +99,7 @@ public:
   void emitDarwinTargetVariantBuildVersion(unsigned Platform, unsigned Major,
                                            unsigned Minor, unsigned Update,
                                            VersionTuple SDKVersion) override;
+  void emitThumbFunc(MCSymbol *Func) override;
   bool emitSymbolAttribute(MCSymbol *Symbol, MCSymbolAttr Attribute) override;
   void emitSymbolDesc(MCSymbol *Symbol, unsigned DescValue) override;
   void emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
@@ -131,7 +136,8 @@ public:
 } // end anonymous namespace.
 
 void MCMachOStreamer::changeSection(MCSection *Section, uint32_t Subsection) {
-  MCObjectStreamer::changeSection(Section, Subsection);
+  // Change the section normally.
+  changeSectionImpl(Section, Subsection);
 
   // Output a linker-local symbol so we don't need section-relative local
   // relocations. The linker hates us when we do that.
@@ -140,16 +146,14 @@ void MCMachOStreamer::changeSection(MCSection *Section, uint32_t Subsection) {
     MCSymbol *Label = getContext().createLinkerPrivateTempSymbol();
     Section->setBeginSymbol(Label);
     HasSectionLabel[Section] = true;
-    if (!Label->isInSection())
-      emitLabel(Label);
   }
 }
 
 void MCMachOStreamer::emitEHSymAttributes(const MCSymbol *Symbol,
                                           MCSymbol *EHSymbol) {
-  auto *Sym = static_cast<const MCSymbolMachO *>(Symbol);
+  auto *Sym = cast<MCSymbolMachO>(Symbol);
   getAssembler().registerSymbol(*Symbol);
-  if (Sym->isExternal())
+  if (Symbol->isExternal())
     emitSymbolAttribute(EHSymbol, MCSA_Global);
   if (Sym->isWeakDefinition())
     emitSymbolAttribute(EHSymbol, MCSA_WeakDefinition);
@@ -160,8 +164,8 @@ void MCMachOStreamer::emitEHSymAttributes(const MCSymbol *Symbol,
 void MCMachOStreamer::emitLabel(MCSymbol *Symbol, SMLoc Loc) {
   // We have to create a new fragment if this is an atom defining symbol,
   // fragments cannot span atoms.
-  if (static_cast<MCSymbolMachO *>(Symbol)->isSymbolLinkerVisible())
-    newFragment();
+  if (cast<MCSymbolMachO>(Symbol)->isSymbolLinkerVisible())
+    insert(getContext().allocFragment<MCDataFragment>());
 
   MCObjectStreamer::emitLabel(Symbol, Loc);
 
@@ -172,17 +176,17 @@ void MCMachOStreamer::emitLabel(MCSymbol *Symbol, SMLoc Loc) {
   //
   // FIXME: Cleanup this code, these bits should be emitted based on semantic
   // properties, not on the order of definition, etc.
-  static_cast<MCSymbolMachO *>(Symbol)->clearReferenceType();
+  cast<MCSymbolMachO>(Symbol)->clearReferenceType();
 }
 
 void MCMachOStreamer::emitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
   MCValue Res;
 
-  if (Value->evaluateAsRelocatable(Res, nullptr)) {
-    if (const auto *SymA = Res.getAddSym()) {
-      if (!Res.getSubSym() &&
-          (SymA->getName().empty() || Res.getConstant() != 0))
-        static_cast<MCSymbolMachO *>(Symbol)->setAltEntry();
+  if (Value->evaluateAsRelocatable(Res, nullptr, nullptr)) {
+    if (const MCSymbolRefExpr *SymAExpr = Res.getSymA()) {
+      const MCSymbol &SymA = SymAExpr->getSymbol();
+      if (!Res.getSymB() && (SymA.getName() == "" || Res.getConstant() != 0))
+        cast<MCSymbolMachO>(Symbol)->setAltEntry();
     }
   }
   MCObjectStreamer::emitAssignment(Symbol, Value);
@@ -206,8 +210,19 @@ void MCMachOStreamer::emitDataRegionEnd() {
   emitLabel(Data.End);
 }
 
-void MCMachOStreamer::emitSubsectionsViaSymbols() {
-  getWriter().setSubsectionsViaSymbols(true);
+void MCMachOStreamer::emitAssemblerFlag(MCAssemblerFlag Flag) {
+  // Let the target do whatever target specific stuff it needs to do.
+  getAssembler().getBackend().handleAssemblerFlag(Flag);
+  // Do any generic stuff we need to do.
+  switch (Flag) {
+  case MCAF_SyntaxUnified: return; // no-op here.
+  case MCAF_Code16: return; // Change parsing mode; no-op here.
+  case MCAF_Code32: return; // Change parsing mode; no-op here.
+  case MCAF_Code64: return; // Change parsing mode; no-op here.
+  case MCAF_SubsectionsViaSymbols:
+    getWriter().setSubsectionsViaSymbols(true);
+    return;
+  }
 }
 
 void MCMachOStreamer::emitLinkerOptions(ArrayRef<std::string> Options) {
@@ -254,9 +269,16 @@ void MCMachOStreamer::emitDarwinTargetVariantBuildVersion(
                                            Minor, Update, SDKVersion);
 }
 
+void MCMachOStreamer::emitThumbFunc(MCSymbol *Symbol) {
+  // Remember that the function is a thumb function. Fixup and relocation
+  // values will need adjusted.
+  getAssembler().setIsThumbFunc(Symbol);
+  cast<MCSymbolMachO>(Symbol)->setThumbFunc();
+}
+
 bool MCMachOStreamer::emitSymbolAttribute(MCSymbol *Sym,
                                           MCSymbolAttr Attribute) {
-  auto *Symbol = static_cast<MCSymbolMachO *>(Sym);
+  MCSymbolMachO *Symbol = cast<MCSymbolMachO>(Sym);
 
   // Indirect symbols are handled differently, to match how 'as' handles
   // them. This makes writing matching .o files easier.
@@ -299,8 +321,6 @@ bool MCMachOStreamer::emitSymbolAttribute(MCSymbol *Sym,
   case MCSA_Exported:
   case MCSA_Memtag:
   case MCSA_WeakAntiDep:
-  case MCSA_OSLinkage:
-  case MCSA_XPLinkage:
     return false;
 
   case MCSA_Global:
@@ -369,18 +389,17 @@ bool MCMachOStreamer::emitSymbolAttribute(MCSymbol *Sym,
 void MCMachOStreamer::emitSymbolDesc(MCSymbol *Symbol, unsigned DescValue) {
   // Encode the 'desc' value into the lowest implementation defined bits.
   getAssembler().registerSymbol(*Symbol);
-  static_cast<MCSymbolMachO *>(Symbol)->setDesc(DescValue);
+  cast<MCSymbolMachO>(Symbol)->setDesc(DescValue);
 }
 
 void MCMachOStreamer::emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
                                        Align ByteAlignment) {
-  auto &Sym = static_cast<MCSymbolMachO &>(*Symbol);
   // FIXME: Darwin 'as' does appear to allow redef of a .comm by itself.
   assert(Symbol->isUndefined() && "Cannot define a symbol twice!");
 
-  getAssembler().registerSymbol(Sym);
-  Sym.setExternal(true);
-  Sym.setCommon(Size, ByteAlignment);
+  getAssembler().registerSymbol(*Symbol);
+  Symbol->setExternal(true);
+  Symbol->setCommon(Size, ByteAlignment);
 }
 
 void MCMachOStreamer::emitLocalCommonSymbol(MCSymbol *Symbol, uint64_t Size,
@@ -396,7 +415,7 @@ void MCMachOStreamer::emitZerofill(MCSection *Section, MCSymbol *Symbol,
   // On darwin all virtual sections have zerofill type. Disallow the usage of
   // .zerofill in non-virtual functions. If something similar is needed, use
   // .space or .zero.
-  if (!Section->isBssSection()) {
+  if (!Section->isVirtualSection()) {
     getContext().reportError(
         Loc, "The usage of .zerofill is restricted to sections of "
              "ZEROFILL type. Use .zero or .space instead.");
@@ -423,8 +442,25 @@ void MCMachOStreamer::emitTBSSSymbol(MCSection *Section, MCSymbol *Symbol,
   emitZerofill(Section, Symbol, Size, ByteAlignment);
 }
 
+void MCMachOStreamer::emitInstToData(const MCInst &Inst,
+                                     const MCSubtargetInfo &STI) {
+  MCDataFragment *DF = getOrCreateDataFragment();
+
+  SmallVector<MCFixup, 4> Fixups;
+  SmallString<256> Code;
+  getAssembler().getEmitter().encodeInstruction(Inst, Code, Fixups, STI);
+
+  // Add the fixups and data.
+  for (MCFixup &Fixup : Fixups) {
+    Fixup.setOffset(Fixup.getOffset() + DF->getContents().size());
+    DF->getFixups().push_back(Fixup);
+  }
+  DF->setHasInstructions(STI);
+  DF->appendContents(Code);
+}
+
 void MCMachOStreamer::finishImpl() {
-  emitFrames();
+  emitFrames(&getAssembler().getBackend());
 
   // We have to set the fragment atom associations so we can relax properly for
   // Mach-O.
@@ -433,7 +469,7 @@ void MCMachOStreamer::finishImpl() {
   // defining symbols.
   DenseMap<const MCFragment *, const MCSymbol *> DefiningSymbolMap;
   for (const MCSymbol &Symbol : getAssembler().symbols()) {
-    auto &Sym = static_cast<const MCSymbolMachO &>(Symbol);
+    auto &Sym = cast<MCSymbolMachO>(Symbol);
     if (Sym.isSymbolLinkerVisible() && Sym.isInSection() && !Sym.isVariable() &&
         !Sym.isAltEntry()) {
       // An atom defining symbol should never be internal to a fragment.
@@ -446,13 +482,13 @@ void MCMachOStreamer::finishImpl() {
   // Set the fragment atom associations by tracking the last seen atom defining
   // symbol.
   for (MCSection &Sec : getAssembler()) {
-    static_cast<MCSectionMachO &>(Sec).allocAtoms();
+    cast<MCSectionMachO>(Sec).allocAtoms();
     const MCSymbol *CurrentAtom = nullptr;
     size_t I = 0;
     for (MCFragment &Frag : Sec) {
       if (const MCSymbol *Symbol = DefiningSymbolMap.lookup(&Frag))
         CurrentAtom = Symbol;
-      static_cast<MCSectionMachO &>(Sec).setAtom(I++, CurrentAtom);
+      cast<MCSectionMachO>(Sec).setAtom(I++, CurrentAtom);
     }
   }
 
@@ -463,8 +499,7 @@ void MCMachOStreamer::finishImpl() {
 }
 
 void MCMachOStreamer::finalizeCGProfileEntry(const MCSymbolRefExpr *&SRE) {
-  auto *S =
-      static_cast<MCSymbolMachO *>(const_cast<MCSymbol *>(&SRE->getSymbol()));
+  const MCSymbol *S = &SRE->getSymbol();
   if (getAssembler().registerSymbol(*S))
     S->setExternal(true);
 }
@@ -483,13 +518,12 @@ void MCMachOStreamer::finalizeCGProfile() {
   // and set its size now so that it's accounted for in layout.
   MCSection *CGProfileSection = Asm.getContext().getMachOSection(
       "__LLVM", "__cg_profile", 0, SectionKind::getMetadata());
-  // Call the base class changeSection to omit the linker-local label.
-  MCObjectStreamer::changeSection(CGProfileSection);
+  changeSection(CGProfileSection);
   // For each entry, reserve space for 2 32-bit indices and a 64-bit count.
   size_t SectionBytes =
       W.getCGProfile().size() * (2 * sizeof(uint32_t) + sizeof(uint64_t));
-  (*CGProfileSection->begin())
-      .setVarContents(std::vector<char>(SectionBytes, 0));
+  cast<MCDataFragment>(*CGProfileSection->begin())
+      .appendContents(SectionBytes, 0);
 }
 
 MCStreamer *llvm::createMachOStreamer(MCContext &Context,
@@ -517,14 +551,12 @@ void MCMachOStreamer::createAddrSigSection() {
   // to be computed immediately after in order for it to be exported correctly.
   MCSection *AddrSigSection =
       Asm.getContext().getObjectFileInfo()->getAddrSigSection();
-  // Call the base class changeSection to omit the linker-local label.
-  MCObjectStreamer::changeSection(AddrSigSection);
-  auto *Frag = cast<MCFragment>(AddrSigSection->curFragList()->Head);
+  changeSection(AddrSigSection);
+  auto *Frag = cast<MCDataFragment>(AddrSigSection->curFragList()->Head);
   // We will generate a series of pointer-sized symbol relocations at offset
   // 0x0. Set the section size to be large enough to contain a single pointer
   // (instead of emitting a zero-sized section) so these relocations are
   // technically valid, even though we don't expect these relocations to
   // actually be applied by the linker.
-  constexpr char zero[8] = {};
-  Frag->setVarContents(zero);
+  Frag->appendContents(8, 0);
 }

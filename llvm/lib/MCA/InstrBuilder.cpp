@@ -75,8 +75,7 @@ static void initializeUsedResources(InstrDesc &ID,
       WithColor::warning()
           << "Ignoring invalid write of zero cycles on processor resource "
           << PR.Name << "\n";
-      WithColor::note() << "found in scheduling class "
-                        << SM.getSchedClassName(ID.SchedClassID)
+      WithColor::note() << "found in scheduling class " << SCDesc.Name
                         << " (write index #" << I << ")\n";
 #endif
       continue;
@@ -632,23 +631,19 @@ InstrBuilder::createInstrDescImpl(const MCInst &MCI,
     return std::move(Err);
 
   // Now add the new descriptor.
-
-  if (IM.canCustomize(IVec)) {
-    IM.customize(IVec, *ID);
-    return *CustomDescriptors.emplace_back(std::move(ID));
-  }
-
   bool IsVariadic = MCDesc.isVariadic();
   if ((ID->IsRecyclable = !IsVariadic && !IsVariant)) {
     auto DKey = std::make_pair(MCI.getOpcode(), SchedClassID);
-    return *(Descriptors[DKey] = std::move(ID));
+    Descriptors[DKey] = std::move(ID);
+    return *Descriptors[DKey];
   }
 
   auto VDKey = std::make_pair(hashMCInst(MCI), SchedClassID);
   assert(
       !VariantDescriptors.contains(VDKey) &&
       "Expected VariantDescriptors to not already have a value for this key.");
-  return *(VariantDescriptors[VDKey] = std::move(ID));
+  VariantDescriptors[VDKey] = std::move(ID);
+  return *VariantDescriptors[VDKey];
 }
 
 Expected<const InstrDesc &>
@@ -682,9 +677,7 @@ STATISTIC(NumVariantInst, "Number of MCInsts that doesn't have static Desc");
 Expected<std::unique_ptr<Instruction>>
 InstrBuilder::createInstruction(const MCInst &MCI,
                                 const SmallVector<Instrument *> &IVec) {
-  Expected<const InstrDesc &> DescOrErr = IM.canCustomize(IVec)
-                                              ? createInstrDescImpl(MCI, IVec)
-                                              : getOrCreateInstrDesc(MCI, IVec);
+  Expected<const InstrDesc &> DescOrErr = getOrCreateInstrDesc(MCI, IVec);
   if (!DescOrErr)
     return DescOrErr.takeError();
   const InstrDesc &D = *DescOrErr;
@@ -742,7 +735,7 @@ InstrBuilder::createInstruction(const MCInst &MCI,
       // Skip non-register operands.
       if (!Op.isReg())
         continue;
-      RegID = Op.getReg().id();
+      RegID = Op.getReg();
     } else {
       // Implicit read.
       RegID = RD.RegisterID;
@@ -807,8 +800,8 @@ InstrBuilder::createInstruction(const MCInst &MCI,
   unsigned WriteIndex = 0;
   Idx = 0U;
   for (const WriteDescriptor &WD : D.Writes) {
-    RegID = WD.isImplicitWrite() ? WD.RegisterID
-                                 : MCI.getOperand(WD.OpIndex).getReg().id();
+    RegID = WD.isImplicitWrite() ? MCRegister(WD.RegisterID)
+                                 : MCI.getOperand(WD.OpIndex).getReg();
     // Check if this is a optional definition that references NoReg or a write
     // to a constant register.
     if ((WD.IsOptionalDef && !RegID) || MRI.isConstant(RegID)) {

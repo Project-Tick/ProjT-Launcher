@@ -1,20 +1,15 @@
 // RUN: %clang_cl_asan %Od %MT -o %t %s
 // RUN: %env_asan_opts=windows_hook_rtl_allocators=true %run %t 2>&1 | FileCheck %s
+// UNSUPPORTED: asan-64-bits
 #include <cassert>
 #include <iostream>
-#include <sanitizer/allocator_interface.h>
 #include <windows.h>
 
 int main() {
   void *ptr = malloc(0);
   if (ptr)
     std::cerr << "allocated!\n";
-
-  // Check the 'allocate 1 instead of 0' hack hasn't changed
-  // Note that as of b3452d90b043a398639e62b0ab01aa339cc649de, dereferencing
-  // the pointer will be detected as a heap-buffer-overflow.
-  if (__sanitizer_get_allocated_size(ptr) != 1)
-    return 1;
+  ((char *)ptr)[0] = '\xff'; //check this 'allocate 1 instead of 0' hack hasn't changed
 
   free(ptr);
 

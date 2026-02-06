@@ -9,7 +9,6 @@
 #ifndef BOLT_PASSES_BINARY_FUNCTION_CALLGRAPH_H
 #define BOLT_PASSES_BINARY_FUNCTION_CALLGRAPH_H
 
-#include "bolt/Core/BinaryContext.h"
 #include "bolt/Core/CallGraph.h"
 #include <deque>
 #include <functional>
@@ -19,6 +18,7 @@ namespace llvm {
 namespace bolt {
 
 class BinaryFunction;
+class BinaryContext;
 
 class BinaryFunctionCallGraph : public CallGraph {
 public:
@@ -46,7 +46,7 @@ public:
 
 private:
   std::unordered_map<const BinaryFunction *, NodeId> FuncToNodeId;
-  BinaryFunctionListType Funcs;
+  std::vector<BinaryFunction *> Funcs;
 };
 
 using CgFilterFunction = std::function<bool(const BinaryFunction &BF)>;

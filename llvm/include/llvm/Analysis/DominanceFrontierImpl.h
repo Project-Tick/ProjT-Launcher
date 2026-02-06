@@ -24,6 +24,8 @@
 #include "llvm/Support/GenericDomTree.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
+#include <set>
+#include <utility>
 #include <vector>
 
 namespace llvm {

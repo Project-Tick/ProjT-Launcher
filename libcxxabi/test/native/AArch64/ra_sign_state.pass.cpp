@@ -53,7 +53,7 @@ void bazz() {
   }
 }
 
-int main(int, char**) {
+int main() {
   try {
     bazz();
   } catch (int i) {

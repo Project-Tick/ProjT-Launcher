@@ -69,7 +69,11 @@ getNonRedundantWriteProcRes(const MCSchedClassDesc &SCDesc,
        [](const ResourceMaskAndEntry &A, const ResourceMaskAndEntry &B) {
          unsigned popcntA = popcount(A.first);
          unsigned popcntB = popcount(B.first);
-         return std::tie(popcntA, A.first) < std::tie(popcntB, B.first);
+         if (popcntA < popcntB)
+           return true;
+         if (popcntA > popcntB)
+           return false;
+         return A.first < B.first;
        });
 
   SmallVector<float, 32> ProcResUnitUsage(NumProcRes);

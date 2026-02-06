@@ -58,7 +58,6 @@ inline TestResult test_vals(const char *fmt, F num, int prec, int width) {
 
   int test_result = 0;
   int reference_result = 0;
-  TestResult result = TestResult::Success;
 
   test_result = LIBC_NAMESPACE::snprintf(test_buff, buffer_size + 1, fmt, width,
                                          prec, num);
@@ -67,14 +66,16 @@ inline TestResult test_vals(const char *fmt, F num, int prec, int width) {
 
   // All of these calls should return that they wrote the same amount.
   if (test_result != reference_result || test_result != buffer_size) {
-    result = TestResult::LengthsDiffer;
-  } else if (!simple_streq(test_buff, reference_buff, buffer_size)) {
-    result = TestResult::StringsNotEqual;
+    return TestResult::LengthsDiffer;
+  }
+
+  if (!simple_streq(test_buff, reference_buff, buffer_size)) {
+    return TestResult::StringsNotEqual;
   }
 
   delete[] test_buff;
   delete[] reference_buff;
-  return result;
+  return TestResult::Success;
 }
 
 constexpr char const *fmt_arr[] = {
@@ -86,12 +87,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   // data = raw_data;
   // size = sizeof(raw_data);
   double num = 0.0;
-  long double ld_num = 0.0L;
   int prec = 0;
   int width = 0;
 
   LIBC_NAMESPACE::fputil::FPBits<double>::StorageType raw_num = 0;
-  LIBC_NAMESPACE::fputil::FPBits<long double>::StorageType ld_raw_num = 0;
 
   // Copy as many bytes of data as will fit into num, prec, and with. Any extras
   // are ignored.
@@ -102,20 +101,16 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
       prec = (prec << 8) + data[cur];
     } else if (cur < sizeof(raw_num) + sizeof(prec) + sizeof(width)) {
       width = (width << 8) + data[cur];
-    } else if (cur < sizeof(raw_num) + sizeof(prec) + sizeof(width) +
-                         sizeof(ld_raw_num)) {
-      ld_raw_num = (ld_raw_num << 8) + data[cur];
     }
   }
 
   num = LIBC_NAMESPACE::fputil::FPBits<double>(raw_num).get_val();
-  ld_num = LIBC_NAMESPACE::fputil::FPBits<long double>(ld_raw_num).get_val();
 
-  // checking the same value in double and long double could help find
-  // mismatches. It also ensures long doubles are being tested even before the
-  // input data is long enough. Mostly this is here to match previous behavior
-  // where this was the only long double value checked.
-  long double num_as_ld = static_cast<long double>(num);
+  // While we could create a "ld_raw_num" from additional bytes, it's much
+  // easier to stick with simply casting num to long double. This avoids the
+  // issues around 80 bit long doubles, especially unnormal and pseudo-denormal
+  // numbers, which MPFR doesn't handle well.
+  long double ld_num = static_cast<long double>(num);
 
   if (width > MAX_SIZE) {
     width = MAX_SIZE;
@@ -135,7 +130,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     TestResult result;
     if (fmt_arr[cur_fmt][fmt_len - 2] == 'L') {
       result = test_vals<long double>(fmt_arr[cur_fmt], ld_num, prec, width);
-      result = test_vals<long double>(fmt_arr[cur_fmt], num_as_ld, prec, width);
     } else {
       result = test_vals<double>(fmt_arr[cur_fmt], num, prec, width);
     }

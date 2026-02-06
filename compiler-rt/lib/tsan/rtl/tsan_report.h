@@ -12,8 +12,6 @@
 #ifndef TSAN_REPORT_H
 #define TSAN_REPORT_H
 
-#include "sanitizer_common/sanitizer_internal_defs.h"
-#include "sanitizer_common/sanitizer_stacktrace.h"
 #include "sanitizer_common/sanitizer_symbolizer.h"
 #include "sanitizer_common/sanitizer_thread_registry.h"
 #include "sanitizer_common/sanitizer_vector.h"
@@ -58,7 +56,6 @@ struct ReportMop {
   bool atomic;
   uptr external_tag;
   Vector<ReportMopMutex> mset;
-  StackTrace stack_trace;
   ReportStack *stack;
 
   ReportMop();
@@ -82,32 +79,23 @@ struct ReportLocation {
   int fd = 0;
   bool fd_closed = false;
   bool suppressable = false;
-  StackID stack_id = 0;
   ReportStack *stack = nullptr;
 };
 
 struct ReportThread {
   Tid id;
-  ThreadID os_id;
+  tid_t os_id;
   bool running;
   ThreadType thread_type;
   char *name;
   Tid parent_tid;
-  StackID stack_id;
   ReportStack *stack;
-  bool suppressable;
 };
 
 struct ReportMutex {
   int id;
   uptr addr;
-  StackID stack_id;
   ReportStack *stack;
-};
-
-struct AddedLocationAddr {
-  uptr addr;
-  usize locs_idx;
 };
 
 class ReportDesc {
@@ -117,7 +105,6 @@ class ReportDesc {
   Vector<ReportStack*> stacks;
   Vector<ReportMop*> mops;
   Vector<ReportLocation*> locs;
-  Vector<AddedLocationAddr> added_location_addrs;
   Vector<ReportMutex*> mutexes;
   Vector<ReportThread*> threads;
   Vector<Tid> unique_tids;

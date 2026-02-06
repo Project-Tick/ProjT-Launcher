@@ -26,14 +26,13 @@
 // RUN: echo "interceptor_name:strcpy" > %t.supp
 // RUN: %env_asan_opts=suppressions='"%t.supp"' %run %t
 
-// UNSUPPORTED: android, MSVC
+// UNSUPPORTED: android
 
-#include "defines.h"
 #include <string.h>
 
 
 // Don't inline function otherwise stacktrace changes.
-ATTRIBUTE_NOINLINE void bad_function() {
+__attribute__((noinline)) void bad_function() {
   char buffer[] = "hello";
   // CHECK: strcpy-param-overlap: memory ranges
   // CHECK: [{{0x.*,[ ]*0x.*}}) and [{{0x.*,[ ]*0x.*}}) overlap

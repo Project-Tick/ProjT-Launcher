@@ -15,6 +15,7 @@
 #include "mlir/TableGen/Predicate.h"
 #include "mlir/TableGen/Trait.h"
 #include "mlir/TableGen/Type.h"
+#include "llvm/ADT/EquivalenceClasses.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/Sequence.h"
 #include "llvm/ADT/SmallPtrSet.h"
@@ -25,6 +26,7 @@
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/TableGen/Error.h"
 #include "llvm/TableGen/Record.h"
+#include <list>
 
 #define DEBUG_TYPE "mlir-tblgen-operator"
 
@@ -385,8 +387,7 @@ void Operator::populateTypeInferenceInfo(
   if (getTrait("::mlir::OpTrait::SameOperandsAndResultType")) {
     // Check for a non-variable length operand to use as the type anchor.
     auto *operandI = llvm::find_if(arguments, [](const Argument &arg) {
-      NamedTypeConstraint *operand =
-          llvm::dyn_cast_if_present<NamedTypeConstraint *>(arg);
+      NamedTypeConstraint *operand = llvm::dyn_cast_if_present<NamedTypeConstraint *>(arg);
       return operand && !operand->isVariableLength();
     });
     if (operandI == arguments.end())
@@ -464,37 +465,6 @@ void Operator::populateTypeInferenceInfo(
       infer.inferred =
           InferredResultType::isArgIndex(sourceIndex) ||
           inference[InferredResultType::unmapResultIndex(sourceIndex)].inferred;
-      continue;
-    }
-
-    // The `ShapedTypeMatchesElementCountAndTypes` trait represents a 1 -> 1
-    // type inference edge where a shaped type matches element count and types
-    // of variadic elements.
-    if (def.isSubClassOf("ShapedTypeMatchesElementCountAndTypes")) {
-      StringRef shapedArg = def.getValueAsString("shaped");
-      StringRef elementsArg = def.getValueAsString("elements");
-
-      int shapedIndex = argumentsAndResultsIndex.lookup(shapedArg);
-      int elementsIndex = argumentsAndResultsIndex.lookup(elementsArg);
-
-      // Handle result type inference from shaped type to variadic elements.
-      if (InferredResultType::isResultIndex(elementsIndex) &&
-          InferredResultType::isArgIndex(shapedIndex)) {
-        int resultIndex = InferredResultType::unmapResultIndex(elementsIndex);
-        ResultTypeInference &infer = inference[resultIndex];
-        if (!infer.inferred) {
-          infer.sources.emplace_back(
-              shapedIndex,
-              "::llvm::SmallVector<::mlir::Type>(::llvm::cast<::mlir::"
-              "ShapedType>($_self).getNumElements(), "
-              "::llvm::cast<::mlir::ShapedType>($_self).getElementType())");
-          infer.inferred = true;
-        }
-      }
-
-      // Type inference in the opposite direction is not possible as the actual
-      // shaped type can't be inferred from the variadic elements.
-
       continue;
     }
 
@@ -664,17 +634,15 @@ void Operator::populateOpStructure() {
       argDef = argDef->getValueAsDef("constraint");
 
     if (argDef->isSubClassOf(typeConstraintClass)) {
-      attrPropOrOperandMapping.push_back(
-          {OperandAttrOrProp::Kind::Operand, operandIndex});
+      attrOrOperandMapping.push_back(
+          {OperandOrAttribute::Kind::Operand, operandIndex});
       arguments.emplace_back(&operands[operandIndex++]);
     } else if (argDef->isSubClassOf(attrClass)) {
-      attrPropOrOperandMapping.push_back(
-          {OperandAttrOrProp::Kind::Attribute, attrIndex});
+      attrOrOperandMapping.push_back(
+          {OperandOrAttribute::Kind::Attribute, attrIndex});
       arguments.emplace_back(&attributes[attrIndex++]);
     } else {
       assert(argDef->isSubClassOf(propertyClass));
-      attrPropOrOperandMapping.push_back(
-          {OperandAttrOrProp::Kind::Property, propIndex});
       arguments.emplace_back(&properties[propIndex++]);
     }
   }
@@ -813,7 +781,7 @@ void Operator::populateOpStructure() {
   // Populate the builders.
   auto *builderList = dyn_cast_or_null<ListInit>(def.getValueInit("builders"));
   if (builderList && !builderList->empty()) {
-    for (const Init *init : builderList->getElements())
+    for (const Init *init : builderList->getValues())
       builders.emplace_back(cast<DefInit>(init)->getDef(), def.getLoc());
   } else if (skipDefaultBuilders()) {
     PrintFatalError(
@@ -870,8 +838,9 @@ auto Operator::VariableDecoratorIterator::unwrap(const Init *init)
   return VariableDecorator(cast<DefInit>(init)->getDef());
 }
 
-auto Operator::getArgToOperandAttrOrProp(int index) const -> OperandAttrOrProp {
-  return attrPropOrOperandMapping[index];
+auto Operator::getArgToOperandOrAttribute(int index) const
+    -> OperandOrAttribute {
+  return attrOrOperandMapping[index];
 }
 
 std::string Operator::getGetterName(StringRef name) const {

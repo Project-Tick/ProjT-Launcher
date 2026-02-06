@@ -25,13 +25,14 @@ enum Opcode : uint32_t;
 /// An emitter which links the program to bytecode for later use.
 class ByteCodeEmitter {
 protected:
+  using LabelTy = uint32_t;
   using AddrTy = uintptr_t;
   using Local = Scope::Local;
 
 public:
-  using LabelTy = uint32_t;
   /// Compiles the function into the module.
-  void compileFunc(const FunctionDecl *FuncDecl, Function *Func = nullptr);
+  Function *compileFunc(const FunctionDecl *FuncDecl);
+  Function *compileObjCBlock(const BlockExpr *BE);
 
 protected:
   ByteCodeEmitter(Context &Ctx, Program &P) : Ctx(Ctx), P(P) {}
@@ -46,22 +47,16 @@ protected:
   /// Methods implemented by the compiler.
   virtual bool visitFunc(const FunctionDecl *E) = 0;
   virtual bool visitExpr(const Expr *E, bool DestroyToplevelScope) = 0;
-  virtual bool visitDeclAndReturn(const VarDecl *VD, const Expr *Init,
-                                  bool ConstantContext) = 0;
-  virtual bool visit(const Expr *E) = 0;
-  virtual bool emitBool(bool V, const Expr *E) = 0;
+  virtual bool visitDeclAndReturn(const VarDecl *E, bool ConstantContext) = 0;
 
   /// Emits jumps.
   bool jumpTrue(const LabelTy &Label);
   bool jumpFalse(const LabelTy &Label);
   bool jump(const LabelTy &Label);
   bool fallthrough(const LabelTy &Label);
-  /// Speculative execution.
-  bool speculate(const CallExpr *E, const LabelTy &EndLabel);
 
   /// We're always emitting bytecode.
   bool isActive() const { return true; }
-  bool checkingForUndefinedBehavior() const { return false; }
 
   /// Callback for local registration.
   Local createLocal(Descriptor *D);
@@ -74,7 +69,6 @@ protected:
   ParamOffset LambdaThisCapture{0, false};
   /// Local descriptors.
   llvm::SmallVector<SmallVector<Local, 8>, 2> Descriptors;
-  std::optional<SourceInfo> LocOverride = std::nullopt;
 
 private:
   /// Current compilation context.
@@ -90,7 +84,7 @@ private:
   /// Location of label relocations.
   llvm::DenseMap<LabelTy, llvm::SmallVector<unsigned, 5>> LabelRelocs;
   /// Program code.
-  llvm::SmallVector<std::byte> Code;
+  std::vector<std::byte> Code;
   /// Opcode to expression mapping.
   SourceMap SrcMap;
 
@@ -99,7 +93,7 @@ private:
 
   /// Emits an opcode.
   template <typename... Tys>
-  bool emitOp(Opcode Op, const Tys &...Args, SourceInfo L);
+  bool emitOp(Opcode Op, const Tys &...Args, const SourceInfo &L);
 
 protected:
 #define GET_LINK_PROTO

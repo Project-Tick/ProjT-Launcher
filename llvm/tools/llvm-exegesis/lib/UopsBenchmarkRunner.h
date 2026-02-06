@@ -30,7 +30,7 @@ public:
                         ExecutionMode, ValCounters) {}
   ~UopsBenchmarkRunner() override;
 
-  static constexpr size_t kMinNumDifferentAddresses = 6;
+  static constexpr const size_t kMinNumDifferentAddresses = 6;
 
 private:
   Expected<std::vector<BenchmarkMeasure>>

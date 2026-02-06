@@ -10,7 +10,7 @@
 ;; both cycles are reported as converged.
 ;;
 ;; CHECK-LABEL: UniformityInfo for function 'headers_b_p':
-;; CHECK-NOT: CYCLES ASSUMED DIVERGENT:
+;; CHECK-NOT: CYCLES ASSSUMED DIVERGENT:
 ;; CHECK-NOT: CYCLES WITH DIVERGENT EXIT:
 
 define amdgpu_kernel void @headers_b_p(i32 %a, i32 %b, i32 %c) {
@@ -68,7 +68,7 @@ exit:
 ;; both cycles are reported as converged.
 ;;
 ;; CHECK-LABEL: UniformityInfo for function 'headers_a_p':
-;; CHECK-NOT: CYCLES ASSUMED DIVERGENT:
+;; CHECK-NOT: CYCLES ASSSUMED DIVERGENT:
 ;; CHECK-NOT: CYCLES WITH DIVERGENT EXIT:
 
 define amdgpu_kernel void @headers_a_p(i32 %a, i32 %b, i32 %c) {
@@ -126,9 +126,10 @@ exit:
 ;; only the inner cycle is reported as diverged.
 ;;
 ;; CHECK-LABEL: UniformityInfo for function 'headers_b_t':
-;; CHECK: CYCLES ASSUMED DIVERGENT:
+;; CHECK: CYCLES ASSSUMED DIVERGENT:
 ;; CHECK:   depth=2: entries(T P) S Q R
-;; CHECK-NOT: CYCLES WITH DIVERGENT EXIT:
+;; CHECK: CYCLES WITH DIVERGENT EXIT:
+;; CHECK:   depth=1: entries(B A) D T S Q P R C
 
 define amdgpu_kernel void @headers_b_t(i32 %a, i32 %b, i32 %c) {
 entry:
@@ -184,7 +185,7 @@ exit:
 ;; Hence the outermost cycle is reported as diverged.
 ;;
 ;; CHECK-LABEL: UniformityInfo for function 'headers_a_t':
-;; CHECK: CYCLES ASSUMED DIVERGENT:
+;; CHECK: CYCLES ASSSUMED DIVERGENT:
 ;; CHECK:   depth=1: entries(A B) D T S Q P R C
 ;; CHECK-NOT: CYCLES WITH DIVERGENT EXIT:
 

@@ -22,8 +22,6 @@ include "DXILStubs.td"
 // DirectX Subtarget features.
 //===----------------------------------------------------------------------===//
 
-defm : RemapAllTargetPseudoPointerOperands<DXILClass>;
-
 def DirectXInstrInfo : InstrInfo;
 
 //===----------------------------------------------------------------------===//

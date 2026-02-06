@@ -36,8 +36,6 @@ public:
 
   const char *GetMangledName() const;
 
-  const char *GetBaseName() const;
-
   lldb::SBInstructionList GetInstructions(lldb::SBTarget target);
 
   lldb::SBInstructionList GetInstructions(lldb::SBTarget target,

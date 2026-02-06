@@ -17,14 +17,15 @@
 #include "clang/Basic/SourceManager.h"
 #include "clang/CrossTU/CrossTranslationUnit.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/FrontendActions.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/TargetSelect.h"
-#include "llvm/Support/WithColor.h"
 #include <optional>
+#include <sstream>
 #include <string>
 
 using namespace llvm;
@@ -122,20 +123,21 @@ static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
 static IntrusiveRefCntPtr<DiagnosticsEngine> Diags;
 
-IntrusiveRefCntPtr<DiagnosticsEngine>
-GetDiagnosticsEngine(DiagnosticOptions &DiagOpts) {
+IntrusiveRefCntPtr<DiagnosticsEngine> GetDiagnosticsEngine() {
   if (Diags) {
     // Call reset to make sure we don't mix errors
     Diags->Reset(false);
     return Diags;
   }
 
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
   TextDiagnosticPrinter *DiagClient =
-      new TextDiagnosticPrinter(llvm::errs(), DiagOpts);
+      new TextDiagnosticPrinter(llvm::errs(), &*DiagOpts);
   DiagClient->setPrefix("clang-extdef-mappping");
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
 
-  auto DiagEngine = llvm::makeIntrusiveRefCnt<DiagnosticsEngine>(
-      DiagnosticIDs::create(), DiagOpts, DiagClient);
+  IntrusiveRefCntPtr<DiagnosticsEngine> DiagEngine(
+      new DiagnosticsEngine(DiagID, &*DiagOpts, DiagClient));
   Diags.swap(DiagEngine);
 
   // Retain this one time so it's not destroyed by ASTUnit::LoadFromASTFile
@@ -150,14 +152,12 @@ static bool HandleAST(StringRef AstPath) {
   if (!CI)
     CI = new CompilerInstance();
 
-  auto DiagOpts = std::make_shared<DiagnosticOptions>();
-  IntrusiveRefCntPtr<DiagnosticsEngine> DiagEngine =
-      GetDiagnosticsEngine(*DiagOpts);
+  IntrusiveRefCntPtr<DiagnosticsEngine> DiagEngine = GetDiagnosticsEngine();
 
   std::unique_ptr<ASTUnit> Unit = ASTUnit::LoadFromASTFile(
       AstPath, CI->getPCHContainerOperations()->getRawReader(),
-      ASTUnit::LoadASTOnly, CI->getVirtualFileSystemPtr(), DiagOpts, DiagEngine,
-      CI->getFileSystemOpts(), CI->getHeaderSearchOpts());
+      ASTUnit::LoadASTOnly, DiagEngine, CI->getFileSystemOpts(),
+      CI->getHeaderSearchOptsPtr());
 
   if (!Unit)
     return false;
@@ -210,9 +210,9 @@ int main(int argc, const char **argv) {
                          "with compile database or .ast files that are "
                          "created from clang's -emit-ast option.\n";
   auto ExpectedParser = CommonOptionsParser::create(
-      argc, argv, ClangExtDefMapGenCategory, cl::OneOrMore, Overview);
+      argc, argv, ClangExtDefMapGenCategory, cl::ZeroOrMore, Overview);
   if (!ExpectedParser) {
-    llvm::WithColor::error() << llvm::toString(ExpectedParser.takeError());
+    llvm::errs() << ExpectedParser.takeError();
     return 1;
   }
   CommonOptionsParser &OptionsParser = ExpectedParser.get();

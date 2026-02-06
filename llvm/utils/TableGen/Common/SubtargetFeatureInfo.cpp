@@ -163,39 +163,6 @@ static bool emitFeaturesAux(StringRef TargetName, const Init &Val,
   return true;
 }
 
-void SubtargetFeatureInfo::emitPredicateCheck(
-    raw_ostream &OS, ArrayRef<const Record *> Predicates) {
-  ListSeparator LS(" && ");
-  for (const Record *R : Predicates) {
-    StringRef CondString = R->getValueAsString("CondString");
-    if (CondString.empty())
-      continue;
-    OS << LS << '(' << CondString << ')';
-  }
-}
-
-void SubtargetFeatureInfo::emitMCPredicateCheck(
-    raw_ostream &OS, StringRef TargetName,
-    ArrayRef<const Record *> Predicates) {
-  auto MCPredicates = make_filter_range(Predicates, [](const Record *R) {
-    return R->getValueAsBit("AssemblerMatcherPredicate");
-  });
-
-  if (MCPredicates.empty()) {
-    OS << "false";
-    return;
-  }
-
-  ListSeparator LS(" && ");
-  bool ParenIfBinOp = range_size(MCPredicates) > 1;
-  for (const Record *R : MCPredicates) {
-    OS << LS;
-    if (emitFeaturesAux(TargetName, *R->getValueAsDag("AssemblerCondDag"),
-                        ParenIfBinOp, OS))
-      PrintFatalError(R, "Invalid AssemblerCondDag!");
-  }
-}
-
 void SubtargetFeatureInfo::emitComputeAssemblerAvailableFeatures(
     StringRef TargetName, StringRef ClassName, StringRef FuncName,
     SubtargetFeatureInfoMap &SubtargetFeatures, raw_ostream &OS) {
@@ -207,14 +174,12 @@ void SubtargetFeatureInfo::emitComputeAssemblerAvailableFeatures(
     OS << "const ";
   OS << "{\n";
   OS << "  FeatureBitset Features;\n";
-  for (const SubtargetFeatureInfo &SFI : make_second_range(SubtargetFeatures)) {
-    const Record *Def = SFI.TheDef;
+  for (const auto &SF : SubtargetFeatures) {
+    const SubtargetFeatureInfo &SFI = SF.second;
 
     OS << "  if (";
-    if (emitFeaturesAux(TargetName, *Def->getValueAsDag("AssemblerCondDag"),
-                        /*ParenIfBinOp=*/false, OS))
-      PrintFatalError(Def, "Invalid AssemblerCondDag!");
-
+    emitFeaturesAux(TargetName, *SFI.TheDef->getValueAsDag("AssemblerCondDag"),
+                    /*ParenIfBinOp=*/false, OS);
     OS << ")\n";
     OS << "    Features.set(" << SFI.getEnumBitName() << ");\n";
   }

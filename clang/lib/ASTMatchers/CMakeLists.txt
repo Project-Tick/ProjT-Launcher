@@ -8,7 +8,7 @@ set(LLVM_LINK_COMPONENTS
 add_clang_library(clangASTMatchers
   ASTMatchFinder.cpp
   ASTMatchersInternal.cpp
-  LowLevelHelpers.cpp
+  GtestMatchers.cpp
 
   LINK_LIBS
   clangAST

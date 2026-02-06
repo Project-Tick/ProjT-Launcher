@@ -60,7 +60,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/CodeGen/ComplexDeinterleavingPass.h"
-#include "llvm/ADT/AllocatorList.h"
 #include "llvm/ADT/MapVector.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
@@ -68,10 +67,8 @@
 #include "llvm/CodeGen/TargetLowering.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/PatternMatch.h"
 #include "llvm/InitializePasses.h"
-#include "llvm/Support/Allocator.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/Utils/Local.h"
 #include <algorithm>
@@ -111,40 +108,6 @@ static bool isNeg(Value *V);
 static Value *getNegOperand(Value *V);
 
 namespace {
-struct ComplexValue {
-  Value *Real = nullptr;
-  Value *Imag = nullptr;
-
-  bool operator==(const ComplexValue &Other) const {
-    return Real == Other.Real && Imag == Other.Imag;
-  }
-};
-hash_code hash_value(const ComplexValue &Arg) {
-  return hash_combine(DenseMapInfo<Value *>::getHashValue(Arg.Real),
-                      DenseMapInfo<Value *>::getHashValue(Arg.Imag));
-}
-} // end namespace
-typedef SmallVector<struct ComplexValue, 2> ComplexValues;
-
-template <> struct llvm::DenseMapInfo<ComplexValue> {
-  static inline ComplexValue getEmptyKey() {
-    return {DenseMapInfo<Value *>::getEmptyKey(),
-            DenseMapInfo<Value *>::getEmptyKey()};
-  }
-  static inline ComplexValue getTombstoneKey() {
-    return {DenseMapInfo<Value *>::getTombstoneKey(),
-            DenseMapInfo<Value *>::getTombstoneKey()};
-  }
-  static unsigned getHashValue(const ComplexValue &Val) {
-    return hash_combine(DenseMapInfo<Value *>::getHashValue(Val.Real),
-                        DenseMapInfo<Value *>::getHashValue(Val.Imag));
-  }
-  static bool isEqual(const ComplexValue &LHS, const ComplexValue &RHS) {
-    return LHS.Real == RHS.Real && LHS.Imag == RHS.Imag;
-  }
-};
-
-namespace {
 template <typename T, typename IterT>
 std::optional<T> findCommonBetweenCollections(IterT A, IterT B) {
   auto Common = llvm::find_if(A, [B](T I) { return llvm::is_contained(B, I); });
@@ -182,22 +145,18 @@ struct ComplexDeinterleavingCompositeNode {
 
   ComplexDeinterleavingCompositeNode(ComplexDeinterleavingOperation Op,
                                      Value *R, Value *I)
-      : Operation(Op) {
-    Vals.push_back({R, I});
-  }
-
-  ComplexDeinterleavingCompositeNode(ComplexDeinterleavingOperation Op,
-                                     ComplexValues &Other)
-      : Operation(Op), Vals(Other) {}
+      : Operation(Op), Real(R), Imag(I) {}
 
 private:
   friend class ComplexDeinterleavingGraph;
-  using CompositeNode = ComplexDeinterleavingCompositeNode;
+  using NodePtr = std::shared_ptr<ComplexDeinterleavingCompositeNode>;
+  using RawNodePtr = ComplexDeinterleavingCompositeNode *;
   bool OperandsValid = true;
 
 public:
   ComplexDeinterleavingOperation Operation;
-  ComplexValues Vals;
+  Value *Real;
+  Value *Imag;
 
   // This two members are required exclusively for generating
   // ComplexDeinterleavingOperation::Symmetric operations.
@@ -206,13 +165,13 @@ public:
 
   ComplexDeinterleavingRotation Rotation =
       ComplexDeinterleavingRotation::Rotation_0;
-  SmallVector<CompositeNode *> Operands;
+  SmallVector<RawNodePtr> Operands;
   Value *ReplacementNode = nullptr;
 
-  void addOperand(CompositeNode *Node) {
-    if (!Node)
+  void addOperand(NodePtr Node) {
+    if (!Node || !Node.get())
       OperandsValid = false;
-    Operands.push_back(Node);
+    Operands.push_back(Node.get());
   }
 
   void dump() { dump(dbgs()); }
@@ -225,7 +184,7 @@ public:
       } else
         OS << "nullptr\n";
     };
-    auto PrintNodeRef = [&](CompositeNode *Ptr) {
+    auto PrintNodeRef = [&](RawNodePtr Ptr) {
       if (Ptr)
         OS << Ptr << "\n";
       else
@@ -233,12 +192,10 @@ public:
     };
 
     OS << "- CompositeNode: " << this << "\n";
-    for (unsigned I = 0; I < Vals.size(); I++) {
-      OS << "  Real(" << I << ") : ";
-      PrintValue(Vals[I].Real);
-      OS << "  Imag(" << I << ") : ";
-      PrintValue(Vals[I].Imag);
-    }
+    OS << "  Real: ";
+    PrintValue(Real);
+    OS << "  Imag: ";
+    PrintValue(Imag);
     OS << "  ReplacementNode: ";
     PrintValue(ReplacementNode);
     OS << "  Operation: " << (int)Operation << "\n";
@@ -262,36 +219,33 @@ public:
   };
 
   using Addend = std::pair<Value *, bool>;
-  using AddendList = BumpPtrList<Addend>;
-  using CompositeNode = ComplexDeinterleavingCompositeNode::CompositeNode;
+  using NodePtr = ComplexDeinterleavingCompositeNode::NodePtr;
+  using RawNodePtr = ComplexDeinterleavingCompositeNode::RawNodePtr;
 
   // Helper struct for holding info about potential partial multiplication
   // candidates
   struct PartialMulCandidate {
     Value *Common;
-    CompositeNode *Node;
+    NodePtr Node;
     unsigned RealIdx;
     unsigned ImagIdx;
     bool IsNodeInverted;
   };
 
   explicit ComplexDeinterleavingGraph(const TargetLowering *TL,
-                                      const TargetLibraryInfo *TLI,
-                                      unsigned Factor)
-      : TL(TL), TLI(TLI), Factor(Factor) {}
+                                      const TargetLibraryInfo *TLI)
+      : TL(TL), TLI(TLI) {}
 
 private:
   const TargetLowering *TL = nullptr;
   const TargetLibraryInfo *TLI = nullptr;
-  unsigned Factor;
-  SmallVector<CompositeNode *> CompositeNodes;
-  DenseMap<ComplexValues, CompositeNode *> CachedResult;
-  SpecificBumpPtrAllocator<ComplexDeinterleavingCompositeNode> Allocator;
+  SmallVector<NodePtr> CompositeNodes;
+  DenseMap<std::pair<Value *, Value *>, NodePtr> CachedResult;
 
   SmallPtrSet<Instruction *, 16> FinalInstructions;
 
   /// Root instructions are instructions from which complex computation starts
-  DenseMap<Instruction *, CompositeNode *> RootToNode;
+  std::map<Instruction *, NodePtr> RootToNode;
 
   /// Topologically sorted root instructions
   SmallVector<Instruction *, 1> OrderedRoots;
@@ -339,37 +293,22 @@ private:
   /// ComplexDeinterleavingOperation::ReductionPHI node replacement. It is then
   /// used in the ComplexDeinterleavingOperation::ReductionOperation node
   /// replacement process.
-  DenseMap<PHINode *, PHINode *> OldToNewPHI;
+  std::map<PHINode *, PHINode *> OldToNewPHI;
 
-  CompositeNode *prepareCompositeNode(ComplexDeinterleavingOperation Operation,
-                                      Value *R, Value *I) {
+  NodePtr prepareCompositeNode(ComplexDeinterleavingOperation Operation,
+                               Value *R, Value *I) {
     assert(((Operation != ComplexDeinterleavingOperation::ReductionPHI &&
              Operation != ComplexDeinterleavingOperation::ReductionOperation) ||
             (R && I)) &&
            "Reduction related nodes must have Real and Imaginary parts");
-    return new (Allocator.Allocate())
-        ComplexDeinterleavingCompositeNode(Operation, R, I);
+    return std::make_shared<ComplexDeinterleavingCompositeNode>(Operation, R,
+                                                                I);
   }
 
-  CompositeNode *prepareCompositeNode(ComplexDeinterleavingOperation Operation,
-                                      ComplexValues &Vals) {
-#ifndef NDEBUG
-    for (auto &V : Vals) {
-      assert(
-          ((Operation != ComplexDeinterleavingOperation::ReductionPHI &&
-            Operation != ComplexDeinterleavingOperation::ReductionOperation) ||
-           (V.Real && V.Imag)) &&
-          "Reduction related nodes must have Real and Imaginary parts");
-    }
-#endif
-    return new (Allocator.Allocate())
-        ComplexDeinterleavingCompositeNode(Operation, Vals);
-  }
-
-  CompositeNode *submitCompositeNode(CompositeNode *Node) {
+  NodePtr submitCompositeNode(NodePtr Node) {
     CompositeNodes.push_back(Node);
-    if (Node->Vals[0].Real)
-      CachedResult[Node->Vals] = Node;
+    if (Node->Real)
+      CachedResult[{Node->Real, Node->Imag}] = Node;
     return Node;
   }
 
@@ -384,12 +323,12 @@ private:
   ///      i: ci - ar * bi
   /// 270: r: cr + ai * bi
   ///      i: ci - ai * br
-  CompositeNode *identifyPartialMul(Instruction *Real, Instruction *Imag);
+  NodePtr identifyPartialMul(Instruction *Real, Instruction *Imag);
 
   /// Identify the other branch of a Partial Mul, taking the CommonOperandI that
   /// is partially known from identifyPartialMul, filling in the other half of
   /// the complex pair.
-  CompositeNode *
+  NodePtr
   identifyNodeWithImplicitAdd(Instruction *I, Instruction *J,
                               std::pair<Value *, Value *> &CommonOperandI);
 
@@ -400,45 +339,39 @@ private:
   ///      i: ai + br
   /// 270: r: ar + bi
   ///      i: ai - br
-  CompositeNode *identifyAdd(Instruction *Real, Instruction *Imag);
-  CompositeNode *identifySymmetricOperation(ComplexValues &Vals);
-  CompositeNode *identifyPartialReduction(Value *R, Value *I);
-  CompositeNode *identifyDotProduct(Value *Inst);
+  NodePtr identifyAdd(Instruction *Real, Instruction *Imag);
+  NodePtr identifySymmetricOperation(Instruction *Real, Instruction *Imag);
+  NodePtr identifyPartialReduction(Value *R, Value *I);
+  NodePtr identifyDotProduct(Value *Inst);
 
-  CompositeNode *identifyNode(ComplexValues &Vals);
-
-  CompositeNode *identifyNode(Value *R, Value *I) {
-    ComplexValues Vals;
-    Vals.push_back({R, I});
-    return identifyNode(Vals);
-  }
+  NodePtr identifyNode(Value *R, Value *I);
 
   /// Determine if a sum of complex numbers can be formed from \p RealAddends
   /// and \p ImagAddens. If \p Accumulator is not null, add the result to it.
   /// Return nullptr if it is not possible to construct a complex number.
   /// \p Flags are needed to generate symmetric Add and Sub operations.
-  CompositeNode *identifyAdditions(AddendList &RealAddends,
-                                   AddendList &ImagAddends,
-                                   std::optional<FastMathFlags> Flags,
-                                   CompositeNode *Accumulator);
+  NodePtr identifyAdditions(std::list<Addend> &RealAddends,
+                            std::list<Addend> &ImagAddends,
+                            std::optional<FastMathFlags> Flags,
+                            NodePtr Accumulator);
 
   /// Extract one addend that have both real and imaginary parts positive.
-  CompositeNode *extractPositiveAddend(AddendList &RealAddends,
-                                       AddendList &ImagAddends);
+  NodePtr extractPositiveAddend(std::list<Addend> &RealAddends,
+                                std::list<Addend> &ImagAddends);
 
   /// Determine if sum of multiplications of complex numbers can be formed from
   /// \p RealMuls and \p ImagMuls. If \p Accumulator is not null, add the result
   /// to it. Return nullptr if it is not possible to construct a complex number.
-  CompositeNode *identifyMultiplications(SmallVectorImpl<Product> &RealMuls,
-                                         SmallVectorImpl<Product> &ImagMuls,
-                                         CompositeNode *Accumulator);
+  NodePtr identifyMultiplications(std::vector<Product> &RealMuls,
+                                  std::vector<Product> &ImagMuls,
+                                  NodePtr Accumulator);
 
   /// Go through pairs of multiplication (one Real and one Imag) and find all
   /// possible candidates for partial multiplication and put them into \p
   /// Candidates. Returns true if all Product has pair with common operand
-  bool collectPartialMuls(ArrayRef<Product> RealMuls,
-                          ArrayRef<Product> ImagMuls,
-                          SmallVectorImpl<PartialMulCandidate> &Candidates);
+  bool collectPartialMuls(const std::vector<Product> &RealMuls,
+                          const std::vector<Product> &ImagMuls,
+                          std::vector<PartialMulCandidate> &Candidates);
 
   /// If the code is compiled with -Ofast or expressions have `reassoc` flag,
   /// the order of complex computation operations may be significantly altered,
@@ -446,42 +379,40 @@ private:
   /// function takes this into consideration and employs a more general approach
   /// to identify complex computations. Initially, it gathers all the addends
   /// and multiplicands and then constructs a complex expression from them.
-  CompositeNode *identifyReassocNodes(Instruction *I, Instruction *J);
+  NodePtr identifyReassocNodes(Instruction *I, Instruction *J);
 
-  CompositeNode *identifyRoot(Instruction *I);
+  NodePtr identifyRoot(Instruction *I);
 
   /// Identifies the Deinterleave operation applied to a vector containing
   /// complex numbers. There are two ways to represent the Deinterleave
   /// operation:
   /// * Using two shufflevectors with even indices for /pReal instruction and
   /// odd indices for /pImag instructions (only for fixed-width vectors)
-  /// * Using N extractvalue instructions applied to `vector.deinterleaveN`
-  /// intrinsics (for both fixed and scalable vectors) where N is a multiple of
-  /// 2.
-  CompositeNode *identifyDeinterleave(ComplexValues &Vals);
+  /// * Using two extractvalue instructions applied to `vector.deinterleave2`
+  /// intrinsic (for both fixed and scalable vectors)
+  NodePtr identifyDeinterleave(Instruction *Real, Instruction *Imag);
 
   /// identifying the operation that represents a complex number repeated in a
   /// Splat vector. There are two possible types of splats: ConstantExpr with
   /// the opcode ShuffleVector and ShuffleVectorInstr. Both should have an
   /// initialization mask with all values set to zero.
-  CompositeNode *identifySplat(ComplexValues &Vals);
+  NodePtr identifySplat(Value *Real, Value *Imag);
 
-  CompositeNode *identifyPHINode(Instruction *Real, Instruction *Imag);
+  NodePtr identifyPHINode(Instruction *Real, Instruction *Imag);
 
   /// Identifies SelectInsts in a loop that has reduction with predication masks
   /// and/or predicated tail folding
-  CompositeNode *identifySelectNode(Instruction *Real, Instruction *Imag);
+  NodePtr identifySelectNode(Instruction *Real, Instruction *Imag);
 
-  Value *replaceNode(IRBuilderBase &Builder, CompositeNode *Node);
+  Value *replaceNode(IRBuilderBase &Builder, RawNodePtr Node);
 
   /// Complete IR modifications after producing new reduction operation:
   /// * Populate the PHINode generated for
   /// ComplexDeinterleavingOperation::ReductionPHI
   /// * Deinterleave the final value outside of the loop and repurpose original
   /// reduction users
-  void processReductionOperation(Value *OperationReplacement,
-                                 CompositeNode *Node);
-  void processReductionSingle(Value *OperationReplacement, CompositeNode *Node);
+  void processReductionOperation(Value *OperationReplacement, RawNodePtr Node);
+  void processReductionSingle(Value *OperationReplacement, RawNodePtr Node);
 
 public:
   void dump() { dump(dbgs()); }
@@ -516,7 +447,7 @@ public:
   bool runOnFunction(Function &F);
 
 private:
-  bool evaluateBasicBlock(BasicBlock *B, unsigned Factor);
+  bool evaluateBasicBlock(BasicBlock *B);
 
   const TargetLowering *TL = nullptr;
   const TargetLibraryInfo *TLI = nullptr;
@@ -569,15 +500,7 @@ bool ComplexDeinterleaving::runOnFunction(Function &F) {
 
   bool Changed = false;
   for (auto &B : F)
-    Changed |= evaluateBasicBlock(&B, 2);
-
-  // TODO: Permit changes for both interleave factors in the same function.
-  if (!Changed) {
-    for (auto &B : F)
-      Changed |= evaluateBasicBlock(&B, 4);
-  }
-
-  // TODO: We can also support interleave factors of 6 and 8 if needed.
+    Changed |= evaluateBasicBlock(&B);
 
   return Changed;
 }
@@ -622,8 +545,8 @@ Value *getNegOperand(Value *V) {
   return I->getOperand(1);
 }
 
-bool ComplexDeinterleaving::evaluateBasicBlock(BasicBlock *B, unsigned Factor) {
-  ComplexDeinterleavingGraph Graph(TL, TLI, Factor);
+bool ComplexDeinterleaving::evaluateBasicBlock(BasicBlock *B) {
+  ComplexDeinterleavingGraph Graph(TL, TLI);
   if (Graph.collectPotentialReductions(B))
     Graph.identifyReductionNodes();
 
@@ -638,7 +561,7 @@ bool ComplexDeinterleaving::evaluateBasicBlock(BasicBlock *B, unsigned Factor) {
   return false;
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
+ComplexDeinterleavingGraph::NodePtr
 ComplexDeinterleavingGraph::identifyNodeWithImplicitAdd(
     Instruction *Real, Instruction *Imag,
     std::pair<Value *, Value *> &PartialMatch) {
@@ -721,20 +644,19 @@ ComplexDeinterleavingGraph::identifyNodeWithImplicitAdd(
     return nullptr;
   }
 
-  CompositeNode *CommonNode =
-      identifyNode(PartialMatch.first, PartialMatch.second);
+  NodePtr CommonNode = identifyNode(PartialMatch.first, PartialMatch.second);
   if (!CommonNode) {
     LLVM_DEBUG(dbgs() << "  - No CommonNode identified\n");
     return nullptr;
   }
 
-  CompositeNode *UncommonNode = identifyNode(UncommonRealOp, UncommonImagOp);
+  NodePtr UncommonNode = identifyNode(UncommonRealOp, UncommonImagOp);
   if (!UncommonNode) {
     LLVM_DEBUG(dbgs() << "  - No UncommonNode identified\n");
     return nullptr;
   }
 
-  CompositeNode *Node = prepareCompositeNode(
+  NodePtr Node = prepareCompositeNode(
       ComplexDeinterleavingOperation::CMulPartial, Real, Imag);
   Node->Rotation = Rotation;
   Node->addOperand(CommonNode);
@@ -742,12 +664,11 @@ ComplexDeinterleavingGraph::identifyNodeWithImplicitAdd(
   return submitCompositeNode(Node);
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
+ComplexDeinterleavingGraph::NodePtr
 ComplexDeinterleavingGraph::identifyPartialMul(Instruction *Real,
                                                Instruction *Imag) {
   LLVM_DEBUG(dbgs() << "identifyPartialMul " << *Real << " / " << *Imag
                     << "\n");
-
   // Determine rotation
   auto IsAdd = [](unsigned Op) {
     return Op == Instruction::FAdd || Op == Instruction::Add;
@@ -833,28 +754,26 @@ ComplexDeinterleavingGraph::identifyPartialMul(Instruction *Real,
     return nullptr;
   }
 
-  CompositeNode *CNode =
-      identifyNodeWithImplicitAdd(CRInst, CIInst, PartialMatch);
+  NodePtr CNode = identifyNodeWithImplicitAdd(CRInst, CIInst, PartialMatch);
   if (!CNode) {
     LLVM_DEBUG(dbgs() << "  - No cnode identified\n");
     return nullptr;
   }
 
-  CompositeNode *UncommonRes = identifyNode(UncommonRealOp, UncommonImagOp);
+  NodePtr UncommonRes = identifyNode(UncommonRealOp, UncommonImagOp);
   if (!UncommonRes) {
     LLVM_DEBUG(dbgs() << "  - No UncommonRes identified\n");
     return nullptr;
   }
 
   assert(PartialMatch.first && PartialMatch.second);
-  CompositeNode *CommonRes =
-      identifyNode(PartialMatch.first, PartialMatch.second);
+  NodePtr CommonRes = identifyNode(PartialMatch.first, PartialMatch.second);
   if (!CommonRes) {
     LLVM_DEBUG(dbgs() << "  - No CommonRes identified\n");
     return nullptr;
   }
 
-  CompositeNode *Node = prepareCompositeNode(
+  NodePtr Node = prepareCompositeNode(
       ComplexDeinterleavingOperation::CMulPartial, Real, Imag);
   Node->Rotation = Rotation;
   Node->addOperand(CommonRes);
@@ -863,7 +782,7 @@ ComplexDeinterleavingGraph::identifyPartialMul(Instruction *Real,
   return submitCompositeNode(Node);
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
+ComplexDeinterleavingGraph::NodePtr
 ComplexDeinterleavingGraph::identifyAdd(Instruction *Real, Instruction *Imag) {
   LLVM_DEBUG(dbgs() << "identifyAdd " << *Real << " / " << *Imag << "\n");
 
@@ -894,18 +813,18 @@ ComplexDeinterleavingGraph::identifyAdd(Instruction *Real, Instruction *Imag) {
     return nullptr;
   }
 
-  CompositeNode *ResA = identifyNode(AR, AI);
+  NodePtr ResA = identifyNode(AR, AI);
   if (!ResA) {
     LLVM_DEBUG(dbgs() << " - AR/AI is not identified as a composite node.\n");
     return nullptr;
   }
-  CompositeNode *ResB = identifyNode(BR, BI);
+  NodePtr ResB = identifyNode(BR, BI);
   if (!ResB) {
     LLVM_DEBUG(dbgs() << " - BR/BI is not identified as a composite node.\n");
     return nullptr;
   }
 
-  CompositeNode *Node =
+  NodePtr Node =
       prepareCompositeNode(ComplexDeinterleavingOperation::CAdd, Real, Imag);
   Node->Rotation = Rotation;
   Node->addOperand(ResA);
@@ -945,65 +864,52 @@ static bool isInstructionPotentiallySymmetric(Instruction *I) {
   }
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
-ComplexDeinterleavingGraph::identifySymmetricOperation(ComplexValues &Vals) {
-  auto *FirstReal = cast<Instruction>(Vals[0].Real);
-  unsigned FirstOpc = FirstReal->getOpcode();
-  for (auto &V : Vals) {
-    auto *Real = cast<Instruction>(V.Real);
-    auto *Imag = cast<Instruction>(V.Imag);
-    if (Real->getOpcode() != FirstOpc || Imag->getOpcode() != FirstOpc)
-      return nullptr;
+ComplexDeinterleavingGraph::NodePtr
+ComplexDeinterleavingGraph::identifySymmetricOperation(Instruction *Real,
+                                                       Instruction *Imag) {
+  if (Real->getOpcode() != Imag->getOpcode())
+    return nullptr;
 
-    if (!isInstructionPotentiallySymmetric(Real) ||
-        !isInstructionPotentiallySymmetric(Imag))
-      return nullptr;
+  if (!isInstructionPotentiallySymmetric(Real) ||
+      !isInstructionPotentiallySymmetric(Imag))
+    return nullptr;
 
-    if (isa<FPMathOperator>(FirstReal))
-      if (Real->getFastMathFlags() != FirstReal->getFastMathFlags() ||
-          Imag->getFastMathFlags() != FirstReal->getFastMathFlags())
-        return nullptr;
-  }
+  auto *R0 = Real->getOperand(0);
+  auto *I0 = Imag->getOperand(0);
 
-  ComplexValues OpVals;
-  for (auto &V : Vals) {
-    auto *R0 = cast<Instruction>(V.Real)->getOperand(0);
-    auto *I0 = cast<Instruction>(V.Imag)->getOperand(0);
-    OpVals.push_back({R0, I0});
-  }
-
-  CompositeNode *Op0 = identifyNode(OpVals);
-  CompositeNode *Op1 = nullptr;
+  NodePtr Op0 = identifyNode(R0, I0);
+  NodePtr Op1 = nullptr;
   if (Op0 == nullptr)
     return nullptr;
 
-  if (FirstReal->isBinaryOp()) {
-    OpVals.clear();
-    for (auto &V : Vals) {
-      auto *R1 = cast<Instruction>(V.Real)->getOperand(1);
-      auto *I1 = cast<Instruction>(V.Imag)->getOperand(1);
-      OpVals.push_back({R1, I1});
-    }
-    Op1 = identifyNode(OpVals);
+  if (Real->isBinaryOp()) {
+    auto *R1 = Real->getOperand(1);
+    auto *I1 = Imag->getOperand(1);
+    Op1 = identifyNode(R1, I1);
     if (Op1 == nullptr)
       return nullptr;
   }
 
-  auto Node =
-      prepareCompositeNode(ComplexDeinterleavingOperation::Symmetric, Vals);
-  Node->Opcode = FirstReal->getOpcode();
-  if (isa<FPMathOperator>(FirstReal))
-    Node->Flags = FirstReal->getFastMathFlags();
+  if (isa<FPMathOperator>(Real) &&
+      Real->getFastMathFlags() != Imag->getFastMathFlags())
+    return nullptr;
+
+  auto Node = prepareCompositeNode(ComplexDeinterleavingOperation::Symmetric,
+                                   Real, Imag);
+  Node->Opcode = Real->getOpcode();
+  if (isa<FPMathOperator>(Real))
+    Node->Flags = Real->getFastMathFlags();
 
   Node->addOperand(Op0);
-  if (FirstReal->isBinaryOp())
+  if (Real->isBinaryOp())
     Node->addOperand(Op1);
 
   return submitCompositeNode(Node);
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
+ComplexDeinterleavingGraph::NodePtr
 ComplexDeinterleavingGraph::identifyDotProduct(Value *V) {
+
   if (!TL->isComplexDeinterleavingOperationSupported(
           ComplexDeinterleavingOperation::CDot, V->getType())) {
     LLVM_DEBUG(dbgs() << "Target doesn't support complex deinterleaving "
@@ -1015,12 +921,13 @@ ComplexDeinterleavingGraph::identifyDotProduct(Value *V) {
   auto *Inst = cast<Instruction>(V);
   auto *RealUser = cast<Instruction>(*Inst->user_begin());
 
-  CompositeNode *CN =
+  NodePtr CN =
       prepareCompositeNode(ComplexDeinterleavingOperation::CDot, Inst, nullptr);
 
-  CompositeNode *ANode = nullptr;
+  NodePtr ANode;
 
-  const Intrinsic::ID PartialReduceInt = Intrinsic::vector_partial_reduce_add;
+  const Intrinsic::ID PartialReduceInt =
+      Intrinsic::experimental_vector_partial_reduce_add;
 
   Value *AReal = nullptr;
   Value *AImag = nullptr;
@@ -1101,7 +1008,7 @@ ComplexDeinterleavingGraph::identifyDotProduct(Value *V) {
   if (Phi->getType() != VTy && RealUser->getType() != VTy)
     return nullptr;
 
-  CompositeNode *Node = identifyNode(AReal, AImag);
+  NodePtr Node = identifyNode(AReal, AImag);
 
   // In the case that a node was identified to figure out the rotation, ensure
   // that trying to identify a node with AReal and AImag post-unwrap results in
@@ -1121,13 +1028,10 @@ ComplexDeinterleavingGraph::identifyDotProduct(Value *V) {
   return submitCompositeNode(CN);
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
+ComplexDeinterleavingGraph::NodePtr
 ComplexDeinterleavingGraph::identifyPartialReduction(Value *R, Value *I) {
   // Partial reductions don't support non-vector types, so check these first
   if (!isa<VectorType>(R->getType()) || !isa<VectorType>(I->getType()))
-    return nullptr;
-
-  if (!R->hasUseList() || !I->hasUseList())
     return nullptr;
 
   auto CommonUser =
@@ -1136,91 +1040,80 @@ ComplexDeinterleavingGraph::identifyPartialReduction(Value *R, Value *I) {
     return nullptr;
 
   auto *IInst = dyn_cast<IntrinsicInst>(*CommonUser);
-  if (!IInst || IInst->getIntrinsicID() != Intrinsic::vector_partial_reduce_add)
+  if (!IInst || IInst->getIntrinsicID() !=
+                    Intrinsic::experimental_vector_partial_reduce_add)
     return nullptr;
 
-  if (CompositeNode *CN = identifyDotProduct(IInst))
+  if (NodePtr CN = identifyDotProduct(IInst))
     return CN;
 
   return nullptr;
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
-ComplexDeinterleavingGraph::identifyNode(ComplexValues &Vals) {
-  auto It = CachedResult.find(Vals);
+ComplexDeinterleavingGraph::NodePtr
+ComplexDeinterleavingGraph::identifyNode(Value *R, Value *I) {
+  auto It = CachedResult.find({R, I});
   if (It != CachedResult.end()) {
     LLVM_DEBUG(dbgs() << " - Folding to existing node\n");
     return It->second;
   }
 
-  if (Vals.size() == 1) {
-    assert(Factor == 2 && "Can only handle interleave factors of 2");
-    Value *R = Vals[0].Real;
-    Value *I = Vals[0].Imag;
-    if (CompositeNode *CN = identifyPartialReduction(R, I))
-      return CN;
-    bool IsReduction = RealPHI == R && (!ImagPHI || ImagPHI == I);
-    if (!IsReduction && R->getType() != I->getType())
-      return nullptr;
-  }
-
-  if (CompositeNode *CN = identifySplat(Vals))
+  if (NodePtr CN = identifyPartialReduction(R, I))
     return CN;
 
-  for (auto &V : Vals) {
-    auto *Real = dyn_cast<Instruction>(V.Real);
-    auto *Imag = dyn_cast<Instruction>(V.Imag);
-    if (!Real || !Imag)
-      return nullptr;
-  }
+  bool IsReduction = RealPHI == R && (!ImagPHI || ImagPHI == I);
+  if (!IsReduction && R->getType() != I->getType())
+    return nullptr;
 
-  if (CompositeNode *CN = identifyDeinterleave(Vals))
+  if (NodePtr CN = identifySplat(R, I))
     return CN;
 
-  if (Vals.size() == 1) {
-    assert(Factor == 2 && "Can only handle interleave factors of 2");
-    auto *Real = dyn_cast<Instruction>(Vals[0].Real);
-    auto *Imag = dyn_cast<Instruction>(Vals[0].Imag);
-    if (CompositeNode *CN = identifyPHINode(Real, Imag))
+  auto *Real = dyn_cast<Instruction>(R);
+  auto *Imag = dyn_cast<Instruction>(I);
+  if (!Real || !Imag)
+    return nullptr;
+
+  if (NodePtr CN = identifyDeinterleave(Real, Imag))
+    return CN;
+
+  if (NodePtr CN = identifyPHINode(Real, Imag))
+    return CN;
+
+  if (NodePtr CN = identifySelectNode(Real, Imag))
+    return CN;
+
+  auto *VTy = cast<VectorType>(Real->getType());
+  auto *NewVTy = VectorType::getDoubleElementsVectorType(VTy);
+
+  bool HasCMulSupport = TL->isComplexDeinterleavingOperationSupported(
+      ComplexDeinterleavingOperation::CMulPartial, NewVTy);
+  bool HasCAddSupport = TL->isComplexDeinterleavingOperationSupported(
+      ComplexDeinterleavingOperation::CAdd, NewVTy);
+
+  if (HasCMulSupport && isInstructionPairMul(Real, Imag)) {
+    if (NodePtr CN = identifyPartialMul(Real, Imag))
       return CN;
-
-    if (CompositeNode *CN = identifySelectNode(Real, Imag))
-      return CN;
-
-    auto *VTy = cast<VectorType>(Real->getType());
-    auto *NewVTy = VectorType::getDoubleElementsVectorType(VTy);
-
-    bool HasCMulSupport = TL->isComplexDeinterleavingOperationSupported(
-        ComplexDeinterleavingOperation::CMulPartial, NewVTy);
-    bool HasCAddSupport = TL->isComplexDeinterleavingOperationSupported(
-        ComplexDeinterleavingOperation::CAdd, NewVTy);
-
-    if (HasCMulSupport && isInstructionPairMul(Real, Imag)) {
-      if (CompositeNode *CN = identifyPartialMul(Real, Imag))
-        return CN;
-    }
-
-    if (HasCAddSupport && isInstructionPairAdd(Real, Imag)) {
-      if (CompositeNode *CN = identifyAdd(Real, Imag))
-        return CN;
-    }
-
-    if (HasCMulSupport && HasCAddSupport) {
-      if (CompositeNode *CN = identifyReassocNodes(Real, Imag)) {
-        return CN;
-      }
-    }
   }
 
-  if (CompositeNode *CN = identifySymmetricOperation(Vals))
+  if (HasCAddSupport && isInstructionPairAdd(Real, Imag)) {
+    if (NodePtr CN = identifyAdd(Real, Imag))
+      return CN;
+  }
+
+  if (HasCMulSupport && HasCAddSupport) {
+    if (NodePtr CN = identifyReassocNodes(Real, Imag))
+      return CN;
+  }
+
+  if (NodePtr CN = identifySymmetricOperation(Real, Imag))
     return CN;
 
   LLVM_DEBUG(dbgs() << "  - Not recognised as a valid pattern.\n");
-  CachedResult[Vals] = nullptr;
+  CachedResult[{R, I}] = nullptr;
   return nullptr;
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
+ComplexDeinterleavingGraph::NodePtr
 ComplexDeinterleavingGraph::identifyReassocNodes(Instruction *Real,
                                                  Instruction *Imag) {
   auto IsOperationSupported = [](unsigned Opcode) -> bool {
@@ -1253,12 +1146,13 @@ ComplexDeinterleavingGraph::identifyReassocNodes(Instruction *Real,
   // Collect multiplications and addend instructions from the given instruction
   // while traversing it operands. Additionally, verify that all instructions
   // have the same fast math flags.
-  auto Collect = [&Flags](Instruction *Insn, SmallVectorImpl<Product> &Muls,
-                          AddendList &Addends) -> bool {
+  auto Collect = [&Flags](Instruction *Insn, std::vector<Product> &Muls,
+                          std::list<Addend> &Addends) -> bool {
     SmallVector<PointerIntPair<Value *, 1, bool>> Worklist = {{Insn, true}};
     SmallPtrSet<Value *, 8> Visited;
     while (!Worklist.empty()) {
-      auto [V, IsPositive] = Worklist.pop_back_val();
+      auto [V, IsPositive] = Worklist.back();
+      Worklist.pop_back();
       if (!Visited.insert(V).second)
         continue;
 
@@ -1274,7 +1168,7 @@ ComplexDeinterleavingGraph::identifyReassocNodes(Instruction *Real,
       // the latter case, we will attempt to separately identify the complex
       // operation from here in order to create a shared
       // ComplexDeinterleavingCompositeNode.
-      if (I != Insn && I->hasNUsesOrMore(2)) {
+      if (I != Insn && I->getNumUses() > 1) {
         LLVM_DEBUG(dbgs() << "Found potential sub-expression: " << *I << "\n");
         Addends.emplace_back(I, IsPositive);
         continue;
@@ -1334,8 +1228,8 @@ ComplexDeinterleavingGraph::identifyReassocNodes(Instruction *Real,
     return true;
   };
 
-  SmallVector<Product> RealMuls, ImagMuls;
-  AddendList RealAddends, ImagAddends;
+  std::vector<Product> RealMuls, ImagMuls;
+  std::list<Addend> RealAddends, ImagAddends;
   if (!Collect(Real, RealMuls, RealAddends) ||
       !Collect(Imag, ImagMuls, ImagAddends))
     return nullptr;
@@ -1343,7 +1237,7 @@ ComplexDeinterleavingGraph::identifyReassocNodes(Instruction *Real,
   if (RealAddends.size() != ImagAddends.size())
     return nullptr;
 
-  CompositeNode *FinalNode = nullptr;
+  NodePtr FinalNode;
   if (!RealMuls.empty() || !ImagMuls.empty()) {
     // If there are multiplicands, extract positive addend and use it as an
     // accumulator
@@ -1360,17 +1254,16 @@ ComplexDeinterleavingGraph::identifyReassocNodes(Instruction *Real,
       return nullptr;
   }
   assert(FinalNode && "FinalNode can not be nullptr here");
-  assert(FinalNode->Vals.size() == 1);
   // Set the Real and Imag fields of the final node and submit it
-  FinalNode->Vals[0].Real = Real;
-  FinalNode->Vals[0].Imag = Imag;
+  FinalNode->Real = Real;
+  FinalNode->Imag = Imag;
   submitCompositeNode(FinalNode);
   return FinalNode;
 }
 
 bool ComplexDeinterleavingGraph::collectPartialMuls(
-    ArrayRef<Product> RealMuls, ArrayRef<Product> ImagMuls,
-    SmallVectorImpl<PartialMulCandidate> &PartialMulCandidates) {
+    const std::vector<Product> &RealMuls, const std::vector<Product> &ImagMuls,
+    std::vector<PartialMulCandidate> &PartialMulCandidates) {
   // Helper function to extract a common operand from two products
   auto FindCommonInstruction = [](const Product &Real,
                                   const Product &Imag) -> Value * {
@@ -1419,20 +1312,20 @@ bool ComplexDeinterleavingGraph::collectPartialMuls(
   return true;
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
+ComplexDeinterleavingGraph::NodePtr
 ComplexDeinterleavingGraph::identifyMultiplications(
-    SmallVectorImpl<Product> &RealMuls, SmallVectorImpl<Product> &ImagMuls,
-    CompositeNode *Accumulator = nullptr) {
+    std::vector<Product> &RealMuls, std::vector<Product> &ImagMuls,
+    NodePtr Accumulator = nullptr) {
   if (RealMuls.size() != ImagMuls.size())
     return nullptr;
 
-  SmallVector<PartialMulCandidate> Info;
+  std::vector<PartialMulCandidate> Info;
   if (!collectPartialMuls(RealMuls, ImagMuls, Info))
     return nullptr;
 
   // Map to store common instruction to node pointers
-  DenseMap<Value *, CompositeNode *> CommonToNode;
-  SmallVector<bool> Processed(Info.size(), false);
+  std::map<Value *, NodePtr> CommonToNode;
+  std::vector<bool> Processed(Info.size(), false);
   for (unsigned I = 0; I < Info.size(); ++I) {
     if (Processed[I])
       continue;
@@ -1461,9 +1354,9 @@ ComplexDeinterleavingGraph::identifyMultiplications(
     }
   }
 
-  SmallVector<bool> ProcessedReal(RealMuls.size(), false);
-  SmallVector<bool> ProcessedImag(ImagMuls.size(), false);
-  CompositeNode *Result = Accumulator;
+  std::vector<bool> ProcessedReal(RealMuls.size(), false);
+  std::vector<bool> ProcessedImag(ImagMuls.size(), false);
+  NodePtr Result = Accumulator;
   for (auto &PMI : Info) {
     if (ProcessedReal[PMI.RealIdx] || ProcessedImag[PMI.ImagIdx])
       continue;
@@ -1486,7 +1379,7 @@ ComplexDeinterleavingGraph::identifyMultiplications(
 
     auto NodeA = It->second;
     auto NodeB = PMI.Node;
-    auto IsMultiplicandReal = PMI.Common == NodeA->Vals[0].Real;
+    auto IsMultiplicandReal = PMI.Common == NodeA->Real;
     // The following table illustrates the relationship between multiplications
     // and rotations. If we consider the multiplication (X + iY) * (U + iV), we
     // can see:
@@ -1528,14 +1421,14 @@ ComplexDeinterleavingGraph::identifyMultiplications(
 
     LLVM_DEBUG({
       dbgs() << "Identified partial multiplication (X, Y) * (U, V):\n";
-      dbgs().indent(4) << "X: " << *NodeA->Vals[0].Real << "\n";
-      dbgs().indent(4) << "Y: " << *NodeA->Vals[0].Imag << "\n";
-      dbgs().indent(4) << "U: " << *NodeB->Vals[0].Real << "\n";
-      dbgs().indent(4) << "V: " << *NodeB->Vals[0].Imag << "\n";
+      dbgs().indent(4) << "X: " << *NodeA->Real << "\n";
+      dbgs().indent(4) << "Y: " << *NodeA->Imag << "\n";
+      dbgs().indent(4) << "U: " << *NodeB->Real << "\n";
+      dbgs().indent(4) << "V: " << *NodeB->Imag << "\n";
       dbgs().indent(4) << "Rotation - " << (int)Rotation * 90 << "\n";
     });
 
-    CompositeNode *NodeMul = prepareCompositeNode(
+    NodePtr NodeMul = prepareCompositeNode(
         ComplexDeinterleavingOperation::CMulPartial, nullptr, nullptr);
     NodeMul->Rotation = Rotation;
     NodeMul->addOperand(NodeA);
@@ -1576,14 +1469,14 @@ ComplexDeinterleavingGraph::identifyMultiplications(
   return Result;
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
+ComplexDeinterleavingGraph::NodePtr
 ComplexDeinterleavingGraph::identifyAdditions(
-    AddendList &RealAddends, AddendList &ImagAddends,
-    std::optional<FastMathFlags> Flags, CompositeNode *Accumulator = nullptr) {
+    std::list<Addend> &RealAddends, std::list<Addend> &ImagAddends,
+    std::optional<FastMathFlags> Flags, NodePtr Accumulator = nullptr) {
   if (RealAddends.size() != ImagAddends.size())
     return nullptr;
 
-  CompositeNode *Result = nullptr;
+  NodePtr Result;
   // If we have accumulator use it as first addend
   if (Accumulator)
     Result = Accumulator;
@@ -1611,7 +1504,7 @@ ComplexDeinterleavingGraph::identifyAdditions(
       else
         Rotation = ComplexDeinterleavingRotation::Rotation_270;
 
-      CompositeNode *AddNode = nullptr;
+      NodePtr AddNode;
       if (Rotation == ComplexDeinterleavingRotation::Rotation_0 ||
           Rotation == ComplexDeinterleavingRotation::Rotation_180) {
         AddNode = identifyNode(R, I);
@@ -1626,7 +1519,7 @@ ComplexDeinterleavingGraph::identifyAdditions(
           dbgs().indent(4) << "Rotation - " << (int)Rotation * 90 << "\n";
         });
 
-        CompositeNode *TmpNode = nullptr;
+        NodePtr TmpNode;
         if (Rotation == llvm::ComplexDeinterleavingRotation::Rotation_0) {
           TmpNode = prepareCompositeNode(
               ComplexDeinterleavingOperation::Symmetric, nullptr, nullptr);
@@ -1668,9 +1561,9 @@ ComplexDeinterleavingGraph::identifyAdditions(
   return Result;
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
-ComplexDeinterleavingGraph::extractPositiveAddend(AddendList &RealAddends,
-                                                  AddendList &ImagAddends) {
+ComplexDeinterleavingGraph::NodePtr
+ComplexDeinterleavingGraph::extractPositiveAddend(
+    std::list<Addend> &RealAddends, std::list<Addend> &ImagAddends) {
   for (auto ItR = RealAddends.begin(); ItR != RealAddends.end(); ++ItR) {
     for (auto ItI = ImagAddends.begin(); ItI != ImagAddends.end(); ++ItI) {
       auto [R, IsPositiveR] = *ItR;
@@ -1700,13 +1593,10 @@ bool ComplexDeinterleavingGraph::identifyNodes(Instruction *RootI) {
                ComplexDeinterleavingOperation::ReductionOperation ||
            RootNode->Operation ==
                ComplexDeinterleavingOperation::ReductionSingle);
-    assert(RootNode->Vals.size() == 1 &&
-           "Cannot handle reductions involving multiple complex values");
     // Find out which part, Real or Imag, comes later, and only if we come to
     // the latest part, add it to OrderedRoots.
-    auto *R = cast<Instruction>(RootNode->Vals[0].Real);
-    auto *I = RootNode->Vals[0].Imag ? cast<Instruction>(RootNode->Vals[0].Imag)
-                                     : nullptr;
+    auto *R = cast<Instruction>(RootNode->Real);
+    auto *I = RootNode->Imag ? cast<Instruction>(RootNode->Imag) : nullptr;
 
     Instruction *ReplacementAnchor;
     if (I)
@@ -1739,8 +1629,6 @@ bool ComplexDeinterleavingGraph::identifyNodes(Instruction *RootI) {
 
 bool ComplexDeinterleavingGraph::collectPotentialReductions(BasicBlock *B) {
   bool FoundPotentialReduction = false;
-  if (Factor != 2)
-    return false;
 
   auto *Br = dyn_cast<BranchInst>(B->getTerminator());
   if (!Br || Br->getNumSuccessors() != 2)
@@ -1750,6 +1638,7 @@ bool ComplexDeinterleavingGraph::collectPotentialReductions(BasicBlock *B) {
   if (Br->getSuccessor(0) != B && Br->getSuccessor(1) != B)
     return false;
 
+  SmallVector<PHINode *> PHIs;
   for (auto &PHI : B->phis()) {
     if (PHI.getNumIncomingValues() != 2)
       continue;
@@ -1792,8 +1681,6 @@ bool ComplexDeinterleavingGraph::collectPotentialReductions(BasicBlock *B) {
 }
 
 void ComplexDeinterleavingGraph::identifyReductionNodes() {
-  assert(Factor == 2 && "Cannot handle multiple complex values");
-
   SmallVector<bool> Processed(ReductionInfo.size(), false);
   SmallVector<Instruction *> OperationInstruction;
   for (auto &P : ReductionInfo)
@@ -1846,10 +1733,6 @@ void ComplexDeinterleavingGraph::identifyReductionNodes() {
     if (Processed[i] || Real->getNumOperands() < 2)
       continue;
 
-    // Can only combined integer reductions at the moment.
-    if (!ReductionInfo[Real].second->getType()->isIntegerTy())
-      continue;
-
     RealPHI = ReductionInfo[Real].first;
     ImagPHI = nullptr;
     PHIsFound = false;
@@ -1883,11 +1766,11 @@ void ComplexDeinterleavingGraph::identifyReductionNodes() {
 }
 
 bool ComplexDeinterleavingGraph::checkNodes() {
+
   bool FoundDeinterleaveNode = false;
-  for (CompositeNode *N : CompositeNodes) {
+  for (NodePtr N : CompositeNodes) {
     if (!N->areOperandsValid())
       return false;
-
     if (N->Operation == ComplexDeinterleavingOperation::Deinterleave)
       FoundDeinterleaveNode = true;
   }
@@ -1910,7 +1793,8 @@ bool ComplexDeinterleavingGraph::checkNodes() {
   // Extract all instructions that are used by all XCMLA/XCADD/ADD/SUB/NEG
   // chains
   while (!Worklist.empty()) {
-    auto *I = Worklist.pop_back_val();
+    auto *I = Worklist.back();
+    Worklist.pop_back();
 
     if (!AllInstructions.insert(I).second)
       continue;
@@ -1924,6 +1808,7 @@ bool ComplexDeinterleavingGraph::checkNodes() {
   }
 
   // Find instructions that have users outside of chain
+  SmallVector<Instruction *, 2> OuterInstructions;
   for (auto *I : AllInstructions) {
     // Skip root nodes
     if (RootToNode.count(I))
@@ -1943,7 +1828,8 @@ bool ComplexDeinterleavingGraph::checkNodes() {
   // that somehow connect to those instructions.
   SmallPtrSet<Instruction *, 16> Visited;
   while (!Worklist.empty()) {
-    auto *I = Worklist.pop_back_val();
+    auto *I = Worklist.back();
+    Worklist.pop_back();
     if (!Visited.insert(I).second)
       continue;
 
@@ -1970,35 +1856,19 @@ bool ComplexDeinterleavingGraph::checkNodes() {
   return !RootToNode.empty();
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
+ComplexDeinterleavingGraph::NodePtr
 ComplexDeinterleavingGraph::identifyRoot(Instruction *RootI) {
   if (auto *Intrinsic = dyn_cast<IntrinsicInst>(RootI)) {
-    if (Intrinsic::getInterleaveIntrinsicID(Factor) !=
-        Intrinsic->getIntrinsicID())
+    if (Intrinsic->getIntrinsicID() != Intrinsic::vector_interleave2)
       return nullptr;
 
-    ComplexValues Vals;
-    for (unsigned I = 0; I < Factor; I += 2) {
-      auto *Real = dyn_cast<Instruction>(Intrinsic->getOperand(I));
-      auto *Imag = dyn_cast<Instruction>(Intrinsic->getOperand(I + 1));
-      if (!Real || !Imag)
-        return nullptr;
-      Vals.push_back({Real, Imag});
-    }
-
-    ComplexDeinterleavingGraph::CompositeNode *Node1 = identifyNode(Vals);
-    if (!Node1)
+    auto *Real = dyn_cast<Instruction>(Intrinsic->getOperand(0));
+    auto *Imag = dyn_cast<Instruction>(Intrinsic->getOperand(1));
+    if (!Real || !Imag)
       return nullptr;
-    return Node1;
+
+    return identifyNode(Real, Imag);
   }
-
-  // TODO: We could also add support for fixed-width interleave factors of 4
-  // and above, but currently for symmetric operations the interleaves and
-  // deinterleaves are already removed by VectorCombine. If we extend this to
-  // permit complex multiplications, reductions, etc. then we should also add
-  // support for fixed-width here.
-  if (Factor != 2)
-    return nullptr;
 
   auto *SVI = dyn_cast<ShuffleVectorInst>(RootI);
   if (!SVI)
@@ -2017,53 +1887,23 @@ ComplexDeinterleavingGraph::identifyRoot(Instruction *RootI) {
   return identifyNode(Real, Imag);
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
-ComplexDeinterleavingGraph::identifyDeinterleave(ComplexValues &Vals) {
-  Instruction *II = nullptr;
-
-  // Must be at least one complex value.
-  auto CheckExtract = [&](Value *V, unsigned ExpectedIdx,
-                          Instruction *ExpectedInsn) -> ExtractValueInst * {
-    auto *EVI = dyn_cast<ExtractValueInst>(V);
-    if (!EVI || EVI->getNumIndices() != 1 ||
-        EVI->getIndices()[0] != ExpectedIdx ||
-        !isa<Instruction>(EVI->getAggregateOperand()) ||
-        (ExpectedInsn && ExpectedInsn != EVI->getAggregateOperand()))
-      return nullptr;
-    return EVI;
-  };
-
-  for (unsigned Idx = 0; Idx < Vals.size(); Idx++) {
-    ExtractValueInst *RealEVI = CheckExtract(Vals[Idx].Real, Idx * 2, II);
-    if (RealEVI && Idx == 0)
-      II = cast<Instruction>(RealEVI->getAggregateOperand());
-    if (!RealEVI || !CheckExtract(Vals[Idx].Imag, (Idx * 2) + 1, II)) {
-      II = nullptr;
-      break;
-    }
-  }
-
-  if (auto *IntrinsicII = dyn_cast_or_null<IntrinsicInst>(II)) {
-    if (IntrinsicII->getIntrinsicID() !=
-        Intrinsic::getDeinterleaveIntrinsicID(2 * Vals.size()))
-      return nullptr;
-
-    // The remaining should match too.
-    CompositeNode *PlaceholderNode = prepareCompositeNode(
-        llvm::ComplexDeinterleavingOperation::Deinterleave, Vals);
-    PlaceholderNode->ReplacementNode = II->getOperand(0);
-    for (auto &V : Vals) {
-      FinalInstructions.insert(cast<Instruction>(V.Real));
-      FinalInstructions.insert(cast<Instruction>(V.Imag));
-    }
+ComplexDeinterleavingGraph::NodePtr
+ComplexDeinterleavingGraph::identifyDeinterleave(Instruction *Real,
+                                                 Instruction *Imag) {
+  Instruction *I = nullptr;
+  Value *FinalValue = nullptr;
+  if (match(Real, m_ExtractValue<0>(m_Instruction(I))) &&
+      match(Imag, m_ExtractValue<1>(m_Specific(I))) &&
+      match(I, m_Intrinsic<Intrinsic::vector_deinterleave2>(
+                   m_Value(FinalValue)))) {
+    NodePtr PlaceholderNode = prepareCompositeNode(
+        llvm::ComplexDeinterleavingOperation::Deinterleave, Real, Imag);
+    PlaceholderNode->ReplacementNode = FinalValue;
+    FinalInstructions.insert(Real);
+    FinalInstructions.insert(Imag);
     return submitCompositeNode(PlaceholderNode);
   }
 
-  if (Vals.size() != 1)
-    return nullptr;
-
-  Value *Real = Vals[0].Real;
-  Value *Imag = Vals[0].Imag;
   auto *RealShuffle = dyn_cast<ShuffleVectorInst>(Real);
   auto *ImagShuffle = dyn_cast<ShuffleVectorInst>(Imag);
   if (!RealShuffle || !ImagShuffle) {
@@ -2147,7 +1987,7 @@ ComplexDeinterleavingGraph::identifyDeinterleave(ComplexValues &Vals) {
     return nullptr;
   }
 
-  CompositeNode *PlaceholderNode =
+  NodePtr PlaceholderNode =
       prepareCompositeNode(llvm::ComplexDeinterleavingOperation::Deinterleave,
                            RealShuffle, ImagShuffle);
   PlaceholderNode->ReplacementNode = RealShuffle->getOperand(0);
@@ -2156,15 +1996,12 @@ ComplexDeinterleavingGraph::identifyDeinterleave(ComplexValues &Vals) {
   return submitCompositeNode(PlaceholderNode);
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
-ComplexDeinterleavingGraph::identifySplat(ComplexValues &Vals) {
+ComplexDeinterleavingGraph::NodePtr
+ComplexDeinterleavingGraph::identifySplat(Value *R, Value *I) {
   auto IsSplat = [](Value *V) -> bool {
     // Fixed-width vector with constants
     if (isa<ConstantDataVector>(V))
       return true;
-
-    if (isa<ConstantInt>(V) || isa<ConstantFP>(V))
-      return isa<VectorType>(V->getType());
 
     VectorType *VTy;
     ArrayRef<int> Mask;
@@ -2191,55 +2028,40 @@ ComplexDeinterleavingGraph::identifySplat(ComplexValues &Vals) {
     return all_equal(Mask) && Mask[0] == 0;
   };
 
-  // The splats must meet the following requirements:
-  //   1. Must either be all instructions or all values.
-  //   2. Non-constant splats must live in the same block.
-  if (auto *FirstValAsInstruction = dyn_cast<Instruction>(Vals[0].Real)) {
-    BasicBlock *FirstBB = FirstValAsInstruction->getParent();
-    for (auto &V : Vals) {
-      if (!IsSplat(V.Real) || !IsSplat(V.Imag))
-        return nullptr;
+  if (!IsSplat(R) || !IsSplat(I))
+    return nullptr;
 
-      auto *Real = dyn_cast<Instruction>(V.Real);
-      auto *Imag = dyn_cast<Instruction>(V.Imag);
-      if (!Real || !Imag || Real->getParent() != FirstBB ||
-          Imag->getParent() != FirstBB)
-        return nullptr;
-    }
-  } else {
-    for (auto &V : Vals) {
-      if (!IsSplat(V.Real) || !IsSplat(V.Imag) || isa<Instruction>(V.Real) ||
-          isa<Instruction>(V.Imag))
-        return nullptr;
-    }
-  }
+  auto *Real = dyn_cast<Instruction>(R);
+  auto *Imag = dyn_cast<Instruction>(I);
+  if ((!Real && Imag) || (Real && !Imag))
+    return nullptr;
 
-  for (auto &V : Vals) {
-    auto *Real = dyn_cast<Instruction>(V.Real);
-    auto *Imag = dyn_cast<Instruction>(V.Imag);
-    if (Real && Imag) {
-      FinalInstructions.insert(Real);
-      FinalInstructions.insert(Imag);
-    }
+  if (Real && Imag) {
+    // Non-constant splats should be in the same basic block
+    if (Real->getParent() != Imag->getParent())
+      return nullptr;
+
+    FinalInstructions.insert(Real);
+    FinalInstructions.insert(Imag);
   }
-  CompositeNode *PlaceholderNode =
-      prepareCompositeNode(ComplexDeinterleavingOperation::Splat, Vals);
+  NodePtr PlaceholderNode =
+      prepareCompositeNode(ComplexDeinterleavingOperation::Splat, R, I);
   return submitCompositeNode(PlaceholderNode);
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
+ComplexDeinterleavingGraph::NodePtr
 ComplexDeinterleavingGraph::identifyPHINode(Instruction *Real,
                                             Instruction *Imag) {
   if (Real != RealPHI || (ImagPHI && Imag != ImagPHI))
     return nullptr;
 
   PHIsFound = true;
-  CompositeNode *PlaceholderNode = prepareCompositeNode(
+  NodePtr PlaceholderNode = prepareCompositeNode(
       ComplexDeinterleavingOperation::ReductionPHI, Real, Imag);
   return submitCompositeNode(PlaceholderNode);
 }
 
-ComplexDeinterleavingGraph::CompositeNode *
+ComplexDeinterleavingGraph::NodePtr
 ComplexDeinterleavingGraph::identifySelectNode(Instruction *Real,
                                                Instruction *Imag) {
   auto *SelectReal = dyn_cast<SelectInst>(Real);
@@ -2269,7 +2091,7 @@ ComplexDeinterleavingGraph::identifySelectNode(Instruction *Real,
   if (!NodeB)
     return nullptr;
 
-  CompositeNode *PlaceholderNode = prepareCompositeNode(
+  NodePtr PlaceholderNode = prepareCompositeNode(
       ComplexDeinterleavingOperation::ReductionSelect, Real, Imag);
   PlaceholderNode->addOperand(NodeA);
   PlaceholderNode->addOperand(NodeB);
@@ -2313,18 +2135,17 @@ static Value *replaceSymmetricNode(IRBuilderBase &B, unsigned Opcode,
 }
 
 Value *ComplexDeinterleavingGraph::replaceNode(IRBuilderBase &Builder,
-                                               CompositeNode *Node) {
+                                               RawNodePtr Node) {
   if (Node->ReplacementNode)
     return Node->ReplacementNode;
 
-  auto ReplaceOperandIfExist = [&](CompositeNode *Node,
-                                   unsigned Idx) -> Value * {
+  auto ReplaceOperandIfExist = [&](RawNodePtr &Node, unsigned Idx) -> Value * {
     return Node->Operands.size() > Idx
                ? replaceNode(Builder, Node->Operands[Idx])
                : nullptr;
   };
 
-  Value *ReplacementNode = nullptr;
+  Value *ReplacementNode;
   switch (Node->Operation) {
   case ComplexDeinterleavingOperation::CDot: {
     Value *Input0 = ReplaceOperandIfExist(Node, 0);
@@ -2360,35 +2181,27 @@ Value *ComplexDeinterleavingGraph::replaceNode(IRBuilderBase &Builder,
     llvm_unreachable("Deinterleave node should already have ReplacementNode");
     break;
   case ComplexDeinterleavingOperation::Splat: {
-    SmallVector<Value *> Ops;
-    for (auto &V : Node->Vals) {
-      Ops.push_back(V.Real);
-      Ops.push_back(V.Imag);
-    }
-    auto *R = dyn_cast<Instruction>(Node->Vals[0].Real);
-    auto *I = dyn_cast<Instruction>(Node->Vals[0].Imag);
+    auto *NewTy = VectorType::getDoubleElementsVectorType(
+        cast<VectorType>(Node->Real->getType()));
+    auto *R = dyn_cast<Instruction>(Node->Real);
+    auto *I = dyn_cast<Instruction>(Node->Imag);
     if (R && I) {
       // Splats that are not constant are interleaved where they are located
-      Instruction *InsertPoint = R;
-      for (auto V : Node->Vals) {
-        if (InsertPoint->comesBefore(cast<Instruction>(V.Real)))
-          InsertPoint = cast<Instruction>(V.Real);
-        if (InsertPoint->comesBefore(cast<Instruction>(V.Imag)))
-          InsertPoint = cast<Instruction>(V.Imag);
-      }
-      InsertPoint = InsertPoint->getNextNode();
+      Instruction *InsertPoint = (I->comesBefore(R) ? R : I)->getNextNode();
       IRBuilder<> IRB(InsertPoint);
-      ReplacementNode = IRB.CreateVectorInterleave(Ops);
+      ReplacementNode = IRB.CreateIntrinsic(Intrinsic::vector_interleave2,
+                                            NewTy, {Node->Real, Node->Imag});
     } else {
-      ReplacementNode = Builder.CreateVectorInterleave(Ops);
+      ReplacementNode = Builder.CreateIntrinsic(
+          Intrinsic::vector_interleave2, NewTy, {Node->Real, Node->Imag});
     }
     break;
   }
   case ComplexDeinterleavingOperation::ReductionPHI: {
     // If Operation is ReductionPHI, a new empty PHINode is created.
     // It is filled later when the ReductionOperation is processed.
-    auto *OldPHI = cast<PHINode>(Node->Vals[0].Real);
-    auto *VTy = cast<VectorType>(Node->Vals[0].Real->getType());
+    auto *OldPHI = cast<PHINode>(Node->Real);
+    auto *VTy = cast<VectorType>(Node->Real->getType());
     auto *NewVTy = VectorType::getDoubleElementsVectorType(VTy);
     auto *NewPHI = PHINode::Create(NewVTy, 0, "", BackEdge->getFirstNonPHIIt());
     OldToNewPHI[OldPHI] = NewPHI;
@@ -2404,11 +2217,14 @@ Value *ComplexDeinterleavingGraph::replaceNode(IRBuilderBase &Builder,
     processReductionOperation(ReplacementNode, Node);
     break;
   case ComplexDeinterleavingOperation::ReductionSelect: {
-    auto *MaskReal = cast<Instruction>(Node->Vals[0].Real)->getOperand(0);
-    auto *MaskImag = cast<Instruction>(Node->Vals[0].Imag)->getOperand(0);
+    auto *MaskReal = cast<Instruction>(Node->Real)->getOperand(0);
+    auto *MaskImag = cast<Instruction>(Node->Imag)->getOperand(0);
     auto *A = replaceNode(Builder, Node->Operands[0]);
     auto *B = replaceNode(Builder, Node->Operands[1]);
-    auto *NewMask = Builder.CreateVectorInterleave({MaskReal, MaskImag});
+    auto *NewMaskTy = VectorType::getDoubleElementsVectorType(
+        cast<VectorType>(MaskReal->getType()));
+    auto *NewMask = Builder.CreateIntrinsic(Intrinsic::vector_interleave2,
+                                            NewMaskTy, {MaskReal, MaskImag});
     ReplacementNode = Builder.CreateSelect(NewMask, A, B);
     break;
   }
@@ -2421,8 +2237,8 @@ Value *ComplexDeinterleavingGraph::replaceNode(IRBuilderBase &Builder,
 }
 
 void ComplexDeinterleavingGraph::processReductionSingle(
-    Value *OperationReplacement, CompositeNode *Node) {
-  auto *Real = cast<Instruction>(Node->Vals[0].Real);
+    Value *OperationReplacement, RawNodePtr Node) {
+  auto *Real = cast<Instruction>(Node->Real);
   auto *OldPHI = ReductionInfo[Real].first;
   auto *NewPHI = OldToNewPHI[OldPHI];
   auto *VTy = cast<VectorType>(Real->getType());
@@ -2439,8 +2255,8 @@ void ComplexDeinterleavingGraph::processReductionSingle(
   }
 
   if (!NewInit)
-    NewInit =
-        Builder.CreateVectorInterleave({Init, Constant::getNullValue(VTy)});
+    NewInit = Builder.CreateIntrinsic(Intrinsic::vector_interleave2, NewVTy,
+                                      {Init, Constant::getNullValue(VTy)});
 
   NewPHI->addIncoming(NewInit, Incoming);
   NewPHI->addIncoming(OperationReplacement, BackEdge);
@@ -2453,19 +2269,23 @@ void ComplexDeinterleavingGraph::processReductionSingle(
 }
 
 void ComplexDeinterleavingGraph::processReductionOperation(
-    Value *OperationReplacement, CompositeNode *Node) {
-  auto *Real = cast<Instruction>(Node->Vals[0].Real);
-  auto *Imag = cast<Instruction>(Node->Vals[0].Imag);
+    Value *OperationReplacement, RawNodePtr Node) {
+  auto *Real = cast<Instruction>(Node->Real);
+  auto *Imag = cast<Instruction>(Node->Imag);
   auto *OldPHIReal = ReductionInfo[Real].first;
   auto *OldPHIImag = ReductionInfo[Imag].first;
   auto *NewPHI = OldToNewPHI[OldPHIReal];
+
+  auto *VTy = cast<VectorType>(Real->getType());
+  auto *NewVTy = VectorType::getDoubleElementsVectorType(VTy);
 
   // We have to interleave initial origin values coming from IncomingBlock
   Value *InitReal = OldPHIReal->getIncomingValueForBlock(Incoming);
   Value *InitImag = OldPHIImag->getIncomingValueForBlock(Incoming);
 
   IRBuilder<> Builder(Incoming->getTerminator());
-  auto *NewInit = Builder.CreateVectorInterleave({InitReal, InitImag});
+  auto *NewInit = Builder.CreateIntrinsic(Intrinsic::vector_interleave2, NewVTy,
+                                          {InitReal, InitImag});
 
   NewPHI->addIncoming(NewInit, Incoming);
   NewPHI->addIncoming(OperationReplacement, BackEdge);
@@ -2499,22 +2319,21 @@ void ComplexDeinterleavingGraph::replaceNodes() {
 
     IRBuilder<> Builder(RootInstruction);
     auto RootNode = RootToNode[RootInstruction];
-    Value *R = replaceNode(Builder, RootNode);
+    Value *R = replaceNode(Builder, RootNode.get());
 
     if (RootNode->Operation ==
         ComplexDeinterleavingOperation::ReductionOperation) {
-      auto *RootReal = cast<Instruction>(RootNode->Vals[0].Real);
-      auto *RootImag = cast<Instruction>(RootNode->Vals[0].Imag);
+      auto *RootReal = cast<Instruction>(RootNode->Real);
+      auto *RootImag = cast<Instruction>(RootNode->Imag);
       ReductionInfo[RootReal].first->removeIncomingValue(BackEdge);
       ReductionInfo[RootImag].first->removeIncomingValue(BackEdge);
       DeadInstrRoots.push_back(RootReal);
       DeadInstrRoots.push_back(RootImag);
     } else if (RootNode->Operation ==
                ComplexDeinterleavingOperation::ReductionSingle) {
-      auto *RootInst = cast<Instruction>(RootNode->Vals[0].Real);
-      auto &Info = ReductionInfo[RootInst];
-      Info.first->removeIncomingValue(BackEdge);
-      DeadInstrRoots.push_back(Info.second);
+      auto *RootInst = cast<Instruction>(RootNode->Real);
+      ReductionInfo[RootInst].first->removeIncomingValue(BackEdge);
+      DeadInstrRoots.push_back(ReductionInfo[RootInst].second);
     } else {
       assert(R && "Unable to find replacement for RootInstruction");
       DeadInstrRoots.push_back(RootInstruction);

@@ -23,6 +23,7 @@
 #include "Utils/ARMBaseInfo.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/StringRef.h"
@@ -51,6 +52,7 @@
 #include <cassert>
 #include <cstdint>
 #include <iterator>
+#include <utility>
 #include <vector>
 
 using namespace llvm;
@@ -107,7 +109,7 @@ namespace {
 
     /// NewWaterList - The subset of WaterList that was created since the
     /// previous iteration by inserting unconditional branches.
-    SmallPtrSet<MachineBasicBlock *, 4> NewWaterList;
+    SmallSet<MachineBasicBlock*, 4> NewWaterList;
 
     using water_iterator = std::vector<MachineBasicBlock *>::iterator;
 
@@ -181,6 +183,9 @@ namespace {
     /// base address.
     DenseMap<int, int> JumpTableUserIndices;
 
+    // Maps a MachineBasicBlock to the number of jump tables entries.
+    DenseMap<const MachineBasicBlock *, int> BlockJumpTableRefCount;
+
     /// ImmBranch - One per immediate branch, keeping the machine instruction
     /// pointer, conditional or unconditional, the max displacement,
     /// and (if isCond is true) the corresponding unconditional branch
@@ -188,8 +193,7 @@ namespace {
     struct ImmBranch {
       MachineInstr *MI;
       unsigned MaxDisp : 31;
-      LLVM_PREFERRED_TYPE(bool)
-      unsigned isCond : 1;
+      bool isCond : 1;
       unsigned UncondBr;
 
       ImmBranch(MachineInstr *mi, unsigned maxdisp, bool cond, unsigned ubr)
@@ -229,7 +233,8 @@ namespace {
     }
 
     MachineFunctionProperties getRequiredProperties() const override {
-      return MachineFunctionProperties().setNoVRegs();
+      return MachineFunctionProperties().set(
+          MachineFunctionProperties::Property::NoVRegs);
     }
 
     StringRef getPassName() const override {
@@ -474,10 +479,8 @@ bool ARMConstantIslands::runOnMachineFunction(MachineFunction &mf) {
 
     LLVM_DEBUG(dbgs() << "Beginning BR iteration #" << NoBRIters << '\n');
     bool BRChange = false;
-    for (unsigned i = 0, e = ImmBranches.size(); i != e; ++i) {
-      // Note: fixupImmediateBr can append to ImmBranches.
+    for (unsigned i = 0, e = ImmBranches.size(); i != e; ++i)
       BRChange |= fixupImmediateBr(ImmBranches[i]);
-    }
     if (BRChange && ++NoBRIters > 30)
       report_fatal_error("Branch Fix Up pass failed to converge!");
     LLVM_DEBUG(dumpBBs());
@@ -519,6 +522,7 @@ bool ARMConstantIslands::runOnMachineFunction(MachineFunction &mf) {
   CPEntries.clear();
   JumpTableEntryIndices.clear();
   JumpTableUserIndices.clear();
+  BlockJumpTableRefCount.clear();
   ImmBranches.clear();
   PushPopMIs.clear();
   T2JumpTables.clear();
@@ -731,6 +735,14 @@ Align ARMConstantIslands::getCPEAlign(const MachineInstr *CPEMI) {
   return MCP->getConstants()[CPI].getAlign();
 }
 
+// Exception landing pads, blocks that has their adress taken, and function
+// entry blocks will always be (potential) indirect jump targets, regardless of
+// whether they are referenced by or not by jump tables.
+static bool isAlwaysIndirectTarget(const MachineBasicBlock &MBB) {
+  return MBB.isEHPad() || MBB.hasAddressTaken() ||
+         &MBB == &MBB.getParent()->front();
+}
+
 /// scanFunctionJumpTables - Do a scan of the function, building up
 /// information about the sizes of each block and the locations of all
 /// the jump tables.
@@ -741,6 +753,20 @@ void ARMConstantIslands::scanFunctionJumpTables() {
           (I.getOpcode() == ARM::t2BR_JT || I.getOpcode() == ARM::tBR_JTr))
         T2JumpTables.push_back(&I);
   }
+
+  if (!MF->getInfo<ARMFunctionInfo>()->branchTargetEnforcement())
+    return;
+
+  if (const MachineJumpTableInfo *JTI = MF->getJumpTableInfo())
+    for (const MachineJumpTableEntry &JTE : JTI->getJumpTables())
+      for (const MachineBasicBlock *MBB : JTE.MBBs) {
+        if (isAlwaysIndirectTarget(*MBB))
+          // Set the reference count essentially to infinity, it will never
+          // reach zero and the BTI Instruction will never be removed.
+          BlockJumpTableRefCount[MBB] = std::numeric_limits<int>::max();
+        else
+          ++BlockJumpTableRefCount[MBB];
+      }
 }
 
 /// initializeFunctionInfo - Do the initial scan of the function, building up

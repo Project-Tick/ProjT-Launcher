@@ -44,7 +44,7 @@ template<typename T> class Foo : public T {};
     {
       "kind": "inheritsFrom",
       "source": "c:@ST>1#T@Foo",
-      "target": "c:input.h@9",
+      "target": "",
       "targetFallback": "T"
     }
   ],

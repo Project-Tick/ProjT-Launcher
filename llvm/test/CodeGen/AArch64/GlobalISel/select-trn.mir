@@ -17,12 +17,11 @@ body:             |
     liveins: $d0, $d1
     ; CHECK-LABEL: name: TRN1v2i32
     ; CHECK: liveins: $d0, $d1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr64 = COPY $d0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr64 = COPY $d1
-    ; CHECK-NEXT: [[TRN1v2i32_:%[0-9]+]]:fpr64 = TRN1v2i32 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $d0 = COPY [[TRN1v2i32_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $d0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr64 = COPY $d0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr64 = COPY $d1
+    ; CHECK: [[TRN1v2i32_:%[0-9]+]]:fpr64 = TRN1v2i32 [[COPY]], [[COPY1]]
+    ; CHECK: $d0 = COPY [[TRN1v2i32_]]
+    ; CHECK: RET_ReallyLR implicit $d0
     %0:fpr(<2 x s32>) = COPY $d0
     %1:fpr(<2 x s32>) = COPY $d1
     %2:fpr(<2 x s32>) = G_TRN1 %0, %1
@@ -41,12 +40,11 @@ body:             |
     liveins: $q0, $q1
     ; CHECK-LABEL: name: TRN1v2i64
     ; CHECK: liveins: $q0, $q1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
-    ; CHECK-NEXT: [[TRN1v2i64_:%[0-9]+]]:fpr128 = TRN1v2i64 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $q0 = COPY [[TRN1v2i64_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $q0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
+    ; CHECK: [[TRN1v2i64_:%[0-9]+]]:fpr128 = TRN1v2i64 [[COPY]], [[COPY1]]
+    ; CHECK: $q0 = COPY [[TRN1v2i64_]]
+    ; CHECK: RET_ReallyLR implicit $q0
     %0:fpr(<2 x s64>) = COPY $q0
     %1:fpr(<2 x s64>) = COPY $q1
     %2:fpr(<2 x s64>) = G_TRN1 %0, %1
@@ -65,12 +63,11 @@ body:             |
     liveins: $d0, $d1
     ; CHECK-LABEL: name: TRN1v4i16
     ; CHECK: liveins: $d0, $d1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr64 = COPY $d0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr64 = COPY $d1
-    ; CHECK-NEXT: [[TRN1v4i16_:%[0-9]+]]:fpr64 = TRN1v4i16 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $d0 = COPY [[TRN1v4i16_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $d0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr64 = COPY $d0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr64 = COPY $d1
+    ; CHECK: [[TRN1v4i16_:%[0-9]+]]:fpr64 = TRN1v4i16 [[COPY]], [[COPY1]]
+    ; CHECK: $d0 = COPY [[TRN1v4i16_]]
+    ; CHECK: RET_ReallyLR implicit $d0
     %0:fpr(<4 x s16>) = COPY $d0
     %1:fpr(<4 x s16>) = COPY $d1
     %2:fpr(<4 x s16>) = G_TRN1 %0, %1
@@ -89,12 +86,11 @@ body:             |
     liveins: $q0, $q1
     ; CHECK-LABEL: name: TRN1v4i32
     ; CHECK: liveins: $q0, $q1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
-    ; CHECK-NEXT: [[TRN1v4i32_:%[0-9]+]]:fpr128 = TRN1v4i32 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $q0 = COPY [[TRN1v4i32_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $q0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
+    ; CHECK: [[TRN1v4i32_:%[0-9]+]]:fpr128 = TRN1v4i32 [[COPY]], [[COPY1]]
+    ; CHECK: $q0 = COPY [[TRN1v4i32_]]
+    ; CHECK: RET_ReallyLR implicit $q0
     %0:fpr(<4 x s32>) = COPY $q0
     %1:fpr(<4 x s32>) = COPY $q1
     %2:fpr(<4 x s32>) = G_TRN1 %0, %1
@@ -113,12 +109,11 @@ body:             |
     liveins: $d0, $d1
     ; CHECK-LABEL: name: TRN1v8i8
     ; CHECK: liveins: $d0, $d1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr64 = COPY $d0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr64 = COPY $d1
-    ; CHECK-NEXT: [[TRN1v8i8_:%[0-9]+]]:fpr64 = TRN1v8i8 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $d0 = COPY [[TRN1v8i8_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $d0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr64 = COPY $d0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr64 = COPY $d1
+    ; CHECK: [[TRN1v8i8_:%[0-9]+]]:fpr64 = TRN1v8i8 [[COPY]], [[COPY1]]
+    ; CHECK: $d0 = COPY [[TRN1v8i8_]]
+    ; CHECK: RET_ReallyLR implicit $d0
     %0:fpr(<8 x s8>) = COPY $d0
     %1:fpr(<8 x s8>) = COPY $d1
     %2:fpr(<8 x s8>) = G_TRN1 %0, %1
@@ -137,12 +132,11 @@ body:             |
     liveins: $q0, $q1
     ; CHECK-LABEL: name: TRN1v8i16
     ; CHECK: liveins: $q0, $q1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
-    ; CHECK-NEXT: [[TRN1v8i16_:%[0-9]+]]:fpr128 = TRN1v8i16 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $q0 = COPY [[TRN1v8i16_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $q0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
+    ; CHECK: [[TRN1v8i16_:%[0-9]+]]:fpr128 = TRN1v8i16 [[COPY]], [[COPY1]]
+    ; CHECK: $q0 = COPY [[TRN1v8i16_]]
+    ; CHECK: RET_ReallyLR implicit $q0
     %0:fpr(<8 x s16>) = COPY $q0
     %1:fpr(<8 x s16>) = COPY $q1
     %2:fpr(<8 x s16>) = G_TRN1 %0, %1
@@ -161,12 +155,11 @@ body:             |
     liveins: $q0, $q1
     ; CHECK-LABEL: name: TRN1v16i8
     ; CHECK: liveins: $q0, $q1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
-    ; CHECK-NEXT: [[TRN1v16i8_:%[0-9]+]]:fpr128 = TRN1v16i8 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $q0 = COPY [[TRN1v16i8_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $q0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
+    ; CHECK: [[TRN1v16i8_:%[0-9]+]]:fpr128 = TRN1v16i8 [[COPY]], [[COPY1]]
+    ; CHECK: $q0 = COPY [[TRN1v16i8_]]
+    ; CHECK: RET_ReallyLR implicit $q0
     %0:fpr(<16 x s8>) = COPY $q0
     %1:fpr(<16 x s8>) = COPY $q1
     %2:fpr(<16 x s8>) = G_TRN1 %0, %1
@@ -185,12 +178,11 @@ body:             |
     liveins: $d0, $d1
     ; CHECK-LABEL: name: TRN2v2i32
     ; CHECK: liveins: $d0, $d1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr64 = COPY $d0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr64 = COPY $d1
-    ; CHECK-NEXT: [[TRN2v2i32_:%[0-9]+]]:fpr64 = TRN2v2i32 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $d0 = COPY [[TRN2v2i32_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $d0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr64 = COPY $d0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr64 = COPY $d1
+    ; CHECK: [[TRN2v2i32_:%[0-9]+]]:fpr64 = TRN2v2i32 [[COPY]], [[COPY1]]
+    ; CHECK: $d0 = COPY [[TRN2v2i32_]]
+    ; CHECK: RET_ReallyLR implicit $d0
     %0:fpr(<2 x s32>) = COPY $d0
     %1:fpr(<2 x s32>) = COPY $d1
     %2:fpr(<2 x s32>) = G_TRN2 %0, %1
@@ -209,12 +201,11 @@ body:             |
     liveins: $q0, $q1
     ; CHECK-LABEL: name: TRN2v2i64
     ; CHECK: liveins: $q0, $q1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
-    ; CHECK-NEXT: [[TRN2v2i64_:%[0-9]+]]:fpr128 = TRN2v2i64 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $q0 = COPY [[TRN2v2i64_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $q0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
+    ; CHECK: [[TRN2v2i64_:%[0-9]+]]:fpr128 = TRN2v2i64 [[COPY]], [[COPY1]]
+    ; CHECK: $q0 = COPY [[TRN2v2i64_]]
+    ; CHECK: RET_ReallyLR implicit $q0
     %0:fpr(<2 x s64>) = COPY $q0
     %1:fpr(<2 x s64>) = COPY $q1
     %2:fpr(<2 x s64>) = G_TRN2 %0, %1
@@ -233,12 +224,11 @@ body:             |
     liveins: $d0, $d1
     ; CHECK-LABEL: name: TRN2v4i16
     ; CHECK: liveins: $d0, $d1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr64 = COPY $d0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr64 = COPY $d1
-    ; CHECK-NEXT: [[TRN2v4i16_:%[0-9]+]]:fpr64 = TRN2v4i16 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $d0 = COPY [[TRN2v4i16_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $d0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr64 = COPY $d0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr64 = COPY $d1
+    ; CHECK: [[TRN2v4i16_:%[0-9]+]]:fpr64 = TRN2v4i16 [[COPY]], [[COPY1]]
+    ; CHECK: $d0 = COPY [[TRN2v4i16_]]
+    ; CHECK: RET_ReallyLR implicit $d0
     %0:fpr(<4 x s16>) = COPY $d0
     %1:fpr(<4 x s16>) = COPY $d1
     %2:fpr(<4 x s16>) = G_TRN2 %0, %1
@@ -257,12 +247,11 @@ body:             |
     liveins: $q0, $q1
     ; CHECK-LABEL: name: TRN2v4i32
     ; CHECK: liveins: $q0, $q1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
-    ; CHECK-NEXT: [[TRN2v4i32_:%[0-9]+]]:fpr128 = TRN2v4i32 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $q0 = COPY [[TRN2v4i32_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $q0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
+    ; CHECK: [[TRN2v4i32_:%[0-9]+]]:fpr128 = TRN2v4i32 [[COPY]], [[COPY1]]
+    ; CHECK: $q0 = COPY [[TRN2v4i32_]]
+    ; CHECK: RET_ReallyLR implicit $q0
     %0:fpr(<4 x s32>) = COPY $q0
     %1:fpr(<4 x s32>) = COPY $q1
     %2:fpr(<4 x s32>) = G_TRN2 %0, %1
@@ -281,12 +270,11 @@ body:             |
     liveins: $d0, $d1
     ; CHECK-LABEL: name: TRN2v8i8
     ; CHECK: liveins: $d0, $d1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr64 = COPY $d0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr64 = COPY $d1
-    ; CHECK-NEXT: [[TRN2v8i8_:%[0-9]+]]:fpr64 = TRN2v8i8 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $d0 = COPY [[TRN2v8i8_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $d0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr64 = COPY $d0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr64 = COPY $d1
+    ; CHECK: [[TRN2v8i8_:%[0-9]+]]:fpr64 = TRN2v8i8 [[COPY]], [[COPY1]]
+    ; CHECK: $d0 = COPY [[TRN2v8i8_]]
+    ; CHECK: RET_ReallyLR implicit $d0
     %0:fpr(<8 x s8>) = COPY $d0
     %1:fpr(<8 x s8>) = COPY $d1
     %2:fpr(<8 x s8>) = G_TRN2 %0, %1
@@ -305,12 +293,11 @@ body:             |
     liveins: $q0, $q1
     ; CHECK-LABEL: name: TRN2v8i16
     ; CHECK: liveins: $q0, $q1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
-    ; CHECK-NEXT: [[TRN2v8i16_:%[0-9]+]]:fpr128 = TRN2v8i16 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $q0 = COPY [[TRN2v8i16_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $q0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
+    ; CHECK: [[TRN2v8i16_:%[0-9]+]]:fpr128 = TRN2v8i16 [[COPY]], [[COPY1]]
+    ; CHECK: $q0 = COPY [[TRN2v8i16_]]
+    ; CHECK: RET_ReallyLR implicit $q0
     %0:fpr(<8 x s16>) = COPY $q0
     %1:fpr(<8 x s16>) = COPY $q1
     %2:fpr(<8 x s16>) = G_TRN2 %0, %1
@@ -329,12 +316,11 @@ body:             |
     liveins: $q0, $q1
     ; CHECK-LABEL: name: TRN2v16i8
     ; CHECK: liveins: $q0, $q1
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
-    ; CHECK-NEXT: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
-    ; CHECK-NEXT: [[TRN2v16i8_:%[0-9]+]]:fpr128 = TRN2v16i8 [[COPY]], [[COPY1]]
-    ; CHECK-NEXT: $q0 = COPY [[TRN2v16i8_]]
-    ; CHECK-NEXT: RET_ReallyLR implicit $q0
+    ; CHECK: [[COPY:%[0-9]+]]:fpr128 = COPY $q0
+    ; CHECK: [[COPY1:%[0-9]+]]:fpr128 = COPY $q1
+    ; CHECK: [[TRN2v16i8_:%[0-9]+]]:fpr128 = TRN2v16i8 [[COPY]], [[COPY1]]
+    ; CHECK: $q0 = COPY [[TRN2v16i8_]]
+    ; CHECK: RET_ReallyLR implicit $q0
     %0:fpr(<16 x s8>) = COPY $q0
     %1:fpr(<16 x s8>) = COPY $q1
     %2:fpr(<16 x s8>) = G_TRN2 %0, %1

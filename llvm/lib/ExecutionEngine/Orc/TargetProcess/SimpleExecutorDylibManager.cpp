@@ -10,10 +10,6 @@
 
 #include "llvm/ExecutionEngine/Orc/Shared/OrcRTBridge.h"
 
-#include "llvm/Support/MSVCErrorWorkarounds.h"
-
-#include <future>
-
 #define DEBUG_TYPE "orc"
 
 namespace llvm {
@@ -39,9 +35,46 @@ SimpleExecutorDylibManager::open(const std::string &Path, uint64_t Mode) {
 
   std::lock_guard<std::mutex> Lock(M);
   auto H = ExecutorAddr::fromPtr(DL.getOSSpecificHandle());
-  Resolvers.push_back(std::make_unique<DylibSymbolResolver>(H));
   Dylibs.insert(DL.getOSSpecificHandle());
-  return ExecutorAddr::fromPtr(Resolvers.back().get());
+  return H;
+}
+
+Expected<std::vector<ExecutorSymbolDef>>
+SimpleExecutorDylibManager::lookup(tpctypes::DylibHandle H,
+                                   const RemoteSymbolLookupSet &L) {
+  std::vector<ExecutorSymbolDef> Result;
+  auto DL = sys::DynamicLibrary(H.toPtr<void *>());
+
+  for (const auto &E : L) {
+    if (E.Name.empty()) {
+      if (E.Required)
+        return make_error<StringError>("Required address for empty symbol \"\"",
+                                       inconvertibleErrorCode());
+      else
+        Result.push_back(ExecutorSymbolDef());
+    } else {
+
+      const char *DemangledSymName = E.Name.c_str();
+#ifdef __APPLE__
+      if (E.Name.front() != '_')
+        return make_error<StringError>(Twine("MachO symbol \"") + E.Name +
+                                           "\" missing leading '_'",
+                                       inconvertibleErrorCode());
+      ++DemangledSymName;
+#endif
+
+      void *Addr = DL.getAddressOfSymbol(DemangledSymName);
+      if (!Addr && E.Required)
+        return make_error<StringError>(Twine("Missing definition for ") +
+                                           DemangledSymName,
+                                       inconvertibleErrorCode());
+
+      // FIXME: determine accurate JITSymbolFlags.
+      Result.push_back({ExecutorAddr::fromPtr(Addr), JITSymbolFlags::Exported});
+    }
+  }
+
+  return Result;
 }
 
 Error SimpleExecutorDylibManager::shutdown() {
@@ -61,11 +94,11 @@ void SimpleExecutorDylibManager::addBootstrapSymbols(
   M[rt::SimpleExecutorDylibManagerInstanceName] = ExecutorAddr::fromPtr(this);
   M[rt::SimpleExecutorDylibManagerOpenWrapperName] =
       ExecutorAddr::fromPtr(&openWrapper);
-  M[rt::SimpleExecutorDylibManagerResolveWrapperName] =
-      ExecutorAddr::fromPtr(&resolveWrapper);
+  M[rt::SimpleExecutorDylibManagerLookupWrapperName] =
+      ExecutorAddr::fromPtr(&lookupWrapper);
 }
 
-llvm::orc::shared::CWrapperFunctionBuffer
+llvm::orc::shared::CWrapperFunctionResult
 SimpleExecutorDylibManager::openWrapper(const char *ArgData, size_t ArgSize) {
   return shared::
       WrapperFunction<rt::SPSSimpleExecutorDylibManagerOpenSignature>::handle(
@@ -75,23 +108,13 @@ SimpleExecutorDylibManager::openWrapper(const char *ArgData, size_t ArgSize) {
           .release();
 }
 
-llvm::orc::shared::CWrapperFunctionBuffer
-SimpleExecutorDylibManager::resolveWrapper(const char *ArgData,
-                                           size_t ArgSize) {
-  using ResolveResult = ExecutorResolver::ResolveResult;
-  return shared::WrapperFunction<
-             rt::SPSSimpleExecutorDylibManagerResolveSignature>::
-      handle(ArgData, ArgSize,
-             [](ExecutorAddr Obj, RemoteSymbolLookupSet L) -> ResolveResult {
-               using TmpResult =
-                   MSVCPExpected<std::vector<std::optional<ExecutorSymbolDef>>>;
-               std::promise<TmpResult> P;
-               auto F = P.get_future();
-               Obj.toPtr<ExecutorResolver *>()->resolveAsync(
-                   std::move(L),
-                   [&](TmpResult R) { P.set_value(std::move(R)); });
-               return F.get();
-             })
+llvm::orc::shared::CWrapperFunctionResult
+SimpleExecutorDylibManager::lookupWrapper(const char *ArgData, size_t ArgSize) {
+  return shared::
+      WrapperFunction<rt::SPSSimpleExecutorDylibManagerLookupSignature>::handle(
+             ArgData, ArgSize,
+             shared::makeMethodWrapperHandler(
+                 &SimpleExecutorDylibManager::lookup))
           .release();
 }
 

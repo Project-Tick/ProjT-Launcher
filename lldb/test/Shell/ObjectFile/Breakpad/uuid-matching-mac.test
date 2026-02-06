@@ -1,7 +1,6 @@
-# RUN: mkdir -p %t.dir
-# RUN: yaml2obj %S/Inputs/uuid-matching-mac.yaml -o %t.dir/uuid-matching-mac.out
+# RUN: yaml2obj %S/Inputs/uuid-matching-mac.yaml -o %T/uuid-matching-mac.out
 # RUN: cd %S
-# RUN: %lldb %t.dir/uuid-matching-mac.out -s %s -o exit | FileCheck %s
+# RUN: %lldb %T/uuid-matching-mac.out -s %s -o exit | FileCheck %s
 
 target symbols add Inputs/uuid-matching-mac.syms
 # CHECK-LABEL: target symbols add

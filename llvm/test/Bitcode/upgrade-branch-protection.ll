@@ -1,10 +1,7 @@
-;; Test that module flags "branch-target-enforcement" and "sign-return-address"
-;; can be upgraded to are upgraded from Error to Min and the value is changed 2
-;; as the module is converted to the semantic.
+;; Test that module flags "branch-target-enforcement" and "sign-return-address"  can be upgraded to
+;; are upgraded from Error to Min.
 
 ; RUN: llvm-as %s -o - | llvm-dis - | FileCheck %s
-
-target triple = "aarch64-unknown-linux-gnu"
 
 !llvm.module.flags = !{!0, !1, !2, !3}
 
@@ -13,7 +10,7 @@ target triple = "aarch64-unknown-linux-gnu"
 !2 = !{i32 1, !"sign-return-address-all", i32 1}
 !3 = !{i32 1, !"sign-return-address-with-bkey", i32 1}
 
-;CHECK: !0 = !{i32 8, !"branch-target-enforcement", i32 2}
-;CHECK: !1 = !{i32 8, !"sign-return-address", i32 2}
-;CHECK: !2 = !{i32 8, !"sign-return-address-all", i32 2}
-;CHECK: !3 = !{i32 8, !"sign-return-address-with-bkey", i32 2}
+;CHECK: !0 = !{i32 8, !"branch-target-enforcement", i32 1}
+;CHECK: !1 = !{i32 8, !"sign-return-address", i32 1}
+;CHECK: !2 = !{i32 8, !"sign-return-address-all", i32 1}
+;CHECK: !3 = !{i32 8, !"sign-return-address-with-bkey", i32 1}

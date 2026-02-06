@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- MisplacedWideningCastCheck.cpp - clang-tidy-----------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "MisplacedWideningCastCheck.h"
+#include "../utils/Matchers.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
@@ -52,8 +53,8 @@ static unsigned getMaxCalculationWidth(const ASTContext &Context,
   E = E->IgnoreParenImpCasts();
 
   if (const auto *Bop = dyn_cast<BinaryOperator>(E)) {
-    const unsigned LHSWidth = getMaxCalculationWidth(Context, Bop->getLHS());
-    const unsigned RHSWidth = getMaxCalculationWidth(Context, Bop->getRHS());
+    unsigned LHSWidth = getMaxCalculationWidth(Context, Bop->getLHS());
+    unsigned RHSWidth = getMaxCalculationWidth(Context, Bop->getRHS());
     if (Bop->getOpcode() == BO_Mul)
       return LHSWidth + RHSWidth;
     if (Bop->getOpcode() == BO_Add)
@@ -79,7 +80,7 @@ static unsigned getMaxCalculationWidth(const ASTContext &Context,
     if (Uop->getOpcode() == UO_Not)
       return 1024U;
 
-    const QualType T = Uop->getType();
+    QualType T = Uop->getType();
     return T->isIntegerType() ? Context.getIntWidth(T) : 1024U;
   } else if (const auto *I = dyn_cast<IntegerLiteral>(E)) {
     return I->getValue().getActiveBits();
@@ -190,10 +191,10 @@ void MisplacedWideningCastCheck::check(const MatchFinder::MatchResult &Result) {
       Calc->isTypeDependent() || Calc->isValueDependent())
     return;
 
-  const ASTContext &Context = *Result.Context;
+  ASTContext &Context = *Result.Context;
 
-  const QualType CastType = Cast->getType();
-  const QualType CalcType = Calc->getType();
+  QualType CastType = Cast->getType();
+  QualType CalcType = Calc->getType();
 
   // Explicit truncation using cast.
   if (Context.getIntWidth(CastType) < Context.getIntWidth(CalcType))

@@ -8,6 +8,7 @@
 //
 // UNSUPPORTED: no-threads
 // UNSUPPORTED: c++03, c++11, c++14, c++17
+// XFAIL: availability-synchronization_library-missing
 
 // [[nodiscard]] bool stop_possible() const noexcept;
 // Returns: true if *this has ownership of a stop state; otherwise, false.

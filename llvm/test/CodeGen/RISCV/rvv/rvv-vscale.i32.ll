@@ -50,3 +50,4 @@ entry:
   ret i32 %1
 }
 
+declare i32 @llvm.vscale.i32()

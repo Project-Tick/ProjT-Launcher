@@ -23,6 +23,8 @@
 
 #define DEBUG_TYPE "jitlink"
 
+#include <list>
+
 namespace llvm {
 namespace jitlink {
 

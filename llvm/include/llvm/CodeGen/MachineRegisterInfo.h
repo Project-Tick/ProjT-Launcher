@@ -23,14 +23,12 @@
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineFunction.h"
-#include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineInstrBundle.h"
 #include "llvm/CodeGen/MachineOperand.h"
 #include "llvm/CodeGen/RegisterBank.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/MC/LaneBitmask.h"
-#include "llvm/Support/Compiler.h"
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -52,7 +50,7 @@ using RegClassOrRegBank =
 /// etc.
 class MachineRegisterInfo {
 public:
-  class LLVM_ABI Delegate {
+  class Delegate {
     virtual void anchor();
 
   public:
@@ -152,7 +150,7 @@ private:
   std::vector<std::pair<MCRegister, Register>> LiveIns;
 
 public:
-  LLVM_ABI explicit MachineRegisterInfo(MachineFunction *MF);
+  explicit MachineRegisterInfo(MachineFunction *MF);
   MachineRegisterInfo(const MachineRegisterInfo &) = delete;
   MachineRegisterInfo &operator=(const MachineRegisterInfo &) = delete;
 
@@ -199,15 +197,21 @@ public:
   // The TwoAddressInstructionPass and PHIElimination passes take the machine
   // function out of SSA form when they introduce multiple defs per virtual
   // register.
-  bool isSSA() const { return MF->getProperties().hasIsSSA(); }
+  bool isSSA() const {
+    return MF->getProperties().hasProperty(
+        MachineFunctionProperties::Property::IsSSA);
+  }
 
   // leaveSSA - Indicates that the machine function is no longer in SSA form.
-  void leaveSSA() { MF->getProperties().resetIsSSA(); }
+  void leaveSSA() {
+    MF->getProperties().reset(MachineFunctionProperties::Property::IsSSA);
+  }
 
   /// tracksLiveness - Returns true when tracking register liveness accurately.
   /// (see MachineFUnctionProperties::Property description for details)
   bool tracksLiveness() const {
-    return MF->getProperties().hasTracksLiveness();
+    return MF->getProperties().hasProperty(
+        MachineFunctionProperties::Property::TracksLiveness);
   }
 
   /// invalidateLiveness - Indicates that register liveness is no longer being
@@ -215,7 +219,10 @@ public:
   ///
   /// This should be called by late passes that invalidate the liveness
   /// information.
-  void invalidateLiveness() { MF->getProperties().resetTracksLiveness(); }
+  void invalidateLiveness() {
+    MF->getProperties().reset(
+        MachineFunctionProperties::Property::TracksLiveness);
+  }
 
   /// Returns true if liveness for register class @p RC should be tracked at
   /// the subregister level.
@@ -241,48 +248,52 @@ public:
   /// Disables the register from the list of CSRs.
   /// I.e. the register will not appear as part of the CSR mask.
   /// \see UpdatedCalleeSavedRegs.
-  LLVM_ABI void disableCalleeSavedRegister(MCRegister Reg);
+  void disableCalleeSavedRegister(MCRegister Reg);
 
   /// Returns list of callee saved registers.
   /// The function returns the updated CSR list (after taking into account
   /// registers that are disabled from the CSR list).
-  LLVM_ABI const MCPhysReg *getCalleeSavedRegs() const;
+  const MCPhysReg *getCalleeSavedRegs() const;
 
   /// Sets the updated Callee Saved Registers list.
   /// Notice that it will override ant previously disabled/saved CSRs.
-  LLVM_ABI void setCalleeSavedRegs(ArrayRef<MCPhysReg> CSRs);
+  void setCalleeSavedRegs(ArrayRef<MCPhysReg> CSRs);
 
   // Strictly for use by MachineInstr.cpp.
-  LLVM_ABI void addRegOperandToUseList(MachineOperand *MO);
+  void addRegOperandToUseList(MachineOperand *MO);
 
   // Strictly for use by MachineInstr.cpp.
-  LLVM_ABI void removeRegOperandFromUseList(MachineOperand *MO);
+  void removeRegOperandFromUseList(MachineOperand *MO);
 
   // Strictly for use by MachineInstr.cpp.
-  LLVM_ABI void moveOperands(MachineOperand *Dst, MachineOperand *Src,
-                             unsigned NumOps);
+  void moveOperands(MachineOperand *Dst, MachineOperand *Src, unsigned NumOps);
 
   /// Verify the sanity of the use list for Reg.
-  LLVM_ABI void verifyUseList(Register Reg) const;
+  void verifyUseList(Register Reg) const;
 
   /// Verify the use list of all registers.
-  LLVM_ABI void verifyUseLists() const;
+  void verifyUseLists() const;
 
   /// reg_begin/reg_end - Provide iteration support to walk over all definitions
   /// and uses of a register within the MachineFunction that corresponds to this
   /// MachineRegisterInfo object.
-  template <bool Uses, bool Defs, bool SkipDebug, bool ByOperand, bool ByInstr>
+  template<bool Uses, bool Defs, bool SkipDebug,
+           bool ByOperand, bool ByInstr, bool ByBundle>
   class defusechain_iterator;
-  template <bool Uses, bool Defs, bool SkipDebug, bool ByInstr>
+  template<bool Uses, bool Defs, bool SkipDebug,
+           bool ByOperand, bool ByInstr, bool ByBundle>
   class defusechain_instr_iterator;
 
   // Make it a friend so it can access getNextOperandForReg().
-  template <bool, bool, bool, bool, bool> friend class defusechain_iterator;
-  template <bool, bool, bool, bool> friend class defusechain_instr_iterator;
+  template<bool, bool, bool, bool, bool, bool>
+    friend class defusechain_iterator;
+  template<bool, bool, bool, bool, bool, bool>
+    friend class defusechain_instr_iterator;
 
   /// reg_iterator/reg_begin/reg_end - Walk all defs and uses of the specified
   /// register.
-  using reg_iterator = defusechain_iterator<true, true, false, true, false>;
+  using reg_iterator =
+      defusechain_iterator<true, true, false, true, false, false>;
   reg_iterator reg_begin(Register RegNo) const {
     return reg_iterator(getRegUseDefListHead(RegNo));
   }
@@ -295,7 +306,7 @@ public:
   /// reg_instr_iterator/reg_instr_begin/reg_instr_end - Walk all defs and uses
   /// of the specified register, stepping by MachineInstr.
   using reg_instr_iterator =
-      defusechain_instr_iterator<true, true, false, /*ByInstr=*/true>;
+      defusechain_instr_iterator<true, true, false, false, true, false>;
   reg_instr_iterator reg_instr_begin(Register RegNo) const {
     return reg_instr_iterator(getRegUseDefListHead(RegNo));
   }
@@ -311,7 +322,7 @@ public:
   /// reg_bundle_iterator/reg_bundle_begin/reg_bundle_end - Walk all defs and uses
   /// of the specified register, stepping by bundle.
   using reg_bundle_iterator =
-      defusechain_instr_iterator<true, true, false, /*ByInstr=*/false>;
+      defusechain_instr_iterator<true, true, false, false, false, true>;
   reg_bundle_iterator reg_bundle_begin(Register RegNo) const {
     return reg_bundle_iterator(getRegUseDefListHead(RegNo));
   }
@@ -330,7 +341,7 @@ public:
   /// reg_nodbg_iterator/reg_nodbg_begin/reg_nodbg_end - Walk all defs and uses
   /// of the specified register, skipping those marked as Debug.
   using reg_nodbg_iterator =
-      defusechain_iterator<true, true, true, true, false>;
+      defusechain_iterator<true, true, true, true, false, false>;
   reg_nodbg_iterator reg_nodbg_begin(Register RegNo) const {
     return reg_nodbg_iterator(getRegUseDefListHead(RegNo));
   }
@@ -347,7 +358,7 @@ public:
   /// all defs and uses of the specified register, stepping by MachineInstr,
   /// skipping those marked as Debug.
   using reg_instr_nodbg_iterator =
-      defusechain_instr_iterator<true, true, true, /*ByInstr=*/true>;
+      defusechain_instr_iterator<true, true, true, false, true, false>;
   reg_instr_nodbg_iterator reg_instr_nodbg_begin(Register RegNo) const {
     return reg_instr_nodbg_iterator(getRegUseDefListHead(RegNo));
   }
@@ -364,7 +375,7 @@ public:
   /// all defs and uses of the specified register, stepping by bundle,
   /// skipping those marked as Debug.
   using reg_bundle_nodbg_iterator =
-      defusechain_instr_iterator<true, true, true, /*ByInstr=*/false>;
+      defusechain_instr_iterator<true, true, true, false, false, true>;
   reg_bundle_nodbg_iterator reg_bundle_nodbg_begin(Register RegNo) const {
     return reg_bundle_nodbg_iterator(getRegUseDefListHead(RegNo));
   }
@@ -384,7 +395,8 @@ public:
   }
 
   /// def_iterator/def_begin/def_end - Walk all defs of the specified register.
-  using def_iterator = defusechain_iterator<false, true, false, true, false>;
+  using def_iterator =
+      defusechain_iterator<false, true, false, true, false, false>;
   def_iterator def_begin(Register RegNo) const {
     return def_iterator(getRegUseDefListHead(RegNo));
   }
@@ -397,7 +409,7 @@ public:
   /// def_instr_iterator/def_instr_begin/def_instr_end - Walk all defs of the
   /// specified register, stepping by MachineInst.
   using def_instr_iterator =
-      defusechain_instr_iterator<false, true, false, /*ByInstr=*/true>;
+      defusechain_instr_iterator<false, true, false, false, true, false>;
   def_instr_iterator def_instr_begin(Register RegNo) const {
     return def_instr_iterator(getRegUseDefListHead(RegNo));
   }
@@ -413,7 +425,7 @@ public:
   /// def_bundle_iterator/def_bundle_begin/def_bundle_end - Walk all defs of the
   /// specified register, stepping by bundle.
   using def_bundle_iterator =
-      defusechain_instr_iterator<false, true, false, /*ByInstr=*/false>;
+      defusechain_instr_iterator<false, true, false, false, false, true>;
   def_bundle_iterator def_bundle_begin(Register RegNo) const {
     return def_bundle_iterator(getRegUseDefListHead(RegNo));
   }
@@ -463,7 +475,8 @@ public:
   }
 
   /// use_iterator/use_begin/use_end - Walk all uses of the specified register.
-  using use_iterator = defusechain_iterator<true, false, false, true, false>;
+  using use_iterator =
+      defusechain_iterator<true, false, false, true, false, false>;
   use_iterator use_begin(Register RegNo) const {
     return use_iterator(getRegUseDefListHead(RegNo));
   }
@@ -476,7 +489,7 @@ public:
   /// use_instr_iterator/use_instr_begin/use_instr_end - Walk all uses of the
   /// specified register, stepping by MachineInstr.
   using use_instr_iterator =
-      defusechain_instr_iterator<true, false, false, /*ByInstr=*/true>;
+      defusechain_instr_iterator<true, false, false, false, true, false>;
   use_instr_iterator use_instr_begin(Register RegNo) const {
     return use_instr_iterator(getRegUseDefListHead(RegNo));
   }
@@ -492,7 +505,7 @@ public:
   /// use_bundle_iterator/use_bundle_begin/use_bundle_end - Walk all uses of the
   /// specified register, stepping by bundle.
   using use_bundle_iterator =
-      defusechain_instr_iterator<true, false, false, /*ByInstr=*/false>;
+      defusechain_instr_iterator<true, false, false, false, false, true>;
   use_bundle_iterator use_bundle_begin(Register RegNo) const {
     return use_bundle_iterator(getRegUseDefListHead(RegNo));
   }
@@ -517,7 +530,7 @@ public:
   /// use_nodbg_iterator/use_nodbg_begin/use_nodbg_end - Walk all uses of the
   /// specified register, skipping those marked as Debug.
   using use_nodbg_iterator =
-      defusechain_iterator<true, false, true, true, false>;
+      defusechain_iterator<true, false, true, true, false, false>;
   use_nodbg_iterator use_nodbg_begin(Register RegNo) const {
     return use_nodbg_iterator(getRegUseDefListHead(RegNo));
   }
@@ -534,7 +547,7 @@ public:
   /// all uses of the specified register, stepping by MachineInstr, skipping
   /// those marked as Debug.
   using use_instr_nodbg_iterator =
-      defusechain_instr_iterator<true, false, true, /*ByInstr=*/true>;
+      defusechain_instr_iterator<true, false, true, false, true, false>;
   use_instr_nodbg_iterator use_instr_nodbg_begin(Register RegNo) const {
     return use_instr_nodbg_iterator(getRegUseDefListHead(RegNo));
   }
@@ -551,7 +564,7 @@ public:
   /// all uses of the specified register, stepping by bundle, skipping
   /// those marked as Debug.
   using use_bundle_nodbg_iterator =
-      defusechain_instr_iterator<true, false, true, /*ByInstr=*/false>;
+      defusechain_instr_iterator<true, false, true, false, false, true>;
   use_bundle_nodbg_iterator use_bundle_nodbg_begin(Register RegNo) const {
     return use_bundle_nodbg_iterator(getRegUseDefListHead(RegNo));
   }
@@ -572,24 +585,17 @@ public:
 
   /// hasOneNonDBGUse - Return true if there is exactly one non-Debug
   /// use of the specified register.
-  LLVM_ABI bool hasOneNonDBGUse(Register RegNo) const;
+  bool hasOneNonDBGUse(Register RegNo) const;
 
   /// hasOneNonDBGUse - Return true if there is exactly one non-Debug
   /// instruction using the specified register. Said instruction may have
   /// multiple uses.
-  LLVM_ABI bool hasOneNonDBGUser(Register RegNo) const;
+  bool hasOneNonDBGUser(Register RegNo) const;
 
-  /// If the register has a single non-Debug use, returns it; otherwise returns
-  /// nullptr.
-  LLVM_ABI MachineOperand *getOneNonDBGUse(Register RegNo) const;
-
-  /// If the register has a single non-Debug instruction using the specified
-  /// register, returns it; otherwise returns nullptr.
-  LLVM_ABI MachineInstr *getOneNonDBGUser(Register RegNo) const;
 
   /// hasAtMostUses - Return true if the given register has at most \p MaxUsers
   /// non-debug user instructions.
-  LLVM_ABI bool hasAtMostUserInstrs(Register Reg, unsigned MaxUsers) const;
+  bool hasAtMostUserInstrs(Register Reg, unsigned MaxUsers) const;
 
   /// replaceRegWith - Replace all instances of FromReg with ToReg in the
   /// machine function.  This is like llvm-level X->replaceAllUsesWith(Y),
@@ -610,33 +616,34 @@ public:
   /// Note that if ToReg is a physical register the function will replace and
   /// apply sub registers to ToReg in order to obtain a final/proper physical
   /// register.
-  LLVM_ABI void replaceRegWith(Register FromReg, Register ToReg);
+  void replaceRegWith(Register FromReg, Register ToReg);
 
   /// getVRegDef - Return the machine instr that defines the specified virtual
   /// register or null if none is found.  This assumes that the code is in SSA
   /// form, so there should only be one definition.
-  LLVM_ABI MachineInstr *getVRegDef(Register Reg) const;
+  MachineInstr *getVRegDef(Register Reg) const;
 
   /// getUniqueVRegDef - Return the unique machine instr that defines the
   /// specified virtual register or null if none is found.  If there are
   /// multiple definitions or no definition, return null.
-  LLVM_ABI MachineInstr *getUniqueVRegDef(Register Reg) const;
+  MachineInstr *getUniqueVRegDef(Register Reg) const;
 
   /// clearKillFlags - Iterate over all the uses of the given register and
   /// clear the kill flag from the MachineOperand. This function is used by
   /// optimization passes which extend register lifetimes and need only
   /// preserve conservative kill flag information.
-  LLVM_ABI void clearKillFlags(Register Reg) const;
+  void clearKillFlags(Register Reg) const;
 
-  LLVM_ABI void dumpUses(Register RegNo) const;
+  void dumpUses(Register RegNo) const;
 
   /// Returns true if PhysReg is unallocatable and constant throughout the
   /// function. Writing to a constant register has no effect.
-  LLVM_ABI bool isConstantPhysReg(MCRegister PhysReg) const;
+  bool isConstantPhysReg(MCRegister PhysReg) const;
 
-  /// Get an iterator over the pressure sets affected by the virtual register
-  /// or register unit.
-  PSetIterator getPressureSets(VirtRegOrUnit VRegOrUnit) const;
+  /// Get an iterator over the pressure sets affected by the given physical or
+  /// virtual register. If RegUnit is physical, it must be a register unit (from
+  /// MCRegUnitIterator).
+  PSetIterator getPressureSets(Register RegUnit) const;
 
   //===--------------------------------------------------------------------===//
   // Virtual Register Info
@@ -690,10 +697,10 @@ public:
   }
 
   /// setRegClass - Set the register class of the specified virtual register.
-  LLVM_ABI void setRegClass(Register Reg, const TargetRegisterClass *RC);
+  void setRegClass(Register Reg, const TargetRegisterClass *RC);
 
   /// Set the register bank to \p RegBank for \p Reg.
-  LLVM_ABI void setRegBank(Register Reg, const RegisterBank &RegBank);
+  void setRegBank(Register Reg, const RegisterBank &RegBank);
 
   void setRegClassOrRegBank(Register Reg,
                             const RegClassOrRegBank &RCOrRB){
@@ -711,9 +718,9 @@ public:
   /// Use RegisterBankInfo::constrainGenericRegister in GlobalISel's
   /// InstructionSelect pass and constrainRegAttrs in every other pass,
   /// including non-select passes of GlobalISel, instead.
-  LLVM_ABI const TargetRegisterClass *
-  constrainRegClass(Register Reg, const TargetRegisterClass *RC,
-                    unsigned MinNumRegs = 0);
+  const TargetRegisterClass *constrainRegClass(Register Reg,
+                                               const TargetRegisterClass *RC,
+                                               unsigned MinNumRegs = 0);
 
   /// Constrain the register class or the register bank of the virtual register
   /// \p Reg (and low-level type) to be a common subclass or a common bank of
@@ -726,8 +733,8 @@ public:
   /// \note Use this method instead of constrainRegClass and
   /// RegisterBankInfo::constrainGenericRegister everywhere but SelectionDAG
   /// ISel / FastISel and GlobalISel's InstructionSelect pass respectively.
-  LLVM_ABI bool constrainRegAttrs(Register Reg, Register ConstrainingReg,
-                                  unsigned MinNumRegs = 0);
+  bool constrainRegAttrs(Register Reg, Register ConstrainingReg,
+                         unsigned MinNumRegs = 0);
 
   /// recomputeRegClass - Try to find a legal super-class of Reg's register
   /// class that still satisfies the constraints from the instructions using
@@ -736,12 +743,12 @@ public:
   /// This method can be used after constraints have been removed from a
   /// virtual register, for example after removing instructions or splitting
   /// the live range.
-  LLVM_ABI bool recomputeRegClass(Register Reg);
+  bool recomputeRegClass(Register Reg);
 
   /// createVirtualRegister - Create and return a new virtual register in the
   /// function with the specified register class.
-  LLVM_ABI Register createVirtualRegister(const TargetRegisterClass *RegClass,
-                                          StringRef Name = "");
+  Register createVirtualRegister(const TargetRegisterClass *RegClass,
+                                 StringRef Name = "");
 
   /// All attributes(register class or bank and low-level type) a virtual
   /// register can have.
@@ -759,12 +766,11 @@ public:
 
   /// Create and return a new virtual register in the function with the
   /// specified register attributes(register class or bank and low level type).
-  LLVM_ABI Register createVirtualRegister(VRegAttrs RegAttr,
-                                          StringRef Name = "");
+  Register createVirtualRegister(VRegAttrs RegAttr, StringRef Name = "");
 
   /// Create and return a new virtual register in the function with the same
   /// attributes as the given register.
-  LLVM_ABI Register cloneVirtualRegister(Register VReg, StringRef Name = "");
+  Register cloneVirtualRegister(Register VReg, StringRef Name = "");
 
   /// Get the low-level type of \p Reg or LLT{} if Reg is not a generic
   /// (target independent) virtual register.
@@ -775,28 +781,28 @@ public:
   }
 
   /// Set the low-level type of \p VReg to \p Ty.
-  LLVM_ABI void setType(Register VReg, LLT Ty);
+  void setType(Register VReg, LLT Ty);
 
   /// Create and return a new generic virtual register with low-level
   /// type \p Ty.
-  LLVM_ABI Register createGenericVirtualRegister(LLT Ty, StringRef Name = "");
+  Register createGenericVirtualRegister(LLT Ty, StringRef Name = "");
 
   /// Remove all types associated to virtual registers (after instruction
   /// selection and constraining of all generic virtual registers).
-  LLVM_ABI void clearVirtRegTypes();
+  void clearVirtRegTypes();
 
   /// Creates a new virtual register that has no register class, register bank
   /// or size assigned yet. This is only allowed to be used
   /// temporarily while constructing machine instructions. Most operations are
   /// undefined on an incomplete register until one of setRegClass(),
   /// setRegBank() or setSize() has been called on it.
-  LLVM_ABI Register createIncompleteVirtualRegister(StringRef Name = "");
+  Register createIncompleteVirtualRegister(StringRef Name = "");
 
   /// getNumVirtRegs - Return the number of virtual registers created.
   unsigned getNumVirtRegs() const { return VRegInfo.size(); }
 
   /// clearVirtRegs - Remove all virtual registers (after physreg assignment).
-  LLVM_ABI void clearVirtRegs();
+  void clearVirtRegs();
 
   /// setRegAllocationHint - Specify a register allocation hint for the
   /// specified virtual register. This is typically used by target, and in case
@@ -804,10 +810,9 @@ public:
   void setRegAllocationHint(Register VReg, unsigned Type, Register PrefReg) {
     assert(VReg.isVirtual());
     RegAllocHints.grow(Register::index2VirtReg(getNumVirtRegs()));
-    auto &Hint = RegAllocHints[VReg];
-    Hint.first = Type;
-    Hint.second.clear();
-    Hint.second.push_back(PrefReg);
+    RegAllocHints[VReg].first  = Type;
+    RegAllocHints[VReg].second.clear();
+    RegAllocHints[VReg].second.push_back(PrefReg);
   }
 
   /// addRegAllocationHint - Add a register allocation hint to the hints
@@ -838,9 +843,9 @@ public:
     assert(VReg.isVirtual());
     if (!RegAllocHints.inBounds(VReg))
       return {0, Register()};
-    auto &Hint = RegAllocHints[VReg.id()];
-    Register BestHint = (Hint.second.size() ? Hint.second[0] : Register());
-    return {Hint.first, BestHint};
+    Register BestHint = (RegAllocHints[VReg.id()].second.size() ?
+                         RegAllocHints[VReg.id()].second[0] : Register());
+    return {RegAllocHints[VReg.id()].first, BestHint};
   }
 
   /// getSimpleHint - same as getRegAllocationHint except it will only return
@@ -862,7 +867,7 @@ public:
   /// markUsesInDebugValueAsUndef - Mark every DBG_VALUE referencing the
   /// specified register as undefined which causes the DBG_VALUE to be
   /// deleted during LiveDebugVariables analysis.
-  LLVM_ABI void markUsesInDebugValueAsUndef(Register Reg) const;
+  void markUsesInDebugValueAsUndef(Register Reg) const;
 
   /// updateDbgUsersToReg - Update a collection of debug instructions
   /// to refer to the designated register.
@@ -898,15 +903,13 @@ public:
   /// ignored, to consider them pass 'true' for optional parameter
   /// SkipNoReturnDef. The register is also considered modified when it is set
   /// in the UsedPhysRegMask.
-  LLVM_ABI bool isPhysRegModified(MCRegister PhysReg,
-                                  bool SkipNoReturnDef = false) const;
+  bool isPhysRegModified(MCRegister PhysReg, bool SkipNoReturnDef = false) const;
 
   /// Return true if the specified register is modified or read in this
   /// function. This checks that no machine operands exist for the register or
   /// any of its aliases. If SkipRegMaskTest is false, the register is
   /// considered used when it is set in the UsedPhysRegMask.
-  LLVM_ABI bool isPhysRegUsed(MCRegister PhysReg,
-                              bool SkipRegMaskTest = false) const;
+  bool isPhysRegUsed(MCRegister PhysReg, bool SkipRegMaskTest = false) const;
 
   /// addPhysRegsUsedFromRegMask - Mark any registers not in RegMask as used.
   /// This corresponds to the bit mask attached to register mask operands.
@@ -930,9 +933,9 @@ public:
 
   /// freezeReservedRegs - Called by the register allocator to freeze the set
   /// of reserved registers before allocation begins.
-  LLVM_ABI void freezeReservedRegs();
+  void freezeReservedRegs();
 
-  /// reserveReg -- Mark a register as reserved so checks like isAllocatable
+  /// reserveReg -- Mark a register as reserved so checks like isAllocatable 
   /// will not suggest using it. This should not be used during the middle
   /// of a function walk, or when liveness info is available.
   void reserveReg(MCRegister PhysReg, const TargetRegisterInfo *TRI) {
@@ -981,7 +984,7 @@ public:
   /// root registers, the root register and all super registers are reserved.
   /// This currently iterates the register hierarchy and may be slower than
   /// expected.
-  LLVM_ABI bool isReservedRegUnit(MCRegUnit Unit) const;
+  bool isReservedRegUnit(unsigned Unit) const;
 
   /// isAllocatable - Returns true when PhysReg belongs to an allocatable
   /// register class and it hasn't been reserved.
@@ -1016,25 +1019,25 @@ public:
     return LiveIns;
   }
 
-  LLVM_ABI bool isLiveIn(Register Reg) const;
+  bool isLiveIn(Register Reg) const;
 
   /// getLiveInPhysReg - If VReg is a live-in virtual register, return the
   /// corresponding live-in physical register.
-  LLVM_ABI MCRegister getLiveInPhysReg(Register VReg) const;
+  MCRegister getLiveInPhysReg(Register VReg) const;
 
   /// getLiveInVirtReg - If PReg is a live-in physical register, return the
   /// corresponding live-in virtual register.
-  LLVM_ABI Register getLiveInVirtReg(MCRegister PReg) const;
+  Register getLiveInVirtReg(MCRegister PReg) const;
 
   /// EmitLiveInCopies - Emit copies to initialize livein virtual registers
   /// into the given entry block.
-  LLVM_ABI void EmitLiveInCopies(MachineBasicBlock *EntryMBB,
-                                 const TargetRegisterInfo &TRI,
-                                 const TargetInstrInfo &TII);
+  void EmitLiveInCopies(MachineBasicBlock *EntryMBB,
+                        const TargetRegisterInfo &TRI,
+                        const TargetInstrInfo &TII);
 
   /// Returns a mask covering all bits that can appear in lane masks of
   /// subregisters of the virtual register @p Reg.
-  LLVM_ABI LaneBitmask getMaxLaneMaskForVReg(Register Reg) const;
+  LaneBitmask getMaxLaneMaskForVReg(Register Reg) const;
 
   /// defusechain_iterator - This class provides iterator support for machine
   /// operands in the function that use or define a specific register.  If
@@ -1043,11 +1046,9 @@ public:
   /// returns end().  If SkipDebug is true it skips uses marked Debug
   /// when incrementing.
   template <bool ReturnUses, bool ReturnDefs, bool SkipDebug, bool ByOperand,
-            bool ByInstr>
+            bool ByInstr, bool ByBundle>
   class defusechain_iterator {
     friend class MachineRegisterInfo;
-    static_assert(!ByOperand || !ByInstr,
-                  "ByOperand and ByInstr are mutually exclusive");
 
   public:
     using iterator_category = std::forward_iterator_tag;
@@ -1110,7 +1111,7 @@ public:
         do {
           advance();
         } while (Op && Op->getParent() == P);
-      } else {
+      } else if (ByBundle) {
         MachineBasicBlock::instr_iterator P =
             getBundleStart(Op->getParent()->getIterator());
         do {
@@ -1149,7 +1150,8 @@ public:
   /// returns defs.  If neither are true then you are silly and it always
   /// returns end().  If SkipDebug is true it skips uses marked Debug
   /// when incrementing.
-  template <bool ReturnUses, bool ReturnDefs, bool SkipDebug, bool ByInstr>
+  template <bool ReturnUses, bool ReturnDefs, bool SkipDebug, bool ByOperand,
+            bool ByInstr, bool ByBundle>
   class defusechain_instr_iterator {
     friend class MachineRegisterInfo;
 
@@ -1207,12 +1209,14 @@ public:
     // Iterator traversal: forward iteration only
     defusechain_instr_iterator &operator++() {          // Preincrement
       assert(Op && "Cannot increment end iterator!");
-      if (ByInstr) {
+      if (ByOperand)
+        advance();
+      else if (ByInstr) {
         MachineInstr *P = Op->getParent();
         do {
           advance();
         } while (Op && Op->getParent() == P);
-      } else {
+      } else if (ByBundle) {
         MachineBasicBlock::instr_iterator P =
             getBundleStart(Op->getParent()->getIterator());
         do {
@@ -1229,7 +1233,7 @@ public:
     // Retrieve a reference to the current operand.
     MachineInstr &operator*() const {
       assert(Op && "Cannot dereference end iterator!");
-      if (!ByInstr)
+      if (ByBundle)
         return *getBundleStart(Op->getParent()->getIterator());
       return *Op->getParent();
     }
@@ -1248,16 +1252,15 @@ class PSetIterator {
 public:
   PSetIterator() = default;
 
-  PSetIterator(VirtRegOrUnit VRegOrUnit, const MachineRegisterInfo *MRI) {
+  PSetIterator(Register RegUnit, const MachineRegisterInfo *MRI) {
     const TargetRegisterInfo *TRI = MRI->getTargetRegisterInfo();
-    if (VRegOrUnit.isVirtualReg()) {
-      const TargetRegisterClass *RC =
-          MRI->getRegClass(VRegOrUnit.asVirtualReg());
+    if (RegUnit.isVirtual()) {
+      const TargetRegisterClass *RC = MRI->getRegClass(RegUnit);
       PSet = TRI->getRegClassPressureSets(RC);
       Weight = TRI->getRegClassWeight(RC).RegWeight;
     } else {
-      PSet = TRI->getRegUnitPressureSets(VRegOrUnit.asMCRegUnit());
-      Weight = TRI->getRegUnitWeight(VRegOrUnit.asMCRegUnit());
+      PSet = TRI->getRegUnitPressureSets(RegUnit);
+      Weight = TRI->getRegUnitWeight(RegUnit);
     }
     if (*PSet == -1)
       PSet = nullptr;
@@ -1278,8 +1281,8 @@ public:
 };
 
 inline PSetIterator
-MachineRegisterInfo::getPressureSets(VirtRegOrUnit VRegOrUnit) const {
-  return PSetIterator(VRegOrUnit, this);
+MachineRegisterInfo::getPressureSets(Register RegUnit) const {
+  return PSetIterator(RegUnit, this);
 }
 
 } // end namespace llvm

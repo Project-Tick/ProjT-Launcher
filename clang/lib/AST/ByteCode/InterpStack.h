@@ -14,9 +14,12 @@
 #define LLVM_CLANG_AST_INTERP_INTERPSTACK_H
 
 #include "FixedPoint.h"
+#include "FunctionPointer.h"
 #include "IntegralAP.h"
 #include "MemberPointer.h"
 #include "PrimType.h"
+#include <memory>
+#include <vector>
 
 namespace clang {
 namespace interp {
@@ -24,22 +27,26 @@ namespace interp {
 /// Stack frame storing temporaries and parameters.
 class InterpStack final {
 public:
-  InterpStack() = default;
+  InterpStack() {}
 
   /// Destroys the stack, freeing up storage.
   ~InterpStack();
 
   /// Constructs a value in place on the top of the stack.
   template <typename T, typename... Tys> void push(Tys &&...Args) {
-    new (grow<aligned_size<T>()>()) T(std::forward<Tys>(Args)...);
+    new (grow(aligned_size<T>())) T(std::forward<Tys>(Args)...);
+#ifndef NDEBUG
     ItemTypes.push_back(toPrimType<T>());
+#endif
   }
 
   /// Returns the value from the top of the stack and removes it.
   template <typename T> T pop() {
+#ifndef NDEBUG
     assert(!ItemTypes.empty());
     assert(ItemTypes.back() == toPrimType<T>());
     ItemTypes.pop_back();
+#endif
     T *Ptr = &peekInternal<T>();
     T Value = std::move(*Ptr);
     shrink(aligned_size<T>());
@@ -48,20 +55,22 @@ public:
 
   /// Discards the top value from the stack.
   template <typename T> void discard() {
+#ifndef NDEBUG
     assert(!ItemTypes.empty());
     assert(ItemTypes.back() == toPrimType<T>());
     ItemTypes.pop_back();
+#endif
     T *Ptr = &peekInternal<T>();
-    if constexpr (!std::is_trivially_destructible_v<T>) {
-      Ptr->~T();
-    }
+    Ptr->~T();
     shrink(aligned_size<T>());
   }
 
   /// Returns a reference to the value on the top of the stack.
   template <typename T> T &peek() const {
+#ifndef NDEBUG
     assert(!ItemTypes.empty());
     assert(ItemTypes.back() == toPrimType<T>());
+#endif
     return peekInternal<T>();
   }
 
@@ -76,7 +85,7 @@ public:
   /// Returns the size of the stack in bytes.
   size_t size() const { return StackSize; }
 
-  /// Clears the stack.
+  /// Clears the stack without calling any destructors.
   void clear();
   void clearTo(size_t NewSize);
 
@@ -89,7 +98,7 @@ public:
 private:
   /// All stack slots are aligned to the native pointer alignment for storage.
   /// The size of an object is rounded up to a pointer alignment multiple.
-  template <typename T> static constexpr size_t aligned_size() {
+  template <typename T> constexpr size_t aligned_size() const {
     constexpr size_t PtrAlign = alignof(void *);
     return ((sizeof(T) + PtrAlign - 1) / PtrAlign) * PtrAlign;
   }
@@ -100,30 +109,7 @@ private:
   }
 
   /// Grows the stack to accommodate a value and returns a pointer to it.
-  template <size_t Size> void *grow() {
-    assert(Size < ChunkSize - sizeof(StackChunk) && "Object too large");
-    static_assert(aligned(Size));
-
-    // Allocate a new stack chunk if necessary.
-    if (LLVM_UNLIKELY(!Chunk)) {
-      Chunk = new (std::malloc(ChunkSize)) StackChunk(Chunk);
-    } else if (LLVM_UNLIKELY(Chunk->size() >
-                             ChunkSize - sizeof(StackChunk) - Size)) {
-      if (Chunk->Next) {
-        Chunk = Chunk->Next;
-      } else {
-        StackChunk *Next = new (std::malloc(ChunkSize)) StackChunk(Chunk);
-        Chunk->Next = Next;
-        Chunk = Next;
-      }
-    }
-
-    auto *Object = reinterpret_cast<void *>(Chunk->start() + Chunk->Size);
-    Chunk->Size += Size;
-    StackSize += Size;
-    return Object;
-  }
-
+  void *grow(size_t Size);
   /// Returns a pointer from the top of the stack.
   void *peekData(size_t Size) const;
   /// Shrinks the stack.
@@ -141,13 +127,13 @@ private:
   struct StackChunk {
     StackChunk *Next;
     StackChunk *Prev;
-    uint32_t Size;
+    char *End;
 
     StackChunk(StackChunk *Prev = nullptr)
-        : Next(nullptr), Prev(Prev), Size(0) {}
+        : Next(nullptr), Prev(Prev), End(reinterpret_cast<char *>(this + 1)) {}
 
     /// Returns the size of the chunk, minus the header.
-    size_t size() const { return Size; }
+    size_t size() const { return End - start(); }
 
     /// Returns a pointer to the start of the data region.
     char *start() { return reinterpret_cast<char *>(this + 1); }
@@ -162,11 +148,9 @@ private:
   /// Total size of the stack.
   size_t StackSize = 0;
 
-  /// SmallVector recording the type of data we pushed into the stack.
-  /// We don't usually need this during normal code interpretation but
-  /// when aborting, we need type information to call the destructors
-  /// for what's left on the stack.
-  llvm::SmallVector<PrimType> ItemTypes;
+#ifndef NDEBUG
+  /// vector recording the type of data we pushed into the stack.
+  std::vector<PrimType> ItemTypes;
 
   template <typename T> static constexpr PrimType toPrimType() {
     if constexpr (std::is_same_v<T, Pointer>)
@@ -199,6 +183,8 @@ private:
       return PT_Uint64;
     else if constexpr (std::is_same_v<T, Floating>)
       return PT_Float;
+    else if constexpr (std::is_same_v<T, FunctionPointer>)
+      return PT_FnPtr;
     else if constexpr (std::is_same_v<T, IntegralAP<true>>)
       return PT_IntAP;
     else if constexpr (std::is_same_v<T, IntegralAP<false>>)
@@ -210,6 +196,7 @@ private:
 
     llvm_unreachable("unknown type push()'ed into InterpStack");
   }
+#endif
 };
 
 } // namespace interp

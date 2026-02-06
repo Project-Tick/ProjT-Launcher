@@ -6,27 +6,24 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "src/errno/libc_errno.h"
 #include "src/fcntl/open.h"
 #include "src/sys/mman/mmap.h"
 #include "src/sys/mman/munmap.h"
 #include "src/sys/mman/remap_file_pages.h"
 #include "src/unistd/close.h"
 #include "src/unistd/sysconf.h"
-#include "test/UnitTest/ErrnoCheckingTest.h"
 #include "test/UnitTest/ErrnoSetterMatcher.h"
 #include "test/UnitTest/Test.h"
 
 #include <sys/mman.h>
 #include <sys/stat.h> // For S_IRWXU
 
-const size_t PAGE_SIZE = LIBC_NAMESPACE::sysconf(_SC_PAGESIZE);
-
 using LIBC_NAMESPACE::testing::ErrnoSetterMatcher::Fails;
 using LIBC_NAMESPACE::testing::ErrnoSetterMatcher::Succeeds;
-using LlvmLibcRemapFilePagesTest = LIBC_NAMESPACE::testing::ErrnoCheckingTest;
 
-TEST_F(LlvmLibcRemapFilePagesTest, NoError) {
-  size_t page_size = PAGE_SIZE;
+TEST(LlvmLibcRemapFilePagesTest, NoError) {
+  size_t page_size = LIBC_NAMESPACE::sysconf(_SC_PAGE_SIZE);
   ASSERT_GT(page_size, size_t(0));
 
   // Create a file-backed mapping
@@ -37,6 +34,7 @@ TEST_F(LlvmLibcRemapFilePagesTest, NoError) {
 
   // First, allocate some memory using mmap
   size_t alloc_size = 2 * page_size;
+  LIBC_NAMESPACE::libc_errno = 0;
   void *addr = LIBC_NAMESPACE::mmap(nullptr, alloc_size, PROT_READ | PROT_WRITE,
                                     MAP_SHARED, fd, 0);
   ASSERT_ERRNO_SUCCESS();
@@ -46,13 +44,16 @@ TEST_F(LlvmLibcRemapFilePagesTest, NoError) {
   EXPECT_THAT(LIBC_NAMESPACE::remap_file_pages(addr, page_size, 0, 1, 0),
               Succeeds());
 
+  // Reset error number for the new function
+  LIBC_NAMESPACE::libc_errno = 0;
+
   // Clean up
   EXPECT_THAT(LIBC_NAMESPACE::munmap(addr, alloc_size), Succeeds());
   EXPECT_THAT(LIBC_NAMESPACE::close(fd), Succeeds());
 }
 
-TEST_F(LlvmLibcRemapFilePagesTest, ErrorInvalidFlags) {
-  size_t page_size = PAGE_SIZE;
+TEST(LlvmLibcRemapFilePagesTest, ErrorInvalidFlags) {
+  size_t page_size = LIBC_NAMESPACE::sysconf(_SC_PAGE_SIZE);
   ASSERT_GT(page_size, size_t(0));
 
   // Create a file-backed mapping
@@ -63,6 +64,7 @@ TEST_F(LlvmLibcRemapFilePagesTest, ErrorInvalidFlags) {
 
   // First, allocate some memory using mmap
   size_t alloc_size = 2 * page_size;
+  LIBC_NAMESPACE::libc_errno = 0;
   void *addr = LIBC_NAMESPACE::mmap(nullptr, alloc_size, PROT_READ | PROT_WRITE,
                                     MAP_SHARED, fd, 0);
   ASSERT_ERRNO_SUCCESS();
@@ -78,8 +80,8 @@ TEST_F(LlvmLibcRemapFilePagesTest, ErrorInvalidFlags) {
   EXPECT_THAT(LIBC_NAMESPACE::close(fd), Succeeds());
 }
 
-TEST_F(LlvmLibcRemapFilePagesTest, ErrorInvalidAddress) {
-  size_t page_size = PAGE_SIZE;
+TEST(LlvmLibcRemapFilePagesTest, ErrorInvalidAddress) {
+  size_t page_size = LIBC_NAMESPACE::sysconf(_SC_PAGESIZE);
   ASSERT_GT(page_size, size_t(0));
 
   // Use an address that we haven't mapped

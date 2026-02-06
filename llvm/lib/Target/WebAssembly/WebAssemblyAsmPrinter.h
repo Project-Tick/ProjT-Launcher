@@ -19,10 +19,6 @@ namespace llvm {
 class WebAssemblyTargetStreamer;
 
 class LLVM_LIBRARY_VISIBILITY WebAssemblyAsmPrinter final : public AsmPrinter {
-public:
-  static char ID;
-
-private:
   const WebAssemblySubtarget *Subtarget;
   const MachineRegisterInfo *MRI;
   WebAssemblyFunctionInfo *MFI;
@@ -31,8 +27,8 @@ private:
 public:
   explicit WebAssemblyAsmPrinter(TargetMachine &TM,
                                  std::unique_ptr<MCStreamer> Streamer)
-      : AsmPrinter(TM, std::move(Streamer), ID), Subtarget(nullptr),
-        MRI(nullptr), MFI(nullptr) {}
+      : AsmPrinter(TM, std::move(Streamer)), Subtarget(nullptr), MRI(nullptr),
+        MFI(nullptr) {}
 
   StringRef getPassName() const override {
     return "WebAssembly Assembly Printer";
@@ -73,7 +69,7 @@ public:
   MVT getRegType(unsigned RegNo) const;
   std::string regToString(const MachineOperand &MO);
   WebAssemblyTargetStreamer *getTargetStreamer();
-  MCSymbolWasm *getMCSymbolForFunction(const Function *F,
+  MCSymbolWasm *getMCSymbolForFunction(const Function *F, bool EnableEmEH,
                                        wasm::WasmSignature *Sig,
                                        bool &InvokeDetected);
   MCSymbol *getOrCreateWasmSymbol(StringRef Name);

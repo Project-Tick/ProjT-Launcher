@@ -19,6 +19,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Transforms/IPO/Internalize.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/StringSet.h"
 #include "llvm/Analysis/CallGraph.h"
@@ -131,6 +132,7 @@ bool InternalizePass::shouldPreserveGV(const GlobalValue &GV) {
 
 bool InternalizePass::maybeInternalize(
     GlobalValue &GV, DenseMap<const Comdat *, ComdatInfo> &ComdatMap) {
+  SmallString<0> ComdatName;
   if (Comdat *C = GV.getComdat()) {
     // For GlobalAlias, C is the aliasee object's comdat which may have been
     // redirected. So ComdatMap may not contain C.
@@ -226,17 +228,17 @@ bool InternalizePass::internalizeModule(Module &M) {
   // FIXME: We should probably add this (and the __stack_chk_guard) via some
   // type of call-back in CodeGen.
   AlwaysPreserved.insert("__stack_chk_fail");
-  if (M.getTargetTriple().isOSAIX())
+  if (Triple(M.getTargetTriple()).isOSAIX())
     AlwaysPreserved.insert("__ssp_canary_word");
   else
     AlwaysPreserved.insert("__stack_chk_guard");
 
   // Preserve the RPC interface for GPU host callbacks when internalizing.
-  if (M.getTargetTriple().isNVPTX())
+  if (Triple(M.getTargetTriple()).isNVPTX())
     AlwaysPreserved.insert("__llvm_rpc_client");
 
   // Mark all functions not in the api as internal.
-  IsWasm = M.getTargetTriple().isOSBinFormatWasm();
+  IsWasm = Triple(M.getTargetTriple()).isOSBinFormatWasm();
   for (Function &I : M) {
     if (!maybeInternalize(I, ComdatMap))
       continue;

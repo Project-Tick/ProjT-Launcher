@@ -20,6 +20,7 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/Sequence.h"
 #include "llvm/ADT/SetVector.h"
+#include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/iterator_range.h"
@@ -1137,12 +1138,13 @@ static Value *findBasePointer(Value *I, DefiningValueMapTy &Cache,
   auto getBaseForInput = [&](Value *Input, Instruction *InsertPt) {
     Value *BDV = findBaseOrBDV(Input, Cache, KnownBases);
     Value *Base = nullptr;
-    if (auto It = States.find(BDV); It == States.end()) {
+    if (!States.count(BDV)) {
       assert(areBothVectorOrScalar(BDV, Input));
       Base = BDV;
     } else {
       // Either conflict or base.
-      Base = It->second.getBaseValue();
+      assert(States.count(BDV));
+      Base = States[BDV].getBaseValue();
     }
     assert(Base && "Can't be null");
     // The cast is needed since base traversal may strip away bitcasts
@@ -1181,12 +1183,11 @@ static Value *findBasePointer(Value *I, DefiningValueMapTy &Cache,
       for (unsigned i = 0; i < NumPHIValues; i++) {
         Value *InVal = PN->getIncomingValue(i);
         BasicBlock *InBB = PN->getIncomingBlock(i);
-        auto [It, Inserted] = BlockToValue.try_emplace(InBB);
-        if (Inserted)
-          It->second = getBaseForInput(InVal, InBB->getTerminator());
+        if (!BlockToValue.count(InBB))
+          BlockToValue[InBB] = getBaseForInput(InVal, InBB->getTerminator());
         else {
 #ifndef NDEBUG
-          Value *OldBase = It->second;
+          Value *OldBase = BlockToValue[InBB];
           Value *Base = getBaseForInput(InVal, nullptr);
 
           // We can't use `stripPointerCasts` instead of this function because
@@ -1206,7 +1207,7 @@ static Value *findBasePointer(Value *I, DefiningValueMapTy &Cache,
                  "findBaseOrBDV should be pure!");
 #endif
         }
-        Value *Base = It->second;
+        Value *Base = BlockToValue[InBB];
         BasePHI->setIncomingValue(i, Base);
       }
     } else if (SelectInst *BaseSI =
@@ -1376,7 +1377,8 @@ static Instruction *rematerializeChain(ArrayRef<Instruction *> ChainToBase,
   Instruction *LastClonedValue = nullptr;
   Instruction *LastValue = nullptr;
   // Walk backwards to visit top-most instructions first.
-  for (Instruction *Instr : reverse(ChainToBase)) {
+  for (Instruction *Instr :
+       make_range(ChainToBase.rbegin(), ChainToBase.rend())) {
     // Only GEP's and casts are supported as we need to be careful to not
     // introduce any new uses of pointers not in the liveset.
     // Note that it's fine to introduce new uses of pointers which were
@@ -1544,10 +1546,9 @@ static void CreateGCRelocates(ArrayRef<Value *> LiveVariables,
     Value *LiveIdx = Builder.getInt32(i);
 
     Type *Ty = LiveVariables[i]->getType();
-    auto [It, Inserted] = TypeToDeclMap.try_emplace(Ty);
-    if (Inserted)
-      It->second = getGCRelocateDecl(Ty);
-    Function *GCRelocateDecl = It->second;
+    if (!TypeToDeclMap.count(Ty))
+      TypeToDeclMap[Ty] = getGCRelocateDecl(Ty);
+    Function *GCRelocateDecl = TypeToDeclMap[Ty];
 
     // only specify a debug name if we can give a useful one
     CallInst *Reloc = Builder.CreateCall(
@@ -2213,6 +2214,14 @@ static void relocationViaAlloca(
 #endif
 }
 
+/// Implement a unique function which doesn't require we sort the input
+/// vector.  Doing so has the effect of changing the output of a couple of
+/// tests in ways which make them less useful in testing fused safepoints.
+template <typename T> static void unique_unsorted(SmallVectorImpl<T> &Vec) {
+  SmallSet<T, 8> Seen;
+  erase_if(Vec, [&](const T &V) { return !Seen.insert(V).second; });
+}
+
 /// Insert holders so that each Value is obviously live through the entire
 /// lifetime of the call.
 static void insertUseHolderAfter(CallBase *Call, const ArrayRef<Value *> Values,
@@ -2300,9 +2309,8 @@ chainToBasePointerCost(SmallVectorImpl<Instruction *> &Chain,
 
     } else if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(Instr)) {
       // Cost of the address calculation
-      Cost += TTI.getAddressComputationCost(
-          GEP->getType(), nullptr, nullptr,
-          TargetTransformInfo::TCK_SizeAndLatency);
+      Type *ValTy = GEP->getSourceElementType();
+      Cost += TTI.getAddressComputationCost(ValTy);
 
       // And cost of the GEP itself
       // TODO: Use TTI->getGEPCost here (it exists, but appears to be not
@@ -2371,9 +2379,9 @@ findRematerializationCandidates(PointerToBaseTy PointerToBase,
 
     // Handle the scenario where the RootOfChain is not equal to the
     // Base Value, but they are essentially the same phi values.
-    if (Value *BaseVal = PointerToBase[Derived]; RootOfChain != BaseVal) {
+    if (RootOfChain != PointerToBase[Derived]) {
       PHINode *OrigRootPhi = dyn_cast<PHINode>(RootOfChain);
-      PHINode *AlternateRootPhi = dyn_cast<PHINode>(BaseVal);
+      PHINode *AlternateRootPhi = dyn_cast<PHINode>(PointerToBase[Derived]);
       if (!OrigRootPhi || !AlternateRootPhi)
         continue;
       // PHI nodes that have the same incoming values, and belonging to the same
@@ -2830,17 +2838,15 @@ static bool insertParsePoints(Function &F, DominatorTree &DT,
   }
   PointerToBase.clear();
 
-  // Do all the fixups of the original live variables to their relocated selves.
-  // A SmallSetVector is used to collect live variables while retaining the
-  // order in which we add them, which is important for reproducible tests.
-  SmallSetVector<Value *, 16> Live;
+  // Do all the fixups of the original live variables to their relocated selves
+  SmallVector<Value *, 128> Live;
   for (const PartiallyConstructedSafepointRecord &Info : Records) {
     // We can't simply save the live set from the original insertion.  One of
     // the live values might be the result of a call which needs a safepoint.
     // That Value* no longer exists and we need to use the new gc_result.
     // Thankfully, the live set is embedded in the statepoint (and updated), so
     // we just grab that.
-    Live.insert_range(Info.StatepointToken->gc_live());
+    llvm::append_range(Live, Info.StatepointToken->gc_live());
 #ifndef NDEBUG
     // Do some basic validation checking on our liveness results before
     // performing relocation.  Relocation can and will turn mistakes in liveness
@@ -2860,6 +2866,7 @@ static bool insertParsePoints(Function &F, DominatorTree &DT,
     }
 #endif
   }
+  unique_unsorted(Live);
 
 #ifndef NDEBUG
   // Validation check
@@ -2868,7 +2875,7 @@ static bool insertParsePoints(Function &F, DominatorTree &DT,
            "must be a gc pointer type");
 #endif
 
-  relocationViaAlloca(F, DT, Live.getArrayRef(), Records);
+  relocationViaAlloca(F, DT, Live, Records);
   return !Records.empty();
 }
 
@@ -2896,7 +2903,7 @@ static void stripNonValidAttributesFromPrototype(Function &F) {
   // assumes that the attributes defined in Intrinsic.td are conservatively
   // correct for both physical and abstract model.
   if (Intrinsic::ID id = F.getIntrinsicID()) {
-    F.setAttributes(Intrinsic::getAttributes(Ctx, id, F.getFunctionType()));
+    F.setAttributes(Intrinsic::getAttributes(Ctx, id));
     return;
   }
 
@@ -3047,8 +3054,7 @@ bool RewriteStatepointsForGC::runOnFunction(Function &F, DominatorTree &DT,
       // non-leaf memcpy/memmove without deopt state just treat it as a leaf
       // copy and don't produce a statepoint.
       if (!AllowStatepointWithNoDeoptInfo && !Call->hasDeoptState()) {
-        assert(isa<AnyMemTransferInst>(Call) &&
-               cast<AnyMemTransferInst>(Call)->isAtomic() &&
+        assert((isa<AtomicMemCpyInst>(Call) || isa<AtomicMemMoveInst>(Call)) &&
                "Don't expect any other calls here!");
         return false;
       }
@@ -3281,22 +3287,21 @@ static void computeLiveInValues(DominatorTree &DT, Function &F,
   // Seed the liveness for each individual block
   for (BasicBlock &BB : F) {
     Data.KillSet[&BB] = computeKillSet(&BB, GC);
-    auto &LiveSet = Data.LiveSet[&BB];
-    LiveSet.clear();
-    computeLiveInValues(BB.rbegin(), BB.rend(), LiveSet, GC);
+    Data.LiveSet[&BB].clear();
+    computeLiveInValues(BB.rbegin(), BB.rend(), Data.LiveSet[&BB], GC);
 
 #ifndef NDEBUG
     for (Value *Kill : Data.KillSet[&BB])
       assert(!Data.LiveSet[&BB].count(Kill) && "live set contains kill");
 #endif
 
-    auto &Out = Data.LiveOut[&BB] = SetVector<Value *>();
-    computeLiveOutSeed(&BB, Out, GC);
-    auto &In = Data.LiveIn[&BB] = Data.LiveSet[&BB];
-    In.set_union(Out);
-    In.set_subtract(Data.KillSet[&BB]);
-    if (!In.empty())
-      Worklist.insert_range(predecessors(&BB));
+    Data.LiveOut[&BB] = SetVector<Value *>();
+    computeLiveOutSeed(&BB, Data.LiveOut[&BB], GC);
+    Data.LiveIn[&BB] = Data.LiveSet[&BB];
+    Data.LiveIn[&BB].set_union(Data.LiveOut[&BB]);
+    Data.LiveIn[&BB].set_subtract(Data.KillSet[&BB]);
+    if (!Data.LiveIn[&BB].empty())
+      Worklist.insert(pred_begin(&BB), pred_end(&BB));
   }
 
   // Propagate that liveness until stable
@@ -3305,7 +3310,7 @@ static void computeLiveInValues(DominatorTree &DT, Function &F,
 
     // Compute our new liveout set, then exit early if it hasn't changed despite
     // the contribution of our successor.
-    SetVector<Value *> &LiveOut = Data.LiveOut[BB];
+    SetVector<Value *> LiveOut = Data.LiveOut[BB];
     const auto OldLiveOutSize = LiveOut.size();
     for (BasicBlock *Succ : successors(BB)) {
       assert(Data.LiveIn.count(Succ));
@@ -3318,6 +3323,7 @@ static void computeLiveInValues(DominatorTree &DT, Function &F,
       // hasn't changed.
       continue;
     }
+    Data.LiveOut[BB] = LiveOut;
 
     // Apply the effects of this basic block
     SetVector<Value *> LiveTmp = LiveOut;
@@ -3325,11 +3331,11 @@ static void computeLiveInValues(DominatorTree &DT, Function &F,
     LiveTmp.set_subtract(Data.KillSet[BB]);
 
     assert(Data.LiveIn.count(BB));
-    SetVector<Value *> &LiveIn = Data.LiveIn[BB];
-    // assert: LiveIn is a subset of LiveTmp
-    if (LiveIn.size() != LiveTmp.size()) {
-      LiveIn = std::move(LiveTmp);
-      Worklist.insert_range(predecessors(BB));
+    const SetVector<Value *> &OldLiveIn = Data.LiveIn[BB];
+    // assert: OldLiveIn is a subset of LiveTmp
+    if (OldLiveIn.size() != LiveTmp.size()) {
+      Data.LiveIn[BB] = LiveTmp;
+      Worklist.insert(pred_begin(BB), pred_end(BB));
     }
   } // while (!Worklist.empty())
 
@@ -3356,7 +3362,7 @@ static void findLiveSetAtInst(Instruction *Inst, GCPtrLivenessData &Data,
   computeLiveInValues(BB->rbegin(), ++Inst->getIterator().getReverse(), LiveOut,
                       GC);
   LiveOut.remove(Inst);
-  Out.insert_range(LiveOut);
+  Out.insert(LiveOut.begin(), LiveOut.end());
 }
 
 static void recomputeLiveInValues(GCPtrLivenessData &RevisedLivenessData,

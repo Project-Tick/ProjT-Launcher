@@ -32,8 +32,7 @@ llvm::Expected<std::unique_ptr<TestAsmPrinter>>
 TestAsmPrinter::create(const std::string &TripleStr, uint16_t DwarfVersion,
                        dwarf::DwarfFormat DwarfFormat) {
   std::string ErrorStr;
-  Triple TT(TripleStr);
-  const Target *TheTarget = TargetRegistry::lookupTarget(TT, ErrorStr);
+  const Target *TheTarget = TargetRegistry::lookupTarget(TripleStr, ErrorStr);
   if (!TheTarget)
     return std::unique_ptr<TestAsmPrinter>();
 
@@ -50,13 +49,13 @@ TestAsmPrinter::create(const std::string &TripleStr, uint16_t DwarfVersion,
 llvm::Error TestAsmPrinter::init(const Target *TheTarget, StringRef TripleName,
                                  uint16_t DwarfVersion,
                                  dwarf::DwarfFormat DwarfFormat) {
-  Triple TheTriple(TripleName);
-  TM.reset(TheTarget->createTargetMachine(TheTriple, "", "", TargetOptions(),
+  TM.reset(TheTarget->createTargetMachine(TripleName, "", "", TargetOptions(),
                                           std::nullopt));
   if (!TM)
     return make_error<StringError>("no target machine for target " + TripleName,
                                    inconvertibleErrorCode());
 
+  Triple TheTriple(TripleName);
   MC.reset(new MCContext(TheTriple, TM->getMCAsmInfo(), TM->getMCRegisterInfo(),
                          TM->getMCSubtargetInfo()));
   TM->getObjFileLowering()->Initialize(*MC, *TM);

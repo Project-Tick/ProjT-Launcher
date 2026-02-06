@@ -24,8 +24,6 @@ TEST(LlvmLibcTimespecGet, Utc) {
 #endif
 }
 
-// Baremetal implementation currently only supports TIME_UTC
-#ifndef LIBC_TARGET_OS_IS_BAREMETAL
 TEST(LlvmLibcTimespecGet, Monotonic) {
   timespec ts1, ts2;
   int result;
@@ -39,7 +37,6 @@ TEST(LlvmLibcTimespecGet, Monotonic) {
     ASSERT_GE(ts2.tv_nsec, ts1.tv_nsec);
   }
 }
-#endif
 
 TEST(LlvmLibcTimespecGet, Unknown) {
   timespec ts;

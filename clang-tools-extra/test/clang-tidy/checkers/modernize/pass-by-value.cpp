@@ -32,6 +32,7 @@ struct A {
 Movable GlobalObj;
 struct B {
   B(const Movable &M) : M(GlobalObj) {}
+  // CHECK-FIXES: B(const Movable &M) : M(GlobalObj) {}
   Movable M;
 };
 
@@ -39,9 +40,11 @@ struct B {
 struct C {
   // Tests extra-reference in body.
   C(const Movable &M) : M(M) { this->i = M.a; }
+  // CHECK-FIXES: C(const Movable &M) : M(M) { this->i = M.a; }
 
   // Tests extra-reference in init-list.
   C(const Movable &M, int) : M(M), i(M.a) {}
+  // CHECK-FIXES: C(const Movable &M, int) : M(M), i(M.a) {}
   Movable M;
   int i;
 };
@@ -67,6 +70,7 @@ struct E {
 // Test with object that can't be moved.
 struct F {
   F(const NotMovable &NM) : NM(NM) {}
+  // CHECK-FIXES: F(const NotMovable &NM) : NM(NM) {}
   NotMovable NM;
 };
 
@@ -92,7 +96,7 @@ struct H {
 using namespace ns_H;
 H::H(const HMovable &M) : M(M) {}
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: pass by value and use std::move
-// CHECK-FIXES: H::H(HMovable M) : M(std::move(M)) {}
+// CHECK-FIXES: H(HMovable M) : M(std::move(M)) {}
 
 // Try messing up with macros.
 #define MOVABLE_PARAM(Name) const Movable & Name
@@ -108,6 +112,7 @@ struct I {
 // Test that templates aren't modified.
 template <typename T> struct J {
   J(const T &M) : M(M) {}
+  // CHECK-FIXES: J(const T &M) : M(M) {}
   T M;
 };
 J<Movable> j1(Movable());
@@ -124,11 +129,13 @@ struct MovableTemplateT
 template <class T>
 struct J2 {
   J2(const MovableTemplateT<T>& A);
+  // CHECK-FIXES: J2(const MovableTemplateT<T>& A);
   MovableTemplateT<T> M;
 };
 
 template <class T>
 J2<T>::J2(const MovableTemplateT<T>& A) : M(A) {}
+// CHECK-FIXES: J2<T>::J2(const MovableTemplateT<T>& A) : M(A) {}
 J2<int> j3(MovableTemplateT<int>{});
 
 struct K_Movable {
@@ -175,6 +182,7 @@ struct O {
 // Test with a const-value parameter.
 struct P {
   P(const Movable M) : M(M) {}
+  // CHECK-FIXES: P(const Movable M) : M(M) {}
   Movable M;
 };
 
@@ -207,6 +215,7 @@ struct R {
 // Test with rvalue parameter.
 struct S {
   S(Movable &&M) : M(M) {}
+  // CHECK-FIXES: S(Movable &&M) : M(M) {}
   Movable M;
 };
 
@@ -216,11 +225,13 @@ template <typename T, int N> struct array { T A[N]; };
 // cause problems with performance-move-const-arg, as it will revert it.
 struct T {
   T(array<int, 10> a) : a_(a) {}
+  // CHECK-FIXES: T(array<int, 10> a) : a_(a) {}
   array<int, 10> a_;
 };
 
 struct U {
   U(const POD &M) : M(M) {}
+  // CHECK-FIXES: U(const POD &M) : M(M) {}
   POD M;
 };
 
@@ -251,63 +262,4 @@ struct W3 {
   W3(const W1 &, const Movable &M) : M(M) {}
   W3(W1 &&, Movable &&M);
   Movable M;
-};
-
-struct ProtectedMovable {
-  ProtectedMovable() = default;
-  ProtectedMovable(const ProtectedMovable &) {}
-protected:
-  ProtectedMovable(ProtectedMovable &&) {}
-};
-
-struct PrivateMovable {
-  PrivateMovable() = default;
-  PrivateMovable(const PrivateMovable &) {}
-private:
-  PrivateMovable(PrivateMovable &&) {}
-
-  friend struct X5;
-};
-
-struct InheritedProtectedMovable : ProtectedMovable {
-  InheritedProtectedMovable() = default;
-  InheritedProtectedMovable(const InheritedProtectedMovable &) {}
-  InheritedProtectedMovable(InheritedProtectedMovable &&) {}
-};
-
-struct InheritedPrivateMovable : PrivateMovable {
-  InheritedPrivateMovable() = default;
-  InheritedPrivateMovable(const InheritedPrivateMovable &) {}
-  InheritedPrivateMovable(InheritedPrivateMovable &&) {}
-};
-
-struct X1 {
-  X1(const ProtectedMovable &M) : M(M) {}
-  ProtectedMovable M;
-};
-
-struct X2 {
-  X2(const PrivateMovable &M) : M(M) {}
-  PrivateMovable M;
-};
-
-struct X3 {
-  X3(const InheritedProtectedMovable &M) : M(M) {}
-  // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: pass by value and use std::move
-  // CHECK-FIXES: X3(InheritedProtectedMovable M) : M(std::move(M)) {}
-  InheritedProtectedMovable M;
-};
-
-struct X4 {
-  X4(const InheritedPrivateMovable &M) : M(M) {}
-  // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: pass by value and use std::move
-  // CHECK-FIXES: X4(InheritedPrivateMovable M) : M(std::move(M)) {}
-  InheritedPrivateMovable M;
-};
-
-struct X5 {
-  X5(const PrivateMovable &M) : M(M) {}
-  // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: pass by value and use std::move
-  // CHECK-FIXES: X5(PrivateMovable M) : M(std::move(M)) {}
-  PrivateMovable M;
 };

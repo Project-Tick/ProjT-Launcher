@@ -12,25 +12,22 @@
 
 // flat_map& operator=(const flat_map& m);
 
-#include <cassert>
 #include <deque>
 #include <flat_map>
 #include <functional>
-#include <type_traits>
 #include <vector>
 
 #include "test_macros.h"
 #include "../../../test_compare.h"
 #include "test_allocator.h"
 
-template <template <class...> class KeyContainer, template <class...> class ValueContainer>
-constexpr void test() {
+int main(int, char**) {
   {
     // test_allocator is not propagated
     using C = test_less<int>;
-    KeyContainer<int, test_allocator<int>> ks({1, 3, 5}, test_allocator<int>(6));
-    ValueContainer<long, test_allocator<long>> vs({2, 2, 1}, test_allocator<long>(7));
-    using M = std::flat_map<int, long, C, decltype(ks), decltype(vs)>;
+    std::vector<int, test_allocator<int>> ks({1, 3, 5}, test_allocator<int>(6));
+    std::vector<char, test_allocator<char>> vs({2, 2, 1}, test_allocator<char>(7));
+    using M = std::flat_map<int, char, C, decltype(ks), decltype(vs)>;
     auto mo = M(ks, vs, C(5));
     auto m  = M({{3, 3}, {4, 4}, {5, 5}}, C(3), test_allocator<int>(2));
     m       = mo;
@@ -39,23 +36,23 @@ constexpr void test() {
     assert(m.keys() == ks);
     assert(m.values() == vs);
     assert(m.keys().get_allocator() == test_allocator<int>(2));
-    assert(m.values().get_allocator() == test_allocator<long>(2));
+    assert(m.values().get_allocator() == test_allocator<char>(2));
 
     // mo is unchanged
     assert(mo.key_comp() == C(5));
     assert(mo.keys() == ks);
     assert(mo.values() == vs);
     assert(mo.keys().get_allocator() == test_allocator<int>(6));
-    assert(mo.values().get_allocator() == test_allocator<long>(7));
+    assert(mo.values().get_allocator() == test_allocator<char>(7));
   }
   {
     // other_allocator is propagated
     using C  = test_less<int>;
-    using Ks = KeyContainer<int, other_allocator<int>>;
-    using Vs = ValueContainer<long, other_allocator<long>>;
+    using Ks = std::vector<int, other_allocator<int>>;
+    using Vs = std::vector<char, other_allocator<char>>;
     auto ks  = Ks({1, 3, 5}, other_allocator<int>(6));
-    auto vs  = Vs({2, 2, 1}, other_allocator<long>(7));
-    using M  = std::flat_map<int, long, C, Ks, Vs>;
+    auto vs  = Vs({2, 2, 1}, other_allocator<char>(7));
+    using M  = std::flat_map<int, char, C, Ks, Vs>;
     auto mo  = M(Ks(ks, other_allocator<int>(6)), Vs(vs, other_allocator<int>(7)), C(5));
     auto m   = M({{3, 3}, {4, 4}, {5, 5}}, C(3), other_allocator<int>(2));
     m        = mo;
@@ -64,16 +61,16 @@ constexpr void test() {
     assert(m.keys() == ks);
     assert(m.values() == vs);
     assert(m.keys().get_allocator() == other_allocator<int>(6));
-    assert(m.values().get_allocator() == other_allocator<long>(7));
+    assert(m.values().get_allocator() == other_allocator<char>(7));
 
     // mo is unchanged
     assert(mo.key_comp() == C(5));
     assert(mo.keys() == ks);
     assert(mo.values() == vs);
     assert(mo.keys().get_allocator() == other_allocator<int>(6));
-    assert(mo.values().get_allocator() == other_allocator<long>(7));
+    assert(mo.values().get_allocator() == other_allocator<char>(7));
   }
-  if (!TEST_IS_CONSTANT_EVALUATED) {
+  {
     // comparator is copied and invariant is preserved
     using M = std::flat_map<int, int, std::function<bool(int, int)>>;
     M mo    = M({{1, 2}, {3, 4}}, std::less<int>());
@@ -91,26 +88,5 @@ constexpr void test() {
     m       = static_cast<const M&>(m);
     assert((m == M{{1, 2}, {3, 4}}));
   }
-}
-
-constexpr bool test() {
-  test<std::vector, std::vector>();
-
-#ifndef __cpp_lib_constexpr_deque
-  if (!TEST_IS_CONSTANT_EVALUATED)
-#endif
-  {
-    test<std::deque, std::deque>();
-  }
-
-  return true;
-}
-
-int main(int, char**) {
-  test();
-#if TEST_STD_VER >= 26
-  static_assert(test());
-#endif
-
   return 0;
 }

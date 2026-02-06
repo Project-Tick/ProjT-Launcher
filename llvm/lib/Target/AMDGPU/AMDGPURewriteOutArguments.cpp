@@ -114,7 +114,9 @@ Type *AMDGPURewriteOutArguments::getStoredType(Value &Arg) const {
   const int MaxUses = 10;
   int UseCount = 0;
 
-  SmallVector<Use *> Worklist(llvm::make_pointer_range(Arg.uses()));
+  SmallVector<Use *> Worklist;
+  for (Use &U : Arg.uses())
+    Worklist.push_back(&U);
 
   Type *StoredType = nullptr;
   while (!Worklist.empty()) {
@@ -274,7 +276,10 @@ bool AMDGPURewriteOutArguments::runOnFunction(Function &F) {
         Value *ReplVal = Store.second->getValueOperand();
 
         auto &ValVec = Replacements[Store.first];
-        if (llvm::is_contained(llvm::make_first_range(ValVec), OutArg)) {
+        if (llvm::any_of(ValVec,
+                         [OutArg](const std::pair<Argument *, Value *> &Entry) {
+                           return Entry.first == OutArg;
+                         })) {
           LLVM_DEBUG(dbgs()
                      << "Saw multiple out arg stores" << *OutArg << '\n');
           // It is possible to see stores to the same argument multiple times,
@@ -299,7 +304,7 @@ bool AMDGPURewriteOutArguments::runOnFunction(Function &F) {
   if (Replacements.empty())
     return false;
 
-  LLVMContext &Ctx = F.getContext();
+  LLVMContext &Ctx = F.getParent()->getContext();
   StructType *NewRetTy = StructType::create(Ctx, ReturnTypes, F.getName());
 
   FunctionType *NewFuncTy = FunctionType::get(NewRetTy,
@@ -324,6 +329,8 @@ bool AMDGPURewriteOutArguments::runOnFunction(Function &F) {
   RetAttrs.addAttribute(Attribute::NoAlias);
   NewFunc->removeRetAttrs(RetAttrs);
   // TODO: How to preserve metadata?
+
+  NewFunc->setIsNewDbgInfoFormat(F.IsNewDbgInfoFormat);
 
   // Move the body of the function into the new rewritten function, and replace
   // this function with a stub.
@@ -369,11 +376,10 @@ bool AMDGPURewriteOutArguments::runOnFunction(Function &F) {
 
   int RetIdx = RetTy->isVoidTy() ? 0 : 1;
   for (Argument &Arg : F.args()) {
-    auto It = OutArgIndexes.find(Arg.getArgNo());
-    if (It == OutArgIndexes.end())
+    if (!OutArgIndexes.count(Arg.getArgNo()))
       continue;
 
-    Type *EltTy = It->second;
+    Type *EltTy = OutArgIndexes[Arg.getArgNo()];
     const auto Align =
         DL->getValueOrABITypeAlignment(Arg.getParamAlign(), EltTy);
 

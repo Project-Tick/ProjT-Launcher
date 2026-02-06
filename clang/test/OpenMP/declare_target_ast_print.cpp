@@ -4,8 +4,6 @@
 // RUN: %clang_cc1 -verify -fopenmp -fopenmp-version=50 -I %S/Inputs -ast-print %s | FileCheck %s --check-prefix=CHECK --check-prefix=OMP50
 // RUN: %clang_cc1 -verify -fopenmp -I %S/Inputs -ast-print %s | FileCheck %s --check-prefix=CHECK --check-prefix=OMP51
 // RUN: %clang_cc1 -verify -fopenmp -fopenmp-version=52 -I %S/Inputs -ast-print %s | FileCheck %s --check-prefix=CHECK --check-prefix=OMP52
-// RUN: %clang_cc1 -verify -fopenmp -fopenmp-version=60 -I %S/Inputs -ast-print %s | FileCheck %s --check-prefix=CHECK
-
 // RUN: %clang_cc1 -fopenmp -fopenmp-version=50 -x c++ -std=c++11 -I %S/Inputs -emit-pch -o %t %s
 // RUN: %clang_cc1 -fopenmp -fopenmp-version=50 -std=c++11 -include-pch %t -I %S/Inputs -verify %s -ast-print | FileCheck %s --check-prefix=CHECK --check-prefix=OMP50
 // RUN: %clang_cc1 -fopenmp -x c++ -std=c++11 -I %S/Inputs -emit-pch -o %t %s
@@ -133,7 +131,7 @@ int out_decl_target = 0;
 // CHECK: void lambda()
 // CHECK: #pragma omp end declare target{{$}}
 
-#pragma omp begin declare target
+#pragma omp declare target
 void lambda () {
 #ifdef __cpp_lambdas
   (void)[&] { ++out_decl_target; };
@@ -144,7 +142,7 @@ void lambda () {
 };
 #pragma omp end declare target
 
-#pragma omp begin declare target
+#pragma omp declare target
 // CHECK: #pragma omp declare target{{$}}
 void foo() {}
 // CHECK-NEXT: void foo()
@@ -152,7 +150,7 @@ void foo() {}
 // CHECK: #pragma omp end declare target{{$}}
 
 extern "C" {
-#pragma omp begin declare target
+#pragma omp declare target
 // CHECK: #pragma omp declare target
 void foo_c() {}
 // CHECK-NEXT: void foo_c()
@@ -161,7 +159,7 @@ void foo_c() {}
 }
 
 extern "C++" {
-#pragma omp begin declare target
+#pragma omp declare target
 // CHECK: #pragma omp declare target
 void foo_cpp() {}
 // CHECK-NEXT: void foo_cpp()
@@ -169,7 +167,7 @@ void foo_cpp() {}
 // CHECK: #pragma omp end declare target
 }
 
-#pragma omp begin declare target
+#pragma omp declare target
 template <class T>
 struct C {
 // CHECK: template <class T> struct C {
@@ -231,7 +229,7 @@ void f1() {
 int b1, b2, b3;
 void f2() {
 }
-#if _OPENMP >= 202111
+#if _OPENMP == 202111
 #pragma omp declare target enter(b1) enter(b2), enter(b3, f2)
 #else
 #pragma omp declare target to(b1) to(b2), to(b3, f2)
@@ -262,7 +260,7 @@ int c1, c2, c3;
 // CHECK: #pragma omp end declare target{{$}}
 
 struct SSSt {
-#pragma omp begin declare target
+#pragma omp declare target
   static int a;
   int b;
 #pragma omp end declare target
@@ -276,7 +274,7 @@ struct SSSt {
 
 template <class T>
 struct SSSTt {
-#pragma omp begin declare target
+#pragma omp declare target
   static T a;
   int b;
 #pragma omp end declare target
@@ -288,7 +286,7 @@ struct SSSTt {
 // CHECK: #pragma omp end declare target
 // CHECK: int b;
 
-#pragma omp begin declare target
+#pragma omp declare target
 template <typename T>
 T baz() { return T(); }
 #pragma omp end declare target
@@ -310,7 +308,7 @@ int baz() { return 1; }
 // CHECK: }
 // CHECK: #pragma omp end declare target
 
-#pragma omp begin declare target
+#pragma omp declare target
   #include "declare_target_include.h"
   void xyz();
 #pragma omp end declare target
@@ -322,8 +320,8 @@ int baz() { return 1; }
 // CHECK: void xyz();
 // CHECK: #pragma omp end declare target
 
-#pragma omp begin declare target
-  #pragma omp begin declare target
+#pragma omp declare target
+  #pragma omp declare target
     void abc();
   #pragma omp end declare target
   void cba();
@@ -336,9 +334,9 @@ int baz() { return 1; }
 // CHECK: void cba();
 // CHECK: #pragma omp end declare target
 
-#pragma omp begin declare target
+#pragma omp declare target
 int abc1() { return 1; }
-#if _OPENMP >= 202111
+#if _OPENMP == 202111
 #pragma omp declare target enter(abc1) device_type(nohost)
 #else
 #pragma omp declare target to(abc1) device_type(nohost)
@@ -352,7 +350,7 @@ int abc1() { return 1; }
 // CHECK-NEXT: }
 // CHECK-NEXT: #pragma omp end declare target
 
-#pragma omp begin declare target
+#pragma omp declare target
 int inner_link;
 #pragma omp declare target link(inner_link)
 #pragma omp end declare target
@@ -381,7 +379,7 @@ int main (int argc, char **argv) {
   baz<float>();
   baz<int>();
 
-#if _OPENMP >= 202111
+#if _OPENMP == 202111
 #pragma omp declare target enter(foo2)
 #else
 #pragma omp declare target to (foo2)
@@ -396,7 +394,7 @@ int main (int argc, char **argv) {
 // CHECK-NEXT: #pragma omp end declare target
 
 // Do not expect anything here since the region is empty.
-#pragma omp begin declare target
+#pragma omp declare target
 #pragma omp end declare target
 
 #endif

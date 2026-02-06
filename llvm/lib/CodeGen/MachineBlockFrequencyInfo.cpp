@@ -29,6 +29,7 @@ using namespace llvm;
 
 #define DEBUG_TYPE "machine-block-freq"
 
+namespace llvm {
 static cl::opt<GVDAGType> ViewMachineBlockFreqPropagationDAG(
     "view-machine-block-freq-propagation-dags", cl::Hidden,
     cl::desc("Pop up a window to show a dag displaying how machine block "
@@ -43,7 +44,6 @@ static cl::opt<GVDAGType> ViewMachineBlockFreqPropagationDAG(
                clEnumValN(GVDT_Count, "count", "display a graph using the real "
                                                "profile count if available.")));
 
-namespace llvm {
 // Similar option above, but used to control BFI display only after MBP pass
 cl::opt<GVDAGType> ViewBlockLayoutWithBFI(
     "view-block-layout-with-bfi", cl::Hidden,
@@ -69,14 +69,14 @@ extern cl::opt<std::string> ViewBlockFreqFuncName;
 // Defined in Analysis/BlockFrequencyInfo.cpp:  -view-hot-freq-perc=
 extern cl::opt<unsigned> ViewHotFreqPercent;
 
+static cl::opt<bool> PrintMachineBlockFreq(
+    "print-machine-bfi", cl::init(false), cl::Hidden,
+    cl::desc("Print the machine block frequency info."));
+
 // Command line option to specify the name of the function for block frequency
 // dump. Defined in Analysis/BlockFrequencyInfo.cpp.
 extern cl::opt<std::string> PrintBFIFuncName;
 } // namespace llvm
-
-static cl::opt<bool>
-    PrintMachineBlockFreq("print-machine-bfi", cl::init(false), cl::Hidden,
-                          cl::desc("Print the machine block frequency info."));
 
 static GVDAGType getGVDT() {
   if (ViewBlockLayoutWithBFI != GVDT_None)
@@ -85,7 +85,9 @@ static GVDAGType getGVDT() {
   return ViewMachineBlockFreqPropagationDAG;
 }
 
-template <> struct llvm::GraphTraits<MachineBlockFrequencyInfo *> {
+namespace llvm {
+
+template <> struct GraphTraits<MachineBlockFrequencyInfo *> {
   using NodeRef = const MachineBasicBlock *;
   using ChildIteratorType = MachineBasicBlock::const_succ_iterator;
   using nodes_iterator = pointer_iterator<MachineFunction::const_iterator>;
@@ -114,7 +116,7 @@ using MBFIDOTGraphTraitsBase =
                           MachineBranchProbabilityInfo>;
 
 template <>
-struct llvm::DOTGraphTraits<MachineBlockFrequencyInfo *>
+struct DOTGraphTraits<MachineBlockFrequencyInfo *>
     : public MBFIDOTGraphTraitsBase {
   const MachineFunction *CurFunc = nullptr;
   DenseMap<const MachineBasicBlock *, int> LayoutOrderMap;
@@ -157,6 +159,8 @@ struct llvm::DOTGraphTraits<MachineBlockFrequencyInfo *>
   }
 };
 
+} // end namespace llvm
+
 AnalysisKey MachineBlockFrequencyAnalysis::Key;
 
 MachineBlockFrequencyAnalysis::Result
@@ -198,8 +202,8 @@ MachineBlockFrequencyInfo::MachineBlockFrequencyInfo(
     MachineBlockFrequencyInfo &&) = default;
 
 MachineBlockFrequencyInfo::MachineBlockFrequencyInfo(
-    const MachineFunction &F, const MachineBranchProbabilityInfo &MBPI,
-    const MachineLoopInfo &MLI) {
+    MachineFunction &F, MachineBranchProbabilityInfo &MBPI,
+    MachineLoopInfo &MLI) {
   calculate(F, MBPI, MLI);
 }
 

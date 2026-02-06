@@ -2,6 +2,8 @@
 ; RUN: llc -mtriple=aarch64 %s -o - | FileCheck %s --check-prefixes=CHECK,CHECK-SD
 ; RUN: llc -mtriple=aarch64 -global-isel=true -global-isel-abort=2 %s -o - 2>&1 | FileCheck %s --check-prefixes=CHECK,CHECK-GI
 
+; Check that constrained fp intrinsics are correctly lowered.
+
 ; CHECK-GI:       warning: Instruction selection used fallback path for add_f32
 ; CHECK-GI-NEXT:  warning: Instruction selection used fallback path for sub_f32
 ; CHECK-GI-NEXT:  warning: Instruction selection used fallback path for mul_f32
@@ -241,7 +243,6 @@
 ; CHECK-GI-NEXT:  warning: Instruction selection used fallback path for exp_v1f64
 ; CHECK-GI-NEXT:  warning: Instruction selection used fallback path for exp2_v1f64
 
-; Check that constrained fp intrinsics are correctly lowered.
 
 ; Single-precision intrinsics
 
@@ -2439,7 +2440,7 @@ define i32 @fcmp_olt_f128(fp128 %a, fp128 %b) #0 {
 ; CHECK-NEXT:    .cfi_offset w30, -16
 ; CHECK-NEXT:    bl __lttf2
 ; CHECK-NEXT:    cmp w0, #0
-; CHECK-NEXT:    cset w0, mi
+; CHECK-NEXT:    cset w0, lt
 ; CHECK-NEXT:    ldr x30, [sp], #16 // 8-byte Folded Reload
 ; CHECK-NEXT:    ret
   %cmp = call i1 @llvm.experimental.constrained.fcmp.f128(fp128 %a, fp128 %b, metadata !"olt", metadata !"fpexcept.strict") #0
@@ -2487,7 +2488,7 @@ define i32 @fcmp_oge_f128(fp128 %a, fp128 %b) #0 {
 ; CHECK-NEXT:    .cfi_offset w30, -16
 ; CHECK-NEXT:    bl __getf2
 ; CHECK-NEXT:    cmp w0, #0
-; CHECK-NEXT:    cset w0, pl
+; CHECK-NEXT:    cset w0, ge
 ; CHECK-NEXT:    ldr x30, [sp], #16 // 8-byte Folded Reload
 ; CHECK-NEXT:    ret
   %cmp = call i1 @llvm.experimental.constrained.fcmp.f128(fp128 %a, fp128 %b, metadata !"oge", metadata !"fpexcept.strict") #0
@@ -2543,7 +2544,7 @@ define i32 @fcmp_ult_f128(fp128 %a, fp128 %b) #0 {
 ; CHECK-NEXT:    .cfi_offset w30, -16
 ; CHECK-NEXT:    bl __getf2
 ; CHECK-NEXT:    cmp w0, #0
-; CHECK-NEXT:    cset w0, mi
+; CHECK-NEXT:    cset w0, lt
 ; CHECK-NEXT:    ldr x30, [sp], #16 // 8-byte Folded Reload
 ; CHECK-NEXT:    ret
   %cmp = call i1 @llvm.experimental.constrained.fcmp.f128(fp128 %a, fp128 %b, metadata !"ult", metadata !"fpexcept.strict") #0
@@ -2591,7 +2592,7 @@ define i32 @fcmp_uge_f128(fp128 %a, fp128 %b) #0 {
 ; CHECK-NEXT:    .cfi_offset w30, -16
 ; CHECK-NEXT:    bl __lttf2
 ; CHECK-NEXT:    cmp w0, #0
-; CHECK-NEXT:    cset w0, pl
+; CHECK-NEXT:    cset w0, ge
 ; CHECK-NEXT:    ldr x30, [sp], #16 // 8-byte Folded Reload
 ; CHECK-NEXT:    ret
   %cmp = call i1 @llvm.experimental.constrained.fcmp.f128(fp128 %a, fp128 %b, metadata !"uge", metadata !"fpexcept.strict") #0
@@ -2647,7 +2648,7 @@ define i32 @fcmps_olt_f128(fp128 %a, fp128 %b) #0 {
 ; CHECK-NEXT:    .cfi_offset w30, -16
 ; CHECK-NEXT:    bl __lttf2
 ; CHECK-NEXT:    cmp w0, #0
-; CHECK-NEXT:    cset w0, mi
+; CHECK-NEXT:    cset w0, lt
 ; CHECK-NEXT:    ldr x30, [sp], #16 // 8-byte Folded Reload
 ; CHECK-NEXT:    ret
   %cmp = call i1 @llvm.experimental.constrained.fcmps.f128(fp128 %a, fp128 %b, metadata !"olt", metadata !"fpexcept.strict") #0
@@ -2695,7 +2696,7 @@ define i32 @fcmps_oge_f128(fp128 %a, fp128 %b) #0 {
 ; CHECK-NEXT:    .cfi_offset w30, -16
 ; CHECK-NEXT:    bl __getf2
 ; CHECK-NEXT:    cmp w0, #0
-; CHECK-NEXT:    cset w0, pl
+; CHECK-NEXT:    cset w0, ge
 ; CHECK-NEXT:    ldr x30, [sp], #16 // 8-byte Folded Reload
 ; CHECK-NEXT:    ret
   %cmp = call i1 @llvm.experimental.constrained.fcmps.f128(fp128 %a, fp128 %b, metadata !"oge", metadata !"fpexcept.strict") #0
@@ -2751,7 +2752,7 @@ define i32 @fcmps_ult_f128(fp128 %a, fp128 %b) #0 {
 ; CHECK-NEXT:    .cfi_offset w30, -16
 ; CHECK-NEXT:    bl __getf2
 ; CHECK-NEXT:    cmp w0, #0
-; CHECK-NEXT:    cset w0, mi
+; CHECK-NEXT:    cset w0, lt
 ; CHECK-NEXT:    ldr x30, [sp], #16 // 8-byte Folded Reload
 ; CHECK-NEXT:    ret
   %cmp = call i1 @llvm.experimental.constrained.fcmps.f128(fp128 %a, fp128 %b, metadata !"ult", metadata !"fpexcept.strict") #0
@@ -2799,7 +2800,7 @@ define i32 @fcmps_uge_f128(fp128 %a, fp128 %b) #0 {
 ; CHECK-NEXT:    .cfi_offset w30, -16
 ; CHECK-NEXT:    bl __lttf2
 ; CHECK-NEXT:    cmp w0, #0
-; CHECK-NEXT:    cset w0, pl
+; CHECK-NEXT:    cset w0, ge
 ; CHECK-NEXT:    ldr x30, [sp], #16 // 8-byte Folded Reload
 ; CHECK-NEXT:    ret
   %cmp = call i1 @llvm.experimental.constrained.fcmps.f128(fp128 %a, fp128 %b, metadata !"uge", metadata !"fpexcept.strict") #0

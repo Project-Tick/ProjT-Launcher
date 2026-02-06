@@ -33,7 +33,7 @@ int main() {
   return 0;
 }
 
-// CHECK: {{Using atos (found at|at user-specified path):}}
+// CHECK: Using atos found at:
 
 // These `function_offset` patterns are designed to disallow `0x0` which is the
 // value printed for `kUnknown`.

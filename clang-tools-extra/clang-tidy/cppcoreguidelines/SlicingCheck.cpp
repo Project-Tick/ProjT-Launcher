@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- SlicingCheck.cpp - clang-tidy-------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -90,8 +90,9 @@ void SlicingCheck::diagnoseSlicedOverriddenMethods(
   }
   // Recursively process bases.
   for (const auto &Base : DerivedDecl.bases()) {
-    if (const auto *BaseRecord = Base.getType()->getAsCXXRecordDecl()) {
-      if (BaseRecord->isCompleteDefinition())
+    if (const auto *BaseRecordType = Base.getType()->getAs<RecordType>()) {
+      if (const auto *BaseRecord = cast_or_null<CXXRecordDecl>(
+              BaseRecordType->getDecl()->getDefinition()))
         diagnoseSlicedOverriddenMethods(Call, *BaseRecord, BaseDecl);
     }
   }

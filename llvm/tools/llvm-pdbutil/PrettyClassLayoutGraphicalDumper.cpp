@@ -13,6 +13,7 @@
 #include "PrettyFunctionDumper.h"
 #include "PrettyTypedefDumper.h"
 #include "PrettyVariableDumper.h"
+#include "PrettyVariableDumper.h"
 #include "llvm-pdbutil.h"
 
 #include "llvm/DebugInfo/PDB/IPDBLineNumber.h"

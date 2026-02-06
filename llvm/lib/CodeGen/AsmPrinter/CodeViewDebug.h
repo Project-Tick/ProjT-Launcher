@@ -63,14 +63,14 @@ public:
     int DataOffset : 31;
 
     /// Non-zero if this is a piece of an aggregate.
-    uint32_t IsSubfield : 1;
+    uint16_t IsSubfield : 1;
 
     /// Offset into aggregate.
-    uint32_t StructOffset : 15;
+    uint16_t StructOffset : 15;
 
     /// Register containing the data or the register base of the memory
     /// location containing the data.
-    uint32_t CVRegister : 16;
+    uint16_t CVRegister;
 
     uint64_t static toOpaqueValue(const LocalVarDef DR) {
       uint64_t Val = 0;
@@ -97,12 +97,6 @@ private:
 
   /// The codeview CPU type used by the translation unit.
   codeview::CPUType TheCPU;
-
-  const DICompileUnit *TheCU = nullptr;
-
-  /// The AsmPrinter used for emitting compiler metadata. When only compiler
-  /// info is being emitted, DebugHandlerBase::Asm may be null.
-  AsmPrinter *CompilerInfoAsm = nullptr;
 
   static LocalVarDef createDefRangeMem(uint16_t CVRegister, int Offset);
 
@@ -148,7 +142,6 @@ private:
     const MCSymbol *Branch;
     const MCSymbol *Table;
     size_t TableSize;
-    std::vector<const MCSymbol *> Cases;
   };
 
   // For each function, store a vector of labels to its instructions, as well as
@@ -339,8 +332,6 @@ private:
   void emitObjName();
 
   void emitCompilerInformation();
-
-  void emitSecureHotPatchInformation();
 
   void emitBuildInfo();
 

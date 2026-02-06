@@ -19,35 +19,34 @@ namespace llvm {
 
 bool CC_ARM_AAPCS(unsigned ValNo, MVT ValVT, MVT LocVT,
                   CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
-                  Type *OrigTy, CCState &State);
+                  CCState &State);
 bool CC_ARM_AAPCS_VFP(unsigned ValNo, MVT ValVT, MVT LocVT,
                       CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
-                      Type *OrigTy, CCState &State);
+                      CCState &State);
 bool CC_ARM_APCS(unsigned ValNo, MVT ValVT, MVT LocVT,
                  CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
-                 Type *OrigTy, CCState &State);
+                 CCState &State);
 bool CC_ARM_APCS_GHC(unsigned ValNo, MVT ValVT, MVT LocVT,
                      CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
-                     Type *OrigTy, CCState &State);
+                     CCState &State);
 bool FastCC_ARM_APCS(unsigned ValNo, MVT ValVT, MVT LocVT,
                      CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
-                     Type *OrigTy, CCState &State);
+                     CCState &State);
 bool CC_ARM_Win32_CFGuard_Check(unsigned ValNo, MVT ValVT, MVT LocVT,
                                 CCValAssign::LocInfo LocInfo,
-                                ISD::ArgFlagsTy ArgFlags, Type *OrigTy,
-                                CCState &State);
+                                ISD::ArgFlagsTy ArgFlags, CCState &State);
 bool RetCC_ARM_AAPCS(unsigned ValNo, MVT ValVT, MVT LocVT,
                      CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
-                     Type *OrigTy, CCState &State);
+                     CCState &State);
 bool RetCC_ARM_AAPCS_VFP(unsigned ValNo, MVT ValVT, MVT LocVT,
                          CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
-                         Type *OrigTy, CCState &State);
+                         CCState &State);
 bool RetCC_ARM_APCS(unsigned ValNo, MVT ValVT, MVT LocVT,
                     CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
-                    Type *OrigTy, CCState &State);
+                    CCState &State);
 bool RetFastCC_ARM_APCS(unsigned ValNo, MVT ValVT, MVT LocVT,
                         CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
-                        Type *OrigTy, CCState &State);
+                        CCState &State);
 
 } // namespace llvm
 

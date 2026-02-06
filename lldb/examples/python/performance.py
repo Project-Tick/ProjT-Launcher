@@ -16,6 +16,7 @@ import resource
 import sys
 import subprocess
 import time
+import types
 
 # ----------------------------------------------------------------------
 # Code that auto imports LLDB
@@ -120,19 +121,19 @@ class BreakpointAction(Action):
             self.breakpoints.append(breakpoint)
         else:
             if module:
-                if isinstance(module, list):
+                if isinstance(module, types.ListType):
                     for module_path in module:
                         self.modules.Append(lldb.SBFileSpec(module_path, False))
-                elif isinstance(module, str):
+                elif isinstance(module, types.StringTypes):
                     self.modules.Append(lldb.SBFileSpec(module, False))
             if name:
                 # "file" can be a list or a string
                 if file:
-                    if isinstance(file, list):
+                    if isinstance(file, types.ListType):
                         self.files = lldb.SBFileSpecList()
                         for f in file:
                             self.files.Append(lldb.SBFileSpec(f, False))
-                    elif isinstance(file, str):
+                    elif isinstance(file, types.StringTypes):
                         self.files.Append(lldb.SBFileSpec(file, False))
                 self.breakpoints.append(
                     self.target.BreakpointCreateByName(name, self.modules, self.files)
@@ -345,7 +346,7 @@ class MemoryMeasurement(Measurement):
 
     def Measure(self):
         output = subprocess.getoutput(self.command).split("\n")[-1]
-        values = re.split(r"[-+\s]+", output)
+        values = re.split("[-+\s]+", output)
         for idx, stat in enumerate(values):
             multiplier = 1
             if stat:

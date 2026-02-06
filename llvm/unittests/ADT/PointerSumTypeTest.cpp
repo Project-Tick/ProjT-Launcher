@@ -17,9 +17,10 @@ struct PointerSumTypeTest : public testing::Test {
   float f;
   int i1, i2;
 
-  using SumType = PointerSumType<Kinds, PointerSumTypeMember<Float, float *>,
-                                 PointerSumTypeMember<Int1, int *>,
-                                 PointerSumTypeMember<Int2, int *>>;
+  typedef PointerSumType<Kinds, PointerSumTypeMember<Float, float *>,
+                         PointerSumTypeMember<Int1, int *>,
+                         PointerSumTypeMember<Int2, int *>>
+      SumType;
   SumType a, b, c, n;
 
   PointerSumTypeTest()

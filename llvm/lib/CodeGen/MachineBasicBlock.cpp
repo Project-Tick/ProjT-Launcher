@@ -22,6 +22,7 @@
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineJumpTableInfo.h"
 #include "llvm/CodeGen/MachineLoopInfo.h"
+#include "llvm/CodeGen/MachinePostDominators.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/SlotIndexes.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
@@ -30,6 +31,7 @@
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/ModuleSlotTracker.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCContext.h"
@@ -90,15 +92,15 @@ MCSymbol *MachineBasicBlock::getSymbol() const {
   return CachedMCSymbol;
 }
 
-MCSymbol *MachineBasicBlock::getEHContSymbol() const {
-  if (!CachedEHContMCSymbol) {
+MCSymbol *MachineBasicBlock::getEHCatchretSymbol() const {
+  if (!CachedEHCatchretMCSymbol) {
     const MachineFunction *MF = getParent();
     SmallString<128> SymbolName;
     raw_svector_ostream(SymbolName)
         << "$ehgcr_" << MF->getFunctionNumber() << '_' << getNumber();
-    CachedEHContMCSymbol = MF->getContext().getOrCreateSymbol(SymbolName);
+    CachedEHCatchretMCSymbol = MF->getContext().getOrCreateSymbol(SymbolName);
   }
-  return CachedEHContMCSymbol;
+  return CachedEHCatchretMCSymbol;
 }
 
 MCSymbol *MachineBasicBlock::getEndSymbol() const {
@@ -551,11 +553,6 @@ void MachineBasicBlock::printName(raw_ostream &os, unsigned printNameFlags,
       os << "ehfunclet-entry";
       hasAttributes = true;
     }
-    if (isEHScopeEntry()) {
-      os << (hasAttributes ? ", " : " (");
-      os << "ehscope-entry";
-      hasAttributes = true;
-    }
     if (getAlignment() != Align(1)) {
       os << (hasAttributes ? ", " : " (");
       os << "align " << getAlignment().value();
@@ -601,7 +598,6 @@ void MachineBasicBlock::printAsOperand(raw_ostream &OS,
 }
 
 void MachineBasicBlock::removeLiveIn(MCRegister Reg, LaneBitmask LaneMask) {
-  assert(Reg.isPhysical());
   LiveInVector::iterator I = find_if(
       LiveIns, [Reg](const RegisterMaskPair &LI) { return LI.PhysReg == Reg; });
   if (I == LiveIns.end())
@@ -612,26 +608,6 @@ void MachineBasicBlock::removeLiveIn(MCRegister Reg, LaneBitmask LaneMask) {
     LiveIns.erase(I);
 }
 
-void MachineBasicBlock::removeLiveInOverlappedWith(MCRegister Reg) {
-  const MachineFunction *MF = getParent();
-  const TargetRegisterInfo *TRI = MF->getSubtarget().getRegisterInfo();
-  // Remove Reg and its subregs from live in set.
-  for (MCPhysReg S : TRI->subregs_inclusive(Reg))
-    removeLiveIn(S);
-
-  // Remove live-in bitmask in super registers as well.
-  for (MCPhysReg Super : TRI->superregs(Reg)) {
-    for (MCSubRegIndexIterator SRI(Super, TRI); SRI.isValid(); ++SRI) {
-      if (Reg == SRI.getSubReg()) {
-        unsigned SubRegIndex = SRI.getSubRegIndex();
-        LaneBitmask SubRegLaneMask = TRI->getSubRegIndexLaneMask(SubRegIndex);
-        removeLiveIn(Super, SubRegLaneMask);
-        break;
-      }
-    }
-  }
-}
-
 MachineBasicBlock::livein_iterator
 MachineBasicBlock::removeLiveIn(MachineBasicBlock::livein_iterator I) {
   // Get non-const version of iterator.
@@ -640,7 +616,6 @@ MachineBasicBlock::removeLiveIn(MachineBasicBlock::livein_iterator I) {
 }
 
 bool MachineBasicBlock::isLiveIn(MCRegister Reg, LaneBitmask LaneMask) const {
-  assert(Reg.isPhysical());
   livein_iterator I = find_if(
       LiveIns, [Reg](const RegisterMaskPair &LI) { return LI.PhysReg == Reg; });
   return I != livein_end() && (I->LaneMask & LaneMask).any();
@@ -1144,7 +1119,7 @@ public:
     MF.setDelegate(this);
   }
 
-  ~SlotIndexUpdateDelegate() override {
+  ~SlotIndexUpdateDelegate() {
     MF.resetDelegate(this);
     for (auto MI : Insertions)
       Indexes->insertMachineInstrInMaps(*MI);
@@ -1162,9 +1137,6 @@ public:
   }
 };
 
-MachineBasicBlock *MachineBasicBlock::SplitCriticalEdge(
-    MachineBasicBlock *Succ, Pass *P, MachineFunctionAnalysisManager *MFAM,
-    std::vector<SparseBitVector<>> *LiveInSets, MachineDomTreeUpdater *MDTU) {
 #define GET_RESULT(RESULT, GETTER, INFIX)                                      \
   [MF, P, MFAM]() {                                                            \
     if (P) {                                                                   \
@@ -1174,20 +1146,11 @@ MachineBasicBlock *MachineBasicBlock::SplitCriticalEdge(
     return MFAM->getCachedResult<RESULT##Analysis>(*MF);                       \
   }()
 
-  assert((P || MFAM) && "Need a way to get analysis results!");
-  MachineFunction *MF = getParent();
-  LiveIntervals *LIS = GET_RESULT(LiveIntervals, getLIS, );
-  SlotIndexes *Indexes = GET_RESULT(SlotIndexes, getSI, );
-  LiveVariables *LV = GET_RESULT(LiveVariables, getLV, );
-  MachineLoopInfo *MLI = GET_RESULT(MachineLoop, getLI, Info);
-  return SplitCriticalEdge(Succ, {LIS, Indexes, LV, MLI}, LiveInSets, MDTU);
-#undef GET_RESULT
-}
-
 MachineBasicBlock *MachineBasicBlock::SplitCriticalEdge(
-    MachineBasicBlock *Succ, const SplitCriticalEdgeAnalyses &Analyses,
+    MachineBasicBlock *Succ, Pass *P, MachineFunctionAnalysisManager *MFAM,
     std::vector<SparseBitVector<>> *LiveInSets, MachineDomTreeUpdater *MDTU) {
-  if (!canSplitCriticalEdge(Succ, Analyses.MLI))
+  assert((P || MFAM) && "Need a way to get analysis results!");
+  if (!canSplitCriticalEdge(Succ))
     return nullptr;
 
   MachineFunction *MF = getParent();
@@ -1209,16 +1172,19 @@ MachineBasicBlock *MachineBasicBlock::SplitCriticalEdge(
   LLVM_DEBUG(dbgs() << "Splitting critical edge: " << printMBBReference(*this)
                     << " -- " << printMBBReference(*NMBB) << " -- "
                     << printMBBReference(*Succ) << '\n');
-  auto *LIS = Analyses.LIS;
+
+  LiveIntervals *LIS = GET_RESULT(LiveIntervals, getLIS, );
+  SlotIndexes *Indexes = GET_RESULT(SlotIndexes, getSI, );
   if (LIS)
     LIS->insertMBBInMaps(NMBB);
-  else if (Analyses.SI)
-    Analyses.SI->insertMBBInMaps(NMBB);
+  else if (Indexes)
+    Indexes->insertMBBInMaps(NMBB);
 
   // On some targets like Mips, branches may kill virtual registers. Make sure
   // that LiveVariables is properly updated after updateTerminator replaces the
   // terminators.
-  auto *LV = Analyses.LV;
+  LiveVariables *LV = GET_RESULT(LiveVariables, getLV, );
+
   // Collect a list of virtual registers killed by the terminators.
   SmallVector<Register, 4> KilledRegs;
   if (LV)
@@ -1257,7 +1223,7 @@ MachineBasicBlock *MachineBasicBlock::SplitCriticalEdge(
   // as the fallthrough successor
   if (Succ == PrevFallthrough)
     PrevFallthrough = NMBB;
-  auto *Indexes = Analyses.SI;
+
   if (!ChangedIndirectJump) {
     SlotIndexUpdateDelegate SlotUpdater(*MF, Indexes);
     updateTerminator(PrevFallthrough);
@@ -1385,7 +1351,7 @@ MachineBasicBlock *MachineBasicBlock::SplitCriticalEdge(
   if (MDTU)
     MDTU->splitCriticalEdge(this, Succ, NMBB);
 
-  if (MachineLoopInfo *MLI = Analyses.MLI)
+  if (MachineLoopInfo *MLI = GET_RESULT(MachineLoop, getLI, Info))
     if (MachineLoop *TIL = MLI->getLoopFor(this)) {
       // If one or the other blocks were not in a loop, the new block is not
       // either, and thus LI doesn't need to be updated.
@@ -1415,8 +1381,8 @@ MachineBasicBlock *MachineBasicBlock::SplitCriticalEdge(
   return NMBB;
 }
 
-bool MachineBasicBlock::canSplitCriticalEdge(const MachineBasicBlock *Succ,
-                                             const MachineLoopInfo *MLI) const {
+bool MachineBasicBlock::canSplitCriticalEdge(
+    const MachineBasicBlock *Succ) const {
   // Splitting the critical edge to a landing pad block is non-trivial. Don't do
   // it in this generic function.
   if (Succ->isEHPad())
@@ -1430,17 +1396,8 @@ bool MachineBasicBlock::canSplitCriticalEdge(const MachineBasicBlock *Succ,
   const MachineFunction *MF = getParent();
   // Performance might be harmed on HW that implements branching using exec mask
   // where both sides of the branches are always executed.
-
-  if (MF->getTarget().requiresStructuredCFG()) {
-    if (!MLI)
-      return false;
-    const MachineLoop *L = MLI->getLoopFor(Succ);
-    // Only if `Succ` is a loop header, splitting the critical edge will not
-    // break structured CFG. And fallthrough to check if this's terminator is
-    // analyzable.
-    if (!L || L->getHeader() != Succ)
-      return false;
-  }
+  if (MF->getTarget().requiresStructuredCFG())
+    return false;
 
   // Do we have an Indirect jump with a jumptable that we can rewrite?
   int JTI = findJumpTableIndex(*this);
@@ -1609,7 +1566,7 @@ MachineBasicBlock::findBranchDebugLoc() {
     DL = TI->getDebugLoc();
     for (++TI ; TI != end() ; ++TI)
       if (TI->isBranch())
-        DL = DebugLoc::getMergedLocation(DL, TI->getDebugLoc());
+        DL = DILocation::getMergedLocation(DL, TI->getDebugLoc());
   }
   return DL;
 }
@@ -1621,36 +1578,20 @@ MachineBasicBlock::getSuccProbability(const_succ_iterator Succ) const {
     return BranchProbability(1, succ_size());
 
   const auto &Prob = *getProbabilityIterator(Succ);
-  if (!Prob.isUnknown())
-    return Prob;
-  // For unknown probabilities, collect the sum of all known ones, and evenly
-  // ditribute the complemental of the sum to each unknown probability.
-  unsigned KnownProbNum = 0;
-  auto Sum = BranchProbability::getZero();
-  for (const auto &P : Probs) {
-    if (!P.isUnknown()) {
-      Sum += P;
-      KnownProbNum++;
+  if (Prob.isUnknown()) {
+    // For unknown probabilities, collect the sum of all known ones, and evenly
+    // ditribute the complemental of the sum to each unknown probability.
+    unsigned KnownProbNum = 0;
+    auto Sum = BranchProbability::getZero();
+    for (const auto &P : Probs) {
+      if (!P.isUnknown()) {
+        Sum += P;
+        KnownProbNum++;
+      }
     }
-  }
-  return Sum.getCompl() / (Probs.size() - KnownProbNum);
-}
-
-bool MachineBasicBlock::canPredictBranchProbabilities() const {
-  if (succ_size() <= 1)
-    return true;
-  if (!hasSuccessorProbabilities())
-    return true;
-
-  SmallVector<BranchProbability, 8> Normalized(Probs.begin(), Probs.end());
-  BranchProbability::normalizeProbabilities(Normalized);
-
-  // Normalize assuming unknown probabilities. This will assign equal
-  // probabilities to all successors.
-  SmallVector<BranchProbability, 8> Equal(Normalized.size());
-  BranchProbability::normalizeProbabilities(Equal);
-
-  return llvm::equal(Normalized, Equal);
+    return Sum.getCompl() / (Probs.size() - KnownProbNum);
+  } else
+    return Prob;
 }
 
 /// Set successor probability of a given iterator.
@@ -1691,7 +1632,6 @@ MachineBasicBlock::LivenessQueryResult
 MachineBasicBlock::computeRegisterLiveness(const TargetRegisterInfo *TRI,
                                            MCRegister Reg, const_iterator Before,
                                            unsigned Neighborhood) const {
-  assert(Reg.isPhysical());
   unsigned N = Neighborhood;
 
   // Try searching forwards from Before, looking for reads or defs.
@@ -1811,15 +1751,20 @@ void MachineBasicBlock::clearLiveIns(
 }
 
 MachineBasicBlock::livein_iterator MachineBasicBlock::livein_begin() const {
-  assert(getParent()->getProperties().hasTracksLiveness() &&
-         "Liveness information is accurate");
+  assert(getParent()->getProperties().hasProperty(
+      MachineFunctionProperties::Property::TracksLiveness) &&
+      "Liveness information is accurate");
   return LiveIns.begin();
 }
 
 MachineBasicBlock::liveout_iterator MachineBasicBlock::liveout_begin() const {
   const MachineFunction &MF = *getParent();
+  assert(MF.getProperties().hasProperty(
+      MachineFunctionProperties::Property::TracksLiveness) &&
+      "Liveness information is accurate");
+
   const TargetLowering &TLI = *MF.getSubtarget().getTargetLowering();
-  MCRegister ExceptionPointer, ExceptionSelector;
+  MCPhysReg ExceptionPointer = 0, ExceptionSelector = 0;
   if (MF.getFunction().hasPersonalityFn()) {
     auto PersonalityFn = MF.getFunction().getPersonalityFn();
     ExceptionPointer = TLI.getExceptionPointerRegister(PersonalityFn);
@@ -1837,12 +1782,6 @@ bool MachineBasicBlock::sizeWithoutDebugLargerThan(unsigned Limit) const {
       return true;
   }
   return false;
-}
-
-void MachineBasicBlock::removePHIsIncomingValuesForPredecessor(
-    const MachineBasicBlock &PredMBB) {
-  for (MachineInstr &Phi : phis())
-    Phi.removePHIIncomingValueFor(PredMBB);
 }
 
 const MBBSectionID MBBSectionID::ColdSectionID(MBBSectionID::SectionType::Cold);

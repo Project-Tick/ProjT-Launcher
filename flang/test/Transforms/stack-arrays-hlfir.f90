@@ -71,9 +71,9 @@ end subroutine omp_target_wsloop
 ! CHECK:         omp.target {{.*}} {
 ! CHECK-NOT:       fir.allocmem
 ! CHECK-NOT:       fir.freemem
-! CHECK:         omp.teams {
 ! CHECK:           fir.alloca !fir.array<2xi64>
-! CHECK:         omp.distribute private({{.*}}) {
+! CHECK:         omp.teams {
+! CHECK:         omp.distribute {
 ! CHECK:         omp.loop_nest {{.*}} {
 ! CHECK-NOT:       fir.allocmem
 ! CHECK-NOT:       fir.freemem

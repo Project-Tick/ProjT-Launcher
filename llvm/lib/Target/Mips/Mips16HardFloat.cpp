@@ -17,6 +17,7 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ModRef.h"
 #include "llvm/Support/raw_ostream.h"
+#include <algorithm>
 #include <string>
 
 using namespace llvm;
@@ -368,7 +369,8 @@ static const char *const IntrinsicInline[] = {
 };
 
 static bool isIntrinsicInline(Function *F) {
-  return llvm::binary_search(IntrinsicInline, F->getName());
+  return std::binary_search(std::begin(IntrinsicInline),
+                            std::end(IntrinsicInline), F->getName());
 }
 
 // Returns of float, double and complex need to be handled with a helper

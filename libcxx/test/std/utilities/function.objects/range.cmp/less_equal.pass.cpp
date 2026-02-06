@@ -27,10 +27,8 @@ struct NotTotallyOrdered {
 };
 
 static_assert(!std::is_invocable_v<std::ranges::less_equal, NotTotallyOrdered, NotTotallyOrdered>);
+static_assert(!std::is_invocable_v<std::ranges::less_equal, int, MoveOnly>);
 static_assert(std::is_invocable_v<std::ranges::less_equal, explicit_operators, explicit_operators>);
-
-// P2404
-static_assert(std::is_invocable_v<std::ranges::less_equal, int, MoveOnly>);
 
 static_assert(requires { typename std::ranges::less_equal::is_transparent; });
 

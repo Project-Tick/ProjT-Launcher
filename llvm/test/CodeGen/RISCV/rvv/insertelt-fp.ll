@@ -7,511 +7,225 @@
 ; RUN:     -verify-machineinstrs < %s | FileCheck %s --check-prefixes=CHECK,ZVFHMIN
 ; RUN: llc -mtriple=riscv64 -mattr=+d,+zfh,+zfbfmin,+zvfhmin,+zvfbfmin,+v -target-abi=lp64d \
 ; RUN:     -verify-machineinstrs < %s | FileCheck %s --check-prefixes=CHECK,ZVFHMIN
-; RUN: llc -mtriple=riscv32 -mattr=+d,+zfh,+zvfhmin,+experimental-zvfbfa,+v -target-abi=ilp32d \
-; RUN:     -verify-machineinstrs < %s | FileCheck %s --check-prefixes=CHECK,ZVFBFA
-; RUN: llc -mtriple=riscv64 -mattr=+d,+zfh,+zvfhmin,+experimental-zvfbfa,+v -target-abi=lp64d \
-; RUN:     -verify-machineinstrs < %s | FileCheck %s --check-prefixes=CHECK,ZVFBFA
 
 define <vscale x 1 x bfloat> @insertelt_nxv1bf16_0(<vscale x 1 x bfloat> %v, bfloat %elt) {
-; ZVFH-LABEL: insertelt_nxv1bf16_0:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a0, fa0
-; ZVFH-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFH-NEXT:    vmv.s.x v8, a0
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv1bf16_0:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a0, fa0
-; ZVFHMIN-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFHMIN-NEXT:    vmv.s.x v8, a0
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv1bf16_0:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetvli a0, zero, e16alt, m1, tu, ma
-; ZVFBFA-NEXT:    vfmv.s.f v8, fa0
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv1bf16_0:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a0, fa0
+; CHECK-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
+; CHECK-NEXT:    vmv.s.x v8, a0
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 1 x bfloat> %v, bfloat %elt, i32 0
   ret <vscale x 1 x bfloat> %r
 }
 
 define <vscale x 1 x bfloat> @insertelt_nxv1bf16_imm(<vscale x 1 x bfloat> %v, bfloat %elt) {
-; ZVFH-LABEL: insertelt_nxv1bf16_imm:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a0, fa0
-; ZVFH-NEXT:    vsetivli zero, 4, e16, mf4, tu, ma
-; ZVFH-NEXT:    vmv.s.x v9, a0
-; ZVFH-NEXT:    vslideup.vi v8, v9, 3
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv1bf16_imm:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a0, fa0
-; ZVFHMIN-NEXT:    vsetivli zero, 4, e16, mf4, tu, ma
-; ZVFHMIN-NEXT:    vmv.s.x v9, a0
-; ZVFHMIN-NEXT:    vslideup.vi v8, v9, 3
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv1bf16_imm:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetivli zero, 4, e16alt, mf4, tu, ma
-; ZVFBFA-NEXT:    vfmv.s.f v9, fa0
-; ZVFBFA-NEXT:    vslideup.vi v8, v9, 3
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv1bf16_imm:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a0, fa0
+; CHECK-NEXT:    vsetivli zero, 4, e16, mf4, tu, ma
+; CHECK-NEXT:    vmv.s.x v9, a0
+; CHECK-NEXT:    vslideup.vi v8, v9, 3
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 1 x bfloat> %v, bfloat %elt, i32 3
   ret <vscale x 1 x bfloat> %r
 }
 
 define <vscale x 1 x bfloat> @insertelt_nxv1bf16_idx(<vscale x 1 x bfloat> %v, bfloat %elt, i32 zeroext %idx) {
-; ZVFH-LABEL: insertelt_nxv1bf16_idx:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    addi a1, a0, 1
-; ZVFH-NEXT:    fmv.x.h a2, fa0
-; ZVFH-NEXT:    vsetvli a3, zero, e16, m1, ta, ma
-; ZVFH-NEXT:    vmv.s.x v9, a2
-; ZVFH-NEXT:    vsetvli zero, a1, e16, mf4, tu, ma
-; ZVFH-NEXT:    vslideup.vx v8, v9, a0
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv1bf16_idx:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    addi a1, a0, 1
-; ZVFHMIN-NEXT:    fmv.x.h a2, fa0
-; ZVFHMIN-NEXT:    vsetvli a3, zero, e16, m1, ta, ma
-; ZVFHMIN-NEXT:    vmv.s.x v9, a2
-; ZVFHMIN-NEXT:    vsetvli zero, a1, e16, mf4, tu, ma
-; ZVFHMIN-NEXT:    vslideup.vx v8, v9, a0
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv1bf16_idx:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    addi a1, a0, 1
-; ZVFBFA-NEXT:    vsetvli a2, zero, e16alt, m1, ta, ma
-; ZVFBFA-NEXT:    vfmv.s.f v9, fa0
-; ZVFBFA-NEXT:    vsetvli zero, a1, e16alt, mf4, tu, ma
-; ZVFBFA-NEXT:    vslideup.vx v8, v9, a0
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv1bf16_idx:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    addi a1, a0, 1
+; CHECK-NEXT:    fmv.x.h a2, fa0
+; CHECK-NEXT:    vsetvli a3, zero, e16, m1, ta, ma
+; CHECK-NEXT:    vmv.s.x v9, a2
+; CHECK-NEXT:    vsetvli zero, a1, e16, mf4, tu, ma
+; CHECK-NEXT:    vslideup.vx v8, v9, a0
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 1 x bfloat> %v, bfloat %elt, i32 %idx
   ret <vscale x 1 x bfloat> %r
 }
 
 define <vscale x 2 x bfloat> @insertelt_nxv2bf16_0(<vscale x 2 x bfloat> %v, bfloat %elt) {
-; ZVFH-LABEL: insertelt_nxv2bf16_0:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a0, fa0
-; ZVFH-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFH-NEXT:    vmv.s.x v8, a0
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv2bf16_0:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a0, fa0
-; ZVFHMIN-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFHMIN-NEXT:    vmv.s.x v8, a0
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv2bf16_0:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetvli a0, zero, e16alt, m1, tu, ma
-; ZVFBFA-NEXT:    vfmv.s.f v8, fa0
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv2bf16_0:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a0, fa0
+; CHECK-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
+; CHECK-NEXT:    vmv.s.x v8, a0
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 2 x bfloat> %v, bfloat %elt, i32 0
   ret <vscale x 2 x bfloat> %r
 }
 
 define <vscale x 2 x bfloat> @insertelt_nxv2bf16_imm(<vscale x 2 x bfloat> %v, bfloat %elt) {
-; ZVFH-LABEL: insertelt_nxv2bf16_imm:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a0, fa0
-; ZVFH-NEXT:    vsetivli zero, 4, e16, mf2, tu, ma
-; ZVFH-NEXT:    vmv.s.x v9, a0
-; ZVFH-NEXT:    vslideup.vi v8, v9, 3
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv2bf16_imm:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a0, fa0
-; ZVFHMIN-NEXT:    vsetivli zero, 4, e16, mf2, tu, ma
-; ZVFHMIN-NEXT:    vmv.s.x v9, a0
-; ZVFHMIN-NEXT:    vslideup.vi v8, v9, 3
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv2bf16_imm:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetivli zero, 4, e16alt, mf2, tu, ma
-; ZVFBFA-NEXT:    vfmv.s.f v9, fa0
-; ZVFBFA-NEXT:    vslideup.vi v8, v9, 3
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv2bf16_imm:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a0, fa0
+; CHECK-NEXT:    vsetivli zero, 4, e16, mf2, tu, ma
+; CHECK-NEXT:    vmv.s.x v9, a0
+; CHECK-NEXT:    vslideup.vi v8, v9, 3
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 2 x bfloat> %v, bfloat %elt, i32 3
   ret <vscale x 2 x bfloat> %r
 }
 
 define <vscale x 2 x bfloat> @insertelt_nxv2bf16_idx(<vscale x 2 x bfloat> %v, bfloat %elt, i32 zeroext %idx) {
-; ZVFH-LABEL: insertelt_nxv2bf16_idx:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    addi a1, a0, 1
-; ZVFH-NEXT:    fmv.x.h a2, fa0
-; ZVFH-NEXT:    vsetvli a3, zero, e16, m1, ta, ma
-; ZVFH-NEXT:    vmv.s.x v9, a2
-; ZVFH-NEXT:    vsetvli zero, a1, e16, mf2, tu, ma
-; ZVFH-NEXT:    vslideup.vx v8, v9, a0
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv2bf16_idx:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    addi a1, a0, 1
-; ZVFHMIN-NEXT:    fmv.x.h a2, fa0
-; ZVFHMIN-NEXT:    vsetvli a3, zero, e16, m1, ta, ma
-; ZVFHMIN-NEXT:    vmv.s.x v9, a2
-; ZVFHMIN-NEXT:    vsetvli zero, a1, e16, mf2, tu, ma
-; ZVFHMIN-NEXT:    vslideup.vx v8, v9, a0
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv2bf16_idx:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    addi a1, a0, 1
-; ZVFBFA-NEXT:    vsetvli a2, zero, e16alt, m1, ta, ma
-; ZVFBFA-NEXT:    vfmv.s.f v9, fa0
-; ZVFBFA-NEXT:    vsetvli zero, a1, e16alt, mf2, tu, ma
-; ZVFBFA-NEXT:    vslideup.vx v8, v9, a0
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv2bf16_idx:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    addi a1, a0, 1
+; CHECK-NEXT:    fmv.x.h a2, fa0
+; CHECK-NEXT:    vsetvli a3, zero, e16, m1, ta, ma
+; CHECK-NEXT:    vmv.s.x v9, a2
+; CHECK-NEXT:    vsetvli zero, a1, e16, mf2, tu, ma
+; CHECK-NEXT:    vslideup.vx v8, v9, a0
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 2 x bfloat> %v, bfloat %elt, i32 %idx
   ret <vscale x 2 x bfloat> %r
 }
 
 define <vscale x 4 x bfloat> @insertelt_nxv4bf16_0(<vscale x 4 x bfloat> %v, bfloat %elt) {
-; ZVFH-LABEL: insertelt_nxv4bf16_0:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a0, fa0
-; ZVFH-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFH-NEXT:    vmv.s.x v8, a0
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv4bf16_0:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a0, fa0
-; ZVFHMIN-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFHMIN-NEXT:    vmv.s.x v8, a0
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv4bf16_0:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetvli a0, zero, e16alt, m1, tu, ma
-; ZVFBFA-NEXT:    vfmv.s.f v8, fa0
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv4bf16_0:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a0, fa0
+; CHECK-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
+; CHECK-NEXT:    vmv.s.x v8, a0
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 4 x bfloat> %v, bfloat %elt, i32 0
   ret <vscale x 4 x bfloat> %r
 }
 
 define <vscale x 4 x bfloat> @insertelt_nxv4bf16_imm(<vscale x 4 x bfloat> %v, bfloat %elt) {
-; ZVFH-LABEL: insertelt_nxv4bf16_imm:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a0, fa0
-; ZVFH-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
-; ZVFH-NEXT:    vmv.s.x v9, a0
-; ZVFH-NEXT:    vslideup.vi v8, v9, 3
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv4bf16_imm:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a0, fa0
-; ZVFHMIN-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
-; ZVFHMIN-NEXT:    vmv.s.x v9, a0
-; ZVFHMIN-NEXT:    vslideup.vi v8, v9, 3
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv4bf16_imm:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetivli zero, 4, e16alt, m1, tu, ma
-; ZVFBFA-NEXT:    vfmv.s.f v9, fa0
-; ZVFBFA-NEXT:    vslideup.vi v8, v9, 3
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv4bf16_imm:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a0, fa0
+; CHECK-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
+; CHECK-NEXT:    vmv.s.x v9, a0
+; CHECK-NEXT:    vslideup.vi v8, v9, 3
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 4 x bfloat> %v, bfloat %elt, i32 3
   ret <vscale x 4 x bfloat> %r
 }
 
 define <vscale x 4 x bfloat> @insertelt_nxv4bf16_idx(<vscale x 4 x bfloat> %v, bfloat %elt, i32 zeroext %idx) {
-; ZVFH-LABEL: insertelt_nxv4bf16_idx:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    addi a1, a0, 1
-; ZVFH-NEXT:    fmv.x.h a2, fa0
-; ZVFH-NEXT:    vsetvli a3, zero, e16, m1, ta, ma
-; ZVFH-NEXT:    vmv.s.x v9, a2
-; ZVFH-NEXT:    vsetvli zero, a1, e16, m1, tu, ma
-; ZVFH-NEXT:    vslideup.vx v8, v9, a0
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv4bf16_idx:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    addi a1, a0, 1
-; ZVFHMIN-NEXT:    fmv.x.h a2, fa0
-; ZVFHMIN-NEXT:    vsetvli a3, zero, e16, m1, ta, ma
-; ZVFHMIN-NEXT:    vmv.s.x v9, a2
-; ZVFHMIN-NEXT:    vsetvli zero, a1, e16, m1, tu, ma
-; ZVFHMIN-NEXT:    vslideup.vx v8, v9, a0
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv4bf16_idx:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    addi a1, a0, 1
-; ZVFBFA-NEXT:    vsetvli a2, zero, e16alt, m1, ta, ma
-; ZVFBFA-NEXT:    vfmv.s.f v9, fa0
-; ZVFBFA-NEXT:    vsetvli zero, a1, e16alt, m1, tu, ma
-; ZVFBFA-NEXT:    vslideup.vx v8, v9, a0
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv4bf16_idx:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    addi a1, a0, 1
+; CHECK-NEXT:    fmv.x.h a2, fa0
+; CHECK-NEXT:    vsetvli a3, zero, e16, m1, ta, ma
+; CHECK-NEXT:    vmv.s.x v9, a2
+; CHECK-NEXT:    vsetvli zero, a1, e16, m1, tu, ma
+; CHECK-NEXT:    vslideup.vx v8, v9, a0
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 4 x bfloat> %v, bfloat %elt, i32 %idx
   ret <vscale x 4 x bfloat> %r
 }
 
 define <vscale x 8 x bfloat> @insertelt_nxv8bf16_0(<vscale x 8 x bfloat> %v, bfloat %elt) {
-; ZVFH-LABEL: insertelt_nxv8bf16_0:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a0, fa0
-; ZVFH-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFH-NEXT:    vmv.s.x v8, a0
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv8bf16_0:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a0, fa0
-; ZVFHMIN-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFHMIN-NEXT:    vmv.s.x v8, a0
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv8bf16_0:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetvli a0, zero, e16alt, m1, tu, ma
-; ZVFBFA-NEXT:    vfmv.s.f v8, fa0
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv8bf16_0:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a0, fa0
+; CHECK-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
+; CHECK-NEXT:    vmv.s.x v8, a0
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 8 x bfloat> %v, bfloat %elt, i32 0
   ret <vscale x 8 x bfloat> %r
 }
 
 define <vscale x 8 x bfloat> @insertelt_nxv8bf16_imm(<vscale x 8 x bfloat> %v, bfloat %elt) {
-; ZVFH-LABEL: insertelt_nxv8bf16_imm:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a0, fa0
-; ZVFH-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
-; ZVFH-NEXT:    vmv.s.x v10, a0
-; ZVFH-NEXT:    vslideup.vi v8, v10, 3
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv8bf16_imm:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a0, fa0
-; ZVFHMIN-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
-; ZVFHMIN-NEXT:    vmv.s.x v10, a0
-; ZVFHMIN-NEXT:    vslideup.vi v8, v10, 3
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv8bf16_imm:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetivli zero, 4, e16alt, m1, tu, ma
-; ZVFBFA-NEXT:    vfmv.s.f v10, fa0
-; ZVFBFA-NEXT:    vslideup.vi v8, v10, 3
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv8bf16_imm:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a0, fa0
+; CHECK-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
+; CHECK-NEXT:    vmv.s.x v10, a0
+; CHECK-NEXT:    vslideup.vi v8, v10, 3
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 8 x bfloat> %v, bfloat %elt, i32 3
   ret <vscale x 8 x bfloat> %r
 }
 
 define <vscale x 8 x bfloat> @insertelt_nxv8bf16_idx(<vscale x 8 x bfloat> %v, bfloat %elt, i32 zeroext %idx) {
-; ZVFH-LABEL: insertelt_nxv8bf16_idx:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a1, fa0
-; ZVFH-NEXT:    vsetvli a2, zero, e16, m1, ta, ma
-; ZVFH-NEXT:    vmv.s.x v10, a1
-; ZVFH-NEXT:    addi a1, a0, 1
-; ZVFH-NEXT:    vsetvli zero, a1, e16, m2, tu, ma
-; ZVFH-NEXT:    vslideup.vx v8, v10, a0
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv8bf16_idx:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a1, fa0
-; ZVFHMIN-NEXT:    vsetvli a2, zero, e16, m1, ta, ma
-; ZVFHMIN-NEXT:    vmv.s.x v10, a1
-; ZVFHMIN-NEXT:    addi a1, a0, 1
-; ZVFHMIN-NEXT:    vsetvli zero, a1, e16, m2, tu, ma
-; ZVFHMIN-NEXT:    vslideup.vx v8, v10, a0
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv8bf16_idx:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetvli a1, zero, e16alt, m1, ta, ma
-; ZVFBFA-NEXT:    vfmv.s.f v10, fa0
-; ZVFBFA-NEXT:    addi a1, a0, 1
-; ZVFBFA-NEXT:    vsetvli zero, a1, e16alt, m2, tu, ma
-; ZVFBFA-NEXT:    vslideup.vx v8, v10, a0
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv8bf16_idx:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a1, fa0
+; CHECK-NEXT:    vsetvli a2, zero, e16, m1, ta, ma
+; CHECK-NEXT:    vmv.s.x v10, a1
+; CHECK-NEXT:    addi a1, a0, 1
+; CHECK-NEXT:    vsetvli zero, a1, e16, m2, tu, ma
+; CHECK-NEXT:    vslideup.vx v8, v10, a0
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 8 x bfloat> %v, bfloat %elt, i32 %idx
   ret <vscale x 8 x bfloat> %r
 }
 
 define <vscale x 16 x bfloat> @insertelt_nxv16bf16_0(<vscale x 16 x bfloat> %v, bfloat %elt) {
-; ZVFH-LABEL: insertelt_nxv16bf16_0:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a0, fa0
-; ZVFH-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFH-NEXT:    vmv.s.x v8, a0
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv16bf16_0:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a0, fa0
-; ZVFHMIN-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFHMIN-NEXT:    vmv.s.x v8, a0
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv16bf16_0:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetvli a0, zero, e16alt, m1, tu, ma
-; ZVFBFA-NEXT:    vfmv.s.f v8, fa0
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv16bf16_0:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a0, fa0
+; CHECK-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
+; CHECK-NEXT:    vmv.s.x v8, a0
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 16 x bfloat> %v, bfloat %elt, i32 0
   ret <vscale x 16 x bfloat> %r
 }
 
 define <vscale x 16 x bfloat> @insertelt_nxv16bf16_imm(<vscale x 16 x bfloat> %v, bfloat %elt) {
-; ZVFH-LABEL: insertelt_nxv16bf16_imm:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a0, fa0
-; ZVFH-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
-; ZVFH-NEXT:    vmv.s.x v12, a0
-; ZVFH-NEXT:    vslideup.vi v8, v12, 3
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv16bf16_imm:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a0, fa0
-; ZVFHMIN-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
-; ZVFHMIN-NEXT:    vmv.s.x v12, a0
-; ZVFHMIN-NEXT:    vslideup.vi v8, v12, 3
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv16bf16_imm:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetivli zero, 4, e16alt, m1, tu, ma
-; ZVFBFA-NEXT:    vfmv.s.f v12, fa0
-; ZVFBFA-NEXT:    vslideup.vi v8, v12, 3
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv16bf16_imm:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a0, fa0
+; CHECK-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
+; CHECK-NEXT:    vmv.s.x v12, a0
+; CHECK-NEXT:    vslideup.vi v8, v12, 3
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 16 x bfloat> %v, bfloat %elt, i32 3
   ret <vscale x 16 x bfloat> %r
 }
 
 define <vscale x 16 x bfloat> @insertelt_nxv16bf16_idx(<vscale x 16 x bfloat> %v, bfloat %elt, i32 zeroext %idx) {
-; ZVFH-LABEL: insertelt_nxv16bf16_idx:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a1, fa0
-; ZVFH-NEXT:    vsetvli a2, zero, e16, m1, ta, ma
-; ZVFH-NEXT:    vmv.s.x v12, a1
-; ZVFH-NEXT:    addi a1, a0, 1
-; ZVFH-NEXT:    vsetvli zero, a1, e16, m4, tu, ma
-; ZVFH-NEXT:    vslideup.vx v8, v12, a0
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv16bf16_idx:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a1, fa0
-; ZVFHMIN-NEXT:    vsetvli a2, zero, e16, m1, ta, ma
-; ZVFHMIN-NEXT:    vmv.s.x v12, a1
-; ZVFHMIN-NEXT:    addi a1, a0, 1
-; ZVFHMIN-NEXT:    vsetvli zero, a1, e16, m4, tu, ma
-; ZVFHMIN-NEXT:    vslideup.vx v8, v12, a0
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv16bf16_idx:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetvli a1, zero, e16alt, m1, ta, ma
-; ZVFBFA-NEXT:    vfmv.s.f v12, fa0
-; ZVFBFA-NEXT:    addi a1, a0, 1
-; ZVFBFA-NEXT:    vsetvli zero, a1, e16alt, m4, tu, ma
-; ZVFBFA-NEXT:    vslideup.vx v8, v12, a0
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv16bf16_idx:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a1, fa0
+; CHECK-NEXT:    vsetvli a2, zero, e16, m1, ta, ma
+; CHECK-NEXT:    vmv.s.x v12, a1
+; CHECK-NEXT:    addi a1, a0, 1
+; CHECK-NEXT:    vsetvli zero, a1, e16, m4, tu, ma
+; CHECK-NEXT:    vslideup.vx v8, v12, a0
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 16 x bfloat> %v, bfloat %elt, i32 %idx
   ret <vscale x 16 x bfloat> %r
 }
 
 define <vscale x 32 x bfloat> @insertelt_nxv32bf16_0(<vscale x 32 x bfloat> %v, bfloat %elt) {
-; ZVFH-LABEL: insertelt_nxv32bf16_0:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a0, fa0
-; ZVFH-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFH-NEXT:    vmv.s.x v8, a0
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv32bf16_0:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a0, fa0
-; ZVFHMIN-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFHMIN-NEXT:    vmv.s.x v8, a0
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv32bf16_0:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetvli a0, zero, e16alt, m1, tu, ma
-; ZVFBFA-NEXT:    vfmv.s.f v8, fa0
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv32bf16_0:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a0, fa0
+; CHECK-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
+; CHECK-NEXT:    vmv.s.x v8, a0
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 32 x bfloat> %v, bfloat %elt, i32 0
   ret <vscale x 32 x bfloat> %r
 }
 
 define <vscale x 32 x bfloat> @insertelt_nxv32bf16_imm(<vscale x 32 x bfloat> %v, bfloat %elt) {
-; ZVFH-LABEL: insertelt_nxv32bf16_imm:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a0, fa0
-; ZVFH-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
-; ZVFH-NEXT:    vmv.s.x v16, a0
-; ZVFH-NEXT:    vslideup.vi v8, v16, 3
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv32bf16_imm:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a0, fa0
-; ZVFHMIN-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
-; ZVFHMIN-NEXT:    vmv.s.x v16, a0
-; ZVFHMIN-NEXT:    vslideup.vi v8, v16, 3
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv32bf16_imm:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetivli zero, 4, e16alt, m1, tu, ma
-; ZVFBFA-NEXT:    vfmv.s.f v16, fa0
-; ZVFBFA-NEXT:    vslideup.vi v8, v16, 3
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv32bf16_imm:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a0, fa0
+; CHECK-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
+; CHECK-NEXT:    vmv.s.x v16, a0
+; CHECK-NEXT:    vslideup.vi v8, v16, 3
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 32 x bfloat> %v, bfloat %elt, i32 3
   ret <vscale x 32 x bfloat> %r
 }
 
 define <vscale x 32 x bfloat> @insertelt_nxv32bf16_idx(<vscale x 32 x bfloat> %v, bfloat %elt, i32 zeroext %idx) {
-; ZVFH-LABEL: insertelt_nxv32bf16_idx:
-; ZVFH:       # %bb.0:
-; ZVFH-NEXT:    fmv.x.h a1, fa0
-; ZVFH-NEXT:    vsetvli a2, zero, e16, m1, ta, ma
-; ZVFH-NEXT:    vmv.s.x v16, a1
-; ZVFH-NEXT:    addi a1, a0, 1
-; ZVFH-NEXT:    vsetvli zero, a1, e16, m8, tu, ma
-; ZVFH-NEXT:    vslideup.vx v8, v16, a0
-; ZVFH-NEXT:    ret
-;
-; ZVFHMIN-LABEL: insertelt_nxv32bf16_idx:
-; ZVFHMIN:       # %bb.0:
-; ZVFHMIN-NEXT:    fmv.x.h a1, fa0
-; ZVFHMIN-NEXT:    vsetvli a2, zero, e16, m1, ta, ma
-; ZVFHMIN-NEXT:    vmv.s.x v16, a1
-; ZVFHMIN-NEXT:    addi a1, a0, 1
-; ZVFHMIN-NEXT:    vsetvli zero, a1, e16, m8, tu, ma
-; ZVFHMIN-NEXT:    vslideup.vx v8, v16, a0
-; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv32bf16_idx:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    vsetvli a1, zero, e16alt, m1, ta, ma
-; ZVFBFA-NEXT:    vfmv.s.f v16, fa0
-; ZVFBFA-NEXT:    addi a1, a0, 1
-; ZVFBFA-NEXT:    vsetvli zero, a1, e16alt, m8, tu, ma
-; ZVFBFA-NEXT:    vslideup.vx v8, v16, a0
-; ZVFBFA-NEXT:    ret
+; CHECK-LABEL: insertelt_nxv32bf16_idx:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    fmv.x.h a1, fa0
+; CHECK-NEXT:    vsetvli a2, zero, e16, m1, ta, ma
+; CHECK-NEXT:    vmv.s.x v16, a1
+; CHECK-NEXT:    addi a1, a0, 1
+; CHECK-NEXT:    vsetvli zero, a1, e16, m8, tu, ma
+; CHECK-NEXT:    vslideup.vx v8, v16, a0
+; CHECK-NEXT:    ret
   %r = insertelement <vscale x 32 x bfloat> %v, bfloat %elt, i32 %idx
   ret <vscale x 32 x bfloat> %r
 }
@@ -529,13 +243,6 @@ define <vscale x 1 x half> @insertelt_nxv1f16_0(<vscale x 1 x half> %v, half %el
 ; ZVFHMIN-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
 ; ZVFHMIN-NEXT:    vmv.s.x v8, a0
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv1f16_0:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a0, fa0
-; ZVFBFA-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFBFA-NEXT:    vmv.s.x v8, a0
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 1 x half> %v, half %elt, i32 0
   ret <vscale x 1 x half> %r
 }
@@ -555,14 +262,6 @@ define <vscale x 1 x half> @insertelt_nxv1f16_imm(<vscale x 1 x half> %v, half %
 ; ZVFHMIN-NEXT:    vmv.s.x v9, a0
 ; ZVFHMIN-NEXT:    vslideup.vi v8, v9, 3
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv1f16_imm:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a0, fa0
-; ZVFBFA-NEXT:    vsetivli zero, 4, e16, mf4, tu, ma
-; ZVFBFA-NEXT:    vmv.s.x v9, a0
-; ZVFBFA-NEXT:    vslideup.vi v8, v9, 3
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 1 x half> %v, half %elt, i32 3
   ret <vscale x 1 x half> %r
 }
@@ -586,16 +285,6 @@ define <vscale x 1 x half> @insertelt_nxv1f16_idx(<vscale x 1 x half> %v, half %
 ; ZVFHMIN-NEXT:    vsetvli zero, a1, e16, mf4, tu, ma
 ; ZVFHMIN-NEXT:    vslideup.vx v8, v9, a0
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv1f16_idx:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    addi a1, a0, 1
-; ZVFBFA-NEXT:    fmv.x.h a2, fa0
-; ZVFBFA-NEXT:    vsetvli a3, zero, e16, m1, ta, ma
-; ZVFBFA-NEXT:    vmv.s.x v9, a2
-; ZVFBFA-NEXT:    vsetvli zero, a1, e16, mf4, tu, ma
-; ZVFBFA-NEXT:    vslideup.vx v8, v9, a0
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 1 x half> %v, half %elt, i32 %idx
   ret <vscale x 1 x half> %r
 }
@@ -613,13 +302,6 @@ define <vscale x 2 x half> @insertelt_nxv2f16_0(<vscale x 2 x half> %v, half %el
 ; ZVFHMIN-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
 ; ZVFHMIN-NEXT:    vmv.s.x v8, a0
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv2f16_0:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a0, fa0
-; ZVFBFA-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFBFA-NEXT:    vmv.s.x v8, a0
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 2 x half> %v, half %elt, i32 0
   ret <vscale x 2 x half> %r
 }
@@ -639,14 +321,6 @@ define <vscale x 2 x half> @insertelt_nxv2f16_imm(<vscale x 2 x half> %v, half %
 ; ZVFHMIN-NEXT:    vmv.s.x v9, a0
 ; ZVFHMIN-NEXT:    vslideup.vi v8, v9, 3
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv2f16_imm:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a0, fa0
-; ZVFBFA-NEXT:    vsetivli zero, 4, e16, mf2, tu, ma
-; ZVFBFA-NEXT:    vmv.s.x v9, a0
-; ZVFBFA-NEXT:    vslideup.vi v8, v9, 3
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 2 x half> %v, half %elt, i32 3
   ret <vscale x 2 x half> %r
 }
@@ -670,16 +344,6 @@ define <vscale x 2 x half> @insertelt_nxv2f16_idx(<vscale x 2 x half> %v, half %
 ; ZVFHMIN-NEXT:    vsetvli zero, a1, e16, mf2, tu, ma
 ; ZVFHMIN-NEXT:    vslideup.vx v8, v9, a0
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv2f16_idx:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    addi a1, a0, 1
-; ZVFBFA-NEXT:    fmv.x.h a2, fa0
-; ZVFBFA-NEXT:    vsetvli a3, zero, e16, m1, ta, ma
-; ZVFBFA-NEXT:    vmv.s.x v9, a2
-; ZVFBFA-NEXT:    vsetvli zero, a1, e16, mf2, tu, ma
-; ZVFBFA-NEXT:    vslideup.vx v8, v9, a0
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 2 x half> %v, half %elt, i32 %idx
   ret <vscale x 2 x half> %r
 }
@@ -697,13 +361,6 @@ define <vscale x 4 x half> @insertelt_nxv4f16_0(<vscale x 4 x half> %v, half %el
 ; ZVFHMIN-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
 ; ZVFHMIN-NEXT:    vmv.s.x v8, a0
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv4f16_0:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a0, fa0
-; ZVFBFA-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFBFA-NEXT:    vmv.s.x v8, a0
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 4 x half> %v, half %elt, i32 0
   ret <vscale x 4 x half> %r
 }
@@ -723,14 +380,6 @@ define <vscale x 4 x half> @insertelt_nxv4f16_imm(<vscale x 4 x half> %v, half %
 ; ZVFHMIN-NEXT:    vmv.s.x v9, a0
 ; ZVFHMIN-NEXT:    vslideup.vi v8, v9, 3
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv4f16_imm:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a0, fa0
-; ZVFBFA-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
-; ZVFBFA-NEXT:    vmv.s.x v9, a0
-; ZVFBFA-NEXT:    vslideup.vi v8, v9, 3
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 4 x half> %v, half %elt, i32 3
   ret <vscale x 4 x half> %r
 }
@@ -754,16 +403,6 @@ define <vscale x 4 x half> @insertelt_nxv4f16_idx(<vscale x 4 x half> %v, half %
 ; ZVFHMIN-NEXT:    vsetvli zero, a1, e16, m1, tu, ma
 ; ZVFHMIN-NEXT:    vslideup.vx v8, v9, a0
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv4f16_idx:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    addi a1, a0, 1
-; ZVFBFA-NEXT:    fmv.x.h a2, fa0
-; ZVFBFA-NEXT:    vsetvli a3, zero, e16, m1, ta, ma
-; ZVFBFA-NEXT:    vmv.s.x v9, a2
-; ZVFBFA-NEXT:    vsetvli zero, a1, e16, m1, tu, ma
-; ZVFBFA-NEXT:    vslideup.vx v8, v9, a0
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 4 x half> %v, half %elt, i32 %idx
   ret <vscale x 4 x half> %r
 }
@@ -781,13 +420,6 @@ define <vscale x 8 x half> @insertelt_nxv8f16_0(<vscale x 8 x half> %v, half %el
 ; ZVFHMIN-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
 ; ZVFHMIN-NEXT:    vmv.s.x v8, a0
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv8f16_0:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a0, fa0
-; ZVFBFA-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFBFA-NEXT:    vmv.s.x v8, a0
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 8 x half> %v, half %elt, i32 0
   ret <vscale x 8 x half> %r
 }
@@ -807,14 +439,6 @@ define <vscale x 8 x half> @insertelt_nxv8f16_imm(<vscale x 8 x half> %v, half %
 ; ZVFHMIN-NEXT:    vmv.s.x v10, a0
 ; ZVFHMIN-NEXT:    vslideup.vi v8, v10, 3
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv8f16_imm:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a0, fa0
-; ZVFBFA-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
-; ZVFBFA-NEXT:    vmv.s.x v10, a0
-; ZVFBFA-NEXT:    vslideup.vi v8, v10, 3
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 8 x half> %v, half %elt, i32 3
   ret <vscale x 8 x half> %r
 }
@@ -838,16 +462,6 @@ define <vscale x 8 x half> @insertelt_nxv8f16_idx(<vscale x 8 x half> %v, half %
 ; ZVFHMIN-NEXT:    vsetvli zero, a1, e16, m2, tu, ma
 ; ZVFHMIN-NEXT:    vslideup.vx v8, v10, a0
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv8f16_idx:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a1, fa0
-; ZVFBFA-NEXT:    vsetvli a2, zero, e16, m1, ta, ma
-; ZVFBFA-NEXT:    vmv.s.x v10, a1
-; ZVFBFA-NEXT:    addi a1, a0, 1
-; ZVFBFA-NEXT:    vsetvli zero, a1, e16, m2, tu, ma
-; ZVFBFA-NEXT:    vslideup.vx v8, v10, a0
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 8 x half> %v, half %elt, i32 %idx
   ret <vscale x 8 x half> %r
 }
@@ -865,13 +479,6 @@ define <vscale x 16 x half> @insertelt_nxv16f16_0(<vscale x 16 x half> %v, half 
 ; ZVFHMIN-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
 ; ZVFHMIN-NEXT:    vmv.s.x v8, a0
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv16f16_0:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a0, fa0
-; ZVFBFA-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFBFA-NEXT:    vmv.s.x v8, a0
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 16 x half> %v, half %elt, i32 0
   ret <vscale x 16 x half> %r
 }
@@ -891,14 +498,6 @@ define <vscale x 16 x half> @insertelt_nxv16f16_imm(<vscale x 16 x half> %v, hal
 ; ZVFHMIN-NEXT:    vmv.s.x v12, a0
 ; ZVFHMIN-NEXT:    vslideup.vi v8, v12, 3
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv16f16_imm:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a0, fa0
-; ZVFBFA-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
-; ZVFBFA-NEXT:    vmv.s.x v12, a0
-; ZVFBFA-NEXT:    vslideup.vi v8, v12, 3
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 16 x half> %v, half %elt, i32 3
   ret <vscale x 16 x half> %r
 }
@@ -922,16 +521,6 @@ define <vscale x 16 x half> @insertelt_nxv16f16_idx(<vscale x 16 x half> %v, hal
 ; ZVFHMIN-NEXT:    vsetvli zero, a1, e16, m4, tu, ma
 ; ZVFHMIN-NEXT:    vslideup.vx v8, v12, a0
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv16f16_idx:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a1, fa0
-; ZVFBFA-NEXT:    vsetvli a2, zero, e16, m1, ta, ma
-; ZVFBFA-NEXT:    vmv.s.x v12, a1
-; ZVFBFA-NEXT:    addi a1, a0, 1
-; ZVFBFA-NEXT:    vsetvli zero, a1, e16, m4, tu, ma
-; ZVFBFA-NEXT:    vslideup.vx v8, v12, a0
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 16 x half> %v, half %elt, i32 %idx
   ret <vscale x 16 x half> %r
 }
@@ -949,13 +538,6 @@ define <vscale x 32 x half> @insertelt_nxv32f16_0(<vscale x 32 x half> %v, half 
 ; ZVFHMIN-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
 ; ZVFHMIN-NEXT:    vmv.s.x v8, a0
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv32f16_0:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a0, fa0
-; ZVFBFA-NEXT:    vsetvli a1, zero, e16, m1, tu, ma
-; ZVFBFA-NEXT:    vmv.s.x v8, a0
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 32 x half> %v, half %elt, i32 0
   ret <vscale x 32 x half> %r
 }
@@ -975,14 +557,6 @@ define <vscale x 32 x half> @insertelt_nxv32f16_imm(<vscale x 32 x half> %v, hal
 ; ZVFHMIN-NEXT:    vmv.s.x v16, a0
 ; ZVFHMIN-NEXT:    vslideup.vi v8, v16, 3
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv32f16_imm:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a0, fa0
-; ZVFBFA-NEXT:    vsetivli zero, 4, e16, m1, tu, ma
-; ZVFBFA-NEXT:    vmv.s.x v16, a0
-; ZVFBFA-NEXT:    vslideup.vi v8, v16, 3
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 32 x half> %v, half %elt, i32 3
   ret <vscale x 32 x half> %r
 }
@@ -1006,16 +580,6 @@ define <vscale x 32 x half> @insertelt_nxv32f16_idx(<vscale x 32 x half> %v, hal
 ; ZVFHMIN-NEXT:    vsetvli zero, a1, e16, m8, tu, ma
 ; ZVFHMIN-NEXT:    vslideup.vx v8, v16, a0
 ; ZVFHMIN-NEXT:    ret
-;
-; ZVFBFA-LABEL: insertelt_nxv32f16_idx:
-; ZVFBFA:       # %bb.0:
-; ZVFBFA-NEXT:    fmv.x.h a1, fa0
-; ZVFBFA-NEXT:    vsetvli a2, zero, e16, m1, ta, ma
-; ZVFBFA-NEXT:    vmv.s.x v16, a1
-; ZVFBFA-NEXT:    addi a1, a0, 1
-; ZVFBFA-NEXT:    vsetvli zero, a1, e16, m8, tu, ma
-; ZVFBFA-NEXT:    vslideup.vx v8, v16, a0
-; ZVFBFA-NEXT:    ret
   %r = insertelement <vscale x 32 x half> %v, half %elt, i32 %idx
   ret <vscale x 32 x half> %r
 }

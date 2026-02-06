@@ -82,4 +82,3 @@ let BaseName = "0" in {
   def E0 : I, ABCRel, isEForm;
 }
 
-defm : RemapAllTargetPseudoPointerOperands<DFVRegClass>;

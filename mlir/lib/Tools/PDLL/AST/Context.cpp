@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Tools/PDLL/AST/Context.h"
-#include "mlir/Tools/PDLL/AST/Types.h"
+#include "TypeDetail.h"
 
 using namespace mlir;
 using namespace mlir::pdll::ast;

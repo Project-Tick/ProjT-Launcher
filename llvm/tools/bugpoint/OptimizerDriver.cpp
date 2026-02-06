@@ -34,6 +34,15 @@ using namespace llvm;
 
 #define DEBUG_TYPE "bugpoint"
 
+namespace llvm {
+extern cl::opt<std::string> OutputPrefix;
+}
+
+static cl::opt<bool> PreserveBitcodeUseListOrder(
+    "preserve-bc-uselistorder",
+    cl::desc("Preserve use-list order when writing LLVM bitcode."),
+    cl::init(true), cl::Hidden);
+
 static cl::opt<std::string>
     OptCmd("opt-command", cl::init(""),
            cl::desc("Path to opt. (default: search path "
@@ -42,7 +51,7 @@ static cl::opt<std::string>
 /// This writes the current "Program" to the named bitcode file.  If an error
 /// occurs, true is returned.
 static bool writeProgramToFileAux(ToolOutputFile &Out, const Module &M) {
-  WriteBitcodeToFile(M, Out.os(), /* ShouldPreserveUseListOrder */ true);
+  WriteBitcodeToFile(M, Out.os(), PreserveBitcodeUseListOrder);
   Out.os().close();
   if (!Out.os().has_error()) {
     Out.keep();
@@ -59,7 +68,7 @@ bool BugDriver::writeProgramToFile(const std::string &Filename, int FD,
 
 bool BugDriver::writeProgramToFile(int FD, const Module &M) const {
   raw_fd_ostream OS(FD, /*shouldClose*/ false);
-  WriteBitcodeToFile(M, OS, /* ShouldPreserveUseListOrder */ true);
+  WriteBitcodeToFile(M, OS, PreserveBitcodeUseListOrder);
   OS.flush();
   if (!OS.has_error())
     return false;
@@ -78,7 +87,7 @@ bool BugDriver::writeProgramToFile(const std::string &Filename,
 
 /// This function is used to output the current Program to a file named
 /// "bugpoint-ID.bc".
-void BugDriver::emitProgressBitcode(const Module &M, const std::string &ID,
+void BugDriver::EmitProgressBitcode(const Module &M, const std::string &ID,
                                     bool NoFlyer) const {
   // Output the input to the current pass to a bitcode file, emit a message
   // telling the user how to reproduce it: opt -foo blah.bc
@@ -102,7 +111,7 @@ void BugDriver::emitProgressBitcode(const Module &M, const std::string &ID,
   outs() << " " << getPassesString(PassesToRun) << "\n";
 }
 
-static cl::opt<bool> SilencePasses(
+cl::opt<bool> SilencePasses(
     "silence-passes",
     cl::desc("Suppress output of running passes (both stdout and stderr)"));
 
@@ -146,7 +155,7 @@ bool BugDriver::runPasses(Module &Program,
   DiscardTemp Discard{*Temp};
   raw_fd_ostream OS(Temp->FD, /*shouldClose*/ false);
 
-  WriteBitcodeToFile(Program, OS, /* ShouldPreserveUseListOrder */ true);
+  WriteBitcodeToFile(Program, OS, PreserveBitcodeUseListOrder);
   OS.flush();
   if (OS.has_error()) {
     errs() << "Error writing bitcode file: " << Temp->TmpName << "\n";
@@ -194,7 +203,8 @@ bool BugDriver::runPasses(Module &Program,
   } else
     Args.push_back(tool);
 
-  llvm::append_range(Args, OptArgs);
+  for (unsigned i = 0, e = OptArgs.size(); i != e; ++i)
+    Args.push_back(OptArgs[i]);
   // Pin to legacy PM since bugpoint has lots of infra and hacks revolving
   // around the legacy PM.
   Args.push_back("-bugpoint-enable-legacy-pm");

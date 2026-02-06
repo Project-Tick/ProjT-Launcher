@@ -11,7 +11,6 @@ add_mlir_conversion_library(MLIRMathToROCDL
   Core
 
   LINK_LIBS PUBLIC
-  MLIRAMDGPUUtils
   MLIRDialectUtils
   MLIRFuncDialect
   MLIRGPUToGPURuntimeTransforms

@@ -36,9 +36,8 @@ namespace detail {
 
 // We call out to an external function to actually print the message as the
 // printing code uses Allocator.h in its implementation.
-LLVM_ABI void printBumpPtrAllocatorStats(unsigned NumSlabs,
-                                         size_t BytesAllocated,
-                                         size_t TotalMemory);
+void printBumpPtrAllocatorStats(unsigned NumSlabs, size_t BytesAllocated,
+                                size_t TotalMemory);
 
 } // end namespace detail
 
@@ -249,9 +248,9 @@ public:
 
     // Use negative index to denote custom sized slabs.
     int64_t InCustomSizedSlabIdx = -1;
-    for (const auto &Slab : CustomSizedSlabs) {
-      const char *S = static_cast<const char *>(Slab.first);
-      size_t Size = Slab.second;
+    for (size_t Idx = 0, E = CustomSizedSlabs.size(); Idx < E; Idx++) {
+      const char *S = static_cast<const char *>(CustomSizedSlabs[Idx].first);
+      size_t Size = CustomSizedSlabs[Idx].second;
       if (P >= S && P < S + Size)
         return InCustomSizedSlabIdx - static_cast<int64_t>(P - S);
       InCustomSizedSlabIdx -= static_cast<int64_t>(Size);
@@ -380,7 +379,7 @@ private:
 
 /// The standard BumpPtrAllocator which just uses the default template
 /// parameters.
-using BumpPtrAllocator = BumpPtrAllocatorImpl<>;
+typedef BumpPtrAllocatorImpl<> BumpPtrAllocator;
 
 /// A BumpPtrAllocator that allows only elements of a specific type to be
 /// allocated.

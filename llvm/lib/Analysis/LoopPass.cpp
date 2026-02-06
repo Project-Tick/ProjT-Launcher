@@ -373,7 +373,7 @@ bool LoopPass::skipLoop(const Loop *L) const {
   if (!F)
     return false;
   // Check the opt bisect limit.
-  const OptPassGate &Gate = F->getContext().getOptPassGate();
+  OptPassGate &Gate = F->getContext().getOptPassGate();
   if (Gate.isEnabled() &&
       !Gate.shouldRunPass(this->getPassName(), getDescription(*L)))
     return true;
@@ -388,7 +388,9 @@ bool LoopPass::skipLoop(const Loop *L) const {
   return false;
 }
 
-LCSSAVerificationPass::LCSSAVerificationPass() : FunctionPass(ID) {}
+LCSSAVerificationPass::LCSSAVerificationPass() : FunctionPass(ID) {
+  initializeLCSSAVerificationPassPass(*PassRegistry::getPassRegistry());
+}
 
 char LCSSAVerificationPass::ID = 0;
 INITIALIZE_PASS(LCSSAVerificationPass, "lcssa-verification", "LCSSA Verifier",

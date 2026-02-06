@@ -18,7 +18,7 @@
 #include "llvm/CodeGen/GlobalISel/CombinerHelper.h"
 #include "llvm/CodeGen/GlobalISel/CombinerInfo.h"
 #include "llvm/CodeGen/GlobalISel/GIMatchTableExecutorImpl.h"
-#include "llvm/CodeGen/GlobalISel/GISelValueTracking.h"
+#include "llvm/CodeGen/GlobalISel/GISelKnownBits.h"
 #include "llvm/CodeGen/GlobalISel/MIPatternMatch.h"
 #include "llvm/CodeGen/GlobalISel/MachineIRBuilder.h"
 #include "llvm/CodeGen/GlobalISel/Utils.h"
@@ -44,12 +44,37 @@ namespace {
 #include "AArch64GenPreLegalizeGICombiner.inc"
 #undef GET_GICOMBINER_TYPES
 
+/// Return true if a G_FCONSTANT instruction is known to be better-represented
+/// as a G_CONSTANT.
+bool matchFConstantToConstant(MachineInstr &MI, MachineRegisterInfo &MRI) {
+  assert(MI.getOpcode() == TargetOpcode::G_FCONSTANT);
+  Register DstReg = MI.getOperand(0).getReg();
+  const unsigned DstSize = MRI.getType(DstReg).getSizeInBits();
+  if (DstSize != 32 && DstSize != 64)
+    return false;
+
+  // When we're storing a value, it doesn't matter what register bank it's on.
+  // Since not all floating point constants can be materialized using a fmov,
+  // it makes more sense to just use a GPR.
+  return all_of(MRI.use_nodbg_instructions(DstReg),
+                [](const MachineInstr &Use) { return Use.mayStore(); });
+}
+
+/// Change a G_FCONSTANT into a G_CONSTANT.
+void applyFConstantToConstant(MachineInstr &MI) {
+  assert(MI.getOpcode() == TargetOpcode::G_FCONSTANT);
+  MachineIRBuilder MIB(MI);
+  const APFloat &ImmValAPF = MI.getOperand(1).getFPImm()->getValueAPF();
+  MIB.buildConstant(MI.getOperand(0).getReg(), ImmValAPF.bitcastToAPInt());
+  MI.eraseFromParent();
+}
+
 /// Try to match a G_ICMP of a G_TRUNC with zero, in which the truncated bits
 /// are sign bits. In this case, we can transform the G_ICMP to directly compare
 /// the wide value with a zero.
 bool matchICmpRedundantTrunc(MachineInstr &MI, MachineRegisterInfo &MRI,
-                             GISelValueTracking *VT, Register &MatchInfo) {
-  assert(MI.getOpcode() == TargetOpcode::G_ICMP && VT);
+                             GISelKnownBits *KB, Register &MatchInfo) {
+  assert(MI.getOpcode() == TargetOpcode::G_ICMP && KB);
 
   auto Pred = (CmpInst::Predicate)MI.getOperand(1).getPredicate();
   if (!ICmpInst::isEquality(Pred))
@@ -68,7 +93,7 @@ bool matchICmpRedundantTrunc(MachineInstr &MI, MachineRegisterInfo &MRI,
     return false;
 
   LLT WideTy = MRI.getType(WideReg);
-  if (VT->computeNumSignBits(WideReg) <=
+  if (KB->computeNumSignBits(WideReg) <=
       WideTy.getSizeInBits() - LHSTy.getSizeInBits())
     return false;
 
@@ -203,13 +228,12 @@ void applyFoldGlobalOffset(MachineInstr &MI, MachineRegisterInfo &MRI,
       B.buildConstant(LLT::scalar(64), -static_cast<int64_t>(MinOffset)));
 }
 
-// Combines vecreduce_add(mul(ext(x), ext(y))) -> vecreduce_add([us]dot(x, y))
-// Or vecreduce_add(ext(mul(ext(x), ext(y)))) -> vecreduce_add([us]dot(x, y))
-// Or vecreduce_add(ext(x)) -> vecreduce_add([us]dot(x, 1))
+// Combines vecreduce_add(mul(ext(x), ext(y))) -> vecreduce_add(udot(x, y))
+// Or vecreduce_add(ext(x)) -> vecreduce_add(udot(x, 1))
 // Similar to performVecReduceAddCombine in SelectionDAG
-bool matchExtAddvToDotAddv(MachineInstr &MI, MachineRegisterInfo &MRI,
-                           const AArch64Subtarget &STI,
-                           std::tuple<Register, Register, bool> &MatchInfo) {
+bool matchExtAddvToUdotAddv(MachineInstr &MI, MachineRegisterInfo &MRI,
+                            const AArch64Subtarget &STI,
+                            std::tuple<Register, Register, bool> &MatchInfo) {
   assert(MI.getOpcode() == TargetOpcode::G_VECREDUCE_ADD &&
          "Expected a G_VECREDUCE_ADD instruction");
   assert(STI.hasDotProd() && "Target should have Dot Product feature");
@@ -222,59 +246,31 @@ bool matchExtAddvToDotAddv(MachineInstr &MI, MachineRegisterInfo &MRI,
   if (DstTy.getScalarSizeInBits() != 32 || MidTy.getScalarSizeInBits() != 32)
     return false;
 
-  // Detect mul(ext, ext) with symmetric ext's. If I1Opc is G_ZEXT or G_SEXT
-  // then the ext's must match the same opcode. It is set to the ext opcode on
-  // output.
-  auto tryMatchingMulOfExt = [&MRI](MachineInstr *MI, Register &Out1,
-                                    Register &Out2, unsigned &I1Opc) {
+  LLT SrcTy;
+  auto I1Opc = I1->getOpcode();
+  if (I1Opc == TargetOpcode::G_MUL) {
     // If result of this has more than 1 use, then there is no point in creating
-    // a dot instruction
-    if (!MRI.hasOneNonDBGUse(MI->getOperand(0).getReg()))
+    // udot instruction
+    if (!MRI.hasOneNonDBGUse(MidReg))
       return false;
 
     MachineInstr *ExtMI1 =
-        getDefIgnoringCopies(MI->getOperand(1).getReg(), MRI);
+        getDefIgnoringCopies(I1->getOperand(1).getReg(), MRI);
     MachineInstr *ExtMI2 =
-        getDefIgnoringCopies(MI->getOperand(2).getReg(), MRI);
+        getDefIgnoringCopies(I1->getOperand(2).getReg(), MRI);
     LLT Ext1DstTy = MRI.getType(ExtMI1->getOperand(0).getReg());
     LLT Ext2DstTy = MRI.getType(ExtMI2->getOperand(0).getReg());
 
     if (ExtMI1->getOpcode() != ExtMI2->getOpcode() || Ext1DstTy != Ext2DstTy)
       return false;
-    if ((I1Opc == TargetOpcode::G_ZEXT || I1Opc == TargetOpcode::G_SEXT) &&
-        I1Opc != ExtMI1->getOpcode())
-      return false;
-    Out1 = ExtMI1->getOperand(1).getReg();
-    Out2 = ExtMI2->getOperand(1).getReg();
     I1Opc = ExtMI1->getOpcode();
-    return true;
-  };
-
-  LLT SrcTy;
-  unsigned I1Opc = I1->getOpcode();
-  if (I1Opc == TargetOpcode::G_MUL) {
-    Register Out1, Out2;
-    if (!tryMatchingMulOfExt(I1, Out1, Out2, I1Opc))
-      return false;
-    SrcTy = MRI.getType(Out1);
-    std::get<0>(MatchInfo) = Out1;
-    std::get<1>(MatchInfo) = Out2;
-  } else if (I1Opc == TargetOpcode::G_ZEXT || I1Opc == TargetOpcode::G_SEXT) {
-    Register I1Op = I1->getOperand(1).getReg();
-    MachineInstr *M = getDefIgnoringCopies(I1Op, MRI);
-    Register Out1, Out2;
-    if (M->getOpcode() == TargetOpcode::G_MUL &&
-        tryMatchingMulOfExt(M, Out1, Out2, I1Opc)) {
-      SrcTy = MRI.getType(Out1);
-      std::get<0>(MatchInfo) = Out1;
-      std::get<1>(MatchInfo) = Out2;
-    } else {
-      SrcTy = MRI.getType(I1Op);
-      std::get<0>(MatchInfo) = I1Op;
-      std::get<1>(MatchInfo) = 0;
-    }
+    SrcTy = MRI.getType(ExtMI1->getOperand(1).getReg());
+    std::get<0>(MatchInfo) = ExtMI1->getOperand(1).getReg();
+    std::get<1>(MatchInfo) = ExtMI2->getOperand(1).getReg();
   } else {
-    return false;
+    SrcTy = MRI.getType(I1->getOperand(1).getReg());
+    std::get<0>(MatchInfo) = I1->getOperand(1).getReg();
+    std::get<1>(MatchInfo) = 0;
   }
 
   if (I1Opc == TargetOpcode::G_ZEXT)
@@ -290,11 +286,11 @@ bool matchExtAddvToDotAddv(MachineInstr &MI, MachineRegisterInfo &MRI,
   return true;
 }
 
-void applyExtAddvToDotAddv(MachineInstr &MI, MachineRegisterInfo &MRI,
-                           MachineIRBuilder &Builder,
-                           GISelChangeObserver &Observer,
-                           const AArch64Subtarget &STI,
-                           std::tuple<Register, Register, bool> &MatchInfo) {
+void applyExtAddvToUdotAddv(MachineInstr &MI, MachineRegisterInfo &MRI,
+                            MachineIRBuilder &Builder,
+                            GISelChangeObserver &Observer,
+                            const AArch64Subtarget &STI,
+                            std::tuple<Register, Register, bool> &MatchInfo) {
   assert(MI.getOpcode() == TargetOpcode::G_VECREDUCE_ADD &&
          "Expected a G_VECREDUCE_ADD instruction");
   assert(STI.hasDotProd() && "Target should have Dot Product feature");
@@ -435,8 +431,6 @@ bool matchExtUaddvToUaddlv(MachineInstr &MI, MachineRegisterInfo &MRI,
   Register ExtSrcReg = ExtMI->getOperand(1).getReg();
   LLT ExtSrcTy = MRI.getType(ExtSrcReg);
   LLT DstTy = MRI.getType(MI.getOperand(0).getReg());
-  if (ExtSrcTy.getScalarSizeInBits() * 2 > DstTy.getScalarSizeInBits())
-    return false;
   if ((DstTy.getScalarSizeInBits() == 16 &&
        ExtSrcTy.getNumElements() % 8 == 0 && ExtSrcTy.getNumElements() < 256) ||
       (DstTy.getScalarSizeInBits() == 32 &&
@@ -486,7 +480,9 @@ void applyExtUaddvToUaddlv(MachineInstr &MI, MachineRegisterInfo &MRI,
     // the values inside a small vec
     extractParts(SrcReg, SrcTy, MainTy, LeftoverTy, WorkingRegisters,
                  LeftoverRegs, B, MRI);
-    llvm::append_range(WorkingRegisters, LeftoverRegs);
+    for (unsigned I = 0; I < LeftoverRegs.size(); I++) {
+      WorkingRegisters.push_back(LeftoverRegs[I]);
+    }
   } else {
     WorkingRegisters.push_back(SrcReg);
     MainTy = SrcTy;
@@ -494,7 +490,7 @@ void applyExtUaddvToUaddlv(MachineInstr &MI, MachineRegisterInfo &MRI,
 
   unsigned MidScalarSize = MainTy.getScalarSizeInBits() * 2;
   LLT MidScalarLLT = LLT::scalar(MidScalarSize);
-  Register ZeroReg = B.buildConstant(LLT::scalar(64), 0).getReg(0);
+  Register zeroReg = B.buildConstant(LLT::scalar(64), 0).getReg(0);
   for (unsigned I = 0; I < WorkingRegisters.size(); I++) {
     // If the number of elements is too small to build an instruction, extend
     // its size before applying addlv
@@ -510,10 +506,10 @@ void applyExtUaddvToUaddlv(MachineInstr &MI, MachineRegisterInfo &MRI,
 
     // Generate the {U/S}ADDLV instruction, whose output is always double of the
     // Src's Scalar size
-    LLT AddlvTy = MidScalarSize <= 32 ? LLT::fixed_vector(4, 32)
+    LLT addlvTy = MidScalarSize <= 32 ? LLT::fixed_vector(4, 32)
                                       : LLT::fixed_vector(2, 64);
-    Register AddlvReg =
-        B.buildInstr(Opc, {AddlvTy}, {WorkingRegisters[I]}).getReg(0);
+    Register addlvReg =
+        B.buildInstr(Opc, {addlvTy}, {WorkingRegisters[I]}).getReg(0);
 
     // The output from {U/S}ADDLV gets placed in the lowest lane of a v4i32 or
     // v2i64 register.
@@ -522,26 +518,26 @@ void applyExtUaddvToUaddlv(MachineInstr &MI, MachineRegisterInfo &MRI,
     // Therefore we have to extract/truncate the the value to the right type
     if (MidScalarSize == 32 || MidScalarSize == 64) {
       WorkingRegisters[I] = B.buildInstr(AArch64::G_EXTRACT_VECTOR_ELT,
-                                         {MidScalarLLT}, {AddlvReg, ZeroReg})
+                                         {MidScalarLLT}, {addlvReg, zeroReg})
                                 .getReg(0);
     } else {
-      Register ExtractReg = B.buildInstr(AArch64::G_EXTRACT_VECTOR_ELT,
-                                         {LLT::scalar(32)}, {AddlvReg, ZeroReg})
+      Register extractReg = B.buildInstr(AArch64::G_EXTRACT_VECTOR_ELT,
+                                         {LLT::scalar(32)}, {addlvReg, zeroReg})
                                 .getReg(0);
       WorkingRegisters[I] =
-          B.buildTrunc({MidScalarLLT}, {ExtractReg}).getReg(0);
+          B.buildTrunc({MidScalarLLT}, {extractReg}).getReg(0);
     }
   }
 
-  Register OutReg;
+  Register outReg;
   if (WorkingRegisters.size() > 1) {
-    OutReg = B.buildAdd(MidScalarLLT, WorkingRegisters[0], WorkingRegisters[1])
+    outReg = B.buildAdd(MidScalarLLT, WorkingRegisters[0], WorkingRegisters[1])
                  .getReg(0);
     for (unsigned I = 2; I < WorkingRegisters.size(); I++) {
-      OutReg = B.buildAdd(MidScalarLLT, OutReg, WorkingRegisters[I]).getReg(0);
+      outReg = B.buildAdd(MidScalarLLT, outReg, WorkingRegisters[I]).getReg(0);
     }
   } else {
-    OutReg = WorkingRegisters[0];
+    outReg = WorkingRegisters[0];
   }
 
   if (DstTy.getScalarSizeInBits() > MidScalarSize) {
@@ -549,23 +545,23 @@ void applyExtUaddvToUaddlv(MachineInstr &MI, MachineRegisterInfo &MRI,
     // Src's ScalarType
     B.buildInstr(std::get<1>(MatchInfo) ? TargetOpcode::G_SEXT
                                         : TargetOpcode::G_ZEXT,
-                 {DstReg}, {OutReg});
+                 {DstReg}, {outReg});
   } else {
-    B.buildCopy(DstReg, OutReg);
+    B.buildCopy(DstReg, outReg);
   }
 
   MI.eraseFromParent();
 }
 
-// Pushes ADD/SUB/MUL through extend instructions to decrease the number of
-// extend instruction at the end by allowing selection of {s|u}addl sooner
+// Pushes ADD/SUB through extend instructions to decrease the number of extend
+// instruction at the end by allowing selection of {s|u}addl sooner
+
 // i32 add(i32 ext i8, i32 ext i8) => i32 ext(i16 add(i16 ext i8, i16 ext i8))
 bool matchPushAddSubExt(MachineInstr &MI, MachineRegisterInfo &MRI,
                         Register DstReg, Register SrcReg1, Register SrcReg2) {
   assert((MI.getOpcode() == TargetOpcode::G_ADD ||
-          MI.getOpcode() == TargetOpcode::G_SUB ||
-          MI.getOpcode() == TargetOpcode::G_MUL) &&
-         "Expected a G_ADD, G_SUB or G_MUL instruction\n");
+          MI.getOpcode() == TargetOpcode::G_SUB) &&
+         "Expected a G_ADD or G_SUB instruction\n");
 
   // Deal with vector types only
   LLT DstTy = MRI.getType(DstReg);
@@ -598,10 +594,9 @@ void applyPushAddSubExt(MachineInstr &MI, MachineRegisterInfo &MRI,
       B.buildInstr(MI.getOpcode(), {MidTy}, {Ext1Reg, Ext2Reg}).getReg(0);
 
   // G_SUB has to sign-extend the result.
-  // G_ADD needs to sext from sext and can sext or zext from zext, and G_MUL
-  // needs to use the original opcode so the original opcode is used for both.
-  if (MI.getOpcode() == TargetOpcode::G_ADD ||
-      MI.getOpcode() == TargetOpcode::G_MUL)
+  // G_ADD needs to sext from sext and can sext or zext from zext, so the
+  // original opcode is used.
+  if (MI.getOpcode() == TargetOpcode::G_ADD)
     B.buildInstr(Opc, {DstReg}, {AddReg});
   else
     B.buildSExt(DstReg, AddReg);
@@ -733,7 +728,7 @@ protected:
 public:
   AArch64PreLegalizerCombinerImpl(
       MachineFunction &MF, CombinerInfo &CInfo, const TargetPassConfig *TPC,
-      GISelValueTracking &VT, GISelCSEInfo *CSEInfo,
+      GISelKnownBits &KB, GISelCSEInfo *CSEInfo,
       const AArch64PreLegalizerCombinerImplRuleConfig &RuleConfig,
       const AArch64Subtarget &STI, MachineDominatorTree *MDT,
       const LegalizerInfo *LI);
@@ -756,12 +751,12 @@ private:
 
 AArch64PreLegalizerCombinerImpl::AArch64PreLegalizerCombinerImpl(
     MachineFunction &MF, CombinerInfo &CInfo, const TargetPassConfig *TPC,
-    GISelValueTracking &VT, GISelCSEInfo *CSEInfo,
+    GISelKnownBits &KB, GISelCSEInfo *CSEInfo,
     const AArch64PreLegalizerCombinerImplRuleConfig &RuleConfig,
     const AArch64Subtarget &STI, MachineDominatorTree *MDT,
     const LegalizerInfo *LI)
-    : Combiner(MF, CInfo, TPC, &VT, CSEInfo),
-      Helper(Observer, B, /*IsPreLegalize*/ true, &VT, MDT, LI),
+    : Combiner(MF, CInfo, TPC, &KB, CSEInfo),
+      Helper(Observer, B, /*IsPreLegalize*/ true, &KB, MDT, LI),
       RuleConfig(RuleConfig), STI(STI),
 #define GET_GICOMBINER_CONSTRUCTOR_INITS
 #include "AArch64GenPreLegalizeGICombiner.inc"
@@ -825,8 +820,8 @@ void AArch64PreLegalizerCombiner::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<TargetPassConfig>();
   AU.setPreservesCFG();
   getSelectionDAGFallbackAnalysisUsage(AU);
-  AU.addRequired<GISelValueTrackingAnalysisLegacy>();
-  AU.addPreserved<GISelValueTrackingAnalysisLegacy>();
+  AU.addRequired<GISelKnownBitsAnalysis>();
+  AU.addPreserved<GISelKnownBitsAnalysis>();
   AU.addRequired<MachineDominatorTreeWrapperPass>();
   AU.addPreserved<MachineDominatorTreeWrapperPass>();
   AU.addRequired<GISelCSEAnalysisWrapperPass>();
@@ -836,12 +831,15 @@ void AArch64PreLegalizerCombiner::getAnalysisUsage(AnalysisUsage &AU) const {
 
 AArch64PreLegalizerCombiner::AArch64PreLegalizerCombiner()
     : MachineFunctionPass(ID) {
+  initializeAArch64PreLegalizerCombinerPass(*PassRegistry::getPassRegistry());
+
   if (!RuleConfig.parseCommandLineOption())
     report_fatal_error("Invalid rule identifier");
 }
 
 bool AArch64PreLegalizerCombiner::runOnMachineFunction(MachineFunction &MF) {
-  if (MF.getProperties().hasFailedISel())
+  if (MF.getProperties().hasProperty(
+          MachineFunctionProperties::Property::FailedISel))
     return false;
   auto &TPC = getAnalysis<TargetPassConfig>();
 
@@ -856,8 +854,7 @@ bool AArch64PreLegalizerCombiner::runOnMachineFunction(MachineFunction &MF) {
   const Function &F = MF.getFunction();
   bool EnableOpt =
       MF.getTarget().getOptLevel() != CodeGenOptLevel::None && !skipFunction(F);
-  GISelValueTracking *VT =
-      &getAnalysis<GISelValueTrackingAnalysisLegacy>().get(MF);
+  GISelKnownBits *KB = &getAnalysis<GISelKnownBitsAnalysis>().get(MF);
   MachineDominatorTree *MDT =
       &getAnalysis<MachineDominatorTreeWrapperPass>().getDomTree();
   CombinerInfo CInfo(/*AllowIllegalOps*/ true, /*ShouldLegalizeIllegal*/ false,
@@ -869,7 +866,7 @@ bool AArch64PreLegalizerCombiner::runOnMachineFunction(MachineFunction &MF) {
   // This is the first Combiner, so the input IR might contain dead
   // instructions.
   CInfo.EnableFullDCE = true;
-  AArch64PreLegalizerCombinerImpl Impl(MF, CInfo, &TPC, *VT, CSEInfo,
+  AArch64PreLegalizerCombinerImpl Impl(MF, CInfo, &TPC, *KB, CSEInfo,
                                        RuleConfig, ST, MDT, LI);
   return Impl.combineMachineInstrs();
 }
@@ -879,7 +876,7 @@ INITIALIZE_PASS_BEGIN(AArch64PreLegalizerCombiner, DEBUG_TYPE,
                       "Combine AArch64 machine instrs before legalization",
                       false, false)
 INITIALIZE_PASS_DEPENDENCY(TargetPassConfig)
-INITIALIZE_PASS_DEPENDENCY(GISelValueTrackingAnalysisLegacy)
+INITIALIZE_PASS_DEPENDENCY(GISelKnownBitsAnalysis)
 INITIALIZE_PASS_DEPENDENCY(GISelCSEAnalysisWrapperPass)
 INITIALIZE_PASS_END(AArch64PreLegalizerCombiner, DEBUG_TYPE,
                     "Combine AArch64 machine instrs before legalization", false,

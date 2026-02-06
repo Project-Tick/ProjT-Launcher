@@ -86,7 +86,6 @@ current state, follow the links to their respective issues:
 
 * `RISC-V <https://github.com/llvm/llvm-project/issues/55383>`_
 * `LoongArch <https://github.com/llvm/llvm-project/issues/112693>`_
-* `WebAssembly <https://github.com/llvm/llvm-project/issues/150449>`_
 
 Get Involved
 ------------
@@ -136,8 +135,6 @@ interesting areas to contribute to lldb.
    use/ondemand
    use/aarch64-linux
    use/symbolfilejson
-   use/lldbdap
-   use/mcp
    use/troubleshooting
    use/links
    Man Page <man/lldb>
@@ -147,6 +144,7 @@ interesting areas to contribute to lldb.
    :maxdepth: 1
    :caption: Scripting LLDB
 
+   use/python
    use/python-reference
    Python API <python_api>
    Python Extensions <python_extensions>
@@ -172,7 +170,7 @@ interesting areas to contribute to lldb.
    resources/lldbplatformpackets
    resources/caveats
    resources/projects
-   resources/lldbdap-contributing
+   resources/lldbdap
    resources/addinglanguagesupport
    Public C++ API <https://lldb.llvm.org/cpp_reference/namespacelldb.html>
    Private C++ API <https://lldb.llvm.org/cpp_reference/index.html>
@@ -184,8 +182,7 @@ interesting areas to contribute to lldb.
 
    Source Code <https://github.com/llvm/llvm-project>
    Releases <https://github.com/llvm/llvm-project/releases>
-   Join the Discord <https://discord.gg/xS7Z362>
-   Discord Channel <https://discord.com/channels/636084430946959380/636732809708306432>
+   Discord <https://discord.com/channels/636084430946959380/636732809708306432>
    Discussion Forums <https://discourse.llvm.org/c/subprojects/lldb/8>
    Developer Policy <https://llvm.org/docs/DeveloperPolicy.html>
    Bug Reports <https://github.com/llvm/llvm-project/issues?q=is%3Aissue+label%3Alldb+is%3Aopen>

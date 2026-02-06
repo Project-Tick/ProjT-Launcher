@@ -1,4 +1,3 @@
-// UNSUPPORTED: system-windows
 // RUN: mlir-opt %s --load-dialect-plugin=%standalone_libs/StandalonePlugin%shlibext --pass-pipeline="builtin.module(standalone-switch-bar-foo)" | FileCheck %s
 
 module {

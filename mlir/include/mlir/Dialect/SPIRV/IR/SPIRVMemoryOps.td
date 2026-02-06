@@ -15,8 +15,6 @@
 #define MLIR_DIALECT_SPIRV_IR_MEMORY_OPS
 
 include "mlir/Dialect/SPIRV/IR/SPIRVBase.td"
-include "mlir/Interfaces/AlignmentAttrInterface.td"
-
 
 // -----
 
@@ -81,10 +79,10 @@ def SPIRV_AccessChainOp : SPIRV_Op<"AccessChain", [Pure]> {
 
 // -----
 
-def SPIRV_CopyMemoryOp : SPIRV_Op<"CopyMemory", [DeclareOpInterfaceMethods<AlignmentAttrOpInterface>]> {
+def SPIRV_CopyMemoryOp : SPIRV_Op<"CopyMemory", []> {
   let summary = [{
     Copy from the memory pointed to by Source to the memory pointed to by
-    Target. Both operands must be non-void pointers and having the same `<id>`
+    Target. Both operands must be non-void pointers and having the same <id>
     Type operand in their OpTypePointer type declaration.  Matching Storage
     Class is not required.  The amount of memory copied is the size of the
     type pointed to. The copied type must have a fixed size; i.e., it must
@@ -123,9 +121,9 @@ def SPIRV_CopyMemoryOp : SPIRV_Op<"CopyMemory", [DeclareOpInterfaceMethods<Align
     SPIRV_AnyPtr:$target,
     SPIRV_AnyPtr:$source,
     OptionalAttr<SPIRV_MemoryAccessAttr>:$memory_access,
-    OptionalAttr<IntValidAlignment<I32Attr>>:$alignment,
+    OptionalAttr<I32Attr>:$alignment,
     OptionalAttr<SPIRV_MemoryAccessAttr>:$source_memory_access,
-    OptionalAttr<IntValidAlignment<I32Attr>>:$source_alignment
+    OptionalAttr<I32Attr>:$source_alignment
   );
 
   let results = (outs);
@@ -184,7 +182,7 @@ def SPIRV_InBoundsPtrAccessChainOp : SPIRV_Op<"InBoundsPtrAccessChain", [Pure]> 
 
 // -----
 
-def SPIRV_LoadOp : SPIRV_Op<"Load", [DeclareOpInterfaceMethods<AlignmentAttrOpInterface>]> {
+def SPIRV_LoadOp : SPIRV_Op<"Load", []> {
   let summary = "Load through a pointer.";
 
   let description = [{
@@ -222,7 +220,7 @@ def SPIRV_LoadOp : SPIRV_Op<"Load", [DeclareOpInterfaceMethods<AlignmentAttrOpIn
   let arguments = (ins
     SPIRV_AnyPtr:$ptr,
     OptionalAttr<SPIRV_MemoryAccessAttr>:$memory_access,
-    OptionalAttr<IntValidAlignment<I32Attr>>:$alignment
+    OptionalAttr<I32Attr>:$alignment
   );
 
   let results = (outs
@@ -312,7 +310,7 @@ def SPIRV_PtrAccessChainOp : SPIRV_Op<"PtrAccessChain", [Pure]> {
 
 // -----
 
-def SPIRV_StoreOp : SPIRV_Op<"Store", [DeclareOpInterfaceMethods<AlignmentAttrOpInterface>]> {
+def SPIRV_StoreOp : SPIRV_Op<"Store", []> {
   let summary = "Store through a pointer.";
 
   let description = [{
@@ -347,7 +345,7 @@ def SPIRV_StoreOp : SPIRV_Op<"Store", [DeclareOpInterfaceMethods<AlignmentAttrOp
     SPIRV_AnyPtr:$ptr,
     SPIRV_Type:$value,
     OptionalAttr<SPIRV_MemoryAccessAttr>:$memory_access,
-    OptionalAttr<IntValidAlignment<I32Attr>>:$alignment
+    OptionalAttr<I32Attr>:$alignment
   );
 
   let results = (outs);
@@ -381,7 +379,7 @@ def SPIRV_VariableOp : SPIRV_Op<"Variable", []> {
 
     Initializer is optional. If Initializer is present, it will be the
     initial value of the variable's memory content. Initializer must be an
-    `<id>` from a constant instruction or a global (module scope) OpVariable
+    <id> from a constant instruction or a global (module scope) OpVariable
     instruction. Initializer must have the same type as the type pointed to
     by Result Type.
 

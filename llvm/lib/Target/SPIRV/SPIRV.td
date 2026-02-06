@@ -14,8 +14,6 @@ include "SPIRVInstrInfo.td"
 include "SPIRVCombine.td"
 include "SPIRVBuiltins.td"
 
-defm : RemapAllTargetPseudoPointerOperands<pID>;
-
 def SPIRVInstrInfo : InstrInfo;
 
 class Proc<string Name, list<SubtargetFeature> Features>

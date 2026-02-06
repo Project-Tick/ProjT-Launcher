@@ -39,7 +39,9 @@
 #include "llvm/CodeGen/MachineOperand.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/Register.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
+#include "llvm/PassRegistry.h"
 #include "llvm/Support/ErrorHandling.h"
 #include <cassert>
 
@@ -55,7 +57,9 @@ class PPCCTRLoops : public MachineFunctionPass {
 public:
   static char ID;
 
-  PPCCTRLoops() : MachineFunctionPass(ID) {}
+  PPCCTRLoops() : MachineFunctionPass(ID) {
+    initializePPCCTRLoopsPass(*PassRegistry::getPassRegistry());
+  }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.addRequired<MachineLoopInfoWrapperPass>();
@@ -251,7 +255,8 @@ void PPCCTRLoops::expandNormalLoops(MachineLoop *ML, MachineInstr *Start,
       MRI->createVirtualRegister(Is64Bit ? &PPC::G8RC_and_G8RC_NOX0RegClass
                                          : &PPC::GPRC_and_GPRC_NOR0RegClass);
 
-  Start->getParent()->getParent()->getProperties().resetNoPHIs();
+  Start->getParent()->getParent()->getProperties().reset(
+      MachineFunctionProperties::Property::NoPHIs);
 
   // Generate "PHI" in the header block.
   auto PHIMIB = BuildMI(*ML->getHeader(), ML->getHeader()->getFirstNonPHI(),

@@ -8,8 +8,10 @@
 
 #include "mlir/Transforms/Passes.h"
 
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/IR/OperationSupport.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/Support/Format.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -49,9 +51,9 @@ void PrintOpStatsPass::runOnOperation() {
   // Compute the operation statistics for the currently visited operation.
   getOperation()->walk(
       [&](Operation *op) { ++opCount[op->getName().getStringRef()]; });
-  if (printAsJSON)
+  if (printAsJSON) {
     printSummaryInJSON();
-  else
+  } else
     printSummary();
   markAllAnalysesPreserved();
 }

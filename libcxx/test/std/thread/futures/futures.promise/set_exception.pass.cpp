@@ -30,8 +30,8 @@ int main(int, char**)
         p.set_exception(std::make_exception_ptr(3));
         try
         {
-          (void)f.get();
-          assert(false);
+            f.get();
+            assert(false);
         }
         catch (int i)
         {

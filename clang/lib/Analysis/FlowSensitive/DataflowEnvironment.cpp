@@ -16,6 +16,7 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/ExprCXX.h"
+#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
 #include "clang/Analysis/FlowSensitive/ASTOps.h"
@@ -25,9 +26,11 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/MapVector.h"
+#include "llvm/ADT/PointerUnion.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/Support/ErrorHandling.h"
+#include <algorithm>
 #include <cassert>
 #include <memory>
 #include <utility>
@@ -532,11 +535,9 @@ void Environment::initialize() {
           } else if (auto *FieldBeingInitialized =
                          dyn_cast<FieldDecl>(Parent->getLambdaContextDecl())) {
             // This is in a field initializer, rather than a method.
-            const RecordDecl *RD = FieldBeingInitialized->getParent();
-            const ASTContext &Ctx = RD->getASTContext();
-            CanQualType T = Ctx.getCanonicalTagType(RD);
             setThisPointeeStorageLocation(
-                cast<RecordStorageLocation>(createObject(T)));
+                cast<RecordStorageLocation>(createObject(QualType(
+                    FieldBeingInitialized->getParent()->getTypeForDecl(), 0))));
           } else {
             assert(false && "Unexpected this-capturing lambda context.");
           }
@@ -1018,7 +1019,7 @@ Environment::createLocAndMaybeValue(QualType Ty,
                                     int Depth, int &CreatedValuesCount) {
   if (!Visited.insert(Ty.getCanonicalType()).second)
     return createStorageLocation(Ty.getNonReferenceType());
-  llvm::scope_exit EraseVisited(
+  auto EraseVisited = llvm::make_scope_exit(
       [&Visited, Ty] { Visited.erase(Ty.getCanonicalType()); });
 
   Ty = Ty.getNonReferenceType();

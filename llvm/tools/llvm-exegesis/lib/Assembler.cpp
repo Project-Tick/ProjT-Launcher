@@ -29,7 +29,6 @@
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/Object/SymbolSize.h"
 #include "llvm/Support/Alignment.h"
-#include "llvm/Support/Error.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -44,8 +43,8 @@
 namespace llvm {
 namespace exegesis {
 
-static constexpr char ModuleID[] = "ExegesisInfoTest";
-static constexpr char FunctionID[] = "foo";
+static constexpr const char ModuleID[] = "ExegesisInfoTest";
+static constexpr const char FunctionID[] = "foo";
 static const Align kFunctionAlignment(4096);
 
 // Fills the given basic block with register setup code, and returns true if
@@ -66,12 +65,11 @@ static bool generateSnippetSetupCode(const ExegesisTarget &ET,
       assert(MM.Address % getpagesize() == 0 &&
              "Memory mappings need to be aligned to page boundaries.");
 #endif
-      const MemoryValue &MemVal = Key.MemoryValues.at(MM.MemoryValueName);
       BBF.addInstructions(ET.generateMmap(
-          MM.Address, MemVal.SizeBytes,
+          MM.Address, Key.MemoryValues.at(MM.MemoryValueName).SizeBytes,
           ET.getAuxiliaryMemoryStartAddress() +
-              sizeof(int) *
-                  (MemVal.Index + SubprocessMemory::AuxiliaryMemoryOffset)));
+              sizeof(int) * (Key.MemoryValues.at(MM.MemoryValueName).Index +
+                             SubprocessMemory::AuxiliaryMemoryOffset)));
     }
     BBF.addInstructions(ET.setStackRegisterToAuxMem());
   }
@@ -257,7 +255,9 @@ Error assembleToStream(const ExegesisTarget &ET,
   // We need to instruct the passes that we're done with SSA and virtual
   // registers.
   auto &Properties = MF.getProperties();
-  Properties.setNoVRegs().resetIsSSA().setNoPHIs();
+  Properties.set(MachineFunctionProperties::Property::NoVRegs);
+  Properties.reset(MachineFunctionProperties::Property::IsSSA);
+  Properties.set(MachineFunctionProperties::Property::NoPHIs);
 
   for (const MCRegister Reg : LiveIns)
     MF.getRegInfo().addLiveIn(Reg);
@@ -298,7 +298,7 @@ Error assembleToStream(const ExegesisTarget &ET,
   // means that we won't know what values are in the registers.
   // FIXME: this should probably be an assertion.
   if (!IsSnippetSetupComplete)
-    Properties.resetTracksLiveness();
+    Properties.reset(MachineFunctionProperties::Property::TracksLiveness);
 
   Fill(Sink);
 
@@ -310,7 +310,7 @@ Error assembleToStream(const ExegesisTarget &ET,
   MCContext &MCContext = MMIWP->getMMI().getContext();
   legacy::PassManager PM;
 
-  TargetLibraryInfoImpl TLII(Module->getTargetTriple());
+  TargetLibraryInfoImpl TLII(Triple(Module->getTargetTriple()));
   PM.add(new TargetLibraryInfoWrapperPass(TLII));
 
   TargetPassConfig *TPC = TM->createPassConfig(PM);
@@ -322,8 +322,10 @@ Error assembleToStream(const ExegesisTarget &ET,
   TPC->printAndVerify("After ExegesisTarget::addTargetSpecificPasses");
   // Adding the following passes:
   // - postrapseudos: expands pseudo return instructions used on some targets.
+  // - machineverifier: checks that the MachineFunction is well formed.
   // - prologepilog: saves and restore callee saved registers.
-  for (const char *PassName : {"postrapseudos", "prologepilog"})
+  for (const char *PassName :
+       {"postrapseudos", "machineverifier", "prologepilog"})
     if (addPass(PM, PassName, *TPC))
       return make_error<Failure>("Unable to add a mandatory pass");
   TPC->setInitialized();
@@ -334,10 +336,6 @@ Error assembleToStream(const ExegesisTarget &ET,
     return make_error<Failure>("Cannot add AsmPrinter passes");
 
   PM.run(*Module); // Run all the passes
-  bool MFWellFormed =
-      MF.verify(nullptr, "llvm-exegesis Assembly", &outs(), false);
-  if (!MFWellFormed)
-    return make_error<Failure>("The machine function failed verification.");
   return Error::success();
 }
 

@@ -21,6 +21,7 @@
 namespace llvm {
 
 class Module;
+class StringRef;
 
 class AMDGPUPALMetadata {
 public:
@@ -154,9 +155,7 @@ public:
 
   unsigned getPALMajorVersion();
   unsigned getPALMinorVersion();
-  VersionTuple getPALVersion();
 
-  void updateHwStageMaximum(unsigned CC, StringRef field, unsigned Val);
   void setHwStage(unsigned CC, StringRef field, unsigned Val);
   void setHwStage(unsigned CC, StringRef field, bool Val);
   void setHwStage(unsigned CC, StringRef field, msgpack::Type Type,

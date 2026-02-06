@@ -31,7 +31,7 @@ public:
 
   ~ValueObjectVTableChild() override = default;
 
-  llvm::Expected<uint64_t> GetByteSize() override { return m_addr_size; };
+  std::optional<uint64_t> GetByteSize() override { return m_addr_size; };
 
   llvm::Expected<uint32_t> CalculateNumChildren(uint32_t max) override {
     return 0;
@@ -154,10 +154,10 @@ ValueObjectVTable::ValueObjectVTable(ValueObject &parent)
   SetFormat(eFormatPointer);
 }
 
-llvm::Expected<uint64_t> ValueObjectVTable::GetByteSize() {
+std::optional<uint64_t> ValueObjectVTable::GetByteSize() {
   if (m_vtable_symbol)
     return m_vtable_symbol->GetByteSize();
-  return llvm::createStringError("no symbol for vtable");
+  return std::nullopt;
 }
 
 llvm::Expected<uint32_t> ValueObjectVTable::CalculateNumChildren(uint32_t max) {
@@ -252,7 +252,7 @@ bool ValueObjectVTable::UpdateValue() {
   m_num_vtable_entries = (vtable_end_addr - vtable_start_addr) / m_addr_size;
 
   m_value.SetValueType(Value::ValueType::LoadAddress);
-  m_value.GetScalar() = parent->GetAddressOf().address;
+  m_value.GetScalar() = parent->GetAddressOf();
   auto type_system_or_err =
       target_sp->GetScratchTypeSystemForLanguage(eLanguageTypeC_plus_plus);
   if (type_system_or_err) {

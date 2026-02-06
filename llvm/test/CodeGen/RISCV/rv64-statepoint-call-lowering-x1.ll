@@ -11,4 +11,6 @@ entry:
   ret void
 }
 
+
 declare void @return_i1()
+declare token @llvm.experimental.gc.statepoint.p0(i64, i32, ptr, i32, i32, ...)

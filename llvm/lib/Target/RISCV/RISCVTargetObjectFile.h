@@ -55,11 +55,6 @@ public:
                                           MCStreamer &Streamer) const override;
 };
 
-class RISCVMachOTargetObjectFile : public TargetLoweringObjectFileMachO {
-public:
-  RISCVMachOTargetObjectFile() {};
-};
-
 } // end namespace llvm
 
 #endif

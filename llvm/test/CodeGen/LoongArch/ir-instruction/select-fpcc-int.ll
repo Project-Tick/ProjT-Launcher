@@ -24,10 +24,9 @@ define i32 @f32_fcmp_oeq(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.ceq.s $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB1_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB1_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_oeq:
@@ -48,10 +47,9 @@ define i32 @f32_fcmp_ogt(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.clt.s $fcc0, $fa1, $fa0
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB2_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB2_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_ogt:
@@ -72,10 +70,9 @@ define i32 @f32_fcmp_oge(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cle.s $fcc0, $fa1, $fa0
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB3_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB3_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_oge:
@@ -96,10 +93,9 @@ define i32 @f32_fcmp_olt(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.clt.s $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB4_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB4_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_olt:
@@ -120,10 +116,9 @@ define i32 @f32_fcmp_ole(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cle.s $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB5_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB5_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_ole:
@@ -144,10 +139,9 @@ define i32 @f32_fcmp_one(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cne.s $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB6_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB6_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_one:
@@ -168,10 +162,9 @@ define i32 @f32_fcmp_ord(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cor.s $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB7_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB7_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_ord:
@@ -192,10 +185,9 @@ define i32 @f32_fcmp_ueq(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cueq.s $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB8_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB8_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_ueq:
@@ -216,10 +208,9 @@ define i32 @f32_fcmp_ugt(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cult.s $fcc0, $fa1, $fa0
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB9_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB9_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_ugt:
@@ -240,10 +231,9 @@ define i32 @f32_fcmp_uge(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cule.s $fcc0, $fa1, $fa0
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB10_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB10_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_uge:
@@ -264,10 +254,9 @@ define i32 @f32_fcmp_ult(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cult.s $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB11_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB11_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_ult:
@@ -288,10 +277,9 @@ define i32 @f32_fcmp_ule(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cule.s $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB12_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB12_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_ule:
@@ -312,10 +300,9 @@ define i32 @f32_fcmp_une(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cune.s $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB13_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB13_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_une:
@@ -336,10 +323,9 @@ define i32 @f32_fcmp_uno(float %a, float %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cun.s $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB14_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB14_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f32_fcmp_uno:
@@ -388,10 +374,9 @@ define i32 @f64_fcmp_oeq(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.ceq.d $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB17_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB17_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_oeq:
@@ -412,10 +397,9 @@ define i32 @f64_fcmp_ogt(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.clt.d $fcc0, $fa1, $fa0
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB18_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB18_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_ogt:
@@ -436,10 +420,9 @@ define i32 @f64_fcmp_oge(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cle.d $fcc0, $fa1, $fa0
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB19_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB19_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_oge:
@@ -460,10 +443,9 @@ define i32 @f64_fcmp_olt(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.clt.d $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB20_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB20_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_olt:
@@ -484,10 +466,9 @@ define i32 @f64_fcmp_ole(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cle.d $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB21_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB21_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_ole:
@@ -508,10 +489,9 @@ define i32 @f64_fcmp_one(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cne.d $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB22_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB22_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_one:
@@ -532,10 +512,9 @@ define i32 @f64_fcmp_ord(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cor.d $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB23_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB23_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_ord:
@@ -556,10 +535,9 @@ define i32 @f64_fcmp_ueq(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cueq.d $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB24_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB24_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_ueq:
@@ -580,10 +558,9 @@ define i32 @f64_fcmp_ugt(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cult.d $fcc0, $fa1, $fa0
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB25_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB25_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_ugt:
@@ -604,10 +581,9 @@ define i32 @f64_fcmp_uge(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cule.d $fcc0, $fa1, $fa0
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB26_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB26_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_uge:
@@ -628,10 +604,9 @@ define i32 @f64_fcmp_ult(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cult.d $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB27_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB27_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_ult:
@@ -652,10 +627,9 @@ define i32 @f64_fcmp_ule(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cule.d $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB28_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB28_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_ule:
@@ -676,10 +650,9 @@ define i32 @f64_fcmp_une(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cune.d $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB29_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB29_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_une:
@@ -700,10 +673,9 @@ define i32 @f64_fcmp_uno(double %a, double %b, i32 %x, i32 %y) {
 ; LA32:       # %bb.0:
 ; LA32-NEXT:    fcmp.cun.d $fcc0, $fa0, $fa1
 ; LA32-NEXT:    movcf2gr $a2, $fcc0
-; LA32-NEXT:    bne $a2, $zero, .LBB30_2
-; LA32-NEXT:  # %bb.1:
-; LA32-NEXT:    move $a0, $a1
-; LA32-NEXT:  .LBB30_2:
+; LA32-NEXT:    masknez $a1, $a1, $a2
+; LA32-NEXT:    maskeqz $a0, $a0, $a2
+; LA32-NEXT:    or $a0, $a0, $a1
 ; LA32-NEXT:    ret
 ;
 ; LA64-LABEL: f64_fcmp_uno:

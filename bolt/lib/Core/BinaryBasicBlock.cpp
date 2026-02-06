@@ -22,6 +22,8 @@
 namespace llvm {
 namespace bolt {
 
+constexpr uint32_t BinaryBasicBlock::INVALID_OFFSET;
+
 bool operator<(const BinaryBasicBlock &LHS, const BinaryBasicBlock &RHS) {
   return LHS.Index < RHS.Index;
 }
@@ -101,18 +103,9 @@ bool BinaryBasicBlock::validateSuccessorInvariants() {
         Valid &= (Sym == Function->getFunctionEndLabel() ||
                   Sym == Function->getFunctionEndLabel(getFragmentNum()));
         if (!Valid) {
-          const BinaryFunction *TargetBF = BC.getFunctionForSymbol(Sym);
-          if (TargetBF) {
-            // It's possible for another function to be in the jump table entry
-            // as a result of built-in unreachable.
-            Valid = true;
-          } else {
-            BC.errs() << "BOLT-WARNING: Jump table contains illegal entry: "
-                      << Sym->getName() << "\n";
-          }
+          BC.errs() << "BOLT-WARNING: Jump table contains illegal entry: "
+                    << Sym->getName() << "\n";
         }
-        if (!Valid)
-          break;
       }
     }
   } else {
@@ -208,11 +201,7 @@ int32_t BinaryBasicBlock::getCFIStateAtInstr(const MCInst *Instr) const {
       InstrSeen = (&Inst == Instr);
       continue;
     }
-    // Ignoring OpNegateRAState CFIs here, as they dont have a "State"
-    // number associated with them.
-    if (Function->getBinaryContext().MIB->isCFI(Inst) &&
-        (Function->getCFIFor(Inst)->getOperation() !=
-         MCCFIInstruction::OpNegateRAState)) {
+    if (Function->getBinaryContext().MIB->isCFI(Inst)) {
       LastCFI = &Inst;
       break;
     }
@@ -383,7 +372,8 @@ void BinaryBasicBlock::updateJumpTableSuccessors() {
              [](const BinaryBasicBlock *BB1, const BinaryBasicBlock *BB2) {
                return BB1->getInputOffset() < BB2->getInputOffset();
              });
-  SuccessorBBs.erase(llvm::unique(SuccessorBBs), SuccessorBBs.end());
+  SuccessorBBs.erase(std::unique(SuccessorBBs.begin(), SuccessorBBs.end()),
+                     SuccessorBBs.end());
 
   for (BinaryBasicBlock *BB : SuccessorBBs)
     addSuccessor(BB);

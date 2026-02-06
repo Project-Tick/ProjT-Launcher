@@ -10,6 +10,7 @@
 
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/SparseTensor/IR/SparseTensor.h"
+#include "mlir/Dialect/SparseTensor/IR/SparseTensorType.h"
 #include "mlir/Dialect/Utils/StructuredOpsUtils.h"
 #include "mlir/IR/AffineExprVisitor.h"
 #include "mlir/IR/BuiltinTypes.h"
@@ -80,53 +81,6 @@ inline static bool includesDenseOutput(SortMask mask) {
   return includesAny(mask, SortMask::kIncludeDenseOutput);
 }
 
-/// Returns a sparsity rank for loop ordering: lower values indicate
-/// dimensions that should be placed in outer loops.
-/// 0 = Dense, 1 = Compressed, 2 = Singleton, 3 = Other/Unknown.
-static unsigned getLoopSparsityRank(unsigned loop, ArrayRef<Value> allTensors,
-                                    ArrayRef<AffineMap> allMaps) {
-  // Start with highest rank.
-  unsigned minRank = 3;
-
-  for (auto [tensor, map] : llvm::zip(allTensors, allMaps)) {
-    // Check if this loop accesses this tensor.
-    bool loopAccessesTensor = false;
-    unsigned tensorDim = 0;
-    for (AffineExpr expr : map.getResults()) {
-      if (auto dimExpr = dyn_cast<AffineDimExpr>(expr)) {
-        if (dimExpr.getPosition() == loop) {
-          loopAccessesTensor = true;
-          break;
-        }
-      }
-      tensorDim++;
-    }
-
-    if (loopAccessesTensor) {
-      const auto enc = getSparseTensorEncoding(tensor.getType());
-      if (!enc) {
-        // Dense tensor - lowest rank.
-        return 0;
-      } else {
-        // Sparse tensor - check the level type for this dimension.
-        auto lvlTypes = enc.getLvlTypes();
-        if (tensorDim < lvlTypes.size()) {
-          auto lvlType = lvlTypes[tensorDim];
-          if (isDenseLT(lvlType)) {
-            return 0; // Dense level.
-          } else if (isCompressedLT(lvlType)) {
-            minRank = std::min(minRank, 1u); // Compressed level.
-          } else if (isSingletonLT(lvlType)) {
-            minRank = std::min(minRank, 2u); // Singleton level.
-          }
-        }
-      }
-    }
-  }
-
-  return minRank;
-}
-
 AffineMap IterationGraphSorter::topoSort() {
   // The sorted result will put the first Reduction iterator to the
   // latest possible position.
@@ -147,40 +101,9 @@ AffineMap IterationGraphSorter::topoSort() {
     // We always prefer a parallel loop over a reduction loop because putting
     // a reduction loop early might make the loop sequence inadmissible.
     auto &it = !parIt.empty() ? parIt : redIt;
-
-    // Select loop based on strategy.
-    unsigned src;
-    switch (strategy) {
-    case sparse_tensor::LoopOrderingStrategy::kDefault:
-      src = it.back();
-      break;
-    case sparse_tensor::LoopOrderingStrategy::kDenseOuter: {
-      // Prefer dense, then compressed, then singleton dimensions outermost.
-      // Create combined tensor and map lists for analysis.
-      SmallVector<Value> allTensors = ins;
-      allTensors.push_back(out);
-      SmallVector<AffineMap> allMaps = loop2InsLvl;
-      allMaps.push_back(loop2OutLvl);
-
-      // Find loop with minimum (lowest) sparsity rank.
-      unsigned minLoop = it[0];
-      unsigned minRank = getLoopSparsityRank(minLoop, allTensors, allMaps);
-
-      for (auto candidateLoop : it) {
-        unsigned rank = getLoopSparsityRank(candidateLoop, allTensors, allMaps);
-        if (rank < minRank || (rank == minRank && candidateLoop < minLoop)) {
-          minLoop = candidateLoop;
-          minRank = rank;
-        }
-      }
-      src = minLoop;
-      break;
-    }
-    }
-
+    auto src = it.back();
     loopOrder.push_back(src);
-    // Remove the selected loop from the worklist.
-    it.erase(std::find(it.begin(), it.end(), src));
+    it.pop_back();
     // Update in-degree, and push 0-degree node into worklist.
     for (unsigned dst = 0; dst < numLoops; dst++) {
       if (itGraph[src][dst] && --inDegree[dst] == 0) {
@@ -200,8 +123,8 @@ AffineMap IterationGraphSorter::topoSort() {
   return AffineMap();
 }
 
-IterationGraphSorter IterationGraphSorter::fromGenericOp(
-    linalg::GenericOp genericOp, sparse_tensor::LoopOrderingStrategy strategy) {
+IterationGraphSorter
+IterationGraphSorter::fromGenericOp(linalg::GenericOp genericOp) {
   // Must be a demapped sparse kernel.
   assert(!hasAnyNonIdentityOperandsOrResults(genericOp) &&
          hasAnySparseOperandOrResult(genericOp) &&
@@ -218,17 +141,14 @@ IterationGraphSorter IterationGraphSorter::fromGenericOp(
       genericOp.getIteratorTypesArray();
 
   return IterationGraphSorter(std::move(ins), std::move(loopMap), out, outMap,
-                              std::move(iterTypes), strategy);
+                              std::move(iterTypes));
 }
 
 IterationGraphSorter::IterationGraphSorter(
-    SmallVector<Value> &&insArg, SmallVector<AffineMap> &&loop2InsLvlArg,
-    Value out, AffineMap loop2OutLvl,
-    SmallVector<utils::IteratorType> &&iterTypesArg,
-    sparse_tensor::LoopOrderingStrategy strategy)
-    : ins(std::move(insArg)), loop2InsLvl(std::move(loop2InsLvlArg)), out(out),
-      loop2OutLvl(loop2OutLvl), iterTypes(std::move(iterTypesArg)),
-      strategy(strategy) {
+    SmallVector<Value> &&ins, SmallVector<AffineMap> &&loop2InsLvl, Value out,
+    AffineMap loop2OutLvl, SmallVector<utils::IteratorType> &&iterTypes)
+    : ins(std::move(ins)), loop2InsLvl(std::move(loop2InsLvl)), out(out),
+      loop2OutLvl(loop2OutLvl), iterTypes(std::move(iterTypes)) {
   // One map per tensor.
   assert(loop2InsLvl.size() == ins.size());
   // All the affine maps have the same number of dimensions (loops).
@@ -237,15 +157,7 @@ IterationGraphSorter::IterationGraphSorter(
   // The number of results of the map should match the rank of the tensor.
   assert(llvm::all_of(llvm::zip(loop2InsLvl, ins), [](auto mvPair) {
     auto [m, v] = mvPair;
-
-    // For ranked types the rank must match.
-    // Simply return true for UnrankedTensorType
-    if (auto shapedType = llvm::dyn_cast<ShapedType>(v.getType())) {
-      return !shapedType.hasRank() ||
-             (m.getNumResults() == shapedType.getRank());
-    }
-    // Non-shaped (scalar) types behave like rank-0.
-    return m.getNumResults() == 0;
+    return m.getNumResults() == cast<ShapedType>(v.getType()).getRank();
   }));
 
   itGraph.resize(getNumLoops(), std::vector<bool>(getNumLoops(), false));
@@ -255,10 +167,10 @@ IterationGraphSorter::IterationGraphSorter(
 AffineMap IterationGraphSorter::sort(SortMask mask, Value ignored) {
   // Reset the adjacency matrix that represents the iteration graph.
   for (auto &row : itGraph)
-    llvm::fill(row, false);
+    std::fill(row.begin(), row.end(), false);
 
   // Reset in-degree.
-  llvm::fill(inDegree, 0);
+  std::fill(inDegree.begin(), inDegree.end(), 0);
 
   // Add the constraints for the loop to level map.
   for (auto [in, map] : llvm::zip(ins, loop2InsLvl)) {

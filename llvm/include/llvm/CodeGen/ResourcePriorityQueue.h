@@ -75,7 +75,6 @@ namespace llvm {
 
   public:
     ResourcePriorityQueue(SelectionDAGISel *IS);
-    ~ResourcePriorityQueue() override;
 
     bool isBottomUp() const override { return false; }
 

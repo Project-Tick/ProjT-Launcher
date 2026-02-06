@@ -10,6 +10,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include "gtest/gtest.h"
 
+#include <type_traits>
+
 using namespace llvm;
 
 namespace {

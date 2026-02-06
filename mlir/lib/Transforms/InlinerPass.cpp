@@ -18,7 +18,6 @@
 #include "mlir/Analysis/CallGraph.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/Inliner.h"
-#include "llvm/Support/DebugLog.h"
 
 namespace mlir {
 #define GEN_PASS_DEF_INLINER
@@ -121,8 +120,8 @@ static bool isProfitableToInline(const Inliner::ResolvedCall &resolvedCall,
     return true;
 
   unsigned ratio = countOps(calleeRegion) * 100 / callerOps;
-  LDBG() << "Callee / caller operation ratio (max: " << inliningThreshold
-         << "%): " << ratio << "%";
+  LLVM_DEBUG(llvm::dbgs() << "Callee / caller operation ratio (max: "
+                          << inliningThreshold << "%): " << ratio << "%\n");
   return ratio <= inliningThreshold;
 }
 
@@ -139,7 +138,7 @@ void InlinerPass::runOnOperation() {
   }
 
   // By default, assume that any inlining is profitable.
-  auto profitabilityCb = [this](const Inliner::ResolvedCall &call) {
+  auto profitabilityCb = [=](const Inliner::ResolvedCall &call) {
     return isProfitableToInline(call, inliningThreshold);
   };
 

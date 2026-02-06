@@ -38,10 +38,9 @@ public:
   }
 
   static lldb_private::ObjectFile *
-  CreateInstance(const lldb::ModuleSP &module_sp,
-                 lldb::DataExtractorSP extractor_sp, lldb::offset_t data_offset,
-                 const lldb_private::FileSpec *file, lldb::offset_t file_offset,
-                 lldb::offset_t length);
+  CreateInstance(const lldb::ModuleSP &module_sp, lldb::DataBufferSP data_sp,
+                 lldb::offset_t data_offset, const lldb_private::FileSpec *file,
+                 lldb::offset_t file_offset, lldb::offset_t length);
 
   static lldb_private::ObjectFile *CreateMemoryInstance(
       const lldb::ModuleSP &module_sp, lldb::WritableDataBufferSP data_sp,
@@ -89,8 +88,7 @@ public:
 
   ObjectFile::Strata CalculateStrata() override;
 
-  ObjectFileXCOFF(const lldb::ModuleSP &module_sp,
-                  lldb::DataExtractorSP extractor_sp,
+  ObjectFileXCOFF(const lldb::ModuleSP &module_sp, lldb::DataBufferSP data_sp,
                   lldb::offset_t data_offset,
                   const lldb_private::FileSpec *file, lldb::offset_t offset,
                   lldb::offset_t length);
@@ -106,18 +104,6 @@ protected:
 
 private:
   bool CreateBinary();
-  template <typename T>
-  void
-  CreateSectionsWithBitness(lldb_private::SectionList &unified_section_list);
-
-  struct XCOFF32 {
-    using SectionHeader = llvm::object::XCOFFSectionHeader32;
-    static constexpr bool Is64Bit = false;
-  };
-  struct XCOFF64 {
-    using SectionHeader = llvm::object::XCOFFSectionHeader64;
-    static constexpr bool Is64Bit = true;
-  };
 
   std::unique_ptr<llvm::object::XCOFFObjectFile> m_binary;
 };

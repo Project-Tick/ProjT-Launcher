@@ -1,6 +1,4 @@
-// RUN: mlir-opt -split-input-file \
-// RUN: -transform-preload-library='transform-library-paths=%p/td/xfer-drop-unit-dims.mlir' \
-// RUN: -transform-interpreter=entry-point=drop_unit_dims %s | FileCheck %s
+// RUN: mlir-opt %s -test-vector-transfer-collapse-inner-most-dims -split-input-file | FileCheck %s
 
 //-----------------------------------------------------------------------------
 // 1. vector.transfer_read

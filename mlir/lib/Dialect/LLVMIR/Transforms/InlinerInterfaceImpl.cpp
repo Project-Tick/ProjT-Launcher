@@ -22,8 +22,6 @@
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/Support/Debug.h"
 
-#include "llvm/Support/DebugLog.h"
-
 #define DEBUG_TYPE "llvm-inliner"
 
 using namespace mlir;
@@ -115,21 +113,20 @@ handleInlinedAllocas(Operation *call,
     // scope if some are already present in the body of the caller. This is not
     // invalid IR, but LLVM cleans these up in InstCombineCalls.cpp, along with
     // other cases where the stacksave/stackrestore is redundant.
-    stackPtr = LLVM::StackSaveOp::create(
-        builder, call->getLoc(),
-        LLVM::LLVMPointerType::get(call->getContext()));
+    stackPtr = builder.create<LLVM::StackSaveOp>(
+        call->getLoc(), LLVM::LLVMPointerType::get(call->getContext()));
   }
   builder.setInsertionPointToStart(callerEntryBlock);
   for (auto &[allocaOp, arraySize, shouldInsertLifetime] : allocasToMove) {
-    auto newConstant =
-        LLVM::ConstantOp::create(builder, allocaOp->getLoc(),
-                                 allocaOp.getArraySize().getType(), arraySize);
+    auto newConstant = builder.create<LLVM::ConstantOp>(
+        allocaOp->getLoc(), allocaOp.getArraySize().getType(), arraySize);
     // Insert a lifetime start intrinsic where the alloca was before moving it.
     if (shouldInsertLifetime) {
       OpBuilder::InsertionGuard insertionGuard(builder);
       builder.setInsertionPoint(allocaOp);
-      LLVM::LifetimeStartOp::create(builder, allocaOp.getLoc(),
-                                    allocaOp.getResult());
+      builder.create<LLVM::LifetimeStartOp>(
+          allocaOp.getLoc(), arraySize.getValue().getLimitedValue(),
+          allocaOp.getResult());
     }
     allocaOp->moveAfter(newConstant);
     allocaOp.getArraySizeMutable().assign(newConstant.getResult());
@@ -142,11 +139,12 @@ handleInlinedAllocas(Operation *call,
       continue;
     builder.setInsertionPoint(block.getTerminator());
     if (hasDynamicAlloca)
-      LLVM::StackRestoreOp::create(builder, call->getLoc(), stackPtr);
+      builder.create<LLVM::StackRestoreOp>(call->getLoc(), stackPtr);
     for (auto &[allocaOp, arraySize, shouldInsertLifetime] : allocasToMove) {
       if (shouldInsertLifetime)
-        LLVM::LifetimeEndOp::create(builder, allocaOp.getLoc(),
-                                    allocaOp.getResult());
+        builder.create<LLVM::LifetimeEndOp>(
+            allocaOp.getLoc(), arraySize.getValue().getLimitedValue(),
+            allocaOp.getResult());
     }
   }
 }
@@ -235,10 +233,8 @@ getUnderlyingObjectSet(Value pointerValue) {
   WalkContinuation walkResult = walkSlice(pointerValue, [&](Value val) {
     // Attempt to advance to the source of the underlying view-like operation.
     // Examples of view-like operations include GEPOp and AddrSpaceCastOp.
-    if (auto viewOp = val.getDefiningOp<ViewLikeOpInterface>()) {
-      if (val == viewOp.getViewDest())
-        return WalkContinuation::advanceTo(viewOp.getViewSource());
-    }
+    if (auto viewOp = val.getDefiningOp<ViewLikeOpInterface>())
+      return WalkContinuation::advanceTo(viewOp.getViewSource());
 
     // Attempt to advance to control flow predecessors.
     std::optional<SmallVector<Value>> controlFlowPredecessors =
@@ -295,7 +291,7 @@ static void createNewAliasScopesFromNoAliasParameter(
 
   // Scope exit block to make it impossible to forget to get rid of the
   // intrinsics.
-  llvm::scope_exit exit([&] {
+  auto exit = llvm::make_scope_exit([&] {
     for (LLVM::SSACopyOp ssaCopyOp : ssaCopies) {
       ssaCopyOp.replaceAllUsesWith(ssaCopyOp.getOperand());
       ssaCopyOp->erase();
@@ -315,8 +311,7 @@ static void createNewAliasScopesFromNoAliasParameter(
     auto scope = LLVM::AliasScopeAttr::get(functionDomain);
     pointerScopes[copyOp] = scope;
 
-    auto builder = OpBuilder(call);
-    LLVM::NoAliasScopeDeclOp::create(builder, call->getLoc(), scope);
+    OpBuilder(call).create<LLVM::NoAliasScopeDeclOp>(call->getLoc(), scope);
   }
 
   // Go through every instruction and attempt to find which noalias parameters
@@ -608,17 +603,16 @@ static Value handleByValArgumentInit(OpBuilder &builder, Location loc,
     OpBuilder::InsertionGuard insertionGuard(builder);
     Block *entryBlock = &(*argument.getParentRegion()->begin());
     builder.setInsertionPointToStart(entryBlock);
-    Value one = LLVM::ConstantOp::create(builder, loc, builder.getI64Type(),
-                                         builder.getI64IntegerAttr(1));
-    allocaOp = LLVM::AllocaOp::create(builder, loc, argument.getType(),
-                                      elementType, one, targetAlignment);
+    Value one = builder.create<LLVM::ConstantOp>(loc, builder.getI64Type(),
+                                                 builder.getI64IntegerAttr(1));
+    allocaOp = builder.create<LLVM::AllocaOp>(
+        loc, argument.getType(), elementType, one, targetAlignment);
   }
   // Copy the pointee to the newly allocated value.
-  Value copySize =
-      LLVM::ConstantOp::create(builder, loc, builder.getI64Type(),
-                               builder.getI64IntegerAttr(elementTypeSize));
-  LLVM::MemcpyOp::create(builder, loc, allocaOp, argument, copySize,
-                         /*isVolatile=*/false);
+  Value copySize = builder.create<LLVM::ConstantOp>(
+      loc, builder.getI64Type(), builder.getI64IntegerAttr(elementTypeSize));
+  builder.create<LLVM::MemcpyOp>(loc, allocaOp, argument, copySize,
+                                 /*isVolatile=*/false);
   return allocaOp;
 }
 
@@ -670,44 +664,41 @@ struct LLVMInlinerInterface : public DialectInlinerInterface {
 
   bool isLegalToInline(Operation *call, Operation *callable,
                        bool wouldBeCloned) const final {
-    auto callOp = dyn_cast<LLVM::CallOp>(call);
-    if (!callOp) {
-      LDBG() << "Cannot inline: call is not an '"
-             << LLVM::CallOp::getOperationName() << "' op";
-      return false;
-    }
-    if (callOp.getNoInline()) {
-      LDBG() << "Cannot inline: call is marked no_inline";
+    if (!isa<LLVM::CallOp>(call)) {
+      LLVM_DEBUG(llvm::dbgs() << "Cannot inline: call is not an '"
+                              << LLVM::CallOp::getOperationName() << "' op\n");
       return false;
     }
     auto funcOp = dyn_cast<LLVM::LLVMFuncOp>(callable);
     if (!funcOp) {
-      LDBG() << "Cannot inline: callable is not an '"
-             << LLVM::LLVMFuncOp::getOperationName() << "' op";
+      LLVM_DEBUG(llvm::dbgs()
+                 << "Cannot inline: callable is not an '"
+                 << LLVM::LLVMFuncOp::getOperationName() << "' op\n");
       return false;
     }
     if (funcOp.isNoInline()) {
-      LDBG() << "Cannot inline: function is marked no_inline";
+      LLVM_DEBUG(llvm::dbgs()
+                 << "Cannot inline: function is marked no_inline\n");
       return false;
     }
     if (funcOp.isVarArg()) {
-      LDBG() << "Cannot inline: callable is variadic";
+      LLVM_DEBUG(llvm::dbgs() << "Cannot inline: callable is variadic\n");
       return false;
     }
     // TODO: Generate aliasing metadata from noalias result attributes.
     if (auto attrs = funcOp.getArgAttrs()) {
       for (DictionaryAttr attrDict : attrs->getAsRange<DictionaryAttr>()) {
         if (attrDict.contains(LLVM::LLVMDialect::getInAllocaAttrName())) {
-          LDBG() << "Cannot inline " << funcOp.getSymName()
-                 << ": inalloca arguments not supported";
+          LLVM_DEBUG(llvm::dbgs() << "Cannot inline " << funcOp.getSymName()
+                                  << ": inalloca arguments not supported\n");
           return false;
         }
       }
     }
     // TODO: Handle exceptions.
     if (funcOp.getPersonality()) {
-      LDBG() << "Cannot inline " << funcOp.getSymName()
-             << ": unhandled function personality";
+      LLVM_DEBUG(llvm::dbgs() << "Cannot inline " << funcOp.getSymName()
+                              << ": unhandled function personality\n");
       return false;
     }
     if (funcOp.getPassthrough()) {
@@ -717,8 +708,10 @@ struct LLVMInlinerInterface : public DialectInlinerInterface {
             if (!stringAttr)
               return false;
             if (disallowedFunctionAttrs.contains(stringAttr)) {
-              LDBG() << "Cannot inline " << funcOp.getSymName()
-                     << ": found disallowed function attribute " << stringAttr;
+              LLVM_DEBUG(llvm::dbgs()
+                         << "Cannot inline " << funcOp.getSymName()
+                         << ": found disallowed function attribute "
+                         << stringAttr << "\n");
               return true;
             }
             return false;
@@ -733,10 +726,8 @@ struct LLVMInlinerInterface : public DialectInlinerInterface {
   }
 
   bool isLegalToInline(Operation *op, Region *, bool, IRMapping &) const final {
-    // The inliner cannot handle variadic function arguments and blocktag
-    // operations prevent inlining since they the blockaddress operations
-    // reference them via the callee symbol.
-    return !(isa<LLVM::VaStartOp>(op) || isa<LLVM::BlockTagOp>(op));
+    // The inliner cannot handle variadic function arguments.
+    return !isa<LLVM::VaStartOp>(op);
   }
 
   /// Handle the given inlined return by replacing it with a branch. This
@@ -749,14 +740,16 @@ struct LLVMInlinerInterface : public DialectInlinerInterface {
 
     // Replace the return with a branch to the dest.
     OpBuilder builder(op);
-    LLVM::BrOp::create(builder, op->getLoc(), returnOp.getOperands(), newDest);
+    builder.create<LLVM::BrOp>(op->getLoc(), returnOp.getOperands(), newDest);
     op->erase();
   }
 
   bool allowSingleBlockOptimization(
       iterator_range<Region::iterator> inlinedBlocks) const final {
-    return !(!inlinedBlocks.empty() &&
-             isa<LLVM::UnreachableOp>(inlinedBlocks.begin()->getTerminator()));
+    if (!inlinedBlocks.empty() &&
+        isa<LLVM::UnreachableOp>(inlinedBlocks.begin()->getTerminator()))
+      return false;
+    return true;
   }
 
   /// Handle the given inlined return by replacing the uses of the call with the
@@ -801,7 +794,7 @@ struct LLVMInlinerInterface : public DialectInlinerInterface {
     // and is extremely unlikely to exist in the code prior to inlining, using
     // this to communicate between this method and `processInlinedCallBlocks`.
     // TODO: Fix this by refactoring the inliner interface.
-    auto copyOp = LLVM::SSACopyOp::create(builder, call->getLoc(), argument);
+    auto copyOp = builder.create<LLVM::SSACopyOp>(call->getLoc(), argument);
     if (argumentAttrs.contains(LLVM::LLVMDialect::getNoAliasAttrName()))
       copyOp->setDiscardableAttr(
           builder.getStringAttr(LLVM::LLVMDialect::getNoAliasAttrName()),

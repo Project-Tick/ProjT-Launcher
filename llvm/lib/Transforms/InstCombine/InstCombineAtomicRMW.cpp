@@ -15,12 +15,13 @@
 
 using namespace llvm;
 
+namespace {
 /// Return true if and only if the given instruction does not modify the memory
 /// location referenced.  Note that an idemptent atomicrmw may still have
 /// ordering effects on nearby instructions, or be volatile.
 /// TODO: Common w/ the version in AtomicExpandPass, and change the term used.
 /// Idemptotent is confusing in this context.
-static bool isIdempotentRMW(AtomicRMWInst &RMWI) {
+bool isIdempotentRMW(AtomicRMWInst& RMWI) {
   if (auto CF = dyn_cast<ConstantFP>(RMWI.getValOperand()))
     switch(RMWI.getOperation()) {
     case AtomicRMWInst::FAdd: // -0.0
@@ -58,7 +59,7 @@ static bool isIdempotentRMW(AtomicRMWInst &RMWI) {
 
 /// Return true if the given instruction always produces a value in memory
 /// equivalent to its value operand.
-static bool isSaturating(AtomicRMWInst &RMWI) {
+bool isSaturating(AtomicRMWInst& RMWI) {
   if (auto CF = dyn_cast<ConstantFP>(RMWI.getValOperand()))
     switch (RMWI.getOperation()) {
     case AtomicRMWInst::FMax:
@@ -97,6 +98,7 @@ static bool isSaturating(AtomicRMWInst &RMWI) {
     return C->isMaxValue(false);
   };
 }
+} // namespace
 
 Instruction *InstCombinerImpl::visitAtomicRMWInst(AtomicRMWInst &RMWI) {
 

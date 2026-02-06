@@ -1,4 +1,4 @@
-; REQUIRES: x86-registered-target
+; REQUIRES: x86_64-linux
 ; RUN: opt < %s -passes='pseudo-probe,loop-unroll-full' -verify-pseudo-probe -S -o %t 2>&1 | FileCheck %s --check-prefix=VERIFY
 ; RUN: FileCheck %s < %t
 

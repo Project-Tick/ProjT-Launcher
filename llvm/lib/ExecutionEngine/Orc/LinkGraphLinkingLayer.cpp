@@ -55,7 +55,7 @@ public:
     Plugins = Layer.Plugins;
   }
 
-  ~JITLinkCtx() override {
+  ~JITLinkCtx() {
     // If there is an object buffer return function then use it to
     // return ownership of the buffer.
     if (Layer.ReturnObjectBuffer && ObjBuffer)
@@ -108,7 +108,8 @@ public:
         LookupContinuation->run(Result.takeError());
       else {
         AsyncLookupResult LR;
-        LR.insert_range(*Result);
+        for (auto &KV : *Result)
+          LR[KV.first] = KV.second;
         LookupContinuation->run(std::move(LR));
       }
     };
@@ -207,6 +208,7 @@ public:
     if (auto Err = MR->notifyResolved(InternedResult))
       return Err;
 
+    notifyLoaded();
     return Error::success();
   }
 
@@ -241,6 +243,11 @@ public:
         [this](LinkGraph &G) { return registerDependencies(G); });
 
     return Error::success();
+  }
+
+  void notifyLoaded() {
+    for (auto &P : Plugins)
+      P->notifyLoaded(*MR);
   }
 
   Error notifyEmitted(jitlink::JITLinkMemoryManager::FinalizedAlloc FA) {
@@ -389,13 +396,16 @@ private:
 
         for (auto *FB : BI.AnonEdges) {
           auto &FBI = BlockInfos[FB];
-          FBI.AnonBackEdges.insert_range(BI.AnonBackEdges);
+          for (auto *BB : BI.AnonBackEdges)
+            FBI.AnonBackEdges.insert(BB);
         }
 
         for (auto *BB : BI.AnonBackEdges) {
           auto &BBI = BlockInfos[BB];
-          BBI.SymbolDeps.insert_range(BI.SymbolDeps);
-          BBI.AnonEdges.insert_range(BI.AnonEdges);
+          for (auto *SD : BI.SymbolDeps)
+            BBI.SymbolDeps.insert(SD);
+          for (auto *FB : BI.AnonEdges)
+            BBI.AnonEdges.insert(FB);
         }
       }
 
@@ -489,10 +499,7 @@ LinkGraphLinkingLayer::LinkGraphLinkingLayer(
 }
 
 LinkGraphLinkingLayer::~LinkGraphLinkingLayer() {
-  assert(Allocs.empty() &&
-         "Layer destroyed with resources still attached "
-         "(ExecutionSession::endSession() must be called prior to "
-         "destruction)");
+  assert(Allocs.empty() && "Layer destroyed with resources still attached");
   getExecutionSession().deregisterResourceManager(*this);
 }
 

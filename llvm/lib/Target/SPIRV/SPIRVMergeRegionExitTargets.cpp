@@ -15,13 +15,18 @@
 #include "Analysis/SPIRVConvergenceRegionAnalysis.h"
 #include "SPIRV.h"
 #include "SPIRVSubtarget.h"
+#include "SPIRVTargetMachine.h"
 #include "SPIRVUtils.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/CodeGen/IntrinsicLowering.h"
+#include "llvm/IR/CFG.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/IntrinsicsSPIRV.h"
 #include "llvm/InitializePasses.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/LoopSimplify.h"
@@ -29,13 +34,16 @@
 
 using namespace llvm;
 
-namespace {
+namespace llvm {
+void initializeSPIRVMergeRegionExitTargetsPass(PassRegistry &);
 
 class SPIRVMergeRegionExitTargets : public FunctionPass {
 public:
   static char ID;
 
-  SPIRVMergeRegionExitTargets() : FunctionPass(ID) {}
+  SPIRVMergeRegionExitTargets() : FunctionPass(ID) {
+    initializeSPIRVMergeRegionExitTargetsPass(*PassRegistry::getPassRegistry());
+  };
 
   // Gather all the successors of |BB|.
   // This function asserts if the terminator neither a branch, switch or return.
@@ -79,8 +87,12 @@ public:
       BasicBlock *RHSTarget =
           BI->isConditional() ? BI->getSuccessor(1) : nullptr;
 
-      Value *LHS = TargetToValue.lookup(LHSTarget);
-      Value *RHS = TargetToValue.lookup(RHSTarget);
+      Value *LHS = TargetToValue.count(LHSTarget) != 0
+                       ? TargetToValue.at(LHSTarget)
+                       : nullptr;
+      Value *RHS = TargetToValue.count(RHSTarget) != 0
+                       ? TargetToValue.at(RHSTarget)
+                       : nullptr;
 
       if (LHS == nullptr || RHS == nullptr)
         return LHS == nullptr ? RHS : LHS;
@@ -234,7 +246,7 @@ public:
   }
 #endif
 
-  bool runOnFunction(Function &F) override {
+  virtual bool runOnFunction(Function &F) override {
     LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
     auto *TopLevelRegion =
         getAnalysis<SPIRVConvergenceRegionAnalysisWrapperPass>()
@@ -265,7 +277,7 @@ public:
     FunctionPass::getAnalysisUsage(AU);
   }
 };
-} // namespace
+} // namespace llvm
 
 char SPIRVMergeRegionExitTargets::ID = 0;
 

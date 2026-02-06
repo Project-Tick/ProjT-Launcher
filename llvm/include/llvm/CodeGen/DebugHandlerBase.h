@@ -30,7 +30,7 @@ class MachineModuleInfo;
 /// Represents the location at which a variable is stored.
 struct DbgVariableLocation {
   /// Base register.
-  MCRegister Register;
+  unsigned Register;
 
   /// Chain of offsetted loads necessary to load the value if it lives in
   /// memory. Every load except for the last is pointer-sized.
@@ -101,12 +101,12 @@ protected:
 
   /// Ensure that a label will be emitted before MI.
   void requestLabelBeforeInsn(const MachineInstr *MI) {
-    LabelsBeforeInsn.try_emplace(MI);
+    LabelsBeforeInsn.insert(std::make_pair(MI, nullptr));
   }
 
   /// Ensure that a label will be emitted after MI.
   void requestLabelAfterInsn(const MachineInstr *MI) {
-    LabelsAfterInsn.try_emplace(MI);
+    LabelsAfterInsn.insert(std::make_pair(MI, nullptr));
   }
 
   virtual void beginFunctionImpl(const MachineFunction *MF) = 0;
@@ -118,7 +118,7 @@ private:
 
   // AsmPrinterHandler overrides.
 public:
-  ~DebugHandlerBase() override;
+  virtual ~DebugHandlerBase() override;
 
   void beginModule(Module *M) override;
 
@@ -144,8 +144,6 @@ public:
   static bool isUnsignedDIType(const DIType *Ty);
 
   const InstructionOrdering &getInstOrdering() const { return InstOrdering; }
-
-  const LexicalScopes &getLexicalScopes() const { return LScopes; }
 };
 
 } // namespace llvm

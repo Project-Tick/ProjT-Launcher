@@ -18,25 +18,6 @@ using namespace llvm::MachO;
 namespace clang {
 namespace installapi {
 
-ArchitectureSet &LibAttrs::getArchSet(StringRef Attr) {
-  auto *It = llvm::find_if(LibraryAttributes, [&Attr](const auto &Input) {
-    return Attr == Input.first;
-  });
-  if (It != LibraryAttributes.end())
-    return It->second;
-  LibraryAttributes.push_back({Attr.str(), ArchitectureSet()});
-  return LibraryAttributes.back().second;
-}
-
-std::optional<LibAttrs::Entry> LibAttrs::find(StringRef Attr) const {
-  auto *It = llvm::find_if(LibraryAttributes, [&Attr](const auto &Input) {
-    return Attr == Input.first;
-  });
-  if (It == LibraryAttributes.end())
-    return std::nullopt;
-  return *It;
-}
-
 /// Metadata stored about a mapping of a declaration to a symbol.
 struct DylibVerifier::SymbolContext {
   // Name to use for all querying and verification
@@ -750,6 +731,7 @@ void DylibVerifier::visitSymbolInDylib(const Record &R, SymbolContext &SymCtx) {
   // Missing declarations are dropped for ErrorsOnly mode. It is the last
   // remaining mode.
   updateState(Result::Ignore);
+  return;
 }
 
 void DylibVerifier::visitGlobal(const GlobalRecord &R) {
@@ -843,13 +825,13 @@ bool DylibVerifier::verifyBinaryAttrs(const ArrayRef<Target> ProvidedTargets,
     DylibTargets.push_back(RS->getTarget());
     const BinaryAttrs &BinInfo = RS->getBinaryAttrs();
     for (const StringRef LibName : BinInfo.RexportedLibraries)
-      DylibReexports.getArchSet(LibName).set(DylibTargets.back().Arch);
+      DylibReexports[LibName].set(DylibTargets.back().Arch);
     for (const StringRef LibName : BinInfo.AllowableClients)
-      DylibClients.getArchSet(LibName).set(DylibTargets.back().Arch);
+      DylibClients[LibName].set(DylibTargets.back().Arch);
     // Compare attributes that are only representable in >= TBD_V5.
     if (FT >= FileType::TBD_V5)
       for (const StringRef Name : BinInfo.RPaths)
-        DylibRPaths.getArchSet(Name).set(DylibTargets.back().Arch);
+        DylibRPaths[Name].set(DylibTargets.back().Arch);
   }
 
   // Check targets first.
@@ -941,33 +923,31 @@ bool DylibVerifier::verifyBinaryAttrs(const ArrayRef<Target> ProvidedTargets,
     if (Provided == Dylib)
       return true;
 
-    for (const LibAttrs::Entry &PEntry : Provided.get()) {
-      const auto &[PAttr, PArchSet] = PEntry;
-      auto DAttrEntry = Dylib.find(PAttr);
-      if (!DAttrEntry) {
-        Ctx.Diag->Report(DiagID_missing) << "binary file" << PEntry;
+    for (const llvm::StringMapEntry<ArchitectureSet> &PAttr : Provided) {
+      const auto DAttrIt = Dylib.find(PAttr.getKey());
+      if (DAttrIt == Dylib.end()) {
+        Ctx.Diag->Report(DiagID_missing) << "binary file" << PAttr;
         if (Fatal)
           return false;
       }
 
-      if (PArchSet != DAttrEntry->second) {
-        Ctx.Diag->Report(DiagID_mismatch) << PEntry << *DAttrEntry;
+      if (PAttr.getValue() != DAttrIt->getValue()) {
+        Ctx.Diag->Report(DiagID_mismatch) << PAttr << *DAttrIt;
         if (Fatal)
           return false;
       }
     }
 
-    for (const LibAttrs::Entry &DEntry : Dylib.get()) {
-      const auto &[DAttr, DArchSet] = DEntry;
-      const auto &PAttrEntry = Provided.find(DAttr);
-      if (!PAttrEntry) {
-        Ctx.Diag->Report(DiagID_missing) << "installAPI option" << DEntry;
+    for (const llvm::StringMapEntry<ArchitectureSet> &DAttr : Dylib) {
+      const auto PAttrIt = Provided.find(DAttr.getKey());
+      if (PAttrIt == Provided.end()) {
+        Ctx.Diag->Report(DiagID_missing) << "installAPI option" << DAttr;
         if (!Fatal)
           continue;
         return false;
       }
 
-      if (PAttrEntry->second != DArchSet) {
+      if (PAttrIt->getValue() != DAttr.getValue()) {
         if (Fatal)
           llvm_unreachable("this case was already covered above.");
       }

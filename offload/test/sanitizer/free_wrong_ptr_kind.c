@@ -6,9 +6,11 @@
 // clang-format on
 
 // UNSUPPORTED: aarch64-unknown-linux-gnu
+// UNSUPPORTED: aarch64-unknown-linux-gnu-LTO
 // UNSUPPORTED: x86_64-unknown-linux-gnu
+// UNSUPPORTED: x86_64-unknown-linux-gnu-LTO
 // UNSUPPORTED: s390x-ibm-linux-gnu
-// XFAIL: intelgpu
+// UNSUPPORTED: s390x-ibm-linux-gnu-LTO
 
 #include <omp.h>
 
@@ -24,10 +26,10 @@ int main(void) {
 // CHECK:  dataDelete
 // CHECK:  omp_target_free
 // NDEBG: main
-// DEBUG:  main {{.*}}free_wrong_ptr_kind.c:[[@LINE-7]]
+// DEBUG:  main {{.*}}free_wrong_ptr_kind.c:22
 //
 // CHECK: Last allocation of size 8 -> device pointer
 // CHECK:  dataAlloc
 // CHECK:  llvm_omp_target_alloc_host
 // NDEBG:  main
-// DEBUG:  main {{.*}}free_wrong_ptr_kind.c:[[@LINE-14]]
+// DEBUG:  main {{.*}}free_wrong_ptr_kind.c:21

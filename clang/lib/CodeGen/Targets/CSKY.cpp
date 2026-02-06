@@ -82,16 +82,15 @@ ABIArgInfo CSKYABIInfo::classifyArgumentType(QualType Ty, int &ArgGPRsLeft,
   if (CGCXXABI::RecordArgABI RAA = getRecordArgABI(Ty, getCXXABI())) {
     if (ArgGPRsLeft)
       ArgGPRsLeft -= 1;
-    return getNaturalAlignIndirect(
-        Ty, /*AddrSpace=*/getDataLayout().getAllocaAddrSpace(),
-        /*ByVal=*/RAA == CGCXXABI::RAA_DirectInMemory);
+    return getNaturalAlignIndirect(Ty, /*ByVal=*/RAA ==
+                                           CGCXXABI::RAA_DirectInMemory);
   }
 
   // Ignore empty structs/unions.
   if (isEmptyRecord(getContext(), Ty, true))
     return ABIArgInfo::getIgnore();
 
-  if (!Ty->isUnionType())
+  if (!Ty->getAsUnionType())
     if (const Type *SeltTy = isSingleElementStruct(Ty, getContext()))
       return ABIArgInfo::getDirect(CGT.ConvertType(QualType(SeltTy, 0)));
 
@@ -115,8 +114,8 @@ ABIArgInfo CSKYABIInfo::classifyArgumentType(QualType Ty, int &ArgGPRsLeft,
 
   if (!isAggregateTypeForABI(Ty)) {
     // Treat an enum type as its underlying type.
-    if (const auto *ED = Ty->getAsEnumDecl())
-      Ty = ED->getIntegerType();
+    if (const EnumType *EnumTy = Ty->getAs<EnumType>())
+      Ty = EnumTy->getDecl()->getIntegerType();
 
     // All integral types are promoted to XLen width, unless passed on the
     // stack.
@@ -145,8 +144,7 @@ ABIArgInfo CSKYABIInfo::classifyArgumentType(QualType Ty, int &ArgGPRsLeft,
           llvm::IntegerType::get(getVMContext(), XLen), (Size + 31) / XLen));
     }
   }
-  return getNaturalAlignIndirect(Ty, getDataLayout().getAllocaAddrSpace(),
-                                 /*ByVal=*/false);
+  return getNaturalAlignIndirect(Ty, /*ByVal=*/false);
 }
 
 ABIArgInfo CSKYABIInfo::classifyReturnType(QualType RetTy) const {

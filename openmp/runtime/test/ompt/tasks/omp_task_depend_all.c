@@ -1,4 +1,3 @@
-// clang-format off
 // RUN: %libomp-compile-and-run | FileCheck %s
 // REQUIRES: ompt
 
@@ -66,7 +65,6 @@
 // CHECK: ompt_event_dependences:
 // CHECK-SAME: ompt_dependence_type_in
 // CHECK-SAME: ndeps=1
-// clang-format on
 
 #include "callback.h"
 #include <stdio.h>

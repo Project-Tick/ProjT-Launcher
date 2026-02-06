@@ -1,5 +1,4 @@
 # RUN: llc -o - -mtriple=x86_64-- -run-pass=x86-cf-opt %s | FileCheck %s
-# RUN: llc -o - -mtriple=x86_64-- -passes=x86-cf-opt %s | FileCheck %s
 
 --- |
   ; ModuleID = 'test.ll'
@@ -69,8 +68,8 @@ frameInfo:
   hasVAStart:      false
   hasMustTailInVarArgFunc: false
   localFrameSize:  0
-  savePoint:       []
-  restorePoint:    []
+  savePoint:       ''
+  restorePoint:    ''
 fixedStack:      []
 stack:           []
 callSites:       []

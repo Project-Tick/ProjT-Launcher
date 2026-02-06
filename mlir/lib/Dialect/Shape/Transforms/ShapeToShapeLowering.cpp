@@ -13,10 +13,11 @@
 #include "mlir/Dialect/Shape/IR/Shape.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/PatternMatch.h"
+#include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mlir {
-#define GEN_PASS_DEF_SHAPETOSHAPELOWERINGPASS
+#define GEN_PASS_DEF_SHAPETOSHAPELOWERING
 #include "mlir/Dialect/Shape/Transforms/Passes.h.inc"
 } // namespace mlir
 
@@ -43,14 +44,14 @@ NumElementsOpConverter::matchAndRewrite(NumElementsOp op,
                    ->materializeConstant(rewriter, rewriter.getIndexAttr(1),
                                          valueType, loc)
                    ->getResult(0);
-  ReduceOp reduce = ReduceOp::create(rewriter, loc, op.getShape(), init);
+  ReduceOp reduce = rewriter.create<ReduceOp>(loc, op.getShape(), init);
 
   // Generate reduce operator.
   Block *body = reduce.getBody();
   OpBuilder b = OpBuilder::atBlockEnd(body);
-  Value product = MulOp::create(b, loc, valueType, body->getArgument(1),
-                                body->getArgument(2));
-  shape::YieldOp::create(b, loc, product);
+  Value product = b.create<MulOp>(loc, valueType, body->getArgument(1),
+                                  body->getArgument(2));
+  b.create<shape::YieldOp>(loc, product);
 
   rewriter.replaceOp(op, reduce.getResult());
   return success();
@@ -58,7 +59,7 @@ NumElementsOpConverter::matchAndRewrite(NumElementsOp op,
 
 namespace {
 struct ShapeToShapeLowering
-    : public impl::ShapeToShapeLoweringPassBase<ShapeToShapeLowering> {
+    : public impl::ShapeToShapeLoweringBase<ShapeToShapeLowering> {
   void runOnOperation() override;
 };
 } // namespace
@@ -79,4 +80,8 @@ void ShapeToShapeLowering::runOnOperation() {
 
 void mlir::populateShapeRewritePatterns(RewritePatternSet &patterns) {
   patterns.add<NumElementsOpConverter>(patterns.getContext());
+}
+
+std::unique_ptr<Pass> mlir::createShapeToShapeLowering() {
+  return std::make_unique<ShapeToShapeLowering>();
 }

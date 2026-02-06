@@ -2,7 +2,7 @@
 
 #define TEMP_FAILURE_RETRY(x)                                                  \
   ({                                                                           \
-    __typeof__(x) __z;                                                         \
+    typeof(x) __z;                                                             \
     do                                                                         \
       __z = (x);                                                               \
     while (__z == -1);                                                         \
@@ -130,7 +130,7 @@ void obscured_temp_failure_retry(void) {
 #undef TEMP_FAILURE_RETRY
 #define IMPL(x)                                                                \
   ({                                                                           \
-    __typeof__(x) __z;                                                         \
+    typeof(x) __z;                                                             \
     do                                                                         \
       __z = (x);                                                               \
     while (__z == -1);                                                         \

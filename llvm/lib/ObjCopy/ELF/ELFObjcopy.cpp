@@ -198,7 +198,8 @@ static Error dumpSectionToFile(StringRef SecName, StringRef Filename,
       if (!BufferOrErr)
         return createFileError(Filename, BufferOrErr.takeError());
       std::unique_ptr<FileOutputBuffer> Buf = std::move(*BufferOrErr);
-      llvm::copy(Sec.OriginalData, Buf->getBufferStart());
+      std::copy(Sec.OriginalData.begin(), Sec.OriginalData.end(),
+                Buf->getBufferStart());
       if (Error E = Buf->commit())
         return createFileError(Filename, std::move(E));
       return Error::success();
@@ -351,7 +352,8 @@ static Error updateAndRemoveSymbols(const CommonConfig &Config,
       Sym.Name = std::string(I->getValue());
 
     if (!Config.SymbolsPrefixRemove.empty() && Sym.Type != STT_SECTION)
-      if (StringRef(Sym.Name).starts_with(Config.SymbolsPrefixRemove))
+      if (Sym.Name.compare(0, Config.SymbolsPrefixRemove.size(),
+                           Config.SymbolsPrefixRemove) == 0)
         Sym.Name = Sym.Name.substr(Config.SymbolsPrefixRemove.size());
 
     if (!Config.SymbolsPrefix.empty() && Sym.Type != STT_SECTION)
@@ -362,7 +364,7 @@ static Error updateAndRemoveSymbols(const CommonConfig &Config,
   // (like GroupSection or RelocationSection). This way, we know which
   // symbols are still 'needed' and which are not.
   if (Config.StripUnneeded || !Config.UnneededSymbolsToRemove.empty() ||
-      !Config.OnlySection.empty() || Config.DiscardMode != DiscardType::None) {
+      !Config.OnlySection.empty()) {
     for (SectionBase &Sec : Obj.sections())
       Sec.markSymbols();
   }
@@ -384,23 +386,22 @@ static Error updateAndRemoveSymbols(const CommonConfig &Config,
     if (Config.StripDebug && Sym.Type == STT_FILE)
       return true;
 
+    if ((Config.DiscardMode == DiscardType::All ||
+         (Config.DiscardMode == DiscardType::Locals &&
+          StringRef(Sym.Name).starts_with(".L"))) &&
+        Sym.Binding == STB_LOCAL && Sym.getShndx() != SHN_UNDEF &&
+        Sym.Type != STT_FILE && Sym.Type != STT_SECTION)
+      return true;
+
     if ((Config.StripUnneeded ||
          Config.UnneededSymbolsToRemove.matches(Sym.Name)) &&
         (!Obj.isRelocatable() || isUnneededSymbol(Sym)))
       return true;
 
-    if (!Sym.Referenced) {
-      if ((Config.DiscardMode == DiscardType::All ||
-           (Config.DiscardMode == DiscardType::Locals &&
-            StringRef(Sym.Name).starts_with(".L"))) &&
-          Sym.Binding == STB_LOCAL && Sym.getShndx() != SHN_UNDEF &&
-          Sym.Type != STT_FILE && Sym.Type != STT_SECTION)
-        return true;
-      // We want to remove undefined symbols if all references have been
-      // stripped.
-      if (!Config.OnlySection.empty() && Sym.getShndx() == SHN_UNDEF)
-        return true;
-    }
+    // We want to remove undefined symbols if all references have been stripped.
+    if (!Config.OnlySection.empty() && !Sym.Referenced &&
+        Sym.getShndx() == SHN_UNDEF)
+      return true;
 
     return false;
   };
@@ -660,13 +661,13 @@ RemoveNoteDetail::updateData(ArrayRef<uint8_t> OldData,
   for (const DeletedRange &RemRange : ToRemove) {
     if (CurPos < RemRange.OldFrom) {
       auto Slice = OldData.slice(CurPos, RemRange.OldFrom - CurPos);
-      llvm::append_range(NewData, Slice);
+      NewData.insert(NewData.end(), Slice.begin(), Slice.end());
     }
     CurPos = RemRange.OldTo;
   }
   if (CurPos < OldData.size()) {
     auto Slice = OldData.slice(CurPos);
-    llvm::append_range(NewData, Slice);
+    NewData.insert(NewData.end(), Slice.begin(), Slice.end());
   }
   return NewData;
 }
@@ -823,7 +824,7 @@ static Error handleArgs(const CommonConfig &Config, const ELFConfig &ELFConfig,
 
   if (Config.ChangeSectionLMAValAll != 0) {
     for (Segment &Seg : Obj.segments()) {
-      if (Seg.MemSize > 0) {
+      if (Seg.FileSize > 0) {
         if (Config.ChangeSectionLMAValAll > 0 &&
             Seg.PAddr > std::numeric_limits<uint64_t>::max() -
                             Config.ChangeSectionLMAValAll) {
@@ -855,7 +856,8 @@ static Error handleArgs(const CommonConfig &Config, const ELFConfig &ELFConfig,
           "cannot change section address in a non-relocatable file");
     StringMap<AddressUpdate> SectionsToUpdateAddress;
     for (const SectionPatternAddressUpdate &PatternUpdate :
-         reverse(Config.ChangeSectionAddress)) {
+         make_range(Config.ChangeSectionAddress.rbegin(),
+                    Config.ChangeSectionAddress.rend())) {
       for (SectionBase &Sec : Obj.sections()) {
         if (PatternUpdate.SectionPattern.matches(Sec.Name) &&
             SectionsToUpdateAddress.try_emplace(Sec.Name, PatternUpdate.Update)

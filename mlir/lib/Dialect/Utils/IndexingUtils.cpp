@@ -19,19 +19,19 @@
 using namespace mlir;
 
 template <typename ExprType>
-static SmallVector<ExprType> computeSuffixProductImpl(ArrayRef<ExprType> sizes,
-                                                      ExprType unit) {
+SmallVector<ExprType> computeSuffixProductImpl(ArrayRef<ExprType> sizes,
+                                               ExprType unit) {
   if (sizes.empty())
     return {};
   SmallVector<ExprType> strides(sizes.size(), unit);
-  for (int64_t r = static_cast<int64_t>(strides.size()) - 2; r >= 0; --r)
+  for (int64_t r = strides.size() - 2; r >= 0; --r)
     strides[r] = strides[r + 1] * sizes[r + 1];
   return strides;
 }
 
 template <typename ExprType>
-static SmallVector<ExprType> computeElementwiseMulImpl(ArrayRef<ExprType> v1,
-                                                       ArrayRef<ExprType> v2) {
+SmallVector<ExprType> computeElementwiseMulImpl(ArrayRef<ExprType> v1,
+                                                ArrayRef<ExprType> v2) {
   // Early exit if both are empty, let zip_equal fail if only 1 is empty.
   if (v1.empty() && v2.empty())
     return {};
@@ -42,8 +42,8 @@ static SmallVector<ExprType> computeElementwiseMulImpl(ArrayRef<ExprType> v1,
 }
 
 template <typename ExprType>
-static ExprType linearizeImpl(ArrayRef<ExprType> offsets,
-                              ArrayRef<ExprType> basis, ExprType zero) {
+ExprType linearizeImpl(ArrayRef<ExprType> offsets, ArrayRef<ExprType> basis,
+                       ExprType zero) {
   assert(offsets.size() == basis.size());
   ExprType linearIndex = zero;
   for (unsigned idx = 0, e = basis.size(); idx < e; ++idx)
@@ -52,9 +52,9 @@ static ExprType linearizeImpl(ArrayRef<ExprType> offsets,
 }
 
 template <typename ExprType, typename DivOpTy>
-static SmallVector<ExprType> delinearizeImpl(ExprType linearIndex,
-                                             ArrayRef<ExprType> strides,
-                                             DivOpTy divOp) {
+SmallVector<ExprType> delinearizeImpl(ExprType linearIndex,
+                                      ArrayRef<ExprType> strides,
+                                      DivOpTy divOp) {
   int64_t rank = strides.size();
   SmallVector<ExprType> offsets(rank);
   for (int64_t r = 0; r < rank; ++r) {
@@ -69,8 +69,7 @@ static SmallVector<ExprType> delinearizeImpl(ExprType linearIndex,
 //===----------------------------------------------------------------------===//
 
 SmallVector<int64_t> mlir::computeSuffixProduct(ArrayRef<int64_t> sizes) {
-  assert((sizes.empty() ||
-          llvm::all_of(sizes.drop_front(), [](int64_t s) { return s >= 0; })) &&
+  assert(llvm::all_of(sizes, [](int64_t s) { return s >= 0; }) &&
          "sizes must be nonnegative");
   int64_t unit = 1;
   return ::computeSuffixProductImpl(sizes, unit);
@@ -81,10 +80,21 @@ SmallVector<int64_t> mlir::computeElementwiseMul(ArrayRef<int64_t> v1,
   return computeElementwiseMulImpl(v1, v2);
 }
 
+int64_t mlir::computeSum(ArrayRef<int64_t> basis) {
+  assert(llvm::all_of(basis, [](int64_t s) { return s > 0; }) &&
+         "basis must be nonnegative");
+  if (basis.empty())
+    return 0;
+  return std::accumulate(basis.begin(), basis.end(), 1, std::plus<int64_t>());
+}
+
 int64_t mlir::computeProduct(ArrayRef<int64_t> basis) {
   assert(llvm::all_of(basis, [](int64_t s) { return s > 0; }) &&
          "basis must be nonnegative");
-  return llvm::product_of(basis);
+  if (basis.empty())
+    return 1;
+  return std::accumulate(basis.begin(), basis.end(), 1,
+                         std::multiplies<int64_t>());
 }
 
 int64_t mlir::linearize(ArrayRef<int64_t> offsets, ArrayRef<int64_t> basis) {
@@ -147,11 +157,19 @@ SmallVector<AffineExpr> mlir::computeElementwiseMul(ArrayRef<AffineExpr> v1,
 }
 
 AffineExpr mlir::computeSum(MLIRContext *ctx, ArrayRef<AffineExpr> basis) {
-  return llvm::sum_of(basis, getAffineConstantExpr(0, ctx));
+  if (basis.empty())
+    return getAffineConstantExpr(0, ctx);
+  return std::accumulate(basis.begin(), basis.end(),
+                         getAffineConstantExpr(0, ctx),
+                         std::plus<AffineExpr>());
 }
 
 AffineExpr mlir::computeProduct(MLIRContext *ctx, ArrayRef<AffineExpr> basis) {
-  return llvm::product_of(basis, getAffineConstantExpr(1, ctx));
+  if (basis.empty())
+    return getAffineConstantExpr(1, ctx);
+  return std::accumulate(basis.begin(), basis.end(),
+                         getAffineConstantExpr(1, ctx),
+                         std::multiplies<AffineExpr>());
 }
 
 AffineExpr mlir::linearize(MLIRContext *ctx, ArrayRef<AffineExpr> offsets,
@@ -202,10 +220,10 @@ bool mlir::isIdentityPermutation(ArrayRef<int64_t> permutation) {
 }
 
 bool mlir::isPermutationVector(ArrayRef<int64_t> interchange) {
+  assert(llvm::all_of(interchange, [](int64_t s) { return s >= 0; }) &&
+         "permutation must be non-negative");
   llvm::SmallDenseSet<int64_t, 4> seenVals;
   for (auto val : interchange) {
-    if (val < 0 || static_cast<uint64_t>(val) >= interchange.size())
-      return false;
     if (seenVals.count(val))
       return false;
     seenVals.insert(val);

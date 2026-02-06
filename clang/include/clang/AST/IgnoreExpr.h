@@ -17,6 +17,16 @@
 #include "clang/AST/ExprCXX.h"
 
 namespace clang {
+namespace detail {
+/// Given an expression E and functions Fn_1,...,Fn_n : Expr * -> Expr *,
+/// Return Fn_n(...(Fn_1(E)))
+inline Expr *IgnoreExprNodesImpl(Expr *E) { return E; }
+template <typename FnTy, typename... FnTys>
+Expr *IgnoreExprNodesImpl(Expr *E, FnTy &&Fn, FnTys &&... Fns) {
+  return IgnoreExprNodesImpl(std::forward<FnTy>(Fn)(E),
+                             std::forward<FnTys>(Fns)...);
+}
+} // namespace detail
 
 /// Given an expression E and functions Fn_1,...,Fn_n : Expr * -> Expr *,
 /// Recursively apply each of the functions to E until reaching a fixed point.
@@ -25,7 +35,7 @@ template <typename... FnTys> Expr *IgnoreExprNodes(Expr *E, FnTys &&... Fns) {
   Expr *LastE = nullptr;
   while (E != LastE) {
     LastE = E;
-    ((E = std::forward<FnTys>(Fns)(E)), ...);
+    E = detail::IgnoreExprNodesImpl(E, std::forward<FnTys>(Fns)...);
   }
   return E;
 }
@@ -120,14 +130,6 @@ inline Expr *IgnoreElidableImplicitConstructorSingleStep(Expr *E) {
          (NumArgs > 1 && CCE->getArg(1)->isDefaultArgument())) &&
         !CCE->getArg(0)->isDefaultArgument() && !CCE->isListInitialization())
       return CCE->getArg(0);
-  }
-  return E;
-}
-
-inline Expr *IgnoreUOpLNotSingleStep(Expr *E) {
-  if (auto *UO = dyn_cast<UnaryOperator>(E)) {
-    if (UO->getOpcode() == UO_LNot)
-      return UO->getSubExpr();
   }
   return E;
 }

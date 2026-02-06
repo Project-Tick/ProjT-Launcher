@@ -171,8 +171,10 @@ bool FunctionCaller::WriteFunctionArguments(
     m_wrapper_args_addrs.push_back(args_addr_ref);
   } else {
     // Make sure this is an address that we've already handed out.
-    if (!llvm::is_contained(m_wrapper_args_addrs, args_addr_ref))
+    if (find(m_wrapper_args_addrs.begin(), m_wrapper_args_addrs.end(),
+             args_addr_ref) == m_wrapper_args_addrs.end()) {
       return false;
+    }
   }
 
   // TODO: verify fun_addr needs to be a callable address
@@ -323,7 +325,8 @@ bool FunctionCaller::FetchFunctionResults(ExecutionContext &exe_ctx,
 void FunctionCaller::DeallocateFunctionResults(ExecutionContext &exe_ctx,
                                                lldb::addr_t args_addr) {
   std::list<lldb::addr_t>::iterator pos;
-  pos = llvm::find(m_wrapper_args_addrs, args_addr);
+  pos = std::find(m_wrapper_args_addrs.begin(), m_wrapper_args_addrs.end(),
+                  args_addr);
   if (pos != m_wrapper_args_addrs.end())
     m_wrapper_args_addrs.erase(pos);
 

@@ -5,7 +5,6 @@ add_entrypoint_object(
   HDRS
     ../getrlimit.h
   DEPENDS
-    libc.hdr.types.struct_rlimit
     libc.include.sys_resource
     libc.include.sys_syscall
     libc.src.__support.OSUtil.osutil
@@ -19,7 +18,6 @@ add_entrypoint_object(
   HDRS
     ../setrlimit.h
   DEPENDS
-    libc.hdr.types.struct_rlimit
     libc.include.sys_resource
     libc.include.sys_syscall
     libc.src.__support.OSUtil.osutil

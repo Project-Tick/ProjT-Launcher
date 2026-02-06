@@ -61,7 +61,6 @@ Functions table:
 
 ### Functions table
 Hot and cold functions tables share the encoding except differences marked below.
-
 Header:
 | Entry  | Encoding | Description |
 | ------ | ----- | ----------- |

@@ -22,7 +22,6 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Error.h"
-#include "llvm/Support/IOSandbox.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
 #include <iterator>
@@ -134,7 +133,7 @@ std::string Rewriter::getRewrittenText(CharSourceRange Range) const {
 unsigned Rewriter::getLocationOffsetAndFileID(SourceLocation Loc,
                                               FileID &FID) const {
   assert(Loc.isValid() && "Invalid location");
-  FileIDAndOffset V = SourceMgr->getDecomposedLoc(Loc);
+  std::pair<FileID, unsigned> V = SourceMgr->getDecomposedLoc(Loc);
   FID = V.first;
   return V.second;
 }
@@ -321,8 +320,6 @@ bool Rewriter::overwriteChangedFiles() {
     OptionalFileEntryRef Entry = getSourceMgr().getFileEntryRefForID(I->first);
     llvm::SmallString<128> Path(Entry->getName());
     getSourceMgr().getFileManager().makeAbsolutePath(Path);
-    // FIXME(sandboxing): Remove this by adopting `llvm::vfs::OutputBackend`.
-    auto BypassSandbox = llvm::sys::sandbox::scopedDisable();
     if (auto Error = llvm::writeToOutput(Path, [&](llvm::raw_ostream &OS) {
           I->second.write(OS);
           return llvm::Error::success();

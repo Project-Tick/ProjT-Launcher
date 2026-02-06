@@ -23,6 +23,7 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/AnalysisManager.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/Support/SaveAndRestore.h"
 
 using namespace clang;
@@ -156,9 +157,9 @@ public:
       return true;
     // Lazily construct the set that records which VarDecls are in
     // EH code.
-    if (!InEH) {
+    if (!InEH.get()) {
       InEH.reset(new llvm::DenseSet<const VarDecl *>());
-      EHCodeVisitor V(*InEH);
+      EHCodeVisitor V(*InEH.get());
       V.TraverseStmt(AC->getBody());
     }
     // Treat all VarDecls that occur in EH code as being "always live"
@@ -195,7 +196,7 @@ public:
 
     // Compute reachable blocks within the CFG for trivial cases
     // where a bogus dead store can be reported because itself is unreachable.
-    if (!reachableCode) {
+    if (!reachableCode.get()) {
       reachableCode.reset(new ReachableCode(cfg));
       reachableCode->computeReachableBlocks();
     }

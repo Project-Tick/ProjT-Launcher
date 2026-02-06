@@ -46,10 +46,6 @@ def non_configurable_patterns():
     vector.ApplyLowerOuterProductPatternsOp()
     # CHECK: transform.apply_patterns.vector.lower_gather
     vector.ApplyLowerGatherPatternsOp()
-    # CHECK: transform.apply_patterns.vector.unroll_from_elements
-    vector.ApplyUnrollFromElementsPatternsOp()
-    # CHECK: transform.apply_patterns.vector.unroll_to_elements
-    vector.ApplyUnrollToElementsPatternsOp()
     # CHECK: transform.apply_patterns.vector.lower_scan
     vector.ApplyLowerScanPatternsOp()
     # CHECK: transform.apply_patterns.vector.lower_shape_cast
@@ -74,9 +70,9 @@ def enum_configurable_patterns():
     # CHECK: transform.apply_patterns.vector.lower_contraction
     vector.ApplyLowerContractionPatternsOp()
     # CHECK: transform.apply_patterns.vector.lower_contraction
-    # CHECK-SAME: lowering_strategy = llvmintr
+    # CHECK-SAME: lowering_strategy = matmulintrinsics
     vector.ApplyLowerContractionPatternsOp(
-        lowering_strategy=vector.VectorContractLowering.LLVMIntr
+        lowering_strategy=vector.VectorContractLowering.Matmul
     )
     # CHECK: transform.apply_patterns.vector.lower_contraction
     # CHECK-SAME: lowering_strategy = parallelarith
@@ -105,9 +101,9 @@ def enum_configurable_patterns():
         lowering_strategy=vector.VectorTransposeLowering.EltWise
     )
     # CHECK: transform.apply_patterns.vector.lower_transpose
-    # CHECK-SAME: lowering_strategy = llvmintr
+    # CHECK-SAME: lowering_strategy = flat_transpose
     vector.ApplyLowerTransposePatternsOp(
-        lowering_strategy=vector.VectorTransposeLowering.LLVMIntr
+        lowering_strategy=vector.VectorTransposeLowering.Flat
     )
     # CHECK: transform.apply_patterns.vector.lower_transpose
     # CHECK-SAME: lowering_strategy = shuffle_1d
@@ -120,10 +116,10 @@ def enum_configurable_patterns():
         lowering_strategy=vector.VectorTransposeLowering.Shuffle16x16
     )
     # CHECK: transform.apply_patterns.vector.lower_transpose
-    # CHECK-SAME: lowering_strategy = llvmintr
+    # CHECK-SAME: lowering_strategy = flat_transpose
     # CHECK-SAME: avx2_lowering_strategy = true
     vector.ApplyLowerTransposePatternsOp(
-        lowering_strategy=vector.VectorTransposeLowering.LLVMIntr,
+        lowering_strategy=vector.VectorTransposeLowering.Flat,
         avx2_lowering_strategy=True,
     )
 

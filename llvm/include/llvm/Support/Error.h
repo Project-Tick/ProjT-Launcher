@@ -16,6 +16,7 @@
 #include "llvm-c/Error.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Config/abi-breaking.h"
+#include "llvm/Support/AlignOf.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -41,7 +42,7 @@ class ErrorSuccess;
 
 /// Base class for error info classes. Do not extend this directly: Extend
 /// the ErrorInfo template subclass instead.
-class LLVM_ABI ErrorInfoBase {
+class ErrorInfoBase {
 public:
   virtual ~ErrorInfoBase() = default;
 
@@ -262,7 +263,7 @@ private:
   // of debug prints can cause the function to be too large for inlining.  So
   // it's important that we define this function out of line so that it can't be
   // inlined.
-  [[noreturn]] LLVM_ABI void fatalUncheckedError() const;
+  [[noreturn]] void fatalUncheckedError() const;
 #endif
 
   void assertIsChecked() {
@@ -366,7 +367,7 @@ public:
 
 /// Special ErrorInfo subclass representing a list of ErrorInfos.
 /// Instances of this class are constructed by joinError.
-class LLVM_ABI ErrorList final : public ErrorInfo<ErrorList> {
+class ErrorList final : public ErrorInfo<ErrorList> {
   // handleErrors needs to be able to iterate the payload list of an
   // ErrorList.
   template <typename... HandlerTs>
@@ -402,10 +403,6 @@ private:
     Payloads.push_back(std::move(Payload2));
   }
 
-  // Explicitly non-copyable.
-  ErrorList(ErrorList const &) = delete;
-  ErrorList &operator=(ErrorList const &) = delete;
-
   static Error join(Error E1, Error E2) {
     if (!E1)
       return E2;
@@ -418,9 +415,8 @@ private:
         auto &E2List = static_cast<ErrorList &>(*E2Payload);
         for (auto &Payload : E2List.Payloads)
           E1List.Payloads.push_back(std::move(Payload));
-      } else {
+      } else
         E1List.Payloads.push_back(E2.takePayload());
-      }
 
       return E1;
     }
@@ -684,22 +680,22 @@ private:
 
   storage_type *getStorage() {
     assert(!HasError && "Cannot get value when an error exists!");
-    return &TStorage;
+    return reinterpret_cast<storage_type *>(&TStorage);
   }
 
   const storage_type *getStorage() const {
     assert(!HasError && "Cannot get value when an error exists!");
-    return &TStorage;
+    return reinterpret_cast<const storage_type *>(&TStorage);
   }
 
   error_type *getErrorStorage() {
     assert(HasError && "Cannot get error when a value exists!");
-    return &ErrorStorage;
+    return reinterpret_cast<error_type *>(&ErrorStorage);
   }
 
   const error_type *getErrorStorage() const {
     assert(HasError && "Cannot get error when a value exists!");
-    return &ErrorStorage;
+    return reinterpret_cast<const error_type *>(&ErrorStorage);
   }
 
   // Used by ExpectedAsOutParameter to reset the checked flag.
@@ -715,11 +711,10 @@ private:
     if (HasError) {
       dbgs() << "Unchecked Expected<T> contained error:\n";
       (*getErrorStorage())->log(dbgs());
-    } else {
+    } else
       dbgs() << "Expected<T> value was in success state. (Note: Expected<T> "
                 "values in success mode must still be checked prior to being "
                 "destroyed).\n";
-    }
     abort();
   }
 #endif
@@ -732,8 +727,8 @@ private:
   }
 
   union {
-    storage_type TStorage;
-    error_type ErrorStorage;
+    AlignedCharArrayUnion<storage_type> TStorage;
+    AlignedCharArrayUnion<error_type> ErrorStorage;
   };
   bool HasError : 1;
 #if LLVM_ENABLE_ABI_BREAKING_CHECKS
@@ -741,17 +736,9 @@ private:
 #endif
 };
 
-/// @deprecated Use reportFatalInternalError() or reportFatalUsageError()
-/// instead.
-[[noreturn]] LLVM_ABI void report_fatal_error(Error Err,
-                                              bool gen_crash_diag = true);
-
-/// Report a fatal error that indicates a bug in LLVM.
-/// See ErrorHandling.h for details.
-[[noreturn]] LLVM_ABI void reportFatalInternalError(Error Err);
-/// Report a fatal error that does not indicate a bug in LLVM.
-/// See ErrorHandling.h for details.
-[[noreturn]] LLVM_ABI void reportFatalUsageError(Error Err);
+/// Report a serious error, calling any installed error handler. See
+/// ErrorHandling.h.
+[[noreturn]] void report_fatal_error(Error Err, bool gen_crash_diag = true);
 
 /// Report a fatal error if Err is a failure value.
 ///
@@ -1062,16 +1049,15 @@ Expected<T> handleExpected(Expected<T> ValOrErr, RecoveryFtor &&RecoveryPath,
 /// This is useful in the base level of your program to allow clean termination
 /// (allowing clean deallocation of resources, etc.), while reporting error
 /// information to the user.
-LLVM_ABI void logAllUnhandledErrors(Error E, raw_ostream &OS,
-                                    Twine ErrorBanner = {});
+void logAllUnhandledErrors(Error E, raw_ostream &OS, Twine ErrorBanner = {});
 
 /// Write all error messages (if any) in E to a string. The newline character
 /// is used to separate error messages.
-LLVM_ABI std::string toString(Error E);
+std::string toString(Error E);
 
 /// Like toString(), but does not consume the error. This can be used to print
 /// a warning while retaining the original error object.
-LLVM_ABI std::string toStringWithoutConsuming(const Error &E);
+std::string toStringWithoutConsuming(const Error &E);
 
 /// Consume a Error without doing anything. This method should be used
 /// only where an error can be considered a reasonable and expected return
@@ -1190,8 +1176,8 @@ private:
 /// This is useful if you're writing an interface that returns a Error
 /// (or Expected) and you want to call code that still returns
 /// std::error_codes.
-class LLVM_ABI ECError : public ErrorInfo<ECError> {
-  LLVM_ABI friend Error errorCodeToError(std::error_code);
+class ECError : public ErrorInfo<ECError> {
+  friend Error errorCodeToError(std::error_code);
 
   void anchor() override;
 
@@ -1216,16 +1202,16 @@ protected:
 /// sensible conversion to std::error_code is available, as attempts to convert
 /// to/from this error will result in a fatal error. (i.e. it is a programmatic
 /// error to try to convert such a value).
-LLVM_ABI std::error_code inconvertibleErrorCode();
+std::error_code inconvertibleErrorCode();
 
 /// Helper for converting an std::error_code to a Error.
-LLVM_ABI Error errorCodeToError(std::error_code EC);
+Error errorCodeToError(std::error_code EC);
 
 /// Helper for converting an ECError to a std::error_code.
 ///
 /// This method requires that Err be Error() or an ECError, otherwise it
 /// will trigger a call to abort().
-LLVM_ABI std::error_code errorToErrorCode(Error Err);
+std::error_code errorToErrorCode(Error Err);
 
 /// Helper to get errno as an std::error_code.
 ///
@@ -1279,7 +1265,7 @@ template <typename T> ErrorOr<T> expectedToErrorOr(Expected<T> &&E) {
 ///   }
 ///   @endcode
 ///
-class LLVM_ABI StringError : public ErrorInfo<StringError> {
+class StringError : public ErrorInfo<StringError> {
 public:
   static char ID;
 
@@ -1309,7 +1295,7 @@ inline Error createStringError(std::error_code EC, char const *Fmt,
   return make_error<StringError>(Buffer, EC);
 }
 
-LLVM_ABI Error createStringError(std::string &&Msg, std::error_code EC);
+Error createStringError(std::string &&Msg, std::error_code EC);
 
 inline Error createStringError(std::error_code EC, const char *S) {
   return createStringError(std::string(S), EC);
@@ -1339,7 +1325,7 @@ inline Error createStringError(std::errc EC, char const *Fmt,
 ///
 /// In some cases, an error needs to live along a 'source' name, in order to
 /// show more detailed information to the user.
-class LLVM_ABI FileError final : public ErrorInfo<FileError> {
+class FileError final : public ErrorInfo<FileError> {
 
   friend Error createFileError(const Twine &, Error);
   friend Error createFileError(const Twine &, size_t, Error);

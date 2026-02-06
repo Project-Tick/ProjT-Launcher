@@ -8,6 +8,7 @@
 //
 // UNSUPPORTED: no-threads
 // UNSUPPORTED: c++03, c++11, c++14, c++17
+// XFAIL: availability-synchronization_library-missing
 
 // template<class C>
 // explicit stop_callback(stop_token&& st, C&& cb)

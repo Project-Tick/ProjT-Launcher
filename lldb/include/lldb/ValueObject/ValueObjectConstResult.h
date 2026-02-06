@@ -60,16 +60,11 @@ public:
                                     Value &value, ConstString name,
                                     Module *module = nullptr);
 
-  static lldb::ValueObjectSP Create(ExecutionContextScope *exe_scope,
-                                    const CompilerType &compiler_type,
-                                    Scalar &scalar, ConstString name,
-                                    Module *module = nullptr);
-
   // When an expression fails to evaluate, we return an error
   static lldb::ValueObjectSP Create(ExecutionContextScope *exe_scope,
                                     Status &&error);
 
-  llvm::Expected<uint64_t> GetByteSize() override;
+  std::optional<uint64_t> GetByteSize() override;
 
   lldb::ValueType GetValueType() const override;
 
@@ -91,7 +86,8 @@ public:
 
   lldb::ValueObjectSP AddressOf(Status &error) override;
 
-  AddrAndType GetAddressOf(bool scalar_is_load_address = true) override;
+  lldb::addr_t GetAddressOf(bool scalar_is_load_address = true,
+                            AddressType *address_type = nullptr) override;
 
   size_t GetPointeeData(DataExtractor &data, uint32_t item_idx = 0,
                         uint32_t item_count = 1) override;
@@ -149,12 +145,6 @@ private:
   ValueObjectConstResult(ExecutionContextScope *exe_scope,
                          ValueObjectManager &manager, const Value &value,
                          ConstString name, Module *module = nullptr);
-
-  ValueObjectConstResult(ExecutionContextScope *exe_scope,
-                         ValueObjectManager &manager,
-                         const CompilerType &compiler_type,
-                         const Scalar &scalar, ConstString name,
-                         Module *module = nullptr);
 
   ValueObjectConstResult(ExecutionContextScope *exe_scope,
                          ValueObjectManager &manager, Status &&error);

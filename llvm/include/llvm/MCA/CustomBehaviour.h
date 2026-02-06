@@ -24,7 +24,6 @@
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MCA/SourceMgr.h"
 #include "llvm/MCA/View.h"
-#include "llvm/Support/Compiler.h"
 
 namespace llvm {
 namespace mca {
@@ -49,7 +48,8 @@ public:
   /// object after it has been lowered from the MCInst.
   /// This is generally a less disruptive alternative to modifying the
   /// scheduling model.
-  virtual void postProcessInstruction(Instruction &Inst, const MCInst &MCI) {}
+  virtual void postProcessInstruction(std::unique_ptr<Instruction> &Inst,
+                                      const MCInst &MCI) {}
 
   // The resetState() method gets invoked at the beginning of each code region
   // so that targets that override this function can clear any state that they
@@ -63,7 +63,7 @@ public:
 /// them properly.
 /// If you implement this class for your target, make sure to also implement
 /// a target specific InstrPostProcess class as well.
-class LLVM_ABI CustomBehaviour {
+class CustomBehaviour {
 protected:
   const MCSubtargetInfo &STI;
   const mca::SourceMgr &SrcMgr;
@@ -133,49 +133,28 @@ public:
   StringRef getData() const { return Data; }
 };
 
-class LatencyInstrument : public Instrument {
-  std::optional<unsigned> Latency;
-
-public:
-  static const StringRef DESC_NAME;
-  LatencyInstrument(StringRef Data) : Instrument(DESC_NAME, Data) {
-    // Skip spaces and tabs.
-    Data = Data.trim();
-    if (Data.empty()) // Empty description. Bail out.
-      return;
-    unsigned L = 0;
-    if (!Data.getAsInteger(10, L))
-      Latency = L;
-  }
-
-  bool hasValue() const { return bool(Latency); }
-  unsigned getLatency() const { return *Latency; }
-};
-
 using UniqueInstrument = std::unique_ptr<Instrument>;
 
 /// This class allows targets to optionally customize the logic that resolves
 /// scheduling class IDs. Targets can use information encoded in Instrument
 /// objects to make more informed scheduling decisions.
-class LLVM_ABI InstrumentManager {
+class InstrumentManager {
 protected:
   const MCSubtargetInfo &STI;
   const MCInstrInfo &MCII;
-  bool EnableInstruments;
 
 public:
-  InstrumentManager(const MCSubtargetInfo &STI, const MCInstrInfo &MCII,
-                    bool EnableInstruments = true)
-      : STI(STI), MCII(MCII), EnableInstruments(EnableInstruments) {};
+  InstrumentManager(const MCSubtargetInfo &STI, const MCInstrInfo &MCII)
+      : STI(STI), MCII(MCII) {}
 
   virtual ~InstrumentManager() = default;
 
   /// Returns true if llvm-mca should ignore instruments.
-  virtual bool shouldIgnoreInstruments() const { return !EnableInstruments; }
+  virtual bool shouldIgnoreInstruments() const { return true; }
 
   // Returns true if this supports processing Instrument with
   // Instrument.Desc equal to Type
-  virtual bool supportsInstrumentType(StringRef Type) const;
+  virtual bool supportsInstrumentType(StringRef Type) const { return false; }
 
   /// Allocate an Instrument, and return a unique pointer to it. This function
   /// may be useful to create instruments coming from comments in the assembly.
@@ -195,13 +174,6 @@ public:
   /// it returns the SchedClassID that belongs to MCI.
   virtual unsigned getSchedClassID(const MCInstrInfo &MCII, const MCInst &MCI,
                                    const SmallVector<Instrument *> &IVec) const;
-
-  // Return true if instruments can modify instruction description
-  virtual bool canCustomize(const ArrayRef<Instrument *> IVec) const;
-
-  // Customize instruction description
-  virtual void customize(const ArrayRef<Instrument *> IVec,
-                         llvm::mca::InstrDesc &Desc) const;
 };
 
 } // namespace mca
