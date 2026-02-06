@@ -312,11 +312,10 @@ void QDirListingPrivate::advance()
     if (engine) {
         while (!fileEngineIterators.empty()) {
             // Find the next valid iterator that matches the filters.
-            QAbstractFileEngineIterator *it;
-            while (it = fileEngineIterators.top().get(), it->advance()) {
-                QDirEntryInfo entryInfo;
-                entryInfo.fileInfoOpt = it->currentFileInfo();
-                if (entryMatches(entryInfo)) { // modifies `fileEngineIterators`!
+            // Always use top() because entryMatches() may modify `fileEngineIterators`!
+            while (fileEngineIterators.top()->advance()) {
+                QDirEntryInfo entryInfo{fileEngineIterators.top()->currentFileInfo()};
+                if (entryMatches(entryInfo)) {
                     currentEntryInfo = std::move(entryInfo);
                     return;
                 }
@@ -326,17 +325,14 @@ void QDirListingPrivate::advance()
         }
     } else {
 #ifndef QT_NO_FILESYSTEMITERATOR
-        QDirEntryInfo entryInfo;
         while (!nativeIterators.empty()) {
             // Find the next valid iterator that matches the filters.
-            QFileSystemIterator *it;
-            while (it = nativeIterators.top().get(),
-                   it->advance(entryInfo.entry, entryInfo.metaData)) {
-                if (entryMatches(entryInfo)) { // modifies `nativeIterators`!
-                    currentEntryInfo = std::move(entryInfo);
+            // Always use top() because entryMatches() may modify `nativeIterators`!
+            while (std::optional r = nativeIterators.top()->advance()) {
+                if (entryMatches(*r)) {
+                    currentEntryInfo = std::move(*r);
                     return;
                 }
-                entryInfo = {};
             }
 
             nativeIterators.pop();

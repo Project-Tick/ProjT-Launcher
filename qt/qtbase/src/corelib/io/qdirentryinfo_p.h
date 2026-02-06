@@ -32,6 +32,17 @@ class QDirEntryInfo
     }
 
 public:
+    QDirEntryInfo() = default;
+    explicit QDirEntryInfo(QFileInfo &&info)
+        : fileInfoOpt(std::move(info))
+    {
+    }
+    explicit QDirEntryInfo(QFileSystemEntry &&e, QFileSystemMetaData &&md)
+        : entry(std::move(e)),
+          metaData(std::move(md))
+    {
+    }
+
     const QFileInfo &fileInfo()
     {
         if (!fileInfoOpt) {
@@ -146,6 +157,8 @@ public:
 private:
     friend class QDirListingPrivate;
     friend class QDirListing;
+    friend class QFileSystemIterator;
+    friend class QFSFileEngineIterator;
 
     QFileSystemEntry entry;
     QFileSystemMetaData metaData;

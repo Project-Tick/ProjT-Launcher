@@ -38,7 +38,6 @@ class Q_NETWORK_EXPORT QAbstractSocket : public QIODevice
         QT7_ONLY(, public QtPrivate::QAbstractSocketConstants)
 {
     Q_OBJECT
-    Q_MOC_INCLUDE(<QtNetwork/qauthenticator.h>)
 
 public:
     enum SocketType {
@@ -108,7 +107,7 @@ public:
         PathMtuSocketOption, // IP_MTU
         KeepAliveIdleOption, // TCP_KEEPIDLE
         KeepAliveIntervalOption, // TCP_KEEPINTVL
-        KeepAliveCountOption // TCP_KEEPCNT
+        KeepAliveCountOption, // TCP_KEEPCNT
     };
     Q_ENUM(SocketOption)
     enum BindFlag {

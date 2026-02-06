@@ -151,7 +151,19 @@ public:
 #endif
 
     static constexpr QChar fromUcs2(char16_t c) noexcept { return QChar{c}; }
-    static constexpr inline auto fromUcs4(char32_t c) noexcept;
+    [[nodiscard]] static constexpr inline auto fromUcs4(char32_t c) noexcept
+    {
+        struct R {
+            char16_t chars[2];
+            [[nodiscard]] constexpr qsizetype size() const noexcept { return chars[1] ? 2 : 1; }
+            [[nodiscard]] constexpr const char16_t *data() const noexcept { return chars; }
+            [[nodiscard]] constexpr const char16_t *begin() const noexcept { return chars; }
+            [[nodiscard]] constexpr const char16_t *end() const noexcept { return begin() + size(); }
+        };
+        return requiresSurrogates(c) ? R{{QChar::highSurrogate(c),
+                                          QChar::lowSurrogate(c)}} :
+                                       R{{char16_t(c), u'\0'}} ;
+    }
 
     // Unicode information
 
@@ -402,6 +414,12 @@ public:
         Script_Todhri,
         Script_TuluTigalari,
 
+        // Unicode 17.0 additions
+        Script_Sidetic,
+        Script_TaiYo,
+        Script_TolongSiki,
+        Script_BeriaErfe,
+
         ScriptCount
     };
 
@@ -497,6 +515,7 @@ public:
         Unicode_15_0,
         Unicode_15_1,
         Unicode_16_0,
+        Unicode_17_0,
     };
 
     Category category() const noexcept { return QChar::category(char32_t(ucs)); }
@@ -719,5 +738,3 @@ struct hash<QT_PREPEND_NAMESPACE(QChar)>
 } // namespace std
 
 #endif // QCHAR_H
-
-#include <QtCore/qstringview.h> // for QChar::fromUcs4() definition
