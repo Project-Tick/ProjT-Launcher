@@ -5,6 +5,7 @@
 #include "content_gpu_client_qt.h"
 
 #include "compositor/compositor.h"
+#include "rhi_gpu_info.h"
 
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/gpu_data_manager.h"
@@ -43,23 +44,7 @@ static QString gpuDeviceToString(const gpu::GPUInfo::GPUDevice &device)
         return "Disabled"_L1;
 
     QString deviceString;
-
-    // TODO: Factor vendor translation out from QtWebEngineCore::GPUInfo.
-    // Only name the most common desktop GPU hardware vendors for now.
-    switch (device.vendor_id) {
-    case 0x1002:
-        deviceString += "AMD"_L1;
-        break;
-    case 0x10DE:
-        deviceString += "Nvidia"_L1;
-        break;
-    case 0x8086:
-        deviceString += "Intel"_L1;
-        break;
-    default:
-        deviceString += "vendor id: 0x"_L1 + QString::number(device.vendor_id, 16);
-    }
-
+    deviceString += RhiGpuInfo::vendorIdToString(device.vendor_id);
     deviceString += ", device id: 0x"_L1 + QString::number(device.device_id, 16);
 
     if (!device.driver_vendor.empty()) {
@@ -155,7 +140,10 @@ static QString windowsInfo(const gpu::GPUInfo &gpuInfo)
 class GpuObserver : public content::GpuDataManagerObserver
 {
 public:
-    GpuObserver(ContentGpuClientQt *client) : m_client(client)
+    GpuObserver(ContentGpuClientQt *client)
+#if BUILDFLAG(IS_OZONE)
+        : m_client(client)
+#endif
     {
         content::GpuDataManager *manager = content::GpuDataManager::GetInstance();
         if (manager->IsEssentialGpuInfoAvailable())
@@ -210,7 +198,9 @@ public:
     }
 
 private:
+#if BUILDFLAG(IS_OZONE)
     ContentGpuClientQt *m_client;
+#endif
     std::optional<gpu::GPUInfo> m_gpuInfo;
 };
 

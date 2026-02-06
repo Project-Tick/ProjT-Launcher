@@ -95,7 +95,7 @@ QT_BEGIN_NAMESPACE
     \value  AllowPersistentCookies
             Cookies marked persistent are saved to and restored from disk, whereas session cookies
             are only stored to disk for crash recovery. This is the default setting.
-    \value  OnlyPersistentCookies
+    \value [since 6.11] OnlyPersistentCookies
             Cookies marked persistent are saved to and restored from disk, whereas session cookies
             are never stored to disk, even for crash recovery.
     \value  ForcePersistentCookies
@@ -1138,11 +1138,10 @@ QQuickWebEngineSettings *QQuickWebEngineProfile::settings() const
 /*!
     \property QQuickWebEngineProfile::userScripts
 
-    \brief The collection of WebEngineScript objects that are injected into
+    \brief The collection of QWebEngineScript objects that are injected into
     all pages that share this profile.
 */
 /*!
-    \property QQuickWebEngineProfile::userScripts
     \qmlproperty WebEngineScriptCollection WebEngineProfile::userScripts
     \since 1.5
     \brief The collection of WebEngineScript objects that are injected into
