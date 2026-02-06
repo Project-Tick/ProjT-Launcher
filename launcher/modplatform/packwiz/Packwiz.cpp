@@ -163,6 +163,13 @@ namespace Packwiz
 
 	void V1::updateModIndex(const QDir& index_dir, Mod& mod)
 	{
+		// Call with null callback - no user confirmation
+		updateModIndex(index_dir, mod, nullptr);
+	}
+	
+	void V1::updateModIndex(const QDir& index_dir, Mod& mod, 
+							std::function<bool(const QString&, const QString&, const QString&)> confirmOverride)
+	{
 		if (!mod.isValid())
 		{
 			qCritical() << QString("Tried to update metadata of an invalid mod!");
@@ -195,6 +202,15 @@ namespace Packwiz
 
 						if (old_version_id != mod.file_id.toString())
 						{
+							// Ask user for confirmation if callback is provided
+							if (confirmOverride) {
+								bool shouldOverride = confirmOverride(old_version_id, mod.file_id.toString(), mod.name);
+								if (!shouldOverride) {
+									qDebug() << "User cancelled override for mod" << mod.name;
+									return;
+								}
+							}
+							
 							qDebug() << "Updating existing mod" << mod.name << "from version" << old_version_id << "to"
 									 << mod.file_id.toString();
 							index_file.remove();

@@ -107,10 +107,23 @@ namespace Packwiz
 									ModPlatform::IndexedVersion& mod_version) -> Mod;
 
 		/* Updates the mod index for the provided mod.
-		 * This creates a new index if one does not exist already
-		 * TODO: Ask the user if they want to override, and delete the old mod's files, or keep the old one.
+		 * This creates a new index if one does not exist already.
+		 * 
+		 * If a mod with the same slug already exists:
+		 * - If version differs: old metadata is removed and new one is created
+		 * - If version is the same: update is skipped (mod is already up to date)
+		 * 
+		 * The optional callback can be used by UI code to prompt user for override confirmation.
+		 * If callback returns false, the update is cancelled.
 		 * */
 		static void updateModIndex(const QDir& index_dir, Mod& mod);
+		
+		/** Same as updateModIndex but with override confirmation callback.
+		 *  @param confirmOverride Called when an existing different version is found.
+		 *                         Receives (old_version, new_version, mod_name). Return true to proceed.
+		 */
+		static void updateModIndex(const QDir& index_dir, Mod& mod, 
+								   std::function<bool(const QString&, const QString&, const QString&)> confirmOverride);
 
 		/* Deletes the metadata for the mod with the given slug. If the metadata doesn't exist, it does nothing. */
 		static void deleteModIndex(const QDir& index_dir, QString& mod_slug);

@@ -108,6 +108,9 @@ class AtlOptionalModListModel : public QAbstractListModel
 	void toggleMod(const ATLauncher::VersionMod& mod, int index);
 	void setMod(const ATLauncher::VersionMod& mod, int index, bool enable, bool shouldEmit = true);
 
+  signals:
+	void errorOccurred(const QString& title, const QString& message);
+
   private:
 	NetJob::Ptr m_jobPtr;
 	std::shared_ptr<QByteArray> m_response = std::make_shared<QByteArray>();
@@ -118,6 +121,8 @@ class AtlOptionalModListModel : public QAbstractListModel
 	QMap<QString, bool> m_selection;
 	QMap<QString, int> m_index;
 	QMap<QString, QList<QString>> m_dependents;
+
+	QWidget* m_parentWidget = nullptr;
 };
 
 class AtlOptionalModDialog : public QDialog

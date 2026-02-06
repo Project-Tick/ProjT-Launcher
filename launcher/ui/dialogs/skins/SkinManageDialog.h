@@ -45,6 +45,7 @@
 #include <QPixmap>
 
 #include "minecraft/auth/MinecraftAccount.hpp"
+#include "minecraft/skins/CapeListModel.h"
 #include "minecraft/skins/SkinList.h"
 #include "minecraft/skins/SkinModel.h"
 #include "ui/dialogs/skins/draw/SkinOpenGLWindow.h"
@@ -83,6 +84,8 @@ class SkinManageDialog : public QDialog, public SkinProvider
 
   private:
 	void setupCapes();
+	void onCapesLoaded();
+	void onCapeLoadError(const QString& error);
 
   private:
 	MinecraftAccountPtr m_acct;
@@ -92,4 +95,5 @@ class SkinManageDialog : public QDialog, public SkinProvider
 	QHash<QString, QImage> m_capes;
 	QHash<QString, int> m_capesIdx;
 	SkinOpenGLWindow* m_skinPreview = nullptr;
+	CapeListModel* m_capeModel = nullptr;
 };

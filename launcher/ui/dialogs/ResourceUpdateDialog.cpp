@@ -311,17 +311,40 @@ void ResourceUpdateDialog::checkCandidates()
 	}
 	else
 	{
-		// FIXME: Find a more efficient way of doing this!
+		// Sort top-level items alphabetically, then sort each item's children in descending order
+		// We disable sorting during population and enable only for the final sort
+		ui->modTreeWidget->setSortingEnabled(false);
 
-		// Sort major items in alphabetical order (also sorts the children unfortunately)
-		ui->modTreeWidget->sortItems(0, Qt::SortOrder::AscendingOrder);
-
-		// Re-sort the children
-		auto* item = ui->modTreeWidget->topLevelItem(0);
-		for (int i = 1; item != nullptr; ++i)
+		// Collect all top-level items and sort them
+		QList<QTreeWidgetItem*> items;
+		while (ui->modTreeWidget->topLevelItemCount() > 0)
 		{
-			item->sortChildren(0, Qt::SortOrder::DescendingOrder);
-			item = ui->modTreeWidget->topLevelItem(i);
+			items.append(ui->modTreeWidget->takeTopLevelItem(0));
+		}
+
+		// Sort items alphabetically by their text
+		std::sort(items.begin(), items.end(), [](QTreeWidgetItem* a, QTreeWidgetItem* b) {
+			return a->text(0).compare(b->text(0), Qt::CaseInsensitive) < 0;
+		});
+
+		// Re-add items and sort each item's children in descending order
+		for (auto* item : items)
+		{
+			// Sort children before adding back
+			QList<QTreeWidgetItem*> children;
+			while (item->childCount() > 0)
+			{
+				children.append(item->takeChild(0));
+			}
+			std::sort(children.begin(), children.end(), [](QTreeWidgetItem* a, QTreeWidgetItem* b) {
+				return a->text(0).compare(b->text(0), Qt::CaseInsensitive) > 0;  // Descending
+			});
+			for (auto* child : children)
+			{
+				item->addChild(child);
+			}
+
+			ui->modTreeWidget->addTopLevelItem(item);
 		}
 	}
 

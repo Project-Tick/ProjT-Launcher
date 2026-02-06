@@ -57,11 +57,14 @@ BUILD_TYPE="release"
 PLATFORM=""
 ARCH=""
 QT_PREFIX=""
+QT_SYSTEM=""
 STATIC_BUILD="n"
 LTO_ENABLED="y"
 TESTS_ENABLED="n"
+WEBENGINE_ENABLED=""
 GAMEMODE_ENABLED=""
 MANGOHUD_ENABLED=""
+TOOLCHAIN=""
 CC_OVERRIDE=""
 CXX_OVERRIDE=""
 OUTPUT_DIR="build"
@@ -217,25 +220,36 @@ parse_args() {
         case "$1" in
             --prefix=*)     PREFIX="${1#*=}" ;;
             --build=*)      BUILD_TYPE="${1#*=}" ;;
+            --build-type=*) BUILD_TYPE="${1#*=}" ;;
             --platform=*)   PLATFORM="${1#*=}" ;;
+            --target=*)     PLATFORM="${1#*=}" ;;
             --arch=*)       ARCH="${1#*=}" ;;
             --qt-prefix=*)  QT_PREFIX="${1#*=}" ;;
+            --qt-path=*)    QT_PREFIX="${1#*=}" ;;
+            --qt-system)    QT_SYSTEM="y" ;;
             --static)       STATIC_BUILD="y" ;;
             --shared)       STATIC_BUILD="n" ;;
             --with-lto)     LTO_ENABLED="y" ;;
             --without-lto)  LTO_ENABLED="n" ;;
+            --enable-lto)   LTO_ENABLED="y" ;;
+            --disable-lto)  LTO_ENABLED="n" ;;
             --with-tests)   TESTS_ENABLED="y" ;;
             --without-tests) TESTS_ENABLED="n" ;;
+            --enable-tests) TESTS_ENABLED="y" ;;
+            --disable-tests) TESTS_ENABLED="n" ;;
+            --enable-webengine) WEBENGINE_ENABLED="y" ;;
+            --disable-webengine) WEBENGINE_ENABLED="n" ;;
             --with-gamemode) GAMEMODE_ENABLED="y" ;;
             --without-gamemode) GAMEMODE_ENABLED="n" ;;
             --with-mangohud) MANGOHUD_ENABLED="y" ;;
             --without-mangohud) MANGOHUD_ENABLED="n" ;;
+            --toolchain=*)  TOOLCHAIN="${1#*=}" ;;
             --cc=*)         CC_OVERRIDE="${1#*=}" ;;
             --cxx=*)        CXX_OVERRIDE="${1#*=}" ;;
             --output=*)     OUTPUT_DIR="${1#*=}" ;;
             -h|--help)      show_help ;;
             -V|--version)   show_version ;;
-            *)              die "unknown option: $1" ;;
+            *)              log_warn "unknown option: $1" ;;
         esac
         shift
     done

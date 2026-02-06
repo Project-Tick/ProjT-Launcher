@@ -45,15 +45,12 @@
 
 #include "Resource.hpp"
 
+#include <QHash>
+#include <QLocale>
 #include <QMutex>
 #include <QPixmapCache>
 
 class Version;
-
-/* TODO:
- *
- * Store localized descriptions
- * */
 
 class DataPack : public Resource
 {
@@ -72,10 +69,35 @@ class DataPack : public Resource
 	/** Gets, respectively, the lower and upper versions supported by the set pack format. */
 	virtual std::pair<Version, Version> compatibleVersions() const;
 
-	/** Gets the description of the data pack. */
+	/** Gets the description of the data pack.
+	 *  If a localized description exists for the current locale, returns that.
+	 *  Otherwise returns the default description.
+	 */
 	QString description() const
 	{
+		QString lang = QLocale::system().name().section('_', 0, 0);
+		if (m_localized_descriptions.contains(lang)) {
+			return m_localized_descriptions.value(lang);
+		}
 		return m_description;
+	}
+	
+	/** Gets the raw (non-localized) description. */
+	QString rawDescription() const
+	{
+		return m_description;
+	}
+	
+	/** Gets description for a specific language code. */
+	QString localizedDescription(const QString& langCode) const
+	{
+		return m_localized_descriptions.value(langCode, m_description);
+	}
+	
+	/** Gets all available localized descriptions. */
+	QHash<QString, QString> allLocalizedDescriptions() const
+	{
+		return m_localized_descriptions;
 	}
 
 	/** Gets the image of the data pack, converted to a QPixmap for drawing, and scaled to size. */
@@ -86,6 +108,12 @@ class DataPack : public Resource
 
 	/** Thread-safe. */
 	void setDescription(QString new_description);
+	
+	/** Thread-safe. Sets a localized description for a specific language. */
+	void setLocalizedDescription(const QString& langCode, const QString& description);
+	
+	/** Thread-safe. Sets all localized descriptions at once. */
+	void setLocalizedDescriptions(const QHash<QString, QString>& descriptions);
 
 	/** Thread-safe. */
 	void setImage(QImage new_image) const;
@@ -106,6 +134,11 @@ class DataPack : public Resource
 	/** The data pack's description, as defined in the pack.mcmeta file.
 	 */
 	QString m_description;
+	
+	/** Localized descriptions keyed by language code (e.g., "en", "de", "ja").
+	 *  Parsed from pack.mcmeta language files if available.
+	 */
+	QHash<QString, QString> m_localized_descriptions;
 
 	/** The data pack's image file cache key, for access in the QPixmapCache global instance.
 	 *

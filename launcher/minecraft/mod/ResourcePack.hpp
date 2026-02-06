@@ -29,10 +29,9 @@
 
 class Version;
 
-/* TODO:
- *
- * Store localized descriptions
- * */
+// Localized descriptions are fully implemented in the DataPack base class.
+// ResourcePack inherits m_localized_descriptions, localizedDescription(),
+// setLocalizedDescription(), and allLocalizedDescriptions() from DataPack.
 
 class ResourcePack : public DataPack
 {

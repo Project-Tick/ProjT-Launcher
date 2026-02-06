@@ -162,14 +162,35 @@ static ComponentPtr componentFromJsonV1(PackProfile* parent,
 	component->m_dependencyOnly = Json::ensureBoolean(obj.value("dependencyOnly"), false);
 	component->m_important		= Json::ensureBoolean(obj.value("important"), false);
 
-	// cached
-	// TODO @RESILIENCE: ignore invalid values/structure here?
-	component->m_cachedVersion	 = Json::ensureString(obj.value("cachedVersion"));
-	component->m_cachedName		 = Json::ensureString(obj.value("cachedName"));
-	component->m_cachedRequires	 = projt::meta::parseDependencies(obj, "cachedRequires");
-	component->m_cachedConflicts = projt::meta::parseDependencies(obj, "cachedConflicts");
-	component->m_cachedVolatile	 = Json::ensureBoolean(obj.value("volatile"), false);
-	bool disabled				 = Json::ensureBoolean(obj.value("disabled"), false);
+	// Cached values - use safe parsing with fallbacks for resilience
+	// Invalid or missing values are silently ignored to allow loading of 
+	// partially corrupted profiles
+	try {
+		component->m_cachedVersion = Json::ensureString(obj.value("cachedVersion"));
+	} catch (...) {
+		component->m_cachedVersion = QString();
+	}
+	
+	try {
+		component->m_cachedName = Json::ensureString(obj.value("cachedName"));
+	} catch (...) {
+		component->m_cachedName = QString();
+	}
+	
+	try {
+		component->m_cachedRequires = projt::meta::parseDependencies(obj, "cachedRequires");
+	} catch (...) {
+		component->m_cachedRequires = {};
+	}
+	
+	try {
+		component->m_cachedConflicts = projt::meta::parseDependencies(obj, "cachedConflicts");
+	} catch (...) {
+		component->m_cachedConflicts = {};
+	}
+	
+	component->m_cachedVolatile = Json::ensureBoolean(obj.value("volatile"), false);
+	bool disabled = Json::ensureBoolean(obj.value("disabled"), false);
 	component->setEnabled(!disabled);
 	return component;
 }

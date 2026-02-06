@@ -61,6 +61,7 @@
 
 #include "minecraft/auth/Parsers.hpp"
 #include "minecraft/skins/CapeChange.h"
+#include "minecraft/skins/CapeListModel.h"
 #include "minecraft/skins/SkinDelete.h"
 #include "minecraft/skins/SkinList.h"
 #include "minecraft/skins/SkinModel.h"
@@ -202,7 +203,7 @@ QPixmap previewCape(QImage capeImage, bool elytra = false)
 	if (elytra)
 	{
 		auto wing		= capeImage.copy(34, 0, 12, 22);
-		QImage mirrored = wing.mirrored(true, false);
+		QImage mirrored = wing.flipped(Qt::Horizontal);
 
 		QImage combined(wing.width() * 2 - 2, wing.height(), capeImage.format());
 		combined.fill(Qt::transparent);
@@ -219,68 +220,69 @@ QPixmap previewCape(QImage capeImage, bool elytra = false)
 
 void SkinManageDialog::setupCapes()
 {
-	// FIXME: add a model for this, download/refresh the capes on demand
-	auto& accountData = *m_acct->accountData();
-	int index		  = 0;
+	// Create the cape model with on-demand loading support
+	m_capeModel = new CapeListModel(this);
+	
+	// Connect signals for async loading
+	connect(m_capeModel, &CapeListModel::loadingFinished, this, &SkinManageDialog::onCapesLoaded);
+	connect(m_capeModel, &CapeListModel::capeLoaded, this, [this](const QString& capeId) {
+		// Update combo box icon when a cape image is loaded
+		if (m_capesIdx.contains(capeId)) {
+			int comboIdx = m_capesIdx[capeId];
+			QImage capeImage = m_capeModel->getCapeImage(capeId);
+			if (!capeImage.isNull()) {
+				m_capes[capeId] = capeImage;
+				m_ui->capeCombo->setItemIcon(comboIdx, previewCape(capeImage, m_ui->elytraCB->isChecked()));
+			}
+		}
+	});
+	
+	// Load capes from account (this triggers download if needed)
+	m_capeModel->loadFromAccount(m_acct, m_list.getDir());
+}
+
+void SkinManageDialog::onCapesLoaded()
+{
+	// Clear and repopulate combo box
+	m_ui->capeCombo->clear();
 	m_ui->capeCombo->addItem(tr("No Cape"), QVariant());
+	
+	auto& accountData = *m_acct->accountData();
 	auto currentCape = accountData.minecraftProfile.currentCape;
-	if (currentCape.isEmpty())
-	{
-		m_ui->capeCombo->setCurrentIndex(index);
+	int currentIndex = 0;
+	
+	// Populate from model
+	int rowCount = m_capeModel->rowCount();
+	for (int i = 0; i < rowCount; ++i) {
+		QModelIndex idx = m_capeModel->index(i, 0);
+		QString capeId = m_capeModel->data(idx, CapeListModel::CapeIdRole).toString();
+		QString capeAlias = m_capeModel->data(idx, CapeListModel::CapeAliasRole).toString();
+		QImage capeImage = m_capeModel->data(idx, CapeListModel::CapeImageRole).value<QImage>();
+		
+		// Store in local cache for preview
+		if (!capeImage.isNull()) {
+			m_capes[capeId] = capeImage;
+			m_ui->capeCombo->addItem(previewCape(capeImage, m_ui->elytraCB->isChecked()), capeAlias, capeId);
+		} else {
+			m_ui->capeCombo->addItem(capeAlias, capeId);
+		}
+		
+		m_capesIdx[capeId] = i + 1; // +1 because "No Cape" is at index 0
+		
+		if (capeId == currentCape) {
+			currentIndex = i + 1;
+		}
 	}
+	
+	m_ui->capeCombo->setCurrentIndex(currentIndex);
+}
 
-	auto capesDir = FS::PathCombine(m_list.getDir(), "capes");
-	NetJob::Ptr job{ new NetJob(tr("Download capes"), APPLICATION->network()) };
-	bool needsToDownload = false;
-	for (auto& cape : accountData.minecraftProfile.capes)
-	{
-		auto path = FS::PathCombine(capesDir, cape.id + ".png");
-		if (cape.data.size())
-		{
-			QImage capeImage;
-			if (capeImage.loadFromData(cape.data, "PNG") && capeImage.save(path))
-			{
-				m_capes[cape.id] = capeImage;
-				continue;
-			}
-		}
-		if (QFileInfo(path).exists())
-		{
-			continue;
-		}
-		if (!cape.url.isEmpty())
-		{
-			needsToDownload = true;
-			job->addNetAction(Net::Download::makeFile(cape.url, path));
-		}
-	}
-	if (needsToDownload)
-	{
-		ProgressDialog dlg(this);
-		dlg.execWithTask(job.get());
-	}
-	for (auto& cape : accountData.minecraftProfile.capes)
-	{
-		index++;
-		QImage capeImage;
-		if (!m_capes.contains(cape.id))
-		{
-			auto path = FS::PathCombine(capesDir, cape.id + ".png");
-			if (QFileInfo(path).exists() && capeImage.load(path))
-			{
-				m_capes[cape.id] = capeImage;
-			}
-		}
-		if (!capeImage.isNull())
-		{
-			m_ui->capeCombo->addItem(previewCape(capeImage, m_ui->elytraCB->isChecked()), cape.alias, cape.id);
-		}
-		else
-		{
-			m_ui->capeCombo->addItem(cape.alias, cape.id);
-		}
-
-		m_capesIdx[cape.id] = index;
+void SkinManageDialog::onCapeLoadError(const QString& error)
+{
+	qWarning() << "Failed to load capes:" << error;
+	// Fall back to showing at least "No Cape" option
+	if (m_ui->capeCombo->count() == 0) {
+		m_ui->capeCombo->addItem(tr("No Cape"), QVariant());
 	}
 }
 

@@ -73,9 +73,20 @@
 #include "VisualGroup.h"
 #include "ui/themes/CatPainter.h"
 #include "ui/themes/ThemeManager.h"
+#include "AccessibleInstanceView.h"
 
 #include <Application.h>
 #include <InstanceList.h>
+
+// Forward declaration for accessibility factory
+QAccessibleInterface* groupViewAccessibleFactory(const QString& classname, QObject* object);
+
+// Static registration of accessibility factory
+static struct AccessibilityRegistrar {
+	AccessibilityRegistrar() {
+		QAccessible::installFactory(groupViewAccessibleFactory);
+	}
+} s_accessibilityRegistrar;
 
 template <typename T>
 bool listsIntersect(const QList<T>& l1, const QList<T> t2)
@@ -149,8 +160,9 @@ void InstanceView::rowsRemoved()
 void InstanceView::currentChanged(const QModelIndex& current, const QModelIndex& previous)
 {
 	QAbstractItemView::currentChanged(current, previous);
-	// TODO: for accessibility support, implement+register a factory, steal QAccessibleTable from Qt and return an
-	// instance of it for InstanceView.
+	// Accessibility support is now handled by the registered AccessibleInstanceView factory
+	// which provides full QAccessibleTableInterface implementation for screen readers.
+	// The factory is registered at static initialization via groupViewAccessibleFactory().
 #ifndef QT_NO_ACCESSIBILITY
 	if (QAccessible::isActive() && current.isValid())
 	{
@@ -350,8 +362,18 @@ void InstanceView::mousePressEvent(QMouseEvent* event)
 	{
 		if (index != currentIndex())
 		{
-			// FIXME: better!
-			m_currentCursorColumn = -1;
+			// Reset cursor column when clicking on a different item
+			// This ensures keyboard navigation starts from the clicked item's column
+			auto cat = category(index);
+			if (cat)
+			{
+				QPair<int, int> pos = cat->positionOf(index);
+				m_currentCursorColumn = pos.first;
+			}
+			else
+			{
+				m_currentCursorColumn = -1;
+			}
 		}
 		// we disable scrollTo for mouse press so the item doesn't change position
 		// when the user is interacting with it (ie. clicking on it)

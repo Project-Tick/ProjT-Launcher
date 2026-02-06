@@ -72,7 +72,8 @@ AtlOptionalModListModel::AtlOptionalModListModel(QWidget* parent,
 												 QList<ATLauncher::VersionMod> mods)
 	: QAbstractListModel(parent),
 	  m_version(version),
-	  m_mods(mods)
+	  m_mods(mods),
+	  m_parentWidget(parent)
 {
 	// fill mod index
 	for (int i = 0; i < m_mods.size(); i++)
@@ -237,12 +238,22 @@ void AtlOptionalModListModel::shareCodeSuccess()
 
 	if (response.error)
 	{
-		// fixme: plumb in an error message
 		qWarning() << "ATLauncher API Response Error" << response.message;
+		QMessageBox::critical(m_parentWidget, tr("Share Code Error"),
+			tr("Failed to apply share code: %1").arg(response.message));
 		return;
 	}
 
-	// FIXME: verify pack and version, error if not matching.
+	// Verify pack and version match
+	if (response.data.pack != m_version.pack || response.data.version != m_version.version)
+	{
+		qWarning() << "Share code pack/version mismatch. Expected:" << m_version.pack << m_version.version
+				   << "Got:" << response.data.pack << response.data.version;
+		QMessageBox::warning(m_parentWidget, tr("Share Code Mismatch"),
+			tr("This share code is for a different pack or version.\n\nExpected: %1 %2\nShare code: %3 %4")
+				.arg(m_version.pack, m_version.version, response.data.pack, response.data.version));
+		return;
+	}
 
 	// Clear the current selection
 	for (const auto& mod : m_mods)
@@ -264,7 +275,9 @@ void AtlOptionalModListModel::shareCodeFailure([[maybe_unused]] const QString& r
 {
 	m_jobPtr.reset();
 
-	// fixme: plumb in an error message
+	qWarning() << "Share code request failed:" << reason;
+	QMessageBox::critical(m_parentWidget, tr("Share Code Error"),
+		tr("Failed to retrieve share code information: %1").arg(reason));
 }
 
 void AtlOptionalModListModel::selectRecommended()
@@ -299,8 +312,7 @@ void AtlOptionalModListModel::toggleMod(const ATLauncher::VersionMod& mod, int i
 		auto message = QString("%1<br><br>%2")
 						   .arg(m_version.warnings[mod.warning], tr("Are you sure that you want to enable this mod?"));
 
-		// fixme: avoid casting here
-		auto result = QMessageBox::warning(qobject_cast<QWidget*>(this->parent()),
+		auto result = QMessageBox::warning(m_parentWidget,
 										   tr("Warning"),
 										   message,
 										   QMessageBox::Yes | QMessageBox::No);

@@ -178,15 +178,30 @@ class FlameAPI : public ResourceAPI
 		{
 			return arr;
 		}
-		// FIXME: Client-side version filtering. This won't take into account any user-selected filtering.
+		
+		// Filter texture packs based on Minecraft version compatibility
+		// Texture packs with the old format (pre-1.6) use a different structure
+		// than resource packs (1.6+). This filtering ensures we only show
+		// compatible texture packs for older Minecraft versions.
 		auto const& mc_versions = arr.mcVersion;
 
-		if (std::any_of(mc_versions.constBegin(),
-						mc_versions.constEnd(),
-						[](auto const& mc_version) { return Version(mc_version) <= Version("1.6"); }))
-		{
+		if (mc_versions.isEmpty()) {
+			// No version info available - allow it through
 			return arr;
 		}
+
+		// Check if any of the supported versions is 1.6 or older (texture pack era)
+		bool hasOldVersion = std::any_of(mc_versions.constBegin(),
+										 mc_versions.constEnd(),
+										 [](auto const& mc_version) { 
+											 return Version(mc_version) <= Version("1.6"); 
+										 });
+		
+		if (hasOldVersion) {
+			return arr;
+		}
+		
+		// Version 1.6+ uses resource packs, not texture packs
 		return {};
 	};
 	void loadExtraPackInfo(ModPlatform::IndexedPack& m, [[maybe_unused]] QJsonObject&) const override

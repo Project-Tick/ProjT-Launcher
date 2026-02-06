@@ -116,6 +116,7 @@ core-y := \
 	MangoHud.cpp \
 	Markdown.cpp \
 	MessageLevel.cpp \
+	PngReader.cpp \
 	RecursiveFileSystemWatcher.cpp \
 	ResourceDownloadTask.cpp \
 	StringUtils.cpp \

@@ -154,6 +154,7 @@ namespace ATLauncher
 			emitFailed(tr("Could not understand pack manifest:\n") + e.cause());
 			return;
 		}
+		version.pack = m_pack_safe_name;
 		m_version = version;
 
 		// Derived from the installation mode

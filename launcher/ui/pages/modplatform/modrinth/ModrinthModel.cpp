@@ -161,30 +161,16 @@ namespace Modrinth
 			return;
 		static const ModrinthAPI api;
 
+		// Direct project ID lookup: Search terms starting with '#' are treated as project IDs
+		// This allows users to search for specific projects by their Modrinth ID
 		if (m_currentSearchTerm.startsWith("#"))
 		{
-			auto projectId = m_currentSearchTerm.mid(1);
-			if (!projectId.isEmpty())
+			if (performDirectProjectLookup(api))
 			{
-				ResourceAPI::Callback<ModPlatform::IndexedPack::Ptr> callbacks;
-
-				callbacks.on_fail	 = [this](QString reason, int) { searchRequestFailed(reason); };
-				callbacks.on_succeed = [this](auto& pack) { searchRequestForOneSucceeded(pack); };
-				callbacks.on_abort	 = [this]
-				{
-					qCritical() << "Search task aborted by an unknown reason!";
-					searchRequestFailed("Aborted");
-				};
-				auto project	 = std::make_shared<ModPlatform::IndexedPack>();
-				project->addonId = projectId;
-				if (auto job = api.getProjectInfo({ project }, std::move(callbacks)); job)
-				{
-					m_jobPtr = job;
-					m_jobPtr->start();
-				}
 				return;
 			}
-		} // TODO: Move to standalone API
+		}
+		
 		ResourceAPI::SortingMethod sort{};
 		sort.name = m_currentSort;
 
@@ -211,6 +197,37 @@ namespace Modrinth
 
 		m_jobPtr = netJob;
 		m_jobPtr->start();
+	}
+	
+	bool ModpackListModel::performDirectProjectLookup(const ModrinthAPI& api)
+	{
+		auto projectId = m_currentSearchTerm.mid(1);
+		if (projectId.isEmpty())
+		{
+			return false;
+		}
+		
+		ResourceAPI::Callback<ModPlatform::IndexedPack::Ptr> callbacks;
+
+		callbacks.on_fail	 = [this](QString reason, int) { searchRequestFailed(reason); };
+		callbacks.on_succeed = [this](auto& pack) { searchRequestForOneSucceeded(pack); };
+		callbacks.on_abort	 = [this]
+		{
+			qCritical() << "Search task aborted by an unknown reason!";
+			searchRequestFailed("Aborted");
+		};
+		
+		auto project	 = std::make_shared<ModPlatform::IndexedPack>();
+		project->addonId = projectId;
+		
+		if (auto job = api.getProjectInfo({ project }, std::move(callbacks)); job)
+		{
+			m_jobPtr = job;
+			m_jobPtr->start();
+			return true;
+		}
+		
+		return false;
 	}
 
 	void ModpackListModel::refresh()

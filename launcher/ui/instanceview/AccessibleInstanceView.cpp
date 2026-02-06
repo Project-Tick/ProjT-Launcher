@@ -424,14 +424,21 @@ QAccessibleInterface* AccessibleInstanceView::childAt(int x, int y) const
 {
 	QPoint viewportOffset = view()->viewport()->mapTo(view(), QPoint(0, 0));
 	QPoint indexPosition  = view()->mapFromGlobal(QPoint(x, y) - viewportOffset);
-	// FIXME: if indexPosition < 0 in one coordinate, return header
+	
+	// If position is negative in either coordinate, the user clicked outside the valid area
+	// In a table view this would return a header, but InstanceView doesn't have headers
+	// so we return nullptr to indicate no valid child at this position
+	if (indexPosition.x() < 0 || indexPosition.y() < 0)
+	{
+		return nullptr;
+	}
 
 	QModelIndex index = view()->indexAt(indexPosition);
 	if (index.isValid())
 	{
 		return child(logicalIndex(index));
 	}
-	return 0;
+	return nullptr;
 }
 
 int AccessibleInstanceView::childCount() const

@@ -217,13 +217,23 @@ class FilterModel : public QIdentityProxyModel
 			return false;
 		if (role != Qt::EditRole)
 			return false;
-		// FIXME: this is a workaround for a bug in QFileSystemModel, where it doesn't
-		// sort after renames
+
+		bool result = model->setData(mapToSource(index), value.toString() + ".png", role);
+
+		// Force refresh to fix QFileSystemModel not sorting after renames
+		// Toggle name filter to trigger internal model refresh
+		if (result)
 		{
-			((QFileSystemModel*)model)->setNameFilterDisables(true);
-			((QFileSystemModel*)model)->setNameFilterDisables(false);
+			auto fsModel = qobject_cast<QFileSystemModel*>(model);
+			if (fsModel)
+			{
+				fsModel->setNameFilterDisables(true);
+				fsModel->setNameFilterDisables(false);
+			}
+			emit layoutChanged();  // Signal views to refresh
 		}
-		return model->setData(mapToSource(index), value.toString() + ".png", role);
+
+		return result;
 	}
 
   private:

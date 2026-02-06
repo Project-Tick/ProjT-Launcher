@@ -142,6 +142,24 @@ void DataPack::setDescription(QString new_description)
 	m_description = new_description;
 }
 
+void DataPack::setLocalizedDescription(const QString& langCode, const QString& description)
+{
+	QMutexLocker locker(&m_data_lock);
+
+	if (langCode.isEmpty()) {
+		m_description = description;
+	} else {
+		m_localized_descriptions[langCode] = description;
+	}
+}
+
+void DataPack::setLocalizedDescriptions(const QHash<QString, QString>& descriptions)
+{
+	QMutexLocker locker(&m_data_lock);
+
+	m_localized_descriptions = descriptions;
+}
+
 void DataPack::setImage(QImage new_image) const
 {
 	QMutexLocker locker(&m_data_lock);

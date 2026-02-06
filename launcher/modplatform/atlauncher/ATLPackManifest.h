@@ -211,6 +211,7 @@ namespace ATLauncher
 
 	struct PackVersion
 	{
+		QString pack;
 		QString version;
 		QString minecraft;
 		bool noConfigs;

@@ -96,6 +96,13 @@
 #include <utime.h>
 #endif
 
+#if defined(Q_OS_LINUX)
+#include <QDBusConnection>
+#include <QDBusInterface>
+#include <QDBusReply>
+#include <QDBusUnixFileDescriptor>
+#endif
+
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -773,11 +780,60 @@ namespace FS
 
 	bool trash(QString path, QString* pathInTrash)
 	{
-		// TODO: Flatpak trash desteği eklenmeli. org.freedesktop.portal.Trash D-Bus arayüzü ile dosyalar çöp kutusuna
-		// taşınabilir. See: https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Trash.html
-		// This requires D-Bus integration with the Trash portal for proper sandboxed file deletion
+#if defined(Q_OS_LINUX)
+		// Flatpak trash support via org.freedesktop.portal.Trash D-Bus interface
+		// See: https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Trash.html
 		if (DesktopServices::isFlatpak())
+		{
+			QDBusConnection bus = QDBusConnection::sessionBus();
+			if (!bus.isConnected())
+			{
+				qWarning() << "D-Bus session bus not connected for Flatpak trash";
+				return false;
+			}
+
+			// Open the file to get a file descriptor
+			int fd = open(path.toUtf8().constData(), O_RDONLY | O_CLOEXEC);
+			if (fd < 0)
+			{
+				qWarning() << "Failed to open file for trashing:" << path;
+				return false;
+			}
+
+			QDBusInterface trashInterface(
+				"org.freedesktop.portal.Desktop",
+				"/org/freedesktop/portal/desktop",
+				"org.freedesktop.portal.Trash",
+				bus
+			);
+
+			if (!trashInterface.isValid())
+			{
+				close(fd);
+				qWarning() << "Trash portal interface not available";
+				return false;
+			}
+
+			QDBusUnixFileDescriptor dbusfd(fd);
+			close(fd); // D-Bus has duplicated the fd
+
+			QDBusReply<uint> reply = trashInterface.call("TrashFile", QVariant::fromValue(dbusfd));
+			if (!reply.isValid())
+			{
+				qWarning() << "Trash portal call failed:" << reply.error().message();
+				return false;
+			}
+
+			// Return value: 1 = success, 0 = failure
+			if (reply.value() == 1)
+			{
+				if (pathInTrash)
+					*pathInTrash = QString(); // Flatpak portal doesn't provide trash path
+				return true;
+			}
 			return false;
+		}
+#endif
 #if defined Q_OS_WIN32
 		if (IsWindowsServer())
 			return false;

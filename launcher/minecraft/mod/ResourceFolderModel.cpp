@@ -550,10 +550,29 @@ bool ResourceFolderModel::dropMimeData(const QMimeData* data, Qt::DropAction act
 			{
 				continue;
 			}
-			// Sadece kopyalama destekleniyor, taşıma (move) desteği yok. FIXME kaldırıldı.
-			if (!installResource(url.toLocalFile()))
+			
+			QString sourcePath = url.toLocalFile();
+			
+			// Handle move vs copy action
+			if (action == Qt::MoveAction)
 			{
-				qWarning() << "Failed to install resource from" << url.toLocalFile();
+				// Move: install then delete source
+				if (installResource(sourcePath))
+				{
+					QFile::remove(sourcePath);
+				}
+				else
+				{
+					qWarning() << "Failed to move resource from" << sourcePath;
+				}
+			}
+			else
+			{
+				// Copy: just install (copies the file)
+				if (!installResource(sourcePath))
+				{
+					qWarning() << "Failed to install resource from" << sourcePath;
+				}
 			}
 		}
 		return true;
@@ -1011,6 +1030,20 @@ Resource::Ptr ResourceFolderModel::find(QString id)
 		return nullptr;
 	return *iter;
 }
+
+Resource::WeakPtr ResourceFolderModel::findWeak(const QString& id)
+{
+	auto it = m_resources_index.constFind(id);
+	if (it == m_resources_index.constEnd())
+		return Resource::WeakPtr();
+	
+	int idx = it.value();
+	if (idx < 0 || idx >= m_resources.size())
+		return Resource::WeakPtr();
+	
+	return Resource::WeakPtr(m_resources[idx].get());
+}
+
 QList<Resource*> ResourceFolderModel::allResources()
 {
 	QList<Resource*> result;
