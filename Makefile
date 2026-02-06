@@ -563,12 +563,17 @@ kconfig-tools: $(KCONFIG_PROGS)
 # Configuration Targets
 # ============================================================================
 
-prepare: $(KCONFIG_OBJDIR)/conf | $(KBUILD_OUTPUT)/include/config $(KBUILD_OUTPUT)/include/generated
+# prepare: Generate auto.conf and autoconf.h from .config
+# Uses lightweight syncconfig.sh instead of building kconfig tools.
+# kconfig tools (menuconfig, defconfig, etc.) are only needed for
+# interactive configuration and are built on-demand via their own targets.
+prepare: | $(KBUILD_OUTPUT)/include/config $(KBUILD_OUTPUT)/include/generated
 	@if [ ! -f "$(KCONFIG_CONFIG)" ]; then \
-		$(MAKE) -f $(srctree)/Makefile defconfig; \
-	else \
-		$(MAKE) -f $(srctree)/Makefile olddefconfig; \
+		echo "error: $(KCONFIG_CONFIG) not found."; \
+		echo "Run ./configure (Unix) or configure.bat (Windows) first."; \
+		exit 1; \
 	fi
+	@bash $(srctree)/scripts/syncconfig.sh $(KBUILD_OUTPUT)
 
 # Override defconfig to use our custom defconfig file
 projt_defconfig: $(KCONFIG_OBJDIR)/conf

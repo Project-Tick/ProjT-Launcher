@@ -75,6 +75,7 @@ runs:
         update: true
         install: >-
           git
+          make
         pacboy: >-
           toolchain:p
           ccache:p
@@ -92,6 +93,11 @@ runs:
           qt6-networkauth:p
           qt6-positioning:p
           qt6-serialport:p
+
+    - name: Install GNU Make (MSVC)
+      if: ${{ runner.os == 'Windows' && inputs.msystem == '' }}
+      shell: powershell
+      run: choco install make -y
 
     - name: Install NSIS (MSVC)
       if: ${{ runner.os == 'Windows' && inputs.msystem == '' }}

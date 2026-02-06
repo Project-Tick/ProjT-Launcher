@@ -111,7 +111,6 @@ env:
   NODE_NO_WARNINGS: 1
   CHECKOUT_REF: ${{ inputs.ref || github.event.inputs.ref || github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha || github.sha }}
   OUTPUT_ROOT: ${{ inputs.output-root || github.event.inputs.output-root || format('{0}/build/out', github.workspace) }}
-  CMAKE_CONFIGURE_ARGS: -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING -DLauncher_OUTPUT_ROOT=${{ inputs.output-root || github.event.inputs.output-root || format('{0}/build/out', github.workspace) }}
 
 jobs:
   build-launcher:
@@ -285,6 +284,7 @@ jobs:
         with:
           ref: ${{ env.CHECKOUT_REF }}
           submodules: true
+          fetch-depth: 1
 
       - name: Setup Dependencies
         id: setup-dependencies
@@ -312,46 +312,39 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           ./configure \
-            --target=linux \
+            --platform=linux \
             --arch=${{ matrix.target-arch || 'x86_64' }} \
-            --build-type=${{ env.BUILD_TYPE }} \
-            --qt-system \
-            --enable-tests \
-            --enable-webengine
+            --build=${{ env.BUILD_TYPE }} \
+            --with-tests
 
       - name: Configure (Windows MSVC)
         if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc'
         shell: cmd
         run: |
           configure.bat ^
-            --target=windows ^
-            --toolchain=msvc ^
+            --build=${{ env.BUILD_TYPE }} ^
             --arch=${{ matrix.target-arch || 'x86_64' }} ^
-            --build-type=${{ env.BUILD_TYPE }} ^
-            --qt-path="${{ steps.setup-dependencies.outputs.qt-path }}" ^
-            --enable-tests ^
-            --enable-webengine
+            --qt-prefix="${{ steps.setup-dependencies.outputs.qt-path }}" ^
+            --with-tests
 
       - name: Configure (Windows MinGW)
         if: runner.os == 'Windows' && matrix.windows-toolchain == 'mingw'
         run: |
           ./configure \
-            --target=windows \
-            --toolchain=mingw \
+            --platform=windows \
             --arch=${{ matrix.target-arch || 'x86_64' }} \
-            --build-type=${{ env.BUILD_TYPE }} \
-            --enable-tests
+            --build=${{ env.BUILD_TYPE }} \
+            --with-tests
 
       - name: Configure (macOS)
         if: runner.os == 'macOS'
         run: |
           ./configure \
-            --target=macos \
+            --platform=macos \
             --arch=${{ matrix.target-arch || 'universal' }} \
-            --build-type=${{ env.BUILD_TYPE }} \
-            --qt-path="${{ steps.setup-dependencies.outputs.qt-path }}" \
-            --enable-tests \
-            --enable-webengine
+            --build=${{ env.BUILD_TYPE }} \
+            --qt-prefix="${{ steps.setup-dependencies.outputs.qt-path }}" \
+            --with-tests
 
       # Build with Make
       - name: Build (Linux/macOS/MinGW)
@@ -361,9 +354,9 @@ jobs:
 
       - name: Build (Windows MSVC)
         if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc'
-        shell: cmd
+        shell: bash
         run: |
-          make -j%NUMBER_OF_PROCESSORS%
+          make -j${NUMBER_OF_PROCESSORS:-4}
 
       # Run Tests
       - name: Run Tests (Linux/macOS/MinGW)
@@ -373,7 +366,7 @@ jobs:
 
       - name: Run Tests (Windows MSVC)
         if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc'
-        shell: cmd
+        shell: bash
         run: |
           make test TEST_VERBOSE=1
 

@@ -44,6 +44,7 @@ jobs:
           path: trusted
           sparse-checkout: |
             ci/github-script
+          fetch-depth: 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -93,6 +94,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.mergedSha }}
+          fetch-depth: 1
 
       - name: Check CODEOWNERS syntax
         run: |

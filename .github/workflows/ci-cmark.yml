@@ -27,6 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
       - name: Install clang-tidy
         run: |
           sudo apt-get install -y clang-tidy
@@ -101,6 +103,8 @@ jobs:
        CXXFLAGS: '${{ matrix.san_cflags }} ${{ matrix.asan_cflags }}'
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
       - name: Build and test
         run: |
            cmake \
@@ -131,6 +135,8 @@ jobs:
             cmake_shared: 'NO'
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
       - uses: ilammy/msvc-dev-cmd@v1
       - name: Build and test
         run: |
