@@ -425,9 +425,11 @@ ifndef CCACHE
   endif
 endif
 
-# Use pipes instead of temp files (faster)
+# Use pipes instead of temp files (faster, GCC/Clang only)
+ifneq ($(WINDOWS_TOOLCHAIN),msvc)
 CFLAGS += -pipe
 CXXFLAGS += -pipe
+endif
 
 # Export job count for sub-makes
 export JOBS
@@ -910,55 +912,15 @@ list-modules:
 # CI Targets
 # ============================================================================
 
-# CI builds for individual components
-PHONY += ci-bzip2 ci-cmark ci-quazip ci-libqrencode ci-javacheck ci-launcher
-PHONY += ci-lint ci-prepare ci-release ci-all
+PHONY += ci-prepare ci-lint ci-release
 
-# Bzip2 CI build
-ci-bzip2: prepare
-	@echo "=== CI: Building bzip2 ==="
-	$(Q)cd $(srctree)/bzip2 && \
-		mkdir -p builddir && cd builddir && \
-		cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_SHARED_LIB=ON -DENABLE_STATIC_LIB=ON && \
-		cmake --build . -j$(JOBS) && \
-		ctest --output-on-failure || true
-
-# CMark CI build
-ci-cmark: prepare
-	@echo "=== CI: Building cmark ==="
-	$(Q)cd $(srctree)/cmark && \
-		mkdir -p builddir && cd builddir && \
-		cmake .. -DCMAKE_BUILD_TYPE=Release && \
-		cmake --build . -j$(JOBS) && \
-		ctest --output-on-failure || true
-
-# Quazip CI build
-ci-quazip: prepare
-	@echo "=== CI: Building quazip ==="
-	$(Q)cd $(srctree)/quazip && \
-		mkdir -p builddir && cd builddir && \
-		cmake .. -DCMAKE_BUILD_TYPE=Release && \
-		cmake --build . -j$(JOBS) && \
-		ctest --output-on-failure || true
-
-# libqrencode CI build
-ci-libqrencode: prepare
-	@echo "=== CI: Building libqrencode ==="
-	$(Q)cd $(srctree)/libqrencode && \
-		mkdir -p builddir && cd builddir && \
-		cmake .. -DCMAKE_BUILD_TYPE=Release && \
-		cmake --build . -j$(JOBS)
-
-# JavaCheck CI build
-ci-javacheck: prepare
-	@echo "=== CI: Building javacheck ==="
-	$(Q)cd $(srctree)/javacheck && \
-		$(MAKE) all
-
-# Launcher CI build (full build)
-ci-launcher: prepare
-	@echo "=== CI: Building launcher ==="
-	$(Q)$(MAKE) -f $(srctree)/Makefile all
+# Prepare target (used by CI workflows)
+ci-prepare: prepare
+	@echo "=== CI: Prepared build environment ==="
+	@echo "Platform: $(TARGET_PLATFORM)"
+	@echo "Architecture: $(TARGET_ARCH)"
+	@echo "Compiler: $(CXX)"
+	@echo "Build directory: $(KBUILD_OUTPUT)"
 
 # Lint target
 ci-lint:
@@ -974,14 +936,6 @@ ci-lint:
 			cppcheck --enable=warning,style --quiet launcher/ 2>/dev/null || true; \
 		fi
 
-# Prepare target (used by CI workflows)
-ci-prepare: prepare
-	@echo "=== CI: Prepared build environment ==="
-	@echo "Platform: $(TARGET_PLATFORM)"
-	@echo "Architecture: $(TARGET_ARCH)"
-	@echo "Compiler: $(CXX)"
-	@echo "Build directory: $(KBUILD_OUTPUT)"
-
 # Release packaging
 ci-release: all
 	@echo "=== CI: Creating release artifacts ==="
@@ -996,9 +950,6 @@ ifeq ($(TARGET_PLATFORM),windows)
 	$(Q)$(MAKE) -f $(srctree)/Makefile package-zip || true
 	$(Q)$(MAKE) -f $(srctree)/Makefile package-nsis || true
 endif
-
-# All CI targets
-ci-all: ci-prepare ci-bzip2 ci-cmark ci-quazip ci-libqrencode ci-javacheck ci-launcher
 
 # ============================================================================
 # Forced Target

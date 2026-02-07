@@ -100,68 +100,44 @@ else
 endif
 endif
 
-# Object compilation rules - search in current module directory
+# Object compilation rules - MSVC vs GCC/Clang
 ifeq ($(WINDOWS_TOOLCHAIN),msvc)
-$(OBJDIR)/%.o: $(CURDIR)/%.c | $(OBJDIR)
-	@echo "  CC      $<"
-	$(Q)mkdir -p $(dir $@)
-	$(Q)$(CC) $(CFLAGS) /c /Fo$@ $<
-
-$(OBJDIR)/%.o: $(CURDIR)/%.cpp | $(OBJDIR)
-	@echo "  CXX     $<"
-	$(Q)mkdir -p $(dir $@)
-	$(Q)$(CXX) $(CXXFLAGS) /c /Fo$@ $<
-
-$(OBJDIR)/%.o: $(CURDIR)/%.cc | $(OBJDIR)
-	@echo "  CXX     $<"
-	$(Q)mkdir -p $(dir $@)
-	$(Q)$(CXX) $(CXXFLAGS) /c /Fo$@ $<
-
-$(OBJDIR)/%.o: $(srctree)/$(lib)/%.c | $(OBJDIR)
-	@echo "  CC      $<"
-	$(Q)mkdir -p $(dir $@)
-	$(Q)$(CC) $(CFLAGS) /c /Fo$@ $<
-
-$(OBJDIR)/%.o: $(srctree)/$(lib)/%.cpp | $(OBJDIR)
-	@echo "  CXX     $<"
-	$(Q)mkdir -p $(dir $@)
-	$(Q)$(CXX) $(CXXFLAGS) /c /Fo$@ $<
-
-$(OBJDIR)/%.o: $(srctree)/$(lib)/%.cc | $(OBJDIR)
-	@echo "  CXX     $<"
-	$(Q)mkdir -p $(dir $@)
-	$(Q)$(CXX) $(CXXFLAGS) /c /Fo$@ $<
+COMPILE_C   = $(CC) $(CFLAGS) /c /Fo$@ $<
+COMPILE_CXX = $(CXX) $(CXXFLAGS) /c /Fo$@ $<
 else
+COMPILE_C   = $(CC) $(CFLAGS) -c -o $@ $<
+COMPILE_CXX = $(CXX) $(CXXFLAGS) -c -o $@ $<
+endif
+
 $(OBJDIR)/%.o: $(CURDIR)/%.c | $(OBJDIR)
 	@echo "  CC      $<"
 	$(Q)mkdir -p $(dir $@)
-	$(Q)$(CC) $(CFLAGS) -c -o $@ $<
+	$(Q)$(COMPILE_C)
 
 $(OBJDIR)/%.o: $(CURDIR)/%.cpp | $(OBJDIR)
 	@echo "  CXX     $<"
 	$(Q)mkdir -p $(dir $@)
-	$(Q)$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(Q)$(COMPILE_CXX)
 
 $(OBJDIR)/%.o: $(CURDIR)/%.cc | $(OBJDIR)
 	@echo "  CXX     $<"
 	$(Q)mkdir -p $(dir $@)
-	$(Q)$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(Q)$(COMPILE_CXX)
 
 $(OBJDIR)/%.o: $(srctree)/$(lib)/%.c | $(OBJDIR)
 	@echo "  CC      $<"
 	$(Q)mkdir -p $(dir $@)
-	$(Q)$(CC) $(CFLAGS) -c -o $@ $<
+	$(Q)$(COMPILE_C)
 
 $(OBJDIR)/%.o: $(srctree)/$(lib)/%.cpp | $(OBJDIR)
 	@echo "  CXX     $<"
 	$(Q)mkdir -p $(dir $@)
-	$(Q)$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(Q)$(COMPILE_CXX)
 
 $(OBJDIR)/%.o: $(srctree)/$(lib)/%.cc | $(OBJDIR)
 	@echo "  CXX     $<"
 	$(Q)mkdir -p $(dir $@)
-	$(Q)$(CXX) $(CXXFLAGS) -c -o $@ $<
-endif
+	$(Q)$(COMPILE_CXX)
 
 # Directory creation
 $(OBJDIR) $(LIBDIR):

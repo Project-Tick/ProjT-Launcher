@@ -34,7 +34,7 @@ class JavaSettingsWidget : public QWidget
 	Q_OBJECT
 
   public:
-	explicit JavaSettingsWidget(QWidget* parent = nullptr) : JavaSettingsWidget(nullptr, nullptr)
+	explicit JavaSettingsWidget([[maybe_unused]] QWidget* parent = nullptr) : JavaSettingsWidget(nullptr, nullptr)
 	{}
 	explicit JavaSettingsWidget(InstancePtr instance, QWidget* parent = nullptr);
 	~JavaSettingsWidget() override;

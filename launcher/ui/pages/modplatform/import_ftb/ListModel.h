@@ -83,11 +83,11 @@ namespace FTBImportAPP
 		ListModel(QObject* parent);
 		virtual ~ListModel() = default;
 
-		int rowCount(const QModelIndex& parent) const
+		int rowCount([[maybe_unused]] const QModelIndex& parent) const
 		{
 			return m_modpacks.size();
 		}
-		int columnCount(const QModelIndex& parent) const
+		int columnCount([[maybe_unused]] const QModelIndex& parent) const
 		{
 			return 1;
 		}

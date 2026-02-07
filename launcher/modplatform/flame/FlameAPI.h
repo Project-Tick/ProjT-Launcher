@@ -94,6 +94,7 @@ class FlameAPI : public ResourceAPI
 			case ModPlatform::LegacyFabric:
 			case ModPlatform::Ornithe:
 			case ModPlatform::Rift: break; // not supported
+			default: break;
 		}
 		return 0;
 	}
