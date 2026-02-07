@@ -603,7 +603,18 @@ prepare: | $(KBUILD_OUTPUT)/include/config $(KBUILD_OUTPUT)/include/generated
 	@bash $(srctree)/scripts/syncconfig.sh $(KBUILD_OUTPUT)
 
 # Override defconfig to use our custom defconfig file
+# First runs ./configure to probe the system (creates base .config),
+# then overlays the defconfig defaults via kconfig's conf tool.
 projt_defconfig: $(KCONFIG_OBJDIR)/conf
+	@echo "=== Running system detection (./configure) ==="
+	$(Q)if [ -x "$(srctree)/configure" ]; then \
+		bash $(srctree)/configure --build=release; \
+	elif [ -f "$(srctree)/configure.bat" ] && command -v cmd.exe >/dev/null 2>&1; then \
+		cmd.exe /c "$(srctree)/configure.bat"; \
+	else \
+		echo "  WARN    No configure script found, using defconfig only"; \
+	fi
+	@echo "=== Overlaying defconfig defaults ==="
 	$(Q)$(KCONFIG_OBJDIR)/conf --defconfig=$(srctree)/$(DEFCONFIG) Kconfig
 
 # Note: menuconfig, oldconfig, savedefconfig, etc. are provided by kconfig/Makefile

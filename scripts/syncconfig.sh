@@ -98,6 +98,13 @@ echo "  GEN     $AUTO_CONF"
             continue
         fi
 
+        # Handle CONFIG_*="" (empty string) -> #define CONFIG_* ""
+        if echo "$line" | grep -qE '^CONFIG_[A-Za-z0-9_]+=""$'; then
+            key=$(echo "$line" | cut -d= -f1)
+            echo "#define $key \"\""
+            continue
+        fi
+
         # Handle CONFIG_*=number -> #define CONFIG_* number
         if echo "$line" | grep -qE '^CONFIG_[A-Za-z0-9_]+=[0-9]+$'; then
             key=$(echo "$line" | cut -d= -f1)

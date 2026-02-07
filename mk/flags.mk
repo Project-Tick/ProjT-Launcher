@@ -4,13 +4,17 @@ include mk/toolchain.mk
 
 MSVC := $(filter cl cl.exe,$(notdir $(CXX)))
 
+# C++ standard from Kconfig (default: -std=c++23)
+CPP_STD := $(or $(CONFIG_CPP_STANDARD),-std=c++23)
+C_STD := $(or $(CONFIG_C_STANDARD),-std=c23)
+
 # Base flags
 ifneq ($(MSVC),)
 CFLAGS += /W4
 CXXFLAGS += /std:c++20 /W4 /permissive-
 else
-CFLAGS += -Wall -Wextra -fstack-protector-strong
-CXXFLAGS += -std=gnu++23 -Wall -Wextra -fstack-protector-strong
+CFLAGS += $(C_STD) -Wall -Wextra -fstack-protector-strong
+CXXFLAGS += $(CPP_STD) -Wall -Wextra -fstack-protector-strong
 endif
 
 # Project-wide defines

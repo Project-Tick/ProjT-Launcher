@@ -470,17 +470,17 @@ echo WINDOWS_TOOLCHAIN := !TOOLCHAIN!
 echo.
 echo # Build Configuration
 if /i "!BUILD_TYPE!"=="debug" (
-echo CONFIG_BUILD_TYPE_DEBUG=y
-echo # CONFIG_BUILD_TYPE_RELEASE is not set
-echo # CONFIG_BUILD_TYPE_RELWITHDEBINFO is not set
+echo CONFIG_BUILD_DEBUG=y
+echo # CONFIG_BUILD_RELEASE is not set
+echo # CONFIG_BUILD_RELWITHDEBINFO is not set
 ) else if /i "!BUILD_TYPE!"=="relwithdebinfo" (
-echo # CONFIG_BUILD_TYPE_DEBUG is not set
-echo # CONFIG_BUILD_TYPE_RELEASE is not set
-echo CONFIG_BUILD_TYPE_RELWITHDEBINFO=y
+echo # CONFIG_BUILD_DEBUG is not set
+echo # CONFIG_BUILD_RELEASE is not set
+echo CONFIG_BUILD_RELWITHDEBINFO=y
 ) else (
-echo # CONFIG_BUILD_TYPE_DEBUG is not set
-echo CONFIG_BUILD_TYPE_RELEASE=y
-echo # CONFIG_BUILD_TYPE_RELWITHDEBINFO is not set
+echo # CONFIG_BUILD_DEBUG is not set
+echo CONFIG_BUILD_RELEASE=y
+echo # CONFIG_BUILD_RELWITHDEBINFO is not set
 )
 echo.
 echo # Target Platform

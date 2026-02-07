@@ -4,6 +4,8 @@
 # This file detects the host and target platform, setting appropriate
 # variables for the build system.
 
+include mk/config.mk
+
 # ============================================================================
 # Host Detection
 # ============================================================================

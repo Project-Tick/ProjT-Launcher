@@ -207,7 +207,7 @@ SED_SUBST = sed \
 	-e 's|@Launcher_MATRIX_URL@|$(Launcher_MATRIX_URL)|g' \
 	-e 's|@Launcher_DISCORD_URL@|$(Launcher_DISCORD_URL)|g' \
 	-e 's|@Launcher_SUBREDDIT_URL@|$(Launcher_SUBREDDIT_URL)|g' \
-	-e 's|\#cmakedefine01 Launcher_ENABLE_JAVA_DOWNLOADER|\#define Launcher_ENABLE_JAVA_DOWNLOADER 0|g'
+	-e 's|\#cmakedefine01 Launcher_ENABLE_JAVA_DOWNLOADER|\#define Launcher_ENABLE_JAVA_DOWNLOADER $(if $(call cfg-yes,$(CONFIG_FEATURE_JAVA_DOWNLOADER)),1,0)|g'
 
 # ============================================================================
 # BuildConfig.cpp generation

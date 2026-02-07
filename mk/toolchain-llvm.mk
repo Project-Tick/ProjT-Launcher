@@ -42,13 +42,17 @@ JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 CMAKE_BUILD_TYPE ?= Release
 
 # Components to build
-LLVM_PROJECTS := clang;lld
+LLVM_PROJECTS := clang
 
-ifeq ($(CONFIG_TOOLCHAIN_LLVM_LIBCXX),y)
+ifeq ($(CONFIG_TOOLCHAIN_BUILD_LLD),y)
+  LLVM_PROJECTS := $(LLVM_PROJECTS);lld
+endif
+
+ifeq ($(CONFIG_TOOLCHAIN_BUILD_LIBCXX),y)
   LLVM_PROJECTS := $(LLVM_PROJECTS);libcxx;libcxxabi;libunwind
 endif
 
-ifeq ($(CONFIG_TOOLCHAIN_LLVM_COMPILER_RT),y)
+ifeq ($(CONFIG_TOOLCHAIN_BUILD_COMPILER_RT),y)
   LLVM_RUNTIMES := compiler-rt
 endif
 

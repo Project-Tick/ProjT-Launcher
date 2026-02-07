@@ -262,9 +262,9 @@ launcher-link: launcher-main
 	@echo "=== Linking Final Executable ==="
 	$(Q)mkdir -p $(KBUILD_OUTPUT)/bin $(KBUILD_OUTPUT)/lib
 	@# Copy Qt libraries to output lib directory
-	$(Q)cp -a $(QT_INSTALL_PREFIX)/lib/libQt6*.so* $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
-	$(Q)cp -a $(QT_INSTALL_PREFIX)/lib/libQt6*.dylib $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
-	$(Q)cp -a $(QT_INSTALL_PREFIX)/bin/Qt6*.dll $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
+	$(Q)cp -a $(QT_PREFIX)/lib/libQt6*.so* $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
+	$(Q)cp -a $(QT_PREFIX)/lib/libQt6*.dylib $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
+	$(Q)cp -a $(QT_PREFIX)/bin/Qt6*.dll $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
 	@# Copy cmark library (platform-aware)
 	$(Q)cp -a $(srctree)/cmark/build/src/libcmark.so* $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
 	$(Q)cp -a $(srctree)/cmark/build/src/libcmark.dylib $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
@@ -304,9 +304,9 @@ launcher-link: launcher-main
 		$(KBUILD_OUTPUT)/lib/libbz2.a \
 		-L$(KBUILD_OUTPUT)/lib -lcmark \
 		$(QT_LIBS) \
-		-L$(QT_INSTALL_PREFIX)/lib -lQt6OpenGLWidgets -lQt6OpenGL -lQt6NetworkAuth -lQt6Xml -lQt6DBus \
+		-L$(QT_PREFIX)/lib -lQt6OpenGLWidgets -lQt6OpenGL -lQt6NetworkAuth -lQt6Xml -lQt6DBus \
 		-lz -lpthread -ldl \
-		-Wl,-rpath,'$$ORIGIN/../lib:$(QT_INSTALL_PREFIX)/lib'
+		-Wl,-rpath,'$$ORIGIN/../lib:$(QT_PREFIX)/lib'
 	@echo "  LINK    $(KBUILD_OUTPUT)/bin/projtlauncher"
 
 # ============================================================================

@@ -114,7 +114,10 @@ LAUNCHER_LIBS := \
 # Common Compiler Flags
 # ============================================================================
 
-COMMON_CXXFLAGS := -std=c++17 -fPIC -g -O0 \
+# C++ standard from Kconfig (tests match main build standard)
+TEST_CPP_STD := $(or $(CONFIG_CPP_STANDARD),-std=c++23)
+
+COMMON_CXXFLAGS := $(TEST_CPP_STD) -fPIC -g -O0 \
 	-I$(SRCDIR) \
 	-I$(SRCDIR)/launcher \
 	-I$(SRCDIR)/launcher/ui \
