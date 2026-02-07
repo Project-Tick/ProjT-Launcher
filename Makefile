@@ -439,6 +439,7 @@ PHONY += test check fuzz
 PHONY += package package-deb package-rpm package-appimage package-dmg
 PHONY += toolchain-gcc toolchain-llvm toolchain-all toolchain-help
 PHONY += subtrees info version listconfig
+PHONY += maintainer-emails
 
 # ============================================================================
 # Include Kconfig Build Rules
@@ -762,6 +763,32 @@ package-deb package-rpm package-appimage package-dmg package-nsis:
 # Utility Targets
 # ============================================================================
 
+MAINTAINERS_DIR ?= $(srctree)/maintainers
+MAINTAINERS_CODEOWNERS ?= $(MAINTAINERS_DIR)/CODEOWNERS
+
+maintainer-emails:
+	@set -e; \
+	if [ -n "$(PATCH)" ] && [ -n "$(RANGE)" ]; then \
+		echo "error: use only one of PATCH=<patch-file> or RANGE=<git-range>" >&2; \
+		exit 1; \
+	fi; \
+	selector=""; \
+	if [ -n "$(PATCH)" ]; then \
+		selector="--patch $(PATCH)"; \
+	elif [ -n "$(RANGE)" ]; then \
+		selector="--git-range $(RANGE)"; \
+	else \
+		selector="--git-range HEAD~1..HEAD"; \
+	fi; \
+	flags=""; \
+	if [ "$(DETAILS)" = "1" ]; then flags="$$flags --show-details"; fi; \
+	if [ "$(STRICT)" = "1" ]; then flags="$$flags --strict-unresolved"; fi; \
+	$(PYTHON3) $(srctree)/scripts/patch_maintainer_emails.py \
+		$$selector \
+		--codeowners "$(MAINTAINERS_CODEOWNERS)" \
+		--maintainers-dir "$(MAINTAINERS_DIR)" \
+		$$flags
+
 listconfig: prepare
 	@echo "Configuration Summary"
 	@echo "====================="
@@ -888,6 +915,7 @@ help:
 	@echo "  info           - Show project and build information"
 	@echo "  version        - Show version ($(PROJT_VERSION_FULL))"
 	@echo "  listconfig     - Show configuration summary"
+	@echo "  maintainer-emails - Print maintainer emails for a patch/range"
 	@echo "  list-modules   - List all available modules"
 	@echo "  clean          - Remove build artifacts"
 	@echo "  distclean      - Remove everything including config"
@@ -899,6 +927,10 @@ help:
 	@echo "  PREFIX=<path>        - Installation prefix (default: /usr/local)"
 	@echo "  DESTDIR=<path>       - Staging directory for packages"
 	@echo "  JOBS=<n>             - Parallel jobs (default: $(NPROC))"
+	@echo "  PATCH=<file>         - Patch file for maintainer-emails target"
+	@echo "  RANGE=<a..b>         - Git range for maintainer-emails target"
+	@echo "  DETAILS=1            - Include per-file owner/email mapping"
+	@echo "  STRICT=1             - Fail if an owner has no resolvable email"
 	@echo ""
 	@echo "Cross-Compilation:"
 	@echo "  TARGET_PLATFORM=<os> - Target: linux, windows, macos"

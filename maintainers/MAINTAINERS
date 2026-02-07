@@ -1,0 +1,19 @@
+# MAINTAINERS
+#
+# One block per maintainer.
+# Edit the sample block below and add new blocks as needed.
+#
+# Fields:
+# - Name: Display name
+# - GitHub: GitHub handle (with @)
+# - Email: Primary contact email
+# - Paths: Comma-separated glob patterns (repo-relative)
+#
+# Matching notes:
+# - Use ** for recursive directory matching.
+# - Keep this file in sync with maintainers/CODEOWNERS.
+
+[Mehmet Samet Duman]
+GitHub: @YongDo-Hyun
+Email: yongdohyun@mail.projecttick.org
+Paths: **
