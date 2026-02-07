@@ -105,7 +105,7 @@ jobs:
           fi
           mv ProjTLauncher-macOS*/ProjTLauncher.dmg ProjTLauncher-macOS-${{ env.VERSION }}.dmg
           mv ProjTLauncher-macOS*/ProjTLauncher-macOS-*.pkg ProjTLauncher-macOS-${{ env.VERSION }}.pkg
-          mv ProjectTick-JavaCheck-${{ github.run_id }}.jar JavaCheck-${{ env.VERSION }}.jar
+          mv JavaCheck.jar JavaCheck-${{ env.VERSION }}.jar
 
           tar --exclude='.git' -czf ProjTLauncher-${{ env.VERSION }}.tar.gz ProjTLauncher-${{ env.VERSION }}
 
