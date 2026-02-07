@@ -92,37 +92,25 @@ jobs:
       should-test: ${{ steps.decide.outputs.should-test }}
       should-build: ${{ steps.decide.outputs.should-build }}
       event-name: ${{ steps.trigger.outputs.event-name }}
-      is-pr: ${{ steps.trigger.outputs.is-pr }}
       is-push: ${{ steps.trigger.outputs.is-push }}
       is-tag-push: ${{ steps.trigger.outputs.is-tag-push }}
       is-branch-push: ${{ steps.trigger.outputs.is-branch-push }}
-      is-merge-group: ${{ steps.trigger.outputs.is-merge-group }}
       is-dispatch: ${{ steps.trigger.outputs.is-dispatch }}
       is-schedule: ${{ steps.trigger.outputs.is-schedule }}
-      is-issue-comment: ${{ steps.trigger.outputs.is-issue-comment }}
       is-release: ${{ steps.trigger.outputs.is-release }}
       is-workflow-run: ${{ steps.trigger.outputs.is-workflow-run }}
-      is-pr-review: ${{ steps.trigger.outputs.is-pr-review }}
       is-branch-protection: ${{ steps.trigger.outputs.is-branch-protection }}
-      is-pr-closed: ${{ steps.trigger.outputs.is-pr-closed }}
       schedule-cron: ${{ steps.trigger.outputs.schedule-cron }}
       ref-name: ${{ steps.trigger.outputs.ref-name }}
       ref-type: ${{ steps.trigger.outputs.ref-type }}
       build-type: ${{ steps.decide.outputs.build-type }}
       run-release-build: ${{ steps.decide.outputs.run-release-build }}
       run-regular-build: ${{ steps.decide.outputs.run-regular-build }}
-      run-zlib: ${{ steps.decide.outputs.run-zlib }}
       run-bzip2: ${{ steps.decide.outputs.run-bzip2 }}
       run-quazip: ${{ steps.decide.outputs.run-quazip }}
-      run-website: ${{ steps.decide.outputs.run-website }}
       run-nix: ${{ steps.decide.outputs.run-nix }}
-      run-bot: ${{ steps.decide.outputs.run-bot }}
       run-meta: ${{ steps.decide.outputs.run-meta }}
-      run-branding: ${{ steps.decide.outputs.run-branding }}
       run-schedule: ${{ steps.decide.outputs.run-schedule }}
-      run-cmark: ${{ steps.decide.outputs.run-cmark }}
-      run-tomlplusplus: ${{ steps.decide.outputs.run-tomlplusplus }}
-      run-libqrencode: ${{ steps.decide.outputs.run-libqrencode }}
       run-javacheck: ${{ steps.decide.outputs.run-javacheck }}
       dominant-scope: ${{ steps.decide.outputs.dominant-scope }}
       changed-files: ${{ steps.collect.outputs.changed-files }}
@@ -268,31 +256,20 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           ACTOR: ${{ github.actor }}
-          IS_PR: ${{ steps.trigger.outputs.is-pr }}
           IS_PUSH: ${{ steps.trigger.outputs.is-push }}
-          IS_MERGE_GROUP: ${{ steps.trigger.outputs.is-merge-group }}
           IS_SCHEDULE: ${{ steps.trigger.outputs.is-schedule }}
           IS_TAG: ${{ steps.trigger.outputs.is-tag-push }}
           IS_RELEASE_EVENT: ${{ steps.trigger.outputs.is-release }}
-          IS_PR_CLOSED: ${{ steps.trigger.outputs.is-pr-closed }}
           SCOPE_LAUNCHER: ${{ steps.scope.outputs.launcher || 'false' }}
-          SCOPE_WEBSITE: ${{ steps.scope.outputs.website || 'false' }}
-          SCOPE_BOT: ${{ steps.scope.outputs.bot || 'false' }}
           SCOPE_META: ${{ steps.scope.outputs.meta || 'false' }}
           SCOPE_QUAZIP: ${{ steps.scope.outputs.quazip || 'false' }}
           SCOPE_BZIP2: ${{ steps.scope.outputs.bzip2 || 'false' }}
-          SCOPE_ZLIB: ${{ steps.scope.outputs.zlib || 'false' }}
           SCOPE_PACKAGES: ${{ steps.scope.outputs.packages || 'false' }}
-          SCOPE_DOCS: ${{ steps.scope.outputs.docs || 'false' }}
           SCOPE_TOOLS: ${{ steps.scope.outputs.tools || 'false' }}
           SCOPE_CI: ${{ steps.scope.outputs.ci || 'false' }}
-          SCOPE_BRANDING: ${{ steps.scope.outputs.branding || 'false' }}
           SCOPE_LAUNCHERJAVA: ${{ steps.scope.outputs.launcherjava || 'false' }}
           SCOPE_JAVACHECK: ${{ steps.scope.outputs.javacheck || 'false' }}
           SCOPE_LIBNBT: ${{ steps.scope.outputs.libnbtplusplus || 'false' }}
-          SCOPE_CMARK: ${{ steps.scope.outputs.cmark || 'false' }}
-          SCOPE_TOMLPLUSPLUS: ${{ steps.scope.outputs.tomlplusplus || 'false' }}
-          SCOPE_LIBQRENCODE: ${{ steps.scope.outputs.libqrencode || 'false' }}
         run: |
           changed="$(cat changed.txt || true)"
 
@@ -339,18 +316,11 @@ jobs:
             should_build=false
           fi
 
-          run_zlib=false
           run_bzip2=false
           run_quazip=false
-          run_website=false
           run_nix=false
-          run_bot=false
           run_meta=false
-          run_branding=false
           run_schedule=false
-          run_cmark=false
-          run_tomlplusplus=false
-          run_libqrencode=false
           run_javacheck=false
           build_type="Debug"
           run_release_build=false

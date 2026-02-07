@@ -17,32 +17,6 @@ permissions:
   security-events: write
 
 jobs:
-  pr-fuzzing:
-    name: PR Fuzzing
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        # Memory sanitizer removed - requires full recompile of all deps including Qt
-        sanitizer: [address, undefined]
-    steps:
-      - name: Build Fuzzers (${{ matrix.sanitizer }})
-        id: build
-        uses: google/clusterfuzzlite/actions/build_fuzzers@v1
-        with:
-          sanitizer: ${{ matrix.sanitizer }}
-          language: c++
-      - name: Run Fuzzers (${{ matrix.sanitizer }})
-        id: run
-        uses: google/clusterfuzzlite/actions/run_fuzzers@v1
-        with:
-          github-token: ${{ github.token }}
-          fuzz-seconds: 300
-          mode: 'code-change'
-          sanitizer: ${{ matrix.sanitizer }}
-          output-sarif: true
-
   batch-fuzzing:
     name: Batch Fuzzing
     if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
