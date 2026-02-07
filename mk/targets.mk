@@ -101,7 +101,7 @@ TEST_MODULES := tests fuzz
 # Build a local module (has its own Makefile we control)
 # Uses --output-sync for clean parallel output (like ninja)
 define build_local
-	@if [ -f "$(srctree)/$(1)/Makefile" ]; then \
+	+@if [ -f "$(srctree)/$(1)/Makefile" ]; then \
 		echo "  BUILD   $(1)"; \
 		$(MAKE) --no-print-directory -C $(srctree)/$(1) \
 			srctree=$(srctree) \
@@ -116,7 +116,7 @@ endef
 
 # Clean a local module
 define clean_local
-	@if [ -f "$(srctree)/$(1)/Makefile" ]; then \
+	+@if [ -f "$(srctree)/$(1)/Makefile" ]; then \
 		echo "  CLEAN   $(1)"; \
 		$(MAKE) --no-print-directory -C $(srctree)/$(1) \
 			srctree=$(srctree) \
@@ -155,7 +155,7 @@ configure: $(GENERATED_FILES)
 
 subtrees: configure
 	@echo "=== Building Subtree Libraries (via wrappers) ==="
-	$(Q)$(MAKE) -f $(srctree)/mk/subtrees.mk \
+	+$(Q)$(MAKE) -f $(srctree)/mk/subtrees.mk \
 		srctree=$(srctree) \
 		KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
 		subtrees
@@ -167,7 +167,7 @@ subtrees: configure
 ifeq ($(CONFIG_QT_BUNDLED),y)
 qt-build: subtrees
 	@echo "=== Building Bundled Qt ==="
-	$(Q)$(MAKE) -f $(srctree)/mk/qt.mk \
+	+$(Q)$(MAKE) -f $(srctree)/mk/qt.mk \
 		srctree=$(srctree) \
 		KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
 		qt
@@ -263,8 +263,13 @@ launcher-link: launcher-main
 	$(Q)mkdir -p $(KBUILD_OUTPUT)/bin $(KBUILD_OUTPUT)/lib
 	@# Copy Qt libraries to output lib directory
 	$(Q)cp -a $(QT_INSTALL_PREFIX)/lib/libQt6*.so* $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
-	@# Copy cmark library
+	$(Q)cp -a $(QT_INSTALL_PREFIX)/lib/libQt6*.dylib $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
+	$(Q)cp -a $(QT_INSTALL_PREFIX)/bin/Qt6*.dll $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
+	@# Copy cmark library (platform-aware)
 	$(Q)cp -a $(srctree)/cmark/build/src/libcmark.so* $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
+	$(Q)cp -a $(srctree)/cmark/build/src/libcmark.dylib $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
+	$(Q)cp -a $(srctree)/cmark/build/src/cmark.dll $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
+	$(Q)cp -a $(srctree)/cmark/build/src/libcmark.dll $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
 	$(Q)$(CXX) -o $(KBUILD_OUTPUT)/bin/projtlauncher \
 		-Wl,--whole-archive \
 		$(KBUILD_OUTPUT)/launcher/liblauncher.a \
@@ -324,7 +329,7 @@ tests: build
 
 # Subtrees (via wrappers - DO NOT call their Makefiles directly)
 zlib tomlplusplus json:
-	$(Q)$(MAKE) -f $(srctree)/mk/subtrees.mk \
+	+$(Q)$(MAKE) -f $(srctree)/mk/subtrees.mk \
 		srctree=$(srctree) KBUILD_OUTPUT=$(KBUILD_OUTPUT) $@
 
 # Local libraries
@@ -382,11 +387,11 @@ clean:
 	@echo "  Cleaning generated files..."
 	$(Q)rm -rf $(GENERATED_DIR)
 	@echo "  Cleaning subtrees via wrapper..."
-	$(Q)$(MAKE) -f $(srctree)/mk/subtrees.mk \
+	+$(Q)$(MAKE) -f $(srctree)/mk/subtrees.mk \
 		srctree=$(srctree) KBUILD_OUTPUT=$(KBUILD_OUTPUT) subtrees-clean
 ifeq ($(CONFIG_QT_BUNDLED),y)
 	@echo "  Cleaning Qt build..."
-	$(Q)$(MAKE) -f $(srctree)/mk/qt.mk \
+	+$(Q)$(MAKE) -f $(srctree)/mk/qt.mk \
 		srctree=$(srctree) KBUILD_OUTPUT=$(KBUILD_OUTPUT) qt-clean
 endif
 	@echo "  Cleaning local modules..."

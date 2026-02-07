@@ -26,13 +26,23 @@ CXX ?= g++
 AR ?= ar
 RANLIB ?= ranlib
 
-# Base flags
+# Base flags - adapt for MSVC vs GCC/Clang
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+BASE_CFLAGS := /nologo /W3 /EHsc /MD /O2
+BASE_CXXFLAGS := $(BASE_CFLAGS) /std:c++17
+else
 BASE_CFLAGS := -O2 -g -fPIC -Wall
 BASE_CXXFLAGS := $(BASE_CFLAGS) -std=c++17
+endif
 
 # Add include paths
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+INC_FLAGS := $(foreach dir,$(includes-y),/I$(srctree)/$(dir))
+INC_FLAGS += /I$(srctree) /I$(KBUILD_OUTPUT)/include
+else
 INC_FLAGS := $(foreach dir,$(includes-y),-I$(srctree)/$(dir))
 INC_FLAGS += -I$(srctree) -I$(KBUILD_OUTPUT)/include
+endif
 
 # Qt support - if module uses Qt, add Qt flags
 ifdef qt-modules-y
@@ -75,12 +85,53 @@ all: $(STATIC_LIB)
 # Only define STATIC_LIB rule if not already defined by including Makefile
 ifndef CUSTOM_STATIC_LIB_RULE
 $(STATIC_LIB): $(OBJS) | $(LIBDIR)
+ifneq ($(strip $(lib-y)),)
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+	@echo "  LIB     $@"
+	$(Q)$(AR) /nologo /OUT:$@ $^
+else
 	@echo "  AR      $@"
 	$(Q)$(AR) rcs $@ $^
 	$(Q)$(RANLIB) $@
 endif
+else
+	@echo "  SKIP    $(lib) (header-only, no objects)"
+	$(Q)touch $@
+endif
+endif
 
 # Object compilation rules - search in current module directory
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+$(OBJDIR)/%.o: $(CURDIR)/%.c | $(OBJDIR)
+	@echo "  CC      $<"
+	$(Q)mkdir -p $(dir $@)
+	$(Q)$(CC) $(CFLAGS) /c /Fo$@ $<
+
+$(OBJDIR)/%.o: $(CURDIR)/%.cpp | $(OBJDIR)
+	@echo "  CXX     $<"
+	$(Q)mkdir -p $(dir $@)
+	$(Q)$(CXX) $(CXXFLAGS) /c /Fo$@ $<
+
+$(OBJDIR)/%.o: $(CURDIR)/%.cc | $(OBJDIR)
+	@echo "  CXX     $<"
+	$(Q)mkdir -p $(dir $@)
+	$(Q)$(CXX) $(CXXFLAGS) /c /Fo$@ $<
+
+$(OBJDIR)/%.o: $(srctree)/$(lib)/%.c | $(OBJDIR)
+	@echo "  CC      $<"
+	$(Q)mkdir -p $(dir $@)
+	$(Q)$(CC) $(CFLAGS) /c /Fo$@ $<
+
+$(OBJDIR)/%.o: $(srctree)/$(lib)/%.cpp | $(OBJDIR)
+	@echo "  CXX     $<"
+	$(Q)mkdir -p $(dir $@)
+	$(Q)$(CXX) $(CXXFLAGS) /c /Fo$@ $<
+
+$(OBJDIR)/%.o: $(srctree)/$(lib)/%.cc | $(OBJDIR)
+	@echo "  CXX     $<"
+	$(Q)mkdir -p $(dir $@)
+	$(Q)$(CXX) $(CXXFLAGS) /c /Fo$@ $<
+else
 $(OBJDIR)/%.o: $(CURDIR)/%.c | $(OBJDIR)
 	@echo "  CC      $<"
 	$(Q)mkdir -p $(dir $@)
@@ -96,7 +147,6 @@ $(OBJDIR)/%.o: $(CURDIR)/%.cc | $(OBJDIR)
 	$(Q)mkdir -p $(dir $@)
 	$(Q)$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-# Also try srctree-relative paths for modules that specify paths that way
 $(OBJDIR)/%.o: $(srctree)/$(lib)/%.c | $(OBJDIR)
 	@echo "  CC      $<"
 	$(Q)mkdir -p $(dir $@)
@@ -111,6 +161,7 @@ $(OBJDIR)/%.o: $(srctree)/$(lib)/%.cc | $(OBJDIR)
 	@echo "  CXX     $<"
 	$(Q)mkdir -p $(dir $@)
 	$(Q)$(CXX) $(CXXFLAGS) -c -o $@ $<
+endif
 
 # Directory creation
 $(OBJDIR) $(LIBDIR):

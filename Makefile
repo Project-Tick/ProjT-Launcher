@@ -67,6 +67,15 @@ PROJT_VERSION = $(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 PROJT_VERSION_FULL = $(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 export PROJT_VERSION PROJT_VERSION_FULL
 
+# Force bash for recipe execution (PIPESTATUS, pipefail etc.)
+# Use bash from PATH on Windows (MSYS2/Git Bash), /bin/bash on Unix
+ifeq ($(OS),Windows_NT)
+SHELL := bash
+else
+SHELL := /bin/bash
+endif
+.SHELLFLAGS := -c
+
 # Prevent make from trying to remake this file
 .PHONY: _all
 _all: all

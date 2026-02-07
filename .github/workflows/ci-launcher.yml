@@ -319,12 +319,13 @@ jobs:
 
       - name: Configure (Windows MSVC)
         if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc'
-        shell: cmd
+        shell: bash
         run: |
-          configure.bat ^
-            --build=${{ env.BUILD_TYPE }} ^
-            --arch=${{ matrix.target-arch || 'x86_64' }} ^
-            --qt-prefix="${{ steps.setup-dependencies.outputs.qt-path }}" ^
+          ./configure \
+            --platform=windows \
+            --build=${{ env.BUILD_TYPE }} \
+            --arch=${{ matrix.target-arch || 'x86_64' }} \
+            --qt-prefix="${{ steps.setup-dependencies.outputs.qt-path }}" \
             --with-tests
 
       - name: Configure (Windows MinGW)
