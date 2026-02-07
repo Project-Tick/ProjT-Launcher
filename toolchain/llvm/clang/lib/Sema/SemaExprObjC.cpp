@@ -74,7 +74,8 @@ ExprResult SemaObjC::ParseObjCStringLiteral(SourceLocation *AtLocs,
         CAT->getElementType(), llvm::APInt(32, StrBuf.size() + 1), nullptr,
         CAT->getSizeModifier(), CAT->getIndexTypeCVRQualifiers());
     S = StringLiteral::Create(Context, StrBuf, StringLiteralKind::Ordinary,
-                              /*Pascal=*/false, StrTy, StrLocs);
+                              /*Pascal=*/false, StrTy, &StrLocs[0],
+                              StrLocs.size());
   }
 
   return BuildObjCStringLiteral(AtLocs[0], S);
@@ -638,14 +639,15 @@ ExprResult SemaObjC::BuildObjCBoxedExpr(SourceRange SR, Expr *ValueExpr) {
     // Look for the appropriate method within NSNumber.
     BoxingMethod = getNSNumberFactoryMethod(*this, Loc, ValueType);
     BoxedType = NSNumberPointer;
-  } else if (const auto *ED = ValueType->getAsEnumDecl()) {
-    if (!ED->isComplete()) {
+  } else if (const EnumType *ET = ValueType->getAs<EnumType>()) {
+    if (!ET->getDecl()->isComplete()) {
       Diag(Loc, diag::err_objc_incomplete_boxed_expression_type)
         << ValueType << ValueExpr->getSourceRange();
       return ExprError();
     }
 
-    BoxingMethod = getNSNumberFactoryMethod(*this, Loc, ED->getIntegerType());
+    BoxingMethod = getNSNumberFactoryMethod(*this, Loc,
+                                            ET->getDecl()->getIntegerType());
     BoxedType = NSNumberPointer;
   } else if (ValueType->isObjCBoxableRecordType()) {
     // Support for structure types, that marked as objc_boxable
@@ -1892,7 +1894,7 @@ bool SemaObjC::CheckMessageArgumentTypes(
         continue;
 
       ExprResult Arg = SemaRef.DefaultVariadicArgumentPromotion(
-          Args[i], VariadicCallType::Method, nullptr);
+          Args[i], Sema::VariadicMethod, nullptr);
       IsError |= Arg.isInvalid();
       Args[i] = Arg.get();
     }
@@ -1978,7 +1980,6 @@ ExprResult SemaObjC::HandleExprPropertyRefExpr(
     SourceLocation SuperLoc, QualType SuperType, bool Super) {
   ASTContext &Context = getASTContext();
   const ObjCInterfaceType *IFaceT = OPT->getInterfaceType();
-  assert(IFaceT && "Expected an Interface");
   ObjCInterfaceDecl *IFace = IFaceT->getDecl();
 
   if (!MemberName.isIdentifier()) {
@@ -2102,8 +2103,7 @@ ExprResult SemaObjC::HandleExprPropertyRefExpr(
   DeclFilterCCC<ObjCPropertyDecl> CCC{};
   if (TypoCorrection Corrected = SemaRef.CorrectTypo(
           DeclarationNameInfo(MemberName, MemberLoc), Sema::LookupOrdinaryName,
-          nullptr, nullptr, CCC, CorrectTypoKind::ErrorRecovery, IFace, false,
-          OPT)) {
+          nullptr, nullptr, CCC, Sema::CTK_ErrorRecovery, IFace, false, OPT)) {
     DeclarationName TypoResult = Corrected.getCorrection();
     if (TypoResult.isIdentifier() &&
         TypoResult.getAsIdentifierInfo() == Member) {
@@ -2297,7 +2297,7 @@ SemaObjC::getObjCMessageKind(Scope *S, IdentifierInfo *Name,
   SemaRef.LookupName(Result, S);
 
   switch (Result.getResultKind()) {
-  case LookupResultKind::NotFound:
+  case LookupResult::NotFound:
     // Normal name lookup didn't find anything. If we're in an
     // Objective-C method, look for ivars. If we find one, we're done!
     // FIXME: This is a hack. Ivar lookup should be part of normal
@@ -2317,14 +2317,14 @@ SemaObjC::getObjCMessageKind(Scope *S, IdentifierInfo *Name,
     // Break out; we'll perform typo correction below.
     break;
 
-  case LookupResultKind::NotFoundInCurrentInstantiation:
-  case LookupResultKind::FoundOverloaded:
-  case LookupResultKind::FoundUnresolvedValue:
-  case LookupResultKind::Ambiguous:
+  case LookupResult::NotFoundInCurrentInstantiation:
+  case LookupResult::FoundOverloaded:
+  case LookupResult::FoundUnresolvedValue:
+  case LookupResult::Ambiguous:
     Result.suppressDiagnostics();
     return ObjCInstanceMessage;
 
-  case LookupResultKind::Found: {
+  case LookupResult::Found: {
     // If the identifier is a class or not, and there is a trailing dot,
     // it's an instance message.
     if (HasTrailingDot)
@@ -2336,10 +2336,10 @@ SemaObjC::getObjCMessageKind(Scope *S, IdentifierInfo *Name,
     if (ObjCInterfaceDecl *Class = dyn_cast<ObjCInterfaceDecl>(ND))
       T = Context.getObjCInterfaceType(Class);
     else if (TypeDecl *Type = dyn_cast<TypeDecl>(ND)) {
+      T = Context.getTypeDeclType(Type);
       SemaRef.DiagnoseUseOfDecl(Type, NameLoc);
-      T = Context.getTypeDeclType(ElaboratedTypeKeyword::None,
-                                  /*Qualifier=*/std::nullopt, Type);
-    } else
+    }
+    else
       return ObjCInstanceMessage;
 
     //  We have a class message, and T is the type we're
@@ -2353,7 +2353,7 @@ SemaObjC::getObjCMessageKind(Scope *S, IdentifierInfo *Name,
   ObjCInterfaceOrSuperCCC CCC(SemaRef.getCurMethodDecl());
   if (TypoCorrection Corrected = SemaRef.CorrectTypo(
           Result.getLookupNameInfo(), Result.getLookupKind(), S, nullptr, CCC,
-          CorrectTypoKind::ErrorRecovery, nullptr, false, nullptr, false)) {
+          Sema::CTK_ErrorRecovery, nullptr, false, nullptr, false)) {
     if (Corrected.isKeyword()) {
       // If we've found the keyword "super" (the only keyword that would be
       // returned by CorrectTypo), this is a send to super.
@@ -3845,7 +3845,7 @@ static inline T *getObjCBridgeAttr(const TypedefType *TD) {
   QualType QT = TDNDecl->getUnderlyingType();
   if (QT->isPointerType()) {
     QT = QT->getPointeeType();
-    if (const RecordType *RT = QT->getAsCanonical<RecordType>()) {
+    if (const RecordType *RT = QT->getAs<RecordType>()) {
       for (auto *Redecl : RT->getDecl()->getMostRecentDecl()->redecls()) {
         if (auto *attr = Redecl->getAttr<T>())
           return attr;
@@ -4007,7 +4007,7 @@ static bool CheckObjCBridgeNSCast(Sema &S, QualType castType, Expr *castExpr,
   while (const auto *TD = T->getAs<TypedefType>()) {
     TypedefNameDecl *TDNDecl = TD->getDecl();
     if (TB *ObjCBAttr = getObjCBridgeAttr<TB>(TD)) {
-      if (const IdentifierInfo *Parm = ObjCBAttr->getBridgedType()) {
+      if (IdentifierInfo *Parm = ObjCBAttr->getBridgedType()) {
         HadTheAttribute = true;
         if (Parm->isStr("id"))
           return true;
@@ -4070,7 +4070,7 @@ static bool CheckObjCBridgeCFCast(Sema &S, QualType castType, Expr *castExpr,
   while (const auto *TD = T->getAs<TypedefType>()) {
     TypedefNameDecl *TDNDecl = TD->getDecl();
     if (TB *ObjCBAttr = getObjCBridgeAttr<TB>(TD)) {
-      if (const IdentifierInfo *Parm = ObjCBAttr->getBridgedType()) {
+      if (IdentifierInfo *Parm = ObjCBAttr->getBridgedType()) {
         HadTheAttribute = true;
         if (Parm->isStr("id"))
           return true;
@@ -4228,9 +4228,9 @@ bool SemaObjC::checkObjCBridgeRelatedComponents(
   if (!ObjCBAttr)
     return false;
 
-  const IdentifierInfo *RCId = ObjCBAttr->getRelatedClass();
-  const IdentifierInfo *CMId = ObjCBAttr->getClassMethod();
-  const IdentifierInfo *IMId = ObjCBAttr->getInstanceMethod();
+  IdentifierInfo *RCId = ObjCBAttr->getRelatedClass();
+  IdentifierInfo *CMId = ObjCBAttr->getClassMethod();
+  IdentifierInfo *IMId = ObjCBAttr->getInstanceMethod();
   if (!RCId)
     return false;
   NamedDecl *Target = nullptr;
@@ -4388,7 +4388,7 @@ SemaObjC::ARCConversionResult
 SemaObjC::CheckObjCConversion(SourceRange castRange, QualType castType,
                               Expr *&castExpr, CheckedConversionKind CCK,
                               bool Diagnose, bool DiagnoseCFAudited,
-                              BinaryOperatorKind Opc, bool IsReinterpretCast) {
+                              BinaryOperatorKind Opc) {
   ASTContext &Context = getASTContext();
   QualType castExprType = castExpr->getType();
 
@@ -4448,17 +4448,13 @@ SemaObjC::CheckObjCConversion(SourceRange castRange, QualType castType,
   // must be explicit.
   // Allow conversions between pointers to lifetime types and coreFoundation
   // pointers too, but only when the conversions are explicit.
-  // Allow conversions requested with a reinterpret_cast that converts an
-  // expression of type T* to type U*.
   if (exprACTC == ACTC_indirectRetainable &&
       (castACTC == ACTC_voidPtr ||
-       (castACTC == ACTC_coreFoundation && SemaRef.isCast(CCK)) ||
-       (IsReinterpretCast && effCastType->isAnyPointerType())))
+       (castACTC == ACTC_coreFoundation && SemaRef.isCast(CCK))))
     return ACR_okay;
   if (castACTC == ACTC_indirectRetainable &&
-      (((exprACTC == ACTC_voidPtr || exprACTC == ACTC_coreFoundation) &&
-        SemaRef.isCast(CCK)) ||
-       (IsReinterpretCast && castExprType->isAnyPointerType())))
+      (exprACTC == ACTC_voidPtr || exprACTC == ACTC_coreFoundation) &&
+      SemaRef.isCast(CCK))
     return ACR_okay;
 
   switch (ARCCastChecker(Context, exprACTC, castACTC, false).Visit(castExpr)) {
@@ -5153,8 +5149,7 @@ ExprResult SemaObjC::ActOnObjCAvailabilityCheckExpr(
     SourceLocation RParen) {
   ASTContext &Context = getASTContext();
   auto FindSpecVersion =
-      [&](StringRef Platform,
-          const llvm::Triple::OSType &OS) -> std::optional<VersionTuple> {
+      [&](StringRef Platform) -> std::optional<VersionTuple> {
     auto Spec = llvm::find_if(AvailSpecs, [&](const AvailabilitySpec &Spec) {
       return Spec.getPlatform() == Platform;
     });
@@ -5167,16 +5162,12 @@ ExprResult SemaObjC::ActOnObjCAvailabilityCheckExpr(
     }
     if (Spec == AvailSpecs.end())
       return std::nullopt;
-
-    return llvm::Triple::getCanonicalVersionForOS(
-        OS, Spec->getVersion(),
-        llvm::Triple::isValidVersionForOS(OS, Spec->getVersion()));
+    return Spec->getVersion();
   };
 
   VersionTuple Version;
   if (auto MaybeVersion =
-          FindSpecVersion(Context.getTargetInfo().getPlatformName(),
-                          Context.getTargetInfo().getTriple().getOS()))
+          FindSpecVersion(Context.getTargetInfo().getPlatformName()))
     Version = *MaybeVersion;
 
   // The use of `@available` in the enclosing context should be analyzed to

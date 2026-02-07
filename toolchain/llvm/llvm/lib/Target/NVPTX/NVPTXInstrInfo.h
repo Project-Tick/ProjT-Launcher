@@ -21,13 +21,12 @@
 #include "NVPTXGenInstrInfo.inc"
 
 namespace llvm {
-class NVPTXSubtarget;
 
 class NVPTXInstrInfo : public NVPTXGenInstrInfo {
   const NVPTXRegisterInfo RegInfo;
   virtual void anchor();
 public:
-  explicit NVPTXInstrInfo(const NVPTXSubtarget &STI);
+  explicit NVPTXInstrInfo();
 
   const NVPTXRegisterInfo &getRegisterInfo() const { return RegInfo; }
 
@@ -47,12 +46,12 @@ public:
    * virtual void loadRegFromStackSlot(
    *    MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
    *    unsigned DestReg, int FrameIndex, const TargetRegisterClass *RC,
-   *    const TargetRegisterInfo *TRI, Register VReg, unsigned SubReg = 0,
+   *    const TargetRegisterInfo *TRI, Register VReg,
    *    MachineInstr::MIFlag Flags = MachineInstr::NoFlags) const;
    */
 
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
-                   const DebugLoc &DL, Register DestReg, Register SrcReg,
+                   const DebugLoc &DL, MCRegister DestReg, MCRegister SrcReg,
                    bool KillSrc, bool RenamableDest = false,
                    bool RenamableSrc = false) const override;
 
@@ -67,6 +66,9 @@ public:
                         MachineBasicBlock *FBB, ArrayRef<MachineOperand> Cond,
                         const DebugLoc &DL,
                         int *BytesAdded = nullptr) const override;
+  bool isSchedulingBoundary(const MachineInstr &MI,
+                            const MachineBasicBlock *MBB,
+                            const MachineFunction &MF) const override;
 };
 
 } // namespace llvm

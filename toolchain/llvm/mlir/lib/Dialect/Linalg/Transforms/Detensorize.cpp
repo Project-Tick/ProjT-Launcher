@@ -9,12 +9,15 @@
 #include "mlir/Dialect/Linalg/Passes.h"
 
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
+#include <iterator>
+#include <memory>
 #include <utility>
 
 namespace mlir {
@@ -34,8 +37,8 @@ static Value sourceMaterializationCallback(OpBuilder &builder, Type type,
 
   // A detensored value is converted back by creating a new tensor from its
   // element(s).
-  return tensor::FromElementsOp::create(
-      builder, loc, RankedTensorType::get({}, inputType), inputs[0]);
+  return builder.create<tensor::FromElementsOp>(
+      loc, RankedTensorType::get({}, inputType), inputs[0]);
 }
 
 namespace {
@@ -147,7 +150,7 @@ public:
     // A tensor value is detensoried by extracting its element(s).
     addTargetMaterialization([](OpBuilder &builder, Type type,
                                 ValueRange inputs, Location loc) -> Value {
-      return tensor::ExtractOp::create(builder, loc, inputs[0], ValueRange{});
+      return builder.create<tensor::ExtractOp>(loc, inputs[0], ValueRange{});
     });
 
     addSourceMaterialization(sourceMaterializationCallback);
@@ -314,8 +317,9 @@ struct LinalgDetensorize
         //       * Add the argument to blockArgsToDetensor.
         //       * Walk the use-def chain backwards to add each predecessor's
         //       terminator-operands corresponding to currentItem to workList.
-        if (auto currentItemBlockArgument =
-                dyn_cast<BlockArgument>(currentItem)) {
+        if (dyn_cast<BlockArgument>(currentItem)) {
+          BlockArgument currentItemBlockArgument =
+              cast<BlockArgument>(currentItem);
           Block *ownerBlock = currentItemBlockArgument.getOwner();
 
           // Function arguments are not detensored/converted.
@@ -410,7 +414,7 @@ struct LinalgDetensorize
         Block *block = blockArg.getParentBlock();
 
         // For the potentially detensorable block argument, find the
-        // corresponding operands in predecessor blocks.
+        // correpsonding operands in predecessor blocks.
         for (PredecessorIterator pred = block->pred_begin();
              pred != block->pred_end(); ++pred) {
           BranchOpInterface terminator =
@@ -454,7 +458,8 @@ struct LinalgDetensorize
       });
 
       for (Block &block : llvm::drop_begin(func.getFunctionBody(), 1))
-        blockArgsToDetensor.insert_range(block.getArguments());
+        for (BlockArgument blockArgument : block.getArguments())
+          blockArgsToDetensor.insert(blockArgument);
     }
   };
 
@@ -480,8 +485,8 @@ struct LinalgDetensorize
     Block *postEntryBlock =
         rewriter.splitBlock(entryBlock, entryBlock->begin());
     rewriter.setInsertionPointToStart(entryBlock);
-    auto branch = cf::BranchOp::create(rewriter, rewriter.getUnknownLoc(),
-                                       postEntryBlock);
+    auto branch =
+        rewriter.create<cf::BranchOp>(rewriter.getUnknownLoc(), postEntryBlock);
 
     if (aggressiveMode.getValue()) {
       AggressiveDetensoringModel costModel;

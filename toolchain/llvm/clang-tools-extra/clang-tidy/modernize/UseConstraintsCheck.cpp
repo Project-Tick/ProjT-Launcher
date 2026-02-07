@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- UseConstraintsCheck.cpp - clang-tidy -----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -8,7 +8,6 @@
 
 #include "UseConstraintsCheck.h"
 #include "clang/AST/ASTContext.h"
-#include "clang/AST/DeclTemplate.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Lex/Lexer.h"
 
@@ -21,12 +20,12 @@ using namespace clang::ast_matchers;
 
 namespace clang::tidy::modernize {
 
-namespace {
 struct EnableIfData {
   TemplateSpecializationTypeLoc Loc;
   TypeLoc Outer;
 };
 
+namespace {
 AST_MATCHER(FunctionDecl, hasOtherDeclarations) {
   auto It = Node.redecls_begin();
   auto EndIt = Node.redecls_end();
@@ -55,21 +54,18 @@ static std::optional<TemplateSpecializationTypeLoc>
 matchEnableIfSpecializationImplTypename(TypeLoc TheType) {
   if (const auto Dep = TheType.getAs<DependentNameTypeLoc>()) {
     const IdentifierInfo *Identifier = Dep.getTypePtr()->getIdentifier();
-    const ElaboratedTypeKeyword Keyword = Dep.getTypePtr()->getKeyword();
     if (!Identifier || Identifier->getName() != "type" ||
-        (Keyword != ElaboratedTypeKeyword::Typename &&
-         Keyword != ElaboratedTypeKeyword::None)) {
+        Dep.getTypePtr()->getKeyword() != ElaboratedTypeKeyword::Typename) {
       return std::nullopt;
     }
-    TheType = Dep.getQualifierLoc().getAsTypeLoc();
+    TheType = Dep.getQualifierLoc().getTypeLoc();
     if (TheType.isNull())
       return std::nullopt;
-  } else {
-    return std::nullopt;
   }
 
   if (const auto SpecializationLoc =
           TheType.getAs<TemplateSpecializationTypeLoc>()) {
+
     const auto *Specialization =
         dyn_cast<TemplateSpecializationType>(SpecializationLoc.getTypePtr());
     if (!Specialization)
@@ -80,14 +76,7 @@ matchEnableIfSpecializationImplTypename(TypeLoc TheType) {
     if (!TD || TD->getName() != "enable_if")
       return std::nullopt;
 
-    assert(!TD->getTemplateParameters()->empty() &&
-           "found template with no template parameters?");
-    const auto *FirstParam = dyn_cast<NonTypeTemplateParmDecl>(
-        TD->getTemplateParameters()->getParam(0));
-    if (!FirstParam || !FirstParam->getType()->isBooleanType())
-      return std::nullopt;
-
-    const int NumArgs = SpecializationLoc.getNumArgs();
+    int NumArgs = SpecializationLoc.getNumArgs();
     if (NumArgs != 1 && NumArgs != 2)
       return std::nullopt;
 
@@ -98,8 +87,12 @@ matchEnableIfSpecializationImplTypename(TypeLoc TheType) {
 
 static std::optional<TemplateSpecializationTypeLoc>
 matchEnableIfSpecializationImplTrait(TypeLoc TheType) {
+  if (const auto Elaborated = TheType.getAs<ElaboratedTypeLoc>())
+    TheType = Elaborated.getNamedTypeLoc();
+
   if (const auto SpecializationLoc =
           TheType.getAs<TemplateSpecializationTypeLoc>()) {
+
     const auto *Specialization =
         dyn_cast<TemplateSpecializationType>(SpecializationLoc.getTypePtr());
     if (!Specialization)
@@ -113,25 +106,16 @@ matchEnableIfSpecializationImplTrait(TypeLoc TheType) {
     if (!Specialization->isTypeAlias())
       return std::nullopt;
 
-    assert(!TD->getTemplateParameters()->empty() &&
-           "found template with no template parameters?");
-    const auto *FirstParam = dyn_cast<NonTypeTemplateParmDecl>(
-        TD->getTemplateParameters()->getParam(0));
-    if (!FirstParam || !FirstParam->getType()->isBooleanType())
-      return std::nullopt;
-
     if (const auto *AliasedType =
             dyn_cast<DependentNameType>(Specialization->getAliasedType())) {
-      const ElaboratedTypeKeyword Keyword = AliasedType->getKeyword();
       if (AliasedType->getIdentifier()->getName() != "type" ||
-          (Keyword != ElaboratedTypeKeyword::Typename &&
-           Keyword != ElaboratedTypeKeyword::None)) {
+          AliasedType->getKeyword() != ElaboratedTypeKeyword::Typename) {
         return std::nullopt;
       }
     } else {
       return std::nullopt;
     }
-    const int NumArgs = SpecializationLoc.getNumArgs();
+    int NumArgs = SpecializationLoc.getNumArgs();
     if (NumArgs != 1 && NumArgs != 2)
       return std::nullopt;
 
@@ -173,13 +157,14 @@ matchTrailingTemplateParam(const FunctionTemplateDecl *FunctionTemplate) {
 
   const TemplateParameterList *TemplateParams =
       FunctionTemplate->getTemplateParameters();
-  if (TemplateParams->empty())
+  if (TemplateParams->size() == 0)
     return {};
 
   const NamedDecl *LastParam =
       TemplateParams->getParam(TemplateParams->size() - 1);
   if (const auto *LastTemplateParam =
           dyn_cast<NonTypeTemplateParmDecl>(LastParam)) {
+
     if (!LastTemplateParam->hasDefaultArgument() ||
         !LastTemplateParam->getName().empty())
       return {};
@@ -220,7 +205,7 @@ getConditionRange(ASTContext &Context,
   const LangOptions &LangOpts = Context.getLangOpts();
   const SourceManager &SM = Context.getSourceManager();
   if (EnableIf.getNumArgs() > 1) {
-    const TemplateArgumentLoc NextArg = EnableIf.getArgLoc(1);
+    TemplateArgumentLoc NextArg = EnableIf.getArgLoc(1);
     return {EnableIf.getLAngleLoc().getLocWithOffset(1),
             utils::lexer::findPreviousTokenKind(
                 NextArg.getSourceRange().getBegin(), SM, LangOpts, tok::comma)};
@@ -232,7 +217,7 @@ getConditionRange(ASTContext &Context,
 
 static SourceRange getTypeRange(ASTContext &Context,
                                 const TemplateSpecializationTypeLoc &EnableIf) {
-  const TemplateArgumentLoc Arg = EnableIf.getArgLoc(1);
+  TemplateArgumentLoc Arg = EnableIf.getArgLoc(1);
   const LangOptions &LangOpts = Context.getLangOpts();
   const SourceManager &SM = Context.getSourceManager();
   return {utils::lexer::findPreviousTokenKind(Arg.getSourceRange().getBegin(),
@@ -266,19 +251,20 @@ getTypeText(ASTContext &Context,
 
 static std::optional<SourceLocation>
 findInsertionForConstraint(const FunctionDecl *Function, ASTContext &Context) {
-  const SourceManager &SM = Context.getSourceManager();
+  SourceManager &SM = Context.getSourceManager();
   const LangOptions &LangOpts = Context.getLangOpts();
 
   if (const auto *Constructor = dyn_cast<CXXConstructorDecl>(Function)) {
-    for (const CXXCtorInitializer *Init : Constructor->inits())
+    for (const CXXCtorInitializer *Init : Constructor->inits()) {
       if (Init->getSourceOrder() == 0)
         return utils::lexer::findPreviousTokenKind(Init->getSourceLocation(),
                                                    SM, LangOpts, tok::colon);
+    }
     if (!Constructor->inits().empty())
       return std::nullopt;
   }
   if (Function->isDeleted()) {
-    const SourceLocation FunctionEnd = Function->getSourceRange().getEnd();
+    SourceLocation FunctionEnd = Function->getSourceRange().getEnd();
     return utils::lexer::findNextAnyTokenKind(FunctionEnd, SM, LangOpts,
                                               tok::equal, tok::equal);
   }
@@ -289,7 +275,7 @@ findInsertionForConstraint(const FunctionDecl *Function, ASTContext &Context) {
   return Body->getBeginLoc();
 }
 
-static bool isPrimaryExpression(const Expr *Expression) {
+bool isPrimaryExpression(const Expr *Expression) {
   // This function is an incomplete approximation of checking whether
   // an Expr is a primary expression. In particular, if this function
   // returns true, the expression is a primary expression. The converse
@@ -310,7 +296,7 @@ static bool isPrimaryExpression(const Expr *Expression) {
 static std::optional<std::string> getConditionText(const Expr *ConditionExpr,
                                                    SourceRange ConditionRange,
                                                    ASTContext &Context) {
-  const SourceManager &SM = Context.getSourceManager();
+  SourceManager &SM = Context.getSourceManager();
   const LangOptions &LangOpts = Context.getLangOpts();
 
   SourceLocation PrevTokenLoc = ConditionRange.getEnd();
@@ -321,14 +307,14 @@ static std::optional<std::string> getConditionText(const Expr *ConditionExpr,
   Token PrevToken;
   std::tie(PrevToken, PrevTokenLoc) = utils::lexer::getPreviousTokenAndStart(
       PrevTokenLoc, SM, LangOpts, SkipComments);
-  const bool EndsWithDoubleSlash =
+  bool EndsWithDoubleSlash =
       PrevToken.is(tok::comment) &&
       Lexer::getSourceText(CharSourceRange::getCharRange(
                                PrevTokenLoc, PrevTokenLoc.getLocWithOffset(2)),
                            SM, LangOpts) == "//";
 
   bool Invalid = false;
-  const llvm::StringRef ConditionText = Lexer::getSourceText(
+  llvm::StringRef ConditionText = Lexer::getSourceText(
       CharSourceRange::getCharRange(ConditionRange), SM, LangOpts, &Invalid);
   if (Invalid)
     return std::nullopt;
@@ -357,9 +343,9 @@ static std::vector<FixItHint> handleReturnType(const FunctionDecl *Function,
                                                const TypeLoc &ReturnType,
                                                const EnableIfData &EnableIf,
                                                ASTContext &Context) {
-  const TemplateArgumentLoc EnableCondition = EnableIf.Loc.getArgLoc(0);
+  TemplateArgumentLoc EnableCondition = EnableIf.Loc.getArgLoc(0);
 
-  const SourceRange ConditionRange = getConditionRange(Context, EnableIf.Loc);
+  SourceRange ConditionRange = getConditionRange(Context, EnableIf.Loc);
 
   std::optional<std::string> ConditionText = getConditionText(
       EnableCondition.getSourceExpression(), ConditionRange, Context);
@@ -370,7 +356,7 @@ static std::vector<FixItHint> handleReturnType(const FunctionDecl *Function,
   if (!TypeText)
     return {};
 
-  SmallVector<AssociatedConstraint, 3> ExistingConstraints;
+  SmallVector<const Expr *, 3> ExistingConstraints;
   Function->getAssociatedConstraints(ExistingConstraints);
   if (!ExistingConstraints.empty()) {
     // FIXME - Support adding new constraints to existing ones. Do we need to
@@ -406,19 +392,19 @@ handleTrailingTemplateType(const FunctionTemplateDecl *FunctionTemplate,
                            const FunctionDecl *Function,
                            const Decl *LastTemplateParam,
                            const EnableIfData &EnableIf, ASTContext &Context) {
-  const SourceManager &SM = Context.getSourceManager();
+  SourceManager &SM = Context.getSourceManager();
   const LangOptions &LangOpts = Context.getLangOpts();
 
-  const TemplateArgumentLoc EnableCondition = EnableIf.Loc.getArgLoc(0);
+  TemplateArgumentLoc EnableCondition = EnableIf.Loc.getArgLoc(0);
 
-  const SourceRange ConditionRange = getConditionRange(Context, EnableIf.Loc);
+  SourceRange ConditionRange = getConditionRange(Context, EnableIf.Loc);
 
   std::optional<std::string> ConditionText = getConditionText(
       EnableCondition.getSourceExpression(), ConditionRange, Context);
   if (!ConditionText)
     return {};
 
-  SmallVector<AssociatedConstraint, 3> ExistingConstraints;
+  SmallVector<const Expr *, 3> ExistingConstraints;
   Function->getAssociatedConstraints(ExistingConstraints);
   if (!ExistingConstraints.empty()) {
     // FIXME - Support adding new constraints to existing ones. Do we need to
@@ -429,7 +415,7 @@ handleTrailingTemplateType(const FunctionTemplateDecl *FunctionTemplate,
   SourceRange RemovalRange;
   const TemplateParameterList *TemplateParams =
       FunctionTemplate->getTemplateParameters();
-  if (!TemplateParams || TemplateParams->empty())
+  if (!TemplateParams || TemplateParams->size() == 0)
     return {};
 
   if (TemplateParams->size() == 1) {

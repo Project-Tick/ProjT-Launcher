@@ -14,7 +14,6 @@ add_mlir_dialect_library(MLIRLinalgTransforms
   EliminateEmptyTensors.cpp
   EraseUnusedOperandsAndResults.cpp
   FoldAddIntoDest.cpp
-  FoldIntoElementwise.cpp
   FusePadOpWithLinalgProducer.cpp
   Fusion.cpp
   Generalization.cpp
@@ -23,15 +22,11 @@ add_mlir_dialect_library(MLIRLinalgTransforms
   InlineScalarOperands.cpp
   Interchange.cpp
   Loops.cpp
-  MorphOps.cpp
   TransposeMatmul.cpp
-  ShardingInterfaceImpl.cpp
-  SimplifyDepthwiseConv.cpp
-  NamedToElementwise.cpp
+  MeshShardingInterfaceImpl.cpp
+  NamedOpConversions.cpp
   BlockPackMatmul.cpp
-  PackAndUnpackPatterns.cpp
   Padding.cpp
-  PadTilingInterface.cpp
   Promotion.cpp
   RuntimeOpVerification.cpp
   Specialize.cpp
@@ -70,7 +65,7 @@ add_mlir_dialect_library(MLIRLinalgTransforms
   MLIRIR
   MLIRMemRefDialect
   MLIRMemRefTransforms
-  MLIRShardTransforms
+  MLIRMeshTransforms
   MLIRLinalgDialect
   MLIRLinalgUtils
   MLIRSCFDialect

@@ -9,8 +9,8 @@
 
 #include "llvm/Support/FormatVariadic.h"
 
-using namespace llvm;
-using namespace llvm::xray;
+namespace llvm {
+namespace xray {
 
 Error RecordPrinter::visit(BufferExtents &R) {
   OS << formatv("<Buffer: size = {0} bytes>", R.size()) << Delim;
@@ -103,3 +103,6 @@ Error RecordPrinter::visit(FunctionRecord &R) {
   OS << Delim;
   return Error::success();
 }
+
+} // namespace xray
+} // namespace llvm

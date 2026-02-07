@@ -10,7 +10,7 @@
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
-#if _LIBCPP_AVAILABILITY_MINIMUM_HEADER_VERSION < 15
+#ifndef _LIBCPP_ABI_DO_NOT_EXPORT_VECTOR_BASE_COMMON
 
 template <bool>
 struct __vector_base_common;
@@ -25,6 +25,6 @@ void __vector_base_common<true>::__throw_length_error() const { std::__throw_len
 
 void __vector_base_common<true>::__throw_out_of_range() const { std::__throw_out_of_range("vector"); }
 
-#endif // _LIBCPP_AVAILABILITY_MINIMUM_HEADER_VERSION < 15
+#endif // _LIBCPP_ABI_DO_NOT_EXPORT_VECTOR_BASE_COMMON
 
 _LIBCPP_END_NAMESPACE_STD

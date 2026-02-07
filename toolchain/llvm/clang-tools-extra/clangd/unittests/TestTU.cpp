@@ -12,7 +12,6 @@
 #include "Diagnostics.h"
 #include "TestFS.h"
 #include "index/FileIndex.h"
-#include "index/SymbolOrigin.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Frontend/CompilerInvocation.h"
@@ -106,7 +105,7 @@ TestTU::preamble(PreambleParsedCallback PreambleCallback) const {
   assert(CI && "Failed to build compilation invocation.");
   if (OverlayRealFileSystemForModules)
     initializeModuleCache(*CI);
-  llvm::scope_exit ModuleCacheDeleter(
+  auto ModuleCacheDeleter = llvm::make_scope_exit(
       std::bind(deleteModuleCache, CI->getHeaderSearchOpts().ModuleCachePath));
   return clang::clangd::buildPreamble(testPath(Filename), *CI, Inputs,
                                       /*StoreInMemory=*/true, PreambleCallback);
@@ -121,7 +120,7 @@ ParsedAST TestTU::build() const {
   assert(CI && "Failed to build compilation invocation.");
   if (OverlayRealFileSystemForModules)
     initializeModuleCache(*CI);
-  llvm::scope_exit ModuleCacheDeleter(
+  auto ModuleCacheDeleter = llvm::make_scope_exit(
       std::bind(deleteModuleCache, CI->getHeaderSearchOpts().ModuleCachePath));
 
   auto Preamble = clang::clangd::buildPreamble(testPath(Filename), *CI, Inputs,
@@ -165,7 +164,7 @@ SymbolSlab TestTU::headerSymbols() const {
   auto AST = build();
   return std::get<0>(indexHeaderSymbols(
       /*Version=*/"null", AST.getASTContext(), AST.getPreprocessor(),
-      AST.getPragmaIncludes(), SymbolOrigin::Preamble));
+      AST.getPragmaIncludes()));
 }
 
 RefSlab TestTU::headerRefs() const {

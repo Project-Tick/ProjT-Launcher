@@ -19,6 +19,7 @@
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/Type.h"
 #include "clang/Analysis/FlowSensitive/StorageLocation.h"
+#include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/SetVector.h"
 
 namespace clang {
@@ -111,14 +112,8 @@ public:
   // fields that are only used in these.
   // Note: The operand of the `noexcept` operator is an unevaluated operand, but
   // nevertheless it appears in the Clang CFG, so we don't exclude it here.
-  bool TraverseDecltypeTypeLoc(DecltypeTypeLoc,
-                               bool TraverseQualifier) override {
-    return true;
-  }
-  bool TraverseTypeOfExprTypeLoc(TypeOfExprTypeLoc,
-                                 bool TraverseQualifier) override {
-    return true;
-  }
+  bool TraverseDecltypeTypeLoc(DecltypeTypeLoc) override { return true; }
+  bool TraverseTypeOfExprTypeLoc(TypeOfExprTypeLoc) override { return true; }
   bool TraverseCXXTypeidExpr(CXXTypeidExpr *TIE) override {
     if (TIE->isPotentiallyEvaluated())
       return DynamicRecursiveASTVisitor::TraverseCXXTypeidExpr(TIE);
@@ -144,17 +139,17 @@ struct ReferencedDecls {
   FieldSet Fields;
   /// All variables with static storage duration, notably including static
   /// member variables and static variables declared within a function.
-  llvm::SetVector<const VarDecl *> Globals;
+  llvm::DenseSet<const VarDecl *> Globals;
   /// Local variables, not including parameters or static variables declared
   /// within a function.
-  llvm::SetVector<const VarDecl *> Locals;
+  llvm::DenseSet<const VarDecl *> Locals;
   /// Free functions and member functions which are referenced (but not
   /// necessarily called).
-  llvm::SetVector<const FunctionDecl *> Functions;
+  llvm::DenseSet<const FunctionDecl *> Functions;
   /// When analyzing a lambda's call operator, the set of all parameters (from
   /// the surrounding function) that the lambda captures. Captured local
   /// variables are already included in `Locals` above.
-  llvm::SetVector<const ParmVarDecl *> LambdaCapturedParams;
+  llvm::DenseSet<const ParmVarDecl *> LambdaCapturedParams;
 };
 
 /// Returns declarations that are declared in or referenced from `FD`.

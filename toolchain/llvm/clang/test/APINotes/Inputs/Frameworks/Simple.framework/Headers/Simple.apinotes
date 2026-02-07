@@ -26,6 +26,3 @@ Classes:
       - Name:            scalarNewProperty
         PropertyKind:    Instance
         Nullability:     Scalar
-Typedefs:
-  - Name:            MyTypedef
-    SwiftConformsTo: Swift.Equatable

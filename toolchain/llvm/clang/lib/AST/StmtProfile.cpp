@@ -65,7 +65,7 @@ namespace {
 
     /// Visit a nested-name-specifier that occurs within an expression
     /// or statement.
-    virtual void VisitNestedNameSpecifier(NestedNameSpecifier NNS) = 0;
+    virtual void VisitNestedNameSpecifier(NestedNameSpecifier *NNS) = 0;
 
     /// Visit a template name that occurs within an expression or
     /// statement.
@@ -167,10 +167,10 @@ namespace {
       ID.AddPointer(II);
     }
 
-    void VisitNestedNameSpecifier(NestedNameSpecifier NNS) override {
+    void VisitNestedNameSpecifier(NestedNameSpecifier *NNS) override {
       if (Canonical)
-        NNS = NNS.getCanonical();
-      NNS.Profile(ID);
+        NNS = Context.getCanonicalNestedNameSpecifier(NNS);
+      ID.AddPointer(NNS);
     }
 
     void VisitTemplateName(TemplateName Name) override {
@@ -226,10 +226,11 @@ namespace {
     void VisitTemplateName(TemplateName Name) override {
       Hash.AddTemplateName(Name);
     }
-    void VisitNestedNameSpecifier(NestedNameSpecifier NNS) override {
-      ID.AddBoolean(bool(NNS));
-      if (NNS)
+    void VisitNestedNameSpecifier(NestedNameSpecifier *NNS) override {
+      ID.AddBoolean(NNS);
+      if (NNS) {
         Hash.AddNestedNameSpecifier(NNS);
+      }
     }
   };
 }
@@ -323,26 +324,24 @@ void StmtProfiler::VisitReturnStmt(const ReturnStmt *S) {
   VisitStmt(S);
 }
 
-void StmtProfiler::VisitDeferStmt(const DeferStmt *S) { VisitStmt(S); }
-
 void StmtProfiler::VisitGCCAsmStmt(const GCCAsmStmt *S) {
   VisitStmt(S);
   ID.AddBoolean(S->isVolatile());
   ID.AddBoolean(S->isSimple());
-  VisitExpr(S->getAsmStringExpr());
+  VisitStringLiteral(S->getAsmString());
   ID.AddInteger(S->getNumOutputs());
   for (unsigned I = 0, N = S->getNumOutputs(); I != N; ++I) {
     ID.AddString(S->getOutputName(I));
-    VisitExpr(S->getOutputConstraintExpr(I));
+    VisitStringLiteral(S->getOutputConstraintLiteral(I));
   }
   ID.AddInteger(S->getNumInputs());
   for (unsigned I = 0, N = S->getNumInputs(); I != N; ++I) {
     ID.AddString(S->getInputName(I));
-    VisitExpr(S->getInputConstraintExpr(I));
+    VisitStringLiteral(S->getInputConstraintLiteral(I));
   }
   ID.AddInteger(S->getNumClobbers());
   for (unsigned I = 0, N = S->getNumClobbers(); I != N; ++I)
-    VisitExpr(S->getClobberExpr(I));
+    VisitStringLiteral(S->getClobberStringLiteral(I));
   ID.AddInteger(S->getNumLabels());
   for (auto *L : S->labels())
     VisitDecl(L->getLabel());
@@ -442,37 +441,37 @@ public:
 #define GEN_CLANG_CLAUSE_CLASS
 #define CLAUSE_CLASS(Enum, Str, Class) void Visit##Class(const Class *C);
 #include "llvm/Frontend/OpenMP/OMP.inc"
-  void VisitOMPClauseWithPreInit(const OMPClauseWithPreInit *C);
-  void VisitOMPClauseWithPostUpdate(const OMPClauseWithPostUpdate *C);
+  void VistOMPClauseWithPreInit(const OMPClauseWithPreInit *C);
+  void VistOMPClauseWithPostUpdate(const OMPClauseWithPostUpdate *C);
 };
 
-void OMPClauseProfiler::VisitOMPClauseWithPreInit(
+void OMPClauseProfiler::VistOMPClauseWithPreInit(
     const OMPClauseWithPreInit *C) {
   if (auto *S = C->getPreInitStmt())
     Profiler->VisitStmt(S);
 }
 
-void OMPClauseProfiler::VisitOMPClauseWithPostUpdate(
+void OMPClauseProfiler::VistOMPClauseWithPostUpdate(
     const OMPClauseWithPostUpdate *C) {
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   if (auto *E = C->getPostUpdateExpr())
     Profiler->VisitStmt(E);
 }
 
 void OMPClauseProfiler::VisitOMPIfClause(const OMPIfClause *C) {
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   if (C->getCondition())
     Profiler->VisitStmt(C->getCondition());
 }
 
 void OMPClauseProfiler::VisitOMPFinalClause(const OMPFinalClause *C) {
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   if (C->getCondition())
     Profiler->VisitStmt(C->getCondition());
 }
 
 void OMPClauseProfiler::VisitOMPNumThreadsClause(const OMPNumThreadsClause *C) {
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   if (C->getNumThreads())
     Profiler->VisitStmt(C->getNumThreads());
 }
@@ -512,13 +511,6 @@ void OMPClauseProfiler::VisitOMPPartialClause(const OMPPartialClause *C) {
     Profiler->VisitExpr(Factor);
 }
 
-void OMPClauseProfiler::VisitOMPLoopRangeClause(const OMPLoopRangeClause *C) {
-  if (const Expr *First = C->getFirst())
-    Profiler->VisitExpr(First);
-  if (const Expr *Count = C->getCount())
-    Profiler->VisitExpr(Count);
-}
-
 void OMPClauseProfiler::VisitOMPAllocatorClause(const OMPAllocatorClause *C) {
   if (C->getAllocator())
     Profiler->VisitStmt(C->getAllocator());
@@ -535,20 +527,18 @@ void OMPClauseProfiler::VisitOMPDetachClause(const OMPDetachClause *C) {
 }
 
 void OMPClauseProfiler::VisitOMPNovariantsClause(const OMPNovariantsClause *C) {
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   if (C->getCondition())
     Profiler->VisitStmt(C->getCondition());
 }
 
 void OMPClauseProfiler::VisitOMPNocontextClause(const OMPNocontextClause *C) {
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   if (C->getCondition())
     Profiler->VisitStmt(C->getCondition());
 }
 
 void OMPClauseProfiler::VisitOMPDefaultClause(const OMPDefaultClause *C) { }
-
-void OMPClauseProfiler::VisitOMPThreadsetClause(const OMPThreadsetClause *C) {}
 
 void OMPClauseProfiler::VisitOMPProcBindClause(const OMPProcBindClause *C) { }
 
@@ -567,8 +557,6 @@ void OMPClauseProfiler::VisitOMPDynamicAllocatorsClause(
 void OMPClauseProfiler::VisitOMPAtomicDefaultMemOrderClause(
     const OMPAtomicDefaultMemOrderClause *C) {}
 
-void OMPClauseProfiler::VisitOMPSelfMapsClause(const OMPSelfMapsClause *C) {}
-
 void OMPClauseProfiler::VisitOMPAtClause(const OMPAtClause *C) {}
 
 void OMPClauseProfiler::VisitOMPSeverityClause(const OMPSeverityClause *C) {}
@@ -579,7 +567,7 @@ void OMPClauseProfiler::VisitOMPMessageClause(const OMPMessageClause *C) {
 }
 
 void OMPClauseProfiler::VisitOMPScheduleClause(const OMPScheduleClause *C) {
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   if (auto *S = C->getChunkSize())
     Profiler->VisitStmt(S);
 }
@@ -589,10 +577,7 @@ void OMPClauseProfiler::VisitOMPOrderedClause(const OMPOrderedClause *C) {
     Profiler->VisitStmt(Num);
 }
 
-void OMPClauseProfiler::VisitOMPNowaitClause(const OMPNowaitClause *C) {
-  if (C->getCondition())
-    Profiler->VisitStmt(C->getCondition());
-}
+void OMPClauseProfiler::VisitOMPNowaitClause(const OMPNowaitClause *) {}
 
 void OMPClauseProfiler::VisitOMPUntiedClause(const OMPUntiedClause *) {}
 
@@ -620,9 +605,6 @@ void OMPClauseProfiler::VisitOMPNoOpenMPClause(const OMPNoOpenMPClause *) {}
 
 void OMPClauseProfiler::VisitOMPNoOpenMPRoutinesClause(
     const OMPNoOpenMPRoutinesClause *) {}
-
-void OMPClauseProfiler::VisitOMPNoOpenMPConstructsClause(
-    const OMPNoOpenMPConstructsClause *) {}
 
 void OMPClauseProfiler::VisitOMPNoParallelismClause(
     const OMPNoParallelismClause *) {}
@@ -660,7 +642,7 @@ void OMPClauseProfiler::VisitOMPDestroyClause(const OMPDestroyClause *C) {
 }
 
 void OMPClauseProfiler::VisitOMPFilterClause(const OMPFilterClause *C) {
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   if (C->getThreadID())
     Profiler->VisitStmt(C->getThreadID());
 }
@@ -683,7 +665,7 @@ void OMPClauseProfiler::VisitOMPPrivateClause(const OMPPrivateClause *C) {
 void
 OMPClauseProfiler::VisitOMPFirstprivateClause(const OMPFirstprivateClause *C) {
   VisitOMPClauseList(C);
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   for (auto *E : C->private_copies()) {
     if (E)
       Profiler->VisitStmt(E);
@@ -696,7 +678,7 @@ OMPClauseProfiler::VisitOMPFirstprivateClause(const OMPFirstprivateClause *C) {
 void
 OMPClauseProfiler::VisitOMPLastprivateClause(const OMPLastprivateClause *C) {
   VisitOMPClauseList(C);
-  VisitOMPClauseWithPostUpdate(C);
+  VistOMPClauseWithPostUpdate(C);
   for (auto *E : C->source_exprs()) {
     if (E)
       Profiler->VisitStmt(E);
@@ -719,7 +701,7 @@ void OMPClauseProfiler::VisitOMPReductionClause(
       C->getQualifierLoc().getNestedNameSpecifier());
   Profiler->VisitName(C->getNameInfo().getName());
   VisitOMPClauseList(C);
-  VisitOMPClauseWithPostUpdate(C);
+  VistOMPClauseWithPostUpdate(C);
   for (auto *E : C->privates()) {
     if (E)
       Profiler->VisitStmt(E);
@@ -757,7 +739,7 @@ void OMPClauseProfiler::VisitOMPTaskReductionClause(
       C->getQualifierLoc().getNestedNameSpecifier());
   Profiler->VisitName(C->getNameInfo().getName());
   VisitOMPClauseList(C);
-  VisitOMPClauseWithPostUpdate(C);
+  VistOMPClauseWithPostUpdate(C);
   for (auto *E : C->privates()) {
     if (E)
       Profiler->VisitStmt(E);
@@ -781,7 +763,7 @@ void OMPClauseProfiler::VisitOMPInReductionClause(
       C->getQualifierLoc().getNestedNameSpecifier());
   Profiler->VisitName(C->getNameInfo().getName());
   VisitOMPClauseList(C);
-  VisitOMPClauseWithPostUpdate(C);
+  VistOMPClauseWithPostUpdate(C);
   for (auto *E : C->privates()) {
     if (E)
       Profiler->VisitStmt(E);
@@ -805,7 +787,7 @@ void OMPClauseProfiler::VisitOMPInReductionClause(
 }
 void OMPClauseProfiler::VisitOMPLinearClause(const OMPLinearClause *C) {
   VisitOMPClauseList(C);
-  VisitOMPClauseWithPostUpdate(C);
+  VistOMPClauseWithPostUpdate(C);
   for (auto *E : C->privates()) {
     if (E)
       Profiler->VisitStmt(E);
@@ -887,25 +869,25 @@ void OMPClauseProfiler::VisitOMPAllocateClause(const OMPAllocateClause *C) {
 }
 void OMPClauseProfiler::VisitOMPNumTeamsClause(const OMPNumTeamsClause *C) {
   VisitOMPClauseList(C);
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
 }
 void OMPClauseProfiler::VisitOMPThreadLimitClause(
     const OMPThreadLimitClause *C) {
   VisitOMPClauseList(C);
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
 }
 void OMPClauseProfiler::VisitOMPPriorityClause(const OMPPriorityClause *C) {
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   if (C->getPriority())
     Profiler->VisitStmt(C->getPriority());
 }
 void OMPClauseProfiler::VisitOMPGrainsizeClause(const OMPGrainsizeClause *C) {
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   if (C->getGrainsize())
     Profiler->VisitStmt(C->getGrainsize());
 }
 void OMPClauseProfiler::VisitOMPNumTasksClause(const OMPNumTasksClause *C) {
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   if (C->getNumTasks())
     Profiler->VisitStmt(C->getNumTasks());
 }
@@ -966,14 +948,8 @@ void OMPClauseProfiler::VisitOMPOrderClause(const OMPOrderClause *C) {}
 void OMPClauseProfiler::VisitOMPBindClause(const OMPBindClause *C) {}
 void OMPClauseProfiler::VisitOMPXDynCGroupMemClause(
     const OMPXDynCGroupMemClause *C) {
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   if (Expr *Size = C->getSize())
-    Profiler->VisitStmt(Size);
-}
-void OMPClauseProfiler::VisitOMPDynGroupprivateClause(
-    const OMPDynGroupprivateClause *C) {
-  VisitOMPClauseWithPreInit(C);
-  if (auto *Size = C->getSize())
     Profiler->VisitStmt(Size);
 }
 void OMPClauseProfiler::VisitOMPDoacrossClause(const OMPDoacrossClause *C) {
@@ -1019,39 +995,26 @@ void StmtProfiler::VisitOMPSimdDirective(const OMPSimdDirective *S) {
   VisitOMPLoopDirective(S);
 }
 
-void StmtProfiler::VisitOMPCanonicalLoopNestTransformationDirective(
-    const OMPCanonicalLoopNestTransformationDirective *S) {
+void StmtProfiler::VisitOMPLoopTransformationDirective(
+    const OMPLoopTransformationDirective *S) {
   VisitOMPLoopBasedDirective(S);
 }
 
 void StmtProfiler::VisitOMPTileDirective(const OMPTileDirective *S) {
-  VisitOMPCanonicalLoopNestTransformationDirective(S);
-}
-
-void StmtProfiler::VisitOMPStripeDirective(const OMPStripeDirective *S) {
-  VisitOMPCanonicalLoopNestTransformationDirective(S);
+  VisitOMPLoopTransformationDirective(S);
 }
 
 void StmtProfiler::VisitOMPUnrollDirective(const OMPUnrollDirective *S) {
-  VisitOMPCanonicalLoopNestTransformationDirective(S);
+  VisitOMPLoopTransformationDirective(S);
 }
 
 void StmtProfiler::VisitOMPReverseDirective(const OMPReverseDirective *S) {
-  VisitOMPCanonicalLoopNestTransformationDirective(S);
+  VisitOMPLoopTransformationDirective(S);
 }
 
 void StmtProfiler::VisitOMPInterchangeDirective(
     const OMPInterchangeDirective *S) {
-  VisitOMPCanonicalLoopNestTransformationDirective(S);
-}
-
-void StmtProfiler::VisitOMPCanonicalLoopSequenceTransformationDirective(
-    const OMPCanonicalLoopSequenceTransformationDirective *S) {
-  VisitOMPExecutableDirective(S);
-}
-
-void StmtProfiler::VisitOMPFuseDirective(const OMPFuseDirective *S) {
-  VisitOMPCanonicalLoopSequenceTransformationDirective(S);
+  VisitOMPLoopTransformationDirective(S);
 }
 
 void StmtProfiler::VisitOMPForDirective(const OMPForDirective *S) {
@@ -1258,7 +1221,7 @@ void StmtProfiler::VisitOMPDistributeDirective(
 
 void OMPClauseProfiler::VisitOMPDistScheduleClause(
     const OMPDistScheduleClause *C) {
-  VisitOMPClauseWithPreInit(C);
+  VistOMPClauseWithPreInit(C);
   if (auto *S = C->getChunkSize())
     Profiler->VisitStmt(S);
 }
@@ -1382,8 +1345,7 @@ void StmtProfiler::VisitExpr(const Expr *S) {
 }
 
 void StmtProfiler::VisitConstantExpr(const ConstantExpr *S) {
-  // Profile exactly as the sub-expression.
-  Visit(S->getSubExpr());
+  VisitExpr(S);
 }
 
 void StmtProfiler::VisitDeclRefExpr(const DeclRefExpr *S) {
@@ -1507,11 +1469,6 @@ StmtProfiler::VisitUnaryExprOrTypeTraitExpr(const UnaryExprOrTypeTraitExpr *S) {
 }
 
 void StmtProfiler::VisitArraySubscriptExpr(const ArraySubscriptExpr *S) {
-  VisitExpr(S);
-}
-
-void StmtProfiler::VisitMatrixSingleSubscriptExpr(
-    const MatrixSingleSubscriptExpr *S) {
   VisitExpr(S);
 }
 
@@ -2223,14 +2180,8 @@ StmtProfiler::VisitCXXPseudoDestructorExpr(const CXXPseudoDestructorExpr *S) {
 
 void StmtProfiler::VisitOverloadExpr(const OverloadExpr *S) {
   VisitExpr(S);
-  bool DescribingDependentVarTemplate =
-      S->getNumDecls() == 1 && isa<VarTemplateDecl>(*S->decls_begin());
-  if (DescribingDependentVarTemplate) {
-    VisitDecl(*S->decls_begin());
-  } else {
-    VisitNestedNameSpecifier(S->getQualifier());
-    VisitName(S->getName(), /*TreatAsDecl*/ true);
-  }
+  VisitNestedNameSpecifier(S->getQualifier());
+  VisitName(S->getName(), /*TreatAsDecl*/ true);
   ID.AddBoolean(S->hasExplicitTemplateArgs());
   if (S->hasExplicitTemplateArgs())
     VisitTemplateArguments(S->getTemplateArgs(), S->getNumTemplateArgs());
@@ -2331,15 +2282,9 @@ void StmtProfiler::VisitSizeOfPackExpr(const SizeOfPackExpr *S) {
 }
 
 void StmtProfiler::VisitPackIndexingExpr(const PackIndexingExpr *E) {
+  VisitExpr(E);
+  VisitExpr(E->getPackIdExpression());
   VisitExpr(E->getIndexExpr());
-
-  if (E->expandsToEmptyPack() || E->getExpressions().size() != 0) {
-    ID.AddInteger(E->getExpressions().size());
-    for (const Expr *Sub : E->getExpressions())
-      Visit(Sub);
-  } else {
-    VisitExpr(E->getPackIdExpression());
-  }
 }
 
 void StmtProfiler::VisitSubstNonTypeTemplateParmPackExpr(
@@ -2398,6 +2343,10 @@ void StmtProfiler::VisitCoyieldExpr(const CoyieldExpr *S) {
 }
 
 void StmtProfiler::VisitOpaqueValueExpr(const OpaqueValueExpr *E) {
+  VisitExpr(E);
+}
+
+void StmtProfiler::VisitTypoExpr(const TypoExpr *E) {
   VisitExpr(E);
 }
 
@@ -2594,16 +2543,6 @@ void OpenACCClauseProfiler::VisitIfClause(const OpenACCIfClause &Clause) {
 void OpenACCClauseProfiler::VisitCopyClause(const OpenACCCopyClause &Clause) {
   VisitClauseWithVarList(Clause);
 }
-
-void OpenACCClauseProfiler::VisitLinkClause(const OpenACCLinkClause &Clause) {
-  VisitClauseWithVarList(Clause);
-}
-
-void OpenACCClauseProfiler::VisitDeviceResidentClause(
-    const OpenACCDeviceResidentClause &Clause) {
-  VisitClauseWithVarList(Clause);
-}
-
 void OpenACCClauseProfiler::VisitCopyInClause(
     const OpenACCCopyInClause &Clause) {
   VisitClauseWithVarList(Clause);
@@ -2670,20 +2609,11 @@ void OpenACCClauseProfiler::VisitCollapseClause(
 void OpenACCClauseProfiler::VisitPrivateClause(
     const OpenACCPrivateClause &Clause) {
   VisitClauseWithVarList(Clause);
-
-  for (auto &Recipe : Clause.getInitRecipes()) {
-    Profiler.VisitDecl(Recipe.AllocaDecl);
-  }
 }
 
 void OpenACCClauseProfiler::VisitFirstPrivateClause(
     const OpenACCFirstPrivateClause &Clause) {
   VisitClauseWithVarList(Clause);
-
-  for (auto &Recipe : Clause.getInitRecipes()) {
-    Profiler.VisitDecl(Recipe.AllocaDecl);
-    Profiler.VisitDecl(Recipe.InitFromTemporary);
-  }
 }
 
 void OpenACCClauseProfiler::VisitAttachClause(
@@ -2761,7 +2691,6 @@ void OpenACCClauseProfiler::VisitWaitClause(const OpenACCWaitClause &Clause) {
   for (auto *E : Clause.getQueueIdExprs())
     Profiler.VisitStmt(E);
 }
-
 /// Nothing to do here, there are no sub-statements.
 void OpenACCClauseProfiler::VisitDeviceTypeClause(
     const OpenACCDeviceTypeClause &Clause) {}
@@ -2772,8 +2701,6 @@ void OpenACCClauseProfiler::VisitIndependentClause(
     const OpenACCIndependentClause &Clause) {}
 
 void OpenACCClauseProfiler::VisitSeqClause(const OpenACCSeqClause &Clause) {}
-void OpenACCClauseProfiler::VisitNoHostClause(
-    const OpenACCNoHostClause &Clause) {}
 
 void OpenACCClauseProfiler::VisitGangClause(const OpenACCGangClause &Clause) {
   for (unsigned I = 0; I < Clause.getNumExprs(); ++I) {
@@ -2784,27 +2711,6 @@ void OpenACCClauseProfiler::VisitGangClause(const OpenACCGangClause &Clause) {
 void OpenACCClauseProfiler::VisitReductionClause(
     const OpenACCReductionClause &Clause) {
   VisitClauseWithVarList(Clause);
-
-  for (auto &Recipe : Clause.getRecipes()) {
-    Profiler.VisitDecl(Recipe.AllocaDecl);
-
-    // TODO: OpenACC: Make sure we remember to update this when we figure out
-    // what we're adding for the operation recipe, in the meantime, a static
-    // assert will make sure we don't add something.
-    static_assert(sizeof(OpenACCReductionRecipe::CombinerRecipe) ==
-                  3 * sizeof(int *));
-    for (auto &CombinerRecipe : Recipe.CombinerRecipes) {
-      if (CombinerRecipe.Op) {
-        Profiler.VisitDecl(CombinerRecipe.LHS);
-        Profiler.VisitDecl(CombinerRecipe.RHS);
-        Profiler.VisitStmt(CombinerRecipe.Op);
-      }
-    }
-  }
-}
-
-void OpenACCClauseProfiler::VisitBindClause(const OpenACCBindClause &Clause) {
-  assert(false && "not implemented... what can we do about our expr?");
 }
 } // namespace
 
@@ -2873,11 +2779,6 @@ void StmtProfiler::VisitOpenACCWaitConstruct(const OpenACCWaitConstruct *S) {
   P.VisitOpenACCClauseList(S->clauses());
 }
 
-void StmtProfiler::VisitOpenACCCacheConstruct(const OpenACCCacheConstruct *S) {
-  // VisitStmt covers 'children', so the exprs inside of it are covered.
-  VisitStmt(S);
-}
-
 void StmtProfiler::VisitOpenACCInitConstruct(const OpenACCInitConstruct *S) {
   VisitStmt(S);
   OpenACCClauseProfiler P{*this};
@@ -2899,13 +2800,6 @@ void StmtProfiler::VisitOpenACCSetConstruct(const OpenACCSetConstruct *S) {
 
 void StmtProfiler::VisitOpenACCUpdateConstruct(
     const OpenACCUpdateConstruct *S) {
-  VisitStmt(S);
-  OpenACCClauseProfiler P{*this};
-  P.VisitOpenACCClauseList(S->clauses());
-}
-
-void StmtProfiler::VisitOpenACCAtomicConstruct(
-    const OpenACCAtomicConstruct *S) {
   VisitStmt(S);
   OpenACCClauseProfiler P{*this};
   P.VisitOpenACCClauseList(S->clauses());

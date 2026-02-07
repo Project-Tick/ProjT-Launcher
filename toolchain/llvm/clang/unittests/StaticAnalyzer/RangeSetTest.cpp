@@ -27,21 +27,21 @@ template <class RangeOrSet> static std::string toString(const RangeOrSet &Obj) {
   Obj.dump(SS);
   return ObjRepresentation;
 }
-[[maybe_unused]] static std::string toString(const llvm::APSInt &Point) {
+LLVM_ATTRIBUTE_UNUSED static std::string toString(const llvm::APSInt &Point) {
   return toString(Point, 10);
 }
 // We need it here for better fail diagnostics from gtest.
-[[maybe_unused]] static std::ostream &operator<<(std::ostream &OS,
-                                                 const RangeSet &Set) {
+LLVM_ATTRIBUTE_UNUSED static std::ostream &operator<<(std::ostream &OS,
+                                                      const RangeSet &Set) {
   return OS << toString(Set);
 }
 // We need it here for better fail diagnostics from gtest.
-[[maybe_unused]] static std::ostream &operator<<(std::ostream &OS,
-                                                 const Range &R) {
+LLVM_ATTRIBUTE_UNUSED static std::ostream &operator<<(std::ostream &OS,
+                                                      const Range &R) {
   return OS << toString(R);
 }
-[[maybe_unused]] static std::ostream &operator<<(std::ostream &OS,
-                                                 APSIntType Ty) {
+LLVM_ATTRIBUTE_UNUSED static std::ostream &operator<<(std::ostream &OS,
+                                                      APSIntType Ty) {
   return OS << (Ty.isUnsigned() ? "u" : "s") << Ty.getBitWidth();
 }
 

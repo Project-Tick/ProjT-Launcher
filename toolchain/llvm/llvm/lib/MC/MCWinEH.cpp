@@ -8,7 +8,11 @@
 
 #include "llvm/MC/MCWinEH.h"
 
-using namespace llvm;
-using namespace WinEH;
+namespace llvm {
+namespace WinEH {
 
 UnwindEmitter::~UnwindEmitter() = default;
+
+}
+}
+

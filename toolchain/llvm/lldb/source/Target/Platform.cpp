@@ -163,12 +163,11 @@ Platform::LocateExecutableScriptingResources(Target *target, Module &module,
 
 Status Platform::GetSharedModule(
     const ModuleSpec &module_spec, Process *process, ModuleSP &module_sp,
+    const FileSpecList *module_search_paths_ptr,
     llvm::SmallVectorImpl<lldb::ModuleSP> *old_modules, bool *did_create_ptr) {
   if (IsHost())
-    // Note: module_search_paths_ptr functionality is now handled internally
-    // by getting target from module_spec and calling
-    // target->GetExecutableSearchPaths()
-    return ModuleList::GetSharedModule(module_spec, module_sp, old_modules,
+    return ModuleList::GetSharedModule(module_spec, module_sp,
+                                       module_search_paths_ptr, old_modules,
                                        did_create_ptr, false);
 
   // Module resolver lambda.
@@ -181,14 +180,16 @@ Status Platform::GetSharedModule(
       resolved_spec = spec;
       resolved_spec.GetFileSpec().PrependPathComponent(m_sdk_sysroot);
       // Try to get shared module with resolved spec.
-      error = ModuleList::GetSharedModule(resolved_spec, module_sp, old_modules,
+      error = ModuleList::GetSharedModule(resolved_spec, module_sp,
+                                          module_search_paths_ptr, old_modules,
                                           did_create_ptr, false);
     }
     // If we don't have sysroot or it didn't work then
     // try original module spec.
     if (!error.Success()) {
       resolved_spec = spec;
-      error = ModuleList::GetSharedModule(resolved_spec, module_sp, old_modules,
+      error = ModuleList::GetSharedModule(resolved_spec, module_sp,
+                                          module_search_paths_ptr, old_modules,
                                           did_create_ptr, false);
     }
     if (error.Success() && module_sp)
@@ -491,6 +492,7 @@ Status Platform::Install(const FileSpec &src, const FileSpec &dst) {
       // the platform's working directory
       if (!fixed_dst.GetDirectory()) {
         FileSpec relative_spec;
+        std::string path;
         if (working_dir) {
           relative_spec = working_dir;
           relative_spec.AppendPathComponent(dst.GetPath());
@@ -730,8 +732,10 @@ bool Platform::SetOSVersion(llvm::VersionTuple version) {
   return false;
 }
 
-Status Platform::ResolveExecutable(const ModuleSpec &module_spec,
-                                   lldb::ModuleSP &exe_module_sp) {
+Status
+Platform::ResolveExecutable(const ModuleSpec &module_spec,
+                            lldb::ModuleSP &exe_module_sp,
+                            const FileSpecList *module_search_paths_ptr) {
 
   // We may connect to a process and use the provided executable (Don't use
   // local $PATH).
@@ -747,8 +751,9 @@ Status Platform::ResolveExecutable(const ModuleSpec &module_spec,
 
   if (resolved_module_spec.GetArchitecture().IsValid() ||
       resolved_module_spec.GetUUID().IsValid()) {
-    Status error = ModuleList::GetSharedModule(resolved_module_spec,
-                                               exe_module_sp, nullptr, nullptr);
+    Status error =
+        ModuleList::GetSharedModule(resolved_module_spec, exe_module_sp,
+                                    module_search_paths_ptr, nullptr, nullptr);
 
     if (exe_module_sp && exe_module_sp->GetObjectFile())
       return error;
@@ -763,9 +768,9 @@ Status Platform::ResolveExecutable(const ModuleSpec &module_spec,
   Status error;
   for (const ArchSpec &arch : GetSupportedArchitectures(process_host_arch)) {
     resolved_module_spec.GetArchitecture() = arch;
-
-    error = ModuleList::GetSharedModule(resolved_module_spec, exe_module_sp,
-                                        nullptr, nullptr);
+    error =
+        ModuleList::GetSharedModule(resolved_module_spec, exe_module_sp,
+                                    module_search_paths_ptr, nullptr, nullptr);
     if (error.Success()) {
       if (exe_module_sp && exe_module_sp->GetObjectFile())
         break;
@@ -1054,12 +1059,10 @@ lldb::ProcessSP Platform::DebugProcess(ProcessLaunchInfo &launch_info,
         // been used where the secondary side was given as the file to open for
         // stdin/out/err after we have already opened the primary so we can
         // read/write stdin/out/err.
-#ifndef _WIN32
         int pty_fd = launch_info.GetPTY().ReleasePrimaryFileDescriptor();
         if (pty_fd != PseudoTerminal::invalid_fd) {
           process_sp->SetSTDIOFileDescriptor(pty_fd);
         }
-#endif
       } else {
         LLDB_LOGF(log, "Platform::%s Attach() failed: %s", __FUNCTION__,
                   error.AsCString());
@@ -1444,13 +1447,16 @@ const std::vector<ConstString> &Platform::GetTrapHandlerSymbolNames() {
   return m_trap_handlers;
 }
 
-Status Platform::GetCachedExecutable(ModuleSpec &module_spec,
-                                     lldb::ModuleSP &module_sp) {
+Status
+Platform::GetCachedExecutable(ModuleSpec &module_spec,
+                              lldb::ModuleSP &module_sp,
+                              const FileSpecList *module_search_paths_ptr) {
   FileSpec platform_spec = module_spec.GetFileSpec();
   Status error = GetRemoteSharedModule(
       module_spec, nullptr, module_sp,
       [&](const ModuleSpec &spec) {
-        return Platform::ResolveExecutable(spec, module_sp);
+        return Platform::ResolveExecutable(spec, module_sp,
+                                           module_search_paths_ptr);
       },
       nullptr);
   if (error.Success()) {
@@ -1492,7 +1498,7 @@ Status Platform::GetRemoteSharedModule(const ModuleSpec &module_spec,
     for (const ArchSpec &arch : GetSupportedArchitectures(process_host_arch)) {
       arch_module_spec.GetArchitecture() = arch;
       error = ModuleList::GetSharedModule(arch_module_spec, module_sp, nullptr,
-                                          nullptr);
+                                          nullptr, nullptr);
       // Did we find an executable using one of the
       if (error.Success() && module_sp)
         break;
@@ -1668,12 +1674,11 @@ void Platform::CallLocateModuleCallbackIfSet(const ModuleSpec &module_spec,
   cached_module_spec.GetUUID().Clear(); // Clear UUID since it may contain md5
                                         // content hash instead of real UUID.
   cached_module_spec.GetFileSpec() = module_file_spec;
-  cached_module_spec.GetSymbolFileSpec() = symbol_file_spec;
   cached_module_spec.GetPlatformFileSpec() = module_spec.GetFileSpec();
   cached_module_spec.SetObjectOffset(0);
 
   error = ModuleList::GetSharedModule(cached_module_spec, module_sp, nullptr,
-                                      did_create_ptr, false, false);
+                                      nullptr, did_create_ptr, false);
   if (error.Success() && module_sp) {
     // Succeeded to load the module file.
     LLDB_LOGF(log, "%s: locate module callback succeeded: module=%s symbol=%s",
@@ -2072,13 +2077,6 @@ size_t Platform::GetSoftwareBreakpointTrapOpcode(Target &target,
     trap_opcode_size = sizeof(g_loongarch_opcode);
   } break;
 
-  case llvm::Triple::wasm32: {
-    // Unreachable (0x00) triggers an unconditional trap.
-    static const uint8_t g_wasm_opcode[] = {0x00};
-    trap_opcode = g_wasm_opcode;
-    trap_opcode_size = sizeof(g_wasm_opcode);
-  } break;
-
   default:
     return 0;
   }
@@ -2230,8 +2228,7 @@ PlatformSP PlatformList::GetOrCreate(llvm::ArrayRef<ArchSpec> archs,
 PlatformSP PlatformList::Create(llvm::StringRef name) {
   std::lock_guard<std::recursive_mutex> guard(m_mutex);
   PlatformSP platform_sp = Platform::Create(name);
-  if (platform_sp)
-    m_platforms.push_back(platform_sp);
+  m_platforms.push_back(platform_sp);
   return platform_sp;
 }
 

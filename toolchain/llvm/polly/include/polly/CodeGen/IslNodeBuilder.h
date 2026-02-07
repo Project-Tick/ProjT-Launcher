@@ -112,7 +112,7 @@ public:
   BlockGenerator &getBlockGenerator() { return BlockGen; }
 
   /// Return the parallel subfunctions that have been created.
-  ArrayRef<Function *> getParallelSubfunctions() const {
+  const ArrayRef<Function *> getParallelSubfunctions() const {
     return ParallelSubfunctions;
   }
 

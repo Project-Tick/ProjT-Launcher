@@ -14,17 +14,18 @@ using namespace llvm;
 namespace {
 
 template <class T, class... Options> struct PickSentinel {
-  using type = ilist_sentinel<
-      typename ilist_detail::compute_node_options<T, Options...>::type>;
+  typedef ilist_sentinel<
+      typename ilist_detail::compute_node_options<T, Options...>::type>
+      type;
 };
 
 class Node : public ilist_node<Node> {};
 class TrackingNode : public ilist_node<Node, ilist_sentinel_tracking<true>> {};
-using Sentinel = PickSentinel<Node>::type;
-using TrackingSentinel =
-    PickSentinel<Node, ilist_sentinel_tracking<true>>::type;
-using NoTrackingSentinel =
-    PickSentinel<Node, ilist_sentinel_tracking<false>>::type;
+typedef PickSentinel<Node>::type Sentinel;
+typedef PickSentinel<Node, ilist_sentinel_tracking<true>>::type
+    TrackingSentinel;
+typedef PickSentinel<Node, ilist_sentinel_tracking<false>>::type
+    NoTrackingSentinel;
 
 struct LocalAccess : ilist_detail::NodeAccess {
   using NodeAccess::getPrev;

@@ -53,7 +53,7 @@ void TestCFGLoopInfo::runOnOperation() {
   }
   llvm::errs() << "\n";
 
-  if (region.hasOneBlock()) {
+  if (region.getBlocks().size() == 1) {
     llvm::errs() << "no loops\n";
     return;
   }

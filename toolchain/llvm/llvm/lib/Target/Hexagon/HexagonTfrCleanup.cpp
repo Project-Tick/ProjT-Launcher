@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// This pass is to address a situation that appears after register allocation
-// every now and then, namely a register copy from a source that was defined
+// This pass is to address a situation that appears after register allocaion
+// evey now and then, namely a register copy from a source that was defined
 // as an immediate value in the same block (usually just before the copy).
 //
 // Here is an example of actual code emitted that shows this problem:
@@ -25,7 +25,7 @@
 //    r0 = zxtb(r3)
 //  }
 
-#include "Hexagon.h"
+#define DEBUG_TYPE "tfr-cleanup"
 #include "HexagonTargetMachine.h"
 
 #include "llvm/CodeGen/LiveIntervals.h"
@@ -37,13 +37,19 @@
 
 using namespace llvm;
 
-#define DEBUG_TYPE "tfr-cleanup"
+namespace llvm {
+FunctionPass *createHexagonTfrCleanup();
+void initializeHexagonTfrCleanupPass(PassRegistry &);
+} // namespace llvm
 
 namespace {
 class HexagonTfrCleanup : public MachineFunctionPass {
 public:
   static char ID;
-  HexagonTfrCleanup() : MachineFunctionPass(ID) {}
+  HexagonTfrCleanup() : MachineFunctionPass(ID), HII(0), TRI(0) {
+    PassRegistry &R = *PassRegistry::getPassRegistry();
+    initializeHexagonTfrCleanupPass(R);
+  }
   StringRef getPassName() const override { return "Hexagon TFR Cleanup"; }
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.setPreservesAll();
@@ -52,8 +58,8 @@ public:
   bool runOnMachineFunction(MachineFunction &MF) override;
 
 private:
-  const HexagonInstrInfo *HII = nullptr;
-  const TargetRegisterInfo *TRI = nullptr;
+  const HexagonInstrInfo *HII;
+  const TargetRegisterInfo *TRI;
 
   typedef DenseMap<unsigned, uint64_t> ImmediateMap;
 
@@ -160,8 +166,11 @@ bool HexagonTfrCleanup::updateImmMap(MachineInstr *MI, ImmediateMap &IMap) {
     if (!Mo->isReg() || !Mo->isDef())
       continue;
     unsigned R = Mo->getReg();
-    for (MCRegAliasIterator AR(R, TRI, true); AR.isValid(); ++AR)
-      IMap.erase(*AR);
+    for (MCRegAliasIterator AR(R, TRI, true); AR.isValid(); ++AR) {
+      ImmediateMap::iterator F = IMap.find(*AR);
+      if (F != IMap.end())
+        IMap.erase(F);
+    }
   }
   return true;
 }

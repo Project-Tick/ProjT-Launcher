@@ -110,6 +110,16 @@ static cl::opt<bool> SuppressWarnings("suppress-warnings",
                                       cl::desc("Suppress all linking warnings"),
                                       cl::init(false), cl::cat(LinkCategory));
 
+static cl::opt<bool> PreserveBitcodeUseListOrder(
+    "preserve-bc-uselistorder",
+    cl::desc("Preserve use-list order when writing LLVM bitcode."),
+    cl::init(true), cl::Hidden, cl::cat(LinkCategory));
+
+static cl::opt<bool> PreserveAssemblyUseListOrder(
+    "preserve-ll-uselistorder",
+    cl::desc("Preserve use-list order when writing LLVM assembly."),
+    cl::init(false), cl::Hidden, cl::cat(LinkCategory));
+
 static cl::opt<bool> NoVerify("disable-verify",
                               cl::desc("Do not run the verifier"), cl::Hidden,
                               cl::cat(LinkCategory));
@@ -118,6 +128,18 @@ static cl::opt<bool> IgnoreNonBitcode(
     "ignore-non-bitcode",
     cl::desc("Do not report an error for non-bitcode files in archives"),
     cl::Hidden);
+
+static cl::opt<bool> TryUseNewDbgInfoFormat(
+    "try-experimental-debuginfo-iterators",
+    cl::desc("Enable debuginfo iterator positions, if they're built in"),
+    cl::init(false));
+
+extern cl::opt<bool> UseNewDbgInfoFormat;
+extern cl::opt<cl::boolOrDefault> PreserveInputDbgFormat;
+extern cl::opt<bool> WriteNewDbgInfoFormat;
+extern bool WriteNewDbgInfoFormatToBitcode;
+
+extern cl::opt<cl::boolOrDefault> LoadBitcodeIntoNewDbgInfoFormat;
 
 static ExitOnError ExitOnErr;
 
@@ -420,7 +442,7 @@ static bool linkFiles(const char *argv0, LLVMContext &Context, Linker &L,
       // does not do the ThinLink that would normally determine what values to
       // promote.
       for (auto &I : *Index) {
-        for (auto &S : I.second.getSummaryList()) {
+        for (auto &S : I.second.SummaryList) {
           if (GlobalValue::isLocalLinkage(S->linkage()))
             S->setLinkage(GlobalValue::ExternalLinkage);
         }
@@ -465,6 +487,15 @@ int main(int argc, char **argv) {
 
   cl::HideUnrelatedOptions({&LinkCategory, &getColorCategory()});
   cl::ParseCommandLineOptions(argc, argv, "llvm linker\n");
+
+  // Load bitcode into the new debug info format by default.
+  if (LoadBitcodeIntoNewDbgInfoFormat == cl::boolOrDefault::BOU_UNSET)
+    LoadBitcodeIntoNewDbgInfoFormat = cl::boolOrDefault::BOU_TRUE;
+
+  // Since llvm-link collects multiple IR modules together, for simplicity's
+  // sake we disable the "PreserveInputDbgFormat" flag to enforce a single
+  // debug info format.
+  PreserveInputDbgFormat = cl::boolOrDefault::BOU_FALSE;
 
   LLVMContext Context;
   Context.setDiagnosticHandler(std::make_unique<LLVMLinkDiagnosticHandler>(),
@@ -513,12 +544,17 @@ int main(int argc, char **argv) {
 
   if (Verbose)
     errs() << "Writing bitcode...\n";
-  Composite->removeDebugIntrinsicDeclarations();
+  auto SetFormat = [&](bool NewFormat) {
+    Composite->setIsNewDbgInfoFormat(NewFormat);
+    if (NewFormat)
+      Composite->removeDebugIntrinsicDeclarations();
+  };
   if (OutputAssembly) {
-    Composite->print(Out.os(), nullptr, /* ShouldPreserveUseListOrder */ false);
+    SetFormat(WriteNewDbgInfoFormat);
+    Composite->print(Out.os(), nullptr, PreserveAssemblyUseListOrder);
   } else if (Force || !CheckBitcodeOutputToConsole(Out.os())) {
-    WriteBitcodeToFile(*Composite, Out.os(),
-                       /* ShouldPreserveUseListOrder */ true);
+    SetFormat(UseNewDbgInfoFormat && WriteNewDbgInfoFormatToBitcode);
+    WriteBitcodeToFile(*Composite, Out.os(), PreserveBitcodeUseListOrder);
   }
 
   // Declare success.

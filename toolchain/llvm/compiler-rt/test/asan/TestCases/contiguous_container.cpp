@@ -2,7 +2,6 @@
 //
 // Test __sanitizer_annotate_contiguous_container.
 
-#include "defines.h"
 #include <algorithm>
 #include <numeric>
 #include <vector>
@@ -248,9 +247,9 @@ void TestDoubleEndedContainer(size_t capacity, size_t off_begin,
   delete[] buffer;
 }
 
-ATTRIBUTE_NOINLINE void Throw() { throw 1; }
+__attribute__((noinline)) void Throw() { throw 1; }
 
-ATTRIBUTE_NOINLINE void ThrowAndCatch() {
+__attribute__((noinline)) void ThrowAndCatch() {
   try {
     Throw();
   } catch (...) {

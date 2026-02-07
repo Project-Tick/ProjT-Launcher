@@ -75,15 +75,15 @@ public:
     _LIBCPP_ASSERT_UNCATEGORIZED(__count >= 0, "count has to be greater than or equal to zero");
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr _View base() const&
+  _LIBCPP_HIDE_FROM_ABI constexpr _View base() const&
     requires copy_constructible<_View>
   {
     return __base_;
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr _View base() && { return std::move(__base_); }
+  _LIBCPP_HIDE_FROM_ABI constexpr _View base() && { return std::move(__base_); }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto begin()
+  _LIBCPP_HIDE_FROM_ABI constexpr auto begin()
     requires(!__simple_view<_View>)
   {
     if constexpr (sized_range<_View>) {
@@ -99,7 +99,7 @@ public:
     }
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto begin() const
+  _LIBCPP_HIDE_FROM_ABI constexpr auto begin() const
     requires range<const _View>
   {
     if constexpr (sized_range<const _View>) {
@@ -115,7 +115,7 @@ public:
     }
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto end()
+  _LIBCPP_HIDE_FROM_ABI constexpr auto end()
     requires(!__simple_view<_View>)
   {
     if constexpr (sized_range<_View>) {
@@ -129,7 +129,7 @@ public:
     }
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto end() const
+  _LIBCPP_HIDE_FROM_ABI constexpr auto end() const
     requires range<const _View>
   {
     if constexpr (sized_range<const _View>) {
@@ -143,14 +143,14 @@ public:
     }
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto size()
+  _LIBCPP_HIDE_FROM_ABI constexpr auto size()
     requires sized_range<_View>
   {
     auto __n = ranges::size(__base_);
     return ranges::min(__n, static_cast<decltype(__n)>(__count_));
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto size() const
+  _LIBCPP_HIDE_FROM_ABI constexpr auto size() const
     requires sized_range<const _View>
   {
     auto __n = ranges::size(__base_);
@@ -178,7 +178,7 @@ public:
     requires _Const && convertible_to<sentinel_t<_View>, sentinel_t<_Base>>
       : __end_(std::move(__s.__end_)) {}
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr sentinel_t<_Base> base() const { return __end_; }
+  _LIBCPP_HIDE_FROM_ABI constexpr sentinel_t<_Base> base() const { return __end_; }
 
   _LIBCPP_HIDE_FROM_ABI friend constexpr bool operator==(const _Iter<_Const>& __lhs, const __sentinel& __rhs) {
     return __lhs.count() == 0 || __lhs.base() == __rhs.__end_;
@@ -229,18 +229,18 @@ struct __passthrough_type;
 
 template <class _Tp, size_t _Extent>
 struct __passthrough_type<span<_Tp, _Extent>> {
-  using type _LIBCPP_NODEBUG = span<_Tp>;
+  using type = span<_Tp>;
 };
 
 template <class _CharT, class _Traits>
 struct __passthrough_type<basic_string_view<_CharT, _Traits>> {
-  using type _LIBCPP_NODEBUG = basic_string_view<_CharT, _Traits>;
+  using type = basic_string_view<_CharT, _Traits>;
 };
 
 template <class _Iter, class _Sent, subrange_kind _Kind>
   requires requires { typename subrange<_Iter>; }
 struct __passthrough_type<subrange<_Iter, _Sent, _Kind>> {
-  using type _LIBCPP_NODEBUG = subrange<_Iter>;
+  using type = subrange<_Iter>;
 };
 
 template <class _Tp>

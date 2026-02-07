@@ -65,7 +65,6 @@ void RegAllocBase::init(VirtRegMap &vrm, LiveIntervals &lis,
   Matrix = &mat;
   MRI->freezeReservedRegs();
   RegClassInfo.runOnMachineFunction(vrm.getMachineFunction());
-  FailedVRegs.clear();
 }
 
 // Visit all the live registers. If they are already assigned to a physical
@@ -128,7 +127,7 @@ void RegAllocBase::allocatePhysRegs() {
       AvailablePhysReg = getErrorAssignment(*RC, MI);
 
       // Keep going after reporting the error.
-      cleanupFailedVReg(VirtReg->reg(), AvailablePhysReg, SplitVRegs);
+      VRM->assignVirt2Phys(VirtReg->reg(), AvailablePhysReg);
     } else if (AvailablePhysReg)
       Matrix->assign(*VirtReg, AvailablePhysReg);
 
@@ -162,35 +161,6 @@ void RegAllocBase::postOptimization() {
   DeadRemats.clear();
 }
 
-void RegAllocBase::cleanupFailedVReg(Register FailedReg, MCRegister PhysReg,
-                                     SmallVectorImpl<Register> &SplitRegs) {
-  // We still should produce valid IR. Kill all the uses and reduce the live
-  // ranges so that we don't think it's possible to introduce kill flags later
-  // which will fail the verifier.
-  for (MachineOperand &MO : MRI->reg_operands(FailedReg)) {
-    if (MO.readsReg())
-      MO.setIsUndef(true);
-  }
-
-  if (!MRI->isReserved(PhysReg)) {
-    // Physical liveness for any aliasing registers is now unreliable, so delete
-    // the uses.
-    for (MCRegAliasIterator Aliases(PhysReg, TRI, true); Aliases.isValid();
-         ++Aliases) {
-      for (MachineOperand &MO : MRI->reg_operands(*Aliases)) {
-        if (MO.readsReg())
-          MO.setIsUndef(true);
-      }
-    }
-  }
-
-  // Directly perform the rewrite, and do not leave it to VirtRegRewriter as
-  // usual. This avoids trying to manage illegal overlapping assignments in
-  // LiveRegMatrix.
-  MRI->replaceRegWith(FailedReg, PhysReg);
-  LIS->removeInterval(FailedReg);
-}
-
 void RegAllocBase::enqueue(const LiveInterval *LI) {
   const Register Reg = LI->reg();
 
@@ -214,9 +184,10 @@ MCPhysReg RegAllocBase::getErrorAssignment(const TargetRegisterClass &RC,
 
   // Avoid printing the error for every single instance of the register. It
   // would be better if this were per register class.
-  bool EmitError = !MF.getProperties().hasFailedRegAlloc();
+  bool EmitError = !MF.getProperties().hasProperty(
+      MachineFunctionProperties::Property::FailedRegAlloc);
   if (EmitError)
-    MF.getProperties().setFailedRegAlloc();
+    MF.getProperties().set(MachineFunctionProperties::Property::FailedRegAlloc);
 
   const Function &Fn = MF.getFunction();
   LLVMContext &Context = Fn.getContext();

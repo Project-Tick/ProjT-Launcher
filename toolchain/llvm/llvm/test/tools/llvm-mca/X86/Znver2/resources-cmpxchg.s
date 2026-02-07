@@ -3,8 +3,6 @@
 
 cmpxchg8b  (%rax)
 cmpxchg16b (%rax)
-lock cmpxchg8b  (%rax)
-lock cmpxchg16b (%rax)
 
 # CHECK:      Instruction Info:
 # CHECK-NEXT: [1]: #uOps
@@ -17,8 +15,6 @@ lock cmpxchg16b (%rax)
 # CHECK:      [1]    [2]    [3]    [4]    [5]    [6]    Instructions:
 # CHECK-NEXT:  18     1     0.33    *      *            cmpxchg8b	(%rax)
 # CHECK-NEXT:  1      100   0.25    *      *            cmpxchg16b	(%rax)
-# CHECK-NEXT:  18     1     0.33    *      *            lock		cmpxchg8b	(%rax)
-# CHECK-NEXT:  1      100   0.25    *      *            lock		cmpxchg16b	(%rax)
 
 # CHECK:      Resources:
 # CHECK-NEXT: [0]   - Zn2AGU0
@@ -37,11 +33,9 @@ lock cmpxchg16b (%rax)
 
 # CHECK:      Resource pressure per iteration:
 # CHECK-NEXT: [0]    [1]    [2]    [3]    [4]    [5]    [6]    [7]    [8]    [9]    [10]   [11]   [12]
-# CHECK-NEXT: 0.67   0.67   0.67   0.50   0.50   0.50   0.50    -      -      -      -      -      -
+# CHECK-NEXT: 0.33   0.33   0.33   0.25   0.25   0.25   0.25    -      -      -      -      -      -
 
 # CHECK:      Resource pressure by instruction:
 # CHECK-NEXT: [0]    [1]    [2]    [3]    [4]    [5]    [6]    [7]    [8]    [9]    [10]   [11]   [12]   Instructions:
 # CHECK-NEXT: 0.33   0.33   0.33   0.25   0.25   0.25   0.25    -      -      -      -      -      -     cmpxchg8b	(%rax)
 # CHECK-NEXT:  -      -      -      -      -      -      -      -      -      -      -      -      -     cmpxchg16b	(%rax)
-# CHECK-NEXT: 0.33   0.33   0.33   0.25   0.25   0.25   0.25    -      -      -      -      -      -     lock		cmpxchg8b	(%rax)
-# CHECK-NEXT:  -      -      -      -      -      -      -      -      -      -      -      -      -     lock		cmpxchg16b	(%rax)

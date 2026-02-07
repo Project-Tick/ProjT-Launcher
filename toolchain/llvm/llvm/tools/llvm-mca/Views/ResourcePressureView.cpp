@@ -37,16 +37,8 @@ ResourcePressureView::ResourcePressureView(const llvm::MCSubtargetInfo &sti,
   }
 
   NumResourceUnits = R2VIndex;
-  ResourceUsage.resize(getSource().size());
-
-  ResourceReleaseAtCycles InitValue{0, 0};
-  auto Generator = [&InitValue]() {
-    ResourceReleaseAtCycles Old = InitValue;
-    ++InitValue.ResourceIdx;
-    return Old;
-  };
-  std::generate_n(std::back_inserter(CommonResourceUsage), NumResourceUnits,
-                  Generator);
+  ResourceUsage.resize(NumResourceUnits * (getSource().size() + 1));
+  std::fill(ResourceUsage.begin(), ResourceUsage.end(), 0.0);
 }
 
 void ResourcePressureView::onEvent(const HWInstructionEvent &Event) {
@@ -68,19 +60,8 @@ void ResourcePressureView::onEvent(const HWInstructionEvent &Event) {
     assert(Resource2VecIndex.contains(RR.first));
     unsigned R2VIndex = Resource2VecIndex[RR.first];
     R2VIndex += llvm::countr_zero(RR.second);
-
-    InstResourceUsage &RU = ResourceUsage[SourceIdx];
-    ResourceReleaseAtCycles NewUsage{R2VIndex, Use.second};
-    auto ResCyclesIt =
-        lower_bound(RU, NewUsage, [](const auto &L, const auto &R) {
-          return L.ResourceIdx < R.ResourceIdx;
-        });
-    if (ResCyclesIt != RU.end() && ResCyclesIt->ResourceIdx == R2VIndex)
-      ResCyclesIt->Cycles += NewUsage.Cycles;
-    else
-      RU.insert(ResCyclesIt, std::move(NewUsage));
-
-    CommonResourceUsage[R2VIndex].Cycles += NewUsage.Cycles;
+    ResourceUsage[R2VIndex + NumResourceUnits * SourceIdx] += Use.second;
+    ResourceUsage[R2VIndex + NumResourceUnits * Source.size()] += Use.second;
   }
 }
 
@@ -154,17 +135,10 @@ void ResourcePressureView::printResourcePressurePerIter(raw_ostream &OS) const {
 
   ArrayRef<llvm::MCInst> Source = getSource();
   const unsigned Executions = LastInstructionIdx / Source.size() + 1;
-  auto UsageEntryEnd = CommonResourceUsage.end();
-  auto UsageEntryIt = CommonResourceUsage.begin();
   for (unsigned I = 0, E = NumResourceUnits; I < E; ++I) {
-    double Pressure = 0.0;
-    if (UsageEntryIt != UsageEntryEnd && UsageEntryIt->ResourceIdx == I) {
-      Pressure = UsageEntryIt->Cycles / Executions;
-      ++UsageEntryIt;
-    }
-    printResourcePressure(FOS, Pressure, (I + 1) * 7);
+    double Usage = ResourceUsage[I + Source.size() * E];
+    printResourcePressure(FOS, Usage / Executions, (I + 1) * 7);
   }
-  assert(UsageEntryIt == UsageEntryEnd);
 
   FOS.flush();
   OS << Buffer;
@@ -183,17 +157,11 @@ void ResourcePressureView::printResourcePressurePerInst(raw_ostream &OS) const {
   ArrayRef<llvm::MCInst> Source = getSource();
   const unsigned Executions = LastInstructionIdx / Source.size() + 1;
   for (const MCInst &MCI : Source) {
-    auto UsageEntryEnd = ResourceUsage[InstrIndex].end();
-    auto UsageEntryIt = ResourceUsage[InstrIndex].begin();
+    unsigned BaseEltIdx = InstrIndex * NumResourceUnits;
     for (unsigned J = 0; J < NumResourceUnits; ++J) {
-      double Pressure = 0.0;
-      if (UsageEntryIt != UsageEntryEnd && UsageEntryIt->ResourceIdx == J) {
-        Pressure = UsageEntryIt->Cycles / Executions;
-        ++UsageEntryIt;
-      }
-      printResourcePressure(FOS, Pressure, (J + 1) * 7);
+      double Usage = ResourceUsage[J + BaseEltIdx];
+      printResourcePressure(FOS, Usage / Executions, (J + 1) * 7);
     }
-    assert(UsageEntryIt == UsageEntryEnd);
 
     FOS << printInstructionString(MCI) << '\n';
     FOS.flush();
@@ -212,22 +180,17 @@ json::Value ResourcePressureView::toJSON() const {
   // non-zero values.
   ArrayRef<llvm::MCInst> Source = getSource();
   const unsigned Executions = LastInstructionIdx / Source.size() + 1;
-
-  auto AddToJSON = [&ResourcePressureInfo, Executions](
-                       const ResourceReleaseAtCycles &RU, unsigned InstIndex) {
-    assert(RU.Cycles.getNumerator() != 0);
-    double Usage = RU.Cycles / Executions;
+  for (const auto &R : enumerate(ResourceUsage)) {
+    const ReleaseAtCycles &RU = R.value();
+    if (RU.getNumerator() == 0)
+      continue;
+    unsigned InstructionIndex = R.index() / NumResourceUnits;
+    unsigned ResourceIndex = R.index() % NumResourceUnits;
+    double Usage = RU / Executions;
     ResourcePressureInfo.push_back(
-        json::Object({{"InstructionIndex", InstIndex},
-                      {"ResourceIndex", RU.ResourceIdx},
+        json::Object({{"InstructionIndex", InstructionIndex},
+                      {"ResourceIndex", ResourceIndex},
                       {"ResourceUsage", Usage}}));
-  };
-  for (const auto &[InstIndex, Usages] : enumerate(ResourceUsage))
-    for (const auto &RU : Usages)
-      AddToJSON(RU, InstIndex);
-  for (const auto &RU : CommonResourceUsage) {
-    if (RU.Cycles.getNumerator() != 0)
-      AddToJSON(RU, Source.size());
   }
 
   json::Object JO({{"ResourcePressureInfo", std::move(ResourcePressureInfo)}});

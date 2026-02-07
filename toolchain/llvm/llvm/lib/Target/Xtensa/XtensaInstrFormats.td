@@ -30,6 +30,7 @@ class XtensaInst24<dag outs, dag ins, string asmstr, list<dag> pattern,
                    InstrItinClass itin = NoItinerary>
   : XtensaInst<3, outs, ins, asmstr, pattern, itin> {
   field bits<24> Inst;
+  field bits<24> SoftFail = 0;
 }
 
 // Base class for Xtensa 16 bit Format
@@ -37,6 +38,7 @@ class XtensaInst16<dag outs, dag ins, string asmstr, list<dag> pattern,
                    InstrItinClass itin = NoItinerary>
   : XtensaInst<2, outs, ins, asmstr, pattern, itin> {
   field bits<16> Inst;
+  field bits<16> SoftFail = 0;
   let Predicates = [HasDensity];
 }
 

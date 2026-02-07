@@ -72,10 +72,11 @@ int main(int argc, const char **argv) {
 
   int ExitCode = Tool.run(Factory.get());
   LangOptions DefaultLangOptions;
-  DiagnosticOptions DiagOpts;
-  TextDiagnosticPrinter DiagnosticPrinter(errs(), DiagOpts);
-  DiagnosticsEngine Diagnostics(DiagnosticIDs::create(), DiagOpts,
-                                &DiagnosticPrinter, false);
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts(new DiagnosticOptions());
+  TextDiagnosticPrinter DiagnosticPrinter(errs(), &*DiagOpts);
+  DiagnosticsEngine Diagnostics(
+      IntrusiveRefCntPtr<DiagnosticIDs>(new DiagnosticIDs()), &*DiagOpts,
+      &DiagnosticPrinter, false);
 
   auto &FileMgr = Tool.getFiles();
   SourceManager Sources(Diagnostics, FileMgr);

@@ -54,7 +54,8 @@ OPTIONS
 
 .. option:: --no-strip-underscore, -n
 
-  Do not strip a leading underscore. This is the default for all platforms.
+  Do not strip a leading underscore. This is the default for all platforms
+  except Mach-O based hosts.
 
 .. option:: --quote
 
@@ -63,7 +64,7 @@ OPTIONS
 .. option:: --strip-underscore, -_
 
   Strip a single leading underscore, if present, from each input name before
-  demangling.
+  demangling. On by default on Mach-O based platforms.
 
 .. option:: --types, -t
 

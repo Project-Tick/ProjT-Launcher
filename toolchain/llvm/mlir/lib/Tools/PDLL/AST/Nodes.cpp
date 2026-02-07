@@ -21,7 +21,7 @@ static StringRef copyStringWithNull(Context &ctx, StringRef str) {
     return str;
 
   char *data = ctx.getAllocator().Allocate<char>(str.size() + 1);
-  llvm::copy(str, data);
+  std::copy(str.begin(), str.end(), data);
   data[str.size()] = 0;
   return StringRef(data, str.size());
 }
@@ -72,7 +72,7 @@ public:
 
             const Module>(
             [&](auto derivedNode) { this->visitImpl(derivedNode); })
-        .DefaultUnreachable("unknown AST node");
+        .Default([](const Node *) { llvm_unreachable("unknown AST node"); });
   }
 
 private:
@@ -195,7 +195,8 @@ CompoundStmt *CompoundStmt::create(Context &ctx, SMRange loc,
   void *rawData = ctx.getAllocator().Allocate(allocSize, alignof(CompoundStmt));
 
   CompoundStmt *stmt = new (rawData) CompoundStmt(loc, children.size());
-  llvm::uninitialized_copy(children, stmt->getChildren().begin());
+  std::uninitialized_copy(children.begin(), children.end(),
+                          stmt->getChildren().begin());
   return stmt;
 }
 
@@ -213,7 +214,6 @@ LetStmt *LetStmt::create(Context &ctx, SMRange loc, VariableDecl *varDecl) {
 
 //===----------------------------------------------------------------------===//
 // EraseStmt
-//===----------------------------------------------------------------------===//
 
 EraseStmt *EraseStmt::create(Context &ctx, SMRange loc, Expr *rootOp) {
   return new (ctx.getAllocator().Allocate<EraseStmt>()) EraseStmt(loc, rootOp);
@@ -221,7 +221,6 @@ EraseStmt *EraseStmt::create(Context &ctx, SMRange loc, Expr *rootOp) {
 
 //===----------------------------------------------------------------------===//
 // ReplaceStmt
-//===----------------------------------------------------------------------===//
 
 ReplaceStmt *ReplaceStmt::create(Context &ctx, SMRange loc, Expr *rootOp,
                                  ArrayRef<Expr *> replExprs) {
@@ -229,13 +228,13 @@ ReplaceStmt *ReplaceStmt::create(Context &ctx, SMRange loc, Expr *rootOp,
   void *rawData = ctx.getAllocator().Allocate(allocSize, alignof(ReplaceStmt));
 
   ReplaceStmt *stmt = new (rawData) ReplaceStmt(loc, rootOp, replExprs.size());
-  llvm::uninitialized_copy(replExprs, stmt->getReplExprs().begin());
+  std::uninitialized_copy(replExprs.begin(), replExprs.end(),
+                          stmt->getReplExprs().begin());
   return stmt;
 }
 
 //===----------------------------------------------------------------------===//
 // RewriteStmt
-//===----------------------------------------------------------------------===//
 
 RewriteStmt *RewriteStmt::create(Context &ctx, SMRange loc, Expr *rootOp,
                                  CompoundStmt *rewriteBody) {
@@ -274,7 +273,8 @@ CallExpr *CallExpr::create(Context &ctx, SMRange loc, Expr *callable,
 
   CallExpr *expr = new (rawData)
       CallExpr(loc, resultType, callable, arguments.size(), isNegated);
-  llvm::uninitialized_copy(arguments, expr->getArguments().begin());
+  std::uninitialized_copy(arguments.begin(), arguments.end(),
+                          expr->getArguments().begin());
   return expr;
 }
 
@@ -318,9 +318,12 @@ OperationExpr::create(Context &ctx, SMRange loc, const ods::Operation *odsOp,
   OperationExpr *opExpr = new (rawData)
       OperationExpr(loc, resultType, name, operands.size(), resultTypes.size(),
                     attributes.size(), name->getLoc());
-  llvm::uninitialized_copy(operands, opExpr->getOperands().begin());
-  llvm::uninitialized_copy(resultTypes, opExpr->getResultTypes().begin());
-  llvm::uninitialized_copy(attributes, opExpr->getAttributes().begin());
+  std::uninitialized_copy(operands.begin(), operands.end(),
+                          opExpr->getOperands().begin());
+  std::uninitialized_copy(resultTypes.begin(), resultTypes.end(),
+                          opExpr->getResultTypes().begin());
+  std::uninitialized_copy(attributes.begin(), attributes.end(),
+                          opExpr->getAttributes().begin());
   return opExpr;
 }
 
@@ -338,7 +341,8 @@ RangeExpr *RangeExpr::create(Context &ctx, SMRange loc,
   void *rawData = ctx.getAllocator().Allocate(allocSize, alignof(TupleExpr));
 
   RangeExpr *expr = new (rawData) RangeExpr(loc, type, elements.size());
-  llvm::uninitialized_copy(elements, expr->getElements().begin());
+  std::uninitialized_copy(elements.begin(), elements.end(),
+                          expr->getElements().begin());
   return expr;
 }
 
@@ -357,7 +361,8 @@ TupleExpr *TupleExpr::create(Context &ctx, SMRange loc,
   TupleType type = TupleType::get(ctx, llvm::to_vector(elementTypes), names);
 
   TupleExpr *expr = new (rawData) TupleExpr(loc, type);
-  llvm::uninitialized_copy(elements, expr->getElements().begin());
+  std::uninitialized_copy(elements.begin(), elements.end(),
+                          expr->getElements().begin());
   return expr;
 }
 
@@ -474,8 +479,10 @@ UserConstraintDecl *UserConstraintDecl::createImpl(
   UserConstraintDecl *decl = new (rawData)
       UserConstraintDecl(name, inputs.size(), hasNativeInputTypes,
                          results.size(), codeBlock, body, resultType);
-  llvm::uninitialized_copy(inputs, decl->getInputs().begin());
-  llvm::uninitialized_copy(results, decl->getResults().begin());
+  std::uninitialized_copy(inputs.begin(), inputs.end(),
+                          decl->getInputs().begin());
+  std::uninitialized_copy(results.begin(), results.end(),
+                          decl->getResults().begin());
   if (hasNativeInputTypes) {
     StringRef *nativeInputTypesPtr = decl->getTrailingObjects<StringRef>();
     for (unsigned i = 0, e = inputs.size(); i < e; ++i)
@@ -537,8 +544,10 @@ UserRewriteDecl *UserRewriteDecl::createImpl(Context &ctx, const Name &name,
 
   UserRewriteDecl *decl = new (rawData) UserRewriteDecl(
       name, inputs.size(), results.size(), codeBlock, body, resultType);
-  llvm::uninitialized_copy(inputs, decl->getInputs().begin());
-  llvm::uninitialized_copy(results, decl->getResults().begin());
+  std::uninitialized_copy(inputs.begin(), inputs.end(),
+                          decl->getInputs().begin());
+  std::uninitialized_copy(results.begin(), results.end(),
+                          decl->getResults().begin());
   return decl;
 }
 
@@ -555,7 +564,8 @@ VariableDecl *VariableDecl::create(Context &ctx, const Name &name, Type type,
 
   VariableDecl *varDecl =
       new (rawData) VariableDecl(name, type, initExpr, constraints.size());
-  llvm::uninitialized_copy(constraints, varDecl->getConstraints().begin());
+  std::uninitialized_copy(constraints.begin(), constraints.end(),
+                          varDecl->getConstraints().begin());
   return varDecl;
 }
 
@@ -568,6 +578,7 @@ Module *Module::create(Context &ctx, SMLoc loc, ArrayRef<Decl *> children) {
   void *rawData = ctx.getAllocator().Allocate(allocSize, alignof(Module));
 
   Module *module = new (rawData) Module(loc, children.size());
-  llvm::uninitialized_copy(children, module->getChildren().begin());
+  std::uninitialized_copy(children.begin(), children.end(),
+                          module->getChildren().begin());
   return module;
 }

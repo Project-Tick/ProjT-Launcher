@@ -1,6 +1,6 @@
 // RUN: fir-opt --add-debug-info --mlir-print-debuginfo %s | FileCheck %s
 
-module {
+module attributes {dlti.dl_spec = #dlti.dl_spec<>} {
   func.func private @str(%arg0: index) -> i32 loc(#loc1)
 }
 #loc1 = loc("test.f90":5:1)

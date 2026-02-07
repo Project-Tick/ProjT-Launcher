@@ -39,7 +39,6 @@ void LVOptions::resolveDependencies() {
     setAttributeFilename();
     setAttributeFiles();
     setAttributeFormat();
-    setAttributeLanguage();
     setAttributeLevel();
     setAttributeProducer();
     setAttributePublics();
@@ -68,7 +67,6 @@ void LVOptions::resolveDependencies() {
     setAttributeQualified();
     setAttributeQualifier();
     setAttributeRegister();
-    setAttributeSize();
     setAttributeSubrange();
     setAttributeSystem();
     setAttributeTypename();
@@ -210,7 +208,7 @@ void LVOptions::resolveDependencies() {
   // 1) Sort the CUs, to get a fast compare.
   // 2) Encode template instantiations, so the names include template
   //    parameter information.
-  // 3) Include qualified types and their sizes.
+  // 3) Include qualified types.
   // 4) Include any inserted abstract references.
   // 5) For added/missing elements add the '+' or '-' tags.
   if (getCompareExecute()) {
@@ -223,7 +221,6 @@ void LVOptions::resolveDependencies() {
     setAttributeInserted();
     setAttributeMissing();
     setAttributeQualified();
-    setAttributeSize();
   }
 
   // Enable formatting for printing (indentation, print children).
@@ -259,10 +256,12 @@ void LVOptions::resolveDependencies() {
 }
 
 void LVOptions::calculateIndentationSize() {
+#ifndef NDEBUG
   if (getInternalID()) {
     std::string String = hexSquareString(0);
     IndentationSize += String.length();
   }
+#endif
   if (getCompareExecute() && (getAttributeAdded() || getAttributeMissing()))
     ++IndentationSize;
   if (getAttributeOffset()) {
@@ -313,10 +312,9 @@ void LVOptions::print(raw_ostream &OS) const {
      << "Range:         " << getAttributeRange() << ", "
      << "Reference:     " << getAttributeReference() << "\n"
      << "Register:      " << getAttributeRegister() << ", "
-     << "Size:          " << getAttributeSize() << ", "
      << "Standard:      " << getAttributeStandard() << ", "
-     << "Subrange:      " << getAttributeSubrange() << "\n"
-     << "System:        " << getAttributeSystem() << ", "
+     << "Subrange:      " << getAttributeSubrange() << ", "
+     << "System:        " << getAttributeSystem() << "\n"
      << "Typename:      " << getAttributeTypename() << ", "
      << "Underlying:    " << getAttributeUnderlying() << ", "
      << "Zero:          " << getAttributeZero() << "\n";
@@ -447,7 +445,8 @@ void LVPatterns::addGenericPatterns(StringSet<> &Patterns) {
 }
 
 void LVPatterns::addOffsetPatterns(const LVOffsetSet &Patterns) {
-  llvm::append_range(OffsetMatchInfo, Patterns);
+  for (const LVOffset &Entry : Patterns)
+    OffsetMatchInfo.push_back(Entry);
   if (OffsetMatchInfo.size()) {
     options().setSelectOffsetPattern();
     options().setSelectExecute();

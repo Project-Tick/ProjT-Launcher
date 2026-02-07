@@ -1204,10 +1204,9 @@ void SystemZDAGToDAGISel::loadVectorConstant(
     SDValue BitCast = CurDAG->getNode(ISD::BITCAST, DL, VT, Op);
     ReplaceNode(Node, BitCast.getNode());
     SelectCode(BitCast.getNode());
-  } else { // half, float or double
-    unsigned SubRegIdx = (VT.getSizeInBits() == 16   ? SystemZ::subreg_h16
-                          : VT.getSizeInBits() == 32 ? SystemZ::subreg_h32
-                                                     : SystemZ::subreg_h64);
+  } else { // float or double
+    unsigned SubRegIdx =
+        (VT.getSizeInBits() == 32 ? SystemZ::subreg_h32 : SystemZ::subreg_h64);
     ReplaceNode(
         Node, CurDAG->getTargetExtractSubreg(SubRegIdx, DL, VT, Op).getNode());
   }
@@ -1851,7 +1850,7 @@ bool SystemZDAGToDAGISel::SelectInlineAsmMemoryOperand(
 
   if (selectBDXAddr(Form, DispRange, Op, Base, Disp, Index)) {
     const TargetRegisterClass *TRC =
-        Subtarget->getRegisterInfo()->getPointerRegClass();
+      Subtarget->getRegisterInfo()->getPointerRegClass(*MF);
     SDLoc DL(Base);
     SDValue RC = CurDAG->getTargetConstant(TRC->getID(), DL, MVT::i32);
 

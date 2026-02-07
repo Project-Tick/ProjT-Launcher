@@ -85,7 +85,8 @@ public:
   StringRef getPassName() const override { return "Localizer"; }
 
   MachineFunctionProperties getRequiredProperties() const override {
-    return MachineFunctionProperties().setIsSSA();
+    return MachineFunctionProperties()
+        .set(MachineFunctionProperties::Property::IsSSA);
   }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override;

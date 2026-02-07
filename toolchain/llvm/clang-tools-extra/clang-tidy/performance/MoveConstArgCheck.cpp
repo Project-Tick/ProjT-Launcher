@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- MoveConstArgCheck.cpp - clang-tidy -----------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -19,10 +19,10 @@ static void replaceCallWithArg(const CallExpr *Call, DiagnosticBuilder &Diag,
                                const LangOptions &LangOpts) {
   const Expr *Arg = Call->getArg(0);
 
-  const CharSourceRange BeforeArgumentsRange = Lexer::makeFileCharRange(
+  CharSourceRange BeforeArgumentsRange = Lexer::makeFileCharRange(
       CharSourceRange::getCharRange(Call->getBeginLoc(), Arg->getBeginLoc()),
       SM, LangOpts);
-  const CharSourceRange AfterArgumentsRange = Lexer::makeFileCharRange(
+  CharSourceRange AfterArgumentsRange = Lexer::makeFileCharRange(
       CharSourceRange::getCharRange(Call->getEndLoc(),
                                     Call->getEndLoc().getLocWithOffset(1)),
       SM, LangOpts);
@@ -44,10 +44,6 @@ void MoveConstArgCheck::registerMatchers(MatchFinder *Finder) {
                unless(isInTemplateInstantiation()))
           .bind("call-move");
 
-  // Match ternary expressions where either branch contains std::move
-  auto TernaryWithMoveMatcher =
-      conditionalOperator(hasDescendant(MoveCallMatcher));
-
   Finder->addMatcher(
       expr(anyOf(
           castExpr(hasSourceExpression(MoveCallMatcher)),
@@ -62,15 +58,13 @@ void MoveConstArgCheck::registerMatchers(MatchFinder *Finder) {
       qualType(rValueReferenceType()).bind("invocation-parm-type");
   // Matches respective ParmVarDecl for a CallExpr or CXXConstructExpr.
   auto ArgumentWithParamMatcher = forEachArgumentWithParam(
-      anyOf(MoveCallMatcher, TernaryWithMoveMatcher),
-      parmVarDecl(
-          anyOf(hasType(ConstTypeParmMatcher), hasType(RValueTypeParmMatcher)))
-          .bind("invocation-parm"));
+      MoveCallMatcher, parmVarDecl(anyOf(hasType(ConstTypeParmMatcher),
+                                         hasType(RValueTypeParmMatcher)))
+                           .bind("invocation-parm"));
   // Matches respective types of arguments for a CallExpr or CXXConstructExpr
   // and it works on calls through function pointers as well.
   auto ArgumentWithParamTypeMatcher = forEachArgumentWithParamType(
-      anyOf(MoveCallMatcher, TernaryWithMoveMatcher),
-      anyOf(ConstTypeParmMatcher, RValueTypeParmMatcher));
+      MoveCallMatcher, anyOf(ConstTypeParmMatcher, RValueTypeParmMatcher));
 
   Finder->addMatcher(
       invocation(anyOf(ArgumentWithParamMatcher, ArgumentWithParamTypeMatcher))
@@ -78,9 +72,9 @@ void MoveConstArgCheck::registerMatchers(MatchFinder *Finder) {
       this);
 }
 
-static bool isRValueReferenceParam(const Expr *Invocation,
-                                   const QualType *InvocationParmType,
-                                   const Expr *Arg) {
+bool IsRValueReferenceParam(const Expr *Invocation,
+                            const QualType *InvocationParmType,
+                            const Expr *Arg) {
   if (Invocation && (*InvocationParmType)->isRValueReferenceType() &&
       Arg->isLValue()) {
     if (!Invocation->getType()->isRecordType())
@@ -114,18 +108,17 @@ void MoveConstArgCheck::check(const MatchFinder::MatchResult &Result) {
 
   const Expr *Arg = CallMove->getArg(0);
   const QualType ArgType = Arg->getType().getCanonicalType();
-  const SourceManager &SM = Result.Context->getSourceManager();
+  SourceManager &SM = Result.Context->getSourceManager();
 
-  const CharSourceRange MoveRange =
+  CharSourceRange MoveRange =
       CharSourceRange::getCharRange(CallMove->getSourceRange());
-  const CharSourceRange FileMoveRange =
+  CharSourceRange FileMoveRange =
       Lexer::makeFileCharRange(MoveRange, SM, getLangOpts());
   if (!FileMoveRange.isValid())
     return;
 
-  const bool IsConstArg = ArgType.isConstQualified();
-  const bool IsTriviallyCopyable =
-      ArgType.isTriviallyCopyableType(*Result.Context);
+  bool IsConstArg = ArgType.isConstQualified();
+  bool IsTriviallyCopyable = ArgType.isTriviallyCopyableType(*Result.Context);
 
   if (IsConstArg || IsTriviallyCopyable) {
     if (const CXXRecordDecl *R = ArgType->getAsCXXRecordDecl()) {
@@ -135,20 +128,20 @@ void MoveConstArgCheck::check(const MatchFinder::MatchResult &Result) {
       if (R->isLambda())
         return;
       // Don't warn when the type is not copyable.
-      for (const auto *Ctor : R->ctors())
-        if (Ctor->isCopyConstructor() &&
-            (Ctor->isDeleted() || Ctor->getAccess() != AS_public))
+      for (const auto *Ctor : R->ctors()) {
+        if (Ctor->isCopyConstructor() && Ctor->isDeleted())
           return;
+      }
     }
 
     if (!IsConstArg && IsTriviallyCopyable && !CheckTriviallyCopyableMove)
       return;
 
-    const bool IsVariable = isa<DeclRefExpr>(Arg);
+    bool IsVariable = isa<DeclRefExpr>(Arg);
     // std::move shouldn't be removed when an lvalue wrapped by std::move is
     // passed to the function with an rvalue reference parameter.
-    const bool IsRVRefParam =
-        isRValueReferenceParam(ReceivingExpr, InvocationParmType, Arg);
+    bool IsRVRefParam =
+        IsRValueReferenceParam(ReceivingExpr, InvocationParmType, Arg);
     const auto *Var =
         IsVariable ? dyn_cast<DeclRefExpr>(Arg)->getDecl() : nullptr;
 

@@ -76,7 +76,7 @@ public:
     BlockSet.insert(MBB);
   }
   ArrayRef<MachineBasicBlock *> getBlocks() const { return Blocks; }
-  using block_iterator = ArrayRef<MachineBasicBlock *>::const_iterator;
+  using block_iterator = typename ArrayRef<MachineBasicBlock *>::const_iterator;
   block_iterator block_begin() const { return getBlocks().begin(); }
   block_iterator block_end() const { return getBlocks().end(); }
   inline iterator_range<block_iterator> blocks() const {
@@ -96,7 +96,7 @@ public:
   void addSubException(std::unique_ptr<WebAssemblyException> E) {
     SubExceptions.push_back(std::move(E));
   }
-  using iterator = decltype(SubExceptions)::const_iterator;
+  using iterator = typename decltype(SubExceptions)::const_iterator;
   iterator begin() const { return SubExceptions.begin(); }
   iterator end() const { return SubExceptions.end(); }
 
@@ -132,7 +132,9 @@ class WebAssemblyExceptionInfo final : public MachineFunctionPass {
 
 public:
   static char ID;
-  WebAssemblyExceptionInfo() : MachineFunctionPass(ID) {}
+  WebAssemblyExceptionInfo() : MachineFunctionPass(ID) {
+    initializeWebAssemblyExceptionInfoPass(*PassRegistry::getPassRegistry());
+  }
   ~WebAssemblyExceptionInfo() override { releaseMemory(); }
   WebAssemblyExceptionInfo(const WebAssemblyExceptionInfo &) = delete;
   WebAssemblyExceptionInfo &

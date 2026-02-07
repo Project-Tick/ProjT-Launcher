@@ -3,7 +3,6 @@
 
 ! RUN: %libomptarget-compile-fortran-generic
 ! RUN: env LIBOMPTARGET_INFO=16 %libomptarget-run-generic 2>&1 | %fcheck-generic
-! XFAIL: intelgpu
 program main
    use omp_lib
    integer :: x(100)

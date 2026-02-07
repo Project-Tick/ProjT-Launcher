@@ -9,7 +9,6 @@
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/Basic/FileManager.h"
-#include "clang/Driver/CreateInvocationFromArgs.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/CompilerInvocation.h"
 #include "clang/Frontend/FrontendActions.h"
@@ -86,9 +85,8 @@ void foo() {}
 
   CreateInvocationOptions CIOpts;
   CIOpts.VFS = llvm::vfs::createPhysicalFileSystem();
-  DiagnosticOptions DiagOpts;
   IntrusiveRefCntPtr<DiagnosticsEngine> Diags =
-      CompilerInstance::createDiagnostics(*CIOpts.VFS, DiagOpts);
+      CompilerInstance::createDiagnostics(*CIOpts.VFS, new DiagnosticOptions());
   CIOpts.Diags = Diags;
 
   std::string CacheBMIPath = llvm::Twine(TestDir + "/Comments.pcm").str();
@@ -99,9 +97,9 @@ void foo() {}
       createInvocation(Args, CIOpts);
   ASSERT_TRUE(Invocation);
 
-  CompilerInstance Instance(std::move(Invocation));
-  Instance.createVirtualFileSystem(CIOpts.VFS);
-  Instance.setDiagnostics(Diags);
+  CompilerInstance Instance;
+  Instance.setDiagnostics(Diags.get());
+  Instance.setInvocation(Invocation);
   Instance.getFrontendOpts().OutputFile = CacheBMIPath;
   GenerateReducedModuleInterfaceAction Action;
   ASSERT_TRUE(Instance.ExecuteAction(Action));

@@ -20,12 +20,24 @@
 #include "test_macros.h"
 #include "min_allocator.h"
 
-int main(int, char**) {
-  {
+int main(int, char**)
+{
+    {
     typedef std::multimap<int, double> C;
     typedef C::value_type V;
     C m = {{20, 1}};
-    m   = {{1, 1}, {1, 1.5}, {1, 2}, {2, 1}, {2, 1.5}, {2, 2}, {3, 1}, {3, 1.5}, {3, 2}};
+    m =
+           {
+               {1, 1},
+               {1, 1.5},
+               {1, 2},
+               {2, 1},
+               {2, 1.5},
+               {2, 2},
+               {3, 1},
+               {3, 1.5},
+               {3, 2}
+           };
     assert(m.size() == 9);
     assert(std::distance(m.begin(), m.end()) == 9);
     C::const_iterator i = m.cbegin();
@@ -38,12 +50,23 @@ int main(int, char**) {
     assert(*++i == V(3, 1));
     assert(*++i == V(3, 1.5));
     assert(*++i == V(3, 2));
-  }
-  {
+    }
+    {
     typedef std::multimap<int, double, std::less<int>, min_allocator<std::pair<const int, double>>> C;
     typedef C::value_type V;
     C m = {{20, 1}};
-    m   = {{1, 1}, {1, 1.5}, {1, 2}, {2, 1}, {2, 1.5}, {2, 2}, {3, 1}, {3, 1.5}, {3, 2}};
+    m =
+           {
+               {1, 1},
+               {1, 1.5},
+               {1, 2},
+               {2, 1},
+               {2, 1.5},
+               {2, 2},
+               {3, 1},
+               {3, 1.5},
+               {3, 2}
+           };
     assert(m.size() == 9);
     assert(std::distance(m.begin(), m.end()) == 9);
     C::const_iterator i = m.cbegin();
@@ -56,7 +79,7 @@ int main(int, char**) {
     assert(*++i == V(3, 1));
     assert(*++i == V(3, 1.5));
     assert(*++i == V(3, 2));
-  }
+    }
 
   return 0;
 }

@@ -32,8 +32,6 @@ include "AVRRegisterInfo.td"
 
 include "AVRInstrInfo.td"
 
-defm : RemapAllTargetPseudoPointerOperands<PTRDISPREGS>;
-
 def AVRInstrInfo : InstrInfo;
 
 //===---------------------------------------------------------------------===//

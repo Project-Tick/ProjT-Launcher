@@ -11,8 +11,7 @@
 
 #include "src/__support/CPP/new.h"
 #include "src/__support/CPP/optional.h"
-#include "src/__support/alloc-checker.h"
-#include "src/__support/macros/config.h" // LIBC_NAMESPACE_DECL
+#include "src/__support/macros/config.h"
 #include "src/string/memory_utils/inline_memcpy.h"
 #include "src/string/string_utils.h"
 
@@ -21,15 +20,15 @@
 namespace LIBC_NAMESPACE_DECL {
 namespace internal {
 
-template <typename T> LIBC_INLINE cpp::optional<T *> strdup(const T *src) {
+LIBC_INLINE cpp::optional<char *> strdup(const char *src) {
   if (src == nullptr)
     return cpp::nullopt;
   size_t len = string_length(src) + 1;
   AllocChecker ac;
-  T *newstr = new (ac) T[len];
+  char *newstr = new (ac) char[len];
   if (!ac)
     return cpp::nullopt;
-  inline_memcpy(newstr, src, len * sizeof(T));
+  inline_memcpy(newstr, src, len);
   return newstr;
 }
 

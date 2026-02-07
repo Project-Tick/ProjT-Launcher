@@ -21,7 +21,6 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PseudoProbe.h"
 #include "llvm/InitializePasses.h"
-#include "llvm/ProfileData/SampleProf.h"
 
 #define DEBUG_TYPE "pseudo-probe-inserter"
 
@@ -130,11 +129,7 @@ public:
 private:
   uint64_t getFuncGUID(Module *M, DILocation *DL) {
     auto Name = DL->getSubprogramLinkageName();
-    // CoroSplit Pass will change the debug info with suffixes i.e. `.resume`,
-    // `.destroy`, `.cleanup`. Strip these suffixes to make the GUID consistent
-    // with the pseudo probe
-    Name = FunctionSamples::getCanonicalCoroFnName(Name);
-    return Function::getGUIDAssumingExternalLinkage(Name);
+    return Function::getGUID(Name);
   }
 
   bool ShouldRun = false;

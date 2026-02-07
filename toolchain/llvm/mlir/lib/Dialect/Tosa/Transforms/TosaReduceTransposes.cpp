@@ -72,7 +72,9 @@
 #include "mlir/Dialect/Tosa/Transforms/Passes.h"
 #include "mlir/Dialect/Tosa/Utils/ConversionUtils.h"
 #include "mlir/IR/Iterators.h"
+#include "mlir/IR/Matchers.h"
 #include "llvm/ADT/TypeSwitch.h"
+#include <memory>
 #include <set>
 #include <stack>
 
@@ -178,8 +180,10 @@ std::optional<DenseElementsAttr>
 TosaReduceTransposes::transposeDenseAttribute(DenseElementsAttr input,
                                               ArrayRef<int32_t> perms) {
   RankedTensorType oldType = llvm::cast<RankedTensorType>(input.getType());
-  ArrayRef<int64_t> oldShape = oldType.getShape();
-  int64_t rank = oldType.getRank();
+  RankedTensorType newType =
+      RankedTensorType::get(applyTOSAPermutation(oldType.getShape(), perms),
+                            oldType.getElementType());
+  size_t rank = oldType.getRank();
 
   // Asserted by TransposeOp verifier and TOSA disallowing tensor with dimension
   // 0. If not in place, something is very wrong.
@@ -188,83 +192,65 @@ TosaReduceTransposes::transposeDenseAttribute(DenseElementsAttr input,
     return std::nullopt;
   }
 
-  auto newShape = applyTOSAPermutation(oldShape, perms);
-  RankedTensorType newType =
-      RankedTensorType::get(newShape, oldType.getElementType());
-
-  if (input.isSplat()) {
+  if (input.isSplat())
     return input.reshape(newType);
-  }
-
-  auto rawData = input.getRawData();
-  if (!rawData.data()) {
-    return std::nullopt;
-  }
 
   // The algorithm is approximately as follows:
-  // 1. Determine the strides of both input and output tensors in row-major
-  // order
-  // 2. Iterate through the output tensor linearly.
-  // 3. For each output position, decompose the linear index into
-  //    multi-dimensional coordinates using output strides.
-  // 4. Use the permutation to map output coordinates to input coordinates and
-  //    calculate the source linear index.
+  // input: perms, input flat array, input tensor type
+  // (1/2) determine the strides of input/output if
+  // they were strided in row-major order. (3) adjust the strides for the
+  // input to be in the same order of indices as the output is written.
+  // (4) process dimension by dimension. example: perms 2, 0, 1; input
+  // 2x3x4; output 4x2x3 for i ... 4, j ... 2, k ... 3: output[i][j][k] =
+  // input[j][k][i] output[6i + 3j + k] = input[12j + 4k + i] and we adjust
+  // input strides to be as input[i + 12j + 4k] so we may process
+  // layer-by-layer.
 
-  // Example: perms [2, 0, 1]; input 2x3x4; output 4x2x3
-  // for output linear index 11: decompose to output[1][1][2]
-  // using output strides [6,3,1]. Map to input coordinates using
-  // perms: dim 0→2, dim 1→0, dim 2→1, giving source position
-  // calculated as 1*inputStrides[2] + 1*inputStrides[0] + 2*inputStrides[1]
-  // = 1*1 + 1*12 + 2*4 = 21
+  // Step 1/2: Strides for input. We ignore output since row-major and can just
+  // push_back.
 
-  size_t elementSize = oldType.getElementTypeBitWidth() / 8;
-  int64_t numElements = oldType.getNumElements();
+  SmallVector<int64_t> originalInputStrides(rank);
+  originalInputStrides[rank - 1] = 1;
+  // index with int64_t to avoid overflow
+  for (int64_t i = rank - 2; i >= 0; i--)
+    originalInputStrides[i] =
+        originalInputStrides[i + 1] * oldType.getDimSize(i + 1);
 
-  SmallVector<char> outputBuffer(numElements * elementSize);
-  const char *inputPtr = rawData.data();
-  char *outputPtr = outputBuffer.data();
+  // Step 3: Transpose strides of input to be same indexing (i, j, k, ...) as
+  // output which is done in row-major order.
 
-  auto calculateStrides = [](ArrayRef<int64_t> shape) -> SmallVector<int64_t> {
-    int64_t rank = shape.size();
-    SmallVector<int64_t> strides(rank);
-    strides[rank - 1] = 1;
-    for (int64_t i = rank - 2; i >= 0; --i) {
-      strides[i] = strides[i + 1] * shape[i + 1];
-    }
-    return strides;
-  };
+  SmallVector<int64_t> newInputStrides;
+  newInputStrides.reserve(rank);
+  for (int32_t v : perms)
+    newInputStrides.push_back(originalInputStrides[v]);
 
-  // Calculate strides for both input and output tensors
-  SmallVector<int64_t> inputStrides = calculateStrides(oldShape);
-  SmallVector<int64_t> outputStrides = calculateStrides(newShape);
+  // Step 4: Write out the transposed "flat array" dimension by dimension.
 
-  auto mapCoordinates = [&](int64_t destLinearIndex) -> int64_t {
-    int64_t tempDestIndex = destLinearIndex;
-    int64_t sourceLinearIndex = 0;
+  auto inputArray = input.getValues<Attribute>();
+  SmallVector<std::pair<int64_t, int64_t>> boundsAndStrides;
+  for (size_t i = 0; i < rank; i++)
+    boundsAndStrides.push_back({newType.getDimSize(i), newInputStrides[i]});
 
-    // Decompose linear destination index into multi-dimensional
-    // coordinates dividing by output strides.
-    // Simultaneously map these coordinates through the permutation
-    // to calculate the corresponding source linear index.
-    for (auto j : llvm::seq<int64_t>(rank)) {
-      int64_t destCoord = tempDestIndex / outputStrides[j];
-      tempDestIndex %= outputStrides[j];
-      sourceLinearIndex += destCoord * inputStrides[perms[j]];
-    }
+  SmallVector<Attribute> resultArray;
+  resultArray.reserve(inputArray.size());
 
-    return sourceLinearIndex;
-  };
+  std::function<void(int64_t,
+                     SmallVector<std::pair<int64_t, int64_t>>::const_iterator)>
+      processTransposeDim = [&](auto accumulatedIndex, auto it) {
+        if (it == boundsAndStrides.end()) {
+          resultArray.push_back(inputArray[accumulatedIndex]);
+          return;
+        }
 
-  for (auto destLinearIndex : llvm::seq<int64_t>(numElements)) {
-    int64_t sourceLinearIndex = mapCoordinates(destLinearIndex);
+        for (int64_t i = 0; i < it->first; i++) {
+          int64_t j = accumulatedIndex + i * it->second;
+          processTransposeDim(j, it + 1);
+        }
+      };
 
-    // Copy the element from source to destination using type-agnostic byte
-    // copying.
-    std::memcpy(outputPtr + destLinearIndex * elementSize,
-                inputPtr + sourceLinearIndex * elementSize, elementSize);
-  }
+  processTransposeDim(0, boundsAndStrides.begin());
 
-  return DenseElementsAttr::getFromRawBuffer(newType, outputBuffer);
+  return DenseElementsAttr::get(newType, resultArray);
 }
 
 // The SetVector should only contain ConstOp, ReshapeOp, TransposeOp
@@ -295,19 +281,13 @@ bool TosaReduceTransposes::collectFanIn(Operation *op,
   if (!llvm::isa<tosa::TransposeOp>(op) && !llvm::isa<tosa::ReshapeOp>(op) &&
       !llvm::isa<tosa::ConstOp>(op)) {
 
-    if (!llvm::isa<tosa::MulOp>(op) &&
-        !op->hasTrait<OpTrait::tosa::TosaElementwiseOperator>())
+    if (!op->hasTrait<OpTrait::tosa::TosaElementwiseOperator>())
       return false;
 
-    for (Value operand : op->getOperands()) {
+    for (Value operand : op->getOperands())
       // If this is a problem in future, think about alternatives to recursion.
-      if (llvm::isa<tosa::MulOp>(op) && operand == op->getOperand(2)) {
-        // do not recurse into MulOp's shift operand
-        continue;
-      }
       if (!collectFanIn(operand.getDefiningOp(), collected))
         return false;
-    }
   }
 
   // Insert in topological order.
@@ -336,8 +316,7 @@ std::optional<Value> TosaReduceTransposes::buildMappedToValue(
     Operation *op, const DenseMap<Value, Value> &valuesMap,
     IRRewriter &rewriter, ArrayRef<int32_t> hoistedPerms) {
   if (op->getNumResults() != 1 ||
-      (!llvm::isa<tosa::MulOp>(op) &&
-       !op->hasTrait<OpTrait::tosa::TosaElementwiseOperator>()))
+      !op->hasTrait<OpTrait::tosa::TosaElementwiseOperator>())
     return std::nullopt;
 
   auto resultType = llvm::cast<RankedTensorType>(op->getResult(0).getType());
@@ -345,9 +324,6 @@ std::optional<Value> TosaReduceTransposes::buildMappedToValue(
   for (Value v : op->getOperands()) {
     if (valuesMap.contains(v)) {
       operands.push_back(valuesMap.at(v));
-    } else if (llvm::isa<tosa::MulOp>(op) && v == op->getOperand(2)) {
-      // special case for MulOp's shift operand
-      operands.push_back(v);
     } else {
       return std::nullopt;
     }
@@ -381,7 +357,9 @@ std::optional<Value> TosaReduceTransposes::buildMappedToValue(
 std::optional<Value> TosaReduceTransposes::buildMappedToValue(
     TransposeOp transposeOp, const DenseMap<Value, Value> &valuesMap,
     IRRewriter &rewriter, ArrayRef<int32_t> hoistedPerms) {
-  if (!areInvolutionTransposes(hoistedPerms, transposeOp.getPerms()))
+  SmallVector<int32_t> perms;
+  if (failed(transposeOp.getConstantPerms(perms)) ||
+      !areInvolutionTransposes(hoistedPerms, perms))
     return std::nullopt;
   return transposeOp.getInput1();
 }
@@ -412,35 +390,28 @@ std::optional<Value> TosaReduceTransposes::buildMappedToValue(
     return std::nullopt;
 
   // Do not insert a TransposeOp, instead we fold the reshape and its attribute.
-  llvm::SmallVector<int64_t> newShape;
-  if (!tosa::getConstShapeValues(reshapeOp.getShape().getDefiningOp(),
-                                 newShape)) {
-    // this mean shape is not constant
-    return std::nullopt;
-  }
-  ImplicitLocOpBuilder builder(reshapeOp.getLoc(), rewriter);
-  auto foldedReshape = ReshapeOp::create(
-      rewriter, reshapeOp.getLoc(),
+  auto foldedReshape = rewriter.create<ReshapeOp>(
+      reshapeOp.getLoc(),
       RankedTensorType::get(applyTOSAPermutation(shape, hoistedPerms),
                             reshapeOutputType.getElementType()),
       reshapeOp.getInput1(),
-      getTosaConstShape(builder, applyTOSAPermutation(llvm::ArrayRef(newShape),
-                                                      hoistedPerms)));
+      rewriter.getDenseI64ArrayAttr(
+          applyTOSAPermutation(reshapeOp.getNewShape(), hoistedPerms)));
   return foldedReshape->getResult(0);
 }
 
 std::optional<Value> TosaReduceTransposes::buildMappedToValue(
     ConstOp constOp, const DenseMap<Value, Value> &valuesMap,
     IRRewriter &rewriter, ArrayRef<int32_t> hoistedPerms) {
-  auto denseAttr = llvm::dyn_cast<DenseElementsAttr>(constOp.getValues());
+  auto denseAttr = llvm::dyn_cast<DenseElementsAttr>(constOp.getValue());
   if (!denseAttr)
     return std::nullopt;
   auto maybeNewDenseAttr = transposeDenseAttribute(denseAttr, hoistedPerms);
   if (!maybeNewDenseAttr.has_value())
     return std::nullopt;
   auto newDenseAttr = maybeNewDenseAttr.value();
-  auto newConstOp = ConstOp::create(rewriter, constOp.getLoc(),
-                                    newDenseAttr.getType(), newDenseAttr);
+  auto newConstOp = rewriter.create<ConstOp>(
+      constOp.getLoc(), newDenseAttr.getType(), newDenseAttr);
   return newConstOp->getResult(0);
 }
 
@@ -518,11 +489,14 @@ bool TosaReduceTransposes::dependenciesAreValid(
       // replaced.
       Operation *user = use.getOwner();
       if (auto otherTranspose = llvm::dyn_cast<TransposeOp>(user)) {
+        SmallVector<int32_t> otherPerms;
+
         // Can later think about cases where transpose -> transpose
         // or reshape -> transpose, where the transposes are not necessarily
         // the same perms as the hoisted, if implementing a more general
         // transform. These could be permitted.
-        if (!llvm::equal(perms, otherTranspose.getPerms()))
+        if (failed(otherTranspose.getConstantPerms(otherPerms)) ||
+            !llvm::equal(perms, otherPerms))
           return false;
       } else if (userNotContainedInValidTransposeDependencies(
                      user, validTransposes, transposeInfo)) {
@@ -616,7 +590,9 @@ void TosaReduceTransposes::runOnOperation() {
         !llvm::isa<RankedTensorType>(output.getType()))
       return;
 
-    llvm::append_range(perms, transposeOp.getPerms());
+    // No transformation when transpose permutation non-constant.
+    if (failed(transposeOp.getConstantPerms(perms)))
+      return;
 
     // We let --canonicalize deal with identity transpose.
     if (llvm::equal(llvm::seq<int32_t>(0, perms.size()), perms))
@@ -658,10 +634,10 @@ void TosaReduceTransposes::runOnOperation() {
     // (like the TransposeOp we insert for ReshapeOp),
     // but in this case, that is specialized enough and overlaps
     // with another direct-use TransposeOp case we need to cover anyway.
-    transposeInfo.emplace_back(transposeOp, dependentOps);
+    transposeInfo.push_back({transposeOp, dependentOps});
 
     // This is for the final replacement across all transposes.
-    totalTransposeOrder.emplace(transposeOp, perms);
+    totalTransposeOrder.push({transposeOp, perms});
   });
 
   // We want to do a full fan-in analysis on a perms-level,

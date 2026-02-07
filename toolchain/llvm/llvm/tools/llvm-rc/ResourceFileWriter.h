@@ -19,8 +19,6 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Endian.h"
 
-#include <map>
-
 namespace llvm {
 
 class MemoryBuffer;

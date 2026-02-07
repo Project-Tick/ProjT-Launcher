@@ -80,25 +80,6 @@ ARMBaseRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
                                        ? CSR_ATPCS_SplitPush_SwiftTail_SaveList
                                        : CSR_AAPCS_SwiftTail_SaveList);
   } else if (F.hasFnAttribute("interrupt")) {
-
-    // Don't save the floating point registers if target does not have floating
-    // point registers.
-    if (STI.hasFPRegs() && F.hasFnAttribute("save-fp")) {
-      bool HasNEON = STI.hasNEON();
-
-      if (STI.isMClass()) {
-        assert(!HasNEON && "NEON is only for Cortex-R/A");
-        return PushPopSplit == ARMSubtarget::SplitR7
-                   ? CSR_ATPCS_SplitPush_FP_SaveList
-                   : CSR_AAPCS_FP_SaveList;
-      }
-      if (F.getFnAttribute("interrupt").getValueAsString() == "FIQ") {
-        return HasNEON ? CSR_FIQ_FP_NEON_SaveList : CSR_FIQ_FP_SaveList;
-      }
-      return HasNEON ? CSR_GenericInt_FP_NEON_SaveList
-                     : CSR_GenericInt_FP_SaveList;
-    }
-
     if (STI.isMClass()) {
       // M-class CPUs have hardware which saves the registers needed to allow a
       // function conforming to the AAPCS to function as a handler.
@@ -232,7 +213,6 @@ getReservedRegs(const MachineFunction &MF) const {
   markSuperRegs(Reserved, ARM::SP);
   markSuperRegs(Reserved, ARM::PC);
   markSuperRegs(Reserved, ARM::FPSCR);
-  markSuperRegs(Reserved, ARM::FPSCR_RM);
   markSuperRegs(Reserved, ARM::APSR_NZCV);
   if (TFI->isFPReserved(MF))
     markSuperRegs(Reserved, STI.getFramePointerReg());
@@ -265,7 +245,7 @@ isAsmClobberable(const MachineFunction &MF, MCRegister PhysReg) const {
 }
 
 bool ARMBaseRegisterInfo::isInlineAsmReadOnlyReg(const MachineFunction &MF,
-                                                 MCRegister PhysReg) const {
+                                                 unsigned PhysReg) const {
   const ARMSubtarget &STI = MF.getSubtarget<ARMSubtarget>();
   const ARMFrameLowering *TFI = getFrameLowering(MF);
 
@@ -276,7 +256,7 @@ bool ARMBaseRegisterInfo::isInlineAsmReadOnlyReg(const MachineFunction &MF,
   if (hasBasePointer(MF))
     markSuperRegs(Reserved, BasePtr);
   assert(checkAllSuperRegsMarked(Reserved));
-  return Reserved.test(PhysReg.id());
+  return Reserved.test(PhysReg);
 }
 
 const TargetRegisterClass *
@@ -311,7 +291,8 @@ ARMBaseRegisterInfo::getLargestLegalSuperClass(const TargetRegisterClass *RC,
 }
 
 const TargetRegisterClass *
-ARMBaseRegisterInfo::getPointerRegClass(unsigned Kind) const {
+ARMBaseRegisterInfo::getPointerRegClass(const MachineFunction &MF, unsigned Kind)
+                                                                         const {
   return &ARM::GPRRegClass;
 }
 
@@ -708,7 +689,7 @@ ARMBaseRegisterInfo::materializeFrameBaseRegister(MachineBasicBlock *MBB,
   const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
   const MCInstrDesc &MCID = TII.get(ADDriOpc);
   Register BaseReg = MRI.createVirtualRegister(&ARM::GPRRegClass);
-  MRI.constrainRegClass(BaseReg, TII.getRegClass(MCID, 0));
+  MRI.constrainRegClass(BaseReg, TII.getRegClass(MCID, 0, this, MF));
 
   MachineInstrBuilder MIB = BuildMI(*MBB, Ins, DL, MCID, BaseReg)
     .addFrameIndex(FrameIdx).addImm(Offset);
@@ -881,7 +862,8 @@ ARMBaseRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   Register PredReg = (PIdx == -1) ? Register() : MI.getOperand(PIdx+1).getReg();
 
   const MCInstrDesc &MCID = MI.getDesc();
-  const TargetRegisterClass *RegClass = TII.getRegClass(MCID, FIOperandNum);
+  const TargetRegisterClass *RegClass =
+      TII.getRegClass(MCID, FIOperandNum, this, *MI.getParent()->getParent());
 
   if (Offset == 0 && (FrameReg.isVirtual() || RegClass->contains(FrameReg)))
     // Must be addrmode4/6.
@@ -959,4 +941,18 @@ bool ARMBaseRegisterInfo::shouldCoalesce(MachineInstr *MI,
     return true;
   }
   return false;
+}
+
+bool ARMBaseRegisterInfo::shouldRewriteCopySrc(const TargetRegisterClass *DefRC,
+                                               unsigned DefSubReg,
+                                               const TargetRegisterClass *SrcRC,
+                                               unsigned SrcSubReg) const {
+  // We can't extract an SPR from an arbitary DPR (as opposed to a DPR_VFP2).
+  if (DefRC == &ARM::SPRRegClass && DefSubReg == 0 &&
+      SrcRC == &ARM::DPRRegClass &&
+      (SrcSubReg == ARM::ssub_0 || SrcSubReg == ARM::ssub_1))
+    return false;
+
+  return TargetRegisterInfo::shouldRewriteCopySrc(DefRC, DefSubReg,
+                                                  SrcRC, SrcSubReg);
 }

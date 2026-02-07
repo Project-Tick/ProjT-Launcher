@@ -292,11 +292,7 @@ void LVType::print(raw_ostream &OS, bool Full) const {
 }
 
 void LVType::printExtra(raw_ostream &OS, bool Full) const {
-  OS << formattedKind(kind()) << " " << formattedName(getName());
-  if (options().getAttributeSize())
-    if (uint32_t Size = getStorageSizeInBytes())
-      OS << " [Size = " << Size << "]";
-  OS << "\n";
+  OS << formattedKind(kind()) << " " << formattedName(getName()) << "\n";
 }
 
 //===----------------------------------------------------------------------===//

@@ -30,8 +30,10 @@ if (LIBCXXABI_INSTALL_HEADERS)
   endforeach()
 
   add_custom_target(install-cxxabi-headers
-    DEPENDS cxxabi-headers
-    COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component cxxabi-headers)
+                    DEPENDS cxxabi-headers
+                    COMMAND "${CMAKE_COMMAND}"
+                            -DCMAKE_INSTALL_COMPONENT=cxxabi-headers
+                            -P "${CMAKE_BINARY_DIR}/cmake_install.cmake")
   # Stripping is a no-op for headers
   add_custom_target(install-cxxabi-headers-stripped DEPENDS install-cxxabi-headers)
 endif()

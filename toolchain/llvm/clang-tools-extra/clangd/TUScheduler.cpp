@@ -1003,7 +1003,8 @@ void ASTWorker::runWithAST(
       AST = NewAST ? std::make_unique<ParsedAST>(std::move(*NewAST)) : nullptr;
     }
     // Make sure we put the AST back into the LRU cache.
-    llvm::scope_exit _([&AST, this]() { IdleASTs.put(this, std::move(*AST)); });
+    auto _ = llvm::make_scope_exit(
+        [&AST, this]() { IdleASTs.put(this, std::move(*AST)); });
     // Run the user-provided action.
     if (!*AST)
       return Action(error(llvm::errc::invalid_argument, "invalid AST"));
@@ -1056,7 +1057,7 @@ void PreambleThread::build(Request Req) {
   Status.update([&](TUStatus &Status) {
     Status.PreambleActivity = PreambleAction::Building;
   });
-  llvm::scope_exit _([this, &Req, &ReusedPreamble] {
+  auto _ = llvm::make_scope_exit([this, &Req, &ReusedPreamble] {
     ASTPeer.updatePreamble(std::move(Req.CI), std::move(Req.Inputs),
                            LatestBuild, std::move(Req.CIDiags),
                            std::move(Req.WantDiags));

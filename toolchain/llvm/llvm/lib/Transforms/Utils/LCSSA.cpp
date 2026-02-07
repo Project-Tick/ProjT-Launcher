@@ -41,6 +41,7 @@
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/PredIteratorCache.h"
 #include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
@@ -98,10 +99,10 @@ formLCSSAForInstructionsImpl(SmallVectorImpl<Instruction *> &Worklist,
     BasicBlock *InstBB = I->getParent();
     Loop *L = LI.getLoopFor(InstBB);
     assert(L && "Instruction belongs to a BB that's not part of a loop");
-    auto [It, Inserted] = LoopExitBlocks.try_emplace(L);
-    if (Inserted)
-      L->getExitBlocks(It->second);
-    const SmallVectorImpl<BasicBlock *> &ExitBlocks = It->second;
+    if (!LoopExitBlocks.count(L))
+      L->getExitBlocks(LoopExitBlocks[L]);
+    assert(LoopExitBlocks.count(L));
+    const SmallVectorImpl<BasicBlock *> &ExitBlocks = LoopExitBlocks[L];
 
     if (ExitBlocks.empty())
       continue;
@@ -242,10 +243,26 @@ formLCSSAForInstructionsImpl(SmallVectorImpl<Instruction *> &Worklist,
       SSAUpdate.RewriteUse(*UseToRewrite);
     }
 
+    SmallVector<DbgValueInst *, 4> DbgValues;
     SmallVector<DbgVariableRecord *, 4> DbgVariableRecords;
-    llvm::findDbgValues(I, DbgVariableRecords);
+    llvm::findDbgValues(DbgValues, I, &DbgVariableRecords);
 
     // Update pre-existing debug value uses that reside outside the loop.
+    for (auto *DVI : DbgValues) {
+      BasicBlock *UserBB = DVI->getParent();
+      if (InstBB == UserBB || L->contains(UserBB))
+        continue;
+      // We currently only handle debug values residing in blocks that were
+      // traversed while rewriting the uses. If we inserted just a single PHI,
+      // we will handle all relevant debug values.
+      Value *V = AddedPHIs.size() == 1 ? AddedPHIs[0]
+                                       : SSAUpdate.FindValueForBlock(UserBB);
+      if (V)
+        DVI->replaceVariableLocationOp(I, V);
+    }
+
+    // RemoveDIs: copy-paste of block above, using non-instruction debug-info
+    // records.
     for (DbgVariableRecord *DVR : DbgVariableRecords) {
       BasicBlock *UserBB = DVR->getMarker()->getParent();
       if (InstBB == UserBB || L->contains(UserBB))
@@ -372,10 +389,9 @@ static bool formLCSSAImpl(Loop &L, const DominatorTree &DT, const LoopInfo *LI,
   }
 #endif
 
-  auto [It, Inserted] = LoopExitBlocks.try_emplace(&L);
-  if (Inserted)
-    L.getExitBlocks(It->second);
-  const SmallVectorImpl<BasicBlock *> &ExitBlocks = It->second;
+  if (!LoopExitBlocks.count(&L))
+    L.getExitBlocks(LoopExitBlocks[&L]);
+  const SmallVectorImpl<BasicBlock *> &ExitBlocks = LoopExitBlocks[&L];
   if (ExitBlocks.empty())
     return false;
 

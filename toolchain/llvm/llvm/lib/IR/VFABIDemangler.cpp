@@ -20,16 +20,15 @@ using namespace llvm;
 
 #define DEBUG_TYPE "vfabi-demangler"
 
+namespace {
 /// Utilities for the Vector Function ABI name parser.
 
-namespace {
 /// Return types for the parser functions.
 enum class ParseRet {
   OK,   // Found.
   None, // Not found.
   Error // Syntax error.
 };
-} // namespace
 
 /// Extracts the `<isa>` information from the mangled string, and
 /// sets the `ISA` accordingly. If successful, the <isa> token is removed
@@ -373,6 +372,7 @@ getScalableECFromSignature(const FunctionType *Signature, const VFISAKind ISA,
 
   return std::nullopt;
 }
+} // namespace
 
 // Format of the ABI name:
 // _ZGV<isa><mask><vlen><parameters>_<scalarname>[(<redirection>)]
@@ -541,7 +541,7 @@ void VFABI::getVectorVariantNames(
   SmallVector<StringRef, 8> ListAttr;
   S.split(ListAttr, ",");
 
-  for (const auto &S : SetVector<StringRef>(llvm::from_range, ListAttr)) {
+  for (const auto &S : SetVector<StringRef>(ListAttr.begin(), ListAttr.end())) {
     std::optional<VFInfo> Info =
         VFABI::tryDemangleForVFABI(S, CI.getFunctionType());
     if (Info && CI.getModule()->getFunction(Info->VectorName)) {

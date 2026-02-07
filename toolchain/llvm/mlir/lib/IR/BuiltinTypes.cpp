@@ -17,7 +17,9 @@
 #include "mlir/IR/TensorEncoding.h"
 #include "mlir/IR/TypeUtilities.h"
 #include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/Sequence.h"
+#include "llvm/ADT/Twine.h"
 #include "llvm/ADT/TypeSwitch.h"
 
 using namespace mlir;
@@ -180,45 +182,6 @@ FunctionType::getWithoutArgsAndResults(const BitVector &argIndices,
 }
 
 //===----------------------------------------------------------------------===//
-// GraphType
-//===----------------------------------------------------------------------===//
-
-unsigned GraphType::getNumInputs() const { return getImpl()->numInputs; }
-
-ArrayRef<Type> GraphType::getInputs() const { return getImpl()->getInputs(); }
-
-unsigned GraphType::getNumResults() const { return getImpl()->numResults; }
-
-ArrayRef<Type> GraphType::getResults() const { return getImpl()->getResults(); }
-
-GraphType GraphType::clone(TypeRange inputs, TypeRange results) const {
-  return get(getContext(), inputs, results);
-}
-
-/// Returns a new function type with the specified arguments and results
-/// inserted.
-GraphType GraphType::getWithArgsAndResults(ArrayRef<unsigned> argIndices,
-                                           TypeRange argTypes,
-                                           ArrayRef<unsigned> resultIndices,
-                                           TypeRange resultTypes) {
-  SmallVector<Type> argStorage, resultStorage;
-  TypeRange newArgTypes =
-      insertTypesInto(getInputs(), argIndices, argTypes, argStorage);
-  TypeRange newResultTypes =
-      insertTypesInto(getResults(), resultIndices, resultTypes, resultStorage);
-  return clone(newArgTypes, newResultTypes);
-}
-
-/// Returns a new function type without the specified arguments and results.
-GraphType GraphType::getWithoutArgsAndResults(const BitVector &argIndices,
-                                              const BitVector &resultIndices) {
-  SmallVector<Type> argStorage, resultStorage;
-  TypeRange newArgTypes = filterTypesOut(getInputs(), argIndices, argStorage);
-  TypeRange newResultTypes =
-      filterTypesOut(getResults(), resultIndices, resultStorage);
-  return clone(newArgTypes, newResultTypes);
-}
-//===----------------------------------------------------------------------===//
 // OpaqueType
 //===----------------------------------------------------------------------===//
 
@@ -360,7 +323,7 @@ RankedTensorType::verify(function_ref<InFlightDiagnostic()> emitError,
                          ArrayRef<int64_t> shape, Type elementType,
                          Attribute encoding) {
   for (int64_t s : shape)
-    if (s < 0 && ShapedType::isStatic(s))
+    if (s < 0 && !ShapedType::isDynamic(s))
       return emitError() << "invalid tensor dimension size";
   if (auto v = llvm::dyn_cast_or_null<VerifiableTensorEncoding>(encoding))
     if (failed(v.verifyEncoding(shape, elementType, emitError)))
@@ -411,20 +374,6 @@ BaseMemRefType BaseMemRefType::cloneWith(std::optional<ArrayRef<int64_t>> shape,
     builder.setShape(*shape);
   builder.setElementType(elementType);
   return builder;
-}
-
-FailureOr<PtrLikeTypeInterface>
-BaseMemRefType::clonePtrWith(Attribute memorySpace,
-                             std::optional<Type> elementType) const {
-  Type eTy = elementType ? *elementType : getElementType();
-  if (llvm::dyn_cast<UnrankedMemRefType>(*this))
-    return cast<PtrLikeTypeInterface>(
-        UnrankedMemRefType::get(eTy, memorySpace));
-
-  MemRefType::Builder builder(llvm::cast<MemRefType>(*this));
-  builder.setElementType(eTy);
-  builder.setMemorySpace(memorySpace);
-  return cast<PtrLikeTypeInterface>(static_cast<MemRefType>(builder));
 }
 
 MemRefType BaseMemRefType::clone(::llvm::ArrayRef<int64_t> shape,
@@ -683,7 +632,7 @@ LogicalResult MemRefType::verify(function_ref<InFlightDiagnostic()> emitError,
 
   // Negative sizes are not allowed except for `kDynamic`.
   for (int64_t s : shape)
-    if (s < 0 && ShapedType::isStatic(s))
+    if (s < 0 && !ShapedType::isDynamic(s))
       return emitError() << "invalid memref size";
 
   assert(layout && "missing layout specification");
@@ -697,45 +646,35 @@ LogicalResult MemRefType::verify(function_ref<InFlightDiagnostic()> emitError,
 }
 
 bool MemRefType::areTrailingDimsContiguous(int64_t n) {
-  assert(n <= getRank() &&
-         "number of dimensions to check must not exceed rank");
-  return n <= getNumContiguousTrailingDims();
-}
+  if (!isLastDimUnitStride())
+    return false;
 
-int64_t MemRefType::getNumContiguousTrailingDims() {
-  const int64_t n = getRank();
+  auto memrefShape = getShape().take_back(n);
+  if (ShapedType::isDynamicShape(memrefShape))
+    return false;
 
-  // memrefs with identity layout are entirely contiguous.
   if (getLayout().isIdentity())
-    return n;
+    return true;
 
-  // Get the strides (if any). Failing to do that, conservatively assume a
-  // non-contiguous layout.
   int64_t offset;
-  SmallVector<int64_t> strides;
-  if (!succeeded(getStridesAndOffset(strides, offset)))
-    return 0;
+  SmallVector<int64_t> stridesFull;
+  if (!succeeded(getStridesAndOffset(stridesFull, offset)))
+    return false;
+  auto strides = ArrayRef<int64_t>(stridesFull).take_back(n);
 
-  ArrayRef<int64_t> shape = getShape();
+  if (strides.empty())
+    return true;
 
-  // A memref with dimensions `d0, d1, ..., dn-1` and strides
-  // `s0, s1, ..., sn-1` is contiguous up to dimension `k`
-  // if each stride `si` is the product of the dimensions `di+1, ..., dn-1`,
-  // for `i` in `[k, n-1]`.
-  // Ignore stride elements if the corresponding dimension is 1, as they are
-  // of no consequence.
-  int64_t dimProduct = 1;
-  for (int64_t i = n - 1; i >= 0; --i) {
-    if (shape[i] == 1)
-      continue;
-    if (strides[i] != dimProduct)
-      return n - i - 1;
-    if (shape[i] == ShapedType::kDynamic)
-      return n - i;
-    dimProduct *= shape[i];
+  // Check whether strides match "flattened" dims.
+  SmallVector<int64_t> flattenedDims;
+  auto dimProduct = 1;
+  for (auto dim : llvm::reverse(memrefShape.drop_front(1))) {
+    dimProduct *= dim;
+    flattenedDims.push_back(dimProduct);
   }
 
-  return n;
+  strides = strides.drop_back(1);
+  return llvm::equal(strides, llvm::reverse(flattenedDims));
 }
 
 MemRefType MemRefType::canonicalizeStridedLayout() {
@@ -776,13 +715,153 @@ MemRefType MemRefType::canonicalizeStridedLayout() {
   return MemRefType::Builder(*this).setLayout({});
 }
 
-LogicalResult MemRefType::getStridesAndOffset(SmallVectorImpl<int64_t> &strides,
-                                              int64_t &offset) const {
-  return getLayout().getStridesAndOffset(getShape(), strides, offset);
+// Fallback cases for terminal dim/sym/cst that are not part of a binary op (
+// i.e. single term). Accumulate the AffineExpr into the existing one.
+static void extractStridesFromTerm(AffineExpr e,
+                                   AffineExpr multiplicativeFactor,
+                                   MutableArrayRef<AffineExpr> strides,
+                                   AffineExpr &offset) {
+  if (auto dim = dyn_cast<AffineDimExpr>(e))
+    strides[dim.getPosition()] =
+        strides[dim.getPosition()] + multiplicativeFactor;
+  else
+    offset = offset + e * multiplicativeFactor;
 }
 
-std::pair<SmallVector<int64_t>, int64_t>
-MemRefType::getStridesAndOffset() const {
+/// Takes a single AffineExpr `e` and populates the `strides` array with the
+/// strides expressions for each dim position.
+/// The convention is that the strides for dimensions d0, .. dn appear in
+/// order to make indexing intuitive into the result.
+static LogicalResult extractStrides(AffineExpr e,
+                                    AffineExpr multiplicativeFactor,
+                                    MutableArrayRef<AffineExpr> strides,
+                                    AffineExpr &offset) {
+  auto bin = dyn_cast<AffineBinaryOpExpr>(e);
+  if (!bin) {
+    extractStridesFromTerm(e, multiplicativeFactor, strides, offset);
+    return success();
+  }
+
+  if (bin.getKind() == AffineExprKind::CeilDiv ||
+      bin.getKind() == AffineExprKind::FloorDiv ||
+      bin.getKind() == AffineExprKind::Mod)
+    return failure();
+
+  if (bin.getKind() == AffineExprKind::Mul) {
+    auto dim = dyn_cast<AffineDimExpr>(bin.getLHS());
+    if (dim) {
+      strides[dim.getPosition()] =
+          strides[dim.getPosition()] + bin.getRHS() * multiplicativeFactor;
+      return success();
+    }
+    // LHS and RHS may both contain complex expressions of dims. Try one path
+    // and if it fails try the other. This is guaranteed to succeed because
+    // only one path may have a `dim`, otherwise this is not an AffineExpr in
+    // the first place.
+    if (bin.getLHS().isSymbolicOrConstant())
+      return extractStrides(bin.getRHS(), multiplicativeFactor * bin.getLHS(),
+                            strides, offset);
+    return extractStrides(bin.getLHS(), multiplicativeFactor * bin.getRHS(),
+                          strides, offset);
+  }
+
+  if (bin.getKind() == AffineExprKind::Add) {
+    auto res1 =
+        extractStrides(bin.getLHS(), multiplicativeFactor, strides, offset);
+    auto res2 =
+        extractStrides(bin.getRHS(), multiplicativeFactor, strides, offset);
+    return success(succeeded(res1) && succeeded(res2));
+  }
+
+  llvm_unreachable("unexpected binary operation");
+}
+
+/// A stride specification is a list of integer values that are either static
+/// or dynamic (encoded with ShapedType::kDynamic). Strides encode
+/// the distance in the number of elements between successive entries along a
+/// particular dimension.
+///
+/// For example, `memref<42x16xf32, (64 * d0 + d1)>` specifies a view into a
+/// non-contiguous memory region of `42` by `16` `f32` elements in which the
+/// distance between two consecutive elements along the outer dimension is `1`
+/// and the distance between two consecutive elements along the inner dimension
+/// is `64`.
+///
+/// The convention is that the strides for dimensions d0, .. dn appear in
+/// order to make indexing intuitive into the result.
+static LogicalResult getStridesAndOffset(MemRefType t,
+                                         SmallVectorImpl<AffineExpr> &strides,
+                                         AffineExpr &offset) {
+  AffineMap m = t.getLayout().getAffineMap();
+
+  if (m.getNumResults() != 1 && !m.isIdentity())
+    return failure();
+
+  auto zero = getAffineConstantExpr(0, t.getContext());
+  auto one = getAffineConstantExpr(1, t.getContext());
+  offset = zero;
+  strides.assign(t.getRank(), zero);
+
+  // Canonical case for empty map.
+  if (m.isIdentity()) {
+    // 0-D corner case, offset is already 0.
+    if (t.getRank() == 0)
+      return success();
+    auto stridedExpr =
+        makeCanonicalStridedLayoutExpr(t.getShape(), t.getContext());
+    if (succeeded(extractStrides(stridedExpr, one, strides, offset)))
+      return success();
+    assert(false && "unexpected failure: extract strides in canonical layout");
+  }
+
+  // Non-canonical case requires more work.
+  auto stridedExpr =
+      simplifyAffineExpr(m.getResult(0), m.getNumDims(), m.getNumSymbols());
+  if (failed(extractStrides(stridedExpr, one, strides, offset))) {
+    offset = AffineExpr();
+    strides.clear();
+    return failure();
+  }
+
+  // Simplify results to allow folding to constants and simple checks.
+  unsigned numDims = m.getNumDims();
+  unsigned numSymbols = m.getNumSymbols();
+  offset = simplifyAffineExpr(offset, numDims, numSymbols);
+  for (auto &stride : strides)
+    stride = simplifyAffineExpr(stride, numDims, numSymbols);
+
+  return success();
+}
+
+LogicalResult MemRefType::getStridesAndOffset(SmallVectorImpl<int64_t> &strides,
+                                              int64_t &offset) {
+  // Happy path: the type uses the strided layout directly.
+  if (auto strided = llvm::dyn_cast<StridedLayoutAttr>(getLayout())) {
+    llvm::append_range(strides, strided.getStrides());
+    offset = strided.getOffset();
+    return success();
+  }
+
+  // Otherwise, defer to the affine fallback as layouts are supposed to be
+  // convertible to affine maps.
+  AffineExpr offsetExpr;
+  SmallVector<AffineExpr, 4> strideExprs;
+  if (failed(::getStridesAndOffset(*this, strideExprs, offsetExpr)))
+    return failure();
+  if (auto cst = llvm::dyn_cast<AffineConstantExpr>(offsetExpr))
+    offset = cst.getValue();
+  else
+    offset = ShapedType::kDynamic;
+  for (auto e : strideExprs) {
+    if (auto c = llvm::dyn_cast<AffineConstantExpr>(e))
+      strides.push_back(c.getValue());
+    else
+      strides.push_back(ShapedType::kDynamic);
+  }
+  return success();
+}
+
+std::pair<SmallVector<int64_t>, int64_t> MemRefType::getStridesAndOffset() {
   SmallVector<int64_t> strides;
   int64_t offset;
   LogicalResult status = getStridesAndOffset(strides, offset);

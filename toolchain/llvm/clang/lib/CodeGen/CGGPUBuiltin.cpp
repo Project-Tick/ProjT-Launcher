@@ -174,7 +174,7 @@ RValue CodeGenFunction::EmitAMDGPUDevicePrintfCallExpr(const CallExpr *E) {
     // We don't know how to emit non-scalar varargs.
     if (!A.getRValue(*this).isScalar()) {
       CGM.ErrorUnsupported(E, "non-scalar arg to printf");
-      return RValue::get(llvm::ConstantInt::getAllOnesValue(IntTy));
+      return RValue::get(llvm::ConstantInt::get(IntTy, -1));
     }
 
     llvm::Value *Arg = A.getRValue(*this).getScalarVal();

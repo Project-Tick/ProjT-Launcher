@@ -50,7 +50,8 @@ class WebAssemblyOptimizeLiveIntervals final : public MachineFunctionPass {
   }
 
   MachineFunctionProperties getRequiredProperties() const override {
-    return MachineFunctionProperties().setTracksLiveness();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::TracksLiveness);
   }
 
   bool runOnMachineFunction(MachineFunction &MF) override;

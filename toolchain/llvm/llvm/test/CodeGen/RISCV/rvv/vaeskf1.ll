@@ -4,6 +4,12 @@
 ; RUN: sed 's/iXLen/i64/g' %s | llc -mtriple=riscv64 -mattr=+v,+zvkned \
 ; RUN:   -verify-machineinstrs | FileCheck %s --check-prefixes=CHECK
 
+declare <vscale x 4 x i32> @llvm.riscv.vaeskf1.nxv4i32.i32(
+  <vscale x 4 x i32>,
+  <vscale x 4 x i32>,
+  iXLen,
+  iXLen)
+
 define <vscale x 4 x i32> @intrinsic_vaeskf1_vi_nxv4i32_i32(<vscale x 4 x i32> %0, iXLen %1) nounwind {
 ; CHECK-LABEL: intrinsic_vaeskf1_vi_nxv4i32_i32:
 ; CHECK:       # %bb.0: # %entry
@@ -12,13 +18,19 @@ define <vscale x 4 x i32> @intrinsic_vaeskf1_vi_nxv4i32_i32(<vscale x 4 x i32> %
 ; CHECK-NEXT:    ret
 entry:
   %a = call <vscale x 4 x i32> @llvm.riscv.vaeskf1.nxv4i32.i32(
-    <vscale x 4 x i32> poison,
+    <vscale x 4 x i32> undef,
     <vscale x 4 x i32> %0,
     iXLen 2,
     iXLen %1)
 
   ret <vscale x 4 x i32> %a
 }
+
+declare <vscale x 8 x i32> @llvm.riscv.vaeskf1.nxv8i32.i32(
+  <vscale x 8 x i32>,
+  <vscale x 8 x i32>,
+  iXLen,
+  iXLen)
 
 define <vscale x 8 x i32> @intrinsic_vaeskf1_vi_nxv8i32_i32(<vscale x 8 x i32> %0, iXLen %1) nounwind {
 ; CHECK-LABEL: intrinsic_vaeskf1_vi_nxv8i32_i32:
@@ -28,13 +40,19 @@ define <vscale x 8 x i32> @intrinsic_vaeskf1_vi_nxv8i32_i32(<vscale x 8 x i32> %
 ; CHECK-NEXT:    ret
 entry:
   %a = call <vscale x 8 x i32> @llvm.riscv.vaeskf1.nxv8i32.i32(
-    <vscale x 8 x i32> poison,
+    <vscale x 8 x i32> undef,
     <vscale x 8 x i32> %0,
     iXLen 2,
     iXLen %1)
 
   ret <vscale x 8 x i32> %a
 }
+
+declare <vscale x 16 x i32> @llvm.riscv.vaeskf1.nxv16i32.i32(
+  <vscale x 16 x i32>,
+  <vscale x 16 x i32>,
+  iXLen,
+  iXLen)
 
 define <vscale x 16 x i32> @intrinsic_vaeskf1_vi_nxv16i32_i32(<vscale x 16 x i32> %0, iXLen %1) nounwind {
 ; CHECK-LABEL: intrinsic_vaeskf1_vi_nxv16i32_i32:
@@ -44,7 +62,7 @@ define <vscale x 16 x i32> @intrinsic_vaeskf1_vi_nxv16i32_i32(<vscale x 16 x i32
 ; CHECK-NEXT:    ret
 entry:
   %a = call <vscale x 16 x i32> @llvm.riscv.vaeskf1.nxv16i32.i32(
-    <vscale x 16 x i32> poison,
+    <vscale x 16 x i32> undef,
     <vscale x 16 x i32> %0,
     iXLen 2,
     iXLen %1)

@@ -39,6 +39,8 @@ public:
 
   int GetActionArgument() const { return m_arg; }
 
+  llvm::StringRef GetPath() const;
+
   const FileSpec &GetFileSpec() const;
 
   void Dump(Stream &stream) const;

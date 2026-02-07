@@ -7,9 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/ExecutionEngine/Orc/COFFPlatform.h"
-
 #include "llvm/ExecutionEngine/Orc/AbsoluteSymbols.h"
-#include "llvm/ExecutionEngine/Orc/COFF.h"
 #include "llvm/ExecutionEngine/Orc/DebugUtils.h"
 #include "llvm/ExecutionEngine/Orc/LookupAndRecordAddrs.h"
 #include "llvm/ExecutionEngine/Orc/ObjectFileInterface.h"
@@ -172,10 +170,8 @@ COFFPlatform::Create(ObjectLinkingLayer &ObjLinkingLayer, JITDylib &PlatformJD,
   if (!GeneratorArchive)
     return GeneratorArchive.takeError();
 
-  std::set<std::string> DylibsToPreload;
   auto OrcRuntimeArchiveGenerator = StaticLibraryDefinitionGenerator::Create(
-      ObjLinkingLayer, nullptr, std::move(*GeneratorArchive),
-      COFFImportFileScanner(DylibsToPreload));
+      ObjLinkingLayer, nullptr, std::move(*GeneratorArchive));
   if (!OrcRuntimeArchiveGenerator)
     return OrcRuntimeArchiveGenerator.takeError();
 
@@ -211,9 +207,8 @@ COFFPlatform::Create(ObjectLinkingLayer &ObjLinkingLayer, JITDylib &PlatformJD,
   Error Err = Error::success();
   auto P = std::unique_ptr<COFFPlatform>(new COFFPlatform(
       ObjLinkingLayer, PlatformJD, std::move(*OrcRuntimeArchiveGenerator),
-      std::move(DylibsToPreload), std::move(OrcRuntimeArchiveBuffer),
-      std::move(RuntimeArchive), std::move(LoadDynLibrary), StaticVCRuntime,
-      VCRuntimePath, Err));
+      std::move(OrcRuntimeArchiveBuffer), std::move(RuntimeArchive),
+      std::move(LoadDynLibrary), StaticVCRuntime, VCRuntimePath, Err));
   if (Err)
     return std::move(Err);
   return std::move(P);
@@ -361,7 +356,6 @@ COFFPlatform::standardRuntimeUtilityAliases() {
           {"__orc_rt_run_program", "__orc_rt_coff_run_program"},
           {"__orc_rt_jit_dlerror", "__orc_rt_coff_jit_dlerror"},
           {"__orc_rt_jit_dlopen", "__orc_rt_coff_jit_dlopen"},
-          {"__orc_rt_jit_dlupdate", "__orc_rt_coff_jit_dlupdate"},
           {"__orc_rt_jit_dlclose", "__orc_rt_coff_jit_dlclose"},
           {"__orc_rt_jit_dlsym", "__orc_rt_coff_jit_dlsym"},
           {"__orc_rt_log_error", "__orc_rt_log_error_to_stderr"}};
@@ -382,7 +376,6 @@ bool COFFPlatform::supportedTarget(const Triple &TT) {
 COFFPlatform::COFFPlatform(
     ObjectLinkingLayer &ObjLinkingLayer, JITDylib &PlatformJD,
     std::unique_ptr<StaticLibraryDefinitionGenerator> OrcRuntimeGenerator,
-    std::set<std::string> DylibsToPreload,
     std::unique_ptr<MemoryBuffer> OrcRuntimeArchiveBuffer,
     std::unique_ptr<object::Archive> OrcRuntimeArchive,
     LoadDynamicLibrary LoadDynLibrary, bool StaticVCRuntime,
@@ -407,6 +400,9 @@ COFFPlatform::COFFPlatform(
     return;
   }
   VCRuntimeBootstrap = std::move(*VCRT);
+
+  for (auto &Lib : OrcRuntimeGenerator->getImportedDynamicLibraries())
+    DylibsToPreload.insert(Lib);
 
   auto ImportedLibs =
       StaticVCRuntime ? VCRuntimeBootstrap->loadStaticVCRuntime(PlatformJD)
@@ -488,8 +484,10 @@ COFFPlatform::buildJDDepMap(JITDylib &JD) {
           }
           DM.push_back(KV.first);
           // Push unvisited entry.
-          if (JDDepMap.try_emplace(KV.first).second)
+          if (!JDDepMap.count(KV.first)) {
             Worklist.push_back(KV.first);
+            JDDepMap[KV.first] = {};
+          }
         }
       });
     }

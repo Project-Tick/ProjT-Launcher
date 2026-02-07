@@ -41,7 +41,6 @@
 
 #include "raw_ostream.h"
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/Support/Compiler.h"
 
 #include <atomic>
 #include <condition_variable>
@@ -68,7 +67,7 @@ public:
   /// The ID of this node
   IDT Id;
 
-  LLVM_ABI void dump(raw_ostream &OS) const;
+  void dump(raw_ostream &OS) const;
 
 protected:
   /// The list of utility nodes associated with this node
@@ -100,10 +99,10 @@ struct BalancedPartitioningConfig {
 
 class BalancedPartitioning {
 public:
-  LLVM_ABI BalancedPartitioning(const BalancedPartitioningConfig &Config);
+  BalancedPartitioning(const BalancedPartitioningConfig &Config);
 
   /// Run recursive graph partitioning that optimizes a given objective.
-  LLVM_ABI void run(std::vector<BPFunctionNode> &Nodes) const;
+  void run(std::vector<BPFunctionNode> &Nodes) const;
 
 private:
   struct UtilitySignature;
@@ -128,7 +127,7 @@ private:
     /// Blocking wait for all threads to complete. Unlike ThreadPool, it is
     /// acceptable for other threads to add more tasks while blocking on this
     /// call.
-    LLVM_ABI void wait();
+    void wait();
     BPThreadPool(ThreadPoolInterface &TheThreadPool)
         : TheThreadPool(TheThreadPool) {}
   };
@@ -193,8 +192,8 @@ private:
 
 protected:
   /// Compute the move gain for uniform log-gap cost
-  LLVM_ABI static float moveGain(const BPFunctionNode &N, bool FromLeftToRight,
-                                 const SignaturesT &Signatures);
+  static float moveGain(const BPFunctionNode &N, bool FromLeftToRight,
+                        const SignaturesT &Signatures);
   friend class BalancedPartitioningTest_MoveGain_Test;
 };
 

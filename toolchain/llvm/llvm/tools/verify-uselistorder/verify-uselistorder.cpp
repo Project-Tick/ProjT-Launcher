@@ -68,6 +68,8 @@ static cl::opt<unsigned>
                 cl::desc("Number of times to shuffle and verify use-lists"),
                 cl::init(1), cl::cat(Cat));
 
+extern cl::opt<cl::boolOrDefault> PreserveInputDbgFormat;
+
 namespace {
 
 struct TempFile {
@@ -245,9 +247,6 @@ ValueMapping::ValueMapping(const Module &M) {
 }
 
 void ValueMapping::map(const Value *V) {
-  if (!V->hasUseList())
-    return;
-
   if (IDs.lookup(V))
     return;
 
@@ -398,9 +397,6 @@ static void verifyUseListOrder(const Module &M) {
 
 static void shuffleValueUseLists(Value *V, std::minstd_rand0 &Gen,
                                  DenseSet<Value *> &Seen) {
-  if (!V->hasUseList())
-    return;
-
   if (!Seen.insert(V).second)
     return;
 
@@ -428,7 +424,7 @@ static void shuffleValueUseLists(Value *V, std::minstd_rand0 &Gen,
                         << ", U = ";
                  U.getUser()->dump());
     }
-  } while (llvm::is_sorted(V->uses(), compareUses));
+  } while (std::is_sorted(V->use_begin(), V->use_end(), compareUses));
 
   LLVM_DEBUG(dbgs() << " => shuffle\n");
   V->sortUseList(compareUses);
@@ -443,9 +439,6 @@ static void shuffleValueUseLists(Value *V, std::minstd_rand0 &Gen,
 }
 
 static void reverseValueUseLists(Value *V, DenseSet<Value *> &Seen) {
-  if (!V->hasUseList())
-    return;
-
   if (!Seen.insert(V).second)
     return;
 
@@ -546,6 +539,7 @@ static void reverseUseLists(Module &M) {
 }
 
 int main(int argc, char **argv) {
+  PreserveInputDbgFormat = cl::boolOrDefault::BOU_TRUE;
   InitLLVM X(argc, argv);
 
   // Enable debug stream buffering.

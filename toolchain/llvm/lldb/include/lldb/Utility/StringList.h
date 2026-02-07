@@ -49,7 +49,7 @@ public:
 
   void AppendList(const char **strv, int strc);
 
-  void AppendList(const StringList &strings);
+  void AppendList(StringList strings);
 
   size_t GetSize() const;
 

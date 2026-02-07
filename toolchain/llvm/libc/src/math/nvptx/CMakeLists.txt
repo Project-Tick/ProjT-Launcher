@@ -1,9 +1,30 @@
+# Math functions not yet available in the libc project, or those not yet tuned
+# for GPU workloads are provided as wrappers over vendor libraries. If we find
+# them ahead of time we will import them statically. Otherwise, we will keep
+# them as external references and expect them to be resolved by the user when
+# they compile. In the future,we will use implementations from the 'libc'
+# project and not provide these wrappers.
+if(CUDAToolkit_FOUND)
+  set(libdevice_path ${CUDAToolkit_BIN_DIR}/../nvvm/libdevice/libdevice.10.bc)
+  if (EXISTS ${libdevice_path})
+    message(STATUS "Found the CUDA device library. Implementations falling back "
+                   "to the vendor libraries will be resolved statically.")
+    set(bitcode_link_flags
+        "SHELL:-Xclang -mlink-builtin-bitcode -Xclang ${libdevice_path}")
+  endif()
+else()
+  message(STATUS "Could not find the CUDA device library. Unimplemented "
+                 "functions will be an external reference to the vendor libraries.")
+endif()
+
 add_entrypoint_object(
   ceil
   SRCS
     ceil.cpp
   HDRS
     ../ceil.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -12,6 +33,8 @@ add_entrypoint_object(
     ceilf.cpp
   HDRS
     ../ceilf.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -20,6 +43,8 @@ add_entrypoint_object(
     copysign.cpp
   HDRS
     ../copysign.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -28,6 +53,8 @@ add_entrypoint_object(
     copysignf.cpp
   HDRS
     ../copysignf.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -36,6 +63,8 @@ add_entrypoint_object(
     fabs.cpp
   HDRS
     ../fabs.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -44,6 +73,8 @@ add_entrypoint_object(
     fabsf.cpp
   HDRS
     ../fabsf.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -52,6 +83,8 @@ add_entrypoint_object(
     floor.cpp
   HDRS
     ../floor.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -60,6 +93,8 @@ add_entrypoint_object(
     floorf.cpp
   HDRS
     ../floorf.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -68,6 +103,8 @@ add_entrypoint_object(
     fma.cpp
   HDRS
     ../fma.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -76,6 +113,8 @@ add_entrypoint_object(
     fmaf.cpp
   HDRS
     ../fmaf.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -84,6 +123,8 @@ add_entrypoint_object(
     fmax.cpp
   HDRS
     ../fmax.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -92,6 +133,8 @@ add_entrypoint_object(
     fmaxf.cpp
   HDRS
     ../fmaxf.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -100,6 +143,8 @@ add_entrypoint_object(
     fmin.cpp
   HDRS
     ../fmin.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -108,6 +153,8 @@ add_entrypoint_object(
     fminf.cpp
   HDRS
     ../fminf.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -116,6 +163,8 @@ add_entrypoint_object(
     fmod.cpp
   HDRS
     ../fmod.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -124,6 +173,8 @@ add_entrypoint_object(
     fmodf.cpp
   HDRS
     ../fmodf.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -132,6 +183,8 @@ add_entrypoint_object(
     nearbyint.cpp
   HDRS
     ../nearbyint.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -140,6 +193,8 @@ add_entrypoint_object(
     nearbyintf.cpp
   HDRS
     ../nearbyintf.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -148,6 +203,8 @@ add_entrypoint_object(
     remainder.cpp
   HDRS
     ../remainder.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -156,6 +213,8 @@ add_entrypoint_object(
     remainderf.cpp
   HDRS
     ../remainderf.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -164,6 +223,8 @@ add_entrypoint_object(
     rint.cpp
   HDRS
     ../rint.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -172,6 +233,8 @@ add_entrypoint_object(
     rintf.cpp
   HDRS
     ../rintf.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -180,6 +243,8 @@ add_entrypoint_object(
     round.cpp
   HDRS
     ../round.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -188,6 +253,8 @@ add_entrypoint_object(
     sqrt.cpp
   HDRS
     ../sqrt.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -196,6 +263,8 @@ add_entrypoint_object(
     sqrtf.cpp
   HDRS
     ../sqrtf.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -204,6 +273,8 @@ add_entrypoint_object(
     trunc.cpp
   HDRS
     ../trunc.h
+  COMPILE_OPTIONS
+    -O2
 )
 
 add_entrypoint_object(
@@ -212,6 +283,166 @@ add_entrypoint_object(
     truncf.cpp
   HDRS
     ../truncf.h
+  COMPILE_OPTIONS
+    -O2
+)
+
+# The following functions currently are not implemented natively and borrow from
+# existing implementations. This will be removed in the future.
+add_entrypoint_object(
+  acos
+  SRCS
+    acos.cpp
+  HDRS
+    ../acos.h
+  COMPILE_OPTIONS
+    ${bitcode_link_flags}
+    -O2
+  VENDOR
+)
+
+add_entrypoint_object(
+  acosh
+  SRCS
+    acosh.cpp
+  HDRS
+    ../acosh.h
+  COMPILE_OPTIONS
+    ${bitcode_link_flags}
+    -O2
+  VENDOR
+)
+
+add_entrypoint_object(
+  asin
+  SRCS
+    asin.cpp
+  HDRS
+    ../asin.h
+  COMPILE_OPTIONS
+    ${bitcode_link_flags}
+    -O2
+  VENDOR
+)
+
+add_entrypoint_object(
+  asinh
+  SRCS
+    asinh.cpp
+  HDRS
+    ../asinh.h
+  COMPILE_OPTIONS
+    ${bitcode_link_flags}
+    -O2
+  VENDOR
+)
+
+add_entrypoint_object(
+  atan
+  SRCS
+    atan.cpp
+  HDRS
+    ../atan.h
+  COMPILE_OPTIONS
+    ${bitcode_link_flags}
+    -O2
+  VENDOR
+)
+
+add_entrypoint_object(
+  atanh
+  SRCS
+    atanh.cpp
+  HDRS
+    ../atanh.h
+  COMPILE_OPTIONS
+    ${bitcode_link_flags}
+    -O2
+  VENDOR
+)
+
+add_entrypoint_object(
+  cos
+  SRCS
+    cos.cpp
+  HDRS
+    ../cos.h
+  COMPILE_OPTIONS
+    ${bitcode_link_flags}
+    -O2
+  VENDOR
+)
+
+add_entrypoint_object(
+  cosh
+  SRCS
+    cosh.cpp
+  HDRS
+    ../cosh.h
+  COMPILE_OPTIONS
+    ${bitcode_link_flags}
+    -O2
+  VENDOR
+)
+
+add_entrypoint_object(
+  erf
+  SRCS
+    erf.cpp
+  HDRS
+    ../erf.h
+  COMPILE_OPTIONS
+    ${bitcode_link_flags}
+    -O2
+  VENDOR
+)
+
+add_entrypoint_object(
+  powi
+  SRCS
+    powi.cpp
+  HDRS
+    ../powi.h
+  COMPILE_OPTIONS
+    ${bitcode_link_flags}
+    -O2
+  VENDOR
+)
+
+add_entrypoint_object(
+  powif
+  SRCS
+    powif.cpp
+  HDRS
+    ../powif.h
+  COMPILE_OPTIONS
+    ${bitcode_link_flags}
+    -O2
+  VENDOR
+)
+
+add_entrypoint_object(
+  sinh
+  SRCS
+    sinh.cpp
+  HDRS
+    ../sinh.h
+  COMPILE_OPTIONS
+    ${bitcode_link_flags}
+    -O2
+  VENDOR
+)
+
+add_entrypoint_object(
+  tanh
+  SRCS
+    tanh.cpp
+  HDRS
+    ../tanh.h
+  COMPILE_OPTIONS
+    ${bitcode_link_flags}
+    -O2
+  VENDOR
 )
 
 add_entrypoint_object(
@@ -222,6 +453,8 @@ add_entrypoint_object(
     ../tgamma.h
   COMPILE_OPTIONS
     ${bitcode_link_flags}
+    -O2
+  VENDOR
 )
 
 add_entrypoint_object(
@@ -232,6 +465,8 @@ add_entrypoint_object(
     ../tgammaf.h
   COMPILE_OPTIONS
     ${bitcode_link_flags}
+    -O2
+  VENDOR
 )
 
 add_entrypoint_object(
@@ -242,6 +477,8 @@ add_entrypoint_object(
     ../lgamma.h
   COMPILE_OPTIONS
     ${bitcode_link_flags}
+    -O2
+  VENDOR
 )
 
 add_entrypoint_object(
@@ -252,4 +489,6 @@ add_entrypoint_object(
     ../lgamma_r.h
   COMPILE_OPTIONS
     ${bitcode_link_flags}
+    -O2
+  VENDOR
 )

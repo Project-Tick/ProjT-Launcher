@@ -41,13 +41,6 @@ protected:
   // Used to detect INCLUDE() cycles.
   llvm::DenseSet<StringRef> activeFilenames;
 
-  enum class State {
-    Script,
-    Expr,
-    // Used by version node and dynamic list parsing.
-    VersionNode,
-  };
-
   struct Token {
     StringRef str;
     explicit operator bool() const { return !str.empty(); }
@@ -61,9 +54,8 @@ protected:
   // expression state changes.
   StringRef curTok;
   size_t prevTokLine = 1;
-  // The lex state when curTok is cached.
-  State curTokState = State::Script;
-  State lexState = State::Script;
+  // The inExpr state when curTok is cached.
+  bool curTokState = false;
   bool eof = false;
 
 public:
@@ -83,6 +75,7 @@ public:
   MemoryBufferRef getCurrentMB();
 
   std::vector<MemoryBufferRef> mbs;
+  bool inExpr = false;
 
 private:
   StringRef getLine();

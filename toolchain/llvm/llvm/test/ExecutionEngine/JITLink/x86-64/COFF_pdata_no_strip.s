@@ -26,8 +26,6 @@ main:
 	.seh_endprologue
 	movl	$0, 36(%rsp)
 	nop
-	.seh_startepilogue
 	addq	$40, %rsp
-	.seh_endepilogue
 	retq
 	.seh_endproc

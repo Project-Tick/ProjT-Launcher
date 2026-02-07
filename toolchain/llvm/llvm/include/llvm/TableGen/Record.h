@@ -19,7 +19,6 @@
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/FoldingSet.h"
 #include "llvm/ADT/PointerIntPair.h"
-#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
@@ -231,21 +230,21 @@ public:
 /// are not the superclass of some other listed class.
 class RecordRecTy final : public RecTy,
                           public FoldingSetNode,
-                          private TrailingObjects<RecordRecTy, const Record *> {
-  friend TrailingObjects;
+                          public TrailingObjects<RecordRecTy, const Record *> {
   friend class Record;
   friend detail::RecordKeeperImpl;
 
   unsigned NumClasses;
 
-  explicit RecordRecTy(RecordKeeper &RK, ArrayRef<const Record *> Classes);
+  explicit RecordRecTy(RecordKeeper &RK, unsigned Num)
+      : RecTy(RecordRecTyKind, RK), NumClasses(Num) {}
 
 public:
   RecordRecTy(const RecordRecTy &) = delete;
   RecordRecTy &operator=(const RecordRecTy &) = delete;
 
   // Do not use sized deallocation due to trailing objects.
-  void operator delete(void *Ptr) { ::operator delete(Ptr); }
+  void operator delete(void *p) { ::operator delete(p); }
 
   static bool classof(const RecTy *RT) {
     return RT->getRecTyKind() == RecordRecTyKind;
@@ -259,7 +258,7 @@ public:
   void Profile(FoldingSetNodeID &ID) const;
 
   ArrayRef<const Record *> getClasses() const {
-    return getTrailingObjects(NumClasses);
+    return ArrayRef(getTrailingObjects<const Record *>(), NumClasses);
   }
 
   using const_record_iterator = const Record *const *;
@@ -317,7 +316,6 @@ protected:
     IK_FoldOpInit,
     IK_IsAOpInit,
     IK_ExistsOpInit,
-    IK_InstancesOpInit,
     IK_AnonymousNameInit,
     IK_StringInit,
     IK_VarInit,
@@ -588,18 +586,18 @@ public:
 /// It contains a vector of bits, whose size is determined by the type.
 class BitsInit final : public TypedInit,
                        public FoldingSetNode,
-                       private TrailingObjects<BitsInit, const Init *> {
-  friend TrailingObjects;
+                       public TrailingObjects<BitsInit, const Init *> {
   unsigned NumBits;
 
-  BitsInit(RecordKeeper &RK, ArrayRef<const Init *> Bits);
+  BitsInit(RecordKeeper &RK, unsigned N)
+      : TypedInit(IK_BitsInit, BitsRecTy::get(RK, N)), NumBits(N) {}
 
 public:
   BitsInit(const BitsInit &) = delete;
   BitsInit &operator=(const BitsInit &) = delete;
 
   // Do not use sized deallocation due to trailing objects.
-  void operator delete(void *Ptr) { ::operator delete(Ptr); }
+  void operator delete(void *p) { ::operator delete(p); }
 
   static bool classof(const Init *I) {
     return I->getKind() == IK_BitsInit;
@@ -616,19 +614,27 @@ public:
   convertInitializerBitRange(ArrayRef<unsigned> Bits) const override;
   std::optional<int64_t> convertInitializerToInt() const;
 
-  // Returns the set of known bits as a 64-bit integer.
-  uint64_t convertKnownBitsToInt() const;
+  bool isComplete() const override {
+    for (unsigned i = 0; i != getNumBits(); ++i)
+      if (!getBit(i)->isComplete()) return false;
+    return true;
+  }
 
-  bool isComplete() const override;
-  bool allInComplete() const;
+  bool allInComplete() const {
+    for (unsigned i = 0; i != getNumBits(); ++i)
+      if (getBit(i)->isComplete()) return false;
+    return true;
+  }
+
   bool isConcrete() const override;
   std::string getAsString() const override;
 
   const Init *resolveReferences(Resolver &R) const override;
 
-  ArrayRef<const Init *> getBits() const { return getTrailingObjects(NumBits); }
-
-  const Init *getBit(unsigned Bit) const override { return getBits()[Bit]; }
+  const Init *getBit(unsigned Bit) const override {
+    assert(Bit < NumBits && "Bit index out of range!");
+    return getTrailingObjects<const Init *>()[Bit];
+  }
 };
 
 /// '7' - Represent an initialization by a literal integer value.
@@ -737,7 +743,9 @@ public:
       return "[{" + Value.str() + "}]";
   }
 
-  std::string getAsUnquotedString() const override { return Value.str(); }
+  std::string getAsUnquotedString() const override {
+    return std::string(Value);
+  }
 
   const Init *getBit(unsigned Bit) const override {
     llvm_unreachable("Illegal bit reference off string");
@@ -748,22 +756,22 @@ public:
 ///
 class ListInit final : public TypedInit,
                        public FoldingSetNode,
-                       private TrailingObjects<ListInit, const Init *> {
-  friend TrailingObjects;
-  unsigned NumElements;
+                       public TrailingObjects<ListInit, const Init *> {
+  unsigned NumValues;
 
 public:
   using const_iterator = const Init *const *;
 
 private:
-  explicit ListInit(ArrayRef<const Init *> Elements, const RecTy *EltTy);
+  explicit ListInit(unsigned N, const RecTy *EltTy)
+      : TypedInit(IK_ListInit, ListRecTy::get(EltTy)), NumValues(N) {}
 
 public:
   ListInit(const ListInit &) = delete;
   ListInit &operator=(const ListInit &) = delete;
 
   // Do not use sized deallocation due to trailing objects.
-  void operator delete(void *Ptr) { ::operator delete(Ptr); }
+  void operator delete(void *p) { ::operator delete(p); }
 
   static bool classof(const Init *I) {
     return I->getKind() == IK_ListInit;
@@ -772,20 +780,15 @@ public:
 
   void Profile(FoldingSetNodeID &ID) const;
 
-  ArrayRef<const Init *> getElements() const {
-    return ArrayRef(getTrailingObjects(), NumElements);
+  const Init *getElement(unsigned i) const {
+    assert(i < NumValues && "List element index out of range!");
+    return getTrailingObjects<const Init *>()[i];
   }
-
-  LLVM_DEPRECATED("Use getElements instead", "getElements")
-  ArrayRef<const Init *> getValues() const { return getElements(); }
-
-  const Init *getElement(unsigned Idx) const { return getElements()[Idx]; }
-
   const RecTy *getElementType() const {
     return cast<ListRecTy>(getType())->getElementType();
   }
 
-  const Record *getElementAsRecord(unsigned Idx) const;
+  const Record *getElementAsRecord(unsigned i) const;
 
   const Init *convertInitializerTo(const RecTy *Ty) const override;
 
@@ -800,11 +803,15 @@ public:
   bool isConcrete() const override;
   std::string getAsString() const override;
 
-  const_iterator begin() const { return getElements().begin(); }
-  const_iterator end() const { return getElements().end(); }
+  ArrayRef<const Init *> getValues() const {
+    return ArrayRef(getTrailingObjects<const Init *>(), NumValues);
+  }
 
-  size_t size() const { return NumElements; }
-  bool empty() const { return NumElements == 0; }
+  const_iterator begin() const { return getTrailingObjects<const Init *>(); }
+  const_iterator end  () const { return begin() + NumValues; }
+
+  size_t         size () const { return NumValues;  }
+  bool           empty() const { return NumValues == 0; }
 
   const Init *getBit(unsigned Bit) const override {
     llvm_unreachable("Illegal bit reference off list");
@@ -844,7 +851,6 @@ public:
     SIZE,
     EMPTY,
     GETDAGOP,
-    GETDAGOPNAME,
     LOG2,
     REPR,
     LISTFLATTEN,
@@ -872,7 +878,7 @@ public:
   UnaryOp getOpcode() const { return (UnaryOp)Opc; }
   const Init *getOperand() const { return LHS; }
 
-  // Fold - If possible, fold this to a simpler init. Return this if not
+  // Fold - If possible, fold this to a simpler init.  Return this if not
   // possible to fold.
   const Init *Fold(const Record *CurRec, bool IsFinal = false) const;
 
@@ -904,7 +910,6 @@ public:
     STRCONCAT,
     INTERLEAVE,
     CONCAT,
-    MATCH,
     EQ,
     NE,
     LE,
@@ -914,7 +919,6 @@ public:
     GETDAGARG,
     GETDAGNAME,
     SETDAGOP,
-    SETDAGOPNAME
   };
 
 private:
@@ -945,7 +949,7 @@ public:
   std::optional<bool> CompareInit(unsigned Opc, const Init *LHS,
                                   const Init *RHS) const;
 
-  // Fold - If possible, fold this to a simpler init. Return this if not
+  // Fold - If possible, fold this to a simpler init.  Return this if not
   // possible to fold.
   const Init *Fold(const Record *CurRec) const;
 
@@ -995,7 +999,7 @@ public:
   const Init *getMHS() const { return MHS; }
   const Init *getRHS() const { return RHS; }
 
-  // Fold - If possible, fold this to a simpler init. Return this if not
+  // Fold - If possible, fold this to a simpler init.  Return this if not
   // possible to fold.
   const Init *Fold(const Record *CurRec) const;
 
@@ -1013,13 +1017,16 @@ public:
 /// Otherwise reports an error.
 class CondOpInit final : public TypedInit,
                          public FoldingSetNode,
-                         private TrailingObjects<CondOpInit, const Init *> {
-  friend TrailingObjects;
+                         public TrailingObjects<CondOpInit, const Init *> {
   unsigned NumConds;
   const RecTy *ValType;
 
-  CondOpInit(ArrayRef<const Init *> Conds, ArrayRef<const Init *> Values,
-             const RecTy *Type);
+  CondOpInit(unsigned NC, const RecTy *Type)
+      : TypedInit(IK_CondOpInit, Type), NumConds(NC), ValType(Type) {}
+
+  size_t numTrailingObjects(OverloadToken<Init *>) const {
+    return 2*NumConds;
+  }
 
 public:
   CondOpInit(const CondOpInit &) = delete;
@@ -1029,9 +1036,8 @@ public:
     return I->getKind() == IK_CondOpInit;
   }
 
-  static const CondOpInit *get(ArrayRef<const Init *> Conds,
-                               ArrayRef<const Init *> Values,
-                               const RecTy *Type);
+  static const CondOpInit *get(ArrayRef<const Init *> C,
+                               ArrayRef<const Init *> V, const RecTy *Type);
 
   void Profile(FoldingSetNodeID &ID) const;
 
@@ -1039,19 +1045,23 @@ public:
 
   unsigned getNumConds() const { return NumConds; }
 
-  const Init *getCond(unsigned Num) const { return getConds()[Num]; }
+  const Init *getCond(unsigned Num) const {
+    assert(Num < NumConds && "Condition number out of range!");
+    return getTrailingObjects<const Init *>()[Num];
+  }
 
-  const Init *getVal(unsigned Num) const { return getVals()[Num]; }
+  const Init *getVal(unsigned Num) const {
+    assert(Num < NumConds && "Val number out of range!");
+    return getTrailingObjects<const Init *>()[Num + NumConds];
+  }
 
   ArrayRef<const Init *> getConds() const {
-    return getTrailingObjects(NumConds);
+    return ArrayRef(getTrailingObjects<const Init *>(), NumConds);
   }
 
   ArrayRef<const Init *> getVals() const {
-    return ArrayRef(getTrailingObjects() + NumConds, NumConds);
+    return ArrayRef(getTrailingObjects<const Init *>() + NumConds, NumConds);
   }
-
-  auto getCondAndVals() const { return zip_equal(getConds(), getVals()); }
 
   const Init *Fold(const Record *CurRec) const;
 
@@ -1101,7 +1111,7 @@ public:
 
   void Profile(FoldingSetNodeID &ID) const;
 
-  // Fold - If possible, fold this to a simpler init. Return this if not
+  // Fold - If possible, fold this to a simpler init.  Return this if not
   // possible to fold.
   const Init *Fold(const Record *CurRec) const;
 
@@ -1134,7 +1144,7 @@ public:
 
   void Profile(FoldingSetNodeID &ID) const;
 
-  // Fold - If possible, fold this to a simpler init. Return this if not
+  // Fold - If possible, fold this to a simpler init.  Return this if not
   // possible to fold.
   const Init *Fold() const;
 
@@ -1168,43 +1178,8 @@ public:
 
   void Profile(FoldingSetNodeID &ID) const;
 
-  // Fold - If possible, fold this to a simpler init. Return this if not
+  // Fold - If possible, fold this to a simpler init.  Return this if not
   // possible to fold.
-  const Init *Fold(const Record *CurRec, bool IsFinal = false) const;
-
-  bool isComplete() const override { return false; }
-
-  const Init *resolveReferences(Resolver &R) const override;
-
-  const Init *getBit(unsigned Bit) const override;
-
-  std::string getAsString() const override;
-};
-
-/// !instances<type>([regex]) - Produces a list of records whose type is `type`.
-/// If `regex` is provided, only records whose name matches the regular
-/// expression `regex` will be included.
-class InstancesOpInit final : public TypedInit, public FoldingSetNode {
-private:
-  const RecTy *Type;
-  const Init *Regex;
-
-  InstancesOpInit(const RecTy *Type, const Init *Regex)
-      : TypedInit(IK_InstancesOpInit, ListRecTy::get(Type)), Type(Type),
-        Regex(Regex) {}
-
-public:
-  InstancesOpInit(const InstancesOpInit &) = delete;
-  InstancesOpInit &operator=(const InstancesOpInit &) = delete;
-
-  static bool classof(const Init *I) {
-    return I->getKind() == IK_InstancesOpInit;
-  }
-
-  static const InstancesOpInit *get(const RecTy *Type, const Init *Regex);
-
-  void Profile(FoldingSetNodeID &ID) const;
-
   const Init *Fold(const Record *CurRec, bool IsFinal = false) const;
 
   bool isComplete() const override { return false; }
@@ -1325,15 +1300,13 @@ public:
 class VarDefInit final
     : public TypedInit,
       public FoldingSetNode,
-      private TrailingObjects<VarDefInit, const ArgumentInit *> {
-  friend TrailingObjects;
+      public TrailingObjects<VarDefInit, const ArgumentInit *> {
   SMLoc Loc;
   const Record *Class;
   const DefInit *Def = nullptr; // after instantiation
   unsigned NumArgs;
 
-  explicit VarDefInit(SMLoc Loc, const Record *Class,
-                      ArrayRef<const ArgumentInit *> Args);
+  explicit VarDefInit(SMLoc Loc, const Record *Class, unsigned N);
 
   const DefInit *instantiate();
 
@@ -1342,7 +1315,7 @@ public:
   VarDefInit &operator=(const VarDefInit &) = delete;
 
   // Do not use sized deallocation due to trailing objects.
-  void operator delete(void *Ptr) { ::operator delete(Ptr); }
+  void operator delete(void *p) { ::operator delete(p); }
 
   static bool classof(const Init *I) {
     return I->getKind() == IK_VarDefInit;
@@ -1357,18 +1330,23 @@ public:
 
   std::string getAsString() const override;
 
-  const ArgumentInit *getArg(unsigned i) const { return args()[i]; }
+  const ArgumentInit *getArg(unsigned i) const {
+    assert(i < NumArgs && "Argument index out of range!");
+    return getTrailingObjects<const ArgumentInit *>()[i];
+  }
 
   using const_iterator = const ArgumentInit *const *;
 
-  const_iterator args_begin() const { return args().begin(); }
-  const_iterator args_end() const { return args().end(); }
+  const_iterator args_begin() const {
+    return getTrailingObjects<const ArgumentInit *>();
+  }
+  const_iterator args_end  () const { return args_begin() + NumArgs; }
 
   size_t         args_size () const { return NumArgs; }
   bool           args_empty() const { return NumArgs == 0; }
 
   ArrayRef<const ArgumentInit *> args() const {
-    return getTrailingObjects(NumArgs);
+    return ArrayRef(args_begin(), NumArgs);
   }
 
   const Init *getBit(unsigned Bit) const override {
@@ -1417,21 +1395,24 @@ public:
   }
 };
 
-/// (v a, b) - Represent a DAG tree value. DAG inits are required
-/// to have at least one value then a (possibly empty) list of arguments. Each
+/// (v a, b) - Represent a DAG tree value.  DAG inits are required
+/// to have at least one value then a (possibly empty) list of arguments.  Each
 /// argument can have a name associated with it.
 class DagInit final
     : public TypedInit,
       public FoldingSetNode,
-      private TrailingObjects<DagInit, const Init *, const StringInit *> {
+      public TrailingObjects<DagInit, const Init *, const StringInit *> {
   friend TrailingObjects;
 
   const Init *Val;
   const StringInit *ValName;
   unsigned NumArgs;
+  unsigned NumArgNames;
 
-  DagInit(const Init *V, const StringInit *VN, ArrayRef<const Init *> Args,
-          ArrayRef<const StringInit *> ArgNames);
+  DagInit(const Init *V, const StringInit *VN, unsigned NumArgs,
+          unsigned NumArgNames)
+      : TypedInit(IK_DagInit, DagRecTy::get(V->getRecordKeeper())), Val(V),
+        ValName(VN), NumArgs(NumArgs), NumArgNames(NumArgNames) {}
 
   size_t numTrailingObjects(OverloadToken<const Init *>) const {
     return NumArgs;
@@ -1446,23 +1427,11 @@ public:
   }
 
   static const DagInit *get(const Init *V, const StringInit *VN,
-                            ArrayRef<const Init *> Args,
-                            ArrayRef<const StringInit *> ArgNames);
-
-  static const DagInit *get(const Init *V, ArrayRef<const Init *> Args,
-                            ArrayRef<const StringInit *> ArgNames) {
-    return DagInit::get(V, nullptr, Args, ArgNames);
-  }
-
+                            ArrayRef<const Init *> ArgRange,
+                            ArrayRef<const StringInit *> NameRange);
   static const DagInit *
   get(const Init *V, const StringInit *VN,
-      ArrayRef<std::pair<const Init *, const StringInit *>> ArgAndNames);
-
-  static const DagInit *
-  get(const Init *V,
-      ArrayRef<std::pair<const Init *, const StringInit *>> ArgAndNames) {
-    return DagInit::get(V, nullptr, ArgAndNames);
-  }
+      ArrayRef<std::pair<const Init *, const StringInit *>> Args);
 
   void Profile(FoldingSetNodeID &ID) const;
 
@@ -1477,14 +1446,18 @@ public:
 
   unsigned getNumArgs() const { return NumArgs; }
 
-  const Init *getArg(unsigned Num) const { return getArgs()[Num]; }
+  const Init *getArg(unsigned Num) const {
+    assert(Num < NumArgs && "Arg number out of range!");
+    return getTrailingObjects<const Init *>()[Num];
+  }
 
   /// This method looks up the specified argument name and returns its argument
   /// number or std::nullopt if that argument name does not exist.
   std::optional<unsigned> getArgNo(StringRef Name) const;
 
   const StringInit *getArgName(unsigned Num) const {
-    return getArgNames()[Num];
+    assert(Num < NumArgNames && "Arg number out of range!");
+    return getTrailingObjects<const StringInit *>()[Num];
   }
 
   StringRef getArgNameStr(unsigned Num) const {
@@ -1493,20 +1466,11 @@ public:
   }
 
   ArrayRef<const Init *> getArgs() const {
-    return getTrailingObjects<const Init *>(NumArgs);
+    return ArrayRef(getTrailingObjects<const Init *>(), NumArgs);
   }
 
   ArrayRef<const StringInit *> getArgNames() const {
-    return getTrailingObjects<const StringInit *>(NumArgs);
-  }
-
-  // Return a range of std::pair.
-  auto getArgAndNames() const {
-    auto Zip = llvm::zip_equal(getArgs(), getArgNames());
-    using EltTy = decltype(*adl_begin(Zip));
-    return llvm::map_range(Zip, [](const EltTy &E) {
-      return std::make_pair(std::get<0>(E), std::get<1>(E));
-    });
+    return ArrayRef(getTrailingObjects<const StringInit *>(), NumArgNames);
   }
 
   const Init *resolveReferences(Resolver &R) const override;
@@ -1526,6 +1490,9 @@ public:
 
   inline const_name_iterator name_begin() const { return getArgNames().begin();}
   inline const_name_iterator name_end  () const { return getArgNames().end(); }
+
+  inline size_t              name_size () const { return NumArgNames; }
+  inline bool                name_empty() const { return NumArgNames == 0; }
 
   const Init *getBit(unsigned Bit) const override {
     llvm_unreachable("Illegal bit reference off dag");
@@ -1577,7 +1544,7 @@ public:
   }
 
   /// Get the source location of the point where the field was defined.
-  SMLoc getLoc() const { return Loc; }
+  const SMLoc &getLoc() const { return Loc; }
 
   /// Is this a field where nonconcrete values are okay?
   bool isNonconcreteOK() const {
@@ -1663,9 +1630,9 @@ private:
   SmallVector<AssertionInfo, 0> Assertions;
   SmallVector<DumpInfo, 0> Dumps;
 
-  // Direct superclasses, which are roots of the inheritance forest (yes, it
+  // All superclasses in the inheritance forest in post-order (yes, it
   // must be a forest; diamond-shaped inheritance is not allowed).
-  SmallVector<std::pair<const Record *, SMRange>, 0> DirectSuperClasses;
+  SmallVector<std::pair<const Record *, SMRange>, 0> SuperClasses;
 
   // Tracks Record instances. Not owned by Record.
   RecordKeeper &TrackedRecords;
@@ -1699,9 +1666,8 @@ public:
   Record(const Record &O)
       : Name(O.Name), Locs(O.Locs), TemplateArgs(O.TemplateArgs),
         Values(O.Values), Assertions(O.Assertions),
-        DirectSuperClasses(O.DirectSuperClasses),
-        TrackedRecords(O.TrackedRecords), ID(getNewUID(O.getRecords())),
-        Kind(O.Kind) {}
+        SuperClasses(O.SuperClasses), TrackedRecords(O.TrackedRecords),
+        ID(getNewUID(O.getRecords())), Kind(O.Kind) {}
 
   static unsigned getNewUID(RecordKeeper &RK);
 
@@ -1752,30 +1718,15 @@ public:
   ArrayRef<AssertionInfo> getAssertions() const { return Assertions; }
   ArrayRef<DumpInfo> getDumps() const { return Dumps; }
 
-  /// Append all superclasses in post-order to \p Classes.
-  void getSuperClasses(std::vector<const Record *> &Classes) const {
-    for (const Record *SC : make_first_range(DirectSuperClasses)) {
-      SC->getSuperClasses(Classes);
-      Classes.push_back(SC);
-    }
-  }
-
-  /// Return all superclasses in post-order.
-  std::vector<const Record *> getSuperClasses() const {
-    std::vector<const Record *> Classes;
-    getSuperClasses(Classes);
-    return Classes;
+  ArrayRef<std::pair<const Record *, SMRange>> getSuperClasses() const {
+    return SuperClasses;
   }
 
   /// Determine whether this record has the specified direct superclass.
-  bool hasDirectSuperClass(const Record *SuperClass) const {
-    return is_contained(make_first_range(DirectSuperClasses), SuperClass);
-  }
+  bool hasDirectSuperClass(const Record *SuperClass) const;
 
-  /// Return the direct superclasses of this record.
-  ArrayRef<std::pair<const Record *, SMRange>> getDirectSuperClasses() const {
-    return DirectSuperClasses;
-  }
+  /// Append the direct superclasses of this record to Classes.
+  void getDirectSuperClasses(SmallVectorImpl<const Record *> &Classes) const;
 
   bool isTemplateArg(const Init *Name) const {
     return llvm::is_contained(TemplateArgs, Name);
@@ -1812,11 +1763,12 @@ public:
   }
 
   void removeValue(const Init *Name) {
-    auto It = llvm::find_if(
-        Values, [Name](const RecordVal &V) { return V.getNameInit() == Name; });
-    if (It == Values.end())
-      llvm_unreachable("Cannot remove an entry that does not exist!");
-    Values.erase(It);
+    for (unsigned i = 0, e = Values.size(); i != e; ++i)
+      if (Values[i].getNameInit() == Name) {
+        Values.erase(Values.begin()+i);
+        return;
+      }
+    llvm_unreachable("Cannot remove an entry that does not exist!");
   }
 
   void removeValue(StringRef Name) {
@@ -1842,32 +1794,29 @@ public:
   void checkUnusedTemplateArgs();
 
   bool isSubClassOf(const Record *R) const {
-    for (const Record *SC : make_first_range(DirectSuperClasses)) {
-      if (SC == R || SC->isSubClassOf(R))
+    for (const auto &[SC, _] : SuperClasses)
+      if (SC == R)
         return true;
-    }
     return false;
   }
 
   bool isSubClassOf(StringRef Name) const {
-    for (const Record *SC : make_first_range(DirectSuperClasses)) {
+    for (const auto &[SC, _] : SuperClasses) {
       if (const auto *SI = dyn_cast<StringInit>(SC->getNameInit())) {
         if (SI->getValue() == Name)
           return true;
       } else if (SC->getNameInitAsString() == Name) {
         return true;
       }
-      if (SC->isSubClassOf(Name))
-        return true;
     }
     return false;
   }
 
-  void addDirectSuperClass(const Record *R, SMRange Range) {
+  void addSuperClass(const Record *R, SMRange Range) {
     assert(!CorrespondingDefInit &&
            "changing type of record after it has been referenced");
     assert(!isSubClassOf(R) && "Already subclassing record!");
-    DirectSuperClasses.emplace_back(R, Range);
+    SuperClasses.emplace_back(R, Range);
   }
 
   /// If there are any field references that refer to fields that have been
@@ -1986,7 +1935,7 @@ public:
   detail::RecordKeeperImpl &getImpl() { return *Impl; }
 
   /// Get the main TableGen input file's name.
-  StringRef getInputFilename() const { return InputFilename; }
+  const std::string getInputFilename() const { return InputFilename; }
 
   /// Get the map of classes.
   const RecordMap &getClasses() const { return Classes; }
@@ -2018,7 +1967,7 @@ public:
   }
 
   void saveInputFilename(std::string Filename) {
-    InputFilename = std::move(Filename);
+    InputFilename = Filename;
   }
 
   void addClass(std::unique_ptr<Record> R) {
@@ -2032,9 +1981,6 @@ public:
     bool Ins = Defs.try_emplace(std::string(R->getName()), std::move(R)).second;
     (void)Ins;
     assert(Ins && "Record already exists");
-    // Clear cache
-    if (!Cache.empty())
-      Cache.clear();
   }
 
   void addExtraGlobal(StringRef Name, const Init *I) {
@@ -2136,7 +2082,10 @@ struct LessRecordRegister {
 
     size_t size() { return Parts.size(); }
 
-    std::pair<bool, StringRef> getPart(size_t Idx) { return Parts[Idx]; }
+    std::pair<bool, StringRef> getPart(size_t i) {
+      assert (i < Parts.size() && "Invalid idx!");
+      return Parts[i];
+    }
   };
 
   bool operator()(const Record *Rec1, const Record *Rec2) const {

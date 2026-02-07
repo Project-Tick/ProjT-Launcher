@@ -11,9 +11,6 @@
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/IR/Module.h"
-#include "llvm/Support/Compiler.h"
-
-#include <string>
 
 namespace llvm {
 namespace offloading {
@@ -25,10 +22,11 @@ using EntryArrayTy = std::pair<GlobalVariable *, GlobalVariable *>;
 /// \param Suffix An optional suffix appended to the emitted symbols.
 /// \param Relocatable Indicate if we need to change the offloading section to
 /// create a relocatable object.
-LLVM_ABI llvm::Error
-wrapOpenMPBinaries(llvm::Module &M, llvm::ArrayRef<llvm::ArrayRef<char>> Images,
-                   EntryArrayTy EntryArray, llvm::StringRef Suffix = "",
-                   bool Relocatable = false);
+llvm::Error wrapOpenMPBinaries(llvm::Module &M,
+                               llvm::ArrayRef<llvm::ArrayRef<char>> Images,
+                               EntryArrayTy EntryArray,
+                               llvm::StringRef Suffix = "",
+                               bool Relocatable = false);
 
 /// Wraps the input fatbinary image into the module \p M as global symbols and
 /// registers the images with the CUDA runtime.
@@ -37,11 +35,9 @@ wrapOpenMPBinaries(llvm::Module &M, llvm::ArrayRef<llvm::ArrayRef<char>> Images,
 /// \param Suffix An optional suffix appended to the emitted symbols.
 /// \param EmitSurfacesAndTextures Whether to emit surface and textures
 /// registration code. It defaults to false.
-LLVM_ABI llvm::Error wrapCudaBinary(llvm::Module &M,
-                                    llvm::ArrayRef<char> Images,
-                                    EntryArrayTy EntryArray,
-                                    llvm::StringRef Suffix = "",
-                                    bool EmitSurfacesAndTextures = true);
+llvm::Error wrapCudaBinary(llvm::Module &M, llvm::ArrayRef<char> Images,
+                           EntryArrayTy EntryArray, llvm::StringRef Suffix = "",
+                           bool EmitSurfacesAndTextures = true);
 
 /// Wraps the input bundled image into the module \p M as global symbols and
 /// registers the images with the HIP runtime.
@@ -50,28 +46,9 @@ LLVM_ABI llvm::Error wrapCudaBinary(llvm::Module &M,
 /// \param Suffix An optional suffix appended to the emitted symbols.
 /// \param EmitSurfacesAndTextures Whether to emit surface and textures
 /// registration code. It defaults to false.
-LLVM_ABI llvm::Error wrapHIPBinary(llvm::Module &M, llvm::ArrayRef<char> Images,
-                                   EntryArrayTy EntryArray,
-                                   llvm::StringRef Suffix = "",
-                                   bool EmitSurfacesAndTextures = true);
-
-struct SYCLJITOptions {
-  // Target/compiler specific options that are passed to the device compiler at
-  // runtime.
-  std::string CompileOptions;
-  // Target/compiler specific options that are passed to the device linker at
-  // runtime.
-  std::string LinkOptions;
-};
-
-/// Wraps OffloadBinaries in the given \p Buffers into the module \p M
-/// as global symbols and registers the images with the SYCL Runtime.
-/// \param Options Compiler and linker options to be encoded for the later
-///  use by a runtime for JIT compilation. Not used for AOT.
-LLVM_ABI llvm::Error
-wrapSYCLBinaries(llvm::Module &M, llvm::ArrayRef<char> Buffer,
-                 SYCLJITOptions Options = SYCLJITOptions());
-
+llvm::Error wrapHIPBinary(llvm::Module &M, llvm::ArrayRef<char> Images,
+                          EntryArrayTy EntryArray, llvm::StringRef Suffix = "",
+                          bool EmitSurfacesAndTextures = true);
 } // namespace offloading
 } // namespace llvm
 

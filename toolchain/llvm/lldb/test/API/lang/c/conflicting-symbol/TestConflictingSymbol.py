@@ -52,10 +52,9 @@ class TestConflictingSymbols(TestBase):
 
         # This should display correctly.
         self.expect(
-            "expr conflicting_symbol",
+            "expr (unsigned long long)conflicting_symbol",
             "Symbol from One should be found",
-            startstr="(void *)",
-            patterns=["0x0+1111$"],
+            substrs=["11111"],
         )
 
         self.runCmd("continue", RUN_SUCCEEDED)
@@ -70,10 +69,9 @@ class TestConflictingSymbols(TestBase):
         lldbutil.check_breakpoint(self, bpno=1, expected_hit_count=1)
 
         self.expect(
-            "expr conflicting_symbol",
+            "expr (unsigned long long)conflicting_symbol",
             "Symbol from Two should be found",
-            startstr="(void *)",
-            patterns=["0x0+2222$"],
+            substrs=["22222"],
         )
 
         self.runCmd("continue", RUN_SUCCEEDED)
@@ -88,7 +86,7 @@ class TestConflictingSymbols(TestBase):
         lldbutil.check_breakpoint(self, bpno=1, expected_hit_count=1)
 
         self.expect(
-            "expr conflicting_symbol",
+            "expr (unsigned long long)conflicting_symbol",
             "An error should be printed when symbols can't be ordered",
             error=True,
             substrs=["Multiple internal symbols"],

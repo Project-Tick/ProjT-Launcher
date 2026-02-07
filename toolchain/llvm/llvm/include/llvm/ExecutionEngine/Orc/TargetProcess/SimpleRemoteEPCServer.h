@@ -21,7 +21,6 @@
 #include "llvm/ExecutionEngine/Orc/Shared/WrapperFunctionUtils.h"
 #include "llvm/ExecutionEngine/Orc/TargetProcess/ExecutorBootstrapService.h"
 #include "llvm/ExecutionEngine/Orc/TargetProcess/SimpleExecutorDylibManager.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/Error.h"
 
@@ -34,12 +33,12 @@ namespace llvm {
 namespace orc {
 
 /// A simple EPC server implementation.
-class LLVM_ABI SimpleRemoteEPCServer : public SimpleRemoteEPCTransportClient {
+class SimpleRemoteEPCServer : public SimpleRemoteEPCTransportClient {
 public:
   using ReportErrorFunction = unique_function<void(Error)>;
 
   /// Dispatches calls to runWrapper.
-  class LLVM_ABI Dispatcher {
+  class Dispatcher {
   public:
     virtual ~Dispatcher();
     virtual void dispatch(unique_function<void()> Work) = 0;
@@ -47,7 +46,7 @@ public:
   };
 
 #if LLVM_ENABLE_THREADS
-  class LLVM_ABI ThreadDispatcher : public Dispatcher {
+  class ThreadDispatcher : public Dispatcher {
   public:
     void dispatch(unique_function<void()> Work) override;
     void shutdown() override;
@@ -145,7 +144,7 @@ public:
   /// returns an error, which should be reported and treated as a 'Disconnect'.
   Expected<HandleMessageAction>
   handleMessage(SimpleRemoteEPCOpcode OpC, uint64_t SeqNo, ExecutorAddr TagAddr,
-                shared::WrapperFunctionBuffer ArgBytes) override;
+                SimpleRemoteEPCArgBytesVector ArgBytes) override;
 
   Error waitForDisconnect();
 
@@ -159,14 +158,14 @@ private:
                          StringMap<ExecutorAddr> BootstrapSymbols);
 
   Error handleResult(uint64_t SeqNo, ExecutorAddr TagAddr,
-                     shared::WrapperFunctionBuffer ArgBytes);
+                     SimpleRemoteEPCArgBytesVector ArgBytes);
   void handleCallWrapper(uint64_t RemoteSeqNo, ExecutorAddr TagAddr,
-                         shared::WrapperFunctionBuffer ArgBytes);
+                         SimpleRemoteEPCArgBytesVector ArgBytes);
 
-  shared::WrapperFunctionBuffer
+  shared::WrapperFunctionResult
   doJITDispatch(const void *FnTag, const char *ArgData, size_t ArgSize);
 
-  static shared::CWrapperFunctionBuffer jitDispatchEntry(void *DispatchCtx,
+  static shared::CWrapperFunctionResult jitDispatchEntry(void *DispatchCtx,
                                                          const void *FnTag,
                                                          const char *ArgData,
                                                          size_t ArgSize);
@@ -175,7 +174,7 @@ private:
   void releaseSeqNo(uint64_t) {}
 
   using PendingJITDispatchResultsMap =
-      DenseMap<uint64_t, std::promise<shared::WrapperFunctionBuffer> *>;
+      DenseMap<uint64_t, std::promise<shared::WrapperFunctionResult> *>;
 
   std::mutex ServerStateMutex;
   std::condition_variable ShutdownCV;

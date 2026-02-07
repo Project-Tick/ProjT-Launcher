@@ -22,7 +22,7 @@ class StringEntryToDwarfStringPoolEntryMap {
 public:
   StringEntryToDwarfStringPoolEntryMap(LinkingGlobalData &GlobalData)
       : GlobalData(GlobalData) {}
-  ~StringEntryToDwarfStringPoolEntryMap() = default;
+  ~StringEntryToDwarfStringPoolEntryMap() {}
 
   /// Create DwarfStringPoolEntry for specified StringEntry if necessary.
   /// Initialize DwarfStringPoolEntry with initial values.

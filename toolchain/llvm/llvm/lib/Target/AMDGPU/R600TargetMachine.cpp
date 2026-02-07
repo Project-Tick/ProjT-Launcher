@@ -19,7 +19,6 @@
 #include "R600MachineFunctionInfo.h"
 #include "R600MachineScheduler.h"
 #include "R600TargetTransformInfo.h"
-#include "llvm/Passes/CodeGenPassBuilder.h"
 #include "llvm/Transforms/Scalar.h"
 #include <optional>
 
@@ -46,21 +45,6 @@ static ScheduleDAGInstrs *createR600MachineScheduler(MachineSchedContext *C) {
 static MachineSchedRegistry R600SchedRegistry("r600",
                                               "Run R600's custom scheduler",
                                               createR600MachineScheduler);
-
-//===----------------------------------------------------------------------===//
-// R600 CodeGen Pass Builder interface.
-//===----------------------------------------------------------------------===//
-
-class R600CodeGenPassBuilder
-    : public CodeGenPassBuilder<R600CodeGenPassBuilder, R600TargetMachine> {
-public:
-  R600CodeGenPassBuilder(R600TargetMachine &TM, const CGPassBuilderOption &Opts,
-                         PassInstrumentationCallbacks *PIC);
-
-  void addPreISel(PassManagerWrapper &PMW) const;
-  void addAsmPrinter(PassManagerWrapper &PMW, CreateMCStreamer) const;
-  Error addInstSelector(PassManagerWrapper &PMW) const;
-};
 
 //===----------------------------------------------------------------------===//
 // R600 Target Machine (R600 -> Cayman)
@@ -103,12 +87,7 @@ R600TargetMachine::getSubtargetImpl(const Function &F) const {
 
 TargetTransformInfo
 R600TargetMachine::getTargetTransformInfo(const Function &F) const {
-  return TargetTransformInfo(std::make_unique<R600TTIImpl>(this, F));
-}
-
-ScheduleDAGInstrs *
-R600TargetMachine::createMachineScheduler(MachineSchedContext *C) const {
-  return createR600MachineScheduler(C);
+  return TargetTransformInfo(R600TTIImpl(this, F));
 }
 
 namespace {
@@ -116,6 +95,11 @@ class R600PassConfig final : public AMDGPUPassConfig {
 public:
   R600PassConfig(TargetMachine &TM, PassManagerBase &PM)
       : AMDGPUPassConfig(TM, PM) {}
+
+  ScheduleDAGInstrs *
+  createMachineScheduler(MachineSchedContext *C) const override {
+    return createR600MachineScheduler(C);
+  }
 
   bool addPreISel() override;
   bool addInstSelector() override;
@@ -154,6 +138,7 @@ void R600PassConfig::addPreSched2() {
 void R600PassConfig::addPreEmitPass() {
   addPass(createR600MachineCFGStructurizerPass());
   addPass(createR600ExpandSpecialInstrsPass());
+  addPass(&FinalizeMachineBundlesID);
   addPass(createR600Packetizer());
   addPass(createR600ControlFlowFinalizer());
 }
@@ -188,16 +173,16 @@ R600CodeGenPassBuilder::R600CodeGenPassBuilder(
   Opt.RequiresCodeGenSCCOrder = true;
 }
 
-void R600CodeGenPassBuilder::addPreISel(PassManagerWrapper &PMW) const {
+void R600CodeGenPassBuilder::addPreISel(AddIRPass &addPass) const {
   // TODO: Add passes pre instruction selection.
 }
 
-void R600CodeGenPassBuilder::addAsmPrinter(PassManagerWrapper &PMW,
+void R600CodeGenPassBuilder::addAsmPrinter(AddMachinePass &addPass,
                                            CreateMCStreamer) const {
   // TODO: Add AsmPrinter.
 }
 
-Error R600CodeGenPassBuilder::addInstSelector(PassManagerWrapper &PMW) const {
+Error R600CodeGenPassBuilder::addInstSelector(AddMachinePass &) const {
   // TODO: Add instruction selector.
   return Error::success();
 }

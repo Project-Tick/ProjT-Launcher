@@ -55,10 +55,12 @@ LegalizeMutation LegalizeMutations::changeElementCountTo(unsigned TypeIdx,
 }
 
 LegalizeMutation LegalizeMutations::changeElementCountTo(unsigned TypeIdx,
-                                                         ElementCount EC) {
+                                                         LLT NewEltTy) {
   return [=](const LegalityQuery &Query) {
     const LLT OldTy = Query.Types[TypeIdx];
-    return std::make_pair(TypeIdx, OldTy.changeElementCount(EC));
+    ElementCount NewEltCount = NewEltTy.isVector() ? NewEltTy.getElementCount()
+                                                   : ElementCount::getFixed(1);
+    return std::make_pair(TypeIdx, OldTy.changeElementCount(NewEltCount));
   };
 }
 

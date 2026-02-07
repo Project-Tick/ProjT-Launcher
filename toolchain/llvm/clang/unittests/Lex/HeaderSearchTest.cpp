@@ -16,6 +16,7 @@
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/TargetOptions.h"
 #include "clang/Lex/HeaderSearchOptions.h"
+#include "clang/Serialization/InMemoryModuleCache.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "gtest/gtest.h"
 #include <memory>
@@ -28,13 +29,14 @@ namespace {
 class HeaderSearchTest : public ::testing::Test {
 protected:
   HeaderSearchTest()
-      : VFS(llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>()),
-        FileMgr(FileMgrOpts, VFS),
-        Diags(DiagnosticIDs::create(), DiagOpts, new IgnoringDiagConsumer()),
+      : VFS(new llvm::vfs::InMemoryFileSystem), FileMgr(FileMgrOpts, VFS),
+        DiagID(new DiagnosticIDs()),
+        Diags(DiagID, new DiagnosticOptions, new IgnoringDiagConsumer()),
         SourceMgr(Diags, FileMgr), TargetOpts(new TargetOptions),
-        Search(HSOpts, SourceMgr, Diags, LangOpts, Target.get()) {
+        Search(std::make_shared<HeaderSearchOptions>(), SourceMgr, Diags,
+               LangOpts, Target.get()) {
     TargetOpts->Triple = "x86_64-apple-darwin11.1.0";
-    Target = TargetInfo::CreateTargetInfo(Diags, *TargetOpts);
+    Target = TargetInfo::CreateTargetInfo(Diags, TargetOpts);
   }
 
   void addSearchDir(llvm::StringRef Dir) {
@@ -80,13 +82,12 @@ protected:
   IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> VFS;
   FileSystemOptions FileMgrOpts;
   FileManager FileMgr;
-  DiagnosticOptions DiagOpts;
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID;
   DiagnosticsEngine Diags;
   SourceManager SourceMgr;
   LangOptions LangOpts;
   std::shared_ptr<TargetOptions> TargetOpts;
   IntrusiveRefCntPtr<TargetInfo> Target;
-  HeaderSearchOptions HSOpts;
   HeaderSearch Search;
   std::unique_ptr<HeaderMap> HMap;
 };

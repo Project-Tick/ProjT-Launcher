@@ -13,8 +13,6 @@
 
 #if _LIBCPP_HAS_LOCALIZATION
 
-#  include <__algorithm/copy.h>
-#  include <__algorithm/fill_n.h>
 #  include <ios>
 
 #  if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
@@ -32,9 +30,12 @@ _LIBCPP_HIDE_FROM_ABI _OutputIterator __pad_and_output(
     __ns -= __sz;
   else
     __ns = 0;
-  __s = std::copy(__ob, __op, __s);
-  __s = std::fill_n(__s, __ns, __fl);
-  __s = std::copy(__op, __oe, __s);
+  for (; __ob < __op; ++__ob, ++__s)
+    *__s = *__ob;
+  for (; __ns; --__ns, ++__s)
+    *__s = __fl;
+  for (; __ob < __oe; ++__ob, ++__s)
+    *__s = *__ob;
   __iob.width(0);
   return __s;
 }

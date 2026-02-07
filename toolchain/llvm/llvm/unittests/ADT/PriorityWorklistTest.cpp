@@ -20,8 +20,8 @@ namespace {
 using namespace llvm;
 
 template <typename T> class PriorityWorklistTest : public ::testing::Test {};
-using TestTypes =
-    ::testing::Types<PriorityWorklist<int>, SmallPriorityWorklist<int, 2>>;
+typedef ::testing::Types<PriorityWorklist<int>, SmallPriorityWorklist<int, 2>>
+    TestTypes;
 TYPED_TEST_SUITE(PriorityWorklistTest, TestTypes, );
 
 TYPED_TEST(PriorityWorklistTest, Basic) {

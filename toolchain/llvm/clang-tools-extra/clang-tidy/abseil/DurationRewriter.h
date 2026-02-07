@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- DurationRewriter.h - clang-tidy ------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -96,7 +96,7 @@ bool isInMacro(const ast_matchers::MatchFinder::MatchResult &Result,
                const Expr *E);
 
 AST_MATCHER_FUNCTION(ast_matchers::internal::Matcher<FunctionDecl>,
-                     durationConversionFunction) {
+                     DurationConversionFunction) {
   using namespace clang::ast_matchers;
   return functionDecl(
       hasAnyName("::absl::ToDoubleHours", "::absl::ToDoubleMinutes",
@@ -108,7 +108,7 @@ AST_MATCHER_FUNCTION(ast_matchers::internal::Matcher<FunctionDecl>,
 }
 
 AST_MATCHER_FUNCTION(ast_matchers::internal::Matcher<FunctionDecl>,
-                     durationFactoryFunction) {
+                     DurationFactoryFunction) {
   using namespace clang::ast_matchers;
   return functionDecl(hasAnyName("::absl::Nanoseconds", "::absl::Microseconds",
                                  "::absl::Milliseconds", "::absl::Seconds",
@@ -116,7 +116,7 @@ AST_MATCHER_FUNCTION(ast_matchers::internal::Matcher<FunctionDecl>,
 }
 
 AST_MATCHER_FUNCTION(ast_matchers::internal::Matcher<FunctionDecl>,
-                     timeConversionFunction) {
+                     TimeConversionFunction) {
   using namespace clang::ast_matchers;
   return functionDecl(hasAnyName(
       "::absl::ToUnixHours", "::absl::ToUnixMinutes", "::absl::ToUnixSeconds",
@@ -125,12 +125,12 @@ AST_MATCHER_FUNCTION(ast_matchers::internal::Matcher<FunctionDecl>,
 
 AST_MATCHER_FUNCTION_P(ast_matchers::internal::Matcher<Stmt>,
                        comparisonOperatorWithCallee,
-                       ast_matchers::internal::Matcher<Decl>, FuncDecl) {
+                       ast_matchers::internal::Matcher<Decl>, funcDecl) {
   using namespace clang::ast_matchers;
   return binaryOperator(
       anyOf(hasOperatorName(">"), hasOperatorName(">="), hasOperatorName("=="),
             hasOperatorName("<="), hasOperatorName("<")),
-      hasEitherOperand(ignoringImpCasts(callExpr(callee(FuncDecl)))));
+      hasEitherOperand(ignoringImpCasts(callExpr(callee(funcDecl)))));
 }
 
 } // namespace clang::tidy::abseil

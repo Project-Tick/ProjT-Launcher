@@ -134,7 +134,7 @@ public:
       LocNoCount = LocNoVec.size();
       if (LocNoCount > 0) {
         LocNos = std::make_unique<unsigned[]>(LocNoCount);
-        llvm::copy(LocNoVec, loc_nos_begin());
+        std::copy(LocNoVec.begin(), LocNoVec.end(), loc_nos_begin());
       }
     } else {
       LLVM_DEBUG(dbgs() << "Found debug value with 64+ unique machine "
@@ -536,6 +536,12 @@ public:
 
 namespace llvm {
 
+/// Implementation of the LiveDebugVariables pass.
+
+LiveDebugVariables::LiveDebugVariables() = default;
+LiveDebugVariables::~LiveDebugVariables() = default;
+LiveDebugVariables::LiveDebugVariables(LiveDebugVariables &&) = default;
+
 class LiveDebugVariables::LDVImpl {
   LocMap::Allocator allocator;
   MachineFunction *MF = nullptr;
@@ -581,7 +587,7 @@ class LiveDebugVariables::LDVImpl {
   SmallVector<std::unique_ptr<UserLabel>, 2> userLabels;
 
   /// Map virtual register to eq class leader.
-  using VRMap = DenseMap<Register, UserValue *>;
+  using VRMap = DenseMap<unsigned, UserValue *>;
   VRMap virtRegToEqClass;
 
   /// Map to find existing UserValue instances.
@@ -676,12 +682,6 @@ public:
 
   void print(raw_ostream&);
 };
-
-/// Implementation of the LiveDebugVariables pass.
-
-LiveDebugVariables::LiveDebugVariables() = default;
-LiveDebugVariables::~LiveDebugVariables() = default;
-LiveDebugVariables::LiveDebugVariables(LiveDebugVariables &&) = default;
 
 } // namespace llvm
 
@@ -1127,6 +1127,7 @@ void UserValue::computeIntervals(MachineRegisterInfo &MRI,
     SlotIndex Idx = Defs[i].first;
     DbgVariableValue DbgValue = Defs[i].second;
     SmallDenseMap<unsigned, std::pair<LiveRange *, const VNInfo *>> LIs;
+    SmallVector<const VNInfo *, 4> VNIs;
     bool ShouldExtendDef = false;
     for (unsigned LocNo : DbgValue.loc_nos()) {
       const MachineOperand &LocMO = locations[LocNo];
@@ -1263,7 +1264,7 @@ void UserValue::computeIntervals(MachineRegisterInfo &MRI,
 
 void LiveDebugVariables::LDVImpl::computeIntervals() {
   LexicalScopes LS;
-  LS.scanFunction(*MF);
+  LS.initialize(*MF);
 
   for (const auto &UV : userValues) {
     UV->computeIntervals(MF->getRegInfo(), *TRI, *LIS, LS);
@@ -1973,8 +1974,8 @@ void LiveDebugVariables::LDVImpl::emitDebugValues(VirtRegMap *VRM) {
 
     if (MachineInstr *Pos = Slots->getInstructionFromIndex(Idx)) {
       // Insert at the end of any debug instructions.
-      auto PostDebug = std::next(MachineBasicBlock::iterator(Pos));
-      PostDebug = skipDebugInstructionsForward(PostDebug, MBB->end());
+      auto PostDebug = std::next(Pos->getIterator());
+      PostDebug = skipDebugInstructionsForward(PostDebug, MBB->instr_end());
       EmitInstsHere(PostDebug);
     } else {
       // Insert position disappeared; walk forwards through slots until we

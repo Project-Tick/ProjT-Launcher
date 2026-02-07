@@ -111,7 +111,7 @@ static unsigned adjustForEndian(const DataLayout &DL, unsigned VectorWidth,
 }
 
 // Translate a masked load intrinsic like
-// <16 x i32 > @llvm.masked.load( <16 x i32>* %addr,
+// <16 x i32 > @llvm.masked.load( <16 x i32>* %addr, i32 align,
 //                               <16 x i1> %mask, <16 x i32> %passthru)
 // to a chain of basic blocks, with loading element one-by-one if
 // the appropriate mask bit is set
@@ -146,10 +146,11 @@ static void scalarizeMaskedLoad(const DataLayout &DL, bool HasBranchDivergence,
                                 CallInst *CI, DomTreeUpdater *DTU,
                                 bool &ModifiedDT) {
   Value *Ptr = CI->getArgOperand(0);
-  Value *Mask = CI->getArgOperand(1);
-  Value *Src0 = CI->getArgOperand(2);
+  Value *Alignment = CI->getArgOperand(1);
+  Value *Mask = CI->getArgOperand(2);
+  Value *Src0 = CI->getArgOperand(3);
 
-  const Align AlignVal = CI->getParamAlign(0).valueOrOne();
+  const Align AlignVal = cast<ConstantInt>(Alignment)->getAlignValue();
   VectorType *VecType = cast<FixedVectorType>(CI->getType());
 
   Type *EltTy = VecType->getElementType();
@@ -289,7 +290,7 @@ static void scalarizeMaskedLoad(const DataLayout &DL, bool HasBranchDivergence,
 }
 
 // Translate a masked store intrinsic, like
-// void @llvm.masked.store(<16 x i32> %src, <16 x i32>* %addr,
+// void @llvm.masked.store(<16 x i32> %src, <16 x i32>* %addr, i32 align,
 //                               <16 x i1> %mask)
 // to a chain of basic blocks, that stores element one-by-one if
 // the appropriate mask bit is set
@@ -319,9 +320,10 @@ static void scalarizeMaskedStore(const DataLayout &DL, bool HasBranchDivergence,
                                  bool &ModifiedDT) {
   Value *Src = CI->getArgOperand(0);
   Value *Ptr = CI->getArgOperand(1);
-  Value *Mask = CI->getArgOperand(2);
+  Value *Alignment = CI->getArgOperand(2);
+  Value *Mask = CI->getArgOperand(3);
 
-  const Align AlignVal = CI->getParamAlign(1).valueOrOne();
+  const Align AlignVal = cast<ConstantInt>(Alignment)->getAlignValue();
   auto *VecType = cast<VectorType>(Src->getType());
 
   Type *EltTy = VecType->getElementType();
@@ -470,8 +472,9 @@ static void scalarizeMaskedGather(const DataLayout &DL,
                                   bool HasBranchDivergence, CallInst *CI,
                                   DomTreeUpdater *DTU, bool &ModifiedDT) {
   Value *Ptrs = CI->getArgOperand(0);
-  Value *Mask = CI->getArgOperand(1);
-  Value *Src0 = CI->getArgOperand(2);
+  Value *Alignment = CI->getArgOperand(1);
+  Value *Mask = CI->getArgOperand(2);
+  Value *Src0 = CI->getArgOperand(3);
 
   auto *VecType = cast<FixedVectorType>(CI->getType());
   Type *EltTy = VecType->getElementType();
@@ -480,7 +483,7 @@ static void scalarizeMaskedGather(const DataLayout &DL,
   Instruction *InsertPt = CI;
   BasicBlock *IfBlock = CI->getParent();
   Builder.SetInsertPoint(InsertPt);
-  Align AlignVal = CI->getParamAlign(0).valueOrOne();
+  MaybeAlign AlignVal = cast<ConstantInt>(Alignment)->getMaybeAlignValue();
 
   Builder.SetCurrentDebugLocation(CI->getDebugLoc());
 
@@ -605,7 +608,8 @@ static void scalarizeMaskedScatter(const DataLayout &DL,
                                    DomTreeUpdater *DTU, bool &ModifiedDT) {
   Value *Src = CI->getArgOperand(0);
   Value *Ptrs = CI->getArgOperand(1);
-  Value *Mask = CI->getArgOperand(2);
+  Value *Alignment = CI->getArgOperand(2);
+  Value *Mask = CI->getArgOperand(3);
 
   auto *SrcFVTy = cast<FixedVectorType>(Src->getType());
 
@@ -619,7 +623,7 @@ static void scalarizeMaskedScatter(const DataLayout &DL,
   Builder.SetInsertPoint(InsertPt);
   Builder.SetCurrentDebugLocation(CI->getDebugLoc());
 
-  Align AlignVal = CI->getParamAlign(1).valueOrOne();
+  MaybeAlign AlignVal = cast<ConstantInt>(Alignment)->getMaybeAlignValue();
   unsigned VectorWidth = SrcFVTy->getNumElements();
 
   // Shorten the way if the mask is a vector of constants.
@@ -964,29 +968,6 @@ static void scalarizeMaskedVectorHistogram(const DataLayout &DL, CallInst *CI,
 
   // FIXME: Do we need to add an alignment parameter to the intrinsic?
   unsigned VectorWidth = AddrType->getNumElements();
-  auto CreateHistogramUpdateValue = [&](IntrinsicInst *CI, Value *Load,
-                                        Value *Inc) -> Value * {
-    Value *UpdateOp;
-    switch (CI->getIntrinsicID()) {
-    case Intrinsic::experimental_vector_histogram_add:
-      UpdateOp = Builder.CreateAdd(Load, Inc);
-      break;
-    case Intrinsic::experimental_vector_histogram_uadd_sat:
-      UpdateOp =
-          Builder.CreateIntrinsic(Intrinsic::uadd_sat, {EltTy}, {Load, Inc});
-      break;
-    case Intrinsic::experimental_vector_histogram_umin:
-      UpdateOp = Builder.CreateIntrinsic(Intrinsic::umin, {EltTy}, {Load, Inc});
-      break;
-    case Intrinsic::experimental_vector_histogram_umax:
-      UpdateOp = Builder.CreateIntrinsic(Intrinsic::umax, {EltTy}, {Load, Inc});
-      break;
-
-    default:
-      llvm_unreachable("Unexpected histogram intrinsic");
-    }
-    return UpdateOp;
-  };
 
   // Shorten the way if the mask is a vector of constants.
   if (isConstantIntVector(Mask)) {
@@ -995,9 +976,8 @@ static void scalarizeMaskedVectorHistogram(const DataLayout &DL, CallInst *CI,
         continue;
       Value *Ptr = Builder.CreateExtractElement(Ptrs, Idx, "Ptr" + Twine(Idx));
       LoadInst *Load = Builder.CreateLoad(EltTy, Ptr, "Load" + Twine(Idx));
-      Value *Update =
-          CreateHistogramUpdateValue(cast<IntrinsicInst>(CI), Load, Inc);
-      Builder.CreateStore(Update, Ptr);
+      Value *Add = Builder.CreateAdd(Load, Inc);
+      Builder.CreateStore(Add, Ptr);
     }
     CI->eraseFromParent();
     return;
@@ -1017,9 +997,8 @@ static void scalarizeMaskedVectorHistogram(const DataLayout &DL, CallInst *CI,
     Builder.SetInsertPoint(CondBlock->getTerminator());
     Value *Ptr = Builder.CreateExtractElement(Ptrs, Idx, "Ptr" + Twine(Idx));
     LoadInst *Load = Builder.CreateLoad(EltTy, Ptr, "Load" + Twine(Idx));
-    Value *UpdateOp =
-        CreateHistogramUpdateValue(cast<IntrinsicInst>(CI), Load, Inc);
-    Builder.CreateStore(UpdateOp, Ptr);
+    Value *Add = Builder.CreateAdd(Load, Inc);
+    Builder.CreateStore(Add, Ptr);
 
     // Create "else" block, fill it in the next iteration
     BasicBlock *NewIfBlock = ThenTerm->getSuccessor(0);
@@ -1110,9 +1089,6 @@ static bool optimizeCallInst(CallInst *CI, bool &ModifiedDT,
     default:
       break;
     case Intrinsic::experimental_vector_histogram_add:
-    case Intrinsic::experimental_vector_histogram_uadd_sat:
-    case Intrinsic::experimental_vector_histogram_umin:
-    case Intrinsic::experimental_vector_histogram_umax:
       if (TTI.isLegalMaskedVectorHistogram(CI->getArgOperand(0)->getType(),
                                            CI->getArgOperand(1)->getType()))
         return false;
@@ -1121,30 +1097,24 @@ static bool optimizeCallInst(CallInst *CI, bool &ModifiedDT,
     case Intrinsic::masked_load:
       // Scalarize unsupported vector masked load
       if (TTI.isLegalMaskedLoad(
-              CI->getType(), CI->getParamAlign(0).valueOrOne(),
-              cast<PointerType>(CI->getArgOperand(0)->getType())
-                  ->getAddressSpace(),
-              isConstantIntVector(CI->getArgOperand(1))
-                  ? TTI::MaskKind::ConstantMask
-                  : TTI::MaskKind::VariableOrConstantMask))
+              CI->getType(),
+              cast<ConstantInt>(CI->getArgOperand(1))->getAlignValue()))
         return false;
       scalarizeMaskedLoad(DL, HasBranchDivergence, CI, DTU, ModifiedDT);
       return true;
     case Intrinsic::masked_store:
       if (TTI.isLegalMaskedStore(
               CI->getArgOperand(0)->getType(),
-              CI->getParamAlign(1).valueOrOne(),
-              cast<PointerType>(CI->getArgOperand(1)->getType())
-                  ->getAddressSpace(),
-              isConstantIntVector(CI->getArgOperand(2))
-                  ? TTI::MaskKind::ConstantMask
-                  : TTI::MaskKind::VariableOrConstantMask))
+              cast<ConstantInt>(CI->getArgOperand(2))->getAlignValue()))
         return false;
       scalarizeMaskedStore(DL, HasBranchDivergence, CI, DTU, ModifiedDT);
       return true;
     case Intrinsic::masked_gather: {
-      Align Alignment = CI->getParamAlign(0).valueOrOne();
+      MaybeAlign MA =
+          cast<ConstantInt>(CI->getArgOperand(1))->getMaybeAlignValue();
       Type *LoadTy = CI->getType();
+      Align Alignment = DL.getValueOrABITypeAlignment(MA,
+                                                      LoadTy->getScalarType());
       if (TTI.isLegalMaskedGather(LoadTy, Alignment) &&
           !TTI.forceScalarizeMaskedGather(cast<VectorType>(LoadTy), Alignment))
         return false;
@@ -1152,8 +1122,11 @@ static bool optimizeCallInst(CallInst *CI, bool &ModifiedDT,
       return true;
     }
     case Intrinsic::masked_scatter: {
-      Align Alignment = CI->getParamAlign(1).valueOrOne();
+      MaybeAlign MA =
+          cast<ConstantInt>(CI->getArgOperand(2))->getMaybeAlignValue();
       Type *StoreTy = CI->getArgOperand(0)->getType();
+      Align Alignment = DL.getValueOrABITypeAlignment(MA,
+                                                      StoreTy->getScalarType());
       if (TTI.isLegalMaskedScatter(StoreTy, Alignment) &&
           !TTI.forceScalarizeMaskedScatter(cast<VectorType>(StoreTy),
                                            Alignment))

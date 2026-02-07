@@ -13,7 +13,7 @@
 #include "flang/Optimizer/CodeGen/CodeGen.h"
 
 #include "flang/Optimizer/Builder/Todo.h" // remove when TODO's are done
-#include "flang/Optimizer/Dialect/FIRCG/CGOps.h"
+#include "flang/Optimizer/CodeGen/CGOps.h"
 #include "flang/Optimizer/Dialect/FIRDialect.h"
 #include "flang/Optimizer/Dialect/FIROps.h"
 #include "flang/Optimizer/Dialect/FIRType.h"
@@ -103,15 +103,13 @@ public:
     auto idxTy = rewriter.getIndexType();
     for (auto ext : seqTy.getShape()) {
       auto iAttr = rewriter.getIndexAttr(ext);
-      auto extVal =
-          mlir::arith::ConstantOp::create(rewriter, loc, idxTy, iAttr);
+      auto extVal = rewriter.create<mlir::arith::ConstantOp>(loc, idxTy, iAttr);
       shapeOpers.push_back(extVal);
     }
-    auto xbox = fir::cg::XEmboxOp::create(
-        rewriter, loc, embox.getType(), embox.getMemref(), shapeOpers,
-        mlir::ValueRange{}, mlir::ValueRange{}, mlir::ValueRange{},
-        mlir::ValueRange{}, embox.getTypeparams(), embox.getSourceBox(),
-        embox.getAllocatorIdxAttr());
+    auto xbox = rewriter.create<fir::cg::XEmboxOp>(
+        loc, embox.getType(), embox.getMemref(), shapeOpers, std::nullopt,
+        std::nullopt, std::nullopt, std::nullopt, embox.getTypeparams(),
+        embox.getSourceBox(), embox.getAllocatorIdxAttr());
     LLVM_DEBUG(llvm::dbgs() << "rewriting " << embox << " to " << xbox << '\n');
     rewriter.replaceOp(embox, xbox.getOperation()->getResults());
     return mlir::success();
@@ -144,11 +142,10 @@ public:
         substrOpers.assign(sliceOp.getSubstr().begin(),
                            sliceOp.getSubstr().end());
       }
-    auto xbox = fir::cg::XEmboxOp::create(
-        rewriter, loc, embox.getType(), embox.getMemref(), shapeOpers,
-        shiftOpers, sliceOpers, subcompOpers, substrOpers,
-        embox.getTypeparams(), embox.getSourceBox(),
-        embox.getAllocatorIdxAttr());
+    auto xbox = rewriter.create<fir::cg::XEmboxOp>(
+        loc, embox.getType(), embox.getMemref(), shapeOpers, shiftOpers,
+        sliceOpers, subcompOpers, substrOpers, embox.getTypeparams(),
+        embox.getSourceBox(), embox.getAllocatorIdxAttr());
     LLVM_DEBUG(llvm::dbgs() << "rewriting " << embox << " to " << xbox << '\n');
     rewriter.replaceOp(embox, xbox.getOperation()->getResults());
     return mlir::success();
@@ -203,8 +200,8 @@ public:
                            sliceOp.getSubstr().end());
       }
 
-    auto xRebox = fir::cg::XReboxOp::create(
-        rewriter, loc, rebox.getType(), rebox.getBox(), shapeOpers, shiftOpers,
+    auto xRebox = rewriter.create<fir::cg::XReboxOp>(
+        loc, rebox.getType(), rebox.getBox(), shapeOpers, shiftOpers,
         sliceOpers, subcompOpers, substrOpers);
     LLVM_DEBUG(llvm::dbgs()
                << "rewriting " << rebox << " to " << xRebox << '\n');
@@ -261,9 +258,9 @@ public:
                "Don't allow substring operations on array_coor. This "
                "restriction may be lifted in the future.");
       }
-    auto xArrCoor = fir::cg::XArrayCoorOp::create(
-        rewriter, loc, arrCoor.getType(), arrCoor.getMemref(), shapeOpers,
-        shiftOpers, sliceOpers, subcompOpers, arrCoor.getIndices(),
+    auto xArrCoor = rewriter.create<fir::cg::XArrayCoorOp>(
+        loc, arrCoor.getType(), arrCoor.getMemref(), shapeOpers, shiftOpers,
+        sliceOpers, subcompOpers, arrCoor.getIndices(),
         arrCoor.getTypeparams());
     LLVM_DEBUG(llvm::dbgs()
                << "rewriting " << arrCoor << " to " << xArrCoor << '\n');
@@ -302,16 +299,11 @@ public:
       else
         return mlir::failure();
     }
-    // Extract dummy_arg_no attribute if present
-    mlir::IntegerAttr dummyArgNoAttr;
-    if (auto attr = declareOp->getAttrOfType<mlir::IntegerAttr>("dummy_arg_no"))
-      dummyArgNoAttr = attr;
     // FIXME: Add FortranAttrs and CudaAttrs
-    auto xDeclOp = fir::cg::XDeclareOp::create(
-        rewriter, loc, declareOp.getType(), declareOp.getMemref(), shapeOpers,
-        shiftOpers, declareOp.getTypeparams(), declareOp.getDummyScope(),
-        declareOp.getStorage(), declareOp.getStorageOffset(),
-        declareOp.getUniqName(), dummyArgNoAttr);
+    auto xDeclOp = rewriter.create<fir::cg::XDeclareOp>(
+        loc, declareOp.getType(), declareOp.getMemref(), shapeOpers, shiftOpers,
+        declareOp.getTypeparams(), declareOp.getDummyScope(),
+        declareOp.getUniqName());
     LLVM_DEBUG(llvm::dbgs()
                << "rewriting " << declareOp << " to " << xDeclOp << '\n');
     rewriter.replaceOp(declareOp, xDeclOp.getOperation()->getResults());

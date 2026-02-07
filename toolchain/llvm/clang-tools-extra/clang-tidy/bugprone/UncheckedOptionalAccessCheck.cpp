@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- UncheckedOptionalAccessCheck.cpp - clang-tidy --------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -19,10 +19,9 @@
 namespace clang::tidy::bugprone {
 using ast_matchers::MatchFinder;
 using dataflow::UncheckedOptionalAccessDiagnoser;
-using dataflow::UncheckedOptionalAccessDiagnostic;
 using dataflow::UncheckedOptionalAccessModel;
 
-static constexpr StringRef FuncID = "fun";
+static constexpr llvm::StringLiteral FuncID("fun");
 
 void UncheckedOptionalAccessCheck::registerMatchers(MatchFinder *Finder) {
   using namespace ast_matchers;
@@ -53,16 +52,14 @@ void UncheckedOptionalAccessCheck::check(
   UncheckedOptionalAccessDiagnoser Diagnoser(ModelOptions);
   // FIXME: Allow user to set the (defaulted) SAT iterations max for
   // `diagnoseFunction` with config options.
-  if (llvm::Expected<llvm::SmallVector<UncheckedOptionalAccessDiagnostic>>
-          Diags = dataflow::diagnoseFunction<UncheckedOptionalAccessModel,
-                                             UncheckedOptionalAccessDiagnostic>(
-              *FuncDecl, *Result.Context, Diagnoser))
-    for (const UncheckedOptionalAccessDiagnostic &Diag : *Diags) {
-      diag(Diag.Range.getBegin(), "unchecked access to optional value")
-          << Diag.Range;
-    }
+  if (llvm::Expected<llvm::SmallVector<SourceLocation>> Locs =
+          dataflow::diagnoseFunction<UncheckedOptionalAccessModel,
+                                     SourceLocation>(*FuncDecl, *Result.Context,
+                                                     Diagnoser))
+    for (const SourceLocation &Loc : *Locs)
+      diag(Loc, "unchecked access to optional value");
   else
-    llvm::consumeError(Diags.takeError());
+    llvm::consumeError(Locs.takeError());
 }
 
 } // namespace clang::tidy::bugprone

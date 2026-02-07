@@ -224,22 +224,22 @@ VSX:
   . isCommutable = 1
     // xsmaddqp
     [(set f128:$vT, (fma f128:$vA, f128:$vB, f128:$vTi))]>,
-    RegConstraint<"$vTi = $vT">,
+    RegConstraint<"$vTi = $vT">, NoEncode<"$vTi">,
     AltVSXFMARel;
 
     // xsmsubqp
     [(set f128:$vT, (fma f128:$vA, f128:$vB, (fneg f128:$vTi)))]>,
-    RegConstraint<"$vTi = $vT">,
+    RegConstraint<"$vTi = $vT">, NoEncode<"$vTi">,
     AltVSXFMARel;
 
     // xsnmaddqp
     [(set f128:$vT, (fneg (fma f128:$vA, f128:$vB, f128:$vTi)))]>,
-    RegConstraint<"$vTi = $vT">,
+    RegConstraint<"$vTi = $vT">, NoEncode<"$vTi">,
     AltVSXFMARel;
 
     // xsnmsubqp
     [(set f128:$vT, (fneg (fma f128:$vA, f128:$vB, (fneg f128:$vTi))))]>,
-    RegConstraint<"$vTi = $vT">,
+    RegConstraint<"$vTi = $vT">, NoEncode<"$vTi">,
     AltVSXFMARel;
 
 - Round to Odd of QP (Negative) Multiply-{Add/Subtract}:
@@ -276,22 +276,22 @@ VSX:
     . isCommutable = 1
       // xsmaddqpo
       [(set f128:$vT, (PPCfmarto f128:$vA, f128:$vB, f128:$vTi))]>,
-      RegConstraint<"$vTi = $vT">,
+      RegConstraint<"$vTi = $vT">, NoEncode<"$vTi">,
       AltVSXFMARel;
 
       // xsmsubqpo
       [(set f128:$vT, (PPCfmarto f128:$vA, f128:$vB, (fneg f128:$vTi)))]>,
-      RegConstraint<"$vTi = $vT">,
+      RegConstraint<"$vTi = $vT">, NoEncode<"$vTi">,
       AltVSXFMARel;
 
       // xsnmaddqpo
       [(set f128:$vT, (fneg (PPCfmarto f128:$vA, f128:$vB, f128:$vTi)))]>,
-      RegConstraint<"$vTi = $vT">,
+      RegConstraint<"$vTi = $vT">, NoEncode<"$vTi">,
       AltVSXFMARel;
 
       // xsnmsubqpo
       [(set f128:$vT, (fneg (PPCfmarto f128:$vA, f128:$vB, (fneg f128:$vTi))))]>,
-      RegConstraint<"$vTi = $vT">,
+      RegConstraint<"$vTi = $vT">, NoEncode<"$vTi">,
       AltVSXFMARel;
 
 - QP Compare Ordered/Unordered: xscmpoqp xscmpuqp
@@ -405,7 +405,7 @@ Fixed Point Facility:
 
     But how to map to it??
     [(set v1f128:$XT, (insertelement v1f128:$XTi, f128:$XB, i4:$UIMM))]>,
-    RegConstraint<"$XTi = $XT">,
+    RegConstraint<"$XTi = $XT">, NoEncode<"$XTi">,
 
   . Or use intrinsic?
     (set v1f128:$XT, (int_ppc_vsx_xxinsertw v1f128:$XTi, f128:$XB, i4:$UIMM))

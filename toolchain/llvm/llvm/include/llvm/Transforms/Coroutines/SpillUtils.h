@@ -13,7 +13,9 @@
 #ifndef LLVM_TRANSFORMS_COROUTINES_SPILLINGINFO_H
 #define LLVM_TRANSFORMS_COROUTINES_SPILLINGINFO_H
 
-namespace llvm::coro {
+namespace llvm {
+
+namespace coro {
 
 using SpillInfo = SmallMapVector<Value *, SmallVector<Instruction *, 2>, 8>;
 
@@ -36,7 +38,6 @@ void collectSpillsAndAllocasFromInsts(
     SmallVector<CoroAllocaAllocInst *, 4> &LocalAllocas, Function &F,
     const SuspendCrossingInfo &Checker, const DominatorTree &DT,
     const coro::Shape &Shape);
-
 void collectSpillsFromDbgInfo(SpillInfo &Spills, Function &F,
                               const SuspendCrossingInfo &Checker);
 
@@ -51,6 +52,8 @@ void sinkSpillUsesAfterCoroBegin(const DominatorTree &DT,
 BasicBlock::iterator getSpillInsertionPt(const coro::Shape &, Value *Def,
                                          const DominatorTree &DT);
 
-} // namespace llvm::coro
+} // namespace coro
+
+} // namespace llvm
 
 #endif // LLVM_TRANSFORMS_COROUTINES_SPILLINGINFO_H

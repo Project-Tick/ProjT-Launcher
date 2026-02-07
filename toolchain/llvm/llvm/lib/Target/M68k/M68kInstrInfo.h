@@ -270,7 +270,7 @@ public:
                         int *BytesAdded = nullptr) const override;
 
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
-                   const DebugLoc &DL, Register DestReg, Register SrcReg,
+                   const DebugLoc &DL, MCRegister DestReg, MCRegister SrcReg,
                    bool KillSrc, bool RenamableDest = false,
                    bool RenamableSrc = false) const override;
 
@@ -280,13 +280,14 @@ public:
 
   void storeRegToStackSlot(
       MachineBasicBlock &MBB, MachineBasicBlock::iterator MI, Register SrcReg,
-      bool IsKill, int FrameIndex, const TargetRegisterClass *RC, Register VReg,
+      bool IsKill, int FrameIndex, const TargetRegisterClass *RC,
+      const TargetRegisterInfo *TRI, Register VReg,
       MachineInstr::MIFlag Flags = MachineInstr::NoFlags) const override;
 
   void loadRegFromStackSlot(
       MachineBasicBlock &MBB, MachineBasicBlock::iterator MI, Register DestReg,
-      int FrameIndex, const TargetRegisterClass *RC, Register VReg,
-      unsigned SubReg = 0,
+      int FrameIndex, const TargetRegisterClass *RC,
+      const TargetRegisterInfo *TRI, Register VReg,
       MachineInstr::MIFlag Flags = MachineInstr::NoFlags) const override;
 
   bool expandPostRAPseudo(MachineInstr &MI) const override;
@@ -318,6 +319,9 @@ public:
   /// Push/Pop to/from stack
   bool ExpandPUSH_POP(MachineInstrBuilder &MIB, const MCInstrDesc &Desc,
                       bool IsPush) const;
+
+  /// Moves to/from CCR
+  bool ExpandCCR(MachineInstrBuilder &MIB, bool IsToCCR) const;
 
   /// Expand all MOVEM pseudos into real MOVEMs
   bool ExpandMOVEM(MachineInstrBuilder &MIB, const MCInstrDesc &Desc,

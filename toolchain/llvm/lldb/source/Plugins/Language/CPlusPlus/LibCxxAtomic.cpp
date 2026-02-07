@@ -96,7 +96,9 @@ public:
 
   lldb::ChildCacheState Update() override;
 
-  llvm::Expected<size_t> GetIndexOfChildWithName(ConstString name) override;
+  bool MightHaveChildren() override;
+
+  size_t GetIndexOfChildWithName(ConstString name) override;
 
 private:
   ValueObject *m_real_child = nullptr;
@@ -117,6 +119,11 @@ lldb_private::formatters::LibcxxStdAtomicSyntheticFrontEnd::Update() {
   return lldb::ChildCacheState::eRefetch;
 }
 
+bool lldb_private::formatters::LibcxxStdAtomicSyntheticFrontEnd::
+    MightHaveChildren() {
+  return true;
+}
+
 llvm::Expected<uint32_t> lldb_private::formatters::
     LibcxxStdAtomicSyntheticFrontEnd::CalculateNumChildren() {
   return m_real_child ? 1 : 0;
@@ -130,25 +137,15 @@ lldb_private::formatters::LibcxxStdAtomicSyntheticFrontEnd::GetChildAtIndex(
   return nullptr;
 }
 
-llvm::Expected<size_t>
-lldb_private::formatters::LibcxxStdAtomicSyntheticFrontEnd::
+size_t lldb_private::formatters::LibcxxStdAtomicSyntheticFrontEnd::
     GetIndexOfChildWithName(ConstString name) {
-  if (name == "Value")
-    return 0;
-  return llvm::createStringError("Type has no child named '%s'",
-                                 name.AsCString());
+  return name == "Value" ? 0 : UINT32_MAX;
 }
 
 SyntheticChildrenFrontEnd *
 lldb_private::formatters::LibcxxAtomicSyntheticFrontEndCreator(
     CXXSyntheticChildren *, lldb::ValueObjectSP valobj_sp) {
-  if (valobj_sp && IsLibCxxAtomic(*valobj_sp))
+  if (valobj_sp)
     return new LibcxxStdAtomicSyntheticFrontEnd(valobj_sp);
   return nullptr;
-}
-
-bool lldb_private::formatters::IsLibCxxAtomic(ValueObject &valobj) {
-  if (auto valobj_sp = valobj.GetNonSyntheticValue())
-    return valobj_sp->GetChildMemberWithName("__a_") != nullptr;
-  return false;
 }

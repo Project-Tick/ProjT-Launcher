@@ -1,7 +1,6 @@
 // RUN: %libomptarget-compilexx-run-and-check-generic
 
 // UNSUPPORTED: amdgcn-amd-amdhsa
-// XFAIL: intelgpu
 
 extern "C" int printf(const char *, ...);
 

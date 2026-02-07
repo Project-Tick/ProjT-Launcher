@@ -25,14 +25,16 @@
 #include "mlir/IR/Location.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/OperationSupport.h"
-#include "mlir/IR/Remarks.h"
+#include "mlir/IR/Types.h"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/DenseSet.h"
+#include "llvm/ADT/SmallString.h"
+#include "llvm/ADT/StringSet.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/Allocator.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Compiler.h"
-#include "llvm/Support/DebugLog.h"
-#include "llvm/Support/ManagedStatic.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/Mutex.h"
 #include "llvm/Support/RWMutex.h"
 #include "llvm/Support/ThreadPool.h"
@@ -120,11 +122,6 @@ namespace mlir {
 /// This class is completely private to this file, so everything is public.
 class MLIRContextImpl {
 public:
-  //===--------------------------------------------------------------------===//
-  // Remark
-  //===--------------------------------------------------------------------===//
-  std::unique_ptr<remark::detail::RemarkEngine> remarkEngine;
-
   //===--------------------------------------------------------------------===//
   // Debugging
   //===--------------------------------------------------------------------===//
@@ -357,10 +354,7 @@ MLIRContext::MLIRContext(const DialectRegistry &registry, Threading setting)
   impl->affineUniquer.registerParametricStorageType<IntegerSetStorage>();
 }
 
-MLIRContext::~MLIRContext() {
-  // finalize remark engine before destroying anything else.
-  impl->remarkEngine.reset();
-}
+MLIRContext::~MLIRContext() = default;
 
 /// Copy the specified array of elements into memory managed by the provided
 /// bump pointer allocator.  This assumes the elements are all PODs.
@@ -368,7 +362,7 @@ template <typename T>
 static ArrayRef<T> copyArrayRefInto(llvm::BumpPtrAllocator &allocator,
                                     ArrayRef<T> elements) {
   auto result = allocator.Allocate<T>(elements.size());
-  llvm::uninitialized_copy(elements, result);
+  std::uninitialized_copy(elements.begin(), elements.end(), result);
   return ArrayRef<T>(result, elements.size());
 }
 
@@ -395,19 +389,6 @@ bool MLIRContext::hasActionHandler() { return (bool)getImpl().actionHandler; }
 
 /// Returns the diagnostic engine for this context.
 DiagnosticEngine &MLIRContext::getDiagEngine() { return getImpl().diagEngine; }
-
-//===----------------------------------------------------------------------===//
-// Remark Handlers
-//===----------------------------------------------------------------------===//
-
-void MLIRContext::setRemarkEngine(
-    std::unique_ptr<remark::detail::RemarkEngine> engine) {
-  getImpl().remarkEngine = std::move(engine);
-}
-
-remark::detail::RemarkEngine *MLIRContext::getRemarkEngine() {
-  return getImpl().remarkEngine.get();
-}
 
 //===----------------------------------------------------------------------===//
 // Dialect and Operation Registration
@@ -477,7 +458,8 @@ MLIRContext::getOrLoadDialect(StringRef dialectNamespace, TypeID dialectID,
   auto dialectIt = impl.loadedDialects.try_emplace(dialectNamespace, nullptr);
 
   if (dialectIt.second) {
-    LDBG() << "Load new dialect in Context " << dialectNamespace;
+    LLVM_DEBUG(llvm::dbgs()
+               << "Load new dialect in Context " << dialectNamespace << "\n");
 #ifndef NDEBUG
     if (impl.multiThreadedExecutionContext != 0)
       llvm::report_fatal_error(
@@ -546,7 +528,8 @@ DynamicDialect *MLIRContext::getOrLoadDynamicDialect(
                              "' has already been registered");
   }
 
-  LDBG() << "Load new dynamic dialect in Context " << dialectNamespace;
+  LLVM_DEBUG(llvm::dbgs() << "Load new dynamic dialect in Context "
+                          << dialectNamespace << "\n");
 #ifndef NDEBUG
   if (impl.multiThreadedExecutionContext != 0)
     llvm::report_fatal_error(
@@ -709,16 +692,18 @@ ArrayRef<RegisteredOperationName> MLIRContext::getRegisteredOperations() {
 /// Return information for registered operations by dialect.
 ArrayRef<RegisteredOperationName>
 MLIRContext::getRegisteredOperationsByDialect(StringRef dialectName) {
-  auto *lowerBound = llvm::lower_bound(
-      impl->sortedRegisteredOperations, dialectName, [](auto &lhs, auto &rhs) {
-        return lhs.getDialect().getNamespace().compare(rhs);
-      });
+  auto lowerBound =
+      std::lower_bound(impl->sortedRegisteredOperations.begin(),
+                       impl->sortedRegisteredOperations.end(), dialectName,
+                       [](auto &lhs, auto &rhs) {
+                         return lhs.getDialect().getNamespace().compare(rhs);
+                       });
 
   if (lowerBound == impl->sortedRegisteredOperations.end() ||
       lowerBound->getDialect().getNamespace() != dialectName)
     return ArrayRef<RegisteredOperationName>();
 
-  auto *upperBound =
+  auto upperBound =
       std::upper_bound(lowerBound, impl->sortedRegisteredOperations.end(),
                        dialectName, [](auto &lhs, auto &rhs) {
                          return lhs.compare(rhs.getDialect().getNamespace());
@@ -827,7 +812,7 @@ OperationName::OperationName(StringRef name, MLIRContext *context) {
   // Acquire a writer-lock so that we can safely create the new instance.
   ScopedWriterLock lock(ctxImpl.operationInfoMutex, isMultithreadingEnabled);
 
-  auto it = ctxImpl.operations.try_emplace(name);
+  auto it = ctxImpl.operations.insert({name, nullptr});
   if (it.second) {
     auto nameAttr = StringAttr::get(context, name);
     it.first->second = std::make_unique<UnregisteredOpModel>(
@@ -904,8 +889,6 @@ int OperationName::UnregisteredOpModel::getOpPropertyByteSize() {
 void OperationName::UnregisteredOpModel::initProperties(
     OperationName opName, OpaqueProperties storage, OpaqueProperties init) {
   new (storage.as<Attribute *>()) Attribute();
-  if (init)
-    *storage.as<Attribute *>() = *init.as<Attribute *>();
 }
 void OperationName::UnregisteredOpModel::deleteProperties(
     OpaqueProperties prop) {
@@ -1204,7 +1187,7 @@ AffineMap AffineMap::getImpl(unsigned dimCount, unsigned symbolCount,
 /// present in result expressions is less than `dimCount` and the highest index
 /// of symbolic identifier present in result expressions is less than
 /// `symbolCount`.
-[[maybe_unused]] static bool
+LLVM_ATTRIBUTE_UNUSED static bool
 willBeValidAffineMap(unsigned dimCount, unsigned symbolCount,
                      ArrayRef<AffineExpr> results) {
   int64_t maxDimPosition = -1;
@@ -1212,10 +1195,11 @@ willBeValidAffineMap(unsigned dimCount, unsigned symbolCount,
   getMaxDimAndSymbol(ArrayRef<ArrayRef<AffineExpr>>(results), maxDimPosition,
                      maxSymbolPosition);
   if ((maxDimPosition >= dimCount) || (maxSymbolPosition >= symbolCount)) {
-    LDBG()
+    LLVM_DEBUG(
+        llvm::dbgs()
         << "maximum dimensional identifier position in result expression must "
            "be less than `dimCount` and maximum symbolic identifier position "
-           "in result expression must be less than `symbolCount`";
+           "in result expression must be less than `symbolCount`\n");
     return false;
   }
   return true;

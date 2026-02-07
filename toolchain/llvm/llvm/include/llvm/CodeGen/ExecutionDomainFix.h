@@ -133,7 +133,7 @@ class ExecutionDomainFix : public MachineFunctionPass {
   using OutRegsInfoMap = SmallVector<LiveRegsDVInfo, 4>;
   OutRegsInfoMap MBBOutRegsInfos;
 
-  ReachingDefInfo *RDI = nullptr;
+  ReachingDefAnalysis *RDA = nullptr;
 
 public:
   ExecutionDomainFix(char &PassID, const TargetRegisterClass &RC)
@@ -141,21 +141,22 @@ public:
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.setPreservesAll();
-    AU.addRequired<ReachingDefInfoWrapperPass>();
+    AU.addRequired<ReachingDefAnalysis>();
     MachineFunctionPass::getAnalysisUsage(AU);
   }
 
   bool runOnMachineFunction(MachineFunction &MF) override;
 
   MachineFunctionProperties getRequiredProperties() const override {
-    return MachineFunctionProperties().setNoVRegs();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::NoVRegs);
   }
 
 private:
   /// Translate TRI register number to a list of indices into our smaller tables
   /// of interesting registers.
   iterator_range<SmallVectorImpl<int>::const_iterator>
-  regIndices(MCRegister Reg) const;
+  regIndices(unsigned Reg) const;
 
   /// DomainValue allocation.
   DomainValue *alloc(int domain = -1);

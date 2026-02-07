@@ -33,7 +33,7 @@ class AArch64PostSelectOptimize : public MachineFunctionPass {
 public:
   static char ID;
 
-  AArch64PostSelectOptimize() : MachineFunctionPass(ID) {}
+  AArch64PostSelectOptimize();
 
   StringRef getPassName() const override {
     return "AArch64 Post Select Optimizer";
@@ -57,6 +57,11 @@ void AArch64PostSelectOptimize::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.setPreservesCFG();
   getSelectionDAGFallbackAnalysisUsage(AU);
   MachineFunctionPass::getAnalysisUsage(AU);
+}
+
+AArch64PostSelectOptimize::AArch64PostSelectOptimize()
+    : MachineFunctionPass(ID) {
+  initializeAArch64PostSelectOptimizePass(*PassRegistry::getPassRegistry());
 }
 
 unsigned getNonFlagSettingVariant(unsigned Opc) {
@@ -100,7 +105,7 @@ unsigned getNonFlagSettingVariant(unsigned Opc) {
 
 bool AArch64PostSelectOptimize::doPeepholeOpts(MachineBasicBlock &MBB) {
   bool Changed = false;
-  for (auto &MI : make_early_inc_range(MBB)) {
+  for (auto &MI : make_early_inc_range(make_range(MBB.begin(), MBB.end()))) {
     bool CurrentIterChanged = foldSimpleCrossClassCopies(MI);
     if (!CurrentIterChanged)
       CurrentIterChanged |= foldCopyDup(MI);
@@ -292,9 +297,12 @@ bool AArch64PostSelectOptimize::optimizeNZCVDefs(MachineBasicBlock &MBB) {
 }
 
 bool AArch64PostSelectOptimize::runOnMachineFunction(MachineFunction &MF) {
-  if (MF.getProperties().hasFailedISel())
+  if (MF.getProperties().hasProperty(
+          MachineFunctionProperties::Property::FailedISel))
     return false;
-  assert(MF.getProperties().hasSelected() && "Expected a selected MF");
+  assert(MF.getProperties().hasProperty(
+             MachineFunctionProperties::Property::Selected) &&
+         "Expected a selected MF");
 
   bool Changed = false;
   for (auto &BB : MF) {

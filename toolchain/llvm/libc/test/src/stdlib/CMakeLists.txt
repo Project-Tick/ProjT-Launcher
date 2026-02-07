@@ -9,7 +9,6 @@ add_libc_test(
   DEPENDS
     libc.src.errno.errno
     libc.src.stdlib.atof
-    libc.test.UnitTest.ErrnoCheckingTest
 )
 
 add_header_library(
@@ -65,7 +64,6 @@ add_fp_unittest(
     libc.src.errno.errno
     libc.src.stdlib.strtod
     libc.src.__support.FPUtil.fenv_impl
-    libc.test.UnitTest.ErrnoCheckingTest
 )
 
 add_fp_unittest(
@@ -78,7 +76,6 @@ add_fp_unittest(
     libc.src.errno.errno
     libc.src.stdlib.strtof
     libc.src.__support.FPUtil.fenv_impl
-    libc.test.UnitTest.ErrnoCheckingTest
 )
 
 add_header_library(
@@ -89,7 +86,6 @@ add_header_library(
     libc.src.__support.CPP.limits
     libc.src.__support.CPP.type_traits
     libc.src.errno.errno
-    libc.test.UnitTest.ErrnoCheckingTest
 )
 
 add_libc_test(
@@ -99,7 +95,6 @@ add_libc_test(
   SRCS
     strtoint32_test.cpp
   DEPENDS
-    libc.hdr.stdint_proxy
     libc.src.__support.str_to_integer
     libc.src.errno.errno
     .strtol_test_support
@@ -112,7 +107,6 @@ add_libc_test(
   SRCS
     strtoint64_test.cpp
   DEPENDS
-    libc.hdr.stdint_proxy
     libc.src.__support.str_to_integer
     libc.src.errno.errno
     .strtol_test_support
@@ -139,7 +133,6 @@ add_libc_test(
     libc.src.errno.errno
     libc.src.__support.uint128
     libc.src.stdlib.strtold
-    libc.test.UnitTest.ErrnoCheckingTest
 )
 
 add_libc_test(
@@ -175,8 +168,7 @@ add_libc_test(
     .strtol_test_support
 )
 
-if(LIBC_CONF_PRINTF_FLOAT_TO_STR_USE_DYADIC_FLOAT OR
-    LIBC_CONF_PRINTF_FLOAT_TO_STR_USE_FLOAT320)
+if(LIBC_CONF_PRINTF_FLOAT_TO_STR_USE_DYADIC_FLOAT)
   list(APPEND strfrom_test_copts "-DLIBC_COPT_FLOAT_TO_STR_REDUCED_PRECISION")
 endif()
 
@@ -187,7 +179,6 @@ add_header_library(
   DEPENDS
     libc.src.__support.CPP.type_traits
     libc.src.__support.FPUtil.fp_bits
-    libc.src.__support.macros.properties.architectures
 )
 
 add_libc_test(
@@ -227,27 +218,6 @@ add_libc_test(
     libc.src.stdlib.strfroml
   COMPILE_OPTIONS
     ${strfrom_test_copts}
-)
-
-add_libc_test(
-  a64l_test
-  SUITE
-    libc-stdlib-tests
-  SRCS
-    a64l_test.cpp
-  DEPENDS
-    libc.src.stdlib.a64l
-)
-
-add_libc_test(
-  l64a_test
-  SUITE
-    libc-stdlib-tests
-  SRCS
-    l64a_test.cpp
-  DEPENDS
-    libc.src.stdlib.l64a
-    libc.src.__support.CPP.limits
 )
 
 add_libc_test(
@@ -376,68 +346,6 @@ add_libc_test(
     libc.src.stdlib.srand
 )
 
-add_libc_test(
-  memalignment_test
-  SUITE
-    libc-stdlib-tests
-  SRCS
-    memalignment_test.cpp
-  DEPENDS
-    libc.hdr.stdint_proxy
-    libc.include.stdlib
-    libc.src.stdlib.memalignment
-)
-
-add_libc_test(
-  mbtowc_test
-  SUITE
-    libc-stdlib-tests
-  SRCS
-    mbtowc_test.cpp
-  DEPENDS
-    libc.hdr.errno_macros
-    libc.src.stdlib.mbtowc
-    libc.hdr.types.wchar_t
-    libc.test.UnitTest.ErrnoCheckingTest
-)
-
-add_libc_test(
-  mbstowcs_test
-  SUITE
-    libc-stdlib-tests
-  SRCS
-    mbstowcs_test.cpp
-  DEPENDS
-    libc.hdr.errno_macros
-    libc.src.stdlib.mbstowcs
-    libc.hdr.types.wchar_t
-    libc.test.UnitTest.ErrnoCheckingTest
-)
-
-add_libc_test(
-  wctomb_test
-  SUITE
-    libc-stdlib-tests
-  SRCS
-    wctomb_test.cpp
-  DEPENDS
-    libc.hdr.errno_macros
-    libc.src.stdlib.wctomb
-    libc.hdr.types.wchar_t
-)
-
-add_libc_test(
-  wcstombs_test
-  SUITE
-    libc-stdlib-tests
-  SRCS
-    wcstombs_test.cpp
-  DEPENDS
-    libc.src.stdlib.wcstombs
-    libc.test.UnitTest.ErrnoCheckingTest
-    libc.hdr.types.wchar_t
-)
-
 if(LLVM_LIBC_FULL_BUILD)
 
   add_libc_test(
@@ -448,19 +356,6 @@ if(LLVM_LIBC_FULL_BUILD)
       libc-stdlib-tests
     SRCS
       _Exit_test.cpp
-    DEPENDS
-      libc.src.__support.OSUtil.osutil
-      libc.src.stdlib._Exit
-  )
-
-  add_libc_test(
-    exit_test
-    # The EXPECT_EXITS test is only availible for unit tests.
-    UNIT_TEST_ONLY
-    SUITE
-      libc-stdlib-tests
-    SRCS
-      exit_test.cpp
     DEPENDS
       libc.src.stdlib._Exit
       libc.src.stdlib.exit

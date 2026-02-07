@@ -7,7 +7,7 @@ define half @f2h(float %a) {
 ; CHECK-NEXT:    str x30, [sp, #-16]! // 8-byte Folded Spill
 ; CHECK-NEXT:    .cfi_def_cfa_offset 16
 ; CHECK-NEXT:    .cfi_offset w30, -16
-; CHECK-NEXT:    bl __truncsfhf2
+; CHECK-NEXT:    bl __gnu_f2h_ieee
 ; CHECK-NEXT:    ldr x30, [sp], #16 // 8-byte Folded Reload
 ; CHECK-NEXT:    ret
 entry:
@@ -77,7 +77,7 @@ define double @selectcc_f64(double %a, double %b, i32 %d) {
 ; CHECK-LABEL: selectcc_f64:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:    cmp w2, #0
-; CHECK-NEXT:    csel x0, x0, x1, mi
+; CHECK-NEXT:    csel x0, x0, x1, lt
 ; CHECK-NEXT:    ret
 entry:
   %c = icmp slt i32 %d, 0
@@ -89,7 +89,7 @@ define float @selectcc_f32(float %a, float %b, i32 %d) {
 ; CHECK-LABEL: selectcc_f32:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:    cmp w2, #0
-; CHECK-NEXT:    csel w0, w0, w1, mi
+; CHECK-NEXT:    csel w0, w0, w1, lt
 ; CHECK-NEXT:    ret
 entry:
   %c = icmp slt i32 %d, 0
@@ -101,7 +101,7 @@ define half @selectcc_f16(half %a, half %b, i32 %d) {
 ; CHECK-LABEL: selectcc_f16:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:    cmp w2, #0
-; CHECK-NEXT:    csel w0, w0, w1, mi
+; CHECK-NEXT:    csel w0, w0, w1, lt
 ; CHECK-NEXT:    ret
 entry:
   %c = icmp slt i32 %d, 0
@@ -113,7 +113,7 @@ define bfloat @selectcc_bf16(bfloat %a, bfloat %b, i32 %d) {
 ; CHECK-LABEL: selectcc_bf16:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:    cmp w2, #0
-; CHECK-NEXT:    csel w0, w0, w1, mi
+; CHECK-NEXT:    csel w0, w0, w1, lt
 ; CHECK-NEXT:    ret
 entry:
   %c = icmp slt i32 %d, 0

@@ -10,7 +10,6 @@ unittest("ProfileDataTests") {
   sources = [
     "BPFunctionNodeTest.cpp",
     "CoverageMappingTest.cpp",
-    "DataAccessProfTest.cpp",
     "InstrProfDataTest.cpp",
     "InstrProfTest.cpp",
     "ItaniumManglingCanonicalizerTest.cpp",

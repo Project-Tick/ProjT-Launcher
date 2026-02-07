@@ -14,6 +14,8 @@
 
 ; These intrinsics require half and i64 to be legal types.
 
+declare i64 @llvm.llrint.i64.f16(half)
+
 define i64 @llrint_f16(half %a) nounwind {
 ; CHECKIZFHMIN-LABEL: llrint_f16:
 ; CHECKIZFHMIN:       # %bb.0:
@@ -29,6 +31,8 @@ define i64 @llrint_f16(half %a) nounwind {
   %1 = call i64 @llvm.llrint.i64.f16(half %a)
   ret i64 %1
 }
+
+declare i64 @llvm.llround.i64.f16(half)
 
 define i64 @llround_f16(half %a) nounwind {
 ; CHECKIZFHMIN-LABEL: llround_f16:

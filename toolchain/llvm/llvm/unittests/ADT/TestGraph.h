@@ -24,17 +24,18 @@ namespace llvm {
 template <unsigned N>
 class Graph {
 private:
+  // Disable copying.
+  Graph(const Graph&);
+  Graph& operator=(const Graph&);
+
   static void ValidateIndex(unsigned Idx) {
     assert(Idx < N && "Invalid node index!");
   }
 public:
-  // Disable copying.
-  Graph(const Graph &) = delete;
-  Graph &operator=(const Graph &) = delete;
 
   /// NodeSubset - A subset of the graph's nodes.
   class NodeSubset {
-    using BitVector = unsigned char; // Where the limitation N <= 8 comes from.
+    typedef unsigned char BitVector; // Where the limitation N <= 8 comes from.
     BitVector Elements;
     NodeSubset(BitVector e) : Elements(e) {}
   public:
@@ -96,7 +97,7 @@ public:
   };
 
   /// NodeType - Node index and set of children of the node.
-  using NodeType = std::pair<unsigned, NodeSubset>;
+  typedef std::pair<unsigned, NodeSubset> NodeType;
 
 private:
   /// Nodes - The list of nodes for this graph.
@@ -168,12 +169,11 @@ public:
     /// yet been visited.
     NodeSubset Children;
 
+    ChildIterator(); // Disable default constructor.
   protected:
     ChildIterator(NodeType *F, NodeSubset C) : FirstNode(F), Children(C) {}
 
   public:
-    ChildIterator() = delete; // Disable default constructor.
-
     /// ChildIterator - Copy constructor.
     ChildIterator(const ChildIterator &other) = default;
     ChildIterator &operator=(const ChildIterator &other) = default;
@@ -233,8 +233,8 @@ public:
 
 template <unsigned N>
 struct GraphTraits<Graph<N> > {
-  using NodeRef = typename Graph<N>::NodeType *;
-  using ChildIteratorType = typename Graph<N>::ChildIterator;
+  typedef typename Graph<N>::NodeType *NodeRef;
+  typedef typename Graph<N>::ChildIterator ChildIteratorType;
 
   static NodeRef getEntryNode(const Graph<N> &G) { return G.AccessNode(0); }
   static ChildIteratorType child_begin(NodeRef Node) {

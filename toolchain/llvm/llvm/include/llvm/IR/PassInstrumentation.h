@@ -55,6 +55,7 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Support/Compiler.h"
+#include <type_traits>
 #include <vector>
 
 namespace llvm {
@@ -162,9 +163,9 @@ public:
   }
 
   /// Add a class name to pass name mapping for use by pass instrumentation.
-  LLVM_ABI void addClassToPassName(StringRef ClassName, StringRef PassName);
-  /// Get the pass name for a given pass class name. Empty if no match found.
-  LLVM_ABI StringRef getPassNameForClassName(StringRef ClassName);
+  void addClassToPassName(StringRef ClassName, StringRef PassName);
+  /// Get the pass name for a given pass class name.
+  StringRef getPassNameForClassName(StringRef ClassName);
 
 private:
   friend class PassInstrumentation;
@@ -215,9 +216,14 @@ class PassInstrumentation {
   template <typename PassT>
   using has_required_t = decltype(std::declval<PassT &>().isRequired());
 
-  template <typename PassT> static bool isRequired(const PassT &Pass) {
-    if constexpr (is_detected<has_required_t, PassT>::value)
-      return Pass.isRequired();
+  template <typename PassT>
+  static std::enable_if_t<is_detected<has_required_t, PassT>::value, bool>
+  isRequired(const PassT &Pass) {
+    return Pass.isRequired();
+  }
+  template <typename PassT>
+  static std::enable_if_t<!is_detected<has_required_t, PassT>::value, bool>
+  isRequired(const PassT &Pass) {
     return false;
   }
 
@@ -343,15 +349,14 @@ public:
   }
 };
 
-LLVM_ABI bool isSpecialPass(StringRef PassID,
-                            const std::vector<StringRef> &Specials);
+bool isSpecialPass(StringRef PassID, const std::vector<StringRef> &Specials);
 
 /// Pseudo-analysis pass that exposes the \c PassInstrumentation to pass
 /// managers.
 class PassInstrumentationAnalysis
     : public AnalysisInfoMixin<PassInstrumentationAnalysis> {
   friend AnalysisInfoMixin<PassInstrumentationAnalysis>;
-  LLVM_ABI static AnalysisKey Key;
+  static AnalysisKey Key;
 
   PassInstrumentationCallbacks *Callbacks;
 

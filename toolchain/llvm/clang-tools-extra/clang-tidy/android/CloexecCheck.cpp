@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- CloexecCheck.cpp - clang-tidy-------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -16,13 +16,12 @@ using namespace clang::ast_matchers;
 
 namespace clang::tidy::android {
 
+namespace {
 // Helper function to form the correct string mode for Type3.
 // Build the replace text. If it's string constant, add <Mode> directly in the
 // end of the string. Else, add <Mode>.
-static std::string buildFixMsgForStringFlag(const Expr *Arg,
-                                            const SourceManager &SM,
-                                            const LangOptions &LangOpts,
-                                            char Mode) {
+std::string buildFixMsgForStringFlag(const Expr *Arg, const SourceManager &SM,
+                                     const LangOptions &LangOpts, char Mode) {
   if (Arg->getBeginLoc().isMacroID())
     return (Lexer::getSourceText(
                 CharSourceRange::getTokenRange(Arg->getSourceRange()), SM,
@@ -30,13 +29,17 @@ static std::string buildFixMsgForStringFlag(const Expr *Arg,
             " \"" + Twine(Mode) + "\"")
         .str();
 
-  const StringRef SR =
-      cast<StringLiteral>(Arg->IgnoreParenCasts())->getString();
+  StringRef SR = cast<StringLiteral>(Arg->IgnoreParenCasts())->getString();
   return ("\"" + SR + Twine(Mode) + "\"").str();
 }
+} // namespace
+
+const char *CloexecCheck::FuncDeclBindingStr = "funcDecl";
+
+const char *CloexecCheck::FuncBindingStr ="func";
 
 void CloexecCheck::registerMatchersImpl(
-    MatchFinder *Finder, const internal::Matcher<FunctionDecl> &Function) {
+    MatchFinder *Finder, internal::Matcher<FunctionDecl> Function) {
   // We assume all the checked APIs are C functions.
   Finder->addMatcher(
       callExpr(
@@ -50,14 +53,14 @@ void CloexecCheck::insertMacroFlag(const MatchFinder::MatchResult &Result,
   const auto *MatchedCall = Result.Nodes.getNodeAs<CallExpr>(FuncBindingStr);
   const auto *FlagArg = MatchedCall->getArg(ArgPos);
   const auto *FD = Result.Nodes.getNodeAs<FunctionDecl>(FuncDeclBindingStr);
-  const SourceManager &SM = *Result.SourceManager;
+  SourceManager &SM = *Result.SourceManager;
 
   if (utils::exprHasBitFlagWithSpelling(FlagArg->IgnoreParenCasts(), SM,
                                         Result.Context->getLangOpts(),
                                         MacroFlag))
     return;
 
-  const SourceLocation EndLoc =
+  SourceLocation EndLoc =
       Lexer::getLocForEndOfToken(SM.getFileLoc(FlagArg->getEndLoc()), 0, SM,
                                  Result.Context->getLangOpts());
 
@@ -85,7 +88,7 @@ void CloexecCheck::insertStringFlag(
   if (!ModeStr || ModeStr->getString().contains(Mode))
     return;
 
-  const std::string ReplacementText = buildFixMsgForStringFlag(
+  std::string ReplacementText = buildFixMsgForStringFlag(
       ModeArg, *Result.SourceManager, Result.Context->getLangOpts(), Mode);
 
   diag(ModeArg->getBeginLoc(), "use %0 mode '%1' to set O_CLOEXEC")

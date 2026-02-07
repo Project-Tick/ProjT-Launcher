@@ -9,7 +9,6 @@
 #include "lldb/Interpreter/OptionValuePathMappings.h"
 
 #include "lldb/Host/FileSystem.h"
-#include "lldb/Interpreter/OptionValue.h"
 #include "lldb/Utility/Args.h"
 #include "lldb/Utility/FileSpec.h"
 #include "lldb/Utility/Stream.h"
@@ -29,21 +28,14 @@ void OptionValuePathMappings::DumpValue(const ExecutionContext *exe_ctx,
   if (dump_mask & eDumpOptionType)
     strm.Printf("(%s)", GetTypeAsCString());
   if (dump_mask & eDumpOptionValue) {
-    if (dump_mask & (eDumpOptionType | eDumpOptionDefaultValue)) {
-      strm.Printf(" =");
-      if (dump_mask & eDumpOptionDefaultValue && !m_path_mappings.IsEmpty()) {
-        DefaultValueFormat label(strm);
-        strm.PutCString("empty");
-      }
-      if (!m_path_mappings.IsEmpty())
-        strm.PutCString("\n");
-    }
+    if (dump_mask & eDumpOptionType)
+      strm.Printf(" =%s", (m_path_mappings.GetSize() > 0) ? "\n" : "");
     m_path_mappings.Dump(&strm);
   }
 }
 
 llvm::json::Value
-OptionValuePathMappings::ToJSON(const ExecutionContext *exe_ctx) const {
+OptionValuePathMappings::ToJSON(const ExecutionContext *exe_ctx) {
   return m_path_mappings.ToJSON();
 }
 

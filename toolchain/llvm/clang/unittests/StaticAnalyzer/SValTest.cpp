@@ -34,12 +34,13 @@ namespace clang {
 // getType() tests include whole bunch of type comparisons,
 // so when something is wrong, it's good to have gtest telling us
 // what are those types.
-[[maybe_unused]] std::ostream &operator<<(std::ostream &OS, const QualType &T) {
+LLVM_ATTRIBUTE_UNUSED std::ostream &operator<<(std::ostream &OS,
+                                               const QualType &T) {
   return OS << T.getAsString();
 }
 
-[[maybe_unused]] std::ostream &operator<<(std::ostream &OS,
-                                          const CanQualType &T) {
+LLVM_ATTRIBUTE_UNUSED std::ostream &operator<<(std::ostream &OS,
+                                               const CanQualType &T) {
   return OS << QualType{T};
 }
 
@@ -60,8 +61,7 @@ using SVals = llvm::StringMap<SVal>;
 /// can test whatever we gathered.
 class SValCollector : public Checker<check::Bind, check::EndAnalysis> {
 public:
-  void checkBind(SVal Loc, SVal Val, const Stmt *S, bool AtDeclInit,
-                 CheckerContext &C) const {
+  void checkBind(SVal Loc, SVal Val, const Stmt *S, CheckerContext &C) const {
     // Skip instantly if we finished testing.
     // Also, we care only for binds happening in variable initializations.
     if (Tested || !isa<DeclStmt>(S))
@@ -139,10 +139,10 @@ class SValTest : public testing::TestWithParam<TestClangConfig> {};
                                                                                \
   void add##NAME##SValCollector(AnalysisASTConsumer &AnalysisConsumer,         \
                                 AnalyzerOptions &AnOpts) {                     \
-    AnOpts.CheckersAndPackages = {{"test." #NAME "SValColl", true}};           \
+    AnOpts.CheckersAndPackages = {{"test.##NAME##SValCollector", true}};       \
     AnalysisConsumer.AddCheckerRegistrationFn([](CheckerRegistry &Registry) {  \
-      Registry.addChecker<NAME##SValCollector>("test." #NAME "SValColl",       \
-                                               "MockDescription");             \
+      Registry.addChecker<NAME##SValCollector>("test.##NAME##SValCollector",   \
+                                               "Description", "");             \
     });                                                                        \
   }                                                                            \
                                                                                \
@@ -319,7 +319,10 @@ void foo(int x) {
   ASSERT_TRUE(LD.has_value());
   auto LDT = LD->getType(Context);
   ASSERT_FALSE(LDT.isNull());
-  const auto *DRecordType = dyn_cast<RecordType>(LDT);
+  const auto *DElaboratedType = dyn_cast<ElaboratedType>(LDT);
+  ASSERT_NE(DElaboratedType, nullptr);
+  const auto *DRecordType =
+      dyn_cast<RecordType>(DElaboratedType->getNamedType());
   ASSERT_NE(DRecordType, nullptr);
   EXPECT_EQ("TestStruct", DRecordType->getDecl()->getName());
 }

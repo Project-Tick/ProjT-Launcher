@@ -20,8 +20,7 @@
 #include "llvm/DebugInfo/DWARF/DWARFDebugLine.h"
 #include "llvm/DebugInfo/DWARF/DWARFDebugRangeList.h"
 #include "llvm/DebugInfo/DWARF/DWARFDie.h"
-#include "llvm/DebugInfo/DWARF/LowLevel/DWARFExpression.h"
-#include "llvm/Support/Compiler.h"
+#include "llvm/DebugInfo/DWARF/DWARFExpression.h"
 #include <map>
 
 namespace llvm {
@@ -123,13 +122,10 @@ public:
                              const AddressRanges &LinkedRanges) = 0;
 
   /// Emit specified \p LineTable into .debug_line table.
-  /// The optional parameter RowOffsets, if provided, will be populated with the
-  /// offsets of each line table row in the output .debug_line section.
-  virtual void
-  emitLineTableForUnit(const DWARFDebugLine::LineTable &LineTable,
-                       const CompileUnit &Unit, OffsetsStringPool &DebugStrPool,
-                       OffsetsStringPool &DebugLineStrPool,
-                       std::vector<uint64_t> *RowOffsets = nullptr) = 0;
+  virtual void emitLineTableForUnit(const DWARFDebugLine::LineTable &LineTable,
+                                    const CompileUnit &Unit,
+                                    OffsetsStringPool &DebugStrPool,
+                                    OffsetsStringPool &DebugLineStrPool) = 0;
 
   /// Emit the .debug_pubnames contribution for \p Unit.
   virtual void emitPubNamesForUnit(const CompileUnit &Unit) = 0;
@@ -212,7 +208,7 @@ using UnitListTy = std::vector<std::unique_ptr<CompileUnit>>;
 /// a variable). These relocations are called ValidRelocs in the
 /// AddressesInfo and are gathered as a very first step when we start
 /// processing a object file.
-class LLVM_ABI DWARFLinker : public DWARFLinkerBase {
+class DWARFLinker : public DWARFLinkerBase {
 public:
   DWARFLinker(MessageHandlerTy ErrorHandler, MessageHandlerTy WarningHandler,
               std::function<StringRef(StringRef)> StringsTranslator)
@@ -587,21 +583,19 @@ private:
     /// applied to the entry point of the function to get the linked address.
     /// \param Die the output DIE to use, pass NULL to create one.
     /// \returns the root of the cloned tree or null if nothing was selected.
-    LLVM_ABI DIE *cloneDIE(const DWARFDie &InputDIE, const DWARFFile &File,
-                           CompileUnit &U, int64_t PCOffset, uint32_t OutOffset,
-                           unsigned Flags, bool IsLittleEndian,
-                           DIE *Die = nullptr);
+    DIE *cloneDIE(const DWARFDie &InputDIE, const DWARFFile &File,
+                  CompileUnit &U, int64_t PCOffset, uint32_t OutOffset,
+                  unsigned Flags, bool IsLittleEndian, DIE *Die = nullptr);
 
     /// Construct the output DIE tree by cloning the DIEs we
     /// chose to keep above. If there are no valid relocs, then there's
     /// nothing to clone/emit.
-    LLVM_ABI uint64_t cloneAllCompileUnits(DWARFContext &DwarfContext,
-                                           const DWARFFile &File,
-                                           bool IsLittleEndian);
+    uint64_t cloneAllCompileUnits(DWARFContext &DwarfContext,
+                                  const DWARFFile &File, bool IsLittleEndian);
 
     /// Emit the .debug_addr section for the \p Unit.
-    LLVM_ABI void emitDebugAddrSection(CompileUnit &Unit,
-                                       const uint16_t DwarfVersion) const;
+    void emitDebugAddrSection(CompileUnit &Unit,
+                              const uint16_t DwarfVersion) const;
 
     using ExpressionHandlerRef = function_ref<void(
         SmallVectorImpl<uint8_t> &, SmallVectorImpl<uint8_t> &,
@@ -609,9 +603,8 @@ private:
 
     /// Compute and emit debug locations (.debug_loc, .debug_loclists)
     /// for \p Unit, patch the attributes referencing it.
-    LLVM_ABI void generateUnitLocations(CompileUnit &Unit,
-                                        const DWARFFile &File,
-                                        ExpressionHandlerRef ExprHandler);
+    void generateUnitLocations(CompileUnit &Unit, const DWARFFile &File,
+                               ExpressionHandlerRef ExprHandler);
 
   private:
     using AttributeSpec = DWARFAbbreviationDeclaration::AttributeSpec;
@@ -708,11 +701,7 @@ private:
     /// already there.
     /// \returns is a name was found.
     bool getDIENames(const DWARFDie &Die, AttributesInfo &Info,
-                     OffsetsStringPool &StringPool, const DWARFFile &File,
-                     CompileUnit &Unit, bool StripTemplate = false);
-
-    llvm::StringRef getCanonicalDIEName(DWARFDie Die, const DWARFFile &File,
-                                        CompileUnit *Unit);
+                     OffsetsStringPool &StringPool, bool StripTemplate = false);
 
     uint32_t hashFullyQualifiedName(DWARFDie DIE, CompileUnit &U,
                                     const DWARFFile &File,

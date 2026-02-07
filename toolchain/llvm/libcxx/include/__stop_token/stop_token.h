@@ -22,7 +22,7 @@ _LIBCPP_BEGIN_NAMESPACE_STD
 
 #if _LIBCPP_STD_VER >= 20 && _LIBCPP_HAS_THREADS
 
-class stop_token {
+class _LIBCPP_AVAILABILITY_SYNC stop_token {
 public:
   _LIBCPP_HIDE_FROM_ABI stop_token() noexcept = default;
 

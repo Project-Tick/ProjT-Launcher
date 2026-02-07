@@ -9,13 +9,13 @@
 #ifndef LLVM_LIB_TARGET_ARM_ARMASMPRINTER_H
 #define LLVM_LIB_TARGET_ARM_ARMASMPRINTER_H
 
+#include "ARMSubtarget.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
 
 class ARMFunctionInfo;
-class ARMBaseTargetMachine;
 class MCOperand;
 class MachineConstantPool;
 class MachineOperand;
@@ -29,10 +29,11 @@ namespace ARM {
 }
 
 class LLVM_LIBRARY_VISIBILITY ARMAsmPrinter : public AsmPrinter {
-public:
-  static char ID;
 
-private:
+  /// Subtarget - Keep a pointer to the ARMSubtarget around so that we can
+  /// make the right decision when printing asm code for different targets.
+  const ARMSubtarget *Subtarget;
+
   /// AFI - Keep a pointer to ARMFunctionInfo for the current
   /// MachineFunction.
   ARMFunctionInfo *AFI;
@@ -72,8 +73,6 @@ public:
     return "ARM Assembly Printer";
   }
 
-  const ARMBaseTargetMachine &getTM() const;
-
   void printOperand(const MachineInstr *MI, int OpNum, raw_ostream &O);
 
   void PrintSymbolOperand(const MachineOperand &MO, raw_ostream &O) override;
@@ -83,8 +82,7 @@ public:
                              const char *ExtraCode, raw_ostream &O) override;
 
   void emitInlineAsmEnd(const MCSubtargetInfo &StartInfo,
-                        const MCSubtargetInfo *EndInfo,
-                        const MachineInstr *MI) override;
+                        const MCSubtargetInfo *EndInfo) const override;
 
   void emitJumpTableAddrs(const MachineInstr *MI);
   void emitJumpTableInsts(const MachineInstr *MI);
@@ -105,7 +103,6 @@ public:
   void emitEndOfAsmFile(Module &M) override;
   void emitXXStructor(const DataLayout &DL, const Constant *CV) override;
   void emitGlobalVariable(const GlobalVariable *GV) override;
-  void emitGlobalAlias(const Module &M, const GlobalAlias &GA) override;
 
   MCSymbol *GetCPISymbol(unsigned CPID) const override;
 
@@ -121,19 +118,8 @@ public:
   void LowerPATCHABLE_FUNCTION_EXIT(const MachineInstr &MI);
   void LowerPATCHABLE_TAIL_CALL(const MachineInstr &MI);
 
-  // KCFI check lowering
-  void LowerKCFI_CHECK(const MachineInstr &MI);
-
 private:
   void EmitSled(const MachineInstr &MI, SledKind Kind);
-
-  // KCFI check emission helpers
-  void EmitKCFI_CHECK_ARM32(Register AddrReg, int64_t Type,
-                            const MachineInstr &Call, int64_t PrefixNops);
-  void EmitKCFI_CHECK_Thumb2(Register AddrReg, int64_t Type,
-                             const MachineInstr &Call, int64_t PrefixNops);
-  void EmitKCFI_CHECK_Thumb1(Register AddrReg, int64_t Type,
-                             const MachineInstr &Call, int64_t PrefixNops);
 
   // Helpers for emitStartOfAsmFile() and emitEndOfAsmFile()
   void emitAttributes();
@@ -161,14 +147,11 @@ private:
 
   MCSymbol *GetARMGVSymbol(const GlobalValue *GV, unsigned char TargetFlags);
 
-  void emitCMSEVeneerAlias(const GlobalAlias &GA);
-
 public:
   /// EmitMachineConstantPoolValue - Print a machine constantpool value to
   /// the .s file.
   void emitMachineConstantPoolValue(MachineConstantPoolValue *MCPV) override;
 };
-
 } // end namespace llvm
 
 #endif

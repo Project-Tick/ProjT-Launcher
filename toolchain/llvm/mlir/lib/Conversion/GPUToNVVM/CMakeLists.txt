@@ -19,7 +19,6 @@ add_mlir_conversion_library(MLIRGPUToNVVMTransforms
   MLIRLLVMDialect
   MLIRMemRefToLLVM
   MLIRNVGPUDialect
-  MLIRNVGPUToNVVM
   MLIRNVVMDialect
   MLIRPass
   MLIRTransformUtils

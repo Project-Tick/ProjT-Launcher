@@ -89,11 +89,11 @@ ArrayRef<MCPhysReg> MCRegisterInfo::getCachedAliasesOf(MCRegister R) const {
     return Aliases;
 
   for (MCRegAliasIteratorImpl It(R, this); It.isValid(); ++It)
-    Aliases.push_back((*It).id());
+    Aliases.push_back(*It);
 
   sort(Aliases);
   Aliases.erase(unique(Aliases), Aliases.end());
-  assert(!llvm::is_contained(Aliases, R) &&
+  assert(none_of(Aliases, [&](auto &Cur) { return R == Cur; }) &&
          "MCRegAliasIteratorImpl includes Self!");
 
   // Always put "self" at the end, so the iterator can choose to ignore it.
@@ -141,15 +141,15 @@ unsigned MCRegisterInfo::getSubRegIndex(MCRegister Reg,
   return 0;
 }
 
-int64_t MCRegisterInfo::getDwarfRegNum(MCRegister Reg, bool isEH) const {
+int64_t MCRegisterInfo::getDwarfRegNum(MCRegister RegNum, bool isEH) const {
   const DwarfLLVMRegPair *M = isEH ? EHL2DwarfRegs : L2DwarfRegs;
   unsigned Size = isEH ? EHL2DwarfRegsSize : L2DwarfRegsSize;
 
   if (!M)
     return -1;
-  DwarfLLVMRegPair Key = {Reg.id(), 0};
+  DwarfLLVMRegPair Key = { RegNum, 0 };
   const DwarfLLVMRegPair *I = std::lower_bound(M, M+Size, Key);
-  if (I == M + Size || I->FromReg != Reg)
+  if (I == M+Size || I->FromReg != RegNum)
     return -1;
   // Consumers need to be able to detect -1 and -2, but at various points
   // the numbers move between unsigned and signed representations, as well as
@@ -191,21 +191,20 @@ int64_t MCRegisterInfo::getDwarfRegNumFromDwarfEHRegNum(uint64_t RegNum) const {
   return RegNum;
 }
 
-int MCRegisterInfo::getSEHRegNum(MCRegister Reg) const {
-  const DenseMap<MCRegister, int>::const_iterator I = L2SEHRegs.find(Reg);
-  if (I == L2SEHRegs.end())
-    return (int)Reg.id();
+int MCRegisterInfo::getSEHRegNum(MCRegister RegNum) const {
+  const DenseMap<MCRegister, int>::const_iterator I = L2SEHRegs.find(RegNum);
+  if (I == L2SEHRegs.end()) return (int)RegNum;
   return I->second;
 }
 
-int MCRegisterInfo::getCodeViewRegNum(MCRegister Reg) const {
+int MCRegisterInfo::getCodeViewRegNum(MCRegister RegNum) const {
   if (L2CVRegs.empty())
     report_fatal_error("target does not implement codeview register mapping");
-  const DenseMap<MCRegister, int>::const_iterator I = L2CVRegs.find(Reg);
+  const DenseMap<MCRegister, int>::const_iterator I = L2CVRegs.find(RegNum);
   if (I == L2CVRegs.end())
-    report_fatal_error("unknown codeview register " + (Reg.id() < getNumRegs()
-                                                           ? getName(Reg)
-                                                           : Twine(Reg.id())));
+    report_fatal_error("unknown codeview register " + (RegNum < getNumRegs()
+                                                           ? getName(RegNum)
+                                                           : Twine(RegNum)));
   return I->second;
 }
 
@@ -222,7 +221,7 @@ bool MCRegisterInfo::regsOverlap(MCRegister RegA, MCRegister RegB) const {
   return false;
 }
 
-bool MCRegisterInfo::isArtificialRegUnit(MCRegUnit Unit) const {
+bool MCRegisterInfo::isArtificialRegUnit(unsigned Unit) const {
   for (MCRegUnitRootIterator Root(Unit, this); Root.isValid(); ++Root)
     if (isArtificial(*Root))
       return true;

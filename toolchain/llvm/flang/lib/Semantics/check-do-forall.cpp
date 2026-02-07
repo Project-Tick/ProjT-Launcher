@@ -154,8 +154,7 @@ public:
   // of its components?
   static bool MightDeallocatePolymorphic(const Symbol &original,
       const std::function<bool(const Symbol &)> &WillDeallocate) {
-    const Symbol &symbol{
-        ResolveAssociations(original, /*stopAtTypeGuard=*/true)};
+    const Symbol &symbol{ResolveAssociations(original)};
     // Check the entity itself, no coarray exception here
     if (IsPolymorphicAllocatable(symbol)) {
       return true;
@@ -183,10 +182,11 @@ public:
         impure.name(), reason);
   }
 
-  void SayDeallocateOfPolymorphic(
+  void SayDeallocateOfPolymorph(
       parser::CharBlock location, const Symbol &entity, const char *reason) {
     context_.SayWithDecl(entity, location,
-        "Deallocation of a polymorphic entity caused by %s not allowed in DO CONCURRENT"_err_en_US,
+        "Deallocation of a polymorphic entity caused by %s"
+        " not allowed in DO CONCURRENT"_err_en_US,
         reason);
   }
 
@@ -206,7 +206,7 @@ public:
         const Symbol &entity{*pair.second};
         if (IsAllocatable(entity) && !IsSaved(entity) &&
             MightDeallocatePolymorphic(entity, DeallocateAll)) {
-          SayDeallocateOfPolymorphic(endBlockStmt.source, entity, reason);
+          SayDeallocateOfPolymorph(endBlockStmt.source, entity, reason);
         }
         if (const Symbol * impure{HasImpureFinal(entity)}) {
           SayDeallocateWithImpureFinal(entity, reason, *impure);
@@ -222,7 +222,7 @@ public:
     if (const Symbol * entity{GetLastName(variable).symbol}) {
       const char *reason{"assignment"};
       if (MightDeallocatePolymorphic(*entity, DeallocateNonCoarray)) {
-        SayDeallocateOfPolymorphic(variable.GetSource(), *entity, reason);
+        SayDeallocateOfPolymorph(variable.GetSource(), *entity, reason);
       }
       if (const auto *assignment{GetAssignment(stmt)}) {
         const auto &lhs{assignment->lhs};
@@ -257,7 +257,7 @@ public:
         const DeclTypeSpec *entityType{entity.GetType()};
         if ((entityType && entityType->IsPolymorphic()) || // POINTER case
             MightDeallocatePolymorphic(entity, DeallocateAll)) {
-          SayDeallocateOfPolymorphic(
+          SayDeallocateOfPolymorph(
               currentStatementSourcePosition_, entity, reason);
         }
         if (const Symbol * impure{HasImpureFinal(entity)}) {
@@ -535,8 +535,7 @@ private:
     if (const SomeExpr * expr{GetExpr(context_, scalarExpression)}) {
       if (!ExprHasTypeCategory(*expr, TypeCategory::Integer)) {
         // No warnings or errors for type INTEGER
-        parser::CharBlock loc{
-            parser::UnwrapRef<parser::Expr>(scalarExpression).source};
+        const parser::CharBlock &loc{scalarExpression.thing.value().source};
         CheckDoControl(loc, ExprHasTypeCategory(*expr, TypeCategory::Real));
       }
     }
@@ -553,7 +552,7 @@ private:
       CheckDoExpression(*bounds.step);
       if (IsZero(*bounds.step)) {
         context_.Warn(common::UsageWarning::ZeroDoStep,
-            parser::UnwrapRef<parser::Expr>(bounds.step).source,
+            bounds.step->thing.value().source,
             "DO step expression should not be zero"_warn_en_US);
       }
     }
@@ -616,7 +615,7 @@ private:
   // C1121 - procedures in mask must be pure
   void CheckMaskIsPure(const parser::ScalarLogicalExpr &mask) const {
     UnorderedSymbolSet references{
-        GatherSymbolsFromExpression(parser::UnwrapRef<parser::Expr>(mask))};
+        GatherSymbolsFromExpression(mask.thing.thing.value())};
     for (const Symbol &ref : OrderBySourcePosition(references)) {
       if (IsProcedure(ref) && !IsPureProcedure(ref)) {
         context_.SayWithDecl(ref, parser::Unwrap<parser::Expr>(mask)->source,
@@ -640,33 +639,32 @@ private:
   }
 
   void HasNoReferences(const UnorderedSymbolSet &indexNames,
-      const parser::ScalarIntExpr &scalarIntExpr) const {
-    const auto &expr{parser::UnwrapRef<parser::Expr>(scalarIntExpr)};
-    CheckNoCollisions(GatherSymbolsFromExpression(expr), indexNames,
+      const parser::ScalarIntExpr &expr) const {
+    CheckNoCollisions(GatherSymbolsFromExpression(expr.thing.thing.value()),
+        indexNames,
         "%s limit expression may not reference index variable '%s'"_err_en_US,
-        expr.source);
+        expr.thing.thing.value().source);
   }
 
   // C1129, names in local locality-specs can't be in mask expressions
   void CheckMaskDoesNotReferenceLocal(const parser::ScalarLogicalExpr &mask,
       const UnorderedSymbolSet &localVars) const {
-    const auto &expr{parser::UnwrapRef<parser::Expr>(mask)};
-    CheckNoCollisions(GatherSymbolsFromExpression(expr), localVars,
+    CheckNoCollisions(GatherSymbolsFromExpression(mask.thing.thing.value()),
+        localVars,
         "%s mask expression references variable '%s'"
         " in LOCAL locality-spec"_err_en_US,
-        expr.source);
+        mask.thing.thing.value().source);
   }
 
   // C1129, names in local locality-specs can't be in limit or step
   // expressions
-  void CheckExprDoesNotReferenceLocal(
-      const parser::ScalarIntExpr &scalarIntExpr,
+  void CheckExprDoesNotReferenceLocal(const parser::ScalarIntExpr &expr,
       const UnorderedSymbolSet &localVars) const {
-    const auto &expr{parser::UnwrapRef<parser::Expr>(scalarIntExpr)};
-    CheckNoCollisions(GatherSymbolsFromExpression(expr), localVars,
+    CheckNoCollisions(GatherSymbolsFromExpression(expr.thing.thing.value()),
+        localVars,
         "%s expression references variable '%s'"
         " in LOCAL locality-spec"_err_en_US,
-        expr.source);
+        expr.thing.thing.value().source);
   }
 
   // C1130, DEFAULT(NONE) locality requires names to be in locality-specs to
@@ -774,7 +772,7 @@ private:
         HasNoReferences(indexNames, std::get<2>(control.t));
         if (const auto &intExpr{
                 std::get<std::optional<parser::ScalarIntExpr>>(control.t)}) {
-          const auto &expr{parser::UnwrapRef<parser::Expr>(intExpr)};
+          const parser::Expr &expr{intExpr->thing.thing.value()};
           CheckNoCollisions(GatherSymbolsFromExpression(expr), indexNames,
               "%s step expression may not reference index variable '%s'"_err_en_US,
               expr.source);
@@ -842,7 +840,7 @@ private:
   }
   void CheckForImpureCall(const parser::ScalarIntExpr &x,
       std::optional<IndexVarKind> nesting) const {
-    const auto &parsedExpr{parser::UnwrapRef<parser::Expr>(x)};
+    const auto &parsedExpr{x.thing.thing.value()};
     auto oldLocation{context_.location()};
     context_.set_location(parsedExpr.source);
     if (const auto &typedExpr{parsedExpr.typedExpr}) {
@@ -1126,8 +1124,7 @@ void DoForallChecker::Leave(const parser::ConnectSpec &connectSpec) {
   const auto *newunit{
       std::get_if<parser::ConnectSpec::Newunit>(&connectSpec.u)};
   if (newunit) {
-    context_.CheckIndexVarRedefine(
-        parser::UnwrapRef<parser::Variable>(newunit));
+    context_.CheckIndexVarRedefine(newunit->v.thing.thing);
   }
 }
 
@@ -1169,43 +1166,25 @@ void DoForallChecker::Leave(const parser::InquireSpec &inquireSpec) {
   const auto *intVar{std::get_if<parser::InquireSpec::IntVar>(&inquireSpec.u)};
   if (intVar) {
     const auto &scalar{std::get<parser::ScalarIntVariable>(intVar->t)};
-    context_.CheckIndexVarRedefine(parser::UnwrapRef<parser::Variable>(scalar));
+    context_.CheckIndexVarRedefine(scalar.thing.thing);
   }
 }
 
 void DoForallChecker::Leave(const parser::IoControlSpec &ioControlSpec) {
   const auto *size{std::get_if<parser::IoControlSpec::Size>(&ioControlSpec.u)};
   if (size) {
-    context_.CheckIndexVarRedefine(parser::UnwrapRef<parser::Variable>(size));
-  }
-}
-
-static void CheckIoImpliedDoIndex(
-    SemanticsContext &context, const parser::Name &name) {
-  if (name.symbol) {
-    context.CheckIndexVarRedefine(name.source, *name.symbol);
-    if (auto why{WhyNotDefinable(name.source, name.symbol->owner(),
-            DefinabilityFlags{}, *name.symbol)}) {
-      context.Say(std::move(*why));
-    }
+    context_.CheckIndexVarRedefine(size->v.thing.thing);
   }
 }
 
 void DoForallChecker::Leave(const parser::OutputImpliedDo &outputImpliedDo) {
-  CheckIoImpliedDoIndex(context_,
-      parser::UnwrapRef<parser::Name>(
-          std::get<parser::IoImpliedDoControl>(outputImpliedDo.t).name));
-}
-
-void DoForallChecker::Leave(const parser::InputImpliedDo &inputImpliedDo) {
-  CheckIoImpliedDoIndex(context_,
-      parser::UnwrapRef<parser::Name>(
-          std::get<parser::IoImpliedDoControl>(inputImpliedDo.t).name));
+  const auto &control{std::get<parser::IoImpliedDoControl>(outputImpliedDo.t)};
+  const parser::Name &name{control.name.thing.thing};
+  context_.CheckIndexVarRedefine(name.source, *name.symbol);
 }
 
 void DoForallChecker::Leave(const parser::StatVariable &statVariable) {
-  context_.CheckIndexVarRedefine(
-      parser::UnwrapRef<parser::Variable>(statVariable));
+  context_.CheckIndexVarRedefine(statVariable.v.thing.thing);
 }
 
 } // namespace Fortran::semantics

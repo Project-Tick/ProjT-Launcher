@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- ReplaceDisallowCopyAndAssignMacroCheck.cpp - clang-tidy ----------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "ReplaceDisallowCopyAndAssignMacroCheck.h"
-#include "../utils/LexerUtils.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/MacroArgs.h"
 #include "clang/Lex/PPCallbacks.h"
@@ -27,7 +26,7 @@ public:
 
   void MacroExpands(const Token &MacroNameTok, const MacroDefinition &MD,
                     SourceRange Range, const MacroArgs *Args) override {
-    const IdentifierInfo *Info = MacroNameTok.getIdentifierInfo();
+    IdentifierInfo *Info = MacroNameTok.getIdentifierInfo();
     if (!Info || !Args || Args->getNumMacroArguments() != 1)
       return;
     if (Info->getName() != Check.getMacroName())
@@ -39,11 +38,11 @@ public:
       // For now we only support simple argument that don't need to be
       // pre-expanded.
       return;
-    const clang::IdentifierInfo *ClassIdent = ClassNameTok->getIdentifierInfo();
+    clang::IdentifierInfo *ClassIdent = ClassNameTok->getIdentifierInfo();
     if (!ClassIdent)
       return;
 
-    const std::string Replacement = llvm::formatv(
+    std::string Replacement = llvm::formatv(
         R"cpp({0}(const {0} &) = delete;
 const {0} &operator=(const {0} &) = delete{1})cpp",
         ClassIdent->getName(), shouldAppendSemi(Range) ? ";" : "");
@@ -60,7 +59,7 @@ private:
   /// \returns \c true if the next token after the given \p MacroLoc is \b not a
   /// semicolon.
   bool shouldAppendSemi(SourceRange MacroLoc) {
-    std::optional<Token> Next = utils::lexer::findNextTokenSkippingComments(
+    std::optional<Token> Next = Lexer::findNextToken(
         MacroLoc.getEnd(), PP.getSourceManager(), PP.getLangOpts());
     return !(Next && Next->is(tok::semi));
   }

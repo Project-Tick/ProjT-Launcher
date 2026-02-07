@@ -7,8 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "mlir/IR/IRMapping.h"
+#include "mlir/IR/Iterators.h"
 #include "mlir/IR/PatternMatch.h"
-#include "llvm/Support/InterleavedRange.h"
+#include "mlir/IR/RegionKindInterface.h"
 
 using namespace mlir;
 
@@ -32,13 +34,13 @@ void PDLValue::print(raw_ostream &os) const {
     os << cast<Type>();
     break;
   case Kind::TypeRange:
-    os << llvm::interleaved(cast<TypeRange>());
+    llvm::interleaveComma(cast<TypeRange>(), os);
     break;
   case Kind::Value:
     os << cast<Value>();
     break;
   case Kind::ValueRange:
-    os << llvm::interleaved(cast<ValueRange>());
+    llvm::interleaveComma(cast<ValueRange>(), os);
     break;
   }
 }
@@ -111,7 +113,6 @@ void PDLPatternModule::attachConfigToPatterns(ModuleOp module,
 
 //===----------------------------------------------------------------------===//
 // Function Registry
-//===----------------------------------------------------------------------===//
 
 void PDLPatternModule::registerConstraintFunction(
     StringRef name, PDLConstraintFunction constraintFn) {

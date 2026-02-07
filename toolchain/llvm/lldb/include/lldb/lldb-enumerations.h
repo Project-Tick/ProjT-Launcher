@@ -130,15 +130,10 @@ FLAGS_ENUM(LaunchFlags){
     eLaunchFlagInheritTCCFromParent =
         (1u << 12), ///< Don't make the inferior responsible for its own TCC
                     ///< permissions but instead inherit them from its parent.
-    eLaunchFlagMemoryTagging =
-        (1u << 13), ///< Launch process with memory tagging explicitly enabled.
 };
 
 /// Thread Run Modes.
 enum RunMode { eOnlyThisThread, eAllThreads, eOnlyDuringStepping };
-
-/// Execution directions
-enum RunDirection { eRunForward, eRunReverse };
 
 /// Byte ordering definitions.
 enum ByteOrder {
@@ -200,15 +195,11 @@ enum Format {
                          ///< character arrays that can contain non printable
                          ///< characters
   eFormatAddressInfo,    ///< Describe what an address points to (func + offset
-                         ///< with file/line, symbol + offset, data, etc)
-  eFormatHexFloat,       ///< ISO C99 hex float string
-  eFormatInstruction,    ///< Disassemble an opcode
-  eFormatVoid,           ///< Do not print this
+                      ///< with file/line, symbol + offset, data, etc)
+  eFormatHexFloat,    ///< ISO C99 hex float string
+  eFormatInstruction, ///< Disassemble an opcode
+  eFormatVoid,        ///< Do not print this
   eFormatUnicode8,
-  eFormatFloat128, ///< Disambiguate between 128-bit `long double` (which uses
-                   ///< `eFormatFloat`) and `__float128` (which uses
-                   ///< `eFormatFloat128`). If the value being formatted is not
-                   ///< 128 bits, then this is identical to `eFormatFloat`.
   kNumFormats
 };
 
@@ -263,9 +254,6 @@ enum StopReason {
   eStopReasonVFork,
   eStopReasonVForkDone,
   eStopReasonInterrupt, ///< Thread requested interrupt
-  // Indicates that execution stopped because the debugger backend relies
-  // on recorded data and we reached the end of that data.
-  eStopReasonHistoryBoundary,
 };
 
 /// Command Return Status Types.
@@ -524,7 +512,6 @@ enum LanguageType {
   eLanguageTypeAssembly = 0x0031,
   eLanguageTypeC_sharp = 0x0032,
   eLanguageTypeMojo = 0x0033,
-  eLanguageTypeLastStandardLanguage = eLanguageTypeMojo,
 
   // Vendor Extensions
   // Note: Language::GetNameForLanguageType
@@ -532,6 +519,8 @@ enum LanguageType {
   // Language::SetLanguageFromCString and Language::AsCString assume these can
   // be used as indexes into array g_languages.
   eLanguageTypeMipsAssembler, ///< Mips_Assembler.
+  // Mojo will move to the common list of languages once the DWARF committee
+  // creates a language code for it.
   eNumLanguageTypes
 };
 
@@ -542,7 +531,6 @@ enum InstrumentationRuntimeType {
   eInstrumentationRuntimeTypeMainThreadChecker = 0x0003,
   eInstrumentationRuntimeTypeSwiftRuntimeReporting = 0x0004,
   eInstrumentationRuntimeTypeLibsanitizersAsan = 0x0005,
-  eInstrumentationRuntimeTypeBoundsSafety = 0x0006,
   eNumInstrumentationRuntimeTypes
 };
 
@@ -669,10 +657,6 @@ enum CommandArgumentType {
   eArgTypeModule,
   eArgTypeCPUName,
   eArgTypeCPUFeatures,
-  eArgTypeManagedPlugin,
-  eArgTypeProtocol,
-  eArgTypeExceptionStage,
-  eArgTypeNameMatchStyle,
   eArgTypeLastArg // Always keep this entry as the last entry in this
                   // enumeration!!
 };
@@ -782,7 +766,6 @@ enum SectionType {
   eSectionTypeLLDBTypeSummaries,
   eSectionTypeLLDBFormatters,
   eSectionTypeSwiftModules,
-  eSectionTypeWasmName,
 };
 
 FLAGS_ENUM(EmulateInstructionOptions){
@@ -848,8 +831,7 @@ enum BasicType {
   eBasicTypeObjCClass,
   eBasicTypeObjCSel,
   eBasicTypeNullPtr,
-  eBasicTypeOther,
-  eBasicTypeFloat128
+  eBasicTypeOther
 };
 
 /// Deprecated
@@ -1331,11 +1313,10 @@ enum CompletionType {
   eTypeCategoryNameCompletion = (1ul << 24),
   eCustomCompletion = (1ul << 25),
   eThreadIDCompletion = (1ul << 26),
-  eManagedPluginCompletion = (1ul << 27),
   // This last enum element is just for input validation.
   // Add new completions before this element,
   // and then increment eTerminatorCompletion's shift value
-  eTerminatorCompletion = (1ul << 28)
+  eTerminatorCompletion = (1ul << 27)
 };
 
 /// Specifies if children need to be re-computed
@@ -1375,9 +1356,9 @@ enum DebuggerBroadcastBit {
   eBroadcastBitWarning = (1 << 1),
   eBroadcastBitError = (1 << 2),
   eBroadcastSymbolChange = (1 << 3),
-  eBroadcastBitProgressCategory = (1 << 4), ///< Deprecated
+  eBroadcastBitProgressCategory = (1 << 4),
   eBroadcastBitExternalProgress = (1 << 5),
-  eBroadcastBitExternalProgressCategory = (1 << 6), ///< Deprecated
+  eBroadcastBitExternalProgressCategory = (1 << 6),
 };
 
 /// Used for expressing severity in logs and diagnostics.
@@ -1385,39 +1366,6 @@ enum Severity {
   eSeverityError,
   eSeverityWarning,
   eSeverityInfo, // Equivalent to Remark used in clang.
-};
-
-/// Callback return value, indicating whether it handled printing the
-/// CommandReturnObject or deferred doing so to the CommandInterpreter.
-enum CommandReturnObjectCallbackResult {
-  /// The callback deferred printing the command return object.
-  eCommandReturnObjectPrintCallbackSkipped = 0,
-  /// The callback handled printing the command return object.
-  eCommandReturnObjectPrintCallbackHandled = 1,
-};
-
-/// Used to determine when to show disassembly.
-enum StopDisassemblyType {
-  eStopDisassemblyTypeNever = 0,
-  eStopDisassemblyTypeNoDebugInfo,
-  eStopDisassemblyTypeNoSource,
-  eStopDisassemblyTypeAlways
-};
-
-enum ExceptionStage {
-  eExceptionStageCreate = (1 << 0),
-  eExceptionStageThrow = (1 << 1),
-  eExceptionStageReThrow = (1 << 2),
-  eExceptionStageCatch = (1 << 3)
-};
-
-enum NameMatchStyle {
-  eNameMatchStyleAuto = eFunctionNameTypeAuto,
-  eNameMatchStyleFull = eFunctionNameTypeFull,
-  eNameMatchStyleBase = eFunctionNameTypeBase,
-  eNameMatchStyleMethod = eFunctionNameTypeMethod,
-  eNameMatchStyleSelector = eFunctionNameTypeSelector,
-  eNameMatchStyleRegex = eFunctionNameTypeSelector << 1
 };
 
 } // namespace lldb

@@ -17,10 +17,9 @@
 #include "clang/Tooling/Core/Replacement.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/MemoryBuffer.h"
+#include <algorithm>
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-
-#include <algorithm>
 
 namespace clang {
 namespace clangd {
@@ -215,7 +214,7 @@ TEST(RenameTest, WithinFileRename) {
         template<typename T>
         class Foo {
         public:
-          static T [[f^oo]]() { return T(); }
+          static T [[f^oo]]() {}
         };
 
         void bar() {
@@ -226,7 +225,7 @@ TEST(RenameTest, WithinFileRename) {
         template<typename T>
         class Foo {
         public:
-          T [[f^oo]]() { return T(); }
+          T [[f^oo]]() {}
         };
 
         void bar() {
@@ -828,7 +827,7 @@ TEST(RenameTest, WithinFileRename) {
 
       // Issue 170: Rename symbol introduced by UsingDecl
       R"cpp(
-        namespace ns { void [[f^oo]](); }
+        namespace ns { void [[f^oo]](); } 
 
         using ns::[[f^oo]];
 
@@ -862,25 +861,6 @@ TEST(RenameTest, WithinFileRename) {
 
         void func([[Fo^o]] *f) {}
       )cpp",
-
-      // rename with explicit object parameter
-      R"cpp(
-      struct Foo {
-        int [[memb^er]] {};
-        auto&& getter1(this auto&& self) {
-          auto local = [&] {
-            return self.[[memb^er]];
-          }();
-          return local + self.[[memb^er]];
-        }
-        auto&& getter2(this Foo&& self) {
-          return self.[[memb^er]];
-        }
-        int normal() {
-          return this->[[mem^ber]] + [[memb^er]];
-        }
-      };
-    )cpp",
   };
   llvm::StringRef NewName = "NewName";
   for (llvm::StringRef T : Tests) {
@@ -888,7 +868,6 @@ TEST(RenameTest, WithinFileRename) {
     Annotations Code(T);
     auto TU = TestTU::withCode(Code.code());
     TU.ExtraArgs.push_back("-xobjective-c++");
-    TU.ExtraArgs.push_back("-std=c++23");
     auto AST = TU.build();
     auto Index = TU.index();
     for (const auto &RenamePos : Code.points()) {
@@ -1291,39 +1270,6 @@ TEST(RenameTest, Renameable) {
        "conflict", !HeaderFile, "Conflict"},
 
       {R"cpp(
-        struct conflict {};
-        enum v^ar {};
-      )cpp",
-       "conflict", !HeaderFile, "conflict"},
-
-      {R"cpp(
-        struct conflict {};
-        int [[v^ar]];
-      )cpp",
-       nullptr, !HeaderFile, "conflict"},
-
-      {R"cpp(
-        enum conflict {};
-        int [[v^ar]];
-      )cpp",
-       nullptr, !HeaderFile, "conflict"},
-
-      {R"cpp(
-        void func(int conflict) {
-          struct [[t^ag]] {};
-        }
-      )cpp",
-       nullptr, !HeaderFile, "conflict"},
-
-      {R"cpp(
-        void func(void) {
-          struct conflict {};
-          int [[v^ar]];
-        }
-      )cpp",
-       nullptr, !HeaderFile, "conflict"},
-
-      {R"cpp(
         void func(int);
         void [[o^therFunc]](double);
       )cpp",
@@ -1361,7 +1307,7 @@ TEST(RenameTest, Renameable) {
        "no symbol", false},
 
       {R"cpp(// FIXME we probably want to rename both overloads here,
-             // but renaming currently assumes there's only a
+             // but renaming currently assumes there's only a 
              // single canonical declaration.
         namespace ns { int foo(int); char foo(char); }
         using ns::^foo;
@@ -1674,11 +1620,6 @@ TEST(CrossFileRenameTests, DirtyBuffer) {
                    llvm::function_ref<void(const SymbolID &, const Symbol &)>
                        Callback) const override {}
 
-    void
-    reverseRelations(const RelationsRequest &Req,
-                     llvm::function_ref<void(const SymbolID &, const Symbol &)>
-                         Callback) const override {}
-
     llvm::unique_function<IndexContents(llvm::StringRef) const>
     indexedFiles() const override {
       return [](llvm::StringRef) { return IndexContents::None; };
@@ -1732,11 +1673,6 @@ TEST(CrossFileRenameTests, DeduplicateRefsFromIndex) {
 
     void relations(const RelationsRequest &,
                    llvm::function_ref<void(const SymbolID &, const Symbol &)>)
-        const override {}
-
-    void
-    reverseRelations(const RelationsRequest &,
-                     llvm::function_ref<void(const SymbolID &, const Symbol &)>)
         const override {}
 
     llvm::unique_function<IndexContents(llvm::StringRef) const>
@@ -1840,7 +1776,7 @@ TEST(CrossFileRenameTests, WithUpToDateIndex) {
           void [[foo]]() override {};
         };
 
-        void func(Base* b, Derived1* d1,
+        void func(Base* b, Derived1* d1, 
                   Derived2* d2, NotDerived* nd) {
           b->[[foo]]();
           d1->[[foo]]();
@@ -2254,9 +2190,9 @@ TEST(CrossFileRenameTests, adjustRenameRanges) {
   for (const auto &T : Tests) {
     SCOPED_TRACE(T.DraftCode);
     Annotations Draft(T.DraftCode);
-    auto ActualRanges = adjustRenameRanges(
-        Draft.code(), RenameSymbolName(ArrayRef<std::string>{"x"}),
-        Annotations(T.IndexedCode).ranges(), LangOpts);
+    auto ActualRanges = adjustRenameRanges(Draft.code(), "x",
+                                           Annotations(T.IndexedCode).ranges(),
+                                           LangOpts, std::nullopt);
     if (!ActualRanges)
        EXPECT_THAT(Draft.ranges(), testing::IsEmpty());
     else

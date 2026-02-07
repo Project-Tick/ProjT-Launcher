@@ -364,14 +364,14 @@ bool ConstantAggregateBuilder::split(size_t Index, CharUnits Hint) {
     // FIXME: If possible, split into two ConstantDataSequentials at Hint.
     CharUnits ElemSize = getSize(CDS->getElementType());
     replace(Elems, Index, Index + 1,
-            llvm::map_range(llvm::seq(uint64_t(0u), CDS->getNumElements()),
-                            [&](uint64_t Elem) {
+            llvm::map_range(llvm::seq(0u, CDS->getNumElements()),
+                            [&](unsigned Elem) {
                               return CDS->getElementAsConstant(Elem);
                             }));
     replace(Offsets, Index, Index + 1,
             llvm::map_range(
-                llvm::seq(uint64_t(0u), CDS->getNumElements()),
-                [&](uint64_t Elem) { return Offset + Elem * ElemSize; }));
+                llvm::seq(0u, CDS->getNumElements()),
+                [&](unsigned Elem) { return Offset + Elem * ElemSize; }));
     return true;
   }
 
@@ -433,7 +433,7 @@ llvm::Constant *ConstantAggregateBuilder::buildFrom(
 
       // All remaining elements must be the same type.
       if (Elems[I]->getType() != CommonType ||
-          !Offset(I).isMultipleOf(ElemSize)) {
+          Offset(I) % ElemSize != 0) {
         CanEmitArray = false;
         break;
       }
@@ -714,7 +714,7 @@ static bool EmitDesignatedInitUpdater(ConstantEmitter &Emitter,
 }
 
 bool ConstStructBuilder::Build(const InitListExpr *ILE, bool AllowOverwrite) {
-  auto *RD = ILE->getType()->castAsRecordDecl();
+  RecordDecl *RD = ILE->getType()->castAs<RecordType>()->getDecl();
   const ASTRecordLayout &Layout = CGM.getContext().getASTRecordLayout(RD);
 
   unsigned FieldNo = -1;
@@ -871,11 +871,12 @@ bool ConstStructBuilder::Build(const APValue &Val, const RecordDecl *RD,
     }
     llvm::stable_sort(Bases);
 
-    for (const BaseInfo &Base : Bases) {
+    for (unsigned I = 0, N = Bases.size(); I != N; ++I) {
+      BaseInfo &Base = Bases[I];
+
       bool IsPrimaryBase = Layout.getPrimaryBase() == Base.Decl;
-      if (!Build(Val.getStructBase(Base.Index), Base.Decl, IsPrimaryBase,
-                 VTableClass, Offset + Base.Offset))
-        return false;
+      Build(Val.getStructBase(Base.Index), Base.Decl, IsPrimaryBase,
+            VTableClass, Offset + Base.Offset);
     }
   }
 
@@ -978,7 +979,7 @@ bool ConstStructBuilder::DoZeroInitPadding(const ASTRecordLayout &Layout,
 
 llvm::Constant *ConstStructBuilder::Finalize(QualType Type) {
   Type = Type.getNonReferenceType();
-  auto *RD = Type->castAsRecordDecl();
+  RecordDecl *RD = Type->castAs<RecordType>()->getDecl();
   llvm::Type *ValTy = CGM.getTypes().ConvertType(Type);
   return Builder.build(ValTy, RD->hasFlexibleArrayMember());
 }
@@ -1001,7 +1002,7 @@ llvm::Constant *ConstStructBuilder::BuildStruct(ConstantEmitter &Emitter,
   ConstantAggregateBuilder Const(Emitter.CGM);
   ConstStructBuilder Builder(Emitter, Const, CharUnits::Zero());
 
-  const auto *RD = ValTy->castAsRecordDecl();
+  const RecordDecl *RD = ValTy->castAs<RecordType>()->getDecl();
   const CXXRecordDecl *CD = dyn_cast<CXXRecordDecl>(RD);
   if (!Builder.Build(Val, RD, false, CD, CharUnits::Zero()))
     return nullptr;
@@ -1225,12 +1226,12 @@ public:
 
     case CK_AddressSpaceConversion: {
       auto C = Emitter.tryEmitPrivate(subExpr, subExpr->getType());
-      if (!C)
-        return nullptr;
+      if (!C) return nullptr;
+      LangAS destAS = E->getType()->getPointeeType().getAddressSpace();
       LangAS srcAS = subExpr->getType()->getPointeeType().getAddressSpace();
       llvm::Type *destTy = ConvertType(E->getType());
       return CGM.getTargetCodeGenInfo().performAddrSpaceCast(CGM, C, srcAS,
-                                                             destTy);
+                                                             destAS, destTy);
     }
 
     case CK_LValueToRValue: {
@@ -1333,10 +1334,7 @@ public:
     case CK_ZeroToOCLOpaqueType:
     case CK_MatrixCast:
     case CK_HLSLVectorTruncation:
-    case CK_HLSLMatrixTruncation:
     case CK_HLSLArrayRValue:
-    case CK_HLSLElementwiseCast:
-    case CK_HLSLAggregateSplatCast:
       return nullptr;
     }
     llvm_unreachable("Invalid CastKind");
@@ -1507,8 +1505,8 @@ public:
 
     llvm::Type *ValTy = CGM.getTypes().ConvertType(destType);
     bool HasFlexibleArray = false;
-    if (const auto *RD = destType->getAsRecordDecl())
-      HasFlexibleArray = RD->hasFlexibleArrayMember();
+    if (const auto *RT = destType->getAs<RecordType>())
+      HasFlexibleArray = RT->getDecl()->hasFlexibleArrayMember();
     return Const.build(ValTy, HasFlexibleArray);
   }
 
@@ -1622,7 +1620,7 @@ llvm::Constant *ConstantEmitter::tryEmitConstantExpr(const ConstantExpr *CE) {
   if (CE->isGLValue())
     RetType = CGM.getContext().getLValueReferenceType(RetType);
 
-  return tryEmitAbstract(CE->getAPValueResult(), RetType);
+  return emitAbstract(CE->getBeginLoc(), CE->getAPValueResult(), RetType);
 }
 
 llvm::Constant *
@@ -1981,10 +1979,7 @@ llvm::Constant *ConstantEmitter::emitForMemory(CodeGenModule &CGM,
   }
 
   // Zero-extend bool.
-  // In HLSL bool vectors are stored in memory as a vector of i32
-  if ((C->getType()->isIntegerTy(1) && !destType->isBitIntType()) ||
-      (destType->isExtVectorBoolType() &&
-       !destType->isPackedVectorBoolType(CGM.getContext()))) {
+  if (C->getType()->isIntegerTy(1) && !destType->isBitIntType()) {
     llvm::Type *boolTy = CGM.getTypes().ConvertTypeForMem(destType);
     llvm::Constant *Res = llvm::ConstantFoldCastOperand(
         llvm::Instruction::ZExt, C, boolTy, CGM.getDataLayout());
@@ -2049,13 +2044,10 @@ namespace {
 struct ConstantLValue {
   llvm::Constant *Value;
   bool HasOffsetApplied;
-  bool HasDestPointerAuth;
 
   /*implicit*/ ConstantLValue(llvm::Constant *value,
-                              bool hasOffsetApplied = false,
-                              bool hasDestPointerAuth = false)
-      : Value(value), HasOffsetApplied(hasOffsetApplied),
-        HasDestPointerAuth(hasDestPointerAuth) {}
+                              bool hasOffsetApplied = false)
+    : Value(value), HasOffsetApplied(hasOffsetApplied) {}
 
   /*implicit*/ ConstantLValue(ConstantAddress address)
     : ConstantLValue(address.getPointer()) {}
@@ -2160,14 +2152,6 @@ llvm::Constant *ConstantLValueEmitter::tryEmit() {
     value = applyOffset(value);
   }
 
-  // Apply pointer-auth signing from the destination type.
-  if (PointerAuthQualifier PointerAuth = DestType.getPointerAuth();
-      PointerAuth && !result.HasDestPointerAuth) {
-    value = Emitter.tryEmitConstantSignedPointer(value, PointerAuth);
-    if (!value)
-      return nullptr;
-  }
-
   // Convert to the appropriate type; this could be an lvalue for
   // an integer.  FIXME: performAddrSpaceCast
   if (isa<llvm::PointerType>(destTy))
@@ -2211,12 +2195,6 @@ ConstantLValueEmitter::tryEmitBase(const APValue::LValueBase &base) {
       return CGM.GetWeakRefReference(D).getPointer();
 
     auto PtrAuthSign = [&](llvm::Constant *C) {
-      if (PointerAuthQualifier PointerAuth = DestType.getPointerAuth()) {
-        C = applyOffset(C);
-        C = Emitter.tryEmitConstantSignedPointer(C, PointerAuth);
-        return ConstantLValue(C, /*applied offset*/ true, /*signed*/ true);
-      }
-
       CGPointerAuthInfo AuthInfo;
 
       if (EnablePtrAuthFunctionTypeDiscrimination)
@@ -2230,18 +2208,14 @@ ConstantLValueEmitter::tryEmitBase(const APValue::LValueBase &base) {
         C = CGM.getConstantSignedPointer(
             C, AuthInfo.getKey(), nullptr,
             cast_or_null<llvm::ConstantInt>(AuthInfo.getDiscriminator()));
-        return ConstantLValue(C, /*applied offset*/ true, /*signed*/ true);
+        return ConstantLValue(C, /*applied offset*/ true);
       }
 
       return ConstantLValue(C);
     };
 
-    if (const auto *FD = dyn_cast<FunctionDecl>(D)) {
-      llvm::Constant *C = CGM.getRawFunctionPointer(FD);
-      if (FD->getType()->isCFIUncheckedCalleeFunctionType())
-        C = llvm::NoCFIValue::get(cast<llvm::GlobalValue>(C));
-      return PtrAuthSign(C);
-    }
+    if (const auto *FD = dyn_cast<FunctionDecl>(D))
+      return PtrAuthSign(CGM.getRawFunctionPointer(FD));
 
     if (const auto *VD = dyn_cast<VarDecl>(D)) {
       // We can never refer to a variable with local storage.
@@ -2448,10 +2422,6 @@ ConstantEmitter::tryEmitPrivate(const APValue &Value, QualType DestType,
                                  EnablePtrAuthFunctionTypeDiscrimination)
         .tryEmit();
   case APValue::Int:
-    if (PointerAuthQualifier PointerAuth = DestType.getPointerAuth();
-        PointerAuth &&
-        (PointerAuth.authenticatesNullValues() || Value.getInt() != 0))
-      return nullptr;
     return llvm::ConstantInt::get(CGM.getLLVMContext(), Value.getInt());
   case APValue::FixedPoint:
     return llvm::ConstantInt::get(CGM.getLLVMContext(),
@@ -2641,7 +2611,9 @@ static llvm::Constant *EmitNullConstant(CodeGenModule &CGM,
         continue;
       }
 
-      const auto *base = I.getType()->castAsCXXRecordDecl();
+      const CXXRecordDecl *base =
+        cast<CXXRecordDecl>(I.getType()->castAs<RecordType>()->getDecl());
+
       // Ignore empty bases.
       if (isEmptyRecordForLayout(CGM.getContext(), I.getType()) ||
           CGM.getContext()
@@ -2679,7 +2651,9 @@ static llvm::Constant *EmitNullConstant(CodeGenModule &CGM,
   // Fill in the virtual bases, if we're working with the complete object.
   if (CXXR && asCompleteObject) {
     for (const auto &I : CXXR->vbases()) {
-      const auto *base = I.getType()->castAsCXXRecordDecl();
+      const CXXRecordDecl *base =
+        cast<CXXRecordDecl>(I.getType()->castAs<RecordType>()->getDecl());
+
       // Ignore empty bases.
       if (isEmptyRecordForLayout(CGM.getContext(), I.getType()))
         continue;
@@ -2743,9 +2717,8 @@ llvm::Constant *CodeGenModule::EmitNullConstant(QualType T) {
     return llvm::ConstantArray::get(ATy, Array);
   }
 
-  if (const auto *RD = T->getAsRecordDecl())
-    return ::EmitNullConstant(*this, RD,
-                              /*asCompleteObject=*/true);
+  if (const RecordType *RT = T->getAs<RecordType>())
+    return ::EmitNullConstant(*this, RT->getDecl(), /*complete object*/ true);
 
   assert(T->isMemberDataPointerType() &&
          "Should only see pointers to data members here!");

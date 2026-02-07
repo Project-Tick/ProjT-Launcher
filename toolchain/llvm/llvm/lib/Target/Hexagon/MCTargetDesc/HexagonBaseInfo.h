@@ -275,7 +275,7 @@ namespace HexagonII {
     INST_ICLASS_ALU32_3   = 0xf0000000
   };
 
-  [[maybe_unused]]
+  LLVM_ATTRIBUTE_UNUSED
   static unsigned getMemAccessSizeInBytes(MemAccessSize S) {
     switch (S) {
       case ByteAccess:        return 1;

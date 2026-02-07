@@ -10,7 +10,6 @@
 /// TODO: Port CodeGen passes to new pass manager.
 //===----------------------------------------------------------------------===//
 
-#include "X86.h"
 #include "X86ISelDAGToDAG.h"
 #include "X86TargetMachine.h"
 
@@ -29,29 +28,24 @@ public:
                                  const CGPassBuilderOption &Opts,
                                  PassInstrumentationCallbacks *PIC)
       : CodeGenPassBuilder(TM, Opts, PIC) {}
-  void addPreISel(PassManagerWrapper &PMW) const;
-  void addAsmPrinter(PassManagerWrapper &PMW, CreateMCStreamer) const;
-  Error addInstSelector(PassManagerWrapper &PMW) const;
-  void addPreSched2(PassManagerWrapper &PMW) const;
+  void addPreISel(AddIRPass &addPass) const;
+  void addAsmPrinter(AddMachinePass &, CreateMCStreamer) const;
+  Error addInstSelector(AddMachinePass &) const;
 };
 
-void X86CodeGenPassBuilder::addPreISel(PassManagerWrapper &PMW) const {
+void X86CodeGenPassBuilder::addPreISel(AddIRPass &addPass) const {
   // TODO: Add passes pre instruction selection.
 }
 
-void X86CodeGenPassBuilder::addAsmPrinter(PassManagerWrapper &PMW,
+void X86CodeGenPassBuilder::addAsmPrinter(AddMachinePass &addPass,
                                           CreateMCStreamer) const {
   // TODO: Add AsmPrinter.
 }
 
-Error X86CodeGenPassBuilder::addInstSelector(PassManagerWrapper &PMW) const {
+Error X86CodeGenPassBuilder::addInstSelector(AddMachinePass &addPass) const {
   // TODO: Add instruction selector related passes.
-  addMachineFunctionPass(X86ISelDAGToDAGPass(TM), PMW);
+  addPass(X86ISelDAGToDAGPass(TM));
   return Error::success();
-}
-
-void X86CodeGenPassBuilder::addPreSched2(PassManagerWrapper &PMW) const {
-  addMachineFunctionPass(X86ExpandPseudoPass(), PMW);
 }
 
 } // namespace

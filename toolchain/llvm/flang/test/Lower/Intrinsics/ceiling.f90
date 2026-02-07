@@ -16,3 +16,5 @@ subroutine ceiling_test1(i, a)
     ! CHECK: %[[f:.*]] = math.ceil %{{.*}} : f32
     ! CHECK: fir.convert %[[f]] : (f32) -> i64
   end subroutine
+  
+  

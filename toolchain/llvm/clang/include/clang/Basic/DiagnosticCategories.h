@@ -11,7 +11,7 @@
 
 namespace clang {
   namespace diag {
-    enum DiagCategory {
+    enum {
 #define GET_CATEGORY_TABLE
 #define CATEGORY(X, ENUM) ENUM,
 #include "clang/Basic/DiagnosticGroups.inc"

@@ -14,7 +14,7 @@
 #include "src/__support/macros/config.h"
 #include "src/__support/macros/optimization.h" // LIBC_UNLIKELY
 #include "src/__support/macros/properties/cpu_features.h"
-#include "src/__support/math/exp10f_utils.h"
+#include "src/math/generic/explogxf.h"
 
 namespace LIBC_NAMESPACE_DECL {
 

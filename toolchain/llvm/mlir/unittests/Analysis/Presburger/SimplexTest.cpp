@@ -20,29 +20,26 @@ using namespace mlir;
 using namespace presburger;
 
 /// Convenience functions to pass literals to Simplex.
-static void addInequality(SimplexBase &simplex, ArrayRef<int64_t> coeffs) {
+void addInequality(SimplexBase &simplex, ArrayRef<int64_t> coeffs) {
   simplex.addInequality(getDynamicAPIntVec(coeffs));
 }
-static void addEquality(SimplexBase &simplex, ArrayRef<int64_t> coeffs) {
+void addEquality(SimplexBase &simplex, ArrayRef<int64_t> coeffs) {
   simplex.addEquality(getDynamicAPIntVec(coeffs));
 }
-static bool isRedundantInequality(Simplex &simplex, ArrayRef<int64_t> coeffs) {
+bool isRedundantInequality(Simplex &simplex, ArrayRef<int64_t> coeffs) {
   return simplex.isRedundantInequality(getDynamicAPIntVec(coeffs));
 }
-static bool isRedundantInequality(LexSimplex &simplex,
-                                  ArrayRef<int64_t> coeffs) {
+bool isRedundantInequality(LexSimplex &simplex, ArrayRef<int64_t> coeffs) {
   return simplex.isRedundantInequality(getDynamicAPIntVec(coeffs));
 }
-static bool isRedundantEquality(Simplex &simplex, ArrayRef<int64_t> coeffs) {
+bool isRedundantEquality(Simplex &simplex, ArrayRef<int64_t> coeffs) {
   return simplex.isRedundantEquality(getDynamicAPIntVec(coeffs));
 }
-static bool isSeparateInequality(LexSimplex &simplex,
-                                 ArrayRef<int64_t> coeffs) {
+bool isSeparateInequality(LexSimplex &simplex, ArrayRef<int64_t> coeffs) {
   return simplex.isSeparateInequality(getDynamicAPIntVec(coeffs));
 }
 
-static Simplex::IneqType findIneqType(Simplex &simplex,
-                                      ArrayRef<int64_t> coeffs) {
+Simplex::IneqType findIneqType(Simplex &simplex, ArrayRef<int64_t> coeffs) {
   return simplex.findIneqType(getDynamicAPIntVec(coeffs));
 }
 
@@ -84,9 +81,8 @@ TEST(SimplexTest, addEquality_separate) {
   EXPECT_TRUE(simplex.isEmpty());
 }
 
-static void expectInequalityMakesSetEmpty(Simplex &simplex,
-                                          ArrayRef<int64_t> coeffs,
-                                          bool expect) {
+void expectInequalityMakesSetEmpty(Simplex &simplex, ArrayRef<int64_t> coeffs,
+                                   bool expect) {
   ASSERT_FALSE(simplex.isEmpty());
   unsigned snapshot = simplex.getSnapshot();
   addInequality(simplex, coeffs);
@@ -125,9 +121,9 @@ TEST(SimplexTest, addInequality_rollback) {
   }
 }
 
-static Simplex simplexFromConstraints(unsigned nDim,
-                                      ArrayRef<SmallVector<int64_t, 8>> ineqs,
-                                      ArrayRef<SmallVector<int64_t, 8>> eqs) {
+Simplex simplexFromConstraints(unsigned nDim,
+                               ArrayRef<SmallVector<int64_t, 8>> ineqs,
+                               ArrayRef<SmallVector<int64_t, 8>> eqs) {
   Simplex simplex(nDim);
   for (const auto &ineq : ineqs)
     addInequality(simplex, ineq);

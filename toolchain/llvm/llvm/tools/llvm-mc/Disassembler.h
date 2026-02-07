@@ -14,6 +14,8 @@
 #ifndef LLVM_TOOLS_LLVM_MC_DISASSEMBLER_H
 #define LLVM_TOOLS_LLVM_MC_DISASSEMBLER_H
 
+#include <string>
+
 namespace llvm {
 
 class MemoryBuffer;
@@ -27,11 +29,10 @@ class MCTargetOptions;
 
 class Disassembler {
 public:
-  static int disassemble(const Target &T, MCSubtargetInfo &STI,
-                         MCStreamer &Streamer, MemoryBuffer &Buffer,
-                         SourceMgr &SM, MCContext &Ctx,
-                         const MCTargetOptions &MCOptions, bool HexBytes,
-                         unsigned NumBenchmarkRuns);
+  static int disassemble(const Target &T, const std::string &Triple,
+                         MCSubtargetInfo &STI, MCStreamer &Streamer,
+                         MemoryBuffer &Buffer, SourceMgr &SM, MCContext &Ctx,
+                         const MCTargetOptions &MCOptions, bool HexBytes);
 };
 
 } // namespace llvm

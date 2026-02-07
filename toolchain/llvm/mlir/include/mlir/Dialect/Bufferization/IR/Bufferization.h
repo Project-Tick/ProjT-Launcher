@@ -12,6 +12,7 @@
 #include "mlir/Bytecode/BytecodeOpInterface.h"
 #include "mlir/Dialect/Bufferization/IR/AllocationOpInterface.h"
 #include "mlir/Dialect/Bufferization/IR/BufferizableOpInterface.h"
+#include "mlir/Interfaces/CopyOpInterface.h"
 #include "mlir/Interfaces/DestinationStyleOpInterface.h"
 #include "mlir/Interfaces/InferTypeOpInterface.h"
 #include "mlir/Interfaces/SubsetOpInterface.h"
@@ -55,10 +56,10 @@ FailureOr<Value> castOrReallocMemRefValue(OpBuilder &b, Value value,
                                           MemRefType type,
                                           const BufferizationOptions &options);
 
-/// Try to fold to_buffer(to_tensor(x)). If x's type and the result type of the
-/// to_buffer op are different, a memref.cast is needed.
-LogicalResult foldToBufferToTensorPair(RewriterBase &rewriter,
-                                       ToBufferOp toBuffer,
+/// Try to fold to_memref(to_tensor(x)). If x's type and the result type of the
+/// to_memref op are different, a memref.cast is needed.
+LogicalResult foldToMemrefToTensorPair(RewriterBase &rewriter,
+                                       ToMemrefOp toMemref,
                                        const BufferizationOptions &options);
 
 /// Add the canonicalization patterns for bufferization.dealloc to the given

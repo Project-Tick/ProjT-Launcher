@@ -34,8 +34,8 @@ using namespace llvm;
 // Pin the vtable to this file.
 void VEInstrInfo::anchor() {}
 
-VEInstrInfo::VEInstrInfo(const VESubtarget &ST)
-    : VEGenInstrInfo(ST, RI, VE::ADJCALLSTACKDOWN, VE::ADJCALLSTACKUP), RI() {}
+VEInstrInfo::VEInstrInfo(VESubtarget &ST)
+    : VEGenInstrInfo(VE::ADJCALLSTACKDOWN, VE::ADJCALLSTACKUP), RI() {}
 
 static bool IsIntegerCC(unsigned CC) { return (CC < VECC::CC_AF); }
 
@@ -357,8 +357,9 @@ static void copyPhysSubRegs(MachineBasicBlock &MBB,
 
 void VEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                               MachineBasicBlock::iterator I, const DebugLoc &DL,
-                              Register DestReg, Register SrcReg, bool KillSrc,
-                              bool RenamableDest, bool RenamableSrc) const {
+                              MCRegister DestReg, MCRegister SrcReg,
+                              bool KillSrc, bool RenamableDest,
+                              bool RenamableSrc) const {
 
   if (IsAliasOfSX(SrcReg) && IsAliasOfSX(DestReg)) {
     BuildMI(MBB, I, DL, get(VE::ORri), DestReg)
@@ -459,6 +460,7 @@ void VEInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
                                       MachineBasicBlock::iterator I,
                                       Register SrcReg, bool isKill, int FI,
                                       const TargetRegisterClass *RC,
+                                      const TargetRegisterInfo *TRI,
                                       Register VReg,
                                       MachineInstr::MIFlag Flags) const {
   DebugLoc DL;
@@ -518,12 +520,10 @@ void VEInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
     report_fatal_error("Can't store this register to stack slot");
 }
 
-void VEInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
-                                       MachineBasicBlock::iterator I,
-                                       Register DestReg, int FI,
-                                       const TargetRegisterClass *RC,
-                                       Register VReg, unsigned SubReg,
-                                       MachineInstr::MIFlag Flags) const {
+void VEInstrInfo::loadRegFromStackSlot(
+    MachineBasicBlock &MBB, MachineBasicBlock::iterator I, Register DestReg,
+    int FI, const TargetRegisterClass *RC, const TargetRegisterInfo *TRI,
+    Register VReg, MachineInstr::MIFlag Flags) const {
   DebugLoc DL;
   if (I != MBB.end())
     DL = I->getDebugLoc();

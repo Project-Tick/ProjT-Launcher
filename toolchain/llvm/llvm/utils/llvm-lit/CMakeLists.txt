@@ -35,14 +35,6 @@ if(NOT "${CMAKE_CFG_INTDIR}" STREQUAL ".")
       llvm-lit.in
       ${bi}
       )
-    if (WIN32)
-      string(REPLACE ${CMAKE_CFG_INTDIR} ${BUILD_MODE} bi_dir ${LIT_BASE_DIR})
-      configure_file(
-        llvm-lit.cmd.in
-        ${bi_dir}/llvm-lit.cmd
-        @ONLY
-        NEWLINE_STYLE DOS)
-    endif()
   endforeach()
 else()
   set(BUILD_MODE .)
@@ -50,11 +42,4 @@ else()
     llvm-lit.in
     ${LIT_BASE_DIR}/${LIT_FILE_NAME}
     )
-  if (WIN32)
-    configure_file(
-      llvm-lit.cmd.in
-      ${LIT_BASE_DIR}/llvm-lit.cmd
-      @ONLY
-      NEWLINE_STYLE DOS)
-  endif()  
 endif()

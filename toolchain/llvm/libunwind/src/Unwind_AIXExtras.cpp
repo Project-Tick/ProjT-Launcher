@@ -10,7 +10,6 @@
 // This file is only used for AIX.
 #if defined(_AIX)
 
-#include "AddressSpace.hpp"
 #include "config.h"
 #include "libunwind_ext.h"
 #include <sys/debug.h>

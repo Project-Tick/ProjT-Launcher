@@ -21,8 +21,10 @@ public:
   CheckedObj& ensureObj4() {
     if (!m_obj4)
       const_cast<CheckedPtr<CheckedObj>&>(m_obj4) = new CheckedObj;
-    if (auto* next = m_obj4->next())
+    if (auto* next = m_obj4->next()) {
+      // expected-warning@-1{{Local variable 'next' is unchecked and unsafe [alpha.webkit.UncheckedLocalVarsChecker]}}
       return *next;
+    }
     return *m_obj4;
   }
 

@@ -10,28 +10,28 @@ void foo() {
 #pragma acc loop
   for(int i = 0;i<5;++i);
 
-// CHECK: #pragma acc loop device_type(default)
+// CHECK: #pragma acc loop device_type(SomeStruct)
 // CHECK-NEXT: for (int i = 0; i < 5; ++i)
 // CHECK-NEXT: ;
-#pragma acc loop device_type(default)
+#pragma acc loop device_type(SomeStruct)
   for(int i = 0;i<5;++i);
 
-// CHECK: #pragma acc loop device_type(nvidia)
+// CHECK: #pragma acc loop device_type(int)
 // CHECK-NEXT: for (int i = 0; i < 5; ++i)
 // CHECK-NEXT: ;
-#pragma acc loop device_type(nvidia)
+#pragma acc loop device_type(int)
   for(int i = 0;i<5;++i);
 
-// CHECK: #pragma acc loop dtype(radeon)
+// CHECK: #pragma acc loop dtype(bool)
 // CHECK-NEXT: for (int i = 0; i < 5; ++i)
 // CHECK-NEXT: ;
-#pragma acc loop dtype(radeon)
+#pragma acc loop dtype(bool)
   for(int i = 0;i<5;++i);
 
-// CHECK: #pragma acc loop dtype(host)
+// CHECK: #pragma acc loop dtype(AnotherIdent)
 // CHECK-NEXT: for (int i = 0; i < 5; ++i)
 // CHECK-NEXT: ;
-#pragma acc loop dtype(host)
+#pragma acc loop dtype(AnotherIdent)
   for(int i = 0;i<5;++i);
 
 // CHECK: #pragma acc loop independent
@@ -291,19 +291,29 @@ void foo() {
 #pragma acc loop vector
   for(int i = 0;i<5;++i);
 
+  int *iPtr;
   bool SomeB;
 
+//CHECK: #pragma acc loop reduction(+: iPtr)
+#pragma acc loop reduction(+: iPtr)
+  for(int i = 0;i<5;++i);
 //CHECK: #pragma acc loop reduction(*: i)
 #pragma acc loop reduction(*: i)
   for(int i = 0;i<5;++i);
 //CHECK: #pragma acc loop reduction(max: SomeB)
 #pragma acc loop reduction(max: SomeB)
   for(int i = 0;i<5;++i);
+//CHECK: #pragma acc loop reduction(min: iPtr)
+#pragma acc loop reduction(min: iPtr)
+  for(int i = 0;i<5;++i);
 //CHECK: #pragma acc loop reduction(&: i)
 #pragma acc loop reduction(&: i)
   for(int i = 0;i<5;++i);
 //CHECK: #pragma acc loop reduction(|: SomeB)
 #pragma acc loop reduction(|: SomeB)
+  for(int i = 0;i<5;++i);
+//CHECK: #pragma acc loop reduction(^: iPtr)
+#pragma acc loop reduction(^: iPtr)
   for(int i = 0;i<5;++i);
 //CHECK: #pragma acc loop reduction(&&: i)
 #pragma acc loop reduction(&&: i)

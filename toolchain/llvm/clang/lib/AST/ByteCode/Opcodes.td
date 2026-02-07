@@ -29,6 +29,7 @@ def IntAP : Type;
 def IntAPS : Type;
 def Float : Type;
 def Ptr : Type;
+def FnPtr : Type;
 def MemberPtr : Type;
 def FixedPoint : Type;
 
@@ -48,18 +49,16 @@ def ArgUint64 : ArgType { let Name = "uint64_t"; }
 def ArgIntAP : ArgType { let Name = "IntegralAP<false>"; let AsRef = true; }
 def ArgIntAPS : ArgType { let Name = "IntegralAP<true>"; let AsRef = true; }
 def ArgFloat : ArgType { let Name = "Floating"; let AsRef = true; }
-
 def ArgBool : ArgType { let Name = "bool"; }
 def ArgFixedPoint : ArgType { let Name = "FixedPoint"; let AsRef = true; }
 
 def ArgFunction : ArgType { let Name = "const Function *"; }
-def ArgFunctionDecl : ArgType { let Name = "const FunctionDecl *"; }
 def ArgRecordDecl : ArgType { let Name = "const RecordDecl *"; }
 def ArgRecordField : ArgType { let Name = "const Record::Field *"; }
 def ArgFltSemantics : ArgType { let Name = "const llvm::fltSemantics *"; }
 def ArgRoundingMode : ArgType { let Name = "llvm::RoundingMode"; }
 def ArgLETD: ArgType { let Name = "const LifetimeExtendedTemporaryDecl *"; }
-def ArgCastKind : ArgType { let Name = "interp::CastKind"; }
+def ArgCastKind : ArgType { let Name = "CastKind"; }
 def ArgCallExpr : ArgType { let Name = "const CallExpr *"; }
 def ArgExpr : ArgType { let Name = "const Expr *"; }
 def ArgOffsetOfExpr : ArgType { let Name = "const OffsetOfExpr *"; }
@@ -90,16 +89,9 @@ def IntegerAndFixedTypeClass : TypeClass {
                Uint32, Sint64, Uint64, IntAP, IntAPS, FixedPoint];
 }
 
-def IntegralTypeClass : TypeClass {
-  let Types = !listconcat(IntegerTypeClass.Types, [Bool]);
-}
 def FixedSizeIntegralTypeClass : TypeClass {
   let Types = [Sint8, Uint8, Sint16, Uint16, Sint32,
                Uint32, Sint64, Uint64, Bool];
-}
-
-def FixedSizeIntegralNoBoolTypeClass : TypeClass {
-  let Types = [Sint8, Uint8, Sint16, Uint16, Sint32, Uint32, Sint64, Uint64];
 }
 
 def NumberTypeClass : TypeClass {
@@ -114,7 +106,9 @@ def AluTypeClass : TypeClass {
   let Types = !listconcat(IntegerTypeClass.Types, [Bool], [FixedPoint]);
 }
 
-def PtrTypeClass : TypeClass { let Types = [Ptr, MemberPtr]; }
+def PtrTypeClass : TypeClass {
+  let Types = [Ptr, FnPtr, MemberPtr];
+}
 
 def NonPtrTypeClass : TypeClass {
   let Types = !listconcat(IntegerTypeClass.Types, [Bool], [Float], [FixedPoint]);
@@ -125,7 +119,7 @@ def AllTypeClass : TypeClass {
 }
 
 def ComparableTypeClass : TypeClass {
-  let Types = !listconcat(AluTypeClass.Types, [Ptr], [Float]);
+  let Types = !listconcat(AluTypeClass.Types, [Ptr], [Float], [FnPtr]);
 }
 
 class SingletonTypeClass<Type Ty> : TypeClass {
@@ -178,14 +172,6 @@ def Jt : JumpOpcode;
 // [Bool] -> [], jumps if false.
 def Jf : JumpOpcode;
 
-def StartSpeculation : Opcode;
-def EndSpeculation : Opcode;
-def BCP : Opcode {
-  let ChangesPC = 1;
-  let HasCustomEval = 1;
-  let Args = [ArgSint32, ArgPrimType];
-}
-
 //===----------------------------------------------------------------------===//
 // Returns
 //===----------------------------------------------------------------------===//
@@ -222,7 +208,9 @@ def CallVirt : Opcode {
   let Args = [ArgFunction, ArgUint32];
 }
 
-def CallBI : Opcode { let Args = [ArgCallExpr, ArgUint32]; }
+def CallBI : Opcode {
+  let Args = [ArgFunction, ArgCallExpr, ArgUint32];
+}
 
 def CallPtr : Opcode {
   let Args = [ArgUint32, ArgCallExpr];
@@ -251,16 +239,6 @@ def InitScope : Opcode {
   let Args = [ArgUint32];
 }
 
-def GetLocalEnabled : Opcode {
-  let Args = [ArgUint32];
-  let HasCustomEval = 1;
-}
-
-def EnableLocal : Opcode {
-  let Args = [ArgUint32];
-  let HasCustomEval = 1;
-}
-
 //===----------------------------------------------------------------------===//
 // Constants
 //===----------------------------------------------------------------------===//
@@ -280,12 +258,11 @@ def ConstSint32 : ConstOpcode<Sint32, ArgSint32>;
 def ConstUint32 : ConstOpcode<Uint32, ArgUint32>;
 def ConstSint64 : ConstOpcode<Sint64, ArgSint64>;
 def ConstUint64 : ConstOpcode<Uint64, ArgUint64>;
-def ConstIntAP : ConstOpcode<IntAP, ArgIntAP>;
-def ConstIntAPS : ConstOpcode<IntAPS, ArgIntAPS>;
+def ConstFloat : ConstOpcode<Float, ArgFloat>;
+def constIntAP : ConstOpcode<IntAP, ArgIntAP>;
+def constIntAPS : ConstOpcode<IntAPS, ArgIntAPS>;
 def ConstBool : ConstOpcode<Bool, ArgBool>;
 def ConstFixedPoint : ConstOpcode<FixedPoint, ArgFixedPoint>;
-
-def ConstFloat : Opcode { let Args = [ArgFloat]; }
 
 // [] -> [Integer]
 def Zero : Opcode {
@@ -326,24 +303,28 @@ def GetPtrGlobal : OffsetOpcode;
 // [Pointer] -> [Pointer]
 def GetPtrField : OffsetOpcode;
 def GetPtrFieldPop : OffsetOpcode;
+// [Pointer] -> [Pointer]
+def GetPtrActiveField : OffsetOpcode;
+// [] -> [Pointer]
+def GetPtrActiveThisField : OffsetOpcode;
 // [] -> [Pointer]
 def GetPtrThisField : OffsetOpcode;
 // [Pointer] -> [Pointer]
 def GetPtrBase : OffsetOpcode;
 // [Pointer] -> [Pointer]
-def GetPtrBasePop : OffsetOpcode { let Args = [ArgUint32, ArgBool]; }
+def GetPtrBasePop : OffsetOpcode;
 def GetMemberPtrBasePop : Opcode {
   // Offset of field, which is a base.
   let Args = [ArgSint32];
 }
 
-def FinishInitPop : Opcode;
-def FinishInit : Opcode;
-def FinishInitActivate : Opcode;
-def FinishInitActivatePop : Opcode;
-def FinishInitGlobal : Opcode;
 
-def GetPtrDerivedPop : Opcode { let Args = [ArgUint32, ArgBool, ArgTypePtr]; }
+def FinishInitPop : Opcode;
+def FinishInit    : Opcode;
+
+def GetPtrDerivedPop : Opcode {
+  let Args = [ArgUint32];
+}
 
 // [Pointer] -> [Pointer]
 def GetPtrVirtBasePop : Opcode {
@@ -371,14 +352,8 @@ def NarrowPtr : Opcode;
 // [Pointer] -> [Pointer]
 def ExpandPtr : Opcode;
 // [Pointer, Offset] -> [Pointer]
-def ArrayElemPtr : Opcode {
-  let Types = [IntegralTypeClass];
-  let HasGroup = 1;
-}
-def ArrayElemPtrPop : Opcode {
-  let Types = [IntegralTypeClass];
-  let HasGroup = 1;
-}
+def ArrayElemPtr : AluOpcode;
+def ArrayElemPtrPop : AluOpcode;
 
 def ArrayElemPop : Opcode {
   let Args = [ArgUint32];
@@ -409,7 +384,7 @@ class AccessOpcode : Opcode {
 }
 
 class BitFieldOpcode : Opcode {
-  let Types = [IntegralTypeClass];
+  let Types = [AluTypeClass];
   let Args = [ArgRecordField];
   let HasGroup = 1;
 }
@@ -419,27 +394,19 @@ def GetLocal : AccessOpcode { let HasCustomEval = 1; }
 // [] -> [Pointer]
 def SetLocal : AccessOpcode { let HasCustomEval = 1; }
 
-def EndLifetimePop : Opcode;
-def EndLifetime : Opcode;
-def StartLifetime : Opcode;
-
 def CheckDecl : Opcode {
   let Args = [ArgVarDecl];
 }
 
 def CheckEnumValue : Opcode {
   let Args = [ArgEnumDecl];
-  let Types = [IntegralTypeClass];
+  let Types = [FixedSizeIntegralTypeClass];
   let HasGroup = 1;
 }
 
 def CheckLiteralType : Opcode {
   let Args = [ArgTypePtr];
 }
-
-def CheckArraySize : Opcode { let Args = [ArgUint64]; }
-def CheckFunctionDecl : Opcode { let Args = [ArgFunctionDecl]; }
-def CheckBitCast : Opcode { let Args = [ArgTypePtr, ArgBool]; }
 
 // [] -> [Value]
 def GetGlobal : AccessOpcode;
@@ -476,24 +443,16 @@ def SetThisField : AccessOpcode;
 
 // [Value] -> []
 def InitThisField : AccessOpcode;
-def InitThisFieldActivate : AccessOpcode;
 // [Value] -> []
 def InitThisBitField : Opcode {
   let Types = [AluTypeClass];
   let Args = [ArgRecordField, ArgUint32];
   let HasGroup = 1;
 }
-def InitThisBitFieldActivate : Opcode {
-  let Types = [AluTypeClass];
-  let Args = [ArgRecordField, ArgUint32];
-  let HasGroup = 1;
-}
 // [Pointer, Value] -> []
 def InitField : AccessOpcode;
-def InitFieldActivate : AccessOpcode;
 // [Pointer, Value] -> []
 def InitBitField : BitFieldOpcode;
-def InitBitFieldActivate : BitFieldOpcode;
 
 //===----------------------------------------------------------------------===//
 // Pointer access
@@ -519,17 +478,15 @@ class StoreBitFieldOpcode : Opcode {
   let HasGroup = 1;
 }
 
+// [Pointer, Value] -> [Pointer]
 def Store : StoreOpcode {}
+// [Pointer, Value] -> []
 def StorePop : StoreOpcode {}
-def StoreActivatePop : StoreOpcode {}
-def StoreActivate : StoreOpcode {}
-def StoreBitField : StoreBitFieldOpcode {}
-def StoreBitFieldPop : StoreBitFieldOpcode {}
-def StoreBitFieldActivate : StoreBitFieldOpcode {}
-def StoreBitFieldActivatePop : StoreBitFieldOpcode {}
 
-def Activate : Opcode {}
-def ActivateThisField : Opcode { let Args = [ArgUint32]; }
+// [Pointer, Value] -> [Pointer]
+def StoreBitField : StoreBitFieldOpcode {}
+// [Pointer, Value] -> []
+def StoreBitFieldPop : StoreBitFieldOpcode {}
 
 // [Pointer, Value] -> []
 def Init : StoreOpcode {}
@@ -552,20 +509,13 @@ def InitElemPop : Opcode {
 //===----------------------------------------------------------------------===//
 
 // [Pointer, Integral] -> [Pointer]
-def AddOffset : Opcode {
-  let Types = [IntegralTypeClass];
-  let HasGroup = 1;
-}
+def AddOffset : AluOpcode;
 // [Pointer, Integral] -> [Pointer]
-def SubOffset : Opcode {
-  let Types = [IntegralTypeClass];
-  let HasGroup = 1;
-}
+def SubOffset : AluOpcode;
 
 // [Pointer, Pointer] -> [Integral]
 def SubPtr : Opcode {
   let Types = [IntegerTypeClass];
-  let Args = [ArgBool];
   let HasGroup = 1;
 }
 
@@ -632,31 +582,10 @@ def Shr : Opcode {
 def Inv: Opcode;
 
 // Increment and decrement.
-class OverflowOpcode : Opcode {
-  let Types = [AluTypeClass];
-  let Args = [ArgBool];
-  let HasGroup = 1;
-}
-
-class OverflowBitfieldOpcode : Opcode {
-  let Types = [AluTypeClass];
-  let Args = [ArgBool, ArgUint32];
-  let HasGroup = 1;
-}
-
-def Inc : OverflowOpcode;
-def IncBitfield : OverflowBitfieldOpcode;
-def IncPop : OverflowOpcode;
-def IncPopBitfield : OverflowBitfieldOpcode;
-def PreInc : OverflowOpcode;
-def PreIncBitfield : OverflowBitfieldOpcode;
-
-def Dec : OverflowOpcode;
-def DecBitfield : OverflowBitfieldOpcode;
-def DecPop : OverflowOpcode;
-def DecPopBitfield : OverflowBitfieldOpcode;
-def PreDec : OverflowOpcode;
-def PreDecBitfield : OverflowBitfieldOpcode;
+def Inc: AluOpcode;
+def IncPop : AluOpcode;
+def Dec: AluOpcode;
+def DecPop: AluOpcode;
 
 // Float increment and decrement.
 def Incf: FloatOpcode;
@@ -706,6 +635,10 @@ def CastFixedPoint : Opcode {
   let Args = [ArgUint32];
 }
 
+def FixedSizeIntegralTypes : TypeClass {
+  let Types = [Uint8, Sint8, Uint16, Sint16, Uint32, Sint32, Uint64, Sint64, Bool];
+}
+
 def CastAP : Opcode {
   let Types = [AluTypeClass];
   let Args = [ArgUint32];
@@ -727,7 +660,7 @@ def CastIntegralFloating : Opcode {
 
 // Cast a floating to an integer type
 def CastFloatingIntegral : Opcode {
-  let Types = [FixedSizeIntegralTypeClass];
+  let Types = [FixedSizeIntegralTypes];
   let Args = [ArgUint32];
   let HasGroup = 1;
 }
@@ -751,7 +684,7 @@ def CastPointerIntegralAPS : Opcode {
   let Args = [ArgUint32];
 }
 def CastIntegralFixedPoint : Opcode {
-  let Types = [FixedSizeIntegralTypeClass];
+  let Types = [FixedSizeIntegralTypes];
   let Args = [ArgUint32];
   let HasGroup = 1;
 }
@@ -762,7 +695,7 @@ def CastFixedPointFloating : Opcode {
   let Args = [ArgFltSemantics];
 }
 def CastFixedPointIntegral : Opcode {
-  let Types = [FixedSizeIntegralNoBoolTypeClass];
+  let Types = [FixedSizeIntegralTypes];
   let HasGroup = 1;
 }
 def ShiftFixedPoint : Opcode {
@@ -773,8 +706,6 @@ def PtrPtrCast : Opcode {
   let Args = [ArgBool];
 
 }
-
-def FnPtrCast : Opcode;
 
 def DecayPtr : Opcode {
   let Types = [PtrTypeClass, PtrTypeClass];
@@ -836,8 +767,6 @@ def SideEffect : Opcode {}
 def InvalidCast : Opcode {
   let Args = [ArgCastKind, ArgBool];
 }
-def InvalidStore : Opcode { let Args = [ArgTypePtr]; }
-def CheckPseudoDtor : Opcode {}
 
 def InvalidDeclRef : Opcode {
   let Args = [ArgDeclRef, ArgBool];
@@ -892,26 +821,31 @@ def Free : Opcode {
   let Args = [ArgBool, ArgBool];
 }
 
-def CheckNewTypeMismatch : Opcode { let Args = [ArgExpr]; }
+def CheckNewTypeMismatch : Opcode {
+  let Args = [ArgExpr];
+}
+
+def InvalidNewDeleteExpr : Opcode {
+  let Args = [ArgExpr];
+}
+
 def CheckNewTypeMismatchArray : Opcode {
   let Types = [IntegerTypeClass];
   let Args = [ArgExpr];
   let HasGroup = 1;
 }
-def InvalidNewDeleteExpr : Opcode { let Args = [ArgExpr]; }
 
 def IsConstantContext: Opcode;
 def CheckAllocations : Opcode;
-def CheckNull : Opcode;
 
 def BitCastTypeClass : TypeClass {
   let Types = [Uint8, Sint8, Uint16, Sint16, Uint32, Sint32, Uint64, Sint64,
-               IntAP, IntAPS, Bool, Float, Ptr, MemberPtr];
+               IntAP, IntAPS, Bool, Float, Ptr];
 }
 
 def BitCastPrim : Opcode {
   let Types = [BitCastTypeClass];
-  let Args = [ArgBool, ArgUint32, ArgFltSemantics, ArgTypePtr];
+  let Args = [ArgBool, ArgUint32, ArgFltSemantics];
   let HasGroup = 1;
 }
 
@@ -920,8 +854,3 @@ def BitCast : Opcode;
 def GetTypeid : Opcode { let Args = [ArgTypePtr, ArgTypePtr]; }
 def GetTypeidPtr : Opcode { let Args = [ArgTypePtr]; }
 def DiagTypeid : Opcode;
-
-def CheckDestruction : Opcode;
-
-def PushCC : Opcode { let Args = [ArgBool]; }
-def PopCC : Opcode;

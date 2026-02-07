@@ -37,17 +37,30 @@ using namespace llvm;
 #define GET_REGINFO_TARGET_DESC
 #include "MipsGenRegisterInfo.inc"
 
-MipsRegisterInfo::MipsRegisterInfo(const MipsSubtarget &STI)
-    : MipsGenRegisterInfo(Mips::RA), ArePtrs64bit(STI.getABI().ArePtrs64bit()) {
+MipsRegisterInfo::MipsRegisterInfo() : MipsGenRegisterInfo(Mips::RA) {
   MIPS_MC::initLLVMToCVRegMapping(this);
 }
 
 unsigned MipsRegisterInfo::getPICCallReg() { return Mips::T9; }
 
 const TargetRegisterClass *
-MipsRegisterInfo::getPointerRegClass(unsigned Kind) const {
-  assert(Kind == 0 && "this should only be used for default case");
-  return ArePtrs64bit ? &Mips::GPR64RegClass : &Mips::GPR32RegClass;
+MipsRegisterInfo::getPointerRegClass(const MachineFunction &MF,
+                                     unsigned Kind) const {
+  MipsABIInfo ABI = MF.getSubtarget<MipsSubtarget>().getABI();
+  MipsPtrClass PtrClassKind = static_cast<MipsPtrClass>(Kind);
+
+  switch (PtrClassKind) {
+  case MipsPtrClass::Default:
+    return ABI.ArePtrs64bit() ? &Mips::GPR64RegClass : &Mips::GPR32RegClass;
+  case MipsPtrClass::GPR16MM:
+    return &Mips::GPRMM16RegClass;
+  case MipsPtrClass::StackPointer:
+    return ABI.ArePtrs64bit() ? &Mips::SP64RegClass : &Mips::SP32RegClass;
+  case MipsPtrClass::GlobalPointer:
+    return ABI.ArePtrs64bit() ? &Mips::GP64RegClass : &Mips::GP32RegClass;
+  }
+
+  llvm_unreachable("Unknown pointer kind");
 }
 
 unsigned
@@ -89,25 +102,14 @@ MipsRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
                                      : CSR_Interrupt_32_SaveList;
   }
 
-  // N64 ABI
-  if (Subtarget.isABI_N64()) {
-    if (Subtarget.isSingleFloat())
-      return CSR_N64_SingleFloat_SaveList;
-
-    return CSR_N64_SaveList;
-  }
-
-  // N32 ABI
-  if (Subtarget.isABI_N32()) {
-    if (Subtarget.isSingleFloat())
-      return CSR_N32_SingleFloat_SaveList;
-
-    return CSR_N32_SaveList;
-  }
-
-  // O32 ABI
   if (Subtarget.isSingleFloat())
-    return CSR_O32_SingleFloat_SaveList;
+    return CSR_SingleFloatOnly_SaveList;
+
+  if (Subtarget.isABI_N64())
+    return CSR_N64_SaveList;
+
+  if (Subtarget.isABI_N32())
+    return CSR_N32_SaveList;
 
   if (Subtarget.isFP64bit())
     return CSR_O32_FP64_SaveList;
@@ -122,25 +124,14 @@ const uint32_t *
 MipsRegisterInfo::getCallPreservedMask(const MachineFunction &MF,
                                        CallingConv::ID) const {
   const MipsSubtarget &Subtarget = MF.getSubtarget<MipsSubtarget>();
-  // N64 ABI
-  if (Subtarget.isABI_N64()) {
-    if (Subtarget.isSingleFloat())
-      return CSR_N64_SingleFloat_RegMask;
-
-    return CSR_N64_RegMask;
-  }
-
-  // N32 ABI
-  if (Subtarget.isABI_N32()) {
-    if (Subtarget.isSingleFloat())
-      return CSR_N32_SingleFloat_RegMask;
-
-    return CSR_N32_RegMask;
-  }
-
-  // O32 ABI
   if (Subtarget.isSingleFloat())
-    return CSR_O32_SingleFloat_RegMask;
+    return CSR_SingleFloatOnly_RegMask;
+
+  if (Subtarget.isABI_N64())
+    return CSR_N64_RegMask;
+
+  if (Subtarget.isABI_N32())
+    return CSR_N32_RegMask;
 
   if (Subtarget.isFP64bit())
     return CSR_O32_FP64_RegMask;
@@ -170,6 +161,13 @@ getReservedRegs(const MachineFunction &MF) const {
 
   for (MCPhysReg R : ReservedGPR32)
     Reserved.set(R);
+
+  // Reserve registers for the NaCl sandbox.
+  if (Subtarget.isTargetNaCl()) {
+    Reserved.set(Mips::T6);   // Reserved for control flow mask.
+    Reserved.set(Mips::T7);   // Reserved for memory access mask.
+    Reserved.set(Mips::T8);   // Reserved for thread pointer.
+  }
 
   for (MCPhysReg R : ReservedGPR64)
     Reserved.set(R);
@@ -206,12 +204,9 @@ getReservedRegs(const MachineFunction &MF) const {
       }
     }
   }
-  // Reserve fp control and status register
-  Reserved.set(Mips::FCR31);
 
   // Reserve hardware registers.
   Reserved.set(Mips::HWR29);
-  Reserved.set(Mips::HWR2);
 
   // Reserve DSP control register.
   Reserved.set(Mips::DSPPos);

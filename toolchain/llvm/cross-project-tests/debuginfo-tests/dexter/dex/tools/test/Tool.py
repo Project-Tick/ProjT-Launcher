@@ -121,8 +121,7 @@ class Tool(TestToolBase):
 
         self.context.options.source_files.extend(list(new_source_files))
 
-        cond_controller_cmds = ["DexLimitSteps", "DexStepFunction", "DexContinue"]
-        if any(c in step_collection.commands for c in cond_controller_cmds):
+        if "DexLimitSteps" in step_collection.commands:
             debugger_controller = ConditionalController(self.context, step_collection)
         else:
             debugger_controller = DefaultController(self.context, step_collection)

@@ -19,10 +19,9 @@
 #include "llvm/IR/Intrinsics.h"
 #include <optional>
 
-using namespace llvm;
+namespace llvm {
 
-std::optional<RoundingMode>
-llvm::convertStrToRoundingMode(StringRef RoundingArg) {
+std::optional<RoundingMode> convertStrToRoundingMode(StringRef RoundingArg) {
   // For dynamic rounding mode, we use round to nearest but we will set the
   // 'exact' SDNodeFlag so that the value will not be rounded.
   return StringSwitch<std::optional<RoundingMode>>(RoundingArg)
@@ -35,8 +34,7 @@ llvm::convertStrToRoundingMode(StringRef RoundingArg) {
       .Default(std::nullopt);
 }
 
-std::optional<StringRef>
-llvm::convertRoundingModeToStr(RoundingMode UseRounding) {
+std::optional<StringRef> convertRoundingModeToStr(RoundingMode UseRounding) {
   std::optional<StringRef> RoundingStr;
   switch (UseRounding) {
   case RoundingMode::Dynamic:
@@ -64,7 +62,7 @@ llvm::convertRoundingModeToStr(RoundingMode UseRounding) {
 }
 
 std::optional<fp::ExceptionBehavior>
-llvm::convertStrToExceptionBehavior(StringRef ExceptionArg) {
+convertStrToExceptionBehavior(StringRef ExceptionArg) {
   return StringSwitch<std::optional<fp::ExceptionBehavior>>(ExceptionArg)
       .Case("fpexcept.ignore", fp::ebIgnore)
       .Case("fpexcept.maytrap", fp::ebMayTrap)
@@ -73,7 +71,7 @@ llvm::convertStrToExceptionBehavior(StringRef ExceptionArg) {
 }
 
 std::optional<StringRef>
-llvm::convertExceptionBehaviorToStr(fp::ExceptionBehavior UseExcept) {
+convertExceptionBehaviorToStr(fp::ExceptionBehavior UseExcept) {
   std::optional<StringRef> ExceptStr;
   switch (UseExcept) {
   case fp::ebStrict:
@@ -89,7 +87,7 @@ llvm::convertExceptionBehaviorToStr(fp::ExceptionBehavior UseExcept) {
   return ExceptStr;
 }
 
-Intrinsic::ID llvm::getConstrainedIntrinsicID(const Instruction &Instr) {
+Intrinsic::ID getConstrainedIntrinsicID(const Instruction &Instr) {
   Intrinsic::ID IID = Intrinsic::not_intrinsic;
   switch (Instr.getOpcode()) {
   case Instruction::FCmp:
@@ -129,3 +127,5 @@ Intrinsic::ID llvm::getConstrainedIntrinsicID(const Instruction &Instr) {
 
   return IID;
 }
+
+} // namespace llvm

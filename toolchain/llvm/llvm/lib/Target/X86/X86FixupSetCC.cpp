@@ -39,31 +39,36 @@ using namespace llvm;
 STATISTIC(NumSubstZexts, "Number of setcc + zext pairs substituted");
 
 namespace {
-class X86FixupSetCCLegacy : public MachineFunctionPass {
+class X86FixupSetCCPass : public MachineFunctionPass {
 public:
   static char ID;
 
-  X86FixupSetCCLegacy() : MachineFunctionPass(ID) {}
+  X86FixupSetCCPass() : MachineFunctionPass(ID) {}
 
   StringRef getPassName() const override { return "X86 Fixup SetCC"; }
 
   bool runOnMachineFunction(MachineFunction &MF) override;
+
+private:
+  MachineRegisterInfo *MRI = nullptr;
+  const X86Subtarget *ST = nullptr;
+  const X86InstrInfo *TII = nullptr;
+
+  enum { SearchBound = 16 };
 };
 } // end anonymous namespace
 
-char X86FixupSetCCLegacy::ID = 0;
+char X86FixupSetCCPass::ID = 0;
 
-INITIALIZE_PASS(X86FixupSetCCLegacy, DEBUG_TYPE, DEBUG_TYPE, false, false)
+INITIALIZE_PASS(X86FixupSetCCPass, DEBUG_TYPE, DEBUG_TYPE, false, false)
 
-FunctionPass *llvm::createX86FixupSetCCLegacyPass() {
-  return new X86FixupSetCCLegacy();
-}
+FunctionPass *llvm::createX86FixupSetCC() { return new X86FixupSetCCPass(); }
 
-static bool fixupSetCC(MachineFunction &MF) {
+bool X86FixupSetCCPass::runOnMachineFunction(MachineFunction &MF) {
   bool Changed = false;
-  MachineRegisterInfo *MRI = &MF.getRegInfo();
-  const X86Subtarget *ST = &MF.getSubtarget<X86Subtarget>();
-  const X86InstrInfo *TII = ST->getInstrInfo();
+  MRI = &MF.getRegInfo();
+  ST = &MF.getSubtarget<X86Subtarget>();
+  TII = ST->getInstrInfo();
 
   SmallVector<MachineInstr*, 4> ToErase;
 
@@ -74,10 +79,10 @@ static bool fixupSetCC(MachineFunction &MF) {
       if (MI.definesRegister(X86::EFLAGS, /*TRI=*/nullptr))
         FlagsDefMI = &MI;
 
-      // Find a setcc/setzucc (if ZU is enabled) that is used by a zext.
+      // Find a setcc that is used by a zext.
       // This doesn't have to be the only use, the transformation is safe
       // regardless.
-      if (MI.getOpcode() != X86::SETCCr && MI.getOpcode() != X86::SETZUCCr)
+      if (MI.getOpcode() != X86::SETCCr)
         continue;
 
       MachineInstr *ZExt = nullptr;
@@ -117,11 +122,7 @@ static bool fixupSetCC(MachineFunction &MF) {
       // register.
       Register ZeroReg = MRI->createVirtualRegister(RC);
       if (ST->hasZU()) {
-        if (!ST->preferLegacySetCC())
-          assert((MI.getOpcode() == X86::SETZUCCr) &&
-                 "Expect setzucc instruction!");
-        else
-          MI.setDesc(TII->get(X86::SETZUCCr));
+        MI.setDesc(TII->get(X86::SETZUCCr));
         BuildMI(*ZExt->getParent(), ZExt, ZExt->getDebugLoc(),
                 TII->get(TargetOpcode::IMPLICIT_DEF), ZeroReg);
       } else {
@@ -135,12 +136,6 @@ static bool fixupSetCC(MachineFunction &MF) {
           .addReg(ZeroReg)
           .addReg(Reg0)
           .addImm(X86::sub_8bit);
-
-      // Redirect the debug-instr-number to the setcc.
-      if (unsigned InstrNum = ZExt->peekDebugInstrNum())
-        MF.makeDebugValueSubstitution({InstrNum, 0},
-                                      {MI.getDebugInstrNum(), 0});
-
       ToErase.push_back(ZExt);
     }
   }
@@ -149,15 +144,4 @@ static bool fixupSetCC(MachineFunction &MF) {
     I->eraseFromParent();
 
   return Changed;
-}
-
-bool X86FixupSetCCLegacy::runOnMachineFunction(MachineFunction &MF) {
-  return fixupSetCC(MF);
-}
-
-PreservedAnalyses X86FixupSetCCPass::run(MachineFunction &MF,
-                                         MachineFunctionAnalysisManager &MFAM) {
-  return fixupSetCC(MF) ? getMachineFunctionPassPreservedAnalyses()
-                              .preserveSet<CFGAnalyses>()
-                        : PreservedAnalyses::all();
 }

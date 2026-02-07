@@ -21,7 +21,7 @@
 #ifndef LLVM_ADT_SPARSEMULTISET_H
 #define LLVM_ADT_SPARSEMULTISET_H
 
-#include "llvm/ADT/STLForwardCompat.h"
+#include "llvm/ADT/identity.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/SparseSet.h"
 #include <cassert>
@@ -77,12 +77,12 @@ namespace llvm {
 /// intuitive and fast removal.
 ///
 /// @tparam ValueT      The type of objects in the set.
-/// @tparam KeyT        The type of the key that identifies objects in the set.
 /// @tparam KeyFunctorT A functor that computes an unsigned index from KeyT.
 /// @tparam SparseT     An unsigned integer type. See above.
 ///
-template <typename ValueT, typename KeyT = unsigned,
-          typename KeyFunctorT = identity, typename SparseT = uint8_t>
+template<typename ValueT,
+         typename KeyFunctorT = identity<unsigned>,
+         typename SparseT = uint8_t>
 class SparseMultiSet {
   static_assert(std::is_unsigned_v<SparseT>,
                 "SparseT must be an unsigned integer type");
@@ -103,16 +103,21 @@ class SparseMultiSet {
     SMSNode(ValueT D, unsigned P, unsigned N) : Data(D), Prev(P), Next(N) {}
 
     /// List tails have invalid Nexts.
-    bool isTail() const { return Next == INVALID; }
+    bool isTail() const {
+      return Next == INVALID;
+    }
 
     /// Whether this node is a tombstone node, and thus is in our freelist.
-    bool isTombstone() const { return Prev == INVALID; }
+    bool isTombstone() const {
+      return Prev == INVALID;
+    }
 
     /// Since the list is circular in Prev, all non-tombstone nodes have a valid
     /// Prev.
     bool isValid() const { return Prev != INVALID; }
   };
 
+  using KeyT = typename KeyFunctorT::argument_type;
   using DenseT = SmallVector<SMSNode, 8>;
   DenseT Dense;
   SparseT *Sparse = nullptr;
@@ -151,7 +156,7 @@ class SparseMultiSet {
 
   /// Add in the given SMSNode. Uses a free entry in our freelist if
   /// available. Returns the index of the added node.
-  unsigned addValue(const ValueT &V, unsigned Prev, unsigned Next) {
+  unsigned addValue(const ValueT& V, unsigned Prev, unsigned Next) {
     if (NumFree == 0) {
       Dense.push_back(SMSNode(V, Prev, Next));
       return Dense.size() - 1;
@@ -199,13 +204,13 @@ public:
     // seem like a likely use case, so we can add that code when we need it.
     assert(empty() && "Can only resize universe on an empty map");
     // Hysteresis prevents needless reallocations.
-    if (U >= Universe / 4 && U <= Universe)
+    if (U >= Universe/4 && U <= Universe)
       return;
     free(Sparse);
     // The Sparse array doesn't actually need to be initialized, so malloc
     // would be enough here, but that will cause tools like valgrind to
     // complain about branching on uninitialized data.
-    Sparse = static_cast<SparseT *>(safe_calloc(U, sizeof(SparseT)));
+    Sparse = static_cast<SparseT*>(safe_calloc(U, sizeof(SparseT)));
     Universe = U;
   }
 
@@ -227,7 +232,7 @@ public:
     unsigned SparseIdx;
 
     iterator_base(SMSPtrTy P, unsigned I, unsigned SI)
-        : SMS(P), Idx(I), SparseIdx(SI) {}
+      : SMS(P), Idx(I), SparseIdx(SI) {}
 
     /// Whether our iterator has fallen outside our dense vector.
     bool isEnd() const {
@@ -268,7 +273,9 @@ public:
       return false;
     }
 
-    bool operator!=(const iterator_base &RHS) const { return !operator==(RHS); }
+    bool operator!=(const iterator_base &RHS) const {
+      return !operator==(RHS);
+    }
 
     /// Increment and decrement operators
     iterator_base &operator--() { // predecrement - Back up
@@ -365,10 +372,12 @@ public:
   /// @param   Key A valid key to find.
   /// @returns An iterator to the element identified by key, or end().
   ///
-  iterator find(const KeyT &Key) { return findIndex(KeyIndexOf(Key)); }
+  iterator find(const KeyT &Key) {
+    return findIndex(KeyIndexOf(Key));
+  }
 
   const_iterator find(const KeyT &Key) const {
-    iterator I = const_cast<SparseMultiSet *>(this)->findIndex(KeyIndexOf(Key));
+    iterator I = const_cast<SparseMultiSet*>(this)->findIndex(KeyIndexOf(Key));
     return const_iterator(I.SMS, I.Idx, KeyIndexOf(Key));
   }
 
@@ -383,7 +392,9 @@ public:
   }
 
   /// Returns true if this set contains an element identified by Key.
-  bool contains(const KeyT &Key) const { return find(Key) != end(); }
+  bool contains(const KeyT &Key) const {
+    return find(Key) != end();
+  }
 
   /// Return the head and tail of the subset's list, otherwise returns end().
   iterator getHead(const KeyT &Key) { return find(Key); }
@@ -400,7 +411,7 @@ public:
   RangePair equal_range(const KeyT &K) {
     iterator B = find(K);
     iterator E = iterator(this, SMSNode::INVALID, B.SparseIdx);
-    return {B, E};
+    return std::make_pair(B, E);
   }
 
   /// Insert a new element at the tail of the subset list. Returns an iterator
@@ -506,6 +517,6 @@ private:
   }
 };
 
-} // namespace llvm
+} // end namespace llvm
 
 #endif // LLVM_ADT_SPARSEMULTISET_H

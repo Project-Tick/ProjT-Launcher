@@ -1,4 +1,3 @@
-	.att_syntax
 	.text
 	.file	"inlinevar2.c"
 	.globl	other                       # -- Begin function other

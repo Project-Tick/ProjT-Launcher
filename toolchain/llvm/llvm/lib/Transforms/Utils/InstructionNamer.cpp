@@ -20,8 +20,9 @@
 
 using namespace llvm;
 
-static void nameInstructions(Function &F) {
-  for (Argument &Arg : F.args()) {
+namespace {
+void nameInstructions(Function &F) {
+  for (auto &Arg : F.args()) {
     if (!Arg.hasName())
       Arg.setName("arg");
   }
@@ -36,6 +37,8 @@ static void nameInstructions(Function &F) {
     }
   }
 }
+
+} // namespace
 
 PreservedAnalyses InstructionNamerPass::run(Function &F,
                                             FunctionAnalysisManager &FAM) {

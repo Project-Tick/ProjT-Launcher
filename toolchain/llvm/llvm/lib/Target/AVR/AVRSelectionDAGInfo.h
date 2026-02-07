@@ -15,17 +15,11 @@
 
 #include "llvm/CodeGen/SelectionDAGTargetInfo.h"
 
-#define GET_SDNODE_ENUM
-#include "AVRGenSDNodeInfo.inc"
-
 namespace llvm {
 
 /// Holds information about the AVR instruction selection DAG.
-class AVRSelectionDAGInfo : public SelectionDAGGenTargetInfo {
+class AVRSelectionDAGInfo : public SelectionDAGTargetInfo {
 public:
-  AVRSelectionDAGInfo();
-
-  ~AVRSelectionDAGInfo() override;
 };
 
 } // end namespace llvm

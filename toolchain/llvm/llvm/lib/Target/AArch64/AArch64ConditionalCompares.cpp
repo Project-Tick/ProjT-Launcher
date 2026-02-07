@@ -573,7 +573,7 @@ void SSACCmpConv::convert(SmallVectorImpl<MachineBasicBlock *> &RemovedBlocks) {
   // Update the CFG first.
   updateTailPHIs();
 
-  // Save successor probabilities before removing CmpBB and Tail from their
+  // Save successor probabilties before removing CmpBB and Tail from their
   // parents.
   BranchProbability Head2CmpBB = MBPI->getEdgeProbability(Head, CmpBB);
   BranchProbability CmpBB2Tail = MBPI->getEdgeProbability(CmpBB, Tail);
@@ -581,7 +581,7 @@ void SSACCmpConv::convert(SmallVectorImpl<MachineBasicBlock *> &RemovedBlocks) {
   Head->removeSuccessor(CmpBB);
   CmpBB->removeSuccessor(Tail);
 
-  // If Head and CmpBB had successor probabilities, update the probabilities to
+  // If Head and CmpBB had successor probabilties, udpate the probabilities to
   // reflect the ccmp-conversion.
   if (Head->hasSuccessorProbabilities() && CmpBB->hasSuccessorProbabilities()) {
 
@@ -596,7 +596,7 @@ void SSACCmpConv::convert(SmallVectorImpl<MachineBasicBlock *> &RemovedBlocks) {
                              Head2Tail + Head2CmpBB * CmpBB2Tail);
 
     // We will transfer successors of CmpBB to Head in a moment without
-    // normalizing the successor probabilities. Set the successor probabilities
+    // normalizing the successor probabilities. Set the successor probabilites
     // before doing so.
     //
     // Pr(I|Head) = Pr(CmpBB|Head) * Pr(I|CmpBB).
@@ -629,7 +629,8 @@ void SSACCmpConv::convert(SmallVectorImpl<MachineBasicBlock *> &RemovedBlocks) {
     }
     const MCInstrDesc &MCID = TII->get(Opc);
     // Create a dummy virtual register for the SUBS def.
-    Register DestReg = MRI->createVirtualRegister(TII->getRegClass(MCID, 0));
+    Register DestReg =
+        MRI->createVirtualRegister(TII->getRegClass(MCID, 0, TRI, *MF));
     // Insert a SUBS Rn, #0 instruction instead of the cbz / cbnz.
     BuildMI(*Head, Head->end(), TermDL, MCID)
         .addReg(DestReg, RegState::Define | RegState::Dead)
@@ -637,7 +638,8 @@ void SSACCmpConv::convert(SmallVectorImpl<MachineBasicBlock *> &RemovedBlocks) {
         .addImm(0)
         .addImm(0);
     // SUBS uses the GPR*sp register classes.
-    MRI->constrainRegClass(HeadCond[2].getReg(), TII->getRegClass(MCID, 1));
+    MRI->constrainRegClass(HeadCond[2].getReg(),
+                           TII->getRegClass(MCID, 1, TRI, *MF));
   }
 
   Head->splice(Head->end(), CmpBB, CmpBB->begin(), CmpBB->end());
@@ -684,10 +686,10 @@ void SSACCmpConv::convert(SmallVectorImpl<MachineBasicBlock *> &RemovedBlocks) {
   unsigned NZCV = AArch64CC::getNZCVToSatisfyCondCode(CmpBBTailCC);
   const MCInstrDesc &MCID = TII->get(Opc);
   MRI->constrainRegClass(CmpMI->getOperand(FirstOp).getReg(),
-                         TII->getRegClass(MCID, 0));
+                         TII->getRegClass(MCID, 0, TRI, *MF));
   if (CmpMI->getOperand(FirstOp + 1).isReg())
     MRI->constrainRegClass(CmpMI->getOperand(FirstOp + 1).getReg(),
-                           TII->getRegClass(MCID, 1));
+                           TII->getRegClass(MCID, 1, TRI, *MF));
   MachineInstrBuilder MIB = BuildMI(*Head, CmpMI, CmpMI->getDebugLoc(), MCID)
                                 .add(CmpMI->getOperand(FirstOp)); // Register Rn
   if (isZBranch)
@@ -769,7 +771,9 @@ class AArch64ConditionalCompares : public MachineFunctionPass {
 
 public:
   static char ID;
-  AArch64ConditionalCompares() : MachineFunctionPass(ID) {}
+  AArch64ConditionalCompares() : MachineFunctionPass(ID) {
+    initializeAArch64ConditionalComparesPass(*PassRegistry::getPassRegistry());
+  }
   void getAnalysisUsage(AnalysisUsage &AU) const override;
   bool runOnMachineFunction(MachineFunction &MF) override;
   StringRef getPassName() const override {

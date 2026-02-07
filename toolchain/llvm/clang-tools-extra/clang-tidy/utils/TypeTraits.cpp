@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- TypeTraits.cpp - clang-tidy---------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -9,25 +9,32 @@
 #include "TypeTraits.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclCXX.h"
+#include "clang/ASTMatchers/ASTMatchFinder.h"
 #include <optional>
 
 namespace clang::tidy::utils::type_traits {
 
-static bool classHasTrivialCopyAndDestroy(QualType Type) {
+namespace {
+
+bool classHasTrivialCopyAndDestroy(QualType Type) {
   auto *Record = Type->getAsCXXRecordDecl();
   return Record && Record->hasDefinition() &&
          !Record->hasNonTrivialCopyConstructor() &&
          !Record->hasNonTrivialDestructor();
 }
 
-static bool hasDeletedCopyConstructor(QualType Type) {
+bool hasDeletedCopyConstructor(QualType Type) {
   auto *Record = Type->getAsCXXRecordDecl();
   if (!Record || !Record->hasDefinition())
     return false;
-  return llvm::any_of(Record->ctors(), [](const auto *Constructor) {
-    return Constructor->isCopyConstructor() && Constructor->isDeleted();
-  });
+  for (const auto *Constructor : Record->ctors()) {
+    if (Constructor->isCopyConstructor() && Constructor->isDeleted())
+      return true;
+  }
+  return false;
 }
+
+} // namespace
 
 std::optional<bool> isExpensiveToCopy(QualType Type,
                                       const ASTContext &Context) {
@@ -35,7 +42,8 @@ std::optional<bool> isExpensiveToCopy(QualType Type,
     return std::nullopt;
   return !Type.isTriviallyCopyableType(Context) &&
          !classHasTrivialCopyAndDestroy(Type) &&
-         !hasDeletedCopyConstructor(Type) && !Type->isObjCLifetimeType();
+         !hasDeletedCopyConstructor(Type) &&
+         !Type->isObjCLifetimeType();
 }
 
 bool recordIsTriviallyDefaultConstructible(const RecordDecl &RecordDecl,
@@ -68,10 +76,14 @@ bool recordIsTriviallyDefaultConstructible(const RecordDecl &RecordDecl,
       return false;
   }
   // If all its direct bases are trivially constructible.
-  return llvm::all_of(ClassDecl->bases(), [&](const CXXBaseSpecifier &Base) {
-    return isTriviallyDefaultConstructible(Base.getType(), Context) &&
-           !Base.isVirtual();
-  });
+  for (const CXXBaseSpecifier &Base : ClassDecl->bases()) {
+    if (!isTriviallyDefaultConstructible(Base.getType(), Context))
+      return false;
+    if (Base.isVirtual())
+      return false;
+  }
+
+  return true;
 }
 
 // Based on QualType::isTrivial.
@@ -105,7 +117,7 @@ bool isTriviallyDefaultConstructible(QualType Type, const ASTContext &Context) {
     }
   }
 
-  const QualType CanonicalType = Type.getCanonicalType();
+  QualType CanonicalType = Type.getCanonicalType();
   if (CanonicalType->isDependentType())
     return false;
 
@@ -113,8 +125,9 @@ bool isTriviallyDefaultConstructible(QualType Type, const ASTContext &Context) {
   if (CanonicalType->isScalarType() || CanonicalType->isVectorType())
     return true;
 
-  if (const auto *RD = CanonicalType->getAsRecordDecl())
-    return recordIsTriviallyDefaultConstructible(*RD, Context);
+  if (const auto *RT = CanonicalType->getAs<RecordType>()) {
+    return recordIsTriviallyDefaultConstructible(*RT->getDecl(), Context);
+  }
 
   // No other types can match.
   return false;

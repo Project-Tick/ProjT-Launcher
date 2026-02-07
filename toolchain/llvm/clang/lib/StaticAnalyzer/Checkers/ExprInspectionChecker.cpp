@@ -227,11 +227,10 @@ void ExprInspectionChecker::analyzerWarnIfReached(const CallExpr *CE,
 
 void ExprInspectionChecker::analyzerNumTimesReached(const CallExpr *CE,
                                                     CheckerContext &C) const {
-  ReachedStat &Stat = ReachedStats[CE];
-  ++Stat.NumTimesReached;
-  if (!Stat.ExampleNode) {
+  ++ReachedStats[CE].NumTimesReached;
+  if (!ReachedStats[CE].ExampleNode) {
     // Later, in checkEndAnalysis, we'd throw a report against it.
-    Stat.ExampleNode = C.generateNonFatalErrorNode();
+    ReachedStats[CE].ExampleNode = C.generateNonFatalErrorNode();
   }
 }
 
@@ -257,7 +256,7 @@ void ExprInspectionChecker::analyzerExplain(const CallExpr *CE,
     return;
 
   SVal V = C.getSVal(Arg);
-  SValExplainer Ex(C.getASTContext(), C.getState());
+  SValExplainer Ex(C.getASTContext());
   reportBug(Ex.Visit(V), C);
 }
 
@@ -430,8 +429,9 @@ void ExprInspectionChecker::analyzerHashDump(const CallExpr *CE,
   const LangOptions &Opts = C.getLangOpts();
   const SourceManager &SM = C.getSourceManager();
   FullSourceLoc FL(CE->getArg(0)->getBeginLoc(), SM);
-  std::string HashContent = getIssueString(
-      FL, getName(), "Category", C.getLocationContext()->getDecl(), Opts);
+  std::string HashContent =
+      getIssueString(FL, getCheckerName().getName(), "Category",
+                     C.getLocationContext()->getDecl(), Opts);
 
   reportBug(HashContent, C);
 }

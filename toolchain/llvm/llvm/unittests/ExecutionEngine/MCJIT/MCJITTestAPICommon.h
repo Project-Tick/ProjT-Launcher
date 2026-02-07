@@ -37,7 +37,9 @@ namespace llvm {
 
 class MCJITTestAPICommon {
 protected:
-  MCJITTestAPICommon() : HostTripleName(sys::getProcessTriple()) {
+  MCJITTestAPICommon()
+    : HostTriple(sys::getProcessTriple())
+  {
     InitializeNativeTarget();
     InitializeNativeTargetAsmPrinter();
 
@@ -47,10 +49,9 @@ protected:
 
 #ifdef _WIN32
     // On Windows, generate ELF objects by specifying "-elf" in triple
-    HostTripleName += "-elf";
+    HostTriple += "-elf";
 #endif // _WIN32
-    HostTripleName = Triple::normalize(HostTripleName);
-    HostTriple = Triple(HostTripleName);
+    HostTriple = Triple::normalize(HostTriple);
   }
 
   bool HostCanBeTargeted() {
@@ -80,18 +81,19 @@ protected:
 
   /// Returns true if the host OS is known to support MCJIT
   bool OSSupportsMCJIT() {
-    if (find(UnsupportedEnvironments, HostTriple.getEnvironment()) !=
+    Triple Host(HostTriple);
+
+    if (find(UnsupportedEnvironments, Host.getEnvironment()) !=
         UnsupportedEnvironments.end())
       return false;
 
-    if (!is_contained(UnsupportedOSs, HostTriple.getOS()))
+    if (!is_contained(UnsupportedOSs, Host.getOS()))
       return true;
 
     return false;
   }
 
-  std::string HostTripleName;
-  Triple HostTriple;
+  std::string HostTriple;
   SmallVector<Triple::ArchType, 4> SupportedArchs;
   SmallVector<Triple::ArchType, 1> HasSubArchs;
   SmallVector<std::string, 2> SupportedSubArchs; // We need to own the memory

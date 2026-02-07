@@ -19,7 +19,6 @@
 #include <cstdint>
 #include <iterator>
 #include <type_traits>
-#include <utility>
 
 #include "test_iterators.h"
 

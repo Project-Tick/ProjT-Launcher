@@ -11,7 +11,6 @@
 
 #include "src/__support/CPP/array.h"
 #include "src/__support/CPP/stringstream.h"
-#include "src/__support/FPUtil/bfloat16.h"
 #include "src/__support/FPUtil/fpbits_str.h"
 #include "src/__support/macros/config.h"
 #include "src/__support/macros/properties/types.h"
@@ -33,20 +32,14 @@ unary_operation(Operation op, InputType input, unsigned int precision,
     return mpfrInput.acos();
   case Operation::Acosh:
     return mpfrInput.acosh();
-  case Operation::Acospi:
-    return mpfrInput.acospi();
   case Operation::Asin:
     return mpfrInput.asin();
   case Operation::Asinh:
     return mpfrInput.asinh();
-  case Operation::Asinpi:
-    return mpfrInput.asinpi();
   case Operation::Atan:
     return mpfrInput.atan();
   case Operation::Atanh:
     return mpfrInput.atanh();
-  case Operation::Atanpi:
-    return mpfrInput.atanpi();
   case Operation::Cbrt:
     return mpfrInput.cbrt();
   case Operation::Ceil:
@@ -91,8 +84,6 @@ unary_operation(Operation op, InputType input, unsigned int precision,
     return mpfrInput.round();
   case Operation::RoundEven:
     return mpfrInput.roundeven();
-  case Operation::Rsqrt:
-    return mpfrInput.rsqrt();
   case Operation::Sin:
     return mpfrInput.sin();
   case Operation::Sinpi:
@@ -276,10 +267,6 @@ template void explain_unary_operation_single_output_error(Operation op,
                                                           double, RoundingMode);
 #endif // LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE
 
-template void explain_unary_operation_single_output_error(Operation op,
-                                                          bfloat16, bfloat16,
-                                                          double, RoundingMode);
-
 template <typename T>
 void explain_unary_operation_two_outputs_error(
     Operation op, T input, const BinaryOutput<T> &libc_result,
@@ -414,28 +401,6 @@ template void explain_binary_operation_one_output_error(
 template void explain_binary_operation_one_output_error(
     Operation, const BinaryInput<long double> &, float16, double, RoundingMode);
 #endif
-#if defined(LIBC_TYPES_HAS_FLOAT128) &&                                        \
-    defined(LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE)
-template void explain_binary_operation_one_output_error(
-    Operation, const BinaryInput<float128> &, float128, double, RoundingMode);
-#endif
-template void explain_binary_operation_one_output_error(
-    Operation, const BinaryInput<bfloat16> &, bfloat16, double, RoundingMode);
-template void
-explain_binary_operation_one_output_error(Operation, const BinaryInput<float> &,
-                                          bfloat16, double, RoundingMode);
-template void explain_binary_operation_one_output_error(
-    Operation, const BinaryInput<double> &, bfloat16, double, RoundingMode);
-template void
-explain_binary_operation_one_output_error(Operation,
-                                          const BinaryInput<long double> &,
-                                          bfloat16, double, RoundingMode);
-#if defined(LIBC_TYPES_HAS_FLOAT128) &&                                        \
-    defined(LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE)
-template void explain_binary_operation_one_output_error(
-    Operation, const BinaryInput<float128> &, bfloat16, double, RoundingMode);
-#endif // defined(LIBC_TYPES_HAS_FLOAT128) &&
-       // defined(LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE)
 
 template <typename InputType, typename OutputType>
 void explain_ternary_operation_one_output_error(
@@ -485,8 +450,6 @@ explain_ternary_operation_one_output_error(Operation,
 
 #ifdef LIBC_TYPES_HAS_FLOAT16
 template void explain_ternary_operation_one_output_error(
-    Operation, const TernaryInput<float16> &, float16, double, RoundingMode);
-template void explain_ternary_operation_one_output_error(
     Operation, const TernaryInput<float> &, float16, double, RoundingMode);
 template void explain_ternary_operation_one_output_error(
     Operation, const TernaryInput<double> &, float16, double, RoundingMode);
@@ -495,21 +458,6 @@ explain_ternary_operation_one_output_error(Operation,
                                            const TernaryInput<long double> &,
                                            float16, double, RoundingMode);
 #endif
-
-template void explain_ternary_operation_one_output_error(
-    Operation, const TernaryInput<float> &, bfloat16, double, RoundingMode);
-template void explain_ternary_operation_one_output_error(
-    Operation, const TernaryInput<double> &, bfloat16, double, RoundingMode);
-template void
-explain_ternary_operation_one_output_error(Operation,
-                                           const TernaryInput<long double> &,
-                                           bfloat16, double, RoundingMode);
-#if defined(LIBC_TYPES_HAS_FLOAT128) &&                                        \
-    defined(LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE)
-template void explain_ternary_operation_one_output_error(
-    Operation, const TernaryInput<float128> &, bfloat16, double, RoundingMode);
-#endif // defined(LIBC_TYPES_HAS_FLOAT128) &&
-       // defined(LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE)
 
 template <typename InputType, typename OutputType>
 bool compare_unary_operation_single_output(Operation op, InputType input,
@@ -567,9 +515,6 @@ template bool compare_unary_operation_single_output(Operation, float128,
                                                     long double, double,
                                                     RoundingMode);
 #endif // LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE
-template bool compare_unary_operation_single_output(Operation, bfloat16,
-                                                    bfloat16, double,
-                                                    RoundingMode);
 
 template <typename T>
 bool compare_unary_operation_two_outputs(Operation op, T input,
@@ -680,37 +625,7 @@ template bool
 compare_binary_operation_one_output(Operation, const BinaryInput<long double> &,
                                     float16, double, RoundingMode);
 #endif
-#if defined(LIBC_TYPES_HAS_FLOAT128) &&                                        \
-    defined(LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE)
-template bool compare_binary_operation_one_output(Operation,
-                                                  const BinaryInput<float128> &,
-                                                  float128, double,
-                                                  RoundingMode);
-#endif
-template bool compare_binary_operation_one_output(Operation,
-                                                  const BinaryInput<bfloat16> &,
-                                                  bfloat16, double,
-                                                  RoundingMode);
 
-template bool compare_binary_operation_one_output(Operation,
-                                                  const BinaryInput<float> &,
-                                                  bfloat16, double,
-                                                  RoundingMode);
-template bool compare_binary_operation_one_output(Operation,
-                                                  const BinaryInput<double> &,
-                                                  bfloat16, double,
-                                                  RoundingMode);
-template bool
-compare_binary_operation_one_output(Operation, const BinaryInput<long double> &,
-                                    bfloat16, double, RoundingMode);
-#if defined(LIBC_TYPES_HAS_FLOAT128) &&                                        \
-    defined(LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE)
-template bool compare_binary_operation_one_output(Operation,
-                                                  const BinaryInput<float128> &,
-                                                  bfloat16, double,
-                                                  RoundingMode);
-#endif // defined(LIBC_TYPES_HAS_FLOAT128) &&
-       // defined(LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE)
 template <typename InputType, typename OutputType>
 bool compare_ternary_operation_one_output(Operation op,
                                           const TernaryInput<InputType> &input,
@@ -745,9 +660,6 @@ compare_ternary_operation_one_output(Operation,
                                      long double, double, RoundingMode);
 
 #ifdef LIBC_TYPES_HAS_FLOAT16
-template bool
-compare_ternary_operation_one_output(Operation, const TernaryInput<float16> &,
-                                     float16, double, RoundingMode);
 template bool compare_ternary_operation_one_output(Operation,
                                                    const TernaryInput<float> &,
                                                    float16, double,
@@ -761,27 +673,6 @@ compare_ternary_operation_one_output(Operation,
                                      const TernaryInput<long double> &, float16,
                                      double, RoundingMode);
 #endif
-
-template bool compare_ternary_operation_one_output(Operation,
-                                                   const TernaryInput<float> &,
-                                                   bfloat16, double,
-                                                   RoundingMode);
-template bool compare_ternary_operation_one_output(Operation,
-                                                   const TernaryInput<double> &,
-                                                   bfloat16, double,
-                                                   RoundingMode);
-template bool
-compare_ternary_operation_one_output(Operation,
-                                     const TernaryInput<long double> &,
-                                     bfloat16, double, RoundingMode);
-
-#if defined(LIBC_TYPES_HAS_FLOAT128) &&                                        \
-    defined(LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE)
-template bool
-compare_ternary_operation_one_output(Operation, const TernaryInput<float128> &,
-                                     bfloat16, double, RoundingMode);
-#endif // defined(LIBC_TYPES_HAS_FLOAT128) &&
-       // defined(LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE)
 
 } // namespace internal
 
@@ -802,8 +693,6 @@ template bool round_to_long<float16>(float16, long &);
 template bool round_to_long<float128>(float128, long &);
 #endif // LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE
 
-template bool round_to_long<bfloat16>(bfloat16, long &);
-
 template <typename T> bool round_to_long(T x, RoundingMode mode, long &result) {
   MPFRNumber mpfr(x);
   return mpfr.round_to_long(get_mpfr_rounding_mode(mode), result);
@@ -820,8 +709,6 @@ template bool round_to_long<float16>(float16, RoundingMode, long &);
 #ifdef LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE
 template bool round_to_long<float128>(float128, RoundingMode, long &);
 #endif // LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE
-
-template bool round_to_long<bfloat16>(bfloat16, RoundingMode, long &);
 
 template <typename T> T round(T x, RoundingMode mode) {
   MPFRNumber mpfr(x);
@@ -840,8 +727,6 @@ template float16 round<float16>(float16, RoundingMode);
 #ifdef LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE
 template float128 round<float128>(float128, RoundingMode);
 #endif // LIBC_TYPES_FLOAT128_IS_NOT_LONG_DOUBLE
-
-template bfloat16 round<bfloat16>(bfloat16, RoundingMode);
 
 } // namespace mpfr
 } // namespace testing

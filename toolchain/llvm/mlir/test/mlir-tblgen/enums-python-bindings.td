@@ -62,15 +62,12 @@ def MyEnum64 : I64EnumAttr<"MyEnum64", "An example 64-bit enum", [One64, Two64]>
 // CHECK: def _myenum64(x, context):
 // CHECK:     return _ods_ir.IntegerAttr.get(_ods_ir.IntegerType.get_signless(64, context=context), int(x))
 
-def User : I32BitEnumAttrCaseBit<"User", 0, "user">;
-def Group : I32BitEnumAttrCaseBit<"Group", 1, "group">;
-def Other : I32BitEnumAttrCaseBit<"Other", 2, "other">;
-
 def TestBitEnum
-    : I32BitEnumAttr<
-          "TestBitEnum", "",
-          [User, Group, Other,
-           I32BitEnumAttrCaseGroup<"Any", [User, Group, Other], "any">]> {
+    : I32BitEnumAttr<"TestBitEnum", "", [
+        I32BitEnumAttrCaseBit<"User", 0, "user">,
+        I32BitEnumAttrCaseBit<"Group", 1, "group">,
+        I32BitEnumAttrCaseBit<"Other", 2, "other">,
+      ]> {
   let genSpecializedAttr = 0;
   let separator = " | ";
 }
@@ -82,10 +79,9 @@ def TestBitEnum_Attr : EnumAttr<Test_Dialect, TestBitEnum, "testbitenum">;
 // CHECK:     User = 1
 // CHECK:     Group = 2
 // CHECK:     Other = 4
-// CHECK:     Any = 7
 
 // CHECK:     def __iter__(self):
-// CHECK:         return iter([case for case in type(self) if (self & case) is case and self is not case])
+// CHECK:         return iter([case for case in type(self) if (self & case) is case])
 // CHECK:     def __len__(self):
 // CHECK:         return bin(self).count("1")
 
@@ -98,8 +94,6 @@ def TestBitEnum_Attr : EnumAttr<Test_Dialect, TestBitEnum, "testbitenum">;
 // CHECK:             return "group"
 // CHECK:         if self is TestBitEnum.Other:
 // CHECK:             return "other"
-// CHECK:         if self is TestBitEnum.Any:
-// CHECK:             return "any"
 // CHECK:         raise ValueError("Unknown TestBitEnum enum entry.")
 
 // CHECK: @register_attribute_builder("TestBitEnum")

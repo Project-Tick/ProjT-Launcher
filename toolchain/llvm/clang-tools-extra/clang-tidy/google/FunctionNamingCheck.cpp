@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- FunctionNamingCheck.cpp - clang-tidy -----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "FunctionNamingCheck.h"
+#include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "llvm/Support/Regex.h"
 
@@ -14,7 +15,9 @@ using namespace clang::ast_matchers;
 
 namespace clang::tidy::google::objc {
 
-static std::string validFunctionNameRegex(bool RequirePrefix) {
+namespace {
+
+std::string validFunctionNameRegex(bool RequirePrefix) {
   // Allow the following name patterns for all functions:
   // • ABFoo (prefix + UpperCamelCase)
   // • ABURL (prefix + capitalized acronym/initialism)
@@ -33,7 +36,7 @@ static std::string validFunctionNameRegex(bool RequirePrefix) {
   // If a prefix is required, the regex checks for a capital letter followed by
   // another capital letter or number that is part of the prefix and another
   // capital letter or number that begins the name following the prefix.
-  const std::string FunctionNameMatcher =
+  std::string FunctionNameMatcher =
       std::string(RequirePrefix ? "[A-Z][A-Z0-9]+" : "") + "[A-Z][a-zA-Z0-9]*";
   return std::string("::(") + FunctionNameMatcher + ")$";
 }
@@ -41,20 +44,20 @@ static std::string validFunctionNameRegex(bool RequirePrefix) {
 /// For now we will only fix functions of static storage class with names like
 /// 'functionName' or 'function_name' and convert them to 'FunctionName'. For
 /// other cases the user must determine an appropriate name on their own.
-static FixItHint generateFixItHint(const FunctionDecl *Decl) {
+FixItHint generateFixItHint(const FunctionDecl *Decl) {
   // A fixit can be generated for functions of static storage class but
   // otherwise the check cannot determine the appropriate function name prefix
   // to use.
   if (Decl->getStorageClass() != SC_Static)
     return {};
 
-  const StringRef Name = Decl->getName();
+  StringRef Name = Decl->getName();
   std::string NewName = Decl->getName().str();
 
   size_t Index = 0;
   bool AtWordBoundary = true;
   while (Index < NewName.size()) {
-    const char Ch = NewName[Index];
+    char Ch = NewName[Index];
     if (isalnum(Ch)) {
       // Capitalize the first letter after every word boundary.
       if (AtWordBoundary) {
@@ -80,6 +83,8 @@ static FixItHint generateFixItHint(const FunctionDecl *Decl) {
   return {};
 }
 
+} // namespace
+
 void FunctionNamingCheck::registerMatchers(MatchFinder *Finder) {
   // Enforce Objective-C function naming conventions on all functions except:
   // • Functions defined in system headers.
@@ -101,7 +106,7 @@ void FunctionNamingCheck::registerMatchers(MatchFinder *Finder) {
 void FunctionNamingCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *MatchedDecl = Result.Nodes.getNodeAs<FunctionDecl>("function");
 
-  const bool IsGlobal = MatchedDecl->getStorageClass() != SC_Static;
+  bool IsGlobal = MatchedDecl->getStorageClass() != SC_Static;
   diag(MatchedDecl->getLocation(),
        "%select{static function|function in global namespace}1 named %0 must "
        "%select{be in|have an appropriate prefix followed by}1 Pascal case as "

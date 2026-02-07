@@ -12,7 +12,6 @@ tablegen(LLVM CSKYGenInstrInfo.inc -gen-instr-info)
 tablegen(LLVM CSKYGenMCCodeEmitter.inc -gen-emitter)
 tablegen(LLVM CSKYGenMCPseudoLowering.inc -gen-pseudo-lowering)
 tablegen(LLVM CSKYGenRegisterInfo.inc -gen-register-info)
-tablegen(LLVM CSKYGenSDNodeInfo.inc -gen-sd-node-info)
 tablegen(LLVM CSKYGenSubtargetInfo.inc -gen-subtarget)
 
 add_public_tablegen_target(CSKYCommonTableGen)
@@ -27,7 +26,6 @@ add_llvm_target(CSKYCodeGen
   CSKYISelLowering.cpp
   CSKYMCInstLower.cpp
   CSKYRegisterInfo.cpp
-  CSKYSelectionDAGInfo.cpp
   CSKYSubtarget.cpp
   CSKYTargetMachine.cpp
   CSKYTargetObjectFile.cpp
@@ -44,7 +42,6 @@ add_llvm_target(CSKYCodeGen
   SelectionDAG
   Support
   Target
-  TargetParser
 
   ADD_TO_COMPONENT
   CSKY

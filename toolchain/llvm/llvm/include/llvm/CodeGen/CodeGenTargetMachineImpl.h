@@ -12,7 +12,6 @@
 //===----------------------------------------------------------------------===//
 #ifndef LLVM_CODEGEN_CODEGENTARGETMACHINEIMPL_H
 #define LLVM_CODEGEN_CODEGENTARGETMACHINEIMPL_H
-#include "llvm/Support/Compiler.h"
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
@@ -21,7 +20,7 @@ namespace llvm {
 /// for targets that make use of the independent code generator (CodeGen)
 /// library. Must not be used directly in code unless to inherit its
 /// implementation.
-class LLVM_ABI CodeGenTargetMachineImpl : public TargetMachine {
+class CodeGenTargetMachineImpl : public TargetMachine {
 protected: // Can only create subclasses.
   CodeGenTargetMachineImpl(const Target &T, StringRef DataLayoutString,
                            const Triple &TT, StringRef CPU, StringRef FS,
@@ -42,7 +41,7 @@ public:
 
   /// Create a pass configuration object to be used by addPassToEmitX methods
   /// for generating a pipeline of CodeGen passes.
-  TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
+  virtual TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
 
   /// Add passes to the specified pass manager to get the specified file
   /// emitted.  Typically this will involve several steps of code generation.
@@ -83,9 +82,9 @@ getEffectiveCodeModel(std::optional<CodeModel::Model> CM,
   if (CM) {
     // By default, targets do not support the tiny and kernel models.
     if (*CM == CodeModel::Tiny)
-      reportFatalUsageError("Target does not support the tiny CodeModel");
+      report_fatal_error("Target does not support the tiny CodeModel", false);
     if (*CM == CodeModel::Kernel)
-      reportFatalUsageError("Target does not support the kernel CodeModel");
+      report_fatal_error("Target does not support the kernel CodeModel", false);
     return *CM;
   }
   return Default;

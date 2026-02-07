@@ -24,7 +24,6 @@
 # CHECK: inlinevar.h:2: (int) var = {{.*}}
 # Unfixed LLDB did show only: (int) var = {{.*}}
 
-	.att_syntax
 	.text
 	.file	"inlinevar1.c"
 	.file	1 "" "./inlinevarother.h"

@@ -18,7 +18,8 @@ public:
                         MachineFunctionAnalysisManager &MAM);
 
   MachineFunctionProperties getRequiredProperties() const {
-    return MachineFunctionProperties().setIsSSA();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::IsSSA);
   }
 };
 

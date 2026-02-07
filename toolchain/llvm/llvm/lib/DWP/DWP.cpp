@@ -18,6 +18,8 @@
 #include "llvm/MC/MCTargetOptionsCommandFlags.h"
 #include "llvm/Object/Decompressor.h"
 #include "llvm/Object/ELFObjectFile.h"
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Support/MemoryBuffer.h"
 #include <limits>
 
 using namespace llvm;
@@ -154,13 +156,14 @@ static bool isSupportedSectionKind(DWARFSectionKind Kind) {
   return Kind != DW_SECT_EXT_unknown;
 }
 
+namespace llvm {
 // Convert an internal section identifier into the index to use with
 // UnitIndexEntry::Contributions.
-static unsigned getContributionIndex(DWARFSectionKind Kind,
-                                     uint32_t IndexVersion) {
+unsigned getContributionIndex(DWARFSectionKind Kind, uint32_t IndexVersion) {
   assert(serializeSectionKind(Kind, IndexVersion) >= DW_SECT_INFO);
   return serializeSectionKind(Kind, IndexVersion) - DW_SECT_INFO;
 }
+} // namespace llvm
 
 // Convert a UnitIndexEntry::Contributions index to the corresponding on-disk
 // value of the section identifier.
@@ -413,52 +416,33 @@ Expected<InfoSectionUnitHeader> parseInfoSectionUnitHeader(StringRef Info) {
 }
 
 static void writeNewOffsetsTo(MCStreamer &Out, DataExtractor &Data,
-                              DenseMap<uint64_t, uint64_t> &OffsetRemapping,
-                              uint64_t &Offset, const uint64_t Size,
-                              uint32_t OldOffsetSize, uint32_t NewOffsetSize) {
-  // Create a mask so we don't trigger a emitIntValue() assert below if the
-  // NewOffset is over 4GB.
-  const uint64_t NewOffsetMask = NewOffsetSize == 8 ? UINT64_MAX : UINT32_MAX;
+                              DenseMap<uint64_t, uint32_t> &OffsetRemapping,
+                              uint64_t &Offset, uint64_t &Size) {
+
   while (Offset < Size) {
-    const uint64_t OldOffset = Data.getUnsigned(&Offset, OldOffsetSize);
-    const uint64_t NewOffset = OffsetRemapping[OldOffset];
-    // Truncate the string offset like the old llvm-dwp would have if we aren't
-    // promoting the .debug_str_offsets to DWARF64.
-    Out.emitIntValue(NewOffset & NewOffsetMask, NewOffsetSize);
+    auto OldOffset = Data.getU32(&Offset);
+    auto NewOffset = OffsetRemapping[OldOffset];
+    Out.emitIntValue(NewOffset, 4);
   }
 }
 
-void writeStringsAndOffsets(
-    MCStreamer &Out, DWPStringPool &Strings, MCSection *StrOffsetSection,
-    StringRef CurStrSection, StringRef CurStrOffsetSection, uint16_t Version,
-    SectionLengths &SectionLength,
-    const Dwarf64StrOffsetsPromotion StrOffsetsOptValue) {
+void writeStringsAndOffsets(MCStreamer &Out, DWPStringPool &Strings,
+                            MCSection *StrOffsetSection,
+                            StringRef CurStrSection,
+                            StringRef CurStrOffsetSection, uint16_t Version) {
   // Could possibly produce an error or warning if one of these was non-null but
   // the other was null.
   if (CurStrSection.empty() || CurStrOffsetSection.empty())
     return;
 
-  DenseMap<uint64_t, uint64_t> OffsetRemapping;
+  DenseMap<uint64_t, uint32_t> OffsetRemapping;
 
   DataExtractor Data(CurStrSection, true, 0);
   uint64_t LocalOffset = 0;
   uint64_t PrevOffset = 0;
-
-  // Keep track if any new string offsets exceed UINT32_MAX. If any do, we can
-  // emit a DWARF64 .debug_str_offsets table for this compile unit. If the
-  // \a StrOffsetsOptValue argument is Dwarf64StrOffsetsPromotion::Always, then
-  // force the emission of DWARF64 .debug_str_offsets for testing.
-  uint32_t OldOffsetSize = 4;
-  uint32_t NewOffsetSize =
-      StrOffsetsOptValue == Dwarf64StrOffsetsPromotion::Always ? 8 : 4;
   while (const char *S = Data.getCStr(&LocalOffset)) {
-    uint64_t NewOffset = Strings.getOffset(S, LocalOffset - PrevOffset);
-    OffsetRemapping[PrevOffset] = NewOffset;
-    // Only promote the .debug_str_offsets to DWARF64 if our setting allows it.
-    if (StrOffsetsOptValue != Dwarf64StrOffsetsPromotion::Disabled &&
-        NewOffset > UINT32_MAX) {
-      NewOffsetSize = 8;
-    }
+    OffsetRemapping[PrevOffset] =
+        Strings.getOffset(S, LocalOffset - PrevOffset);
     PrevOffset = LocalOffset;
   }
 
@@ -470,7 +454,7 @@ void writeStringsAndOffsets(
   uint64_t Size = CurStrOffsetSection.size();
   if (Version > 4) {
     while (Offset < Size) {
-      const uint64_t HeaderSize = debugStrOffsetsHeaderSize(Data, Version);
+      uint64_t HeaderSize = debugStrOffsetsHeaderSize(Data, Version);
       assert(HeaderSize <= Size - Offset &&
              "StrOffsetSection size is less than its header");
 
@@ -480,52 +464,16 @@ void writeStringsAndOffsets(
       if (HeaderSize == 8) {
         ContributionSize = Data.getU32(&HeaderLengthOffset);
       } else if (HeaderSize == 16) {
-        OldOffsetSize = 8;
         HeaderLengthOffset += 4; // skip the dwarf64 marker
         ContributionSize = Data.getU64(&HeaderLengthOffset);
       }
       ContributionEnd = ContributionSize + HeaderLengthOffset;
-
-      StringRef HeaderBytes = Data.getBytes(&Offset, HeaderSize);
-      if (OldOffsetSize == 4 && NewOffsetSize == 8) {
-        // We had a DWARF32 .debug_str_offsets header, but we need to emit
-        // some string offsets that require 64 bit offsets on the .debug_str
-        // section. Emit the .debug_str_offsets header in DWARF64 format so we
-        // can emit string offsets that exceed UINT32_MAX without truncating
-        // the string offset.
-
-        // 2 bytes for DWARF version, 2 bytes pad.
-        const uint64_t VersionPadSize = 4;
-        const uint64_t NewLength =
-            (ContributionSize - VersionPadSize) * 2 + VersionPadSize;
-        // Emit the DWARF64 length that starts with a 4 byte DW_LENGTH_DWARF64
-        // value followed by the 8 byte updated length.
-        Out.emitIntValue(llvm::dwarf::DW_LENGTH_DWARF64, 4);
-        Out.emitIntValue(NewLength, 8);
-        // Emit DWARF version as a 2 byte integer.
-        Out.emitIntValue(Version, 2);
-        // Emit 2 bytes of padding.
-        Out.emitIntValue(0, 2);
-        // Update the .debug_str_offsets section length contribution for the
-        // this .dwo file.
-        for (auto &Pair : SectionLength) {
-          if (Pair.first == DW_SECT_STR_OFFSETS) {
-            Pair.second = NewLength + 12;
-            break;
-          }
-        }
-      } else {
-        // Just emit the same .debug_str_offsets header.
-        Out.emitBytes(HeaderBytes);
-      }
-      writeNewOffsetsTo(Out, Data, OffsetRemapping, Offset, ContributionEnd,
-                        OldOffsetSize, NewOffsetSize);
+      Out.emitBytes(Data.getBytes(&Offset, HeaderSize));
+      writeNewOffsetsTo(Out, Data, OffsetRemapping, Offset, ContributionEnd);
     }
 
   } else {
-    assert(OldOffsetSize == NewOffsetSize);
-    writeNewOffsetsTo(Out, Data, OffsetRemapping, Offset, Size, OldOffsetSize,
-                      NewOffsetSize);
+    writeNewOffsetsTo(Out, Data, OffsetRemapping, Offset, Size);
   }
 }
 
@@ -617,7 +565,7 @@ Error handleSection(
     std::vector<StringRef> &CurTypesSection,
     std::vector<StringRef> &CurInfoSection, StringRef &AbbrevSection,
     StringRef &CurCUIndexSection, StringRef &CurTUIndexSection,
-    SectionLengths &SectionLength) {
+    std::vector<std::pair<DWARFSectionKind, uint32_t>> &SectionLength) {
   if (Section.isBSS())
     return Error::success();
 
@@ -675,8 +623,7 @@ Error handleSection(
 }
 
 Error write(MCStreamer &Out, ArrayRef<std::string> Inputs,
-            OnCuIndexOverflow OverflowOptValue,
-            Dwarf64StrOffsetsPromotion StrOffsetsOptValue) {
+            OnCuIndexOverflow OverflowOptValue) {
   const auto &MCOFI = *Out.getContext().getObjectFileInfo();
   MCSection *const StrSection = MCOFI.getDwarfStrDWOSection();
   MCSection *const StrOffsetSection = MCOFI.getDwarfStrOffDWOSection();
@@ -706,7 +653,6 @@ Error write(MCStreamer &Out, ArrayRef<std::string> Inputs,
   uint32_t ContributionOffsets[8] = {};
   uint16_t Version = 0;
   uint32_t IndexVersion = 0;
-  StringRef FirstInput;
   bool AnySectionOverflow = false;
 
   DWPStringPool Strings(Out, StrSection);
@@ -741,7 +687,7 @@ Error write(MCStreamer &Out, ArrayRef<std::string> Inputs,
     // This maps each section contained in this file to its length.
     // This information is later on used to calculate the contributions,
     // i.e. offset and length, of each compile/type unit to a section.
-    SectionLengths SectionLength;
+    std::vector<std::pair<DWARFSectionKind, uint32_t>> SectionLength;
 
     for (const auto &Section : Obj.sections())
       if (auto Err = handleSection(
@@ -765,17 +711,12 @@ Error write(MCStreamer &Out, ArrayRef<std::string> Inputs,
     if (Version == 0) {
       Version = Header.Version;
       IndexVersion = Version < 5 ? 2 : 5;
-      FirstInput = Input;
     } else if (Version != Header.Version) {
-      return make_error<DWPError>(
-          "incompatible DWARF compile unit version: " + Input + " (version " +
-          utostr(Header.Version) + ") and " + FirstInput.str() + " (version " +
-          utostr(Version) + ")");
+      return make_error<DWPError>("incompatible DWARF compile unit versions.");
     }
 
     writeStringsAndOffsets(Out, Strings, StrOffsetSection, CurStrSection,
-                           CurStrOffsetSection, Header.Version, SectionLength,
-                           StrOffsetsOptValue);
+                           CurStrOffsetSection, Header.Version);
 
     for (auto Pair : SectionLength) {
       auto Index = getContributionIndex(Pair.first, IndexVersion);
@@ -826,7 +767,9 @@ Error write(MCStreamer &Out, ArrayRef<std::string> Inputs,
                     "debug_info", OverflowOptValue, AnySectionOverflow))
               return Err;
             if (AnySectionOverflow) {
-              FoundCUUnit = true;
+              if (Header.Version < 5 ||
+                  Header.UnitType == dwarf::DW_UT_split_compile)
+                FoundCUUnit = true;
               break;
             }
           }

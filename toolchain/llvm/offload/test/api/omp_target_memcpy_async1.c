@@ -1,6 +1,6 @@
 // RUN: %libomptarget-compile-and-run-generic
 
-// Test case for omp_target_memcpy_async, originally from GCC
+// Test case for omp_target_memcpy_async, oringally from GCC
 
 #include "stdio.h"
 #include <omp.h>

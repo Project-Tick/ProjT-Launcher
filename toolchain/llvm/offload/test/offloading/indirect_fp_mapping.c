@@ -2,7 +2,6 @@
 // RUN: %libomptarget-run-generic | %fcheck-generic
 // RUN: %libomptarget-compileopt-generic -fopenmp-version=51
 // RUN: %libomptarget-run-generic | %fcheck-generic
-// XFAIL: intelgpu
 
 #include <stdio.h>
 

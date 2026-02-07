@@ -14,7 +14,6 @@
 #ifndef __AVXVNNIINT8INTRIN_H
 #define __AVXVNNIINT8INTRIN_H
 
-// clang-format off
 /// Multiply groups of 4 adjacent pairs of signed 8-bit integers in \a __A with
 ///    corresponding signed 8-bit integers in \a __B, producing 4 intermediate
 ///    signed 16-bit results. Sum these 4 results with the corresponding
@@ -45,12 +44,10 @@
 /// ENDFOR
 /// dst[MAX:128] := 0
 /// \endcode
-// clang-format on
 #define _mm_dpbssd_epi32(__W, __A, __B)                                        \
-  ((__m128i)__builtin_ia32_vpdpbssd128((__v4si)(__W), (__v16qi)(__A),          \
-                                       (__v16qi)(__B)))
+  ((__m128i)__builtin_ia32_vpdpbssd128((__v4si)(__W), (__v4si)(__A),           \
+                                       (__v4si)(__B)))
 
-// clang-format off
 /// Multiply groups of 4 adjacent pairs of signed 8-bit integers in \a __A with
 ///    corresponding signed 8-bit integers in \a __B, producing 4 intermediate
 ///    signed 16-bit results. Sum these 4 results with the corresponding
@@ -81,12 +78,10 @@
 /// ENDFOR
 /// dst[MAX:256] := 0
 /// \endcode
-// clang-format on
 #define _mm256_dpbssd_epi32(__W, __A, __B)                                     \
-  ((__m256i)__builtin_ia32_vpdpbssd256((__v8si)(__W), (__v32qi)(__A),          \
-                                       (__v32qi)(__B)))
+  ((__m256i)__builtin_ia32_vpdpbssd256((__v8si)(__W), (__v8si)(__A),           \
+                                       (__v8si)(__B)))
 
-// clang-format off
 /// Multiply groups of 4 adjacent pairs of signed 8-bit integers in \a __A with
 ///    corresponding signed 8-bit integers in \a __B, producing 4 intermediate
 ///    signed 16-bit results. Sum these 4 results with the corresponding
@@ -99,7 +94,7 @@
 /// _mm_dpbssds_epi32( __m128i __W, __m128i __A, __m128i __B);
 /// \endcode
 ///
-/// This intrinsic corresponds to the \c VPDPBSSDS instruction.
+/// This intrinsic corresponds to the \c VPDPBSSD instruction.
 ///
 /// \param __A
 ///    A 128-bit vector of [16 x char].
@@ -118,12 +113,10 @@
 /// ENDFOR
 /// dst[MAX:128] := 0
 /// \endcode
-// clang-format on
 #define _mm_dpbssds_epi32(__W, __A, __B)                                       \
-  ((__m128i)__builtin_ia32_vpdpbssds128((__v4si)(__W), (__v16qi)(__A),         \
-                                        (__v16qi)(__B)))
+  ((__m128i)__builtin_ia32_vpdpbssds128((__v4si)(__W), (__v4si)(__A),          \
+                                        (__v4si)(__B)))
 
-// clang-format off
 /// Multiply groups of 4 adjacent pairs of signed 8-bit integers in \a __A with
 ///    corresponding signed 8-bit integers in \a __B, producing 4 intermediate
 ///    signed 16-bit results. Sum these 4 results with the corresponding
@@ -136,7 +129,7 @@
 /// _mm256_dpbssds_epi32(__m256i __W, __m256i __A, __m256i __B);
 /// \endcode
 ///
-/// This intrinsic corresponds to the \c VPDPBSSDS instruction.
+/// This intrinsic corresponds to the \c VPDPBSSD instruction.
 ///
 /// \param __A
 ///    A 256-bit vector of [32 x char].
@@ -155,12 +148,10 @@
 /// ENDFOR
 /// dst[MAX:256] := 0
 /// \endcode
-// clang-format on
 #define _mm256_dpbssds_epi32(__W, __A, __B)                                    \
-  ((__m256i)__builtin_ia32_vpdpbssds256((__v8si)(__W), (__v32qi)(__A),         \
-                                        (__v32qi)(__B)))
+  ((__m256i)__builtin_ia32_vpdpbssds256((__v8si)(__W), (__v8si)(__A),          \
+                                        (__v8si)(__B)))
 
-// clang-format off
 /// Multiply groups of 4 adjacent pairs of signed 8-bit integers in \a __A with
 ///    corresponding unsigned 8-bit integers in \a __B, producing 4 intermediate
 ///    signed 16-bit results. Sum these 4 results with the corresponding
@@ -172,7 +163,7 @@
 /// _mm_dpbsud_epi32(__m128i __W, __m128i __A, __m128i __B);
 /// \endcode
 ///
-/// This intrinsic corresponds to the \c VPDPBSUD instruction.
+/// This intrinsic corresponds to the \c VPDPBSSD instruction.
 ///
 /// \param __A
 ///    A 128-bit vector of [16 x char].
@@ -191,12 +182,10 @@
 /// ENDFOR
 /// dst[MAX:128] := 0
 /// \endcode
-// clang-format on
 #define _mm_dpbsud_epi32(__W, __A, __B)                                        \
-  ((__m128i)__builtin_ia32_vpdpbsud128((__v4si)(__W), (__v16qi)(__A),          \
-                                       (__v16qu)(__B)))
+  ((__m128i)__builtin_ia32_vpdpbsud128((__v4si)(__W), (__v4si)(__A),           \
+                                       (__v4si)(__B)))
 
-// clang-format off
 /// Multiply groups of 4 adjacent pairs of signed 8-bit integers in \a __A with
 ///    corresponding unsigned 8-bit integers in \a __B, producing 4 intermediate
 ///    signed 16-bit results. Sum these 4 results with the corresponding
@@ -208,7 +197,7 @@
 /// _mm256_dpbsud_epi32(__m256i __W, __m256i __A, __m256i __B);
 /// \endcode
 ///
-/// This intrinsic corresponds to the \c VPDPBSUD instruction.
+/// This intrinsic corresponds to the \c VPDPBSSD instruction.
 ///
 /// \param __A
 ///    A 256-bit vector of [32 x char].
@@ -227,12 +216,10 @@
 /// ENDFOR
 /// dst[MAX:256] := 0
 /// \endcode
-// clang-format on
 #define _mm256_dpbsud_epi32(__W, __A, __B)                                     \
-  ((__m256i)__builtin_ia32_vpdpbsud256((__v8si)(__W), (__v32qi)(__A),          \
-                                       (__v32qu)(__B)))
+  ((__m256i)__builtin_ia32_vpdpbsud256((__v8si)(__W), (__v8si)(__A),           \
+                                       (__v8si)(__B)))
 
-// clang-format off
 /// Multiply groups of 4 adjacent pairs of signed 8-bit integers in \a __A with
 ///    corresponding unsigned 8-bit integers in \a __B, producing 4 intermediate
 ///    signed 16-bit results. Sum these 4 results with the corresponding
@@ -245,7 +232,7 @@
 /// _mm_dpbsuds_epi32( __m128i __W, __m128i __A, __m128i __B);
 /// \endcode
 ///
-/// This intrinsic corresponds to the \c VPDPBSUDS instruction.
+/// This intrinsic corresponds to the \c VPDPBSSD instruction.
 ///
 /// \param __A
 ///    A 128-bit vector of [16 x char].
@@ -264,12 +251,10 @@
 /// ENDFOR
 /// dst[MAX:128] := 0
 /// \endcode
-// clang-format on
 #define _mm_dpbsuds_epi32(__W, __A, __B)                                       \
-  ((__m128i)__builtin_ia32_vpdpbsuds128((__v4si)(__W), (__v16qi)(__A),         \
-                                        (__v16qu)(__B)))
+  ((__m128i)__builtin_ia32_vpdpbsuds128((__v4si)(__W), (__v4si)(__A),          \
+                                        (__v4si)(__B)))
 
-// clang-format off
 /// Multiply groups of 4 adjacent pairs of signed 8-bit integers in \a __A with
 ///    corresponding unsigned 8-bit integers in \a __B, producing 4 intermediate
 ///    signed 16-bit results. Sum these 4 results with the corresponding
@@ -282,7 +267,7 @@
 /// _mm256_dpbsuds_epi32(__m256i __W, __m256i __A, __m256i __B);
 /// \endcode
 ///
-/// This intrinsic corresponds to the \c VPDPBSUDS instruction.
+/// This intrinsic corresponds to the \c VPDPBSSD instruction.
 ///
 /// \param __A
 ///    A 256-bit vector of [32 x char].
@@ -301,12 +286,10 @@
 /// ENDFOR
 /// dst[MAX:256] := 0
 /// \endcode
-// clang-format on
 #define _mm256_dpbsuds_epi32(__W, __A, __B)                                    \
-  ((__m256i)__builtin_ia32_vpdpbsuds256((__v8si)(__W), (__v32qi)(__A),         \
-                                        (__v32qu)(__B)))
+  ((__m256i)__builtin_ia32_vpdpbsuds256((__v8si)(__W), (__v8si)(__A),          \
+                                        (__v8si)(__B)))
 
-// clang-format off
 /// Multiply groups of 4 adjacent pairs of unsigned 8-bit integers in \a __A with
 ///    corresponding unsigned 8-bit integers in \a __B, producing 4 intermediate
 ///    signed 16-bit results. Sum these 4 results with the corresponding
@@ -318,7 +301,7 @@
 /// _mm_dpbuud_epi32(__m128i __W, __m128i __A, __m128i __B);
 /// \endcode
 ///
-/// This intrinsic corresponds to the \c VPDPBUUD instruction.
+/// This intrinsic corresponds to the \c VPDPBSSD instruction.
 ///
 /// \param __A
 ///    A 128-bit vector of [16 x unsigned char].
@@ -337,12 +320,10 @@
 /// ENDFOR
 /// dst[MAX:128] := 0
 /// \endcode
-// clang-format on
 #define _mm_dpbuud_epi32(__W, __A, __B)                                        \
-  ((__m128i)__builtin_ia32_vpdpbuud128((__v4si)(__W), (__v16qu)(__A),          \
-                                       (__v16qu)(__B)))
+  ((__m128i)__builtin_ia32_vpdpbuud128((__v4si)(__W), (__v4si)(__A),           \
+                                       (__v4si)(__B)))
 
-// clang-format off
 /// Multiply groups of 4 adjacent pairs of unsigned 8-bit integers in \a __A with
 ///    corresponding unsigned 8-bit integers in \a __B, producing 4 intermediate
 ///    signed 16-bit results. Sum these 4 results with the corresponding
@@ -354,7 +335,7 @@
 /// _mm256_dpbuud_epi32(__m256i __W, __m256i __A, __m256i __B);
 /// \endcode
 ///
-/// This intrinsic corresponds to the \c VPDPBUUD instruction.
+/// This intrinsic corresponds to the \c VPDPBSSD instruction.
 ///
 /// \param __A
 ///    A 256-bit vector of [32 x unsigned char].
@@ -373,12 +354,10 @@
 /// ENDFOR
 /// dst[MAX:256] := 0
 /// \endcode
-// clang-format on
 #define _mm256_dpbuud_epi32(__W, __A, __B)                                     \
-  ((__m256i)__builtin_ia32_vpdpbuud256((__v8si)(__W), (__v32qu)(__A),          \
-                                       (__v32qu)(__B)))
+  ((__m256i)__builtin_ia32_vpdpbuud256((__v8si)(__W), (__v8si)(__A),           \
+                                       (__v8si)(__B)))
 
-// clang-format off
 /// Multiply groups of 4 adjacent pairs of unsigned 8-bit integers in \a __A with
 ///    corresponding unsigned 8-bit integers in \a __B, producing 4 intermediate
 ///    signed 16-bit results. Sum these 4 results with the corresponding
@@ -410,12 +389,10 @@
 /// ENDFOR
 /// dst[MAX:128] := 0
 /// \endcode
-// clang-format on
 #define _mm_dpbuuds_epi32(__W, __A, __B)                                       \
-  ((__m128i)__builtin_ia32_vpdpbuuds128((__v4si)(__W), (__v16qu)(__A),         \
-                                        (__v16qu)(__B)))
+  ((__m128i)__builtin_ia32_vpdpbuuds128((__v4si)(__W), (__v4si)(__A),          \
+                                        (__v4si)(__B)))
 
-// clang-format off
 ///    corresponding unsigned 8-bit integers in \a __B, producing 4 intermediate
 ///    signed 16-bit results. Sum these 4 results with the corresponding
 ///    32-bit integer in \a __W with signed saturation, and store the packed
@@ -446,9 +423,8 @@
 /// ENDFOR
 /// dst[MAX:256] := 0
 /// \endcode
-// clang-format on
 #define _mm256_dpbuuds_epi32(__W, __A, __B)                                    \
-  ((__m256i)__builtin_ia32_vpdpbuuds256((__v8si)(__W), (__v32qu)(__A),         \
-                                        (__v32qu)(__B)))
+  ((__m256i)__builtin_ia32_vpdpbuuds256((__v8si)(__W), (__v8si)(__A),          \
+                                        (__v8si)(__B)))
 
 #endif // __AVXVNNIINT8INTRIN_H

@@ -80,6 +80,7 @@ namespace llvm {
 namespace exegesis {
 
 static bool hasVariablesWithTiedOperands(const Instruction &Instr) {
+  SmallVector<const Variable *, 8> Result;
   for (const auto &Var : Instr.Variables)
     if (Var.hasTiedOperands())
       return true;
@@ -349,6 +350,8 @@ ParallelSnippetGenerator::generateCodeTemplates(
   }
   return Result;
 }
+
+constexpr const size_t ParallelSnippetGenerator::kMinNumDifferentAddresses;
 
 } // namespace exegesis
 } // namespace llvm

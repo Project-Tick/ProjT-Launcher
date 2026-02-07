@@ -1,5 +1,4 @@
-# REQUIRES: x86
-# UNSUPPORTED: system-windows
+# REQUIRES: x86, shell
 # RUN: rm -rf %t; split-file %s %t
 # RUN: llvm-mc -filetype=obj -triple=x86_64-apple-darwin %t/foo.s -o %t/foo.o
 # RUN: mkdir -p %t/Foo.framework/Versions/A

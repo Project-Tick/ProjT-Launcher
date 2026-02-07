@@ -23,7 +23,9 @@ class MCSymbolXCOFF : public MCSymbol {
 
 public:
   MCSymbolXCOFF(const MCSymbolTableEntry *Name, bool isTemporary)
-      : MCSymbol(Name, isTemporary) {}
+      : MCSymbol(SymbolKindXCOFF, Name, isTemporary) {}
+
+  static bool classof(const MCSymbol *S) { return S->isXCOFF(); }
 
   enum CodeModel : uint8_t { CM_Small, CM_Large };
 
@@ -37,8 +39,6 @@ public:
     return Name;
   }
 
-  bool isExternal() const { return IsExternal; }
-  void setExternal(bool Value) const { IsExternal = Value; }
   void setStorageClass(XCOFF::StorageClass SC) {
     StorageClass = SC;
   };

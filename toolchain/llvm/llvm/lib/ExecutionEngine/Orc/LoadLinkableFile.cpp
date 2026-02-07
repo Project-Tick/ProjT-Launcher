@@ -26,13 +26,6 @@ checkCOFFRelocatableObject(std::unique_ptr<MemoryBuffer> Obj,
 }
 
 static Expected<std::unique_ptr<MemoryBuffer>>
-checkXCOFFRelocatableObject(std::unique_ptr<MemoryBuffer> Obj,
-                            const Triple &TT) {
-  // TODO: Actually check the architecture of the file.
-  return std::move(Obj);
-}
-
-static Expected<std::unique_ptr<MemoryBuffer>>
 checkELFRelocatableObject(std::unique_ptr<MemoryBuffer> Obj, const Triple &TT) {
   // TODO: Actually check the architecture of the file.
   return std::move(Obj);
@@ -49,7 +42,7 @@ loadLinkableFile(StringRef Path, const Triple &TT, LoadArchives LA,
   if (!FDOrErr)
     return createFileError(Path, FDOrErr.takeError());
   sys::fs::file_t FD = *FDOrErr;
-  llvm::scope_exit CloseFile([&]() { sys::fs::closeFile(FD); });
+  auto CloseFile = make_scope_exit([&]() { sys::fs::closeFile(FD); });
 
   auto Buf =
       MemoryBuffer::getOpenFile(FD, *IdentifierOverride, /*FileSize=*/-1);
@@ -111,15 +104,6 @@ loadLinkableFile(StringRef Path, const Triple &TT, LoadArchives LA,
     if (!RequireFormat || *RequireFormat == Triple::MachO)
       return loadLinkableSliceFromMachOUniversalBinary(
           FD, std::move(*Buf), TT, LA, Path, *IdentifierOverride);
-    break;
-  case file_magic::xcoff_object_64:
-    if (!RequireFormat || *RequireFormat == Triple::XCOFF) {
-      auto CheckedBuf = checkXCOFFRelocatableObject(std::move(*Buf), TT);
-      if (!CheckedBuf)
-        return CheckedBuf.takeError();
-      return std::make_pair(std::move(*CheckedBuf),
-                            LinkableFileKind::RelocatableObject);
-    }
     break;
   default:
     break;

@@ -12,8 +12,6 @@
 
 #include "SparcInstPrinter.h"
 #include "Sparc.h"
-#include "llvm/ADT/StringExtras.h"
-#include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCSubtargetInfo.h"
@@ -68,12 +66,12 @@ bool SparcInstPrinter::printSparcAliasInstr(const MCInst *MI,
       return false;
     if (!MI->getOperand(0).isReg())
       return false;
-    switch (MI->getOperand(0).getReg().id()) {
+    switch (MI->getOperand(0).getReg()) {
     default: return false;
     case SP::G0: // jmp $addr | ret | retl
       if (MI->getOperand(2).isImm() &&
           MI->getOperand(2).getImm() == 8) {
-        switch (MI->getOperand(1).getReg().id()) {
+        switch(MI->getOperand(1).getReg()) {
         default: break;
         case SP::I7: O << "\tret"; return true;
         case SP::O7: O << "\tretl"; return true;
@@ -117,7 +115,7 @@ void SparcInstPrinter::printOperand(const MCInst *MI, int opNum,
   const MCOperand &MO = MI->getOperand (opNum);
 
   if (MO.isReg()) {
-    MCRegister Reg = MO.getReg();
+    unsigned Reg = MO.getReg();
     if (isV9(STI))
       printRegName(O, Reg, SP::RegNamesStateReg);
     else
@@ -128,7 +126,7 @@ void SparcInstPrinter::printOperand(const MCInst *MI, int opNum,
   if (MO.isImm()) {
     switch (MI->getOpcode()) {
       default:
-        markup(O, Markup::Immediate) << formatImm(int32_t(MO.getImm()));
+        O << (int)MO.getImm();
         return;
 
       case SP::TICCri: // Fall through
@@ -144,7 +142,7 @@ void SparcInstPrinter::printOperand(const MCInst *MI, int opNum,
   }
 
   assert(MO.isExpr() && "Unknown operand kind in printOperand");
-  MAI.printExpr(O, *MO.getExpr());
+  MO.getExpr()->print(O, &MAI);
 }
 
 void SparcInstPrinter::printMemOperand(const MCInst *MI, int opNum,
@@ -194,8 +192,8 @@ void SparcInstPrinter::printCCOperand(const MCInst *MI, int opNum,
     // Make sure CC is a fp conditional flag.
     CC = (CC < SPCC::FCC_BEGIN) ? (CC + SPCC::FCC_BEGIN) : CC;
     break;
-  case SP::CPBCOND:
-  case SP::CPBCONDA:
+  case SP::CBCOND:
+  case SP::CBCONDA:
     // Make sure CC is a cp conditional flag.
     CC = (CC < SPCC::CPCC_BEGIN) ? (CC + SPCC::CPCC_BEGIN) : CC;
     break;
@@ -236,10 +234,12 @@ void SparcInstPrinter::printMembarTag(const MCInst *MI, int opNum,
     return;
   }
 
-  ListSeparator LS(" | ");
+  bool First = true;
   for (unsigned i = 0; i < std::size(TagNames); i++) {
-    if (Imm & (1 << i))
-      O << LS << TagNames[i];
+    if (Imm & (1 << i)) {
+      O << (First ? "" : " | ") << TagNames[i];
+      First = false;
+    }
   }
 }
 
@@ -262,31 +262,4 @@ void SparcInstPrinter::printPrefetchTag(const MCInst *MI, int opNum,
     O << '#' << PrefetchTag->Name;
   else
     O << Imm;
-}
-
-void SparcInstPrinter::printCTILabel(const MCInst *MI, uint64_t Address,
-                                     unsigned OpNum, const MCSubtargetInfo &STI,
-                                     raw_ostream &O) {
-  const MCOperand &Op = MI->getOperand(OpNum);
-
-  // If the label has already been resolved to an immediate offset (say, when
-  // we're running the disassembler), just print the immediate.
-  if (Op.isImm()) {
-    int64_t Offset = Op.getImm();
-    if (PrintBranchImmAsAddress) {
-      uint64_t Target = Address + Offset;
-      if (STI.getTargetTriple().isSPARC32())
-        Target &= 0xffffffff;
-      O << formatHex(Target);
-    } else {
-      O << ".";
-      if (Offset >= 0)
-        O << "+";
-      O << Offset;
-    }
-    return;
-  }
-
-  // Otherwise, just print the expression.
-  MAI.printExpr(O, *Op.getExpr());
 }

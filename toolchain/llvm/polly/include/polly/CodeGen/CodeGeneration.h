@@ -10,15 +10,10 @@
 #define POLLY_CODEGENERATION_H
 
 #include "polly/CodeGen/IRBuilder.h"
-
-namespace llvm {
-class RegionInfo;
-}
+#include "polly/ScopPass.h"
+#include "llvm/IR/PassManager.h"
 
 namespace polly {
-class IslAstInfo;
-
-using llvm::BasicBlock;
 
 enum VectorizerChoice {
   VECTORIZER_NONE,
@@ -32,9 +27,12 @@ extern VectorizerChoice PollyVectorizerChoice;
 /// UnreachableInst.
 void markBlockUnreachable(BasicBlock &Block, PollyIRBuilder &Builder);
 
-extern bool PerfMonitoring;
+struct CodeGenerationPass final : PassInfoMixin<CodeGenerationPass> {
+  PreservedAnalyses run(Scop &S, ScopAnalysisManager &SAM,
+                        ScopStandardAnalysisResults &AR, SPMUpdater &U);
+};
 
-bool runCodeGeneration(Scop &S, llvm::RegionInfo &RI, IslAstInfo &AI);
+extern bool PerfMonitoring;
 } // namespace polly
 
 #endif // POLLY_CODEGENERATION_H

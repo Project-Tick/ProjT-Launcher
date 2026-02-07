@@ -297,7 +297,8 @@ public:
     }
 
     // Sort the operands.
-    llvm::stable_sort(commOperands, commutativeOperandComparator);
+    std::stable_sort(commOperands.begin(), commOperands.end(),
+                     commutativeOperandComparator);
     SmallVector<Value, 2> sortedOperands;
     for (const std::unique_ptr<CommutativeOperand> &commOperand : commOperands)
       sortedOperands.push_back(commOperand->operand);

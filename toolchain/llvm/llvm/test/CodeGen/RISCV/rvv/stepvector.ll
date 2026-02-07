@@ -2,6 +2,8 @@
 ; RUN: llc -mtriple=riscv32 -mattr=+m,+v -verify-machineinstrs < %s | FileCheck %s -check-prefixes=CHECK,RV32
 ; RUN: llc -mtriple=riscv64 -mattr=+m,+v -verify-machineinstrs < %s | FileCheck %s -check-prefixes=CHECK,RV64
 
+declare <vscale x 1 x i8> @llvm.stepvector.nxv1i8()
+
 define <vscale x 1 x i8> @stepvector_nxv1i8() {
 ; CHECK-LABEL: stepvector_nxv1i8:
 ; CHECK:       # %bb.0:
@@ -11,6 +13,8 @@ define <vscale x 1 x i8> @stepvector_nxv1i8() {
   %v = call <vscale x 1 x i8> @llvm.stepvector.nxv1i8()
   ret <vscale x 1 x i8> %v
 }
+
+declare <vscale x 2 x i8> @llvm.stepvector.nxv2i8()
 
 define <vscale x 2 x i8> @stepvector_nxv2i8() {
 ; CHECK-LABEL: stepvector_nxv2i8:
@@ -22,6 +26,8 @@ define <vscale x 2 x i8> @stepvector_nxv2i8() {
   ret <vscale x 2 x i8> %v
 }
 
+declare <vscale x 3 x i8> @llvm.stepvector.nxv3i8()
+
 define <vscale x 3 x i8> @stepvector_nxv3i8() {
 ; CHECK-LABEL: stepvector_nxv3i8:
 ; CHECK:       # %bb.0:
@@ -32,6 +38,8 @@ define <vscale x 3 x i8> @stepvector_nxv3i8() {
   ret <vscale x 3 x i8> %v
 }
 
+declare <vscale x 4 x i8> @llvm.stepvector.nxv4i8()
+
 define <vscale x 4 x i8> @stepvector_nxv4i8() {
 ; CHECK-LABEL: stepvector_nxv4i8:
 ; CHECK:       # %bb.0:
@@ -41,6 +49,8 @@ define <vscale x 4 x i8> @stepvector_nxv4i8() {
   %v = call <vscale x 4 x i8> @llvm.stepvector.nxv4i8()
   ret <vscale x 4 x i8> %v
 }
+
+declare <vscale x 8 x i8> @llvm.stepvector.nxv8i8()
 
 define <vscale x 8 x i8> @stepvector_nxv8i8() {
 ; CHECK-LABEL: stepvector_nxv8i8:
@@ -93,6 +103,8 @@ entry:
   ret <vscale x 8 x i8> %3
 }
 
+declare <vscale x 16 x i8> @llvm.stepvector.nxv16i8()
+
 define <vscale x 16 x i8> @stepvector_nxv16i8() {
 ; CHECK-LABEL: stepvector_nxv16i8:
 ; CHECK:       # %bb.0:
@@ -102,6 +114,8 @@ define <vscale x 16 x i8> @stepvector_nxv16i8() {
   %v = call <vscale x 16 x i8> @llvm.stepvector.nxv16i8()
   ret <vscale x 16 x i8> %v
 }
+
+declare <vscale x 32 x i8> @llvm.stepvector.nxv32i8()
 
 define <vscale x 32 x i8> @stepvector_nxv32i8() {
 ; CHECK-LABEL: stepvector_nxv32i8:
@@ -113,6 +127,8 @@ define <vscale x 32 x i8> @stepvector_nxv32i8() {
   ret <vscale x 32 x i8> %v
 }
 
+declare <vscale x 64 x i8> @llvm.stepvector.nxv64i8()
+
 define <vscale x 64 x i8> @stepvector_nxv64i8() {
 ; CHECK-LABEL: stepvector_nxv64i8:
 ; CHECK:       # %bb.0:
@@ -122,6 +138,8 @@ define <vscale x 64 x i8> @stepvector_nxv64i8() {
   %v = call <vscale x 64 x i8> @llvm.stepvector.nxv64i8()
   ret <vscale x 64 x i8> %v
 }
+
+declare <vscale x 1 x i16> @llvm.stepvector.nxv1i16()
 
 define <vscale x 1 x i16> @stepvector_nxv1i16() {
 ; CHECK-LABEL: stepvector_nxv1i16:
@@ -133,6 +151,8 @@ define <vscale x 1 x i16> @stepvector_nxv1i16() {
   ret <vscale x 1 x i16> %v
 }
 
+declare <vscale x 2 x i16> @llvm.stepvector.nxv2i16()
+
 define <vscale x 2 x i16> @stepvector_nxv2i16() {
 ; CHECK-LABEL: stepvector_nxv2i16:
 ; CHECK:       # %bb.0:
@@ -142,6 +162,8 @@ define <vscale x 2 x i16> @stepvector_nxv2i16() {
   %v = call <vscale x 2 x i16> @llvm.stepvector.nxv2i16()
   ret <vscale x 2 x i16> %v
 }
+
+declare <vscale x 2 x i15> @llvm.stepvector.nxv2i15()
 
 define <vscale x 2 x i15> @stepvector_nxv2i15() {
 ; CHECK-LABEL: stepvector_nxv2i15:
@@ -153,6 +175,8 @@ define <vscale x 2 x i15> @stepvector_nxv2i15() {
   ret <vscale x 2 x i15> %v
 }
 
+declare <vscale x 3 x i16> @llvm.stepvector.nxv3i16()
+
 define <vscale x 3 x i16> @stepvector_nxv3i16() {
 ; CHECK-LABEL: stepvector_nxv3i16:
 ; CHECK:       # %bb.0:
@@ -162,6 +186,8 @@ define <vscale x 3 x i16> @stepvector_nxv3i16() {
   %v = call <vscale x 3 x i16> @llvm.stepvector.nxv3i16()
   ret <vscale x 3 x i16> %v
 }
+
+declare <vscale x 4 x i16> @llvm.stepvector.nxv4i16()
 
 define <vscale x 4 x i16> @stepvector_nxv4i16() {
 ; CHECK-LABEL: stepvector_nxv4i16:
@@ -173,6 +199,8 @@ define <vscale x 4 x i16> @stepvector_nxv4i16() {
   ret <vscale x 4 x i16> %v
 }
 
+declare <vscale x 8 x i16> @llvm.stepvector.nxv8i16()
+
 define <vscale x 8 x i16> @stepvector_nxv8i16() {
 ; CHECK-LABEL: stepvector_nxv8i16:
 ; CHECK:       # %bb.0:
@@ -182,6 +210,8 @@ define <vscale x 8 x i16> @stepvector_nxv8i16() {
   %v = call <vscale x 8 x i16> @llvm.stepvector.nxv8i16()
   ret <vscale x 8 x i16> %v
 }
+
+declare <vscale x 16 x i16> @llvm.stepvector.nxv16i16()
 
 define <vscale x 16 x i16> @stepvector_nxv16i16() {
 ; CHECK-LABEL: stepvector_nxv16i16:
@@ -234,6 +264,8 @@ entry:
   ret <vscale x 16 x i16> %3
 }
 
+declare <vscale x 32 x i16> @llvm.stepvector.nxv32i16()
+
 define <vscale x 32 x i16> @stepvector_nxv32i16() {
 ; CHECK-LABEL: stepvector_nxv32i16:
 ; CHECK:       # %bb.0:
@@ -243,6 +275,8 @@ define <vscale x 32 x i16> @stepvector_nxv32i16() {
   %v = call <vscale x 32 x i16> @llvm.stepvector.nxv32i16()
   ret <vscale x 32 x i16> %v
 }
+
+declare <vscale x 1 x i32> @llvm.stepvector.nxv1i32()
 
 define <vscale x 1 x i32> @stepvector_nxv1i32() {
 ; CHECK-LABEL: stepvector_nxv1i32:
@@ -254,6 +288,8 @@ define <vscale x 1 x i32> @stepvector_nxv1i32() {
   ret <vscale x 1 x i32> %v
 }
 
+declare <vscale x 2 x i32> @llvm.stepvector.nxv2i32()
+
 define <vscale x 2 x i32> @stepvector_nxv2i32() {
 ; CHECK-LABEL: stepvector_nxv2i32:
 ; CHECK:       # %bb.0:
@@ -263,6 +299,8 @@ define <vscale x 2 x i32> @stepvector_nxv2i32() {
   %v = call <vscale x 2 x i32> @llvm.stepvector.nxv2i32()
   ret <vscale x 2 x i32> %v
 }
+
+declare <vscale x 3 x i32> @llvm.stepvector.nxv3i32()
 
 define <vscale x 3 x i32> @stepvector_nxv3i32() {
 ; CHECK-LABEL: stepvector_nxv3i32:
@@ -274,6 +312,8 @@ define <vscale x 3 x i32> @stepvector_nxv3i32() {
   ret <vscale x 3 x i32> %v
 }
 
+declare <vscale x 4 x i32> @llvm.stepvector.nxv4i32()
+
 define <vscale x 4 x i32> @stepvector_nxv4i32() {
 ; CHECK-LABEL: stepvector_nxv4i32:
 ; CHECK:       # %bb.0:
@@ -284,6 +324,8 @@ define <vscale x 4 x i32> @stepvector_nxv4i32() {
   ret <vscale x 4 x i32> %v
 }
 
+declare <vscale x 8 x i32> @llvm.stepvector.nxv8i32()
+
 define <vscale x 8 x i32> @stepvector_nxv8i32() {
 ; CHECK-LABEL: stepvector_nxv8i32:
 ; CHECK:       # %bb.0:
@@ -293,6 +335,8 @@ define <vscale x 8 x i32> @stepvector_nxv8i32() {
   %v = call <vscale x 8 x i32> @llvm.stepvector.nxv8i32()
   ret <vscale x 8 x i32> %v
 }
+
+declare <vscale x 16 x i32> @llvm.stepvector.nxv16i32()
 
 define <vscale x 16 x i32> @stepvector_nxv16i32() {
 ; CHECK-LABEL: stepvector_nxv16i32:
@@ -345,6 +389,8 @@ entry:
   ret <vscale x 16 x i32> %3
 }
 
+declare <vscale x 1 x i64> @llvm.stepvector.nxv1i64()
+
 define <vscale x 1 x i64> @stepvector_nxv1i64() {
 ; CHECK-LABEL: stepvector_nxv1i64:
 ; CHECK:       # %bb.0:
@@ -354,6 +400,8 @@ define <vscale x 1 x i64> @stepvector_nxv1i64() {
   %v = call <vscale x 1 x i64> @llvm.stepvector.nxv1i64()
   ret <vscale x 1 x i64> %v
 }
+
+declare <vscale x 2 x i64> @llvm.stepvector.nxv2i64()
 
 define <vscale x 2 x i64> @stepvector_nxv2i64() {
 ; CHECK-LABEL: stepvector_nxv2i64:
@@ -365,6 +413,8 @@ define <vscale x 2 x i64> @stepvector_nxv2i64() {
   ret <vscale x 2 x i64> %v
 }
 
+declare <vscale x 3 x i64> @llvm.stepvector.nxv3i64()
+
 define <vscale x 3 x i64> @stepvector_nxv3i64() {
 ; CHECK-LABEL: stepvector_nxv3i64:
 ; CHECK:       # %bb.0:
@@ -375,6 +425,8 @@ define <vscale x 3 x i64> @stepvector_nxv3i64() {
   ret <vscale x 3 x i64> %v
 }
 
+declare <vscale x 4 x i64> @llvm.stepvector.nxv4i64()
+
 define <vscale x 4 x i64> @stepvector_nxv4i64() {
 ; CHECK-LABEL: stepvector_nxv4i64:
 ; CHECK:       # %bb.0:
@@ -384,6 +436,8 @@ define <vscale x 4 x i64> @stepvector_nxv4i64() {
   %v = call <vscale x 4 x i64> @llvm.stepvector.nxv4i64()
   ret <vscale x 4 x i64> %v
 }
+
+declare <vscale x 8 x i64> @llvm.stepvector.nxv8i64()
 
 define <vscale x 8 x i64> @stepvector_nxv8i64() {
 ; CHECK-LABEL: stepvector_nxv8i64:
@@ -447,7 +501,7 @@ define <vscale x 8 x i64> @mul_bigimm_stepvector_nxv8i64() {
 ; RV64-NEXT:    vsetvli a0, zero, e64, m8, ta, ma
 ; RV64-NEXT:    vid.v v8
 ; RV64-NEXT:    lui a0, 1987
-; RV64-NEXT:    addi a0, a0, -731
+; RV64-NEXT:    addiw a0, a0, -731
 ; RV64-NEXT:    slli a0, a0, 12
 ; RV64-NEXT:    addi a0, a0, -683
 ; RV64-NEXT:    vmul.vx v8, v8, a0
@@ -470,6 +524,8 @@ entry:
   %3 = shl <vscale x 8 x i64> %2, splat (i64 2)
   ret <vscale x 8 x i64> %3
 }
+
+declare <vscale x 16 x i64> @llvm.stepvector.nxv16i64()
 
 define <vscale x 16 x i64> @stepvector_nxv16i64() {
 ; RV32-LABEL: stepvector_nxv16i64:
@@ -581,21 +637,21 @@ define <vscale x 16 x i64> @mul_bigimm_stepvector_nxv16i64() {
 ; RV32-NEXT:    lui a1, 797989
 ; RV32-NEXT:    csrr a2, vlenb
 ; RV32-NEXT:    lui a3, 11557
+; RV32-NEXT:    lui a4, 92455
 ; RV32-NEXT:    addi a1, a1, -683
-; RV32-NEXT:    srli a4, a2, 2
+; RV32-NEXT:    addi a3, a3, -683
 ; RV32-NEXT:    sw a1, 8(sp)
 ; RV32-NEXT:    sw a0, 12(sp)
-; RV32-NEXT:    slli a0, a2, 3
-; RV32-NEXT:    sub a0, a0, a4
-; RV32-NEXT:    lui a1, 92455
-; RV32-NEXT:    addi a3, a3, -683
-; RV32-NEXT:    mul a3, a2, a3
-; RV32-NEXT:    srli a2, a2, 3
-; RV32-NEXT:    addi a1, a1, -1368
-; RV32-NEXT:    mulhu a1, a2, a1
+; RV32-NEXT:    srli a0, a2, 3
+; RV32-NEXT:    addi a1, a4, -1368
+; RV32-NEXT:    mul a2, a2, a3
+; RV32-NEXT:    mulhu a1, a0, a1
+; RV32-NEXT:    slli a3, a0, 1
+; RV32-NEXT:    slli a0, a0, 6
+; RV32-NEXT:    sub a0, a0, a3
 ; RV32-NEXT:    add a0, a1, a0
 ; RV32-NEXT:    addi a1, sp, 8
-; RV32-NEXT:    sw a3, 0(sp)
+; RV32-NEXT:    sw a2, 0(sp)
 ; RV32-NEXT:    sw a0, 4(sp)
 ; RV32-NEXT:    vsetvli a0, zero, e64, m8, ta, ma
 ; RV32-NEXT:    vlse64.v v8, (a1), zero
@@ -614,7 +670,7 @@ define <vscale x 16 x i64> @mul_bigimm_stepvector_nxv16i64() {
 ; RV64-NEXT:    lui a1, 1987
 ; RV64-NEXT:    vsetvli a2, zero, e64, m8, ta, ma
 ; RV64-NEXT:    vid.v v8
-; RV64-NEXT:    addi a1, a1, -731
+; RV64-NEXT:    addiw a1, a1, -731
 ; RV64-NEXT:    slli a1, a1, 12
 ; RV64-NEXT:    addi a1, a1, -683
 ; RV64-NEXT:    mul a0, a0, a1

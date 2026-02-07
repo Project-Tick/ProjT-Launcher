@@ -17,13 +17,6 @@ extern "C" {
 
 MLIR_DECLARE_CAPI_DIALECT_REGISTRATION(Standalone, standalone);
 
-MLIR_CAPI_EXPORTED MlirType mlirStandaloneCustomTypeGet(MlirContext ctx,
-                                                        MlirStringRef value);
-
-MLIR_CAPI_EXPORTED bool mlirStandaloneTypeIsACustomType(MlirType t);
-
-MLIR_CAPI_EXPORTED MlirTypeID mlirStandaloneCustomTypeGetTypeID(void);
-
 #ifdef __cplusplus
 }
 #endif

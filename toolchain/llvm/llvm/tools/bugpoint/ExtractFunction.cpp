@@ -35,16 +35,19 @@ using namespace llvm;
 
 #define DEBUG_TYPE "bugpoint"
 
-bool llvm::DisableSimplifyCFG = false;
+namespace llvm {
+bool DisableSimplifyCFG = false;
+extern cl::opt<std::string> OutputPrefix;
+} // End llvm namespace
 
-static cl::opt<bool>
-    NoDCE("disable-dce",
-          cl::desc("Do not use the -dce pass to reduce testcases"));
-static cl::opt<bool, true>
+namespace {
+cl::opt<bool> NoDCE("disable-dce",
+                    cl::desc("Do not use the -dce pass to reduce testcases"));
+cl::opt<bool, true>
     NoSCFG("disable-simplifycfg", cl::location(DisableSimplifyCFG),
            cl::desc("Do not use the -simplifycfg pass to reduce testcases"));
 
-static Function *globalInitUsesExternalBA(GlobalVariable *GV) {
+Function *globalInitUsesExternalBA(GlobalVariable *GV) {
   if (!GV->hasInitializer())
     return nullptr;
 
@@ -75,6 +78,7 @@ static Function *globalInitUsesExternalBA(GlobalVariable *GV) {
   }
   return nullptr;
 }
+} // end anonymous namespace
 
 std::unique_ptr<Module>
 BugDriver::deleteInstructionFromProgram(const Instruction *I,
@@ -150,7 +154,7 @@ std::unique_ptr<Module> BugDriver::extractLoop(Module *M) {
   std::unique_ptr<Module> NewM = runPassesOn(M, LoopExtractPasses);
   if (!NewM) {
     outs() << "*** Loop extraction failed: ";
-    emitProgressBitcode(*M, "loopextraction", true);
+    EmitProgressBitcode(*M, "loopextraction", true);
     outs() << "*** Sorry. :(  Please report a bug!\n";
     return nullptr;
   }
@@ -194,16 +198,21 @@ static void eliminateAliases(GlobalValue *GV) {
   }
 }
 
-// "Remove" the global variable by deleting its initializer, making it external.
-void llvm::deleteGlobalInitializer(GlobalVariable *GV) {
+//
+// DeleteGlobalInitializer - "Remove" the global variable by deleting its
+// initializer,
+// making it external.
+//
+void llvm::DeleteGlobalInitializer(GlobalVariable *GV) {
   eliminateAliases(GV);
   GV->setInitializer(nullptr);
   GV->setComdat(nullptr);
 }
 
-// "Remove" the function by deleting all of its basic blocks, making it
-// external.
-void llvm::deleteFunctionBody(Function *F) {
+// DeleteFunctionBody - "Remove" the function by deleting all of its basic
+// blocks, making it external.
+//
+void llvm::DeleteFunctionBody(Function *F) {
   eliminateAliases(F);
   // Function declarations can't have comdats.
   F->setComdat(nullptr);
@@ -213,9 +222,9 @@ void llvm::deleteFunctionBody(Function *F) {
   assert(F->isDeclaration() && "This didn't make the function external!");
 }
 
-/// getTorInit - Given a list of entries for static ctors/dtors, return them
+/// GetTorInit - Given a list of entries for static ctors/dtors, return them
 /// as a constant array.
-static Constant *getTorInit(std::vector<std::pair<Function *, int>> &TorList) {
+static Constant *GetTorInit(std::vector<std::pair<Function *, int>> &TorList) {
   assert(!TorList.empty() && "Don't create empty tor list!");
   std::vector<Constant *> ArrayElts;
   Type *Int32Ty = Type::getInt32Ty(TorList[0].first->getContext());
@@ -230,11 +239,11 @@ static Constant *getTorInit(std::vector<std::pair<Function *, int>> &TorList) {
       ArrayType::get(ArrayElts[0]->getType(), ArrayElts.size()), ArrayElts);
 }
 
-/// splitStaticCtorDtor - A module was recently split into two parts, M1/M2, and
+/// SplitStaticCtorDtor - A module was recently split into two parts, M1/M2, and
 /// M1 has all of the global variables.  If M2 contains any functions that are
 /// static ctors/dtors, we need to add an llvm.global_[cd]tors global to M2, and
 /// prune appropriate entries out of M1s list.
-static void splitStaticCtorDtor(const char *GlobalName, Module *M1, Module *M2,
+static void SplitStaticCtorDtor(const char *GlobalName, Module *M1, Module *M2,
                                 ValueToValueMapTy &VMap) {
   GlobalVariable *GV = M1->getNamedGlobal(GlobalName);
   if (!GV || GV->isDeclaration() || GV->hasLocalLinkage() || !GV->use_empty())
@@ -275,7 +284,7 @@ static void splitStaticCtorDtor(const char *GlobalName, Module *M1, Module *M2,
 
   GV->eraseFromParent();
   if (!M1Tors.empty()) {
-    Constant *M1Init = getTorInit(M1Tors);
+    Constant *M1Init = GetTorInit(M1Tors);
     new GlobalVariable(*M1, M1Init->getType(), false,
                        GlobalValue::AppendingLinkage, M1Init, GlobalName);
   }
@@ -286,14 +295,14 @@ static void splitStaticCtorDtor(const char *GlobalName, Module *M1, Module *M2,
 
   GV->eraseFromParent();
   if (!M2Tors.empty()) {
-    Constant *M2Init = getTorInit(M2Tors);
+    Constant *M2Init = GetTorInit(M2Tors);
     new GlobalVariable(*M2, M2Init->getType(), false,
                        GlobalValue::AppendingLinkage, M2Init, GlobalName);
   }
 }
 
 std::unique_ptr<Module>
-llvm::splitFunctionsOutOfModule(Module *M, const std::vector<Function *> &F,
+llvm::SplitFunctionsOutOfModule(Module *M, const std::vector<Function *> &F,
                                 ValueToValueMapTy &VMap) {
   // Make sure functions & globals are all external so that linkage
   // between the two modules will work.
@@ -317,13 +326,13 @@ llvm::splitFunctionsOutOfModule(Module *M, const std::vector<Function *> &F,
     LLVM_DEBUG(TNOF->printAsOperand(errs(), false));
     LLVM_DEBUG(errs() << "\n");
     TestFunctions.insert(cast<Function>(NewVMap[TNOF]));
-    deleteFunctionBody(TNOF); // Function is now external in this module!
+    DeleteFunctionBody(TNOF); // Function is now external in this module!
   }
 
   // Remove the Safe functions from the Test module
   for (Function &I : *New)
     if (!TestFunctions.count(&I))
-      deleteFunctionBody(&I);
+      DeleteFunctionBody(&I);
 
   // Try to split the global initializers evenly
   for (GlobalVariable &I : M->globals()) {
@@ -339,17 +348,17 @@ llvm::splitFunctionsOutOfModule(Module *M, const std::vector<Function *> &F,
                << TestFn->getName() << "'.\n";
         exit(1);
       }
-      deleteGlobalInitializer(&I); // Delete the initializer to make it external
+      DeleteGlobalInitializer(&I); // Delete the initializer to make it external
     } else {
       // If we keep it in the safe module, then delete it in the test module
-      deleteGlobalInitializer(GV);
+      DeleteGlobalInitializer(GV);
     }
   }
 
   // Make sure that there is a global ctor/dtor array in both halves of the
   // module if they both have static ctor/dtor functions.
-  splitStaticCtorDtor("llvm.global_ctors", M, New.get(), NewVMap);
-  splitStaticCtorDtor("llvm.global_dtors", M, New.get(), NewVMap);
+  SplitStaticCtorDtor("llvm.global_ctors", M, New.get(), NewVMap);
+  SplitStaticCtorDtor("llvm.global_dtors", M, New.get(), NewVMap);
 
   return New;
 }
@@ -366,7 +375,7 @@ BugDriver::extractMappedBlocksFromModule(const std::vector<BasicBlock *> &BBs,
     outs() << "*** Basic Block extraction failed!\n";
     errs() << "Error creating temporary file: " << toString(Temp.takeError())
            << "\n";
-    emitProgressBitcode(*M, "basicblockextractfail", true);
+    EmitProgressBitcode(*M, "basicblockextractfail", true);
     return nullptr;
   }
   DiscardTemp Discard{*Temp};
@@ -390,7 +399,7 @@ BugDriver::extractMappedBlocksFromModule(const std::vector<BasicBlock *> &BBs,
   OS.flush();
   if (OS.has_error()) {
     errs() << "Error writing list of blocks to not extract\n";
-    emitProgressBitcode(*M, "basicblockextractfail", true);
+    EmitProgressBitcode(*M, "basicblockextractfail", true);
     OS.clear_error();
     return nullptr;
   }
@@ -404,7 +413,7 @@ BugDriver::extractMappedBlocksFromModule(const std::vector<BasicBlock *> &BBs,
 
   if (!Ret) {
     outs() << "*** Basic Block extraction failed, please report a bug!\n";
-    emitProgressBitcode(*M, "basicblockextractfail", true);
+    EmitProgressBitcode(*M, "basicblockextractfail", true);
   }
   return Ret;
 }

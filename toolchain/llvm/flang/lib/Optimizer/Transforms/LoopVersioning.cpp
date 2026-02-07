@@ -40,7 +40,7 @@
 ///       could be part of the cost analysis above.
 //===----------------------------------------------------------------------===//
 
-#include "flang/Common/ISO_Fortran_binding_wrapper.h"
+#include "flang/ISO_Fortran_binding_wrapper.h"
 #include "flang/Optimizer/Builder/BoxValue.h"
 #include "flang/Optimizer/Builder/FIRBuilder.h"
 #include "flang/Optimizer/Builder/Runtime/Inquiry.h"
@@ -51,7 +51,6 @@
 #include "flang/Optimizer/Dialect/Support/KindMapping.h"
 #include "flang/Optimizer/Support/DataLayout.h"
 #include "flang/Optimizer/Transforms/Passes.h"
-#include "mlir/Dialect/DLTI/DLTI.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/IR/Dominance.h"
 #include "mlir/IR/Matchers.h"
@@ -185,42 +184,56 @@ getRankAndElementSize(const fir::KindMapping &kindMap,
   return {0, 0};
 }
 
-/// If a value comes from a fir.declare of fir.pack_array,
-/// follow it to the original source, otherwise return the value.
-static mlir::Value unwrapPassThroughOps(mlir::Value val) {
-  // Instead of unwrapping fir.declare, we may try to start
-  // the analysis in this pass from fir.declare's instead
-  // of the function entry block arguments. This way the loop
-  // versioning would work even after FIR inlining.
-  while (true) {
-    if (fir::DeclareOp declare = val.getDefiningOp<fir::DeclareOp>()) {
-      val = declare.getMemref();
-      continue;
-    }
-    // fir.pack_array might be met before fir.declare - this is how
-    // it is orifinally generated.
-    // It might also be met after fir.declare - after the optimization
-    // passes that sink fir.pack_array closer to the uses.
-    if (auto packArray = val.getDefiningOp<fir::PackArrayOp>()) {
-      val = packArray.getArray();
-      continue;
-    }
-    break;
-  }
+/// if a value comes from a fir.declare, follow it to the original source,
+/// otherwise return the value
+static mlir::Value unwrapFirDeclare(mlir::Value val) {
+  // fir.declare is for source code variables. We don't have declares of
+  // declares
+  if (fir::DeclareOp declare = val.getDefiningOp<fir::DeclareOp>())
+    return declare.getMemref();
   return val;
+}
+
+/// Return true, if \p rebox operation keeps the input array
+/// continuous in the innermost dimension, if it is initially continuous
+/// in the innermost dimension.
+static bool reboxPreservesContinuity(fir::ReboxOp rebox) {
+  // If slicing is not involved, then the rebox does not affect
+  // the continuity of the array.
+  auto sliceArg = rebox.getSlice();
+  if (!sliceArg)
+    return true;
+
+  // A slice with step=1 in the innermost dimension preserves
+  // the continuity of the array in the innermost dimension.
+  if (auto sliceOp =
+          mlir::dyn_cast_or_null<fir::SliceOp>(sliceArg.getDefiningOp())) {
+    if (sliceOp.getFields().empty() && sliceOp.getSubstr().empty()) {
+      auto triples = sliceOp.getTriples();
+      if (triples.size() > 2)
+        if (auto innermostStep = fir::getIntIfConstant(triples[2]))
+          if (*innermostStep == 1)
+            return true;
+    }
+
+    LLVM_DEBUG(llvm::dbgs()
+               << "REBOX with slicing may produce non-contiguous array: "
+               << sliceOp << '\n'
+               << rebox << '\n');
+    return false;
+  }
+
+  LLVM_DEBUG(llvm::dbgs() << "REBOX with unknown slice" << sliceArg << '\n'
+                          << rebox << '\n');
+  return false;
 }
 
 /// if a value comes from a fir.rebox, follow the rebox to the original source,
 /// of the value, otherwise return the value
 static mlir::Value unwrapReboxOp(mlir::Value val) {
   while (fir::ReboxOp rebox = val.getDefiningOp<fir::ReboxOp>()) {
-    if (!fir::reboxPreservesContinuity(rebox,
-                                       /*mayHaveNonDefaultLowerBounds=*/true,
-                                       /*checkWhole=*/false)) {
-      LLVM_DEBUG(llvm::dbgs() << "REBOX may produce non-contiguous array: "
-                              << rebox << '\n');
+    if (!reboxPreservesContinuity(rebox))
       break;
-    }
     val = rebox.getBox();
   }
   return val;
@@ -229,7 +242,7 @@ static mlir::Value unwrapReboxOp(mlir::Value val) {
 /// normalize a value (removing fir.declare and fir.rebox) so that we can
 /// more conveniently spot values which came from function arguments
 static mlir::Value normaliseVal(mlir::Value val) {
-  return unwrapPassThroughOps(unwrapReboxOp(val));
+  return unwrapFirDeclare(unwrapReboxOp(val));
 }
 
 /// some FIR operations accept a fir.shape, a fir.shift or a fir.shapeshift.
@@ -285,7 +298,7 @@ static mlir::Value getIndex(fir::FirOpBuilder &builder, mlir::Operation *op,
   // index_0 = index - lb;
   if (lb.getType() != index.getType())
     lb = builder.createConvert(coop.getLoc(), index.getType(), lb);
-  return mlir::arith::SubIOp::create(builder, coop.getLoc(), index, lb);
+  return builder.create<mlir::arith::SubIOp>(coop.getLoc(), index, lb);
 }
 
 void LoopVersioningPass::runOnOperation() {
@@ -299,8 +312,8 @@ void LoopVersioningPass::runOnOperation() {
   mlir::ModuleOp module = func->getParentOfType<mlir::ModuleOp>();
   fir::KindMapping kindMap = fir::getKindMapping(module);
   mlir::SmallVector<ArgInfo, 4> argsOfInterest;
-  std::optional<mlir::DataLayout> dl = fir::support::getOrSetMLIRDataLayout(
-      module, /*allowDefaultLayout=*/false);
+  std::optional<mlir::DataLayout> dl =
+      fir::support::getOrSetDataLayout(module, /*allowDefaultLayout=*/false);
   if (!dl)
     mlir::emitError(module.getLoc(),
                     "data layout attribute is required to perform " DEBUG_TYPE
@@ -483,26 +496,26 @@ void LoopVersioningPass::runOnOperation() {
       unsigned ndims = arg.rank;
       for (unsigned i = 0; i < ndims; i++) {
         mlir::Value dimIdx = builder.createIntegerConstant(loc, idxTy, i);
-        arg.dims[i] = fir::BoxDimsOp::create(builder, loc, idxTy, idxTy, idxTy,
-                                             arg.arg, dimIdx);
+        arg.dims[i] = builder.create<fir::BoxDimsOp>(loc, idxTy, idxTy, idxTy,
+                                                     arg.arg, dimIdx);
       }
       // We only care about lowest order dimension, here.
       mlir::Value elemSize =
           builder.createIntegerConstant(loc, idxTy, arg.size);
-      mlir::Value cmp = mlir::arith::CmpIOp::create(
-          builder, loc, mlir::arith::CmpIPredicate::eq,
-          arg.dims[0].getResult(2), elemSize);
+      mlir::Value cmp = builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::eq, arg.dims[0].getResult(2),
+          elemSize);
       if (!allCompares) {
         allCompares = cmp;
       } else {
         allCompares =
-            mlir::arith::AndIOp::create(builder, loc, cmp, allCompares);
+            builder.create<mlir::arith::AndIOp>(loc, cmp, allCompares);
       }
     }
 
     auto ifOp =
-        fir::IfOp::create(builder, loc, op.op->getResultTypes(), allCompares,
-                          /*withElse=*/true);
+        builder.create<fir::IfOp>(loc, op.op->getResultTypes(), allCompares,
+                                  /*withElse=*/true);
     builder.setInsertionPointToStart(&ifOp.getThenRegion().front());
 
     LLVM_DEBUG(llvm::dbgs() << "Creating cloned loop\n");
@@ -515,8 +528,8 @@ void LoopVersioningPass::runOnOperation() {
       mlir::Type arrTy = fir::SequenceType::get(newShape, elementType);
       mlir::Type boxArrTy = fir::BoxType::get(arrTy);
       mlir::Type refArrTy = builder.getRefType(arrTy);
-      auto carg = fir::ConvertOp::create(builder, loc, boxArrTy, arg.arg);
-      auto caddr = fir::BoxAddrOp::create(builder, loc, refArrTy, carg);
+      auto carg = builder.create<fir::ConvertOp>(loc, boxArrTy, arg.arg);
+      auto caddr = builder.create<fir::BoxAddrOp>(loc, refArrTy, carg);
       auto insPt = builder.saveInsertionPoint();
       // Use caddr instead of arg.
       clonedLoop->walk([&](mlir::Operation *coop) {
@@ -540,9 +553,9 @@ void LoopVersioningPass::runOnOperation() {
             mlir::Value scale =
                 builder.createConvert(loc, idxTy, arg.dims[i].getResult(2));
             curIndex =
-                mlir::arith::MulIOp::create(builder, loc, scale, curIndex);
-            totalIndex = (totalIndex) ? mlir::arith::AddIOp::create(
-                                            builder, loc, curIndex, totalIndex)
+                builder.create<mlir::arith::MulIOp>(loc, scale, curIndex);
+            totalIndex = (totalIndex) ? builder.create<mlir::arith::AddIOp>(
+                                            loc, curIndex, totalIndex)
                                       : curIndex;
           }
           // This is the lowest dimension - which doesn't need scaling
@@ -554,16 +567,16 @@ void LoopVersioningPass::runOnOperation() {
             unsigned bits = llvm::Log2_32(arg.size);
             mlir::Value elemShift =
                 builder.createIntegerConstant(loc, idxTy, bits);
-            totalIndex = mlir::arith::AddIOp::create(
-                builder, loc,
-                mlir::arith::ShRSIOp::create(builder, loc, totalIndex,
-                                             elemShift),
+            totalIndex = builder.create<mlir::arith::AddIOp>(
+                loc,
+                builder.create<mlir::arith::ShRSIOp>(loc, totalIndex,
+                                                     elemShift),
                 finalIndex);
           } else {
             totalIndex = finalIndex;
           }
-          auto newOp = fir::CoordinateOp::create(
-              builder, loc, builder.getRefType(elementType), caddr,
+          auto newOp = builder.create<fir::CoordinateOp>(
+              loc, builder.getRefType(elementType), caddr,
               mlir::ValueRange{totalIndex});
           LLVM_DEBUG(newOp->dump());
           coop->getResult(0).replaceAllUsesWith(newOp->getResult(0));
@@ -582,7 +595,7 @@ void LoopVersioningPass::runOnOperation() {
     mlir::ResultRange results = clonedLoop->getResults();
     bool hasResults = (results.size() > 0);
     if (hasResults)
-      fir::ResultOp::create(builder, loc, results);
+      builder.create<fir::ResultOp>(loc, results);
 
     // Add the original loop in the else-side of the if operation.
     builder.setInsertionPointToStart(&ifOp.getElseRegion().front());
@@ -591,7 +604,7 @@ void LoopVersioningPass::runOnOperation() {
     builder.insert(op.op);
     // Rely on "cloned loop has results, so original loop also has results".
     if (hasResults) {
-      fir::ResultOp::create(builder, loc, op.op->getResults());
+      builder.create<fir::ResultOp>(loc, op.op->getResults());
     } else {
       // Use an assert to check this.
       assert(op.op->getResults().size() == 0 &&

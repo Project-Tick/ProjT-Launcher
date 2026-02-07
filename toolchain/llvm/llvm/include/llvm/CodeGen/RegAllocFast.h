@@ -14,33 +14,36 @@
 
 namespace llvm {
 
-class RegAllocFastPass : public PassInfoMixin<RegAllocFastPass> {
-public:
-  struct Options {
-    RegAllocFilterFunc Filter;
-    StringRef FilterName;
-    bool ClearVRegs;
-    Options(RegAllocFilterFunc F = nullptr, StringRef FN = "all",
-            bool CV = true)
-        : Filter(std::move(F)), FilterName(FN), ClearVRegs(CV) {}
-  };
+struct RegAllocFastPassOptions {
+  RegAllocFilterFunc Filter = nullptr;
+  StringRef FilterName = "all";
+  bool ClearVRegs = true;
+};
 
-  RegAllocFastPass(Options Opts = Options()) : Opts(std::move(Opts)) {}
+class RegAllocFastPass : public PassInfoMixin<RegAllocFastPass> {
+  RegAllocFastPassOptions Opts;
+
+public:
+  RegAllocFastPass(RegAllocFastPassOptions Opts = RegAllocFastPassOptions())
+      : Opts(Opts) {}
 
   MachineFunctionProperties getRequiredProperties() const {
-    return MachineFunctionProperties().setNoPHIs();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::NoPHIs);
   }
 
   MachineFunctionProperties getSetProperties() const {
     if (Opts.ClearVRegs) {
-      return MachineFunctionProperties().setNoVRegs();
+      return MachineFunctionProperties().set(
+          MachineFunctionProperties::Property::NoVRegs);
     }
 
     return MachineFunctionProperties();
   }
 
   MachineFunctionProperties getClearedProperties() const {
-    return MachineFunctionProperties().setIsSSA();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::IsSSA);
   }
 
   PreservedAnalyses run(MachineFunction &MF, MachineFunctionAnalysisManager &);
@@ -49,9 +52,6 @@ public:
                      function_ref<StringRef(StringRef)> MapClassName2PassName);
 
   static bool isRequired() { return true; }
-
-private:
-  Options Opts;
 };
 
 } // namespace llvm

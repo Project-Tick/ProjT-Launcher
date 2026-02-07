@@ -170,7 +170,7 @@ public:
   bool isSignedCharBool(QualType Ty);
 
   void adornBoolConversionDiagWithTernaryFixit(
-      const Expr *SourceExpr, const Sema::SemaDiagnosticBuilder &Builder);
+      Expr *SourceExpr, const Sema::SemaDiagnosticBuilder &Builder);
 
   /// Check an Objective-C dictionary literal being converted to the given
   /// target type.
@@ -307,11 +307,11 @@ public:
 
   DeclGroupPtrTy
   ActOnForwardProtocolDeclaration(SourceLocation AtProtoclLoc,
-                                  ArrayRef<IdentifierLoc> IdentList,
+                                  ArrayRef<IdentifierLocPair> IdentList,
                                   const ParsedAttributesView &attrList);
 
   void FindProtocolDeclaration(bool WarnOnDeclarations, bool ForObjCContainer,
-                               ArrayRef<IdentifierLoc> ProtocolId,
+                               ArrayRef<IdentifierLocPair> ProtocolId,
                                SmallVectorImpl<Decl *> &Protocols);
 
   void DiagnoseTypeArgsAndProtocols(IdentifierInfo *ProtocolId,
@@ -812,8 +812,7 @@ public:
                                           CheckedConversionKind CCK,
                                           bool Diagnose = true,
                                           bool DiagnoseCFAudited = false,
-                                          BinaryOperatorKind Opc = BO_PtrMemD,
-                                          bool IsReinterpretCast = false);
+                                          BinaryOperatorKind Opc = BO_PtrMemD);
 
   Expr *stripARCUnbridgedCast(Expr *e);
   void diagnoseARCUnbridgedCast(Expr *e);

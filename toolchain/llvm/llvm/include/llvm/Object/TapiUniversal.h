@@ -15,7 +15,6 @@
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Object/Binary.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/MemoryBufferRef.h"
 #include "llvm/TextAPI/Architecture.h"
@@ -26,7 +25,7 @@ namespace object {
 
 class TapiFile;
 
-class LLVM_ABI TapiUniversal : public Binary {
+class TapiUniversal : public Binary {
 public:
   class ObjectForArch {
     const TapiUniversal *Parent;
@@ -66,7 +65,7 @@ public:
       return Parent->ParsedFile->getInstallName() == getInstallName();
     }
 
-    LLVM_ABI Expected<std::unique_ptr<TapiFile>> getAsObjectFile() const;
+    Expected<std::unique_ptr<TapiFile>> getAsObjectFile() const;
   };
 
   class object_iterator {
@@ -111,11 +110,9 @@ public:
   static bool classof(const Binary *v) { return v->isTapiUniversal(); }
 
 private:
-  /// Attributes of a library that is inlined into a single TBD file.
   struct Library {
-    const StringRef InstallName;
-    const MachO::Architecture Arch;
-    const std::optional<size_t> DocumentIdx;
+    StringRef InstallName;
+    MachO::Architecture Arch;
   };
 
   std::unique_ptr<MachO::InterfaceFile> ParsedFile;

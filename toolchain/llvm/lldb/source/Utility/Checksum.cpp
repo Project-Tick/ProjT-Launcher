@@ -21,7 +21,10 @@ Checksum &Checksum::operator=(const Checksum &checksum) {
   return *this;
 }
 
-void Checksum::SetMD5(llvm::MD5::MD5Result md5) { m_checksum = md5; }
+void Checksum::SetMD5(llvm::MD5::MD5Result md5) {
+  const constexpr size_t md5_length = 16;
+  std::uninitialized_copy_n(md5.begin(), md5_length, m_checksum.begin());
+}
 
 Checksum::operator bool() const { return !llvm::equal(m_checksum, g_sentinel); }
 

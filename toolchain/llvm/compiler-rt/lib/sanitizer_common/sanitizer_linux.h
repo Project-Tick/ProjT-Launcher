@@ -14,7 +14,7 @@
 
 #include "sanitizer_platform.h"
 #if SANITIZER_FREEBSD || SANITIZER_LINUX || SANITIZER_NETBSD || \
-    SANITIZER_SOLARIS || SANITIZER_HAIKU
+    SANITIZER_SOLARIS
 #  include "sanitizer_common.h"
 #  include "sanitizer_internal_defs.h"
 #  include "sanitizer_platform_limits_freebsd.h"
@@ -31,11 +31,6 @@ namespace __sanitizer {
 // the one in <dirent.h>, which is used by readdir().
 struct linux_dirent;
 
-#  if SANITIZER_HAIKU
-struct MemoryMappingLayoutData {
-  long signed int cookie;
-};
-#  else
 struct ProcSelfMapsBuff {
   char *data;
   uptr mmaped_size;
@@ -48,7 +43,6 @@ struct MemoryMappingLayoutData {
 };
 
 void ReadProcMaps(ProcSelfMapsBuff *proc_maps);
-#  endif  // SANITIZER_HAIKU
 
 // Syscall wrappers.
 uptr internal_getdents(fd_t fd, struct linux_dirent *dirp, unsigned int count);
@@ -108,11 +102,11 @@ class ThreadLister {
     Incomplete,
     Ok,
   };
-  Result ListThreads(InternalMmapVector<ThreadID> *threads);
-  const char *LoadStatus(ThreadID tid);
+  Result ListThreads(InternalMmapVector<tid_t> *threads);
+  const char *LoadStatus(tid_t tid);
 
  private:
-  bool IsAlive(ThreadID tid);
+  bool IsAlive(tid_t tid);
 
   InternalScopedString task_path_;
   InternalScopedString status_path_;
@@ -130,7 +124,7 @@ bool LibraryNameIs(const char *full_name, const char *base_name);
 // Call cb for each region mapped by map.
 void ForEachMappedRegion(link_map *map, void (*cb)(const void *, uptr));
 
-// Releases memory pages entirely within the [beg, end) address range.
+// Releases memory pages entirely within the [beg, end] address range.
 // The pages no longer count toward RSS; reads are guaranteed to return 0.
 // Requires (but does not verify!) that pages are MAP_PRIVATE.
 inline void ReleaseMemoryPagesToOSAndZeroFill(uptr beg, uptr end) {

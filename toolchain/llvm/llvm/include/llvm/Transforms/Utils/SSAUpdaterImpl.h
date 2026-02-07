@@ -366,7 +366,7 @@ public:
         continue;
 
       // Look for an existing PHI.
-      FindExistingPHI(Info->BB);
+      FindExistingPHI(Info->BB, BlockList);
       if (Info->AvailableVal)
         continue;
 
@@ -412,11 +412,11 @@ public:
 
   /// FindExistingPHI - Look through the PHI nodes in a block to see if any of
   /// them match what is needed.
-  void FindExistingPHI(BlkT *BB) {
+  void FindExistingPHI(BlkT *BB, BlockListTy *BlockList) {
     SmallVector<BBInfo *, 20> TaggedBlocks;
     for (auto &SomePHI : BB->phis()) {
       if (CheckIfPHIMatches(&SomePHI, TaggedBlocks)) {
-        RecordMatchingPHIs(TaggedBlocks);
+        RecordMatchingPHIs(BlockList);
         break;
       }
     }
@@ -424,10 +424,10 @@ public:
 
   /// CheckIfPHIMatches - Check if a PHI node matches the placement and values
   /// in the BBMap.
-  bool CheckIfPHIMatches(PhiT *PHI, BlockListTy &TaggedBlocks) {
+  bool CheckIfPHIMatches(PhiT *PHI, SmallVectorImpl<BBInfo *> &TaggedBlocks) {
     // Match failed: clear all the PHITag values. Only need to clear visited
     // blocks.
-    scope_exit Cleanup([&]() {
+    auto Cleanup = make_scope_exit([&]() {
       for (BBInfo *TaggedBlock : TaggedBlocks)
         TaggedBlock->PHITag = nullptr;
       TaggedBlocks.clear();
@@ -484,15 +484,15 @@ public:
 
   /// RecordMatchingPHIs - For each PHI node that matches, record it in both
   /// the BBMap and the AvailableVals mapping.
-  void RecordMatchingPHIs(BlockListTy &TaggedBlocks) {
-    for (BBInfo *Block : TaggedBlocks) {
-      PhiT *PHI = Block->PHITag;
-      assert(PHI && "PHITag didn't set?");
-      BlkT *BB = PHI->getParent();
-      ValT PHIVal = Traits::GetPHIValue(PHI);
-      (*AvailableVals)[BB] = PHIVal;
-      BBMap[BB]->AvailableVal = PHIVal;
-    }
+  void RecordMatchingPHIs(BlockListTy *BlockList) {
+    for (typename BlockListTy::iterator I = BlockList->begin(),
+           E = BlockList->end(); I != E; ++I)
+      if (PhiT *PHI = (*I)->PHITag) {
+        BlkT *BB = PHI->getParent();
+        ValT PHIVal = Traits::GetPHIValue(PHI);
+        (*AvailableVals)[BB] = PHIVal;
+        BBMap[BB]->AvailableVal = PHIVal;
+      }
   }
 };
 

@@ -11,5 +11,3 @@ Contents:
    developer-docs/InitializerLists
    developer-docs/nullability
    developer-docs/RegionStore
-   developer-docs/PerformanceInvestigation
-   developer-docs/Statistics

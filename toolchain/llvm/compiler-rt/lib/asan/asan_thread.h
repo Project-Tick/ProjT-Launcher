@@ -75,7 +75,7 @@ class AsanThread {
   struct InitOptions;
   void Init(const InitOptions *options = nullptr);
 
-  void ThreadStart(ThreadID os_id);
+  void ThreadStart(tid_t os_id);
   thread_return_t RunThread();
 
   uptr stack_top();
@@ -104,7 +104,7 @@ class AsanThread {
     if (!fake_stack_) return;
     FakeStack *t = fake_stack_;
     fake_stack_ = nullptr;
-    ResetTLSFakeStack();
+    SetTLSFakeStack(nullptr);
     t->Destroy(tid);
   }
 
@@ -144,12 +144,6 @@ class AsanThread {
     GetStartData(&data, sizeof(data));
   }
 
-  bool IsFakeStackSuppressed() const {
-    return fake_stack_suppression_counter_ > 0;
-  }
-  void SuppressFakeStack();
-  void UnsuppressFakeStack();
-
  private:
   // NOTE: There is no AsanThread constructor. It is allocated
   // via mmap() and *must* be valid in zero-initialized state.
@@ -185,7 +179,6 @@ class AsanThread {
   DTLS *dtls_;
 
   FakeStack *fake_stack_;
-  int fake_stack_suppression_counter_;
   AsanThreadLocalMallocStorage malloc_storage_;
   AsanStats stats_;
   bool unwinding_;

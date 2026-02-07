@@ -23,7 +23,6 @@
 
 namespace llvm {
 class Constant;
-class Function;
 class StoreInst;
 class LoadInst;
 class MemIntrinsic;
@@ -36,7 +35,7 @@ namespace VNCoercion {
 /// Return true if CoerceAvailableValueToLoadType would succeed if it was
 /// called.
 bool canCoerceMustAliasedValueToLoad(Value *StoredVal, Type *LoadTy,
-                                     Function *F);
+                                     const DataLayout &DL);
 
 /// If we saw a store of a value to memory, and then a load from a must-aliased
 /// pointer of a different type, try to coerce the stored value to the loaded
@@ -45,7 +44,7 @@ bool canCoerceMustAliasedValueToLoad(Value *StoredVal, Type *LoadTy,
 ///
 /// If we can't do it, return null.
 Value *coerceAvailableValueToLoadType(Value *StoredVal, Type *LoadedTy,
-                                      IRBuilderBase &IRB, Function *F);
+                                      IRBuilderBase &IRB, const DataLayout &DL);
 
 /// This function determines whether a value for the pointer LoadPtr can be
 /// extracted from the store at DepSI.
@@ -76,7 +75,7 @@ int analyzeLoadFromClobberingMemInst(Type *LoadTy, Value *LoadPtr,
 /// It inserts instructions to do so at InsertPt, and returns the extracted
 /// value.
 Value *getValueForLoad(Value *SrcVal, unsigned Offset, Type *LoadTy,
-                       Instruction *InsertPt, Function *F);
+                            Instruction *InsertPt, const DataLayout &DL);
 // This is the same as getValueForLoad, except it performs no insertion.
 // It only allows constant inputs.
 Constant *getConstantValueForLoad(Constant *SrcVal, unsigned Offset,

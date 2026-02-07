@@ -41,7 +41,7 @@ std::pair<uint16_t, uint32_t> SavedRegisterMask(const RuntimeFunction &RF,
     GPRMask |= (((1 << ((RF.StackAdjust() & 0x3) + 1)) - 1)
                 << (~RF.StackAdjust() & 0x3));
 
-  return {GPRMask, VFPMask};
+  return std::make_pair(GPRMask, VFPMask);
 }
 } // namespace WinEH
 } // namespace ARM

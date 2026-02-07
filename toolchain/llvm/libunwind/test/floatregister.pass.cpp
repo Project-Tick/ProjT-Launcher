@@ -7,8 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// REQUIRES: target={{aarch64-.+}}
-// UNSUPPORTED: target={{.*-windows.*}}
+// REQUIRES: linux && target={{aarch64-.+}}
 
 // Basic test for float registers number are accepted.
 
@@ -53,7 +52,7 @@ __attribute__((noinline)) void foo() {
   _Unwind_Backtrace(frame_handler, NULL);
 }
 
-__attribute__((section("main_func"))) int main(int, char **) {
+__attribute__((section("main_func"))) int main() {
   foo();
   return -2;
 }

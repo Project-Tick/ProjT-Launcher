@@ -154,17 +154,17 @@ void ilist_alloc_traits<MachineBasicBlock>::deleteNode(MachineBasicBlock *MBB) {
   MBB->getParent()->deleteMachineBasicBlock(MBB);
 }
 
-static inline Align getFnStackAlignment(const TargetSubtargetInfo &STI,
-                                        const Function &F) {
+static inline Align getFnStackAlignment(const TargetSubtargetInfo *STI,
+                                           const Function &F) {
   if (auto MA = F.getFnStackAlign())
     return *MA;
-  return STI.getFrameLowering()->getStackAlign();
+  return STI->getFrameLowering()->getStackAlign();
 }
 
 MachineFunction::MachineFunction(Function &F, const TargetMachine &Target,
                                  const TargetSubtargetInfo &STI, MCContext &Ctx,
                                  unsigned FunctionNum)
-    : F(F), Target(Target), STI(STI), Ctx(Ctx) {
+    : F(F), Target(Target), STI(&STI), Ctx(Ctx) {
   FunctionNumber = FunctionNum;
   init();
 }
@@ -187,15 +187,18 @@ void MachineFunction::handleChangeDesc(MachineInstr &MI,
 
 void MachineFunction::init() {
   // Assume the function starts in SSA form with correct liveness.
-  Properties.setIsSSA();
-  Properties.setTracksLiveness();
-  RegInfo = new (Allocator) MachineRegisterInfo(this);
+  Properties.set(MachineFunctionProperties::Property::IsSSA);
+  Properties.set(MachineFunctionProperties::Property::TracksLiveness);
+  if (STI->getRegisterInfo())
+    RegInfo = new (Allocator) MachineRegisterInfo(this);
+  else
+    RegInfo = nullptr;
 
   MFInfo = nullptr;
 
   // We can realign the stack if the target supports it and the user hasn't
   // explicitly asked us not to.
-  bool CanRealignSP = STI.getFrameLowering()->isStackRealignable() &&
+  bool CanRealignSP = STI->getFrameLowering()->isStackRealignable() &&
                       !F.hasFnAttribute("no-realign-stack");
   bool ForceRealignSP = F.hasFnAttribute(Attribute::StackAlignment) ||
                         F.hasFnAttribute("stackrealign");
@@ -209,12 +212,13 @@ void MachineFunction::init() {
     FrameInfo->ensureMaxAlignment(*F.getFnStackAlign());
 
   ConstantPool = new (Allocator) MachineConstantPool(getDataLayout());
-  Alignment = STI.getTargetLowering()->getMinFunctionAlignment();
+  Alignment = STI->getTargetLowering()->getMinFunctionAlignment();
 
   // FIXME: Shouldn't use pref alignment if explicit alignment is set on F.
-  if (!F.hasOptSize())
+  // FIXME: Use Function::hasOptSize().
+  if (!F.hasFnAttribute(Attribute::OptimizeForSize))
     Alignment = std::max(Alignment,
-                         STI.getTargetLowering()->getPrefFunctionAlignment());
+                         STI->getTargetLowering()->getPrefFunctionAlignment());
 
   // -fsanitize=function and -fsanitize=kcfi instrument indirect function calls
   // to load a type hash before the function label. Ensure functions are aligned
@@ -258,15 +262,6 @@ MachineFunction::~MachineFunction() {
 
 void MachineFunction::clear() {
   Properties.reset();
-
-  // Clear JumpTableInfo first. Otherwise, every MBB we delete would do a
-  // linear search over the jump table entries to find and erase itself.
-  if (JumpTableInfo) {
-    JumpTableInfo->~MachineJumpTableInfo();
-    Allocator.Deallocate(JumpTableInfo);
-    JumpTableInfo = nullptr;
-  }
-
   // Don't call destructors on MachineInstr and MachineOperand. All of their
   // memory comes from the BumpPtrAllocator which is about to be purged.
   //
@@ -294,6 +289,11 @@ void MachineFunction::clear() {
 
   ConstantPool->~MachineConstantPool();
   Allocator.Deallocate(ConstantPool);
+
+  if (JumpTableInfo) {
+    JumpTableInfo->~MachineJumpTableInfo();
+    Allocator.Deallocate(JumpTableInfo);
+  }
 
   if (WinEHInfo) {
     WinEHInfo->~WinEHFuncInfo();
@@ -609,10 +609,10 @@ MachineFunction::getMachineMemOperand(const MachineMemOperand *MMO,
 MachineInstr::ExtraInfo *MachineFunction::createMIExtraInfo(
     ArrayRef<MachineMemOperand *> MMOs, MCSymbol *PreInstrSymbol,
     MCSymbol *PostInstrSymbol, MDNode *HeapAllocMarker, MDNode *PCSections,
-    uint32_t CFIType, MDNode *MMRAs, Value *DS) {
+    uint32_t CFIType, MDNode *MMRAs) {
   return MachineInstr::ExtraInfo::create(Allocator, MMOs, PreInstrSymbol,
                                          PostInstrSymbol, HeapAllocMarker,
-                                         PCSections, CFIType, MMRAs, DS);
+                                         PCSections, CFIType, MMRAs);
 }
 
 const char *MachineFunction::createExternalSymbolName(StringRef Name) {
@@ -699,61 +699,43 @@ bool MachineFunction::needsFrameMoves() const {
          !F.getParent()->debug_compile_units().empty();
 }
 
-MachineFunction::CallSiteInfo::CallSiteInfo(const CallBase &CB) {
-  // Numeric callee_type ids are only for indirect calls.
-  if (!CB.isIndirectCall())
-    return;
+namespace llvm {
 
-  MDNode *CalleeTypeList = CB.getMetadata(LLVMContext::MD_callee_type);
-  if (!CalleeTypeList)
-    return;
+  template<>
+  struct DOTGraphTraits<const MachineFunction*> : public DefaultDOTGraphTraits {
+    DOTGraphTraits(bool isSimple = false) : DefaultDOTGraphTraits(isSimple) {}
 
-  for (const MDOperand &Op : CalleeTypeList->operands()) {
-    MDNode *TypeMD = cast<MDNode>(Op);
-    MDString *TypeIdStr = cast<MDString>(TypeMD->getOperand(1));
-    // Compute numeric type id from generalized type id string
-    uint64_t TypeIdVal = MD5Hash(TypeIdStr->getString());
-    IntegerType *Int64Ty = Type::getInt64Ty(CB.getContext());
-    CalleeTypeIds.push_back(
-        ConstantInt::get(Int64Ty, TypeIdVal, /*IsSigned=*/false));
-  }
-}
-
-template <>
-struct llvm::DOTGraphTraits<const MachineFunction *>
-    : public DefaultDOTGraphTraits {
-  DOTGraphTraits(bool isSimple = false) : DefaultDOTGraphTraits(isSimple) {}
-
-  static std::string getGraphName(const MachineFunction *F) {
-    return ("CFG for '" + F->getName() + "' function").str();
-  }
-
-  std::string getNodeLabel(const MachineBasicBlock *Node,
-                           const MachineFunction *Graph) {
-    std::string OutStr;
-    {
-      raw_string_ostream OSS(OutStr);
-
-      if (isSimple()) {
-        OSS << printMBBReference(*Node);
-        if (const BasicBlock *BB = Node->getBasicBlock())
-          OSS << ": " << BB->getName();
-      } else
-        Node->print(OSS);
+    static std::string getGraphName(const MachineFunction *F) {
+      return ("CFG for '" + F->getName() + "' function").str();
     }
 
-    if (OutStr[0] == '\n')
-      OutStr.erase(OutStr.begin());
+    std::string getNodeLabel(const MachineBasicBlock *Node,
+                             const MachineFunction *Graph) {
+      std::string OutStr;
+      {
+        raw_string_ostream OSS(OutStr);
 
-    // Process string output to make it nicer...
-    for (unsigned i = 0; i != OutStr.length(); ++i)
-      if (OutStr[i] == '\n') { // Left justify
-        OutStr[i] = '\\';
-        OutStr.insert(OutStr.begin() + i + 1, 'l');
+        if (isSimple()) {
+          OSS << printMBBReference(*Node);
+          if (const BasicBlock *BB = Node->getBasicBlock())
+            OSS << ": " << BB->getName();
+        } else
+          Node->print(OSS);
       }
-    return OutStr;
-  }
-};
+
+      if (OutStr[0] == '\n') OutStr.erase(OutStr.begin());
+
+      // Process string output to make it nicer...
+      for (unsigned i = 0; i != OutStr.length(); ++i)
+        if (OutStr[i] == '\n') {                            // Left justify
+          OutStr[i] = '\\';
+          OutStr.insert(OutStr.begin()+i+1, 'l');
+        }
+      return OutStr;
+    }
+  };
+
+} // end namespace llvm
 
 void MachineFunction::viewCFG() const
 {
@@ -938,7 +920,7 @@ MachineFunction::getCallSiteInfo(const MachineInstr *MI) {
   assert(MI->isCandidateForAdditionalCallInfo() &&
          "Call site info refers only to call (MI) candidates");
 
-  if (!Target.Options.EmitCallSiteInfo && !Target.Options.EmitCallGraphSection)
+  if (!Target.Options.EmitCallSiteInfo)
     return CallSitesInfo.end();
   return CallSitesInfo.find(MI);
 }
@@ -967,7 +949,9 @@ void MachineFunction::eraseAdditionalCallInfo(const MachineInstr *MI) {
   if (CSIt != CallSitesInfo.end())
     CallSitesInfo.erase(CSIt);
 
-  CalledGlobalsInfo.erase(CallMI);
+  CalledGlobalsMap::iterator CGIt = CalledGlobalsInfo.find(CallMI);
+  if (CGIt != CalledGlobalsInfo.end())
+    CalledGlobalsInfo.erase(CGIt);
 }
 
 void MachineFunction::copyAdditionalCallInfo(const MachineInstr *Old,
@@ -983,13 +967,13 @@ void MachineFunction::copyAdditionalCallInfo(const MachineInstr *Old,
   CallSiteInfoMap::iterator CSIt = getCallSiteInfo(OldCallMI);
   if (CSIt != CallSitesInfo.end()) {
     CallSiteInfo CSInfo = CSIt->second;
-    CallSitesInfo[New] = std::move(CSInfo);
+    CallSitesInfo[New] = CSInfo;
   }
 
   CalledGlobalsMap::iterator CGIt = CalledGlobalsInfo.find(OldCallMI);
   if (CGIt != CalledGlobalsInfo.end()) {
     CalledGlobalInfo CGInfo = CGIt->second;
-    CalledGlobalsInfo[New] = std::move(CGInfo);
+    CalledGlobalsInfo[New] = CGInfo;
   }
 }
 
@@ -1007,14 +991,14 @@ void MachineFunction::moveAdditionalCallInfo(const MachineInstr *Old,
   if (CSIt != CallSitesInfo.end()) {
     CallSiteInfo CSInfo = std::move(CSIt->second);
     CallSitesInfo.erase(CSIt);
-    CallSitesInfo[New] = std::move(CSInfo);
+    CallSitesInfo[New] = CSInfo;
   }
 
   CalledGlobalsMap::iterator CGIt = CalledGlobalsInfo.find(OldCallMI);
   if (CGIt != CalledGlobalsInfo.end()) {
     CalledGlobalInfo CGInfo = std::move(CGIt->second);
     CalledGlobalsInfo.erase(CGIt);
-    CalledGlobalsInfo[New] = std::move(CGInfo);
+    CalledGlobalsInfo[New] = CGInfo;
   }
 }
 
@@ -1439,7 +1423,8 @@ void MachineJumpTableInfo::print(raw_ostream &OS) const {
     OS << printJumpTableEntryReference(i) << ':';
     for (const MachineBasicBlock *MBB : JumpTables[i].MBBs)
       OS << ' ' << printMBBReference(*MBB);
-    OS << '\n';
+    if (i != e)
+      OS << '\n';
   }
 
   OS << '\n';

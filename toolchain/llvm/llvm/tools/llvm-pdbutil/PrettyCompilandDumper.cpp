@@ -32,6 +32,8 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include <utility>
+
 using namespace llvm;
 using namespace llvm::pdb;
 

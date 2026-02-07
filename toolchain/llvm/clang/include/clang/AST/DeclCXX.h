@@ -22,10 +22,10 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExternalASTSource.h"
 #include "clang/AST/LambdaCapture.h"
-#include "clang/AST/NestedNameSpecifierBase.h"
+#include "clang/AST/NestedNameSpecifier.h"
 #include "clang/AST/Redeclarable.h"
 #include "clang/AST/Stmt.h"
-#include "clang/AST/TypeBase.h"
+#include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
 #include "clang/AST/UnresolvedSet.h"
 #include "clang/Basic/LLVM.h"
@@ -365,10 +365,12 @@ private:
       return getVBasesSlowCase();
     }
 
-    ArrayRef<CXXBaseSpecifier> bases() const { return {getBases(), NumBases}; }
+    ArrayRef<CXXBaseSpecifier> bases() const {
+      return llvm::ArrayRef(getBases(), NumBases);
+    }
 
     ArrayRef<CXXBaseSpecifier> vbases() const {
-      return {getVBases(), NumVBases};
+      return llvm::ArrayRef(getVBases(), NumVBases);
     }
 
   private:
@@ -545,6 +547,21 @@ public:
     return const_cast<CXXRecordDecl*>(this)->getMostRecentDecl();
   }
 
+  CXXRecordDecl *getMostRecentNonInjectedDecl() {
+    CXXRecordDecl *Recent =
+        static_cast<CXXRecordDecl *>(this)->getMostRecentDecl();
+    while (Recent->isInjectedClassName()) {
+      // FIXME: Does injected class name need to be in the redeclarations chain?
+      assert(Recent->getPreviousDecl());
+      Recent = Recent->getPreviousDecl();
+    }
+    return Recent;
+  }
+
+  const CXXRecordDecl *getMostRecentNonInjectedDecl() const {
+    return const_cast<CXXRecordDecl*>(this)->getMostRecentNonInjectedDecl();
+  }
+
   CXXRecordDecl *getDefinition() const {
     // We only need an update if we don't already know which
     // declaration is the definition.
@@ -552,18 +569,13 @@ public:
     return DD ? DD->Definition : nullptr;
   }
 
-  CXXRecordDecl *getDefinitionOrSelf() const {
-    if (auto *Def = getDefinition())
-      return Def;
-    return const_cast<CXXRecordDecl *>(this);
-  }
-
   bool hasDefinition() const { return DefinitionData || dataPtr(); }
 
   static CXXRecordDecl *Create(const ASTContext &C, TagKind TK, DeclContext *DC,
                                SourceLocation StartLoc, SourceLocation IdLoc,
                                IdentifierInfo *Id,
-                               CXXRecordDecl *PrevDecl = nullptr);
+                               CXXRecordDecl *PrevDecl = nullptr,
+                               bool DelayTypeCreation = false);
   static CXXRecordDecl *CreateLambda(const ASTContext &C, DeclContext *DC,
                                      TypeSourceInfo *Info, SourceLocation Loc,
                                      unsigned DependencyKind, bool IsGeneric,
@@ -1538,9 +1550,6 @@ public:
   /// Returns the destructor decl for this class.
   CXXDestructorDecl *getDestructor() const;
 
-  /// Returns the destructor decl for this class.
-  bool hasDeletedDestructor() const;
-
   /// Returns true if the class destructor, or any implicitly invoked
   /// destructors are marked noreturn.
   bool isAnyDestructorNoReturn() const { return data().IsAnyDestructorNoReturn; }
@@ -1711,6 +1720,14 @@ public:
   /// static analysis, or similar.
   bool hasMemberName(DeclarationName N) const;
 
+  /// Performs an imprecise lookup of a dependent name in this class.
+  ///
+  /// This function does not follow strict semantic rules and should be used
+  /// only when lookup rules can be relaxed, e.g. indexing.
+  std::vector<const NamedDecl *>
+  lookupDependentName(DeclarationName Name,
+                      llvm::function_ref<bool(const NamedDecl *ND)> Filter);
+
   /// Renders and displays an inheritance diagram
   /// for this C++ class and all of its base classes (transitively) using
   /// GraphViz.
@@ -1879,35 +1896,6 @@ public:
     DL.IsGenericLambda = IsGeneric;
   }
 
-  /// Determines whether this declaration represents the
-  /// injected class name.
-  ///
-  /// The injected class name in C++ is the name of the class that
-  /// appears inside the class itself. For example:
-  ///
-  /// \code
-  /// struct C {
-  ///   // C is implicitly declared here as a synonym for the class name.
-  /// };
-  ///
-  /// C::C c; // same as "C c;"
-  /// \endcode
-  bool isInjectedClassName() const;
-
-  /// Determines whether this declaration has is canonically of an injected
-  /// class type. These are non-instantiated class template patterns, which can
-  /// be used from within the class template itself. For example:
-  ///
-  /// \code
-  /// template<class T> struct C {
-  ///   C *t; // Here `C *` is a pointer to an injected class type.
-  /// };
-  /// \endcode
-  bool hasInjectedClassType() const;
-
-  CanQualType
-  getCanonicalTemplateSpecializationType(const ASTContext &Ctx) const;
-
   // Determine whether this type is an Interface Like type for
   // __interface inheritance purposes.
   bool isInterfaceLike() const;
@@ -1994,7 +1982,7 @@ private:
                         const DeclarationNameInfo &NameInfo, QualType T,
                         TypeSourceInfo *TInfo, SourceLocation EndLocation,
                         CXXConstructorDecl *Ctor, DeductionCandidate Kind,
-                        const AssociatedConstraint &TrailingRequiresClause,
+                        Expr *TrailingRequiresClause,
                         const CXXDeductionGuideDecl *GeneratedFrom,
                         SourceDeductionGuideKind SourceKind)
       : FunctionDecl(CXXDeductionGuide, C, DC, StartLoc, NameInfo, T, TInfo,
@@ -2027,7 +2015,7 @@ public:
          TypeSourceInfo *TInfo, SourceLocation EndLocation,
          CXXConstructorDecl *Ctor = nullptr,
          DeductionCandidate Kind = DeductionCandidate::Normal,
-         const AssociatedConstraint &TrailingRequiresClause = {},
+         Expr *TrailingRequiresClause = nullptr,
          const CXXDeductionGuideDecl *SourceDG = nullptr,
          SourceDeductionGuideKind SK = SourceDeductionGuideKind::None);
 
@@ -2135,7 +2123,7 @@ protected:
                 QualType T, TypeSourceInfo *TInfo, StorageClass SC,
                 bool UsesFPIntrin, bool isInline,
                 ConstexprSpecKind ConstexprKind, SourceLocation EndLocation,
-                const AssociatedConstraint &TrailingRequiresClause = {})
+                Expr *TrailingRequiresClause = nullptr)
       : FunctionDecl(DK, C, RD, StartLoc, NameInfo, T, TInfo, SC, UsesFPIntrin,
                      isInline, ConstexprKind, TrailingRequiresClause) {
     if (EndLocation.isValid())
@@ -2148,7 +2136,7 @@ public:
          const DeclarationNameInfo &NameInfo, QualType T, TypeSourceInfo *TInfo,
          StorageClass SC, bool UsesFPIntrin, bool isInline,
          ConstexprSpecKind ConstexprKind, SourceLocation EndLocation,
-         const AssociatedConstraint &TrailingRequiresClause = {});
+         Expr *TrailingRequiresClause = nullptr);
 
   static CXXMethodDecl *CreateDeserialized(ASTContext &C, GlobalDeclID ID);
 
@@ -2616,12 +2604,15 @@ class CXXConstructorDecl final
                      bool UsesFPIntrin, bool isInline,
                      bool isImplicitlyDeclared, ConstexprSpecKind ConstexprKind,
                      InheritedConstructor Inherited,
-                     const AssociatedConstraint &TrailingRequiresClause);
+                     Expr *TrailingRequiresClause);
 
   void anchor() override;
 
   size_t numTrailingObjects(OverloadToken<InheritedConstructor>) const {
     return CXXConstructorDeclBits.IsInheritingConstructor;
+  }
+  size_t numTrailingObjects(OverloadToken<ExplicitSpecifier>) const {
+    return CXXConstructorDeclBits.HasTrailingExplicitSpecifier;
   }
 
   ExplicitSpecifier getExplicitSpecifierInternal() const {
@@ -2639,12 +2630,8 @@ class CXXConstructorDecl final
   };
 
   uint64_t getTrailingAllocKind() const {
-    uint64_t Kind = 0;
-    if (CXXConstructorDeclBits.IsInheritingConstructor)
-      Kind |= TAKInheritsConstructor;
-    if (CXXConstructorDeclBits.HasTrailingExplicitSpecifier)
-      Kind |= TAKHasTailExplicit;
-    return Kind;
+    return numTrailingObjects(OverloadToken<InheritedConstructor>()) |
+           (numTrailingObjects(OverloadToken<ExplicitSpecifier>()) << 1);
   }
 
 public:
@@ -2660,7 +2647,7 @@ public:
          ExplicitSpecifier ES, bool UsesFPIntrin, bool isInline,
          bool isImplicitlyDeclared, ConstexprSpecKind ConstexprKind,
          InheritedConstructor Inherited = InheritedConstructor(),
-         const AssociatedConstraint &TrailingRequiresClause = {});
+         Expr *TrailingRequiresClause = nullptr);
 
   void setExplicitSpecifier(ExplicitSpecifier ES) {
     assert((!ES.getExpr() ||
@@ -2872,13 +2859,14 @@ class CXXDestructorDecl : public CXXMethodDecl {
 
   // FIXME: Don't allocate storage for these except in the first declaration
   // of a virtual destructor.
+  FunctionDecl *OperatorDelete = nullptr;
   Expr *OperatorDeleteThisArg = nullptr;
 
   CXXDestructorDecl(ASTContext &C, CXXRecordDecl *RD, SourceLocation StartLoc,
                     const DeclarationNameInfo &NameInfo, QualType T,
                     TypeSourceInfo *TInfo, bool UsesFPIntrin, bool isInline,
                     bool isImplicitlyDeclared, ConstexprSpecKind ConstexprKind,
-                    const AssociatedConstraint &TrailingRequiresClause = {})
+                    Expr *TrailingRequiresClause = nullptr)
       : CXXMethodDecl(CXXDestructor, C, RD, StartLoc, NameInfo, T, TInfo,
                       SC_None, UsesFPIntrin, isInline, ConstexprKind,
                       SourceLocation(), TrailingRequiresClause) {
@@ -2893,17 +2881,14 @@ public:
          const DeclarationNameInfo &NameInfo, QualType T, TypeSourceInfo *TInfo,
          bool UsesFPIntrin, bool isInline, bool isImplicitlyDeclared,
          ConstexprSpecKind ConstexprKind,
-         const AssociatedConstraint &TrailingRequiresClause = {});
+         Expr *TrailingRequiresClause = nullptr);
   static CXXDestructorDecl *CreateDeserialized(ASTContext &C, GlobalDeclID ID);
 
   void setOperatorDelete(FunctionDecl *OD, Expr *ThisArg);
-  void setOperatorGlobalDelete(FunctionDecl *OD);
-  void setOperatorArrayDelete(FunctionDecl *OD);
-  void setGlobalOperatorArrayDelete(FunctionDecl *OD);
-  const FunctionDecl *getOperatorDelete() const;
-  const FunctionDecl *getOperatorGlobalDelete() const;
-  const FunctionDecl *getArrayOperatorDelete() const;
-  const FunctionDecl *getGlobalArrayOperatorDelete() const;
+
+  const FunctionDecl *getOperatorDelete() const {
+    return getCanonicalDecl()->OperatorDelete;
+  }
 
   Expr *getOperatorDeleteThisArg() const {
     return getCanonicalDecl()->OperatorDeleteThisArg;
@@ -2942,7 +2927,7 @@ class CXXConversionDecl : public CXXMethodDecl {
                     TypeSourceInfo *TInfo, bool UsesFPIntrin, bool isInline,
                     ExplicitSpecifier ES, ConstexprSpecKind ConstexprKind,
                     SourceLocation EndLocation,
-                    const AssociatedConstraint &TrailingRequiresClause = {})
+                    Expr *TrailingRequiresClause = nullptr)
       : CXXMethodDecl(CXXConversion, C, RD, StartLoc, NameInfo, T, TInfo,
                       SC_None, UsesFPIntrin, isInline, ConstexprKind,
                       EndLocation, TrailingRequiresClause),
@@ -2960,7 +2945,7 @@ public:
          const DeclarationNameInfo &NameInfo, QualType T, TypeSourceInfo *TInfo,
          bool UsesFPIntrin, bool isInline, ExplicitSpecifier ES,
          ConstexprSpecKind ConstexprKind, SourceLocation EndLocation,
-         const AssociatedConstraint &TrailingRequiresClause = {});
+         Expr *TrailingRequiresClause = nullptr);
   static CXXConversionDecl *CreateDeserialized(ASTContext &C, GlobalDeclID ID);
 
   ExplicitSpecifier getExplicitSpecifier() {
@@ -3138,7 +3123,7 @@ public:
 
   /// Retrieve the nested-name-specifier that qualifies the
   /// name of the namespace.
-  NestedNameSpecifier getQualifier() const {
+  NestedNameSpecifier *getQualifier() const {
     return QualifierLoc.getNestedNameSpecifier();
   }
 
@@ -3193,7 +3178,7 @@ public:
 /// \code
 /// namespace Foo = Bar;
 /// \endcode
-class NamespaceAliasDecl : public NamespaceBaseDecl,
+class NamespaceAliasDecl : public NamedDecl,
                            public Redeclarable<NamespaceAliasDecl> {
   friend class ASTDeclReader;
 
@@ -3210,14 +3195,14 @@ class NamespaceAliasDecl : public NamespaceBaseDecl,
 
   /// The Decl that this alias points to, either a NamespaceDecl or
   /// a NamespaceAliasDecl.
-  NamespaceBaseDecl *Namespace;
+  NamedDecl *Namespace;
 
   NamespaceAliasDecl(ASTContext &C, DeclContext *DC,
                      SourceLocation NamespaceLoc, SourceLocation AliasLoc,
                      IdentifierInfo *Alias, NestedNameSpecifierLoc QualifierLoc,
-                     SourceLocation IdentLoc, NamespaceBaseDecl *Namespace)
-      : NamespaceBaseDecl(NamespaceAlias, DC, AliasLoc, Alias),
-        redeclarable_base(C), NamespaceLoc(NamespaceLoc), IdentLoc(IdentLoc),
+                     SourceLocation IdentLoc, NamedDecl *Namespace)
+      : NamedDecl(NamespaceAlias, DC, AliasLoc, Alias), redeclarable_base(C),
+        NamespaceLoc(NamespaceLoc), IdentLoc(IdentLoc),
         QualifierLoc(QualifierLoc), Namespace(Namespace) {}
 
   void anchor() override;
@@ -3229,11 +3214,13 @@ class NamespaceAliasDecl : public NamespaceBaseDecl,
   NamespaceAliasDecl *getMostRecentDeclImpl() override;
 
 public:
-  static NamespaceAliasDecl *
-  Create(ASTContext &C, DeclContext *DC, SourceLocation NamespaceLoc,
-         SourceLocation AliasLoc, IdentifierInfo *Alias,
-         NestedNameSpecifierLoc QualifierLoc, SourceLocation IdentLoc,
-         NamespaceBaseDecl *Namespace);
+  static NamespaceAliasDecl *Create(ASTContext &C, DeclContext *DC,
+                                    SourceLocation NamespaceLoc,
+                                    SourceLocation AliasLoc,
+                                    IdentifierInfo *Alias,
+                                    NestedNameSpecifierLoc QualifierLoc,
+                                    SourceLocation IdentLoc,
+                                    NamedDecl *Namespace);
 
   static NamespaceAliasDecl *CreateDeserialized(ASTContext &C, GlobalDeclID ID);
 
@@ -3259,7 +3246,7 @@ public:
 
   /// Retrieve the nested-name-specifier that qualifies the
   /// name of the namespace.
-  NestedNameSpecifier getQualifier() const {
+  NestedNameSpecifier *getQualifier() const {
     return QualifierLoc.getNestedNameSpecifier();
   }
 
@@ -3287,7 +3274,7 @@ public:
 
   /// Retrieve the namespace that this alias refers to, which
   /// may either be a NamespaceDecl or a NamespaceAliasDecl.
-  NamespaceBaseDecl *getAliasedNamespace() const { return Namespace; }
+  NamedDecl *getAliasedNamespace() const { return Namespace; }
 
   SourceRange getSourceRange() const override LLVM_READONLY {
     return SourceRange(NamespaceLoc, IdentLoc);
@@ -3314,7 +3301,7 @@ class LifetimeExtendedTemporaryDecl final
 
   mutable APValue *Value = nullptr;
 
-  LLVM_DECLARE_VIRTUAL_ANCHOR_FUNCTION();
+  virtual void anchor();
 
   LifetimeExtendedTemporaryDecl(Expr *Temp, ValueDecl *EDecl, unsigned Mangling)
       : Decl(Decl::LifetimeExtendedTemporary, EDecl->getDeclContext(),
@@ -3621,7 +3608,7 @@ public:
   NestedNameSpecifierLoc getQualifierLoc() const { return QualifierLoc; }
 
   /// Retrieve the nested-name-specifier that qualifies the name.
-  NestedNameSpecifier getQualifier() const {
+  NestedNameSpecifier *getQualifier() const {
     return QualifierLoc.getNestedNameSpecifier();
   }
 
@@ -3811,11 +3798,13 @@ public:
   /// The source location of the 'enum' keyword.
   SourceLocation getEnumLoc() const { return EnumLocation; }
   void setEnumLoc(SourceLocation L) { EnumLocation = L; }
-  NestedNameSpecifier getQualifier() const {
+  NestedNameSpecifier *getQualifier() const {
     return getQualifierLoc().getNestedNameSpecifier();
   }
   NestedNameSpecifierLoc getQualifierLoc() const {
-    return getEnumTypeLoc().getPrefix();
+    if (auto ETL = EnumType->getTypeLoc().getAs<ElaboratedTypeLoc>())
+      return ETL.getQualifierLoc();
+    return NestedNameSpecifierLoc();
   }
   // Returns the "qualifier::Name" part as a TypeLoc.
   TypeLoc getEnumTypeLoc() const {
@@ -3827,9 +3816,7 @@ public:
   void setEnumType(TypeSourceInfo *TSI) { EnumType = TSI; }
 
 public:
-  EnumDecl *getEnumDecl() const {
-    return EnumType->getType()->castAs<clang::EnumType>()->getDecl();
-  }
+  EnumDecl *getEnumDecl() const { return cast<EnumDecl>(EnumType->getType()->getAsTagDecl()); }
 
   static UsingEnumDecl *Create(ASTContext &C, DeclContext *DC,
                                SourceLocation UsingL, SourceLocation EnumL,
@@ -3882,7 +3869,8 @@ class UsingPackDecl final
                   InstantiatedFrom ? InstantiatedFrom->getDeclName()
                                    : DeclarationName()),
         InstantiatedFrom(InstantiatedFrom), NumExpansions(UsingDecls.size()) {
-    llvm::uninitialized_copy(UsingDecls, getTrailingObjects());
+    std::uninitialized_copy(UsingDecls.begin(), UsingDecls.end(),
+                            getTrailingObjects<NamedDecl *>());
   }
 
   void anchor() override;
@@ -3900,7 +3888,7 @@ public:
   /// Get the set of using declarations that this pack expanded into. Note that
   /// some of these may still be unresolved.
   ArrayRef<NamedDecl *> expansions() const {
-    return getTrailingObjects(NumExpansions);
+    return llvm::ArrayRef(getTrailingObjects<NamedDecl *>(), NumExpansions);
   }
 
   static UsingPackDecl *Create(ASTContext &C, DeclContext *DC,
@@ -3977,7 +3965,7 @@ public:
   NestedNameSpecifierLoc getQualifierLoc() const { return QualifierLoc; }
 
   /// Retrieve the nested-name-specifier that qualifies the name.
-  NestedNameSpecifier getQualifier() const {
+  NestedNameSpecifier *getQualifier() const {
     return QualifierLoc.getNestedNameSpecifier();
   }
 
@@ -4067,7 +4055,7 @@ public:
   NestedNameSpecifierLoc getQualifierLoc() const { return QualifierLoc; }
 
   /// Retrieve the nested-name-specifier that qualifies the name.
-  NestedNameSpecifier getQualifier() const {
+  NestedNameSpecifier *getQualifier() const {
     return QualifierLoc.getNestedNameSpecifier();
   }
 
@@ -4180,16 +4168,15 @@ public:
 /// DecompositionDecl of type 'int (&)[3]'.
 class BindingDecl : public ValueDecl {
   /// The declaration that this binding binds to part of.
-  ValueDecl *Decomp = nullptr;
+  ValueDecl *Decomp;
   /// The binding represented by this declaration. References to this
   /// declaration are effectively equivalent to this expression (except
   /// that it is only evaluated once at the point of declaration of the
   /// binding).
   Expr *Binding = nullptr;
 
-  BindingDecl(DeclContext *DC, SourceLocation IdLoc, IdentifierInfo *Id,
-              QualType T)
-      : ValueDecl(Decl::Binding, DC, IdLoc, Id, T) {}
+  BindingDecl(DeclContext *DC, SourceLocation IdLoc, IdentifierInfo *Id)
+      : ValueDecl(Decl::Binding, DC, IdLoc, Id, QualType()) {}
 
   void anchor() override;
 
@@ -4197,8 +4184,7 @@ public:
   friend class ASTDeclReader;
 
   static BindingDecl *Create(ASTContext &C, DeclContext *DC,
-                             SourceLocation IdLoc, IdentifierInfo *Id,
-                             QualType T);
+                             SourceLocation IdLoc, IdentifierInfo *Id);
   static BindingDecl *CreateDeserialized(ASTContext &C, GlobalDeclID ID);
 
   /// Get the expression to which this declaration is bound. This may be null
@@ -4206,12 +4192,13 @@ public:
   /// decomposition declaration, and when the initializer is type-dependent.
   Expr *getBinding() const { return Binding; }
 
-  // Get the array of nested BindingDecls when the binding represents a pack.
-  ArrayRef<BindingDecl *> getBindingPackDecls() const;
-
   /// Get the decomposition declaration that this binding represents a
   /// decomposition of.
   ValueDecl *getDecomposedDecl() const { return Decomp; }
+
+  /// Get the variable (if any) that holds the value of evaluating the binding.
+  /// Only present for user-defined bindings for tuple-like types.
+  VarDecl *getHoldingVar() const;
 
   /// Set the binding for this BindingDecl, along with its declared type (which
   /// should be a possibly-cv-qualified form of the type of the binding, or a
@@ -4223,10 +4210,6 @@ public:
 
   /// Set the decomposed variable for this BindingDecl.
   void setDecomposedDecl(ValueDecl *Decomposed) { Decomp = Decomposed; }
-
-  /// Get the variable (if any) that holds the value of evaluating the binding.
-  /// Only present for user-defined bindings for tuple-like types.
-  VarDecl *getHoldingVar() const;
 
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
   static bool classofKind(Kind K) { return K == Decl::Binding; }
@@ -4253,15 +4236,10 @@ class DecompositionDecl final
       : VarDecl(Decomposition, C, DC, StartLoc, LSquareLoc, nullptr, T, TInfo,
                 SC),
         NumBindings(Bindings.size()) {
-    llvm::uninitialized_copy(Bindings, getTrailingObjects());
-    for (auto *B : Bindings) {
+    std::uninitialized_copy(Bindings.begin(), Bindings.end(),
+                            getTrailingObjects<BindingDecl *>());
+    for (auto *B : Bindings)
       B->setDecomposedDecl(this);
-      if (B->isParameterPack() && B->getBinding()) {
-        for (BindingDecl *NestedBD : B->getBindingPackDecls()) {
-          NestedBD->setDecomposedDecl(this);
-        }
-      }
-    }
   }
 
   void anchor() override;
@@ -4279,29 +4257,8 @@ public:
   static DecompositionDecl *CreateDeserialized(ASTContext &C, GlobalDeclID ID,
                                                unsigned NumBindings);
 
-  // Provide the range of bindings which may have a nested pack.
   ArrayRef<BindingDecl *> bindings() const {
-    return getTrailingObjects(NumBindings);
-  }
-
-  // Provide a flattened range to visit each binding.
-  auto flat_bindings() const {
-    ArrayRef<BindingDecl *> Bindings = bindings();
-    ArrayRef<BindingDecl *> PackBindings;
-
-    // Split the bindings into subranges split by the pack.
-    ArrayRef<BindingDecl *> BeforePackBindings = Bindings.take_until(
-        [](BindingDecl *BD) { return BD->isParameterPack(); });
-
-    Bindings = Bindings.drop_front(BeforePackBindings.size());
-    if (!Bindings.empty() && Bindings.front()->getBinding()) {
-      PackBindings = Bindings.front()->getBindingPackDecls();
-      Bindings = Bindings.drop_front();
-    }
-
-    return llvm::concat<BindingDecl *const>(std::move(BeforePackBindings),
-                                            std::move(PackBindings),
-                                            std::move(Bindings));
+    return llvm::ArrayRef(getTrailingObjects<BindingDecl *>(), NumBindings);
   }
 
   void printName(raw_ostream &OS, const PrintingPolicy &Policy) const override;

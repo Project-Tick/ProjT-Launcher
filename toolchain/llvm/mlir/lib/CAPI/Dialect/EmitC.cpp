@@ -11,7 +11,6 @@
 #include "mlir/Dialect/EmitC/IR/EmitC.h"
 
 using namespace mlir;
-using namespace mlir::emitc;
 
 MLIR_DEFINE_CAPI_DIALECT_REGISTRATION(EmitC, emitc, mlir::emitc::EmitCDialect)
 
@@ -50,10 +49,6 @@ MlirType mlirEmitCArrayTypeGet(intptr_t nDims, int64_t *shape,
       emitc::ArrayType::get(llvm::ArrayRef(shape, nDims), unwrap(elementType)));
 }
 
-MlirStringRef mlirEmitCArrayTypeGetName(void) {
-  return wrap(emitc::ArrayType::name);
-}
-
 //===---------------------------------------------------------------------===//
 // LValueType
 //===---------------------------------------------------------------------===//
@@ -68,10 +63,6 @@ MlirTypeID mlirEmitCLValueTypeGetTypeID(void) {
 
 MlirType mlirEmitCLValueTypeGet(MlirType valueType) {
   return wrap(emitc::LValueType::get(unwrap(valueType)));
-}
-
-MlirStringRef mlirEmitCLValueTypeGetName(void) {
-  return wrap(emitc::LValueType::name);
 }
 
 //===---------------------------------------------------------------------===//
@@ -90,10 +81,6 @@ MlirType mlirEmitCOpaqueTypeGet(MlirContext ctx, MlirStringRef value) {
   return wrap(emitc::OpaqueType::get(unwrap(ctx), unwrap(value)));
 }
 
-MlirStringRef mlirEmitCOpaqueTypeGetName(void) {
-  return wrap(emitc::OpaqueType::name);
-}
-
 //===---------------------------------------------------------------------===//
 // PointerType
 //===---------------------------------------------------------------------===//
@@ -108,10 +95,6 @@ MlirTypeID mlirEmitCPointerTypeGetTypeID(void) {
 
 MlirType mlirEmitCPointerTypeGet(MlirType pointee) {
   return wrap(emitc::PointerType::get(unwrap(pointee)));
-}
-
-MlirStringRef mlirEmitCPointerTypeGetName(void) {
-  return wrap(emitc::PointerType::name);
 }
 
 //===---------------------------------------------------------------------===//
@@ -130,10 +113,6 @@ MlirType mlirEmitCPtrDiffTTypeGet(MlirContext ctx) {
   return wrap(emitc::PtrDiffTType::get(unwrap(ctx)));
 }
 
-MlirStringRef mlirEmitCPtrDiffTTypeGetName(void) {
-  return wrap(emitc::PtrDiffTType::name);
-}
-
 //===---------------------------------------------------------------------===//
 // SignedSizeTType
 //===---------------------------------------------------------------------===//
@@ -148,10 +127,6 @@ MlirTypeID mlirEmitCSignedSizeTTypeGetTypeID(void) {
 
 MlirType mlirEmitCSignedSizeTTypeGet(MlirContext ctx) {
   return wrap(emitc::SignedSizeTType::get(unwrap(ctx)));
-}
-
-MlirStringRef mlirEmitCSignedSizeTTypeGetName(void) {
-  return wrap(emitc::SignedSizeTType::name);
 }
 
 //===---------------------------------------------------------------------===//
@@ -170,10 +145,6 @@ MlirType mlirEmitCSizeTTypeGet(MlirContext ctx) {
   return wrap(emitc::SizeTType::get(unwrap(ctx)));
 }
 
-MlirStringRef mlirEmitCSizeTTypeGetName(void) {
-  return wrap(emitc::SizeTType::name);
-}
-
 //===----------------------------------------------------------------------===//
 // CmpPredicate attribute.
 //===----------------------------------------------------------------------===//
@@ -186,10 +157,6 @@ MlirAttribute mlirEmitCCmpPredicateAttrGet(MlirContext ctx,
                                            MlirEmitCCmpPredicate val) {
   return wrap((Attribute)emitc::CmpPredicateAttr::get(
       unwrap(ctx), static_cast<emitc::CmpPredicate>(val)));
-}
-
-MlirStringRef mlirEmitCCmpPredicateAttrGetName(void) {
-  return wrap(emitc::CmpPredicateAttr::name);
 }
 
 MlirEmitCCmpPredicate mlirEmitCCmpPredicateAttrGetValue(MlirAttribute attr) {
@@ -211,10 +178,6 @@ bool mlirAttributeIsAEmitCOpaque(MlirAttribute attr) {
 
 MlirAttribute mlirEmitCOpaqueAttrGet(MlirContext ctx, MlirStringRef value) {
   return wrap((Attribute)emitc::OpaqueAttr::get(unwrap(ctx), unwrap(value)));
-}
-
-MlirStringRef mlirEmitCOpaqueAttrGetName(void) {
-  return wrap(emitc::OpaqueAttr::name);
 }
 
 MlirStringRef mlirEmitCOpaqueAttrGetValue(MlirAttribute attr) {

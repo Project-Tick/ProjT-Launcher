@@ -9,7 +9,6 @@
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/Basic/FileManager.h"
-#include "clang/Driver/CreateInvocationFromArgs.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/CompilerInvocation.h"
 #include "clang/Frontend/FrontendActions.h"
@@ -67,9 +66,9 @@ export int aa = 43;
     CreateInvocationOptions CIOpts;
     CIOpts.VFS = llvm::vfs::createPhysicalFileSystem();
 
-    DiagnosticOptions DiagOpts;
     IntrusiveRefCntPtr<DiagnosticsEngine> Diags =
-        CompilerInstance::createDiagnostics(*CIOpts.VFS, DiagOpts);
+        CompilerInstance::createDiagnostics(*CIOpts.VFS,
+                                            new DiagnosticOptions());
     CIOpts.Diags = Diags;
 
     const char *Args[] = {"clang++",       "-std=c++20",
@@ -87,13 +86,16 @@ export int aa = 43;
 
     Buf->release();
 
-    CompilerInstance Instance(std::move(Invocation));
-    Instance.setDiagnostics(Diags);
+    CompilerInstance Instance;
+    Instance.setDiagnostics(Diags.get());
+    Instance.setInvocation(Invocation);
 
     Instance.getFrontendOpts().OutputFile = BMIPath;
 
-    Instance.createVirtualFileSystem(CIOpts.VFS);
-    Instance.createFileManager();
+    if (auto VFSWithRemapping = createVFSFromCompilerInvocation(
+            Instance.getInvocation(), Instance.getDiagnostics(), CIOpts.VFS))
+      CIOpts.VFS = VFSWithRemapping;
+    Instance.createFileManager(CIOpts.VFS);
 
     Instance.getHeaderSearchOpts().ValidateASTInputFilesContent = true;
 
@@ -105,9 +107,9 @@ export int aa = 43;
   {
     CreateInvocationOptions CIOpts;
     CIOpts.VFS = llvm::vfs::createPhysicalFileSystem();
-    DiagnosticOptions DiagOpts;
     IntrusiveRefCntPtr<DiagnosticsEngine> Diags =
-        CompilerInstance::createDiagnostics(*CIOpts.VFS, DiagOpts);
+        CompilerInstance::createDiagnostics(*CIOpts.VFS,
+                                            new DiagnosticOptions());
     CIOpts.Diags = Diags;
 
     std::string BMIPath = llvm::Twine(TestDir + "/a.pcm").str();
@@ -119,12 +121,12 @@ export int aa = 43;
     EXPECT_TRUE(Invocation);
     Invocation->getFrontendOpts().DisableFree = false;
 
-    CompilerInstance Clang(std::move(Invocation));
+    CompilerInstance Clang;
 
-    Clang.setDiagnostics(Diags);
-    Clang.createVirtualFileSystem(CIOpts.VFS);
-    Clang.createFileManager();
-    Clang.createSourceManager();
+    Clang.setInvocation(Invocation);
+    Clang.setDiagnostics(Diags.get());
+    FileManager *FM = Clang.createFileManager(CIOpts.VFS);
+    Clang.createSourceManager(*FM);
 
     EXPECT_TRUE(Clang.createTarget());
     Clang.createPreprocessor(TU_Complete);

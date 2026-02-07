@@ -281,8 +281,7 @@ template <class ELFT> Expected<ELFYAML::Object *> ELFDumper<ELFT>::dump() {
   Y->Header.Type = Obj.getHeader().e_type;
   if (Obj.getHeader().e_machine != 0)
     Y->Header.Machine = ELFYAML::ELF_EM(Obj.getHeader().e_machine);
-  if (Obj.getHeader().e_flags != 0)
-    Y->Header.Flags = ELFYAML::ELF_EF(Obj.getHeader().e_flags);
+  Y->Header.Flags = Obj.getHeader().e_flags;
   Y->Header.Entry = Obj.getHeader().e_entry;
 
   // Dump sections
@@ -895,17 +894,17 @@ ELFDumper<ELFT>::dumpBBAddrMapSection(const Elf_Shdr *Shdr) {
   std::vector<ELFYAML::PGOAnalysisMapEntry> PGOAnalyses;
   DataExtractor::Cursor Cur(0);
   uint8_t Version = 0;
-  uint16_t Feature = 0;
+  uint8_t Feature = 0;
   uint64_t Address = 0;
   while (Cur && Cur.tell() < Content.size()) {
     if (Shdr->sh_type == ELF::SHT_LLVM_BB_ADDR_MAP) {
       Version = Data.getU8(Cur);
-      if (Cur && Version > 4)
+      if (Cur && Version > 2)
         return createStringError(
             errc::invalid_argument,
             "invalid SHT_LLVM_BB_ADDR_MAP section version: " +
                 Twine(static_cast<int>(Version)));
-      Feature = Version < 5 ? Data.getU8(Cur) : Data.getU16(Cur);
+      Feature = Data.getU8(Cur);
     }
     uint64_t NumBBRanges = 1;
     uint64_t NumBlocks = 0;
@@ -935,22 +934,9 @@ ELFDumper<ELFT>::dumpBBAddrMapSection(const Elf_Shdr *Shdr) {
            ++BlockIndex) {
         uint32_t ID = Version >= 2 ? Data.getULEB128(Cur) : BlockIndex;
         uint64_t Offset = Data.getULEB128(Cur);
-        std::optional<std::vector<llvm::yaml::Hex64>> CallsiteEndOffsets;
-        if (FeatureOrErr->CallsiteEndOffsets) {
-          uint32_t NumCallsites = Data.getULEB128(Cur);
-          CallsiteEndOffsets = std::vector<llvm::yaml::Hex64>(NumCallsites, 0);
-          for (uint32_t CallsiteIndex = 0; Cur && CallsiteIndex < NumCallsites;
-               ++CallsiteIndex) {
-            (*CallsiteEndOffsets)[CallsiteIndex] = Data.getULEB128(Cur);
-          }
-        }
         uint64_t Size = Data.getULEB128(Cur);
         uint64_t Metadata = Data.getULEB128(Cur);
-        std::optional<llvm::yaml::Hex64> Hash;
-        if (FeatureOrErr->BBHash)
-          Hash = Data.getU64(Cur);
-        BBEntries.push_back(
-            {ID, Offset, Size, Metadata, std::move(CallsiteEndOffsets), Hash});
+        BBEntries.push_back({ID, Offset, Size, Metadata});
       }
       TotalNumBlocks += BBEntries.size();
       BBRanges.push_back({BaseAddress, /*NumBlocks=*/{}, BBEntries});
@@ -972,8 +958,6 @@ ELFDumper<ELFT>::dumpBBAddrMapSection(const Elf_Shdr *Shdr) {
           auto &PGOBBEntry = PGOBBEntries.emplace_back();
           if (FeatureOrErr->BBFreq) {
             PGOBBEntry.BBFreq = Data.getULEB128(Cur);
-            if (FeatureOrErr->PostLinkCfg)
-              PGOBBEntry.PostLinkBBFreq = Data.getULEB128(Cur);
             if (!Cur)
               break;
           }
@@ -984,10 +968,7 @@ ELFDumper<ELFT>::dumpBBAddrMapSection(const Elf_Shdr *Shdr) {
             for (uint64_t SuccIdx = 0; Cur && SuccIdx < SuccCount; ++SuccIdx) {
               uint32_t ID = Data.getULEB128(Cur);
               uint32_t BrProb = Data.getULEB128(Cur);
-              std::optional<uint32_t> PostLinkBrFreq;
-              if (FeatureOrErr->PostLinkCfg)
-                PostLinkBrFreq = Data.getULEB128(Cur);
-              SuccEntries.push_back({ID, BrProb, PostLinkBrFreq});
+              SuccEntries.push_back({ID, BrProb});
             }
           }
         }
@@ -1285,7 +1266,8 @@ ELFDumper<ELFT>::dumpSymtabShndxSection(const Elf_Shdr *Shdr) {
     return EntriesOrErr.takeError();
 
   S->Entries.emplace();
-  llvm::append_range(*S->Entries, *EntriesOrErr);
+  for (const Elf_Word &E : *EntriesOrErr)
+    S->Entries->push_back(E);
   return S.release();
 }
 
@@ -1508,7 +1490,8 @@ ELFDumper<ELFT>::dumpSymverSection(const Elf_Shdr *Shdr) {
     return VersionsOrErr.takeError();
 
   S->Entries.emplace();
-  llvm::append_range(*S->Entries, *VersionsOrErr);
+  for (const Elf_Half &E : *VersionsOrErr)
+    S->Entries->push_back(E);
 
   return S.release();
 }

@@ -30,7 +30,6 @@ include "VERegisterInfo.td"
 include "VECallingConv.td"
 include "VEInstrInfo.td"
 
-defm : RemapAllTargetPseudoPointerOperands<ve_ptr_rc>;
 def VEInstrInfo : InstrInfo {}
 
 def VEAsmParser : AsmParser {

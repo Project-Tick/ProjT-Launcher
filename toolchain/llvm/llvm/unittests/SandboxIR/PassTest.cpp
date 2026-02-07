@@ -84,9 +84,7 @@ define void @foo() {
   class TestNamePass final : public FunctionPass {
   public:
     TestNamePass(llvm::StringRef Name) : FunctionPass(Name) {}
-    bool runOnFunction(Function &F, const Analyses &A) override {
-      return false;
-    }
+    bool runOnFunction(Function &F, const Analyses &A) { return false; }
   };
   EXPECT_DEATH(TestNamePass("white space"), ".*whitespace.*");
   EXPECT_DEATH(TestNamePass("-dash"), ".*start with.*");
@@ -148,7 +146,7 @@ define i8 @foo(i8 %v0, i8 %v1) {
   class TestNamePass final : public RegionPass {
   public:
     TestNamePass(llvm::StringRef Name) : RegionPass(Name) {}
-    bool runOnRegion(Region &F, const Analyses &A) override { return false; }
+    bool runOnRegion(Region &F, const Analyses &A) { return false; }
   };
   EXPECT_DEATH(TestNamePass("white space"), ".*whitespace.*");
   EXPECT_DEATH(TestNamePass("-dash"), ".*start with.*");
@@ -199,7 +197,7 @@ define void @foo() {
   std::string Buff;
   llvm::raw_string_ostream SS(Buff);
   FPM.print(SS);
-  EXPECT_EQ(Buff, "test-fpm<test-pass1,test-pass2>");
+  EXPECT_EQ(Buff, "test-fpm(test-pass1,test-pass2)");
 #endif // NDEBUG
 }
 
@@ -258,7 +256,7 @@ define i8 @foo(i8 %v0, i8 %v1) {
   std::string Buff;
   llvm::raw_string_ostream SS(Buff);
   RPM.print(SS);
-  EXPECT_EQ(Buff, "test-rpm<test-pass1,test-pass2>");
+  EXPECT_EQ(Buff, "test-rpm(test-pass1,test-pass2)");
 #endif // NDEBUG
 }
 

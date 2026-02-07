@@ -18,6 +18,8 @@
 ; RUN:   -verify-machineinstrs -disable-strictnode-mutation \
 ; RUN:   | FileCheck -check-prefix=RV64I %s
 
+declare double @llvm.experimental.constrained.sqrt.f64(double, metadata, metadata)
+
 define double @sqrt_f64(double %a) nounwind strictfp {
 ; CHECKIFD-LABEL: sqrt_f64:
 ; CHECKIFD:       # %bb.0:
@@ -54,6 +56,8 @@ define double @sqrt_f64(double %a) nounwind strictfp {
   %1 = call double @llvm.experimental.constrained.sqrt.f64(double %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret double %1
 }
+
+declare double @llvm.experimental.constrained.powi.f64(double, i32, metadata, metadata)
 
 define double @powi_f64(double %a, i32 %b) nounwind strictfp {
 ; RV32IFD-LABEL: powi_f64:
@@ -116,6 +120,8 @@ define double @powi_f64(double %a, i32 %b) nounwind strictfp {
   ret double %1
 }
 
+declare double @llvm.experimental.constrained.sin.f64(double, metadata, metadata)
+
 define double @sin_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: sin_f64:
 ; RV32IFD:       # %bb.0:
@@ -173,6 +179,8 @@ define double @sin_f64(double %a) nounwind strictfp {
   %1 = call double @llvm.experimental.constrained.sin.f64(double %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret double %1
 }
+
+declare double @llvm.experimental.constrained.cos.f64(double, metadata, metadata)
 
 define double @cos_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: cos_f64:
@@ -366,6 +374,8 @@ define double @sincos_f64(double %a) nounwind strictfp {
   %3 = fadd double %1, %2
   ret double %3
 }
+
+declare double @llvm.experimental.constrained.tan.f64(double, metadata, metadata)
 
 define double @tan_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: tan_f64:
@@ -599,6 +609,8 @@ define double @atan_f64(double %a) nounwind strictfp {
   ret double %1
 }
 
+declare double @llvm.experimental.constrained.atan2.f64(double, double, metadata, metadata)
+
 define double @atan2_f64(double %a, double %b) nounwind strictfp {
 ; RV32IFD-LABEL: atan2_f64:
 ; RV32IFD:       # %bb.0:
@@ -831,6 +843,8 @@ define double @tanh_f64(double %a) nounwind strictfp {
   ret double %1
 }
 
+declare double @llvm.experimental.constrained.pow.f64(double, double, metadata, metadata)
+
 define double @pow_f64(double %a, double %b) nounwind strictfp {
 ; RV32IFD-LABEL: pow_f64:
 ; RV32IFD:       # %bb.0:
@@ -888,6 +902,8 @@ define double @pow_f64(double %a, double %b) nounwind strictfp {
   %1 = call double @llvm.experimental.constrained.pow.f64(double %a, double %b, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret double %1
 }
+
+declare double @llvm.experimental.constrained.exp.f64(double, metadata, metadata)
 
 define double @exp_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: exp_f64:
@@ -947,6 +963,8 @@ define double @exp_f64(double %a) nounwind strictfp {
   ret double %1
 }
 
+declare double @llvm.experimental.constrained.exp2.f64(double, metadata, metadata)
+
 define double @exp2_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: exp2_f64:
 ; RV32IFD:       # %bb.0:
@@ -1004,6 +1022,8 @@ define double @exp2_f64(double %a) nounwind strictfp {
   %1 = call double @llvm.experimental.constrained.exp2.f64(double %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret double %1
 }
+
+declare double @llvm.experimental.constrained.log.f64(double, metadata, metadata)
 
 define double @log_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: log_f64:
@@ -1063,6 +1083,8 @@ define double @log_f64(double %a) nounwind strictfp {
   ret double %1
 }
 
+declare double @llvm.experimental.constrained.log10.f64(double, metadata, metadata)
+
 define double @log10_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: log10_f64:
 ; RV32IFD:       # %bb.0:
@@ -1120,6 +1142,8 @@ define double @log10_f64(double %a) nounwind strictfp {
   %1 = call double @llvm.experimental.constrained.log10.f64(double %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret double %1
 }
+
+declare double @llvm.experimental.constrained.log2.f64(double, metadata, metadata)
 
 define double @log2_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: log2_f64:
@@ -1179,6 +1203,8 @@ define double @log2_f64(double %a) nounwind strictfp {
   ret double %1
 }
 
+declare double @llvm.experimental.constrained.fma.f64(double, double, double, metadata, metadata)
+
 define double @fma_f64(double %a, double %b, double %c) nounwind strictfp {
 ; CHECKIFD-LABEL: fma_f64:
 ; CHECKIFD:       # %bb.0:
@@ -1215,6 +1241,8 @@ define double @fma_f64(double %a, double %b, double %c) nounwind strictfp {
   %1 = call double @llvm.experimental.constrained.fma.f64(double %a, double %b, double %c, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret double %1
 }
+
+declare double @llvm.experimental.constrained.fmuladd.f64(double, double, double, metadata, metadata)
 
 define double @fmuladd_f64(double %a, double %b, double %c) nounwind strictfp {
 ; CHECKIFD-LABEL: fmuladd_f64:
@@ -1266,6 +1294,8 @@ define double @fmuladd_f64(double %a, double %b, double %c) nounwind strictfp {
   %1 = call double @llvm.experimental.constrained.fmuladd.f64(double %a, double %b, double %c, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret double %1
 }
+
+declare double @llvm.experimental.constrained.minnum.f64(double, double, metadata)
 
 define double @minnum_f64(double %a, double %b) nounwind strictfp {
 ; RV32IFD-LABEL: minnum_f64:
@@ -1324,6 +1354,8 @@ define double @minnum_f64(double %a, double %b) nounwind strictfp {
   %1 = call double @llvm.experimental.constrained.minnum.f64(double %a, double %b, metadata !"fpexcept.strict") strictfp
   ret double %1
 }
+
+declare double @llvm.experimental.constrained.maxnum.f64(double, double, metadata)
 
 define double @maxnum_f64(double %a, double %b) nounwind strictfp {
 ; RV32IFD-LABEL: maxnum_f64:
@@ -1400,6 +1432,8 @@ define double @maxnum_f64(double %a, double %b) nounwind strictfp {
 ;   ret double %1
 ; }
 
+declare double @llvm.experimental.constrained.floor.f64(double, metadata)
+
 define double @floor_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: floor_f64:
 ; RV32IFD:       # %bb.0:
@@ -1457,6 +1491,8 @@ define double @floor_f64(double %a) nounwind strictfp {
   %1 = call double @llvm.experimental.constrained.floor.f64(double %a, metadata !"fpexcept.strict") strictfp
   ret double %1
 }
+
+declare double @llvm.experimental.constrained.ceil.f64(double, metadata)
 
 define double @ceil_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: ceil_f64:
@@ -1516,6 +1552,8 @@ define double @ceil_f64(double %a) nounwind strictfp {
   ret double %1
 }
 
+declare double @llvm.experimental.constrained.trunc.f64(double, metadata)
+
 define double @trunc_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: trunc_f64:
 ; RV32IFD:       # %bb.0:
@@ -1573,6 +1611,8 @@ define double @trunc_f64(double %a) nounwind strictfp {
   %1 = call double @llvm.experimental.constrained.trunc.f64(double %a, metadata !"fpexcept.strict") strictfp
   ret double %1
 }
+
+declare double @llvm.experimental.constrained.rint.f64(double, metadata, metadata)
 
 define double @rint_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: rint_f64:
@@ -1632,6 +1672,8 @@ define double @rint_f64(double %a) nounwind strictfp {
   ret double %1
 }
 
+declare double @llvm.experimental.constrained.nearbyint.f64(double, metadata, metadata)
+
 define double @nearbyint_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: nearbyint_f64:
 ; RV32IFD:       # %bb.0:
@@ -1689,6 +1731,8 @@ define double @nearbyint_f64(double %a) nounwind strictfp {
   %1 = call double @llvm.experimental.constrained.nearbyint.f64(double %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret double %1
 }
+
+declare double @llvm.experimental.constrained.round.f64(double, metadata)
 
 define double @round_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: round_f64:
@@ -1748,6 +1792,8 @@ define double @round_f64(double %a) nounwind strictfp {
   ret double %1
 }
 
+declare double @llvm.experimental.constrained.roundeven.f64(double, metadata)
+
 define double @roundeven_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: roundeven_f64:
 ; RV32IFD:       # %bb.0:
@@ -1806,6 +1852,8 @@ define double @roundeven_f64(double %a) nounwind strictfp {
   ret double %1
 }
 
+declare iXLen @llvm.experimental.constrained.lrint.iXLen.f64(double, metadata, metadata)
+
 define iXLen @lrint_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: lrint_f64:
 ; RV32IFD:       # %bb.0:
@@ -1848,6 +1896,8 @@ define iXLen @lrint_f64(double %a) nounwind strictfp {
   ret iXLen %1
 }
 
+declare iXLen @llvm.experimental.constrained.lround.iXLen.f64(double, metadata)
+
 define iXLen @lround_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: lround_f64:
 ; RV32IFD:       # %bb.0:
@@ -1889,6 +1939,8 @@ define iXLen @lround_f64(double %a) nounwind strictfp {
   %1 = call iXLen @llvm.experimental.constrained.lround.iXLen.f64(double %a, metadata !"fpexcept.strict") strictfp
   ret iXLen %1
 }
+
+declare i64 @llvm.experimental.constrained.llrint.i64.f64(double, metadata, metadata)
 
 define i64 @llrint_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: llrint_f64:
@@ -1939,6 +1991,8 @@ define i64 @llrint_f64(double %a) nounwind strictfp {
   %1 = call i64 @llvm.experimental.constrained.llrint.i64.f64(double %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret i64 %1
 }
+
+declare i64 @llvm.experimental.constrained.llround.i64.f64(double, metadata)
 
 define i64 @llround_f64(double %a) nounwind strictfp {
 ; RV32IFD-LABEL: llround_f64:

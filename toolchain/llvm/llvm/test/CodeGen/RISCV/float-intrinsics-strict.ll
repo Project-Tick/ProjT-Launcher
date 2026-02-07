@@ -18,6 +18,8 @@
 ; RUN:   -verify-machineinstrs -disable-strictnode-mutation \
 ; RUN:   | FileCheck -check-prefix=RV64I %s
 
+declare float @llvm.experimental.constrained.sqrt.f32(float, metadata, metadata)
+
 define float @sqrt_f32(float %a) nounwind strictfp {
 ; CHECKIF-LABEL: sqrt_f32:
 ; CHECKIF:       # %bb.0:
@@ -49,6 +51,8 @@ define float @sqrt_f32(float %a) nounwind strictfp {
   %1 = call float @llvm.experimental.constrained.sqrt.f32(float %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret float %1
 }
+
+declare float @llvm.experimental.constrained.powi.f32(float, i32, metadata, metadata)
 
 define float @powi_f32(float %a, i32 %b) nounwind strictfp {
 ; RV32IF-LABEL: powi_f32:
@@ -111,6 +115,8 @@ define float @powi_f32(float %a, i32 %b) nounwind strictfp {
   ret float %1
 }
 
+declare float @llvm.experimental.constrained.sin.f32(float, metadata, metadata)
+
 define float @sin_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: sin_f32:
 ; RV32IF:       # %bb.0:
@@ -168,6 +174,8 @@ define float @sin_f32(float %a) nounwind strictfp {
   %1 = call float @llvm.experimental.constrained.sin.f32(float %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret float %1
 }
+
+declare float @llvm.experimental.constrained.cos.f32(float, metadata, metadata)
 
 define float @cos_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: cos_f32:
@@ -345,6 +353,8 @@ define float @sincos_f32(float %a) nounwind strictfp {
   %3 = fadd float %1, %2
   ret float %3
 }
+
+declare float @llvm.experimental.constrained.tan.f32(float, metadata, metadata)
 
 define float @tan_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: tan_f32:
@@ -578,6 +588,8 @@ define float @atan_f32(float %a) nounwind strictfp {
   ret float %1
 }
 
+declare float @llvm.experimental.constrained.atan2.f32(float, float, metadata, metadata)
+
 define float @atan2_f32(float %a, float %b) nounwind strictfp {
 ; RV32IF-LABEL: atan2_f32:
 ; RV32IF:       # %bb.0:
@@ -810,6 +822,8 @@ define float @tanh_f32(float %a) nounwind strictfp {
   ret float %1
 }
 
+declare float @llvm.experimental.constrained.pow.f32(float, float, metadata, metadata)
+
 define float @pow_f32(float %a, float %b) nounwind strictfp {
 ; RV32IF-LABEL: pow_f32:
 ; RV32IF:       # %bb.0:
@@ -867,6 +881,8 @@ define float @pow_f32(float %a, float %b) nounwind strictfp {
   %1 = call float @llvm.experimental.constrained.pow.f32(float %a, float %b, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret float %1
 }
+
+declare float @llvm.experimental.constrained.exp.f32(float, metadata, metadata)
 
 define float @exp_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: exp_f32:
@@ -926,6 +942,8 @@ define float @exp_f32(float %a) nounwind strictfp {
   ret float %1
 }
 
+declare float @llvm.experimental.constrained.exp2.f32(float, metadata, metadata)
+
 define float @exp2_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: exp2_f32:
 ; RV32IF:       # %bb.0:
@@ -983,6 +1001,8 @@ define float @exp2_f32(float %a) nounwind strictfp {
   %1 = call float @llvm.experimental.constrained.exp2.f32(float %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret float %1
 }
+
+declare float @llvm.experimental.constrained.log.f32(float, metadata, metadata)
 
 define float @log_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: log_f32:
@@ -1042,6 +1062,8 @@ define float @log_f32(float %a) nounwind strictfp {
   ret float %1
 }
 
+declare float @llvm.experimental.constrained.log10.f32(float, metadata, metadata)
+
 define float @log10_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: log10_f32:
 ; RV32IF:       # %bb.0:
@@ -1099,6 +1121,8 @@ define float @log10_f32(float %a) nounwind strictfp {
   %1 = call float @llvm.experimental.constrained.log10.f32(float %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret float %1
 }
+
+declare float @llvm.experimental.constrained.log2.f32(float, metadata, metadata)
 
 define float @log2_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: log2_f32:
@@ -1158,6 +1182,8 @@ define float @log2_f32(float %a) nounwind strictfp {
   ret float %1
 }
 
+declare float @llvm.experimental.constrained.fma.f32(float, float, float, metadata, metadata)
+
 define float @fma_f32(float %a, float %b, float %c) nounwind strictfp {
 ; CHECKIF-LABEL: fma_f32:
 ; CHECKIF:       # %bb.0:
@@ -1189,6 +1215,8 @@ define float @fma_f32(float %a, float %b, float %c) nounwind strictfp {
   %1 = call float @llvm.experimental.constrained.fma.f32(float %a, float %b, float %c, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret float %1
 }
+
+declare float @llvm.experimental.constrained.fmuladd.f32(float, float, float, metadata, metadata)
 
 define float @fmuladd_f32(float %a, float %b, float %c) nounwind strictfp {
 ; CHECKIF-LABEL: fmuladd_f32:
@@ -1231,6 +1259,8 @@ define float @fmuladd_f32(float %a, float %b, float %c) nounwind strictfp {
   %1 = call float @llvm.experimental.constrained.fmuladd.f32(float %a, float %b, float %c, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret float %1
 }
+
+declare float @llvm.experimental.constrained.minnum.f32(float, float, metadata)
 
 define float @minnum_f32(float %a, float %b) nounwind strictfp {
 ; RV32IF-LABEL: minnum_f32:
@@ -1289,6 +1319,8 @@ define float @minnum_f32(float %a, float %b) nounwind strictfp {
   %1 = call float @llvm.experimental.constrained.minnum.f32(float %a, float %b, metadata !"fpexcept.strict") strictfp
   ret float %1
 }
+
+declare float @llvm.experimental.constrained.maxnum.f32(float, float, metadata)
 
 define float @maxnum_f32(float %a, float %b) nounwind strictfp {
 ; RV32IF-LABEL: maxnum_f32:
@@ -1365,6 +1397,8 @@ define float @maxnum_f32(float %a, float %b) nounwind strictfp {
 ;   ret float %1
 ; }
 
+declare float @llvm.experimental.constrained.floor.f32(float, metadata)
+
 define float @floor_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: floor_f32:
 ; RV32IF:       # %bb.0:
@@ -1422,6 +1456,8 @@ define float @floor_f32(float %a) nounwind strictfp {
   %1 = call float @llvm.experimental.constrained.floor.f32(float %a, metadata !"fpexcept.strict") strictfp
   ret float %1
 }
+
+declare float @llvm.experimental.constrained.ceil.f32(float, metadata)
 
 define float @ceil_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: ceil_f32:
@@ -1481,6 +1517,8 @@ define float @ceil_f32(float %a) nounwind strictfp {
   ret float %1
 }
 
+declare float @llvm.experimental.constrained.trunc.f32(float, metadata)
+
 define float @trunc_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: trunc_f32:
 ; RV32IF:       # %bb.0:
@@ -1538,6 +1576,8 @@ define float @trunc_f32(float %a) nounwind strictfp {
   %1 = call float @llvm.experimental.constrained.trunc.f32(float %a, metadata !"fpexcept.strict") strictfp
   ret float %1
 }
+
+declare float @llvm.experimental.constrained.rint.f32(float, metadata, metadata)
 
 define float @rint_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: rint_f32:
@@ -1597,6 +1637,8 @@ define float @rint_f32(float %a) nounwind strictfp {
   ret float %1
 }
 
+declare float @llvm.experimental.constrained.nearbyint.f32(float, metadata, metadata)
+
 define float @nearbyint_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: nearbyint_f32:
 ; RV32IF:       # %bb.0:
@@ -1654,6 +1696,8 @@ define float @nearbyint_f32(float %a) nounwind strictfp {
   %1 = call float @llvm.experimental.constrained.nearbyint.f32(float %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret float %1
 }
+
+declare float @llvm.experimental.constrained.round.f32(float, metadata)
 
 define float @round_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: round_f32:
@@ -1713,6 +1757,8 @@ define float @round_f32(float %a) nounwind strictfp {
   ret float %1
 }
 
+declare float @llvm.experimental.constrained.roundeven.f32(float, metadata)
+
 define float @roundeven_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: roundeven_f32:
 ; RV32IF:       # %bb.0:
@@ -1771,6 +1817,8 @@ define float @roundeven_f32(float %a) nounwind strictfp {
   ret float %1
 }
 
+declare iXLen @llvm.experimental.constrained.lrint.iXLen.f32(float, metadata, metadata)
+
 define iXLen @lrint_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: lrint_f32:
 ; RV32IF:       # %bb.0:
@@ -1813,6 +1861,8 @@ define iXLen @lrint_f32(float %a) nounwind strictfp {
   ret iXLen %1
 }
 
+declare iXLen @llvm.experimental.constrained.lround.iXLen.f32(float, metadata)
+
 define iXLen @lround_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: lround_f32:
 ; RV32IF:       # %bb.0:
@@ -1854,6 +1904,8 @@ define iXLen @lround_f32(float %a) nounwind strictfp {
   %1 = call iXLen @llvm.experimental.constrained.lround.iXLen.f32(float %a, metadata !"fpexcept.strict") strictfp
   ret iXLen %1
 }
+
+declare i64 @llvm.experimental.constrained.llrint.i64.f32(float, metadata, metadata)
 
 define i64 @llrint_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: llrint_f32:
@@ -1904,6 +1956,8 @@ define i64 @llrint_f32(float %a) nounwind strictfp {
   %1 = call i64 @llvm.experimental.constrained.llrint.i64.f32(float %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret i64 %1
 }
+
+declare i64 @llvm.experimental.constrained.llround.i64.f32(float, metadata)
 
 define i64 @llround_f32(float %a) nounwind strictfp {
 ; RV32IF-LABEL: llround_f32:

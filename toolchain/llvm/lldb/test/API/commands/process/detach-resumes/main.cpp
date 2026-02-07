@@ -1,9 +1,8 @@
-#include "attach.h"
 #include "pseudo_barrier.h"
 #include <chrono>
-#include <cstdio>
 #include <fcntl.h>
 #include <fstream>
+#include <stdio.h>
 #include <thread>
 #include <vector>
 

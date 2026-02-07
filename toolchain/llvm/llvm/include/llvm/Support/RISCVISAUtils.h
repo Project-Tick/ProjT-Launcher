@@ -14,7 +14,6 @@
 #define LLVM_SUPPORT_RISCVISAUTILS_H
 
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Support/Compiler.h"
 #include <map>
 #include <string>
 
@@ -29,7 +28,7 @@ struct ExtensionVersion {
   unsigned Minor;
 };
 
-LLVM_ABI bool compareExtension(const std::string &LHS, const std::string &RHS);
+bool compareExtension(const std::string &LHS, const std::string &RHS);
 
 /// Helper class for OrderedExtensionMap.
 struct ExtensionComparator {
@@ -40,8 +39,8 @@ struct ExtensionComparator {
 
 /// OrderedExtensionMap is std::map, it's specialized to keep entries
 /// in canonical order of extension.
-using OrderedExtensionMap =
-    std::map<std::string, ExtensionVersion, ExtensionComparator>;
+typedef std::map<std::string, ExtensionVersion, ExtensionComparator>
+    OrderedExtensionMap;
 
 } // namespace RISCVISAUtils
 

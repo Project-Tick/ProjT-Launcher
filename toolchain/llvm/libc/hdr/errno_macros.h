@@ -15,9 +15,7 @@
 #include <linux/errno.h>
 
 #include "include/llvm-libc-macros/error-number-macros.h"
-#elif defined(__APPLE__)
-#include <sys/errno.h>
-#else // __APPLE__
+#else // __linux__
 #include "include/llvm-libc-macros/generic-error-number-macros.h"
 #endif
 

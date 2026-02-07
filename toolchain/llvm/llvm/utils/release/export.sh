@@ -17,7 +17,6 @@ projects="llvm bolt clang cmake compiler-rt libcxx libcxxabi libclc clang-tools-
 
 release=""
 rc=""
-subprojects=""
 yyyymmdd=$(date +'%Y%m%d')
 snapshot=""
 template='${PROJECT}-${RELEASE}${RC}.src.tar.xz'
@@ -31,7 +30,6 @@ Usage: $(basename $0) [-release|--release <major>.<minor>.<patch>]
                       [-final|--final]
                       [-git-ref|--git-ref <git-ref>]
                       [-template|--template <template>]
-                      [-sub-projects|--sub-projects]
 
 Flags:
 
@@ -39,14 +37,13 @@ Flags:
   -rc       | --rc <num>                           The release candidate number
   -final    | --final                              When provided, this option will disable the rc flag
   -git-ref  | --git-ref <git-ref>                  (optional) Use <git-ref> to determine the release and don't export the test-suite files
-  -sub-projects | --sub-projects                   Generate tarballs for each sub-project (off by default).
   -template | --template <template>                (optional) Possible placeholders: \$PROJECT \$YYYYMMDD \$GIT_REF \$RELEASE \$RC.
                                                    Defaults to '${template}'.
 
 The following list shows the filenames (with <placeholders>) for the artifacts
 that are being generated (given that you don't touch --template).
 
-$(test -n "$subprojects" && echo "$projects "| sed 's/\([a-z-]\+\) /  * \1-<RELEASE><RC>.src.tar.xz \n/g')
+$(echo "$projects "| sed 's/\([a-z-]\+\) /  * \1-<RELEASE><RC>.src.tar.xz \n/g')
 
 Additional files being generated:
 
@@ -126,19 +123,17 @@ export_sources() {
                 tar -C test-suite-$release$rc.src --strip-components=1 -xzf -
         fi
         echo "Creating tarball for test-suite ..."
-        XZ_OPT="-T0" tar --sort=name --owner=0 --group=0 \
+        tar --sort=name --owner=0 --group=0 \
             --pax-option=exthdr.name=%d/PaxHeaders/%f,delete=atime,delete=ctime \
             -cJf test-suite-$release$rc.src.tar.xz test-suite-$release$rc.src
     fi
 
-    if [ -n "$subprojects" ]; then
-        for proj in $projects; do
-            echo "Creating tarball for $proj ..."
-            pushd $llvm_src_dir/$proj
-            git archive --prefix=$proj-$release$rc.src/ $tree_id . | xz -T0 >$target_dir/$(template_file $proj)
-            popd
-        done
-    fi
+    for proj in $projects; do
+        echo "Creating tarball for $proj ..."
+        pushd $llvm_src_dir/$proj
+        git archive --prefix=$proj-$release$rc.src/ $tree_id . | xz -T0 >$target_dir/$(template_file $proj)
+        popd
+    done
 }
 
 while [ $# -gt 0 ]; do
@@ -153,9 +148,6 @@ while [ $# -gt 0 ]; do
             ;;
         -final | --final )
             rc="final"
-            ;;
-        -sub-projects | --sub-projects )
-            subprojects=1
             ;;
         -git-ref | --git-ref )
             shift

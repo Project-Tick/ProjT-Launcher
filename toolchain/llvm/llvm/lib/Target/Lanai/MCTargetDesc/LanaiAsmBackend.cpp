@@ -11,9 +11,9 @@
 #include "llvm/MC/MCAsmBackend.h"
 #include "llvm/MC/MCAssembler.h"
 #include "llvm/MC/MCELFObjectWriter.h"
+#include "llvm/MC/MCFixupKindInfo.h"
 #include "llvm/MC/MCObjectWriter.h"
 #include "llvm/MC/MCSubtargetInfo.h"
-#include "llvm/MC/MCValue.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -47,13 +47,19 @@ public:
   LanaiAsmBackend(const Target &T, Triple::OSType OST)
       : MCAsmBackend(llvm::endianness::big), OSType(OST) {}
 
-  void applyFixup(const MCFragment &, const MCFixup &, const MCValue &Target,
-                  uint8_t *Data, uint64_t Value, bool IsResolved) override;
+  void applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
+                  const MCValue &Target, MutableArrayRef<char> Data,
+                  uint64_t Value, bool IsResolved,
+                  const MCSubtargetInfo *STI) const override;
 
   std::unique_ptr<MCObjectTargetWriter>
   createObjectTargetWriter() const override;
 
-  MCFixupKindInfo getFixupKindInfo(MCFixupKind Kind) const override;
+  const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override;
+
+  unsigned getNumFixupKinds() const override {
+    return Lanai::NumTargetFixupKinds;
+  }
 
   bool writeNopData(raw_ostream &OS, uint64_t Count,
                     const MCSubtargetInfo *STI) const override;
@@ -70,19 +76,20 @@ bool LanaiAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count,
   return true;
 }
 
-void LanaiAsmBackend::applyFixup(const MCFragment &F, const MCFixup &Fixup,
-                                 const MCValue &Target, uint8_t *Data,
-                                 uint64_t Value, bool IsResolved) {
-  if (!IsResolved)
-    Asm->getWriter().recordRelocation(F, Fixup, Target, Value);
-
+void LanaiAsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
+                                 const MCValue &Target,
+                                 MutableArrayRef<char> Data, uint64_t Value,
+                                 bool /*IsResolved*/,
+                                 const MCSubtargetInfo * /*STI*/) const {
   MCFixupKind Kind = Fixup.getKind();
   Value = adjustFixupValue(static_cast<unsigned>(Kind), Value);
+
   if (!Value)
     return; // This value doesn't change the encoding
 
   // Where in the object and where the number of bytes that need
   // fixing up
+  unsigned Offset = Fixup.getOffset();
   unsigned NumBytes = (getFixupKindInfo(Kind).TargetSize + 7) / 8;
   unsigned FullSize = 4;
 
@@ -92,7 +99,8 @@ void LanaiAsmBackend::applyFixup(const MCFragment &F, const MCFixup &Fixup,
   // Load instruction and apply value
   for (unsigned i = 0; i != NumBytes; ++i) {
     unsigned Idx = (FullSize - 1 - i);
-    CurVal |= static_cast<uint64_t>(static_cast<uint8_t>(Data[Idx])) << (i * 8);
+    CurVal |= static_cast<uint64_t>(static_cast<uint8_t>(Data[Offset + Idx]))
+              << (i * 8);
   }
 
   uint64_t Mask =
@@ -102,7 +110,7 @@ void LanaiAsmBackend::applyFixup(const MCFragment &F, const MCFixup &Fixup,
   // Write out the fixed up bytes back to the code/data bits.
   for (unsigned i = 0; i != NumBytes; ++i) {
     unsigned Idx = (FullSize - 1 - i);
-    Data[Idx] = static_cast<uint8_t>((CurVal >> (i * 8)) & 0xff);
+    Data[Offset + Idx] = static_cast<uint8_t>((CurVal >> (i * 8)) & 0xff);
   }
 }
 
@@ -111,7 +119,8 @@ LanaiAsmBackend::createObjectTargetWriter() const {
   return createLanaiELFObjectWriter(MCELFObjectTargetWriter::getOSABI(OSType));
 }
 
-MCFixupKindInfo LanaiAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
+const MCFixupKindInfo &
+LanaiAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
   static const MCFixupKindInfo Infos[Lanai::NumTargetFixupKinds] = {
       // This table *must* be in same the order of fixup_* kinds in
       // LanaiFixupKinds.h.
@@ -134,7 +143,7 @@ MCFixupKindInfo LanaiAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
   if (Kind < FirstTargetFixupKind)
     return MCAsmBackend::getFixupKindInfo(Kind);
 
-  assert(unsigned(Kind - FirstTargetFixupKind) < Lanai::NumTargetFixupKinds &&
+  assert(unsigned(Kind - FirstTargetFixupKind) < getNumFixupKinds() &&
          "Invalid kind!");
   return Infos[Kind - FirstTargetFixupKind];
 }

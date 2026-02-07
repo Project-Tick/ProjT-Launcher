@@ -221,7 +221,7 @@ public:
 
   hash_code getHashValue() const override {
     return hash_combine(this->Expression::getHashValue(), ValueType,
-                        hash_combine_range(operands()));
+                        hash_combine_range(op_begin(), op_end()));
   }
 
   // Debugging support
@@ -452,7 +452,7 @@ public:
     IntOperands[NumIntOperands++] = IntOperand;
   }
 
-  void allocateIntOperands(BumpPtrAllocator &Allocator) {
+  virtual void allocateIntOperands(BumpPtrAllocator &Allocator) {
     assert(!IntOperands && "Operands already allocated");
     IntOperands = Allocator.Allocate<unsigned>(MaxIntOperands);
   }

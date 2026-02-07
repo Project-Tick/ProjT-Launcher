@@ -137,18 +137,11 @@ llvm::StringRef UnixSignals::GetSignalAsStringRef(int32_t signo) const {
   return pos->second.m_name;
 }
 
-llvm::StringRef UnixSignals::GetSignalNumberDescription(int32_t signo) const {
-  const auto pos = m_signals.find(signo);
-  if (pos == m_signals.end())
-    return {};
-  return pos->second.m_description;
-}
-
-std::string UnixSignals::GetSignalDescription(
-    int32_t signo, std::optional<int32_t> code,
-    std::optional<lldb::addr_t> addr, std::optional<lldb::addr_t> lower,
-    std::optional<lldb::addr_t> upper, std::optional<uint32_t> pid,
-    std::optional<uint32_t> uid) const {
+std::string
+UnixSignals::GetSignalDescription(int32_t signo, std::optional<int32_t> code,
+                                  std::optional<lldb::addr_t> addr,
+                                  std::optional<lldb::addr_t> lower,
+                                  std::optional<lldb::addr_t> upper) const {
   std::string str;
 
   collection::const_iterator pos = m_signals.find(signo);
@@ -186,10 +179,6 @@ std::string UnixSignals::GetSignalDescription(
           } else
             strm << sc.m_description.str();
 
-          break;
-        case SignalCodePrintOption::Sender:
-          if (pid && uid)
-            strm << " (sender pid=" << *pid << ", uid=" << *uid << ")";
           break;
         }
         str += strm.str();
@@ -408,3 +397,4 @@ bool UnixSignals::ResetSignal(int32_t signo, bool reset_stop,
     (*elem).second.Reset(reset_stop, reset_notify, reset_suppress);
     return true;
 }
+

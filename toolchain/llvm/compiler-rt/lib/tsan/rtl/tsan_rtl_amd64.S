@@ -3,8 +3,6 @@
 
 #include "sanitizer_common/sanitizer_asm.h"
 
-.att_syntax
-
 #if !defined(__APPLE__)
 .section .text
 #else

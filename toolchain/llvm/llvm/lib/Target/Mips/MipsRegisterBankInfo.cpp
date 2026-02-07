@@ -25,40 +25,35 @@
 namespace llvm {
 namespace Mips {
 enum PartialMappingIdx {
-  PMI_GPR32,
-  PMI_GPR64,
+  PMI_GPR,
   PMI_SPR,
   PMI_DPR,
   PMI_MSA,
-  PMI_Min = PMI_GPR32,
+  PMI_Min = PMI_GPR,
 };
 
-const RegisterBankInfo::PartialMapping PartMappings[]{{0, 32, GPRBRegBank},
-                                                      {0, 64, GPRBRegBank},
-                                                      {0, 32, FPRBRegBank},
-                                                      {0, 64, FPRBRegBank},
-                                                      {0, 128, FPRBRegBank}};
+const RegisterBankInfo::PartialMapping PartMappings[]{
+    {0, 32, GPRBRegBank},
+    {0, 32, FPRBRegBank},
+    {0, 64, FPRBRegBank},
+    {0, 128, FPRBRegBank}
+};
 
 enum ValueMappingIdx {
-  InvalidIdx = 0,
-  GPR32Idx = 1,
-  GPR64Idx = 4,
-  SPRIdx = 7,
-  DPRIdx = 10,
-  MSAIdx = 13
+    InvalidIdx = 0,
+    GPRIdx = 1,
+    SPRIdx = 4,
+    DPRIdx = 7,
+    MSAIdx = 10
 };
 
 const RegisterBankInfo::ValueMapping ValueMappings[] = {
     // invalid
     {nullptr, 0},
-    // up to 3 operands in GPRs; 32 bit.
-    {&PartMappings[PMI_GPR32 - PMI_Min], 1},
-    {&PartMappings[PMI_GPR32 - PMI_Min], 1},
-    {&PartMappings[PMI_GPR32 - PMI_Min], 1},
-    // up to 3 operands in GPRs; 64 bit.
-    {&PartMappings[PMI_GPR64 - PMI_Min], 1},
-    {&PartMappings[PMI_GPR64 - PMI_Min], 1},
-    {&PartMappings[PMI_GPR64 - PMI_Min], 1},
+    // up to 3 operands in GPRs
+    {&PartMappings[PMI_GPR - PMI_Min], 1},
+    {&PartMappings[PMI_GPR - PMI_Min], 1},
+    {&PartMappings[PMI_GPR - PMI_Min], 1},
     // up to 3 operands in FPRs - single precission
     {&PartMappings[PMI_SPR - PMI_Min], 1},
     {&PartMappings[PMI_SPR - PMI_Min], 1},
@@ -70,7 +65,8 @@ const RegisterBankInfo::ValueMapping ValueMappings[] = {
     // up to 3 operands in FPRs - MSA
     {&PartMappings[PMI_MSA - PMI_Min], 1},
     {&PartMappings[PMI_MSA - PMI_Min], 1},
-    {&PartMappings[PMI_MSA - PMI_Min], 1}};
+    {&PartMappings[PMI_MSA - PMI_Min], 1}
+};
 
 } // end namespace Mips
 } // end namespace llvm
@@ -370,7 +366,7 @@ static const unsigned CustomMappingID = 1;
 static const MipsRegisterBankInfo::ValueMapping *
 getGprbOrCustomMapping(unsigned Size, unsigned &MappingID) {
   if (Size == 32)
-    return &Mips::ValueMappings[Mips::GPR32Idx];
+    return &Mips::ValueMappings[Mips::GPRIdx];
 
   MappingID = CustomMappingID;
   return &Mips::ValueMappings[Mips::DPRIdx];
@@ -398,12 +394,7 @@ MipsRegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
   using namespace TargetOpcode;
 
   unsigned NumOperands = MI.getNumOperands();
-  const ValueMapping *OperandsMapping = &Mips::ValueMappings[Mips::GPR32Idx];
-  unsigned GPRSize = getMaximumSize(Mips::GPRBRegBankID);
-  assert((GPRSize == 32 || GPRSize == 64) && "Unexpected GPR size");
-  const ValueMapping *GPRValueMapping =
-      GPRSize == 32 ? &Mips::ValueMappings[Mips::GPR32Idx]
-                    : &Mips::ValueMappings[Mips::GPR64Idx];
+  const ValueMapping *OperandsMapping = &Mips::ValueMappings[Mips::GPRIdx];
   unsigned MappingID = DefaultMappingID;
 
   // Check if LLT sizes match sizes of available register banks.
@@ -442,7 +433,7 @@ MipsRegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
   case G_VASTART:
   case G_BSWAP:
   case G_CTLZ:
-    OperandsMapping = GPRValueMapping;
+    OperandsMapping = &Mips::ValueMappings[Mips::GPRIdx];
     break;
   case G_ADD:
   case G_SUB:
@@ -451,15 +442,15 @@ MipsRegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
   case G_SREM:
   case G_UDIV:
   case G_UREM:
-    OperandsMapping = GPRValueMapping;
+    OperandsMapping = &Mips::ValueMappings[Mips::GPRIdx];
     if (Op0Size == 128)
       OperandsMapping = getMSAMapping(MF);
     break;
   case G_STORE:
   case G_LOAD: {
     if (Op0Size == 128) {
-      OperandsMapping =
-          getOperandsMapping({getMSAMapping(MF), GPRValueMapping});
+      OperandsMapping = getOperandsMapping(
+          {getMSAMapping(MF), &Mips::ValueMappings[Mips::GPRIdx]});
       break;
     }
 
@@ -468,16 +459,16 @@ MipsRegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
 
     if (isFloatingPoint_32or64(InstTy, Op0Size) ||
         isAmbiguous_64(InstTy, Op0Size)) {
-      OperandsMapping =
-          getOperandsMapping({getFprbMapping(Op0Size), GPRValueMapping});
-    } else if (InstTy == InstType::Integer) {
-      OperandsMapping = getOperandsMapping({GPRValueMapping, GPRValueMapping});
+      OperandsMapping = getOperandsMapping(
+          {getFprbMapping(Op0Size), &Mips::ValueMappings[Mips::GPRIdx]});
     } else {
-      assert((isAmbiguous_32(InstTy, Op0Size) ||
+      assert((isInteger_32(InstTy, Op0Size) ||
+              isAmbiguous_32(InstTy, Op0Size) ||
               isAmbiguousWithMergeOrUnmerge_64(InstTy, Op0Size)) &&
              "Unexpected Inst type");
-      OperandsMapping = getOperandsMapping(
-          {getGprbOrCustomMapping(Op0Size, MappingID), GPRValueMapping});
+      OperandsMapping =
+          getOperandsMapping({getGprbOrCustomMapping(Op0Size, MappingID),
+                              &Mips::ValueMappings[Mips::GPRIdx]});
     }
 
     break;
@@ -494,7 +485,7 @@ MipsRegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
       return getInstructionMapping(CustomMappingID, /*Cost=*/1, OperandsMapping,
                                    /*NumOperands=*/1);
     }
-    assert((isInteger_32(InstTy, Op0Size) || isInteger_64(InstTy, Op0Size) ||
+    assert((isInteger_32(InstTy, Op0Size) ||
             isFloatingPoint_32or64(InstTy, Op0Size) ||
             isAmbiguous_32or64(InstTy, Op0Size)) &&
            "Unexpected Inst type");
@@ -505,22 +496,21 @@ MipsRegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
   case G_SELECT: {
     if (!Op0Ty.isPointer())
       InstTy = TI.determineInstType(&MI);
-
     if (isFloatingPoint_32or64(InstTy, Op0Size) ||
         isAmbiguous_64(InstTy, Op0Size)) {
       const RegisterBankInfo::ValueMapping *Bank = getFprbMapping(Op0Size);
-      OperandsMapping = getOperandsMapping({Bank, GPRValueMapping, Bank, Bank});
-      break;
-    } else if (InstTy == InstType::Integer) {
       OperandsMapping = getOperandsMapping(
-          {GPRValueMapping, GPRValueMapping, GPRValueMapping, GPRValueMapping});
+          {Bank, &Mips::ValueMappings[Mips::GPRIdx], Bank, Bank});
+      break;
     } else {
-      assert((isAmbiguous_32(InstTy, Op0Size) ||
+      assert((isInteger_32(InstTy, Op0Size) ||
+              isAmbiguous_32(InstTy, Op0Size) ||
               isAmbiguousWithMergeOrUnmerge_64(InstTy, Op0Size)) &&
              "Unexpected Inst type");
       const RegisterBankInfo::ValueMapping *Bank =
           getGprbOrCustomMapping(Op0Size, MappingID);
-      OperandsMapping = getOperandsMapping({Bank, GPRValueMapping, Bank, Bank});
+      OperandsMapping = getOperandsMapping(
+          {Bank, &Mips::ValueMappings[Mips::GPRIdx], Bank, Bank});
     }
     break;
   }
@@ -530,10 +520,9 @@ MipsRegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
 
     if (isFloatingPoint_32or64(InstTy, Op0Size))
       OperandsMapping = getFprbMapping(Op0Size);
-    else if (InstTy == InstType::Integer) {
-      OperandsMapping = GPRValueMapping;
-    } else {
-      assert(isAmbiguousWithMergeOrUnmerge_64(InstTy, Op0Size) &&
+    else {
+      assert((isInteger_32(InstTy, Op0Size) ||
+              isAmbiguousWithMergeOrUnmerge_64(InstTy, Op0Size)) &&
              "Unexpected Inst type");
       OperandsMapping = getGprbOrCustomMapping(Op0Size, MappingID);
     }
@@ -545,8 +534,9 @@ MipsRegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
     assert((isAmbiguousWithMergeOrUnmerge_64(InstTy, Op3Size) ||
             isFloatingPoint_64(InstTy, Op3Size)) &&
            "Unexpected Inst type");
-    OperandsMapping = getOperandsMapping(
-        {GPRValueMapping, GPRValueMapping, &Mips::ValueMappings[Mips::DPRIdx]});
+    OperandsMapping = getOperandsMapping({&Mips::ValueMappings[Mips::GPRIdx],
+                                          &Mips::ValueMappings[Mips::GPRIdx],
+                                          &Mips::ValueMappings[Mips::DPRIdx]});
     if (isAmbiguousWithMergeOrUnmerge_64(InstTy, Op3Size))
       MappingID = CustomMappingID;
     break;
@@ -556,8 +546,9 @@ MipsRegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
     assert((isAmbiguousWithMergeOrUnmerge_64(InstTy, Op0Size) ||
             isFloatingPoint_64(InstTy, Op0Size)) &&
            "Unexpected Inst type");
-    OperandsMapping = getOperandsMapping(
-        {&Mips::ValueMappings[Mips::DPRIdx], GPRValueMapping, GPRValueMapping});
+    OperandsMapping = getOperandsMapping({&Mips::ValueMappings[Mips::DPRIdx],
+                                          &Mips::ValueMappings[Mips::GPRIdx],
+                                          &Mips::ValueMappings[Mips::GPRIdx]});
     if (isAmbiguousWithMergeOrUnmerge_64(InstTy, Op0Size))
       MappingID = CustomMappingID;
     break;
@@ -578,8 +569,8 @@ MipsRegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
   case G_FCMP: {
     unsigned Op2Size = MRI.getType(MI.getOperand(2).getReg()).getSizeInBits();
     OperandsMapping =
-        getOperandsMapping({GPRValueMapping, nullptr, getFprbMapping(Op2Size),
-                            getFprbMapping(Op2Size)});
+        getOperandsMapping({&Mips::ValueMappings[Mips::GPRIdx], nullptr,
+                            getFprbMapping(Op2Size), getFprbMapping(Op2Size)});
     break;
   }
   case G_FPEXT:
@@ -591,29 +582,36 @@ MipsRegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
                                           &Mips::ValueMappings[Mips::DPRIdx]});
     break;
   case G_FPTOSI: {
+    assert((Op0Size == 32) && "Unsupported integer size");
     unsigned SizeFP = MRI.getType(MI.getOperand(1).getReg()).getSizeInBits();
-    OperandsMapping =
-        getOperandsMapping({GPRValueMapping, getFprbMapping(SizeFP)});
+    OperandsMapping = getOperandsMapping(
+        {&Mips::ValueMappings[Mips::GPRIdx], getFprbMapping(SizeFP)});
     break;
   }
   case G_SITOFP:
-    OperandsMapping =
-        getOperandsMapping({getFprbMapping(Op0Size), GPRValueMapping});
+    assert((MRI.getType(MI.getOperand(1).getReg()).getSizeInBits() == 32) &&
+           "Unsupported integer size");
+    OperandsMapping = getOperandsMapping(
+        {getFprbMapping(Op0Size), &Mips::ValueMappings[Mips::GPRIdx]});
     break;
   case G_CONSTANT:
   case G_FRAME_INDEX:
   case G_GLOBAL_VALUE:
   case G_JUMP_TABLE:
   case G_BRCOND:
-    OperandsMapping = getOperandsMapping({GPRValueMapping, nullptr});
+    OperandsMapping =
+        getOperandsMapping({&Mips::ValueMappings[Mips::GPRIdx], nullptr});
     break;
   case G_BRJT:
     OperandsMapping =
-        getOperandsMapping({GPRValueMapping, nullptr, GPRValueMapping});
+        getOperandsMapping({&Mips::ValueMappings[Mips::GPRIdx], nullptr,
+                            &Mips::ValueMappings[Mips::GPRIdx]});
     break;
   case G_ICMP:
-    OperandsMapping = getOperandsMapping(
-        {GPRValueMapping, nullptr, GPRValueMapping, GPRValueMapping});
+    OperandsMapping =
+        getOperandsMapping({&Mips::ValueMappings[Mips::GPRIdx], nullptr,
+                            &Mips::ValueMappings[Mips::GPRIdx],
+                            &Mips::ValueMappings[Mips::GPRIdx]});
     break;
   default:
     return getInvalidInstructionMapping();
@@ -637,7 +635,7 @@ public:
     B.setChangeObserver(*this);
   }
 
-  ~InstManager() override { B.stopObservingChanges(); }
+  ~InstManager() { B.stopObservingChanges(); }
 
   void createdInstr(MachineInstr &MI) override { InstList.insert(&MI); }
   void erasingInstr(MachineInstr &MI) override {}

@@ -11,16 +11,13 @@
 
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/STLForwardCompat.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/DataTypes.h"
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/JSON.h"
 #include "llvm/Support/raw_ostream.h"
-#include <type_traits>
 
 namespace llvm {
 
@@ -43,8 +40,8 @@ template <typename T> struct EnumEntry {
 struct HexNumber {
   // To avoid sign-extension we have to explicitly cast to the appropriate
   // unsigned type. The overloads are here so that every type that is implicitly
-  // convertible to an integer (including endian helpers) can be used without
-  // requiring type traits or call-site changes.
+  // convertible to an integer (including enums and endian helpers) can be used
+  // without requiring type traits or call-site changes.
   HexNumber(char Value) : Value(static_cast<unsigned char>(Value)) {}
   HexNumber(signed char Value) : Value(static_cast<unsigned char>(Value)) {}
   HexNumber(signed short Value) : Value(static_cast<unsigned short>(Value)) {}
@@ -57,9 +54,6 @@ struct HexNumber {
   HexNumber(unsigned int Value) : Value(Value) {}
   HexNumber(unsigned long Value) : Value(Value) {}
   HexNumber(unsigned long long Value) : Value(Value) {}
-  template <typename EnumT, typename = std::enable_if_t<std::is_enum_v<EnumT>>>
-  HexNumber(EnumT Value) : HexNumber(llvm::to_underlying(Value)) {}
-
   uint64_t Value;
 };
 
@@ -82,15 +76,11 @@ struct FlagEntry {
   FlagEntry(StringRef Name, unsigned long Value) : Name(Name), Value(Value) {}
   FlagEntry(StringRef Name, unsigned long long Value)
       : Name(Name), Value(Value) {}
-  template <typename EnumT, typename = std::enable_if_t<std::is_enum_v<EnumT>>>
-  FlagEntry(StringRef Name, EnumT Value)
-      : FlagEntry(Name, llvm::to_underlying(Value)) {}
-
   StringRef Name;
   uint64_t Value;
 };
 
-LLVM_ABI raw_ostream &operator<<(raw_ostream &OS, const HexNumber &Value);
+raw_ostream &operator<<(raw_ostream &OS, const HexNumber &Value);
 
 template <class T> std::string to_string(const T &Value) {
   std::string number;
@@ -107,18 +97,7 @@ std::string enumToString(T Value, ArrayRef<EnumEntry<TEnum>> EnumValues) {
   return utohexstr(Value, true);
 }
 
-/// Retrieves the Value's enum name.
-///
-/// Returns an empty StringRef when an invalid value is provided.
-template <typename T, typename TEnum>
-StringRef enumToStringRef(T Value, ArrayRef<EnumEntry<TEnum>> EnumValues) {
-  for (const EnumEntry<TEnum> &EnumItem : EnumValues)
-    if (EnumItem.Value == Value)
-      return EnumItem.AltName;
-  return "";
-}
-
-class LLVM_ABI ScopedPrinter {
+class ScopedPrinter {
 public:
   enum class ScopedPrinterKind {
     Base,
@@ -185,17 +164,17 @@ public:
     SmallVector<FlagEntry, 10> SetFlags(ExtraFlags);
 
     for (const auto &Flag : Flags) {
-      if (Flag.Value == TFlag{})
+      if (Flag.Value == 0)
         continue;
 
       TFlag EnumMask{};
-      if ((Flag.Value & EnumMask1) != TFlag{})
+      if (Flag.Value & EnumMask1)
         EnumMask = EnumMask1;
-      else if ((Flag.Value & EnumMask2) != TFlag{})
+      else if (Flag.Value & EnumMask2)
         EnumMask = EnumMask2;
-      else if ((Flag.Value & EnumMask3) != TFlag{})
+      else if (Flag.Value & EnumMask3)
         EnumMask = EnumMask3;
-      bool IsEnum = (Flag.Value & EnumMask) != TFlag{};
+      bool IsEnum = (Flag.Value & EnumMask) != 0;
       if ((!IsEnum && (Value & Flag.Value) == Flag.Value) ||
           (IsEnum && (Value & EnumMask) == Flag.Value)) {
         SetFlags.emplace_back(Flag.Name, Flag.Value);
@@ -284,11 +263,9 @@ public:
     startLine() << Label << ": " << (Value ? "Yes" : "No") << '\n';
   }
 
-  template <typename T, typename... TArgs>
-  void printVersion(StringRef Label, T MajorVersion, TArgs... MinorVersions) {
+  template <typename... T> void printVersion(StringRef Label, T... Version) {
     startLine() << Label << ": ";
-    getOStream() << MajorVersion;
-    ((getOStream() << '.' << MinorVersions), ...);
+    printVersionInternal(Version...);
     getOStream() << "\n";
   }
 
@@ -456,6 +433,16 @@ public:
   virtual raw_ostream &getOStream() { return OS; }
 
 private:
+  template <typename T> void printVersionInternal(T Value) {
+    getOStream() << Value;
+  }
+
+  template <typename S, typename T, typename... TArgs>
+  void printVersionInternal(S Value, T Value2, TArgs... Args) {
+    getOStream() << Value << ".";
+    printVersionInternal(Value2, Args...);
+  }
+
   static bool flagName(const FlagEntry &LHS, const FlagEntry &RHS) {
     return LHS.Name < RHS.Name;
   }
@@ -585,9 +572,9 @@ private:
   std::unique_ptr<DelimitedScope> OuterScope;
 
 public:
-  LLVM_ABI JSONScopedPrinter(raw_ostream &OS, bool PrettyPrint = false,
-                             std::unique_ptr<DelimitedScope> &&OuterScope =
-                                 std::unique_ptr<DelimitedScope>{});
+  JSONScopedPrinter(raw_ostream &OS, bool PrettyPrint = false,
+                    std::unique_ptr<DelimitedScope> &&OuterScope =
+                        std::unique_ptr<DelimitedScope>{});
 
   static bool classof(const ScopedPrinter *SP) {
     return SP->getKind() == ScopedPrinter::ScopedPrinterKind::JSON;
@@ -870,7 +857,7 @@ struct DictScope : DelimitedScope {
     W.objectBegin();
   }
 
-  ~DictScope() override {
+  ~DictScope() {
     if (W)
       W->objectEnd();
   }
@@ -889,7 +876,7 @@ struct ListScope : DelimitedScope {
     W.arrayBegin();
   }
 
-  ~ListScope() override {
+  ~ListScope() {
     if (W)
       W->arrayEnd();
   }

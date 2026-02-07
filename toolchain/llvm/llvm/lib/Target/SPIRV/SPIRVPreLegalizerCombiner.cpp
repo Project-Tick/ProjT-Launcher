@@ -1,3 +1,4 @@
+
 //===-- SPIRVPreLegalizerCombiner.cpp - combine legalization ----*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -12,17 +13,27 @@
 //===----------------------------------------------------------------------===//
 
 #include "SPIRV.h"
-#include "SPIRVCombinerHelper.h"
+#include "SPIRVTargetMachine.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/CodeGen/GlobalISel/CSEInfo.h"
+#include "llvm/CodeGen/GlobalISel/CSEMIRBuilder.h"
 #include "llvm/CodeGen/GlobalISel/Combiner.h"
+#include "llvm/CodeGen/GlobalISel/CombinerHelper.h"
 #include "llvm/CodeGen/GlobalISel/CombinerInfo.h"
 #include "llvm/CodeGen/GlobalISel/GIMatchTableExecutorImpl.h"
 #include "llvm/CodeGen/GlobalISel/GISelChangeObserver.h"
-#include "llvm/CodeGen/GlobalISel/GISelValueTracking.h"
+#include "llvm/CodeGen/GlobalISel/GISelKnownBits.h"
+#include "llvm/CodeGen/GlobalISel/GenericMachineInstrs.h"
 #include "llvm/CodeGen/GlobalISel/MIPatternMatch.h"
+#include "llvm/CodeGen/GlobalISel/MachineIRBuilder.h"
+#include "llvm/CodeGen/GlobalISel/Utils.h"
 #include "llvm/CodeGen/MachineDominators.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
+#include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/CodeGen/TargetOpcodes.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
+#include "llvm/IR/IntrinsicsSPIRV.h"
+#include "llvm/Support/Debug.h"
 
 #define GET_GICOMBINER_DEPS
 #include "SPIRVGenPreLegalizeGICombiner.inc"
@@ -39,16 +50,75 @@ namespace {
 #include "SPIRVGenPreLegalizeGICombiner.inc"
 #undef GET_GICOMBINER_TYPES
 
+/// This match is part of a combine that
+/// rewrites length(X - Y) to distance(X, Y)
+///   (f32 (g_intrinsic length
+///           (g_fsub (vXf32 X) (vXf32 Y))))
+/// ->
+///   (f32 (g_intrinsic distance
+///           (vXf32 X) (vXf32 Y)))
+///
+bool matchLengthToDistance(MachineInstr &MI, MachineRegisterInfo &MRI) {
+  if (MI.getOpcode() != TargetOpcode::G_INTRINSIC ||
+      cast<GIntrinsic>(MI).getIntrinsicID() != Intrinsic::spv_length)
+    return false;
+
+  // First operand of MI is `G_INTRINSIC` so start at operand 2.
+  Register SubReg = MI.getOperand(2).getReg();
+  MachineInstr *SubInstr = MRI.getVRegDef(SubReg);
+  if (!SubInstr || SubInstr->getOpcode() != TargetOpcode::G_FSUB)
+    return false;
+
+  return true;
+}
+void applySPIRVDistance(MachineInstr &MI, MachineRegisterInfo &MRI,
+                        MachineIRBuilder &B) {
+
+  // Extract the operands for X and Y from the match criteria.
+  Register SubDestReg = MI.getOperand(2).getReg();
+  MachineInstr *SubInstr = MRI.getVRegDef(SubDestReg);
+  Register SubOperand1 = SubInstr->getOperand(1).getReg();
+  Register SubOperand2 = SubInstr->getOperand(2).getReg();
+
+  // Remove the original `spv_length` instruction.
+
+  Register ResultReg = MI.getOperand(0).getReg();
+  DebugLoc DL = MI.getDebugLoc();
+  MachineBasicBlock &MBB = *MI.getParent();
+  MachineBasicBlock::iterator InsertPt = MI.getIterator();
+
+  // Build the `spv_distance` intrinsic.
+  MachineInstrBuilder NewInstr =
+      BuildMI(MBB, InsertPt, DL, B.getTII().get(TargetOpcode::G_INTRINSIC));
+  NewInstr
+      .addDef(ResultReg)                       // Result register
+      .addIntrinsicID(Intrinsic::spv_distance) // Intrinsic ID
+      .addUse(SubOperand1)                     // Operand X
+      .addUse(SubOperand2);                    // Operand Y
+
+  auto RemoveAllUses = [&](Register Reg) {
+    SmallVector<MachineInstr *, 4> UsesToErase;
+    for (auto &UseMI : MRI.use_instructions(Reg))
+      UsesToErase.push_back(&UseMI);
+
+    // calling eraseFromParent to early invalidates the iterator.
+    for (auto *MIToErase : UsesToErase)
+      MIToErase->eraseFromParent();
+  };
+  RemoveAllUses(SubDestReg);   // remove all uses of FSUB Result
+  SubInstr->eraseFromParent(); // remove FSUB instruction
+}
+
 class SPIRVPreLegalizerCombinerImpl : public Combiner {
 protected:
-  const SPIRVCombinerHelper Helper;
+  const CombinerHelper Helper;
   const SPIRVPreLegalizerCombinerImplRuleConfig &RuleConfig;
   const SPIRVSubtarget &STI;
 
 public:
   SPIRVPreLegalizerCombinerImpl(
       MachineFunction &MF, CombinerInfo &CInfo, const TargetPassConfig *TPC,
-      GISelValueTracking &VT, GISelCSEInfo *CSEInfo,
+      GISelKnownBits &KB, GISelCSEInfo *CSEInfo,
       const SPIRVPreLegalizerCombinerImplRuleConfig &RuleConfig,
       const SPIRVSubtarget &STI, MachineDominatorTree *MDT,
       const LegalizerInfo *LI);
@@ -71,12 +141,12 @@ private:
 
 SPIRVPreLegalizerCombinerImpl::SPIRVPreLegalizerCombinerImpl(
     MachineFunction &MF, CombinerInfo &CInfo, const TargetPassConfig *TPC,
-    GISelValueTracking &VT, GISelCSEInfo *CSEInfo,
+    GISelKnownBits &KB, GISelCSEInfo *CSEInfo,
     const SPIRVPreLegalizerCombinerImplRuleConfig &RuleConfig,
     const SPIRVSubtarget &STI, MachineDominatorTree *MDT,
     const LegalizerInfo *LI)
-    : Combiner(MF, CInfo, TPC, &VT, CSEInfo),
-      Helper(Observer, B, /*IsPreLegalize*/ true, &VT, MDT, LI, STI),
+    : Combiner(MF, CInfo, TPC, &KB, CSEInfo),
+      Helper(Observer, B, /*IsPreLegalize*/ true, &KB, MDT, LI),
       RuleConfig(RuleConfig), STI(STI),
 #define GET_GICOMBINER_CONSTRUCTOR_INITS
 #include "SPIRVGenPreLegalizeGICombiner.inc"
@@ -113,8 +183,8 @@ void SPIRVPreLegalizerCombiner::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<TargetPassConfig>();
   AU.setPreservesCFG();
   getSelectionDAGFallbackAnalysisUsage(AU);
-  AU.addRequired<GISelValueTrackingAnalysisLegacy>();
-  AU.addPreserved<GISelValueTrackingAnalysisLegacy>();
+  AU.addRequired<GISelKnownBitsAnalysis>();
+  AU.addPreserved<GISelKnownBitsAnalysis>();
   AU.addRequired<MachineDominatorTreeWrapperPass>();
   AU.addPreserved<MachineDominatorTreeWrapperPass>();
   MachineFunctionPass::getAnalysisUsage(AU);
@@ -122,12 +192,15 @@ void SPIRVPreLegalizerCombiner::getAnalysisUsage(AnalysisUsage &AU) const {
 
 SPIRVPreLegalizerCombiner::SPIRVPreLegalizerCombiner()
     : MachineFunctionPass(ID) {
+  initializeSPIRVPreLegalizerCombinerPass(*PassRegistry::getPassRegistry());
+
   if (!RuleConfig.parseCommandLineOption())
     report_fatal_error("Invalid rule identifier");
 }
 
 bool SPIRVPreLegalizerCombiner::runOnMachineFunction(MachineFunction &MF) {
-  if (MF.getProperties().hasFailedISel())
+  if (MF.getProperties().hasProperty(
+          MachineFunctionProperties::Property::FailedISel))
     return false;
   auto &TPC = getAnalysis<TargetPassConfig>();
 
@@ -137,8 +210,7 @@ bool SPIRVPreLegalizerCombiner::runOnMachineFunction(MachineFunction &MF) {
   const Function &F = MF.getFunction();
   bool EnableOpt =
       MF.getTarget().getOptLevel() != CodeGenOptLevel::None && !skipFunction(F);
-  GISelValueTracking *VT =
-      &getAnalysis<GISelValueTrackingAnalysisLegacy>().get(MF);
+  GISelKnownBits *KB = &getAnalysis<GISelKnownBitsAnalysis>().get(MF);
   MachineDominatorTree *MDT =
       &getAnalysis<MachineDominatorTreeWrapperPass>().getDomTree();
   CombinerInfo CInfo(/*AllowIllegalOps*/ true, /*ShouldLegalizeIllegal*/ false,
@@ -150,7 +222,7 @@ bool SPIRVPreLegalizerCombiner::runOnMachineFunction(MachineFunction &MF) {
   // This is the first Combiner, so the input IR might contain dead
   // instructions.
   CInfo.EnableFullDCE = false;
-  SPIRVPreLegalizerCombinerImpl Impl(MF, CInfo, &TPC, *VT, /*CSEInfo*/ nullptr,
+  SPIRVPreLegalizerCombinerImpl Impl(MF, CInfo, &TPC, *KB, /*CSEInfo*/ nullptr,
                                      RuleConfig, ST, MDT, LI);
   return Impl.combineMachineInstrs();
 }
@@ -160,7 +232,7 @@ INITIALIZE_PASS_BEGIN(SPIRVPreLegalizerCombiner, DEBUG_TYPE,
                       "Combine SPIRV machine instrs before legalization", false,
                       false)
 INITIALIZE_PASS_DEPENDENCY(TargetPassConfig)
-INITIALIZE_PASS_DEPENDENCY(GISelValueTrackingAnalysisLegacy)
+INITIALIZE_PASS_DEPENDENCY(GISelKnownBitsAnalysis)
 INITIALIZE_PASS_END(SPIRVPreLegalizerCombiner, DEBUG_TYPE,
                     "Combine SPIRV machine instrs before legalization", false,
                     false)

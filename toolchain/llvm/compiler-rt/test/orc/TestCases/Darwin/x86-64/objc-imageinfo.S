@@ -5,9 +5,7 @@
 
 // RUN: rm -rf %t
 // RUN: split-file %s %t
-// RUN: pushd %t
-// RUN: %clang -c *.S
-// RUN: popd
+// RUN: (cd %t; %clang -c *.S)
 
 // Check individual versions are loadable.
 

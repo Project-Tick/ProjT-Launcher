@@ -177,12 +177,8 @@ protected:
 public:
   virtual ~SparseIterator() = default;
 
-  virtual void setSparseEmitStrategy(SparseEmitStrategy strategy) {
+  void setSparseEmitStrategy(SparseEmitStrategy strategy) {
     emitStrategy = strategy;
-  }
-
-  virtual SparseEmitStrategy getSparseEmitStrategy() const {
-    return emitStrategy;
   }
 
   virtual std::string getDebugInterfacePrefix() const = 0;
@@ -197,7 +193,7 @@ public:
   // Sets the iterate to the specified position.
   void seek(ValueRange vals) {
     assert(vals.size() == cursorValsCnt);
-    llvm::copy(vals, cursorValsStorageRef.begin());
+    std::copy(vals.begin(), vals.end(), cursorValsStorageRef.begin());
     // Now that the iterator is re-positioned, the coordinate becomes invalid.
     crd = nullptr;
   }

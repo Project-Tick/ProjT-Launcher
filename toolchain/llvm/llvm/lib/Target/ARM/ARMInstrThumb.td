@@ -14,7 +14,6 @@
 // Thumb specific DAG Nodes.
 //
 
-// CMSE non-secure function call.
 def ARMtsecall : SDNode<"ARMISD::tSECALL", SDT_ARMcall,
                         [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue,
                          SDNPVariadic]>;
@@ -484,7 +483,6 @@ let isBranch = 1, isTerminator = 1, isBarrier = 1, isIndirectBranch = 1 in {
   def tBX : TI<(outs), (ins GPR:$Rm, pred:$p), IIC_Br, "bx${p}\t$Rm", []>,
             T1Special<{1,1,0,?}>, Sched<[WriteBr]> {
     // A6.2.3 & A8.6.25
-    bits<0> p;
     bits<4> Rm;
     let Inst{6-3} = Rm;
     let Inst{2-0} = 0b000;
@@ -493,7 +491,6 @@ let isBranch = 1, isTerminator = 1, isBarrier = 1, isIndirectBranch = 1 in {
   def tBXNS : TI<(outs), (ins GPR:$Rm, pred:$p), IIC_Br, "bxns${p}\t$Rm", []>,
               Requires<[IsThumb, Has8MSecExt]>,
               T1Special<{1,1,0,?}>, Sched<[WriteBr]> {
-    bits<0> p;
     bits<4> Rm;
     let Inst{6-3} = Rm;
     let Inst{2-0} = 0b100;
@@ -526,7 +523,6 @@ let isCall = 1,
                   "bl${p}\t$func",
                   [(ARMcall tglobaladdr:$func)]>,
              Requires<[IsThumb]>, Sched<[WriteBrL]> {
-    bits<0> p;
     bits<24> func;
     let Inst{26} = func{23};
     let Inst{25-16} = func{20-11};
@@ -540,7 +536,6 @@ let isCall = 1,
                  (outs), (ins pred:$p, thumb_blx_target:$func), IIC_Br,
                    "blx${p}\t$func", []>,
               Requires<[IsThumb, HasV5T, IsNotMClass]>, Sched<[WriteBrL]> {
-    bits<0> p;
     bits<24> func;
     let Inst{26} = func{23};
     let Inst{25-16} = func{20-11};
@@ -555,7 +550,6 @@ let isCall = 1,
                   "blx${p}\t$func", []>,
               Requires<[IsThumb, HasV5T]>,
               T1Special<{1,1,1,?}>, Sched<[WriteBrL]> { // A6.2.3 & A8.6.24;
-    bits<0> p;
     bits<4> func;
     let Inst{6-3} = func;
     let Inst{2-0} = 0b000;
@@ -571,7 +565,6 @@ let isCall = 1,
                    "blxns${p}\t$func", []>,
                 Requires<[IsThumb, Has8MSecExt]>,
                 T1Special<{1,1,1,?}>, Sched<[WriteBrL]> {
-    bits<0> p;
     bits<4> func;
     let Inst{6-3} = func;
     let Inst{2-0} = 0b100;
@@ -831,7 +824,6 @@ let hasSideEffects = 0 in {
 let mayLoad = 1, hasExtraDefRegAllocReq = 1, variadicOpsAreDefs = 1 in
 def tLDMIA : T1I<(outs), (ins tGPR:$Rn, pred:$p, reglist:$regs, variable_ops),
         IIC_iLoad_m, "ldm${p}\t$Rn, $regs", []>, T1Encoding<{1,1,0,0,1,?}> {
-  bits<0> p;
   bits<3> Rn;
   bits<8> regs;
   let Inst{10-8} = Rn;
@@ -862,7 +854,6 @@ def tSTMIA_UPD : Thumb1I<(outs tGPR:$wb),
                          AddrModeNone, 2, IIC_iStore_mu,
                          "stm${p}\t$Rn!, $regs", "$Rn = $wb", []>,
                      T1Encoding<{1,1,0,0,0,?}> {
-  bits<0> p;
   bits<3> Rn;
   bits<8> regs;
   let Inst{10-8} = Rn;
@@ -881,7 +872,6 @@ def tPOP : T1I<(outs), (ins pred:$p, reglist:$regs, variable_ops),
                IIC_iPop,
                "pop${p}\t$regs", []>,
            T1Misc<{1,1,0,?,?,?,?}>, Sched<[WriteLd]> {
-  bits<0> p;
   bits<16> regs;
   let Inst{8}   = regs{15};
   let Inst{7-0} = regs{7-0};
@@ -892,7 +882,6 @@ def tPUSH : T1I<(outs), (ins pred:$p, reglist:$regs, variable_ops),
                 IIC_iStore_m,
                 "push${p}\t$regs", []>,
             T1Misc<{0,1,0,?,?,?,?}>, Sched<[WriteST]> {
-  bits<0> p;
   bits<16> regs;
   let Inst{8}   = regs{14};
   let Inst{7-0} = regs{7-0};
@@ -1220,9 +1209,8 @@ def tMOVi8 : T1sI<(outs tGPR:$Rd), (ins imm0_255_expr:$imm8), IIC_iMOVi,
 }
 // Because we have an explicit tMOVSr below, we need an alias to handle
 // the immediate "movs" form here. Blech.
-def : tInstAlias<"movs $Rdn, $imm8",
-                 (tMOVi8 tGPR:$Rdn, (s_cc_out CPSR),
-                         imm0_255_expr:$imm8, (pred 14, zero_reg))>;
+def : tInstAlias <"movs $Rdn, $imm8",
+                 (tMOVi8 tGPR:$Rdn, CPSR, imm0_255_expr:$imm8, 14, zero_reg)>;
 
 // A7-73: MOV(2) - mov setting flag.
 
@@ -1605,17 +1593,13 @@ def tLDRLIT_ga_pcrel : PseudoInst<(outs tGPR:$dst), (ins i32imm:$addr),
                                   IIC_iLoadiALU,
                                   [(set tGPR:$dst,
                                         (ARMWrapperPIC tglobaladdr:$addr))]>,
-                       Requires<[IsThumb, DontUseMovtInPic]> {
-  let Size = 8;  // 2 instructions + constant.
-}
+                       Requires<[IsThumb, DontUseMovtInPic]>;
 
 def tLDRLIT_ga_abs : PseudoInst<(outs tGPR:$dst), (ins i32imm:$src),
                                 IIC_iLoad_i,
                                 [(set tGPR:$dst,
                                       (ARMWrapper tglobaladdr:$src))]>,
-                     Requires<[IsThumb, DontUseMovt, DontGenExecuteOnly]> {
-  let Size = 6;  // 1 instruction + constant.
-}
+                     Requires<[IsThumb, DontUseMovt, DontGenExecuteOnly]>;
 
 // 32-bit immediate using mov/add with the 4 :lower0_7: to :upper8_15:
 // relocations.
@@ -1713,17 +1697,17 @@ def : T1Pat<(sextloadi16 t_addrmode_is2:$addr),
 def : T1Pat<(sextloadi16 t_addrmode_rr:$addr),
             (tASRri (tLSLri (tLDRHr t_addrmode_rr:$addr), 16), 16)>;
 
-def : T1Pat<(atomic_load_azext_8 t_addrmode_is1:$src),
+def : T1Pat<(atomic_load_8 t_addrmode_is1:$src),
              (tLDRBi t_addrmode_is1:$src)>;
-def : T1Pat<(atomic_load_azext_8 t_addrmode_rr:$src),
+def : T1Pat<(atomic_load_8 t_addrmode_rr:$src),
              (tLDRBr t_addrmode_rr:$src)>;
-def : T1Pat<(atomic_load_azext_16 t_addrmode_is2:$src),
+def : T1Pat<(atomic_load_16 t_addrmode_is2:$src),
              (tLDRHi t_addrmode_is2:$src)>;
-def : T1Pat<(atomic_load_azext_16 t_addrmode_rr:$src),
+def : T1Pat<(atomic_load_16 t_addrmode_rr:$src),
              (tLDRHr t_addrmode_rr:$src)>;
-def : T1Pat<(atomic_load_nonext_32 t_addrmode_is4:$src),
+def : T1Pat<(atomic_load_32 t_addrmode_is4:$src),
              (tLDRi t_addrmode_is4:$src)>;
-def : T1Pat<(atomic_load_nonext_32 t_addrmode_rr:$src),
+def : T1Pat<(atomic_load_32 t_addrmode_rr:$src),
              (tLDRr t_addrmode_rr:$src)>;
 def : T1Pat<(atomic_store_8 tGPR:$val, t_addrmode_is1:$ptr),
              (tSTRBi tGPR:$val, t_addrmode_is1:$ptr)>;
@@ -1780,8 +1764,7 @@ let isBranch = 1, isTerminator = 1, isBarrier = 1, isIndirectBranch = 1 in {
 
 // In Thumb1, "nop" is encoded as a "mov r8, r8". Technically, the bf00
 // encoding is available on ARMv6K, but we don't differentiate that finely.
-def : InstAlias<"nop", (tMOVr R8, R8, (pred 14, zero_reg)), 0>,
-      Requires<[IsThumb, IsThumb1Only]>;
+def : InstAlias<"nop", (tMOVr R8, R8, 14, zero_reg), 0>, Requires<[IsThumb, IsThumb1Only]>;
 
 
 // "neg" is and alias for "rsb rd, rn, #0"

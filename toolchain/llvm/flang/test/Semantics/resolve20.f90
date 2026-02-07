@@ -38,7 +38,7 @@ module m
   type :: bad3
   end type
 
-  !PORTABILITY: Name 'm' declared in a module should not have the same name as the module [-Wbenign-name-clash]
+  !PORTABILITY: Name 'm' declared in a module should not have the same name as the module
   type :: m
   end type m
 
@@ -49,7 +49,7 @@ module m
   external :: a, b, c, d
   !ERROR: EXTERNAL attribute not allowed on 'm'
   external :: m
-  !WARNING: EXTERNAL attribute was already specified on 'foo' [-Wredundant-attribute]
+  !WARNING: EXTERNAL attribute was already specified on 'foo'
   external :: foo
   !ERROR: EXTERNAL attribute not allowed on 'bar'
   external :: bar
@@ -89,12 +89,4 @@ contains
     !ERROR: Abstract procedure interface 'f' may not be referenced
     x = f()
   end subroutine
-  subroutine baz(foo)
-    external foo
-    interface
-      !WARNING: Dummy argument 'foo' was declared earlier as EXTERNAL [-Wredundant-attribute]
-      subroutine foo(x)
-      end
-    end interface
-  end
 end module

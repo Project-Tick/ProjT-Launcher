@@ -6,7 +6,8 @@
 
 include "APIDefs.td"
 
-def FunctionA : Function {
+def : Function {
+    let name = "FunctionA";
     let desc = "Function A description";
     let details = [ "Function A detailed information" ];
     let params = [

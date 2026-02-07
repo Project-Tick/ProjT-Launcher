@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- ContainerSizeEmptyCheck.cpp - clang-tidy -------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -16,31 +16,29 @@
 
 using namespace clang::ast_matchers;
 
-namespace clang::tidy::readability {
-
-namespace {
+namespace clang {
+namespace ast_matchers {
 
 AST_POLYMORPHIC_MATCHER_P2(hasAnyArgumentWithParam,
                            AST_POLYMORPHIC_SUPPORTED_TYPES(CallExpr,
                                                            CXXConstructExpr),
-                           ast_matchers::internal::Matcher<Expr>, ArgMatcher,
-                           ast_matchers::internal::Matcher<ParmVarDecl>,
-                           ParamMatcher) {
-  ast_matchers::internal::BoundNodesTreeBuilder Result;
+                           internal::Matcher<Expr>, ArgMatcher,
+                           internal::Matcher<ParmVarDecl>, ParamMatcher) {
+  BoundNodesTreeBuilder Result;
   // The first argument of an overloaded member operator is the implicit object
   // argument of the method which should not be matched against a parameter, so
   // we skip over it here.
-  ast_matchers::internal::BoundNodesTreeBuilder Matches;
+  BoundNodesTreeBuilder Matches;
   unsigned ArgIndex = cxxOperatorCallExpr(callee(cxxMethodDecl()))
                               .matches(Node, Finder, &Matches)
                           ? 1
                           : 0;
   int ParamIndex = 0;
   for (; ArgIndex < Node.getNumArgs(); ++ArgIndex) {
-    ast_matchers::internal::BoundNodesTreeBuilder ArgMatches(*Builder);
+    BoundNodesTreeBuilder ArgMatches(*Builder);
     if (ArgMatcher.matches(*(Node.getArg(ArgIndex)->IgnoreParenCasts()), Finder,
                            &ArgMatches)) {
-      ast_matchers::internal::BoundNodesTreeBuilder ParamMatches(ArgMatches);
+      BoundNodesTreeBuilder ParamMatches(ArgMatches);
       if (expr(anyOf(cxxConstructExpr(hasDeclaration(cxxConstructorDecl(
                          hasParameter(ParamIndex, ParamMatcher)))),
                      callExpr(callee(functionDecl(
@@ -82,11 +80,14 @@ AST_MATCHER(Expr, usedInBooleanContext) {
                      binaryOperator(hasAnyOperatorName("&&", "||")),
                      unaryOperator(hasOperatorName("!")).bind("NegOnSize"))))))
           .matches(Node, Finder, Builder);
-  Builder->removeBindings(
-      [ExprName](const ast_matchers::internal::BoundNodesMap &Nodes) {
-        return Nodes.getNode(ExprName).getNodeKind().isNone();
-      });
+  Builder->removeBindings([ExprName](const BoundNodesMap &Nodes) {
+    return Nodes.getNode(ExprName).getNodeKind().isNone();
+  });
   return Result;
+}
+
+AST_MATCHER(CXXConstructExpr, isDefaultConstruction) {
+  return Node.getConstructor()->isDefaultConstructor();
 }
 
 AST_MATCHER(QualType, isIntegralType) {
@@ -106,26 +107,8 @@ AST_MATCHER_P(UserDefinedLiteral, hasLiteral,
   return false;
 }
 
-AST_MATCHER_P(CXXMethodDecl, hasCanonicalDecl,
-              clang::ast_matchers::internal::Matcher<CXXMethodDecl>,
-              InnerMatcher) {
-  return InnerMatcher.matches(*Node.getCanonicalDecl(), Finder, Builder);
-}
-
-AST_POLYMORPHIC_MATCHER_P(
-    matchMemberName,
-    AST_POLYMORPHIC_SUPPORTED_TYPES(MemberExpr, CXXDependentScopeMemberExpr),
-    std::string, MemberName) {
-  if (const auto *E = dyn_cast<MemberExpr>(&Node))
-    return E->getMemberDecl()->getName() == MemberName;
-
-  if (const auto *E = dyn_cast<CXXDependentScopeMemberExpr>(&Node))
-    return E->getMember().getAsString() == MemberName;
-
-  return false;
-}
-
-} // namespace
+} // namespace ast_matchers
+namespace tidy::readability {
 
 using utils::isBinaryOrTernary;
 
@@ -155,10 +138,9 @@ void ContainerSizeEmptyCheck::registerMatchers(MatchFinder *Finder) {
   const auto ValidContainerNonTemplateType =
       qualType(hasUnqualifiedDesugaredType(
           recordType(hasDeclaration(ValidContainerRecord))));
-  const auto ValidContainerTemplateType = qualType(hasUnqualifiedDesugaredType(
-      anyOf(templateSpecializationType(
-                hasDeclaration(classTemplateDecl(has(ValidContainerRecord)))),
-            injectedClassNameType(hasDeclaration(ValidContainerRecord)))));
+  const auto ValidContainerTemplateType =
+      qualType(hasUnqualifiedDesugaredType(templateSpecializationType(
+          hasDeclaration(classTemplateDecl(has(ValidContainerRecord))))));
 
   const auto ValidContainer = qualType(
       anyOf(ValidContainerNonTemplateType, ValidContainerTemplateType));
@@ -171,9 +153,6 @@ void ContainerSizeEmptyCheck::registerMatchers(MatchFinder *Finder) {
                           .bind("SizeBinaryOp")),
             usedInBooleanContext());
 
-  const auto NotInEmptyMethodOfContainer = unless(
-      forCallable(cxxMethodDecl(hasCanonicalDecl(equalsBoundNode("empty")))));
-
   Finder->addMatcher(
       cxxMemberCallExpr(
           argumentCountIs(0),
@@ -183,23 +162,25 @@ void ContainerSizeEmptyCheck::registerMatchers(MatchFinder *Finder) {
                  .bind("MemberCallObject")),
           callee(
               cxxMethodDecl(hasAnyName("size", "length")).bind("SizeMethod")),
-          WrongUse, NotInEmptyMethodOfContainer)
+          WrongUse,
+          unless(hasAncestor(
+              cxxMethodDecl(ofClass(equalsBoundNode("container"))))))
           .bind("SizeCallExpr"),
       this);
 
   Finder->addMatcher(
-      callExpr(
-          argumentCountIs(0),
-          has(mapAnyOf(memberExpr, cxxDependentScopeMemberExpr)
-                  .with(
-                      hasObjectExpression(
-                          expr(anyOf(hasType(ValidContainer),
-                                     hasType(pointsTo(ValidContainer)),
-                                     hasType(references(ValidContainer))))
-                              .bind("MemberCallObject")),
-                      anyOf(matchMemberName("size"), matchMemberName("length")))
-                  .bind("MemberExpr")),
-          WrongUse, NotInEmptyMethodOfContainer)
+      callExpr(argumentCountIs(0),
+               has(cxxDependentScopeMemberExpr(
+                       hasObjectExpression(
+                           expr(anyOf(hasType(ValidContainer),
+                                      hasType(pointsTo(ValidContainer)),
+                                      hasType(references(ValidContainer))))
+                               .bind("MemberCallObject")),
+                       anyOf(hasMemberName("size"), hasMemberName("length")))
+                       .bind("DependentExpr")),
+               WrongUse,
+               unless(hasAncestor(
+                   cxxMethodDecl(ofClass(equalsBoundNode("container"))))))
           .bind("SizeCallExpr"),
       this);
 
@@ -207,7 +188,7 @@ void ContainerSizeEmptyCheck::registerMatchers(MatchFinder *Finder) {
   const auto WrongComparend =
       anyOf(stringLiteral(hasSize(0)),
             userDefinedLiteral(hasLiteral(stringLiteral(hasSize(0)))),
-            cxxConstructExpr(argumentCountIs(0)),
+            cxxConstructExpr(isDefaultConstruction()),
             cxxUnresolvedConstructExpr(argumentCountIs(0)));
   // Match the object being compared.
   const auto STLArg =
@@ -217,14 +198,13 @@ void ContainerSizeEmptyCheck::registerMatchers(MatchFinder *Finder) {
                     expr(hasType(pointsTo(ValidContainer))).bind("Pointee"))),
             expr(hasType(ValidContainer)).bind("STLObject"));
 
-  const auto ExcludedComparisonTypesMatcher = qualType(
-      anyOf(hasDeclaration(cxxRecordDecl(matchers::matchesAnyListedRegexName(
-                                             ExcludedComparisonTypes))
-                               .bind("excluded")),
-            hasCanonicalType(hasDeclaration(
-                cxxRecordDecl(matchers::matchesAnyListedRegexName(
-                                  ExcludedComparisonTypes))
-                    .bind("excluded")))));
+  const auto ExcludedComparisonTypesMatcher = qualType(anyOf(
+      hasDeclaration(
+          cxxRecordDecl(matchers::matchesAnyListedName(ExcludedComparisonTypes))
+              .bind("excluded")),
+      hasCanonicalType(hasDeclaration(
+          cxxRecordDecl(matchers::matchesAnyListedName(ExcludedComparisonTypes))
+              .bind("excluded")))));
   const auto SameExcludedComparisonTypesMatcher =
       qualType(anyOf(hasDeclaration(cxxRecordDecl(equalsBoundNode("excluded"))),
                      hasCanonicalType(hasDeclaration(
@@ -235,7 +215,8 @@ void ContainerSizeEmptyCheck::registerMatchers(MatchFinder *Finder) {
           hasAnyOperatorName("==", "!="), hasOperands(WrongComparend, STLArg),
           unless(allOf(hasLHS(hasType(ExcludedComparisonTypesMatcher)),
                        hasRHS(hasType(SameExcludedComparisonTypesMatcher)))),
-          NotInEmptyMethodOfContainer)
+          unless(hasAncestor(
+              cxxMethodDecl(ofClass(equalsBoundNode("container"))))))
           .bind("BinCmp"),
       this);
 }
@@ -255,12 +236,9 @@ void ContainerSizeEmptyCheck::check(const MatchFinder::MatchResult &Result) {
           ? MemberCallObject
           : (Pointee ? Pointee : Result.Nodes.getNodeAs<Expr>("STLObject"));
   FixItHint Hint;
-  std::string ReplacementText =
-      E->isImplicitCXXThis()
-          ? ""
-          : std::string(Lexer::getSourceText(
-                CharSourceRange::getTokenRange(E->getSourceRange()),
-                *Result.SourceManager, getLangOpts()));
+  std::string ReplacementText = std::string(
+      Lexer::getSourceText(CharSourceRange::getTokenRange(E->getSourceRange()),
+                           *Result.SourceManager, getLangOpts()));
   const auto *OpCallExpr = dyn_cast<CXXOperatorCallExpr>(E);
   if (isBinaryOrTernary(E) || isa<UnaryOperator>(E) ||
       (OpCallExpr && (OpCallExpr->getOperator() == OO_Star))) {
@@ -271,26 +249,27 @@ void ContainerSizeEmptyCheck::check(const MatchFinder::MatchResult &Result) {
     // This can happen if the object is a smart pointer. Don't add anything
     // because a '->' is already there (PR#51776), just call the method.
     ReplacementText += "empty()";
-  } else if (E->isImplicitCXXThis()) {
-    ReplacementText += "empty()";
   } else if (E->getType()->isPointerType())
     ReplacementText += "->empty()";
   else
     ReplacementText += ".empty()";
 
   if (BinCmp) {
-    if (BinCmp->getOperator() == OO_ExclaimEqual)
+    if (BinCmp->getOperator() == OO_ExclaimEqual) {
       ReplacementText = "!" + ReplacementText;
+    }
     Hint =
         FixItHint::CreateReplacement(BinCmp->getSourceRange(), ReplacementText);
   } else if (BinCmpTempl) {
-    if (BinCmpTempl->getOpcode() == BinaryOperatorKind::BO_NE)
+    if (BinCmpTempl->getOpcode() == BinaryOperatorKind::BO_NE) {
       ReplacementText = "!" + ReplacementText;
+    }
     Hint = FixItHint::CreateReplacement(BinCmpTempl->getSourceRange(),
                                         ReplacementText);
   } else if (BinCmpRewritten) {
-    if (BinCmpRewritten->getOpcode() == BinaryOperatorKind::BO_NE)
+    if (BinCmpRewritten->getOpcode() == BinaryOperatorKind::BO_NE) {
       ReplacementText = "!" + ReplacementText;
+    }
     Hint = FixItHint::CreateReplacement(BinCmpRewritten->getSourceRange(),
                                         ReplacementText);
   } else if (BinaryOp) { // Determine the correct transformation.
@@ -396,10 +375,8 @@ void ContainerSizeEmptyCheck::check(const MatchFinder::MatchResult &Result) {
       Diag << SizeMethod;
     else if (const auto *DependentExpr =
                  Result.Nodes.getNodeAs<CXXDependentScopeMemberExpr>(
-                     "MemberExpr"))
+                     "DependentExpr"))
       Diag << DependentExpr->getMember();
-    else if (const auto *ME = Result.Nodes.getNodeAs<MemberExpr>("MemberExpr"))
-      Diag << ME->getMemberNameInfo().getName();
     else
       Diag << "unknown method";
     Diag << Hint;
@@ -430,4 +407,5 @@ void ContainerSizeEmptyCheck::check(const MatchFinder::MatchResult &Result) {
       << Container;
 }
 
-} // namespace clang::tidy::readability
+} // namespace tidy::readability
+} // namespace clang

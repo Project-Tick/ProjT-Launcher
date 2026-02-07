@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- AvoidUnderscoreInGoogletestNameCheck.cpp - clang-tidy --*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -10,6 +10,7 @@
 
 #include "AvoidUnderscoreInGoogletestNameCheck.h"
 #include "clang/AST/ASTContext.h"
+#include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/MacroArgs.h"
 #include "clang/Lex/PPCallbacks.h"
@@ -17,7 +18,7 @@
 
 namespace clang::tidy::google::readability {
 
-constexpr StringRef KDisabledTestPrefix = "DISABLED_";
+constexpr llvm::StringLiteral KDisabledTestPrefix = "DISABLED_";
 
 // Determines whether the macro is a Googletest test macro.
 static bool isGoogletestTestMacro(StringRef MacroName) {
@@ -39,11 +40,10 @@ public:
   void MacroExpands(const Token &MacroNameToken,
                     const MacroDefinition &MacroDefinition, SourceRange Range,
                     const MacroArgs *Args) override {
-    const IdentifierInfo *NameIdentifierInfo =
-        MacroNameToken.getIdentifierInfo();
+    IdentifierInfo *NameIdentifierInfo = MacroNameToken.getIdentifierInfo();
     if (!NameIdentifierInfo)
       return;
-    const StringRef MacroName = NameIdentifierInfo->getName();
+    StringRef MacroName = NameIdentifierInfo->getName();
     if (!isGoogletestTestMacro(MacroName) || !Args ||
         Args->getNumMacroArguments() < 2)
       return;
@@ -51,7 +51,7 @@ public:
     const Token *TestNameToken = Args->getUnexpArgument(1);
     if (!TestSuiteNameToken || !TestNameToken)
       return;
-    const std::string TestSuiteNameMaybeDisabled =
+    std::string TestSuiteNameMaybeDisabled =
         PP->getSpelling(*TestSuiteNameToken);
     StringRef TestSuiteName = TestSuiteNameMaybeDisabled;
     TestSuiteName.consume_front(KDisabledTestPrefix);
@@ -61,7 +61,7 @@ public:
                   "Googletest FAQ")
           << TestSuiteName;
 
-    const std::string TestNameMaybeDisabled = PP->getSpelling(*TestNameToken);
+    std::string TestNameMaybeDisabled = PP->getSpelling(*TestNameToken);
     StringRef TestName = TestNameMaybeDisabled;
     TestName.consume_front(KDisabledTestPrefix);
     if (TestName.contains('_'))

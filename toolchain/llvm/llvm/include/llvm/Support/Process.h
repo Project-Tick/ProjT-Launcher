@@ -25,7 +25,6 @@
 #define LLVM_SUPPORT_PROCESS_H
 
 #include "llvm/Support/Chrono.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/DataTypes.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/Program.h"
@@ -46,14 +45,14 @@ public:
   using Pid = int32_t;
 
   /// Get the process's identifier.
-  LLVM_ABI static Pid getProcessId();
+  static Pid getProcessId();
 
   /// Get the process's page size.
   /// This may fail if the underlying syscall returns an error. In most cases,
   /// page size information is used for optimization, and this error can be
   /// safely discarded by calling consumeError, and an estimated page size
   /// substituted instead.
-  LLVM_ABI static Expected<unsigned> getPageSize();
+  static Expected<unsigned> getPageSize();
 
   /// Get the process's estimated page size.
   /// This function always succeeds, but if the underlying syscall to determine
@@ -73,7 +72,7 @@ public:
   /// by the process. This only counts the memory allocated via the malloc,
   /// calloc and realloc functions and includes any "free" holes in the
   /// allocated space.
-  LLVM_ABI static size_t GetMallocUsage();
+  static size_t GetMallocUsage();
 
   /// This static function will set \p user_time to the amount of CPU time
   /// spent in user (non-kernel) mode and \p sys_time to the amount of CPU
@@ -83,22 +82,22 @@ public:
   /// \param elapsed Returns the system_clock::now() giving current time
   /// \param user_time Returns the current amount of user time for the process
   /// \param sys_time Returns the current amount of system time for the process
-  LLVM_ABI static void GetTimeUsage(TimePoint<> &elapsed,
-                                    std::chrono::nanoseconds &user_time,
-                                    std::chrono::nanoseconds &sys_time);
+  static void GetTimeUsage(TimePoint<> &elapsed,
+                           std::chrono::nanoseconds &user_time,
+                           std::chrono::nanoseconds &sys_time);
 
   /// This function makes the necessary calls to the operating system to
   /// prevent core files or any other kind of large memory dumps that can
   /// occur when a program fails.
   /// Prevent core file generation.
-  LLVM_ABI static void PreventCoreFiles();
+  static void PreventCoreFiles();
 
   /// true if PreventCoreFiles has been called, false otherwise.
-  LLVM_ABI static bool AreCoreFilesPrevented();
+  static bool AreCoreFilesPrevented();
 
   // This function returns the environment variable \arg name's value as a UTF-8
   // string. \arg Name is assumed to be in UTF-8 encoding too.
-  LLVM_ABI static std::optional<std::string> GetEnv(StringRef name);
+  static std::optional<std::string> GetEnv(StringRef name);
 
   /// This function searches for an existing file in the list of directories
   /// in a PATH like environment variable, and returns the first file found,
@@ -106,12 +105,12 @@ public:
   /// variable.  If an ignore list is specified, then any folder which is in
   /// the PATH like environment variable but is also in IgnoreList is not
   /// considered.
-  LLVM_ABI static std::optional<std::string>
+  static std::optional<std::string>
   FindInEnvPath(StringRef EnvName, StringRef FileName,
                 ArrayRef<std::string> IgnoreList,
                 char Separator = EnvPathSeparator);
 
-  LLVM_ABI static std::optional<std::string>
+  static std::optional<std::string>
   FindInEnvPath(StringRef EnvName, StringRef FileName,
                 char Separator = EnvPathSeparator);
 
@@ -119,7 +118,7 @@ public:
   // and error) are properly mapped to a file descriptor before we use any of
   // them.  This should only be called by standalone programs, library
   // components should not call this.
-  LLVM_ABI static std::error_code FixupStandardFileDescriptors();
+  static std::error_code FixupStandardFileDescriptors();
 
   // This function safely closes a file descriptor.  It is not safe to retry
   // close(2) when it returns with errno equivalent to EINTR; this is because
@@ -128,93 +127,93 @@ public:
   //
   // N.B. Some operating systems, due to thread cancellation, cannot properly
   // guarantee that it will or will not be closed one way or the other!
-  LLVM_ABI static std::error_code SafelyCloseFileDescriptor(int FD);
+  static std::error_code SafelyCloseFileDescriptor(int FD);
 
   /// This function determines if the standard input is connected directly
   /// to a user's input (keyboard probably), rather than coming from a file
   /// or pipe.
-  LLVM_ABI static bool StandardInIsUserInput();
+  static bool StandardInIsUserInput();
 
   /// This function determines if the standard output is connected to a
   /// "tty" or "console" window. That is, the output would be displayed to
   /// the user rather than being put on a pipe or stored in a file.
-  LLVM_ABI static bool StandardOutIsDisplayed();
+  static bool StandardOutIsDisplayed();
 
   /// This function determines if the standard error is connected to a
   /// "tty" or "console" window. That is, the output would be displayed to
   /// the user rather than being put on a pipe or stored in a file.
-  LLVM_ABI static bool StandardErrIsDisplayed();
+  static bool StandardErrIsDisplayed();
 
   /// This function determines if the given file descriptor is connected to
   /// a "tty" or "console" window. That is, the output would be displayed to
   /// the user rather than being put on a pipe or stored in a file.
-  LLVM_ABI static bool FileDescriptorIsDisplayed(int fd);
+  static bool FileDescriptorIsDisplayed(int fd);
 
   /// This function determines if the given file descriptor is displayd and
   /// supports colors.
-  LLVM_ABI static bool FileDescriptorHasColors(int fd);
+  static bool FileDescriptorHasColors(int fd);
 
   /// This function determines the number of columns in the window
   /// if standard output is connected to a "tty" or "console"
   /// window. If standard output is not connected to a tty or
   /// console, or if the number of columns cannot be determined,
   /// this routine returns zero.
-  LLVM_ABI static unsigned StandardOutColumns();
+  static unsigned StandardOutColumns();
 
   /// This function determines the number of columns in the window
   /// if standard error is connected to a "tty" or "console"
   /// window. If standard error is not connected to a tty or
   /// console, or if the number of columns cannot be determined,
   /// this routine returns zero.
-  LLVM_ABI static unsigned StandardErrColumns();
+  static unsigned StandardErrColumns();
 
   /// This function determines whether the terminal connected to standard
   /// output supports colors. If standard output is not connected to a
   /// terminal, this function returns false.
-  LLVM_ABI static bool StandardOutHasColors();
+  static bool StandardOutHasColors();
 
   /// This function determines whether the terminal connected to standard
   /// error supports colors. If standard error is not connected to a
   /// terminal, this function returns false.
-  LLVM_ABI static bool StandardErrHasColors();
+  static bool StandardErrHasColors();
 
   /// Enables or disables whether ANSI escape sequences are used to output
   /// colors. This only has an effect on Windows.
   /// Note: Setting this option is not thread-safe and should only be done
   /// during initialization.
-  LLVM_ABI static void UseANSIEscapeCodes(bool enable);
+  static void UseANSIEscapeCodes(bool enable);
 
   /// Whether changing colors requires the output to be flushed.
   /// This is needed on systems that don't support escape sequences for
   /// changing colors.
-  LLVM_ABI static bool ColorNeedsFlush();
+  static bool ColorNeedsFlush();
 
   /// This function returns the colorcode escape sequences.
   /// If ColorNeedsFlush() is true then this function will change the colors
   /// and return an empty escape sequence. In that case it is the
   /// responsibility of the client to flush the output stream prior to
   /// calling this function.
-  LLVM_ABI static const char *OutputColor(char c, bool bold, bool bg);
+  static const char *OutputColor(char c, bool bold, bool bg);
 
   /// Same as OutputColor, but only enables the bold attribute.
-  LLVM_ABI static const char *OutputBold(bool bg);
+  static const char *OutputBold(bool bg);
 
   /// This function returns the escape sequence to reverse forground and
   /// background colors.
-  LLVM_ABI static const char *OutputReverse();
+  static const char *OutputReverse();
 
   /// Resets the terminals colors, or returns an escape sequence to do so.
-  LLVM_ABI static const char *ResetColor();
+  static const char *ResetColor();
 
   /// Get the result of a process wide random number generator. The
   /// generator will be automatically seeded in non-deterministic fashion.
-  LLVM_ABI static unsigned GetRandomNumber();
+  static unsigned GetRandomNumber();
 
   /// Equivalent to ::exit(), except when running inside a CrashRecoveryContext.
   /// In that case, the control flow will resume after RunSafely(), like for a
   /// crash, rather than exiting the current process.
   /// Use \arg NoCleanup for calling _exit() instead of exit().
-  [[noreturn]] LLVM_ABI static void Exit(int RetCode, bool NoCleanup = false);
+  [[noreturn]] static void Exit(int RetCode, bool NoCleanup = false);
 
 private:
   [[noreturn]] static void ExitNoCleanup(int RetCode);

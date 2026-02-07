@@ -9,7 +9,6 @@
 #include "lldb/Interpreter/OptionValueDictionary.h"
 
 #include "lldb/DataFormatters/FormatManager.h"
-#include "lldb/Interpreter/OptionValue.h"
 #include "lldb/Interpreter/OptionValueEnumeration.h"
 #include "lldb/Interpreter/OptionValueString.h"
 #include "lldb/Utility/Args.h"
@@ -31,13 +30,8 @@ void OptionValueDictionary::DumpValue(const ExecutionContext *exe_ctx,
   }
   if (dump_mask & eDumpOptionValue) {
     const bool one_line = dump_mask & eDumpOptionCommand;
-    if (dump_mask & (eDumpOptionType | eDumpOptionDefaultValue)) {
+    if (dump_mask & eDumpOptionType)
       strm.PutCString(" =");
-      if (dump_mask & eDumpOptionDefaultValue && !m_values.empty()) {
-        DefaultValueFormat label(strm);
-        strm.PutCString("empty");
-      }
-    }
 
     if (!one_line)
       strm.IndentMore();
@@ -94,7 +88,7 @@ void OptionValueDictionary::DumpValue(const ExecutionContext *exe_ctx,
 }
 
 llvm::json::Value
-OptionValueDictionary::ToJSON(const ExecutionContext *exe_ctx) const {
+OptionValueDictionary::ToJSON(const ExecutionContext *exe_ctx) {
   llvm::json::Object dict;
   for (const auto &value : m_values) {
     dict.try_emplace(value.first(), value.second->ToJSON(exe_ctx));

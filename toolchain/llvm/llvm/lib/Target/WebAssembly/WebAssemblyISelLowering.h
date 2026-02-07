@@ -19,6 +19,17 @@
 
 namespace llvm {
 
+namespace WebAssemblyISD {
+
+enum NodeType : unsigned {
+  FIRST_NUMBER = ISD::BUILTIN_OP_END,
+#define HANDLE_NODETYPE(NODE) NODE,
+#include "WebAssemblyISD.def"
+#undef HANDLE_NODETYPE
+};
+
+} // end namespace WebAssemblyISD
+
 class WebAssemblySubtarget;
 
 class WebAssemblyTargetLowering final : public TargetLowering {
@@ -42,6 +53,7 @@ private:
   MachineBasicBlock *
   EmitInstrWithCustomInserter(MachineInstr &MI,
                               MachineBasicBlock *MBB) const override;
+  const char *getTargetNodeName(unsigned Opcode) const override;
   std::pair<unsigned, const TargetRegisterClass *>
   getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
                                StringRef Constraint, MVT VT) const override;
@@ -58,7 +70,7 @@ private:
   bool isOffsetFoldingLegal(const GlobalAddressSDNode *GA) const override;
   EVT getSetCCResultType(const DataLayout &DL, LLVMContext &Context,
                          EVT VT) const override;
-  bool getTgtMemIntrinsic(IntrinsicInfo &Info, const CallBase &I,
+  bool getTgtMemIntrinsic(IntrinsicInfo &Info, const CallInst &I,
                           MachineFunction &MF,
                           unsigned Intrinsic) const override;
 
@@ -69,15 +81,14 @@ private:
 
   TargetLoweringBase::LegalizeTypeAction
   getPreferredVectorAction(MVT VT) const override;
-  bool isFMAFasterThanFMulAndFAdd(const MachineFunction &MF,
-                                  EVT VT) const override;
 
   SDValue LowerCall(CallLoweringInfo &CLI,
                     SmallVectorImpl<SDValue> &InVals) const override;
   bool CanLowerReturn(CallingConv::ID CallConv, MachineFunction &MF,
                       bool isVarArg,
                       const SmallVectorImpl<ISD::OutputArg> &Outs,
-                      LLVMContext &Context, const Type *RetTy) const override;
+                      LLVMContext &Context,
+                      const Type *RetTy) const override;
   SDValue LowerReturn(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
                       const SmallVectorImpl<ISD::OutputArg> &Outs,
                       const SmallVectorImpl<SDValue> &OutVals, const SDLoc &dl,
@@ -120,7 +131,6 @@ private:
   SDValue LowerStore(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerMUL_LOHI(SDValue Op, SelectionDAG &DAG) const;
   SDValue Replace128Op(SDNode *N, SelectionDAG &DAG) const;
-  SDValue LowerUADDO(SDValue Op, SelectionDAG &DAG) const;
 
   // Custom DAG combine hooks
   SDValue

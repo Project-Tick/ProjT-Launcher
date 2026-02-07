@@ -564,20 +564,21 @@ unsigned int GVNHoist::rank(const Value *V) const {
 }
 
 bool GVNHoist::hasEH(const BasicBlock *BB) {
-  auto [It, Inserted] = BBSideEffects.try_emplace(BB);
-  if (!Inserted)
+  auto It = BBSideEffects.find(BB);
+  if (It != BBSideEffects.end())
     return It->second;
 
   if (BB->isEHPad() || BB->hasAddressTaken()) {
-    It->second = true;
+    BBSideEffects[BB] = true;
     return true;
   }
 
   if (BB->getTerminator()->mayThrow()) {
-    It->second = true;
+    BBSideEffects[BB] = true;
     return true;
   }
 
+  BBSideEffects[BB] = false;
   return false;
 }
 
@@ -1166,7 +1167,8 @@ std::pair<unsigned, unsigned> GVNHoist::hoistExpressions(Function &F) {
         SI.insert(Store, VN);
       else if (auto *Call = dyn_cast<CallInst>(&I1)) {
         if (auto *Intr = dyn_cast<IntrinsicInst>(Call)) {
-          if (Intr->getIntrinsicID() == Intrinsic::assume ||
+          if (isa<DbgInfoIntrinsic>(Intr) ||
+              Intr->getIntrinsicID() == Intrinsic::assume ||
               Intr->getIntrinsicID() == Intrinsic::sideeffect)
             continue;
         }

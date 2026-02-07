@@ -85,72 +85,6 @@ if (DialectInlinerInterface *interface = dyn_cast<DialectInlinerInterface>(diale
 }
 ```
 
-#### Utilizing the ODS framework
-
-Note: Before reading this section, the reader should have some familiarity with
-the concepts described in the
-[`Operation Definition Specification`](DefiningDialects/Operations.md) documentation.
-
-MLIR also supports defining dialect interfaces directly in **TableGen**.
-This reduces boilerplate and allows authors to specify high-level interface 
-structure declaratively.
-
-For example, the above interface can be defined using ODS as follows:
-
-```tablegen
-def DialectInlinerInterface : DialectInterface<"DialectInlinerInterface"> {
-  let description = [{
-     Define a base inlining interface class to allow for dialects to opt-in to 
-     the inliner.
-  }];
-
-  let methods = [
-    InterfaceMethod<[{
-        Returns true if the given region 'src' can be inlined into the region
-        'dest' that is attached to an operation registered to the current dialect.
-        'valueMapping' contains any remapped values from within the 'src' region.
-        This can be used to examine what values will replace entry arguments into
-        the 'src' region, for example.
-      }],
-      "bool", "isLegalToInline",
-      (ins "Region *":$dest, "Region *":$src, "IRMapping &":$valueMapping),
-      [{
-        return false;
-      }]
-      >
-  ];
-}
-```
-
-`DialectInterfaces` class make use of the following components:
-
-*   C++ Class Name (Provided via template parameter)
-    -   The name of the C++ interface class.
-*   Description (`description`)
-    -   A string description of the interface, its invariants, example usages,
-    etc.
-*   C++ Namespace (`cppNamespace`)
-    -   The C++ namespace that the interface class should be generated in.
-*   Methods (`methods`)
-    -   The list of interface hook methods that are defined by the IR object.
-    -   The structure of these methods is defined [here](#interface-methods).
-
-The header file can be generated via the following command:
-
-```bash
-mlir-tblgen --gen-dialect-interface-decls DialectInterface.td
-```
-
-To generate dialect interface declarations using the ODS framework in CMake, you would write:
-
-```cmake
-set(LLVM_TARGET_DEFINITIONS DialectInlinerInterface.td)
-mlir_tablegen(DialectInlinerInterface.h.inc -gen-dialect-interface-decls)
-```
-
-An example of this can be found in the DialectInlinerInterface implementation 
-and the related `CMakeLists.txt` under `mlir/include/mlir/Transforms`.
-
 #### DialectInterfaceCollection
 
 An additional utility is provided via `DialectInterfaceCollection`. This class
@@ -322,7 +256,7 @@ struct ExampleTypeInterfaceTraits {
   struct ExternalModel : public FallbackModel<ConcreteModel> {
     unsigned exampleInterfaceHook(Type type) const override {
       // Default implementation can be provided here.
-      return cast<ConcreteType>(type).callSomeTypeSpecificMethod();
+      return type.cast<ConcreteType>().callSomeTypeSpecificMethod();
     }
   };
 };
@@ -429,6 +363,10 @@ void *TestDialect::getRegisteredInterfaceForOp(TypeID typeID,
 ```
 
 #### Utilizing the ODS Framework
+
+Note: Before reading this section, the reader should have some familiarity with
+the concepts described in the
+[`Operation Definition Specification`](DefiningDialects/Operations.md) documentation.
 
 As detailed above, [Interfaces](#attributeoperationtype-interfaces) allow for
 attributes, operations, and types to expose method calls without requiring that
@@ -625,7 +563,7 @@ def MyInterface : OpInterface<"MyInterface"> {
         template <typename ConcreteOp>
         struct Model : public Concept {
           Operation *create(OpBuilder &builder, Location loc) const override {
-            return ConcreteOp::create(builder, loc);
+            return builder.create<ConcreteOp>(loc);
           }
         }
       };
@@ -636,7 +574,7 @@ def MyInterface : OpInterface<"MyInterface"> {
     }],
       "Operation *", "create", (ins "OpBuilder &":$builder, "Location":$loc),
       /*methodBody=*/[{
-        return ConcreteOp::create(builder, loc);
+        return builder.create<ConcreteOp>(loc);
     }]>,
 
     InterfaceMethod<[{
@@ -815,19 +753,14 @@ interface section goes as follows:
     -   (`C++ class` -- `ODS class`(if applicable))
 
 ##### CallInterfaces
+
 *   `CallOpInterface` - Used to represent operations like 'call'
     -   `CallInterfaceCallable getCallableForCallee()`
     -   `void setCalleeFromCallable(CallInterfaceCallable)`
-    -   `ArrayAttr getArgAttrsAttr()`
-    -   `ArrayAttr getResAttrsAttr()`
-    -   `void setArgAttrsAttr(ArrayAttr)`
-    -   `void setResAttrsAttr(ArrayAttr)`
-    -   `Attribute removeArgAttrsAttr()`
-    -   `Attribute removeResAttrsAttr()`
 *   `CallableOpInterface` - Used to represent the target callee of call.
     -   `Region * getCallableRegion()`
     -   `ArrayRef<Type> getArgumentTypes()`
-    -   `ArrayRef<Type> getResultTypes()`
+    -   `ArrayRef<Type> getResultsTypes()`
     -   `ArrayAttr getArgAttrsAttr()`
     -   `ArrayAttr getResAttrsAttr()`
     -   `void setArgAttrsAttr(ArrayAttr)`

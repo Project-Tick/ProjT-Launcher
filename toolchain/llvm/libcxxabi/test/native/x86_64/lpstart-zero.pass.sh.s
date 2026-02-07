@@ -23,7 +23,6 @@
 ## The exception table is modified to use udata4 encoding for LPStart and
 ## sdata4 encoding for call sites.
 
-	.att_syntax
 	.text
 	.globl	main                            # -- Begin function main
 	.p2align	4, 0x90

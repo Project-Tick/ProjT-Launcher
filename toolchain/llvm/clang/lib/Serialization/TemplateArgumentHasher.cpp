@@ -15,7 +15,6 @@
 #include "clang/AST/TypeVisitor.h"
 #include "clang/Basic/IdentifierTable.h"
 #include "llvm/ADT/FoldingSet.h"
-#include "llvm/Support/TimeProfiler.h"
 
 using namespace clang;
 
@@ -320,9 +319,7 @@ public:
 
   void VisitMemberPointerType(const MemberPointerType *T) {
     AddQualType(T->getPointeeType());
-    AddType(T->getQualifier().getAsType());
-    if (auto *RD = T->getMostRecentCXXRecordDecl())
-      AddDecl(RD->getCanonicalDecl());
+    AddType(T->getClass());
   }
 
   void VisitPackExpansionType(const PackExpansionType *T) {
@@ -379,6 +376,10 @@ public:
 
   void VisitTypedefType(const TypedefType *T) { AddDecl(T->getDecl()); }
 
+  void VisitElaboratedType(const ElaboratedType *T) {
+    AddQualType(T->getNamedType());
+  }
+
   void VisitUnaryTransformType(const UnaryTransformType *T) {
     AddQualType(T->getUnderlyingType());
     AddQualType(T->getBaseType());
@@ -402,7 +403,6 @@ void TemplateArgumentHasher::AddType(const Type *T) {
 
 unsigned clang::serialization::StableHashForTemplateArguments(
     llvm::ArrayRef<TemplateArgument> Args) {
-  llvm::TimeTraceScope TimeScope("Stable Hash for Template Arguments");
   TemplateArgumentHasher Hasher;
   Hasher.AddInteger(Args.size());
   for (TemplateArgument Arg : Args)

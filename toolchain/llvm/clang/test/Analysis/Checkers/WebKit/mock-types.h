@@ -1,28 +1,3 @@
-#ifndef std_move
-#define std_move
-
-namespace std {
-
-template <typename T> struct remove_reference {
-typedef T type;
-};
-
-template <typename T> struct remove_reference<T&> {
-typedef T type;
-};
-
-template<typename T> typename remove_reference<T>::type&& move(T&& t);
-
-}
-
-#endif
-
-namespace WTF {
-
-template<typename T> typename std::remove_reference<T>::type&& move(T&& t);
-
-}
-
 #ifndef mock_types_1103988513531
 #define mock_types_1103988513531
 
@@ -31,23 +6,23 @@ namespace std {
 template <typename T>
 class unique_ptr {
 private:
-  void *t;
+  T *t;
 
 public:
   unique_ptr() : t(nullptr) { }
   unique_ptr(T *t) : t(t) { }
   ~unique_ptr() {
     if (t)
-      delete static_cast<T*>(t);
+      delete t;
   }
   template <typename U> unique_ptr(unique_ptr<U>&& u)
     : t(u.t)
   {
     u.t = nullptr;
   }
-  T *get() const { return static_cast<T*>(t); }
-  T *operator->() const { return get(); }
-  T &operator*() const { return *get(); }
+  T *get() const { return t; }
+  T *operator->() const { return t; }
+  T &operator*() const { return *t; }
   unique_ptr &operator=(T *) { return *this; }
   explicit operator bool() const { return !!t; }
 };
@@ -274,7 +249,7 @@ public:
   T *get() const { return t; }
   T *operator->() const { return t; }
   T &operator*() const { return *t; }
-  CheckedPtr &operator=(T *);
+  CheckedPtr &operator=(T *) { return *this; }
   operator bool() const { return t; }
 };
 
@@ -314,95 +289,8 @@ public:
     u.t = nullptr;
   }
   T &get() const { return *t; }
-  operator T&() const { return *t; }
   T *operator->() const { return t; }
   UniqueRef &operator=(T &) { return *this; }
-};
-
-class WeakPtrImpl {
-private:
-  void* ptr { nullptr };
-  mutable unsigned m_refCount { 0 };
-
-  template <typename U> friend class CanMakeWeakPtr;
-  template <typename U> friend class WeakPtr;
-
-public:
-  template <typename T>
-  static Ref<WeakPtrImpl> create(T& t)
-  {
-    return adoptRef(*new WeakPtrImpl(t));
-  }
-
-  void ref() const { m_refCount++; }
-  void deref() const {
-    m_refCount--;
-    if (!m_refCount)
-      delete const_cast<WeakPtrImpl*>(this);
-  }
-
-  template <typename T>
-  T* get() { return static_cast<T*>(ptr); }
-  operator bool() const { return !!ptr; }
-  void clear() { ptr = nullptr; }
-
-private:
-  template <typename T>
-  WeakPtrImpl(T* t)
-    : ptr(static_cast<void*>(t))
-  { }
-};
-
-template <typename T>
-class CanMakeWeakPtr {
-private:
-  RefPtr<WeakPtrImpl> impl;
-
-  template <typename U> friend class CanMakeWeakPtr;
-  template <typename U> friend class WeakPtr;
-
-  Ref<WeakPtrImpl> createWeakPtrImpl() {
-    if (!impl)
-      impl = WeakPtrImpl::create(static_cast<T>(*this));
-    return *impl;
-  }
-
-public:
-  ~CanMakeWeakPtr() {
-    if (!impl)
-      return;
-    impl->clear();
-    impl = nullptr;
-  }
-};
-
-template <typename T>
-class WeakPtr {
-private:
-  RefPtr<WeakPtrImpl> impl;
-
-public:
-  WeakPtr(T& t) {
-    *this = t;
-  }
-  WeakPtr(T* t) {
-    *this = t;
-  }
-
-  template <typename U>
-  WeakPtr<T> operator=(U& obj) {
-    impl = obj.createWeakPtrImpl();
-  }
-
-  template <typename U>
-  WeakPtr<T> operator=(U* obj) {
-    impl = obj ? obj->createWeakPtrImpl() : nullptr;
-  }
-
-  T* get() {
-    return impl ? impl->get<T>() : nullptr;
-  }
-
 };
 
 #endif

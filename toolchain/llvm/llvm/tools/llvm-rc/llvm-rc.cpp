@@ -201,7 +201,7 @@ std::string getMingwTriple() {
   Triple T(sys::getDefaultTargetTriple());
   if (!isUsableArch(T.getArch()))
     T.setArch(getDefaultFallbackArch());
-  if (T.isOSCygMing())
+  if (T.isWindowsGNUEnvironment())
     return T.str();
   // Write out the literal form of the vendor/env here, instead of
   // constructing them with enum values (which end up with them in
@@ -266,7 +266,8 @@ void preprocess(StringRef Src, StringRef Dst, const RcOptions &Opts,
       }
     }
   }
-  llvm::append_range(Args, Opts.PreprocessArgs);
+  for (const auto &S : Opts.PreprocessArgs)
+    Args.push_back(S);
   Args.push_back(Src);
   Args.push_back("-o");
   Args.push_back(Dst);
@@ -371,7 +372,7 @@ RcOptions parseWindresOptions(ArrayRef<const char *> ArgsArr,
   }
 
   std::vector<std::string> FileArgs = InputArgs.getAllArgValues(WINDRES_INPUT);
-  llvm::append_range(FileArgs, InputArgsArray);
+  FileArgs.insert(FileArgs.end(), InputArgsArray.begin(), InputArgsArray.end());
 
   if (InputArgs.hasArg(WINDRES_input)) {
     Opts.InputFile = InputArgs.getLastArgValue(WINDRES_input).str();
@@ -519,7 +520,8 @@ RcOptions parseRcOptions(ArrayRef<const char *> ArgsArr,
   }
 
   std::vector<std::string> InArgsInfo = InputArgs.getAllArgValues(OPT_INPUT);
-  llvm::append_range(InArgsInfo, InputArgsArray);
+  InArgsInfo.insert(InArgsInfo.end(), InputArgsArray.begin(),
+                    InputArgsArray.end());
   if (InArgsInfo.size() != 1) {
     fatalError("Exactly one input file should be provided.");
   }
@@ -619,8 +621,7 @@ void doRc(std::string Src, std::string Dest, RcOptions &Opts,
   StringRef Contents = FileContents->getBuffer();
 
   std::string FilteredContents = filterCppOutput(Contents);
-  std::vector<RCToken> Tokens =
-      ExitOnErr(tokenizeRC(FilteredContents, Opts.IsWindres));
+  std::vector<RCToken> Tokens = ExitOnErr(tokenizeRC(FilteredContents));
 
   if (Opts.BeVerbose) {
     const Twine TokenNames[] = {

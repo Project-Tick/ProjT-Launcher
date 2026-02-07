@@ -9,6 +9,7 @@
 #include "RegisterAliasing.h"
 
 #include <cassert>
+#include <memory>
 
 #include "MipsInstrInfo.h"
 #include "TestBase.h"

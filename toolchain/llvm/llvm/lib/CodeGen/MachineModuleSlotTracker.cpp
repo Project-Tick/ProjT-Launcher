@@ -39,8 +39,8 @@ void MachineModuleSlotTracker::processMachineModule(
       if (&F != &TheFunction)
         continue;
       MDNStartSlot = AST->getNextMetadataSlot();
-      if (TheMF)
-        processMachineFunctionMetadata(AST, *TheMF);
+      if (auto *MF = TheMMI.getMachineFunction(F))
+        processMachineFunctionMetadata(AST, *MF);
       MDNEndSlot = AST->getNextMetadataSlot();
       break;
     }
@@ -52,8 +52,8 @@ void MachineModuleSlotTracker::processMachineFunction(
     bool ShouldInitializeAllMetadata) {
   if (!ShouldInitializeAllMetadata && F == &TheFunction) {
     MDNStartSlot = AST->getNextMetadataSlot();
-    if (TheMF)
-      processMachineFunctionMetadata(AST, *TheMF);
+    if (auto *MF = TheMMI.getMachineFunction(*F))
+      processMachineFunctionMetadata(AST, *MF);
     MDNEndSlot = AST->getNextMetadataSlot();
   }
 }
@@ -64,10 +64,11 @@ void MachineModuleSlotTracker::collectMachineMDNodes(
 }
 
 MachineModuleSlotTracker::MachineModuleSlotTracker(
-    MFGetterFnT Fn, const MachineFunction *MF, bool ShouldInitializeAllMetadata)
+    const MachineModuleInfo &MMI, const MachineFunction *MF,
+    bool ShouldInitializeAllMetadata)
     : ModuleSlotTracker(MF->getFunction().getParent(),
                         ShouldInitializeAllMetadata),
-      TheFunction(MF->getFunction()), TheMF(Fn(MF->getFunction())) {
+      TheFunction(MF->getFunction()), TheMMI(MMI) {
   setProcessHook([this](AbstractSlotTrackerStorage *AST, const Module *M,
                         bool ShouldInitializeAllMetadata) {
     this->processMachineModule(AST, M, ShouldInitializeAllMetadata);

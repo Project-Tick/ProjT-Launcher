@@ -103,8 +103,7 @@ ABIArgInfo WebAssemblyABIInfo::classifyArgumentType(QualType Ty) const {
     // Records with non-trivial destructors/copy-constructors should not be
     // passed by value.
     if (auto RAA = getRecordArgABI(Ty, getCXXABI()))
-      return getNaturalAlignIndirect(Ty, getDataLayout().getAllocaAddrSpace(),
-                                     RAA == CGCXXABI::RAA_DirectInMemory);
+      return getNaturalAlignIndirect(Ty, RAA == CGCXXABI::RAA_DirectInMemory);
     // Ignore empty structs/unions.
     if (isEmptyRecord(getContext(), Ty, true))
       return ABIArgInfo::getIgnore();
@@ -115,9 +114,10 @@ ABIArgInfo WebAssemblyABIInfo::classifyArgumentType(QualType Ty) const {
       return ABIArgInfo::getDirect(CGT.ConvertType(QualType(SeltTy, 0)));
     // For the experimental multivalue ABI, fully expand all other aggregates
     if (Kind == WebAssemblyABIKind::ExperimentalMV) {
-      const auto *RD = Ty->castAsRecordDecl();
+      const RecordType *RT = Ty->getAs<RecordType>();
+      assert(RT);
       bool HasBitField = false;
-      for (auto *Field : RD->fields()) {
+      for (auto *Field : RT->getDecl()->fields()) {
         if (Field->isBitField()) {
           HasBitField = true;
           break;

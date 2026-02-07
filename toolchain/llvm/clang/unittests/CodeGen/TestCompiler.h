@@ -36,8 +36,7 @@ struct TestCompiler {
                clang::CodeGenOptions CGO = clang::CodeGenOptions()) {
     compiler.getLangOpts() = LO;
     compiler.getCodeGenOpts() = CGO;
-    compiler.setVirtualFileSystem(llvm::vfs::getRealFileSystem());
-    compiler.createDiagnostics();
+    compiler.createDiagnostics(*llvm::vfs::getRealFileSystem());
 
     std::string TrStr = llvm::Triple::normalize(llvm::sys::getProcessTriple());
     llvm::Triple Tr(TrStr);
@@ -46,18 +45,22 @@ struct TestCompiler {
     Tr.setEnvironment(Triple::EnvironmentType::UnknownEnvironment);
     compiler.getTargetOpts().Triple = Tr.getTriple();
     compiler.setTarget(clang::TargetInfo::CreateTargetInfo(
-        compiler.getDiagnostics(), compiler.getTargetOpts()));
+        compiler.getDiagnostics(),
+        std::make_shared<clang::TargetOptions>(compiler.getTargetOpts())));
 
     const clang::TargetInfo &TInfo = compiler.getTarget();
     PtrSize = TInfo.getPointerWidth(clang::LangAS::Default) / 8;
 
     compiler.createFileManager();
-    compiler.createSourceManager();
+    compiler.createSourceManager(compiler.getFileManager());
     compiler.createPreprocessor(clang::TU_Prefix);
 
     compiler.createASTContext();
 
-    CG = CreateLLVMCodeGen(compiler, "main-module", Context);
+    CG.reset(CreateLLVMCodeGen(
+        compiler.getDiagnostics(), "main-module",
+        &compiler.getVirtualFileSystem(), compiler.getHeaderSearchOpts(),
+        compiler.getPreprocessorOpts(), compiler.getCodeGenOpts(), Context));
   }
 
   void init(const char *TestProgram,

@@ -180,9 +180,6 @@ Decl *SemaObjC::ActOnProperty(Scope *S, SourceLocation AtLoc,
                            0);
   TypeSourceInfo *TSI = SemaRef.GetTypeForDeclarator(FD.D);
   QualType T = TSI->getType();
-  if (T.getPointerAuth().isPresent()) {
-    Diag(AtLoc, diag::err_ptrauth_qualifier_invalid) << T << 2;
-  }
   if (!getOwnershipRule(Attributes)) {
     Attributes |= deducePropertyOwnershipFromType(SemaRef, T);
   }
@@ -310,7 +307,7 @@ static bool LocPropertyAttribute( ASTContext &Context, const char *attrName,
     return false;
 
   SourceManager &SM = Context.getSourceManager();
-  FileIDAndOffset locInfo = SM.getDecomposedLoc(LParenLoc);
+  std::pair<FileID, unsigned> locInfo = SM.getDecomposedLoc(LParenLoc);
   // Try to load the file buffer.
   bool invalidTemp = false;
   StringRef file = SM.getBufferData(locInfo.first, &invalidTemp);
@@ -1041,7 +1038,7 @@ RedeclarePropertyAccessor(ASTContext &Context, ObjCImplementationDecl *Impl,
       Decl->getSelector(), Decl->getReturnType(),
       Decl->getReturnTypeSourceInfo(), Impl, Decl->isInstanceMethod(),
       Decl->isVariadic(), Decl->isPropertyAccessor(),
-      /*isSynthesizedAccessorStub=*/true, Decl->isImplicit(), Decl->isDefined(),
+      /* isSynthesized*/ true, Decl->isImplicit(), Decl->isDefined(),
       Decl->getImplementationControl(), Decl->hasRelatedResultType());
   ImplDecl->getMethodFamily();
   if (Decl->hasAttrs())
@@ -1298,15 +1295,6 @@ Decl *SemaObjC::ActOnPropertyImplDecl(
         }
       }
 
-      if (Context.getLangOpts().PointerAuthObjcInterfaceSel &&
-          !PropertyIvarType.getPointerAuth()) {
-        if (Context.isObjCSelType(QualType(PropertyIvarType.getTypePtr(), 0))) {
-          if (auto PAQ = Context.getObjCMemberSelTypePtrAuth())
-            PropertyIvarType =
-                Context.getPointerAuthType(PropertyIvarType, PAQ);
-        }
-      }
-
       Ivar = ObjCIvarDecl::Create(Context, ClassImpDecl,
                                   PropertyIvarLoc,PropertyIvarLoc, PropertyIvar,
                                   PropertyIvarType, /*TInfo=*/nullptr,
@@ -1320,8 +1308,8 @@ Decl *SemaObjC::ActOnPropertyImplDecl(
         CompleteTypeErr = true;
       }
       if (!CompleteTypeErr) {
-        if (const auto *RD = PropertyIvarType->getAsRecordDecl();
-            RD && RD->hasFlexibleArrayMember()) {
+        const RecordType *RecordTy = PropertyIvarType->getAs<RecordType>();
+        if (RecordTy && RecordTy->getDecl()->hasFlexibleArrayMember()) {
           Diag(PropertyIvarLoc, diag::err_synthesize_variable_sized_ivar)
             << PropertyIvarType;
           CompleteTypeErr = true; // suppress later diagnostics about the ivar
@@ -1358,9 +1346,9 @@ Decl *SemaObjC::ActOnPropertyImplDecl(
             PropertyIvarType->castAs<ObjCObjectPointerType>(),
             IvarType->castAs<ObjCObjectPointerType>());
       else {
-        compat = SemaRef.IsAssignConvertCompatible(
-            SemaRef.CheckAssignmentConstraints(PropertyIvarLoc,
-                                               PropertyIvarType, IvarType));
+        compat = (SemaRef.CheckAssignmentConstraints(
+                      PropertyIvarLoc, PropertyIvarType, IvarType) ==
+                  Sema::Compatible);
       }
       if (!compat) {
         Diag(PropertyDiagLoc, diag::err_property_ivar_type)
@@ -1711,9 +1699,8 @@ bool SemaObjC::DiagnosePropertyAccessorMismatch(ObjCPropertyDecl *property,
              PropertyRValueType->getAs<ObjCObjectPointerType>()) &&
         (getterObjCPtr = GetterType->getAs<ObjCObjectPointerType>()))
       compat = Context.canAssignObjCInterfaces(getterObjCPtr, propertyObjCPtr);
-    else if (!SemaRef.IsAssignConvertCompatible(
-                 SemaRef.CheckAssignmentConstraints(Loc, GetterType,
-                                                    PropertyRValueType))) {
+    else if (SemaRef.CheckAssignmentConstraints(
+                 Loc, GetterType, PropertyRValueType) != Sema::Compatible) {
       Diag(Loc, diag::err_property_accessor_type)
           << property->getDeclName() << PropertyRValueType
           << GetterMethod->getSelector() << GetterType;
@@ -2088,9 +2075,10 @@ void SemaObjC::DiagnoseUnimplementedProperties(Scope *S, ObjCImplDecl *IMPDecl,
   for (const auto *I : IMPDecl->property_impls())
     PropImplMap.insert(I->getPropertyDecl());
 
+  llvm::SmallPtrSet<const ObjCMethodDecl *, 8> InsMap;
   // Collect property accessors implemented in current implementation.
-  llvm::SmallPtrSet<const ObjCMethodDecl *, 8> InsMap(llvm::from_range,
-                                                      IMPDecl->methods());
+  for (const auto *I : IMPDecl->methods())
+    InsMap.insert(I);
 
   ObjCCategoryDecl *C = dyn_cast<ObjCCategoryDecl>(CDecl);
   ObjCInterfaceDecl *PrimaryClass = nullptr;
@@ -2101,7 +2089,8 @@ void SemaObjC::DiagnoseUnimplementedProperties(Scope *S, ObjCImplDecl *IMPDecl,
         // When reporting on missing setter/getters, do not report when
         // setter/getter is implemented in category's primary class
         // implementation.
-        InsMap.insert_range(IMP->methods());
+        for (const auto *I : IMP->methods())
+          InsMap.insert(I);
       }
 
   for (ObjCContainerDecl::PropertyMap::iterator

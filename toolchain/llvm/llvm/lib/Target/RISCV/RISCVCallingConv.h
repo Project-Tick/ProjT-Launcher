@@ -21,19 +21,19 @@ namespace llvm {
 typedef bool RISCVCCAssignFn(unsigned ValNo, MVT ValVT, MVT LocVT,
                              CCValAssign::LocInfo LocInfo,
                              ISD::ArgFlagsTy ArgFlags, CCState &State,
-                             bool IsRet, Type *OrigTy);
+                             bool IsFixed, bool IsRet, Type *OrigTy);
 
 bool CC_RISCV(unsigned ValNo, MVT ValVT, MVT LocVT,
               CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
-              CCState &State, bool IsRet, Type *OrigTy);
+              CCState &State, bool IsFixed, bool IsRet, Type *OrigTy);
 
 bool CC_RISCV_FastCC(unsigned ValNo, MVT ValVT, MVT LocVT,
                      CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
-                     CCState &State, bool IsRet, Type *OrigTy);
+                     CCState &State, bool IsFixed, bool IsRet, Type *OrigTy);
 
 bool CC_RISCV_GHC(unsigned ValNo, MVT ValVT, MVT LocVT,
                   CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
-                  Type *OrigTy, CCState &State);
+                  CCState &State);
 
 namespace RISCV {
 

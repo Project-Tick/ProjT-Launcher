@@ -21,7 +21,7 @@
 // GCC doesn't support the aligned-allocation flags.
 // XFAIL: gcc
 
-// ADDITIONAL_COMPILE_FLAGS: -I %{libcxx-dir}/src -Wno-macro-redefined
+// XFAIL: FROZEN-CXX03-HEADERS-FIXME
 
 // RUN: %{build} -faligned-allocation -fsized-deallocation
 // RUN: %{run}
@@ -38,7 +38,10 @@
 
 #include "test_macros.h"
 
-#include "include/aligned_alloc.h"
+TEST_DIAGNOSTIC_PUSH
+TEST_CLANG_DIAGNOSTIC_IGNORED("-Wprivate-header")
+#include <__memory/aligned_alloc.h>
+TEST_DIAGNOSTIC_POP
 
 struct alloc_stats {
   alloc_stats() { reset(); }

@@ -1,9 +1,6 @@
-// clang-format off
 // RUN: %libomptarget-compile-run-and-check-generic
 // REQUIRES: ompt
 // REQUIRES: gpu
-// XFAIL: intelgpu
-// clang-format on
 
 /*
  * Example OpenMP program that registers EMI callbacks.
@@ -76,86 +73,85 @@ int main() {
   return rc;
 }
 
-// clang-format off
 /// CHECK-NOT: Callback Target EMI:
 /// CHECK-NOT: device_num=-1
 /// CHECK: Callback Init:
 /// CHECK: Callback Load:
-/// CHECK: Callback Target EMI: kind=ompt_target_enter_data endpoint=ompt_scope_begin
+/// CHECK: Callback Target EMI: kind=2 endpoint=1
 /// CHECK-NOT: device_num=-1
 /// CHECK-NOT: code=(nil)
 /// CHECK: code=[[CODE1:.*]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_begin optype=ompt_target_data_alloc
+/// CHECK: Callback DataOp EMI: endpoint=1 optype=1
 /// CHECK: code=[[CODE1]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_end optype=ompt_target_data_alloc
+/// CHECK: Callback DataOp EMI: endpoint=2 optype=1
 /// CHECK-NOT: dest=(nil)
 /// CHECK: code=[[CODE1]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_begin optype=ompt_target_data_transfer_to_device
+/// CHECK: Callback DataOp EMI: endpoint=1 optype=2
 /// CHECK: code=[[CODE1]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_end optype=ompt_target_data_transfer_to_device
+/// CHECK: Callback DataOp EMI: endpoint=2 optype=2
 /// CHECK: code=[[CODE1]]
-/// CHECK: Callback Target EMI: kind=ompt_target_enter_data endpoint=ompt_scope_end
+/// CHECK: Callback Target EMI: kind=2 endpoint=2
 /// CHECK-NOT: device_num=-1
 /// CHECK: code=[[CODE1]]
-/// CHECK: Callback Target EMI: kind=ompt_target endpoint=ompt_scope_begin
+/// CHECK: Callback Target EMI: kind=1 endpoint=1
 /// CHECK-NOT: device_num=-1
 /// CHECK-NOT: code=(nil)
 /// CHECK: code=[[CODE2:.*]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_begin optype=ompt_target_data_alloc
+/// CHECK: Callback DataOp EMI: endpoint=1 optype=1
 /// CHECK: code=[[CODE2]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_end optype=ompt_target_data_alloc
+/// CHECK: Callback DataOp EMI: endpoint=2 optype=1
 /// CHECK-NOT: dest=(nil)
 /// CHECK: code=[[CODE2]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_begin optype=ompt_target_data_transfer_to_device
+/// CHECK: Callback DataOp EMI: endpoint=1 optype=2
 /// CHECK: code=[[CODE2]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_end optype=ompt_target_data_transfer_to_device
+/// CHECK: Callback DataOp EMI: endpoint=2 optype=2
 /// CHECK: code=[[CODE2]]
-/// CHECK: Callback Submit EMI: endpoint=ompt_scope_begin  req_num_teams=1
-/// CHECK: Callback Submit EMI: endpoint=ompt_scope_end  req_num_teams=1
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_begin optype=ompt_target_data_transfer_from_device
+/// CHECK: Callback Submit EMI: endpoint=1  req_num_teams=1
+/// CHECK: Callback Submit EMI: endpoint=2  req_num_teams=1
+/// CHECK: Callback DataOp EMI: endpoint=1 optype=3
 /// CHECK: code=[[CODE2]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_end optype=ompt_target_data_transfer_from_device
+/// CHECK: Callback DataOp EMI: endpoint=2 optype=3
 /// CHECK: code=[[CODE2]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_begin optype=ompt_target_data_delete
+/// CHECK: Callback DataOp EMI: endpoint=1 optype=4
 /// CHECK: code=[[CODE2]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_end optype=ompt_target_data_delete
+/// CHECK: Callback DataOp EMI: endpoint=2 optype=4
 /// CHECK: code=[[CODE2]]
-/// CHECK: Callback Target EMI: kind=ompt_target endpoint=ompt_scope_end
+/// CHECK: Callback Target EMI: kind=1 endpoint=2
 /// CHECK-NOT: device_num=-1
 /// CHECK: code=[[CODE2]]
-/// CHECK: Callback Target EMI: kind=ompt_target_exit_data endpoint=ompt_scope_begin
+/// CHECK: Callback Target EMI: kind=3 endpoint=1
 /// CHECK-NOT: device_num=-1
 /// CHECK-NOT: code=(nil)
 /// CHECK: code=[[CODE3:.*]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_begin optype=ompt_target_data_transfer_from_device
+/// CHECK: Callback DataOp EMI: endpoint=1 optype=3
 /// CHECK: code=[[CODE3]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_end optype=ompt_target_data_transfer_from_device
+/// CHECK: Callback DataOp EMI: endpoint=2 optype=3
 /// CHECK: code=[[CODE3]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_begin optype=ompt_target_data_delete
+/// CHECK: Callback DataOp EMI: endpoint=1 optype=4
 /// CHECK: code=[[CODE3]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_end optype=ompt_target_data_delete
+/// CHECK: Callback DataOp EMI: endpoint=2 optype=4
 /// CHECK: code=[[CODE3]]
-/// CHECK: Callback Target EMI: kind=ompt_target_exit_data endpoint=ompt_scope_end
+/// CHECK: Callback Target EMI: kind=3 endpoint=2
 /// CHECK-NOT: device_num=-1
 /// CHECK: code=[[CODE3]]
-/// CHECK: Callback Target EMI: kind=ompt_target endpoint=ompt_scope_begin
+/// CHECK: Callback Target EMI: kind=1 endpoint=1
 /// CHECK-NOT: device_num=-1
 /// CHECK-NOT: code=(nil)
 /// CHECK: code=[[CODE4:.*]]
-/// CHECK: Callback Submit EMI: endpoint=ompt_scope_begin  req_num_teams=1
-/// CHECK: Callback Submit EMI: endpoint=ompt_scope_end  req_num_teams=1
-/// CHECK: Callback Target EMI: kind=ompt_target endpoint=ompt_scope_end
+/// CHECK: Callback Submit EMI: endpoint=1  req_num_teams=1
+/// CHECK: Callback Submit EMI: endpoint=2  req_num_teams=1
+/// CHECK: Callback Target EMI: kind=1 endpoint=2
 /// CHECK-NOT: device_num=-1
 /// CHECK: code=[[CODE4]]
-/// CHECK: Callback Target EMI: kind=ompt_target_update endpoint=ompt_scope_begin
+/// CHECK: Callback Target EMI: kind=4 endpoint=1
 /// CHECK-NOT: device_num=-1
 /// CHECK-NOT: code=(nil)
 /// CHECK: code=[[CODE5:.*]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_begin optype=ompt_target_data_transfer_from_device
+/// CHECK: Callback DataOp EMI: endpoint=1 optype=3
 /// CHECK: code=[[CODE5]]
-/// CHECK: Callback DataOp EMI: endpoint=ompt_scope_end optype=ompt_target_data_transfer_from_device
+/// CHECK: Callback DataOp EMI: endpoint=2 optype=3
 /// CHECK: code=[[CODE5]]
-/// CHECK: Callback Target EMI: kind=ompt_target_update endpoint=ompt_scope_end
+/// CHECK: Callback Target EMI: kind=4 endpoint=2
 /// CHECK-NOT: device_num=-1
 /// CHECK: code=[[CODE5]]
 /// CHECK: Callback Fini:

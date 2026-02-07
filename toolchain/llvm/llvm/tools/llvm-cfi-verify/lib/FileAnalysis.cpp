@@ -278,7 +278,8 @@ Expected<DIInliningInfo>
 FileAnalysis::symbolizeInlinedCode(object::SectionedAddress Address) {
   assert(Symbolizer != nullptr && "Symbolizer is invalid.");
 
-  return Symbolizer->symbolizeInlinedCode(Object->getFileName(), Address);
+  return Symbolizer->symbolizeInlinedCode(std::string(Object->getFileName()),
+                                          Address);
 }
 
 CFIProtectionStatus
@@ -377,8 +378,6 @@ Error FileAnalysis::initialiseDisassemblyMembers() {
   MCPU = "";
   std::string ErrorString;
 
-  Triple TheTriple(TripleName);
-
   LLVMSymbolizer::Options Opt;
   Opt.UseSymbolTable = false;
   Symbolizer.reset(new LLVMSymbolizer(Opt));
@@ -391,19 +390,19 @@ Error FileAnalysis::initialiseDisassemblyMembers() {
          "\", failed with error: " + ErrorString)
             .str());
 
-  RegisterInfo.reset(ObjectTarget->createMCRegInfo(TheTriple));
+  RegisterInfo.reset(ObjectTarget->createMCRegInfo(TripleName));
   if (!RegisterInfo)
     return make_error<UnsupportedDisassembly>(
         "Failed to initialise RegisterInfo.");
 
   MCTargetOptions MCOptions;
   AsmInfo.reset(
-      ObjectTarget->createMCAsmInfo(*RegisterInfo, TheTriple, MCOptions));
+      ObjectTarget->createMCAsmInfo(*RegisterInfo, TripleName, MCOptions));
   if (!AsmInfo)
     return make_error<UnsupportedDisassembly>("Failed to initialise AsmInfo.");
 
   SubtargetInfo.reset(ObjectTarget->createMCSubtargetInfo(
-      TheTriple, MCPU, Features.getString()));
+      TripleName, MCPU, Features.getString()));
   if (!SubtargetInfo)
     return make_error<UnsupportedDisassembly>(
         "Failed to initialise SubtargetInfo.");
@@ -524,8 +523,9 @@ void FileAnalysis::parseSectionContents(ArrayRef<uint8_t> SectionBytes,
 
     // Check if this instruction exists in the range of the DWARF metadata.
     if (!IgnoreDWARFFlag) {
-      auto LineInfo = Symbolizer->symbolizeCode(
-          Object->getFileName(), {VMAddress, Address.SectionIndex});
+      auto LineInfo =
+          Symbolizer->symbolizeCode(std::string(Object->getFileName()),
+                                    {VMAddress, Address.SectionIndex});
       if (!LineInfo) {
         handleAllErrors(LineInfo.takeError(), [](const ErrorInfoBase &E) {
           errs() << "Symbolizer failed to get line: " << E.message() << "\n";
@@ -574,7 +574,7 @@ Error FileAnalysis::parseSymbolTable() {
     }
   }
   if (auto *ElfObject = dyn_cast<object::ELFObjectFileBase>(Object)) {
-    for (const auto &Plt : ElfObject->getPltEntries(*SubtargetInfo)) {
+    for (const auto &Plt : ElfObject->getPltEntries()) {
       if (!Plt.Symbol)
         continue;
       object::SymbolRef Sym(*Plt.Symbol, Object);

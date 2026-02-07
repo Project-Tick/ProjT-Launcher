@@ -13,10 +13,10 @@
 // Having said that, we should re-attempt to pull this earlier at some point
 // in future.
 
-// The basic approach looks for sequence of predicated jump, compare instruction
-// that generates the predicate and, the feeder to the predicate. Once it finds
+// The basic approach looks for sequence of predicated jump, compare instruciton
+// that genereates the predicate and, the feeder to the predicate. Once it finds
 // all, it collapses compare and jump instruction into a new value jump
-// instructions.
+// intstructions.
 //
 //===----------------------------------------------------------------------===//
 
@@ -63,6 +63,13 @@ static cl::opt<int> DbgNVJCount("nvj-count", cl::init(-1), cl::Hidden,
 static cl::opt<bool> DisableNewValueJumps("disable-nvjump", cl::Hidden,
                                           cl::desc("Disable New Value Jumps"));
 
+namespace llvm {
+
+FunctionPass *createHexagonNewValueJump();
+void initializeHexagonNewValueJumpPass(PassRegistry&);
+
+} // end namespace llvm
+
 namespace {
 
   struct HexagonNewValueJump : public MachineFunctionPass {
@@ -80,7 +87,8 @@ namespace {
     bool runOnMachineFunction(MachineFunction &Fn) override;
 
     MachineFunctionProperties getRequiredProperties() const override {
-      return MachineFunctionProperties().setNoVRegs();
+      return MachineFunctionProperties().set(
+          MachineFunctionProperties::Property::NoVRegs);
     }
 
   private:

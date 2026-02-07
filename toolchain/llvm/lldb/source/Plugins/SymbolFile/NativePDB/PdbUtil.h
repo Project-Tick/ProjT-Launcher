@@ -65,21 +65,11 @@ struct CVTagRecord {
   }
 
   llvm::StringRef name() const {
-    if (m_kind == Struct || m_kind == Class)
+    if (m_kind == Struct || m_kind == Union)
       return cvclass.Name;
     if (m_kind == Enum)
       return cvenum.Name;
     return cvunion.Name;
-  }
-
-  CompilerContextKind contextKind() const {
-    if (m_kind == Struct || m_kind == Class)
-      return CompilerContextKind::ClassOrStruct;
-    if (m_kind == Enum)
-      return CompilerContextKind::Enum;
-
-    assert(m_kind == Union);
-    return CompilerContextKind::Union;
   }
 
 private:

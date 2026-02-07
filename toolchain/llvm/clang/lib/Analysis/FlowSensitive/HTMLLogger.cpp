@@ -539,10 +539,12 @@ llvm::Expected<std::string> renderSVG(llvm::StringRef DotGraph) {
                                                    Input))
     return llvm::createStringError(EC, "failed to create `dot` temp input");
   llvm::raw_fd_ostream(InputFD, /*shouldClose=*/true) << DotGraph;
-  llvm::scope_exit DeleteInput([&] { llvm::sys::fs::remove(Input); });
+  auto DeleteInput =
+      llvm::make_scope_exit([&] { llvm::sys::fs::remove(Input); });
   if (auto EC = llvm::sys::fs::createTemporaryFile("analysis", ".svg", Output))
     return llvm::createStringError(EC, "failed to create `dot` temp output");
-  llvm::scope_exit DeleteOutput([&] { llvm::sys::fs::remove(Output); });
+  auto DeleteOutput =
+      llvm::make_scope_exit([&] { llvm::sys::fs::remove(Output); });
 
   std::vector<std::optional<llvm::StringRef>> Redirects = {
       Input, Output,

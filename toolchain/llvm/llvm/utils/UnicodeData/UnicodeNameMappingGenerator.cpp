@@ -15,6 +15,7 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
 #include <algorithm>
+#include <array>
 #include <deque>
 #include <fstream>
 #include <memory>
@@ -417,15 +418,15 @@ int main(int argc, char **argv) {
 
   fprintf(Out,
           "namespace llvm { namespace sys { namespace unicode { \n"
-          "extern const char *const UnicodeNameToCodepointDict;\n"
-          "extern const uint8_t *const UnicodeNameToCodepointIndex;\n"
+          "extern const char *UnicodeNameToCodepointDict;\n"
+          "extern const uint8_t *UnicodeNameToCodepointIndex;\n"
           "extern const std::size_t UnicodeNameToCodepointIndexSize;\n"
           "extern const std::size_t UnicodeNameToCodepointLargestNameSize;\n");
 
-  fprintf(Out, "const char *const UnicodeNameToCodepointDict = \"%s\";\n",
+  fprintf(Out, "const char* UnicodeNameToCodepointDict = \"%s\";\n",
           Dict.c_str());
 
-  fprintf(Out, "const uint8_t UnicodeNameToCodepointIndex_[%zu] = {\n",
+  fprintf(Out, "uint8_t UnicodeNameToCodepointIndex_[%zu] = {\n",
           Tree.size() + 1);
 
   for (auto Byte : Tree) {
@@ -433,7 +434,7 @@ int main(int argc, char **argv) {
   }
 
   fprintf(Out, "0};");
-  fprintf(Out, "const uint8_t *const UnicodeNameToCodepointIndex = "
+  fprintf(Out, "const uint8_t* UnicodeNameToCodepointIndex = "
                "UnicodeNameToCodepointIndex_; \n");
   fprintf(Out, "const std::size_t UnicodeNameToCodepointIndexSize = %zu;\n",
           Tree.size() + 1);

@@ -26,6 +26,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
 #include <cstdint>
+#include <utility>
 
 using namespace llvm;
 using namespace rdf;
@@ -43,11 +44,11 @@ bool CopyPropagation::interpretAsCopy(const MachineInstr *MI, EqualityMap &EM) {
       const MachineOperand &Src = MI->getOperand(1);
       RegisterRef DstR = DFG.makeRegRef(Dst.getReg(), Dst.getSubReg());
       RegisterRef SrcR = DFG.makeRegRef(Src.getReg(), Src.getSubReg());
-      assert(DstR.asMCReg().isPhysical());
-      assert(SrcR.asMCReg().isPhysical());
+      assert(Register::isPhysicalRegister(DstR.Reg));
+      assert(Register::isPhysicalRegister(SrcR.Reg));
       const TargetRegisterInfo &TRI = DFG.getTRI();
-      if (TRI.getMinimalPhysRegClass(DstR.asMCReg()) !=
-          TRI.getMinimalPhysRegClass(SrcR.asMCReg()))
+      if (TRI.getMinimalPhysRegClass(DstR.Reg) !=
+          TRI.getMinimalPhysRegClass(SrcR.Reg))
         return false;
       if (!DFG.isTracked(SrcR) || !DFG.isTracked(DstR))
         return false;
@@ -65,7 +66,7 @@ void CopyPropagation::recordCopy(NodeAddr<StmtNode*> SA, EqualityMap &EM) {
   Copies.push_back(SA.Id);
 
   for (auto I : EM) {
-    auto FS = DefM.find(I.second.Id);
+    auto FS = DefM.find(I.second.Reg);
     if (FS == DefM.end() || FS->second.empty())
       continue; // Undefined source
     RDefMap[I.second][SA.Id] = FS->second.top()->Id;
@@ -92,7 +93,7 @@ void CopyPropagation::updateMap(NodeAddr<InstrNode*> IA) {
   for (auto &R : RDefMap) {
     if (!RRs.count(R.first))
       continue;
-    auto F = DefM.find(R.first.Id);
+    auto F = DefM.find(R.first.Reg);
     if (F == DefM.end() || F->second.empty())
       continue;
     R.second[IA.Id] = F->second.top()->Id;
@@ -107,7 +108,7 @@ bool CopyPropagation::scanBlock(MachineBasicBlock *B) {
   for (NodeAddr<InstrNode*> IA : BA.Addr->members(DFG)) {
     if (DFG.IsCode<NodeAttrs::Stmt>(IA)) {
       NodeAddr<StmtNode*> SA = IA;
-      EqualityMap EM(RegisterRefLess(DFG.getPRI()));
+      EqualityMap EM(std::less<RegisterRef>(DFG.getPRI()));
       if (interpretAsCopy(SA.Addr->getCode(), EM))
         recordCopy(SA, EM);
     }
@@ -132,8 +133,8 @@ bool CopyPropagation::run() {
     for (NodeId I : Copies) {
       dbgs() << "Instr: " << *DFG.addr<StmtNode*>(I).Addr->getCode();
       dbgs() << "   eq: {";
-      if (auto It = CopyMap.find(I); It != CopyMap.end()) {
-        for (auto J : It->second)
+      if (CopyMap.count(I)) {
+        for (auto J : CopyMap.at(I))
           dbgs() << ' ' << Print<RegisterRef>(J.first, DFG) << '='
                  << Print<RegisterRef>(J.second, DFG);
       }
@@ -154,16 +155,16 @@ bool CopyPropagation::run() {
   bool HasLimit = CpLimit.getNumOccurrences() > 0;
 #endif
 
-  auto MinPhysReg = [this](RegisterRef RR) -> MCRegister {
+  auto MinPhysReg = [this] (RegisterRef RR) -> unsigned {
     const TargetRegisterInfo &TRI = DFG.getTRI();
-    const TargetRegisterClass &RC = *TRI.getMinimalPhysRegClass(RR.asMCReg());
+    const TargetRegisterClass &RC = *TRI.getMinimalPhysRegClass(RR.Reg);
     if ((RC.LaneMask & RR.Mask) == RC.LaneMask)
-      return RR.asMCReg();
-    for (MCSubRegIndexIterator S(RR.asMCReg(), &TRI); S.isValid(); ++S)
+      return RR.Reg;
+    for (MCSubRegIndexIterator S(RR.Reg, &TRI); S.isValid(); ++S)
       if (RR.Mask == TRI.getSubRegIndexLaneMask(S.getSubRegIndex()))
         return S.getSubReg();
     llvm_unreachable("Should have found a register");
-    return MCRegister();
+    return 0;
   };
 
   const PhysicalRegisterInfo &PRI = DFG.getPRI();
@@ -214,7 +215,7 @@ bool CopyPropagation::run() {
                  << *NodeAddr<StmtNode*>(IA).Addr->getCode();
         }
 
-        MCRegister NewReg = MinPhysReg(SR);
+        unsigned NewReg = MinPhysReg(SR);
         Op.setReg(NewReg);
         Op.setSubReg(0);
         DFG.unlinkUse(UA, false);

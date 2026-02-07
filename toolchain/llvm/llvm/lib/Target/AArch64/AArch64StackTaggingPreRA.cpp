@@ -31,8 +31,9 @@ using namespace llvm;
 
 enum UncheckedLdStMode { UncheckedNever, UncheckedSafe, UncheckedAlways };
 
-static cl::opt<UncheckedLdStMode> ClUncheckedLdSt(
-    "stack-tagging-unchecked-ld-st", cl::Hidden, cl::init(UncheckedSafe),
+cl::opt<UncheckedLdStMode> ClUncheckedLdSt(
+    "stack-tagging-unchecked-ld-st", cl::Hidden,
+    cl::init(UncheckedSafe),
     cl::desc(
         "Unconditionally apply unchecked-ld-st optimization (even for large "
         "stack frames, or in the presence of variable sized allocas)."),
@@ -62,7 +63,9 @@ class AArch64StackTaggingPreRA : public MachineFunctionPass {
 
 public:
   static char ID;
-  AArch64StackTaggingPreRA() : MachineFunctionPass(ID) {}
+  AArch64StackTaggingPreRA() : MachineFunctionPass(ID) {
+    initializeAArch64StackTaggingPreRAPass(*PassRegistry::getPassRegistry());
+  }
 
   bool mayUseUncheckedLoadStore();
   void uncheckUsesOf(unsigned TaggedReg, int FI);
@@ -281,8 +284,9 @@ std::optional<int> AArch64StackTaggingPreRA::findFirstSlotCandidate() {
             WorkList.push_back(DstReg);
           continue;
         }
-        LLVM_DEBUG(dbgs() << "[" << ST.FI << ":" << ST.Tag << "] use of "
-                          << printReg(UseReg) << " in " << UseI << "\n");
+        LLVM_DEBUG(dbgs() << "[" << ST.FI << ":" << ST.Tag << "] use of %"
+                          << Register::virtReg2Index(UseReg) << " in " << UseI
+                          << "\n");
         Score++;
       }
     }

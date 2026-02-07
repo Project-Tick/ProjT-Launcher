@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "src/__support/libc_errno.h"
+#include "src/errno/libc_errno.h"
 #include "src/fcntl/open.h"
 #include "src/termios/cfgetispeed.h"
 #include "src/termios/cfgetospeed.h"
@@ -16,52 +16,49 @@
 #include "src/termios/tcgetsid.h"
 #include "src/termios/tcsetattr.h"
 #include "src/unistd/close.h"
-#include "test/UnitTest/ErrnoCheckingTest.h"
 #include "test/UnitTest/ErrnoSetterMatcher.h"
 #include "test/UnitTest/Test.h"
 
 #include <termios.h>
 
-using LlvmLibcTermiosTest = LIBC_NAMESPACE::testing::ErrnoCheckingTest;
-using namespace LIBC_NAMESPACE::testing::ErrnoSetterMatcher;
+using LIBC_NAMESPACE::testing::ErrnoSetterMatcher::Fails;
+using LIBC_NAMESPACE::testing::ErrnoSetterMatcher::Succeeds;
 
 // We just list a bunch of smoke tests here as it is not possible to
 // test functionality at the least because we want to run the tests
 // from ninja/make which change the terminal behavior.
 
-TEST_F(LlvmLibcTermiosTest, SpeedSmokeTest) {
+TEST(LlvmLibcTermiosTest, SpeedSmokeTest) {
   struct termios t;
+  LIBC_NAMESPACE::libc_errno = 0;
   ASSERT_THAT(LIBC_NAMESPACE::cfsetispeed(&t, B50), Succeeds(0));
   ASSERT_EQ(LIBC_NAMESPACE::cfgetispeed(&t), speed_t(B50));
   ASSERT_THAT(LIBC_NAMESPACE::cfsetospeed(&t, B75), Succeeds(0));
   ASSERT_EQ(LIBC_NAMESPACE::cfgetospeed(&t), speed_t(B75));
 
+  LIBC_NAMESPACE::libc_errno = 0;
   ASSERT_THAT(LIBC_NAMESPACE::cfsetispeed(&t, ~CBAUD), Fails(EINVAL));
+  LIBC_NAMESPACE::libc_errno = 0;
   ASSERT_THAT(LIBC_NAMESPACE::cfsetospeed(&t, ~CBAUD), Fails(EINVAL));
 }
 
-TEST_F(LlvmLibcTermiosTest, GetAttrSmokeTest) {
+TEST(LlvmLibcTermiosTest, GetAttrSmokeTest) {
   struct termios t;
+  LIBC_NAMESPACE::libc_errno = 0;
   int fd = LIBC_NAMESPACE::open("/dev/tty", O_RDONLY);
-  if (fd < 0) {
-    // When /dev/tty is not available, no point continuing
-    libc_errno = 0;
-    return;
-  }
+  if (fd < 0)
+    return; // When /dev/tty is not available, no point continuing.
   ASSERT_ERRNO_SUCCESS();
   ASSERT_THAT(LIBC_NAMESPACE::tcgetattr(fd, &t), Succeeds(0));
-  ASSERT_THAT(LIBC_NAMESPACE::close(fd), Succeeds(0));
+  ASSERT_EQ(LIBC_NAMESPACE::close(fd), 0);
 }
 
-TEST_F(LlvmLibcTermiosTest, TcGetSidSmokeTest) {
+TEST(LlvmLibcTermiosTest, TcGetSidSmokeTest) {
+  LIBC_NAMESPACE::libc_errno = 0;
   int fd = LIBC_NAMESPACE::open("/dev/tty", O_RDONLY);
-  if (fd < 0) {
-    // When /dev/tty is not available, no point continuing
-    libc_errno = 0;
-    return;
-  }
+  if (fd < 0)
+    return; // When /dev/tty is not available, no point continuing.
   ASSERT_ERRNO_SUCCESS();
-  ASSERT_THAT(LIBC_NAMESPACE::tcgetsid(fd),
-              returns(GT(pid_t(0))).with_errno(EQ(0)));
-  ASSERT_THAT(LIBC_NAMESPACE::close(fd), Succeeds(0));
+  ASSERT_GT(LIBC_NAMESPACE::tcgetsid(fd), pid_t(0));
+  ASSERT_EQ(LIBC_NAMESPACE::close(fd), 0);
 }

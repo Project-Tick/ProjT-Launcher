@@ -13,6 +13,7 @@
 
 #include "AMDGPU.h"
 #include "AMDGPULibFunc.h"
+#include "GCNSubtarget.h"
 #include "llvm/Analysis/AssumptionCache.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/ValueTracking.h"
@@ -52,6 +53,8 @@ private:
   DominatorTree *DT = nullptr;
 
   using FuncInfo = llvm::AMDGPULibFunc;
+
+  bool UnsafeFPMath = false;
 
   // -fuse-native.
   bool AllNative = false;
@@ -115,6 +118,7 @@ private:
                                             bool AllowStrictFP = false);
 
 protected:
+  bool isUnsafeMath(const FPMathOperator *FPOp) const;
   bool isUnsafeFiniteOnlyMath(const FPMathOperator *FPOp) const;
 
   bool canIncreasePrecisionOfConstantFold(const FPMathOperator *FPOp) const;
@@ -412,17 +416,23 @@ bool AMDGPULibCalls::parseFunctionName(const StringRef &FMangledName,
   return AMDGPULibFunc::parse(FMangledName, FInfo);
 }
 
+bool AMDGPULibCalls::isUnsafeMath(const FPMathOperator *FPOp) const {
+  return UnsafeFPMath || FPOp->isFast();
+}
+
 bool AMDGPULibCalls::isUnsafeFiniteOnlyMath(const FPMathOperator *FPOp) const {
-  return FPOp->hasApproxFunc() && FPOp->hasNoNaNs() && FPOp->hasNoInfs();
+  return UnsafeFPMath ||
+         (FPOp->hasApproxFunc() && FPOp->hasNoNaNs() && FPOp->hasNoInfs());
 }
 
 bool AMDGPULibCalls::canIncreasePrecisionOfConstantFold(
     const FPMathOperator *FPOp) const {
   // TODO: Refine to approxFunc or contract
-  return FPOp->isFast();
+  return isUnsafeMath(FPOp);
 }
 
 void AMDGPULibCalls::initFunction(Function &F, FunctionAnalysisManager &FAM) {
+  UnsafeFPMath = F.getFnAttribute("unsafe-fp-math").getValueAsBool();
   AC = &FAM.getResult<AssumptionAnalysis>(F);
   TLInfo = &FAM.getResult<TargetLibraryAnalysis>(F);
   DT = FAM.getCachedResult<DominatorTreeAnalysis>(F);
@@ -605,7 +615,7 @@ static bool isKnownIntegral(const Value *V, const DataLayout &DL,
 
     // Need to check int size cannot produce infinity, which computeKnownFPClass
     // knows how to do already.
-    return isKnownNeverInfinity(I, SimplifyQuery(DL));
+    return isKnownNeverInfinity(I, /*Depth=*/0, SimplifyQuery(DL));
   case Instruction::Call: {
     const CallInst *CI = cast<CallInst>(I);
     switch (CI->getIntrinsicID()) {
@@ -617,7 +627,7 @@ static bool isKnownIntegral(const Value *V, const DataLayout &DL,
     case Intrinsic::round:
     case Intrinsic::roundeven:
       return (FMF.noInfs() && FMF.noNaNs()) ||
-             isKnownNeverInfOrNaN(I, SimplifyQuery(DL));
+             isKnownNeverInfOrNaN(I, /*Depth=*/0, SimplifyQuery(DL));
     default:
       break;
     }
@@ -755,7 +765,7 @@ bool AMDGPULibCalls::fold(CallInst *CI) {
       // TODO: Account for flags on current call
       if (PowrFunc &&
           cannotBeOrderedLessThanZero(
-              FPOp->getOperand(0),
+              FPOp->getOperand(0), /*Depth=*/0,
               SimplifyQuery(M->getDataLayout(), TLInfo, DT, AC, Call))) {
         Call->setCalledFunction(PowrFunc);
         return fold_pow(FPOp, B, PowrInfo) || true;
@@ -845,7 +855,7 @@ bool AMDGPULibCalls::TDOFold(CallInst *CI, const FuncInfo &FInfo) {
           return false;
         }
       }
-      LLVMContext &context = CI->getContext();
+      LLVMContext &context = CI->getParent()->getParent()->getContext();
       Constant *nval;
       if (getArgType(FInfo) == AMDGPULibFunc::F32) {
         SmallVector<float, 0> FVal;
@@ -1351,11 +1361,6 @@ bool AMDGPULibCalls::fold_sincos(FPMathOperator *FPOp, IRBuilder<> &B,
   bool const isSin = fInfo.getId() == AMDGPULibFunc::EI_SIN;
 
   Value *CArgVal = FPOp->getOperand(0);
-
-  // TODO: Constant fold the call
-  if (isa<ConstantData>(CArgVal))
-    return false;
-
   CallInst *CI = cast<CallInst>(FPOp);
 
   Function *F = B.GetInsertBlock()->getParent();

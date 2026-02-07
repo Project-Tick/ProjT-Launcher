@@ -162,8 +162,9 @@ public:
 /// graphs are converted to 'dot' graphs.  When specializing, you may inherit
 /// from DefaultDOTGraphTraits if you don't need to override everything.
 ///
-template <typename Ty> struct DOTGraphTraits : DefaultDOTGraphTraits {
-  using DefaultDOTGraphTraits::DefaultDOTGraphTraits;
+template <typename Ty>
+struct DOTGraphTraits : public DefaultDOTGraphTraits {
+  DOTGraphTraits (bool simple=false) : DefaultDOTGraphTraits (simple) {}
 };
 
 } // End llvm namespace

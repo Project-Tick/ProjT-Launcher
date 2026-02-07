@@ -13,7 +13,6 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/Allocator.h"
-#include "llvm/Support/Compiler.h"
 
 namespace llvm {
 
@@ -29,8 +28,8 @@ public:
 
   // All returned strings are null-terminated: *save(S).end() == 0.
   StringRef save(const char *S) { return save(StringRef(S)); }
-  LLVM_ABI StringRef save(StringRef S);
-  LLVM_ABI StringRef save(const Twine &S);
+  StringRef save(StringRef S);
+  StringRef save(const Twine &S);
   StringRef save(const std::string &S) { return save(StringRef(S)); }
 };
 
@@ -51,8 +50,8 @@ public:
 
   // All returned strings are null-terminated: *save(S).end() == 0.
   StringRef save(const char *S) { return save(StringRef(S)); }
-  LLVM_ABI StringRef save(StringRef S);
-  LLVM_ABI StringRef save(const Twine &S);
+  StringRef save(StringRef S);
+  StringRef save(const Twine &S);
   StringRef save(const std::string &S) { return save(StringRef(S)); }
 };
 

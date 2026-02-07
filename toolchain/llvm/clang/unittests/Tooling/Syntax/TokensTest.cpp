@@ -20,7 +20,6 @@
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/TokenKinds.def"
 #include "clang/Basic/TokenKinds.h"
-#include "clang/Driver/CreateInvocationFromArgs.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Frontend/Utils.h"
@@ -133,11 +132,11 @@ public:
     CI->getFrontendOpts().DisableFree = false;
     CI->getPreprocessorOpts().addRemappedFile(
         FileName, llvm::MemoryBuffer::getMemBufferCopy(Code).release());
-    CompilerInstance Compiler(std::move(CI));
-    Compiler.setDiagnostics(Diags);
-    Compiler.setVirtualFileSystem(FS);
-    Compiler.setFileManager(FileMgr);
-    Compiler.setSourceManager(SourceMgr);
+    CompilerInstance Compiler;
+    Compiler.setInvocation(std::move(CI));
+    Compiler.setDiagnostics(Diags.get());
+    Compiler.setFileManager(FileMgr.get());
+    Compiler.setSourceManager(SourceMgr.get());
 
     this->Buffer = TokenBuffer(*SourceMgr);
     RecordTokens Recorder(this->Buffer);
@@ -250,16 +249,14 @@ public:
   }
 
   // Data fields.
-  DiagnosticOptions DiagOpts;
   llvm::IntrusiveRefCntPtr<DiagnosticsEngine> Diags =
-      llvm::makeIntrusiveRefCnt<DiagnosticsEngine>(DiagnosticIDs::create(),
-                                                   DiagOpts);
+      new DiagnosticsEngine(new DiagnosticIDs, new DiagnosticOptions);
   IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> FS =
-      llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+      new llvm::vfs::InMemoryFileSystem;
   llvm::IntrusiveRefCntPtr<FileManager> FileMgr =
-      llvm::makeIntrusiveRefCnt<FileManager>(FileSystemOptions(), FS);
+      new FileManager(FileSystemOptions(), FS);
   llvm::IntrusiveRefCntPtr<SourceManager> SourceMgr =
-      llvm::makeIntrusiveRefCnt<SourceManager>(*Diags, *FileMgr);
+      new SourceManager(*Diags, *FileMgr);
   /// Contains last result of calling recordTokens().
   TokenBuffer Buffer = TokenBuffer(*SourceMgr);
 };

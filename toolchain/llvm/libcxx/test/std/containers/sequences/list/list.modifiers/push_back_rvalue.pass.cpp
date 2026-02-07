@@ -10,7 +10,7 @@
 
 // <list>
 
-// void push_back(value_type&& x); // constexpr since C++26
+// void push_back(value_type&& x);
 
 #include <list>
 #include <cassert>
@@ -19,8 +19,9 @@
 #include "MoveOnly.h"
 #include "min_allocator.h"
 
-TEST_CONSTEXPR_CXX26 bool test() {
-  {
+int main(int, char**)
+{
+    {
     std::list<MoveOnly> l1;
     l1.push_back(MoveOnly(1));
     assert(l1.size() == 1);
@@ -29,8 +30,8 @@ TEST_CONSTEXPR_CXX26 bool test() {
     assert(l1.size() == 2);
     assert(l1.front() == MoveOnly(1));
     assert(l1.back() == MoveOnly(2));
-  }
-  {
+    }
+    {
     std::list<MoveOnly, min_allocator<MoveOnly>> l1;
     l1.push_back(MoveOnly(1));
     assert(l1.size() == 1);
@@ -39,16 +40,7 @@ TEST_CONSTEXPR_CXX26 bool test() {
     assert(l1.size() == 2);
     assert(l1.front() == MoveOnly(1));
     assert(l1.back() == MoveOnly(2));
-  }
-
-  return true;
-}
-
-int main(int, char**) {
-  assert(test());
-#if TEST_STD_VER >= 26
-  static_assert(test());
-#endif
+    }
 
   return 0;
 }

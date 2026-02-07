@@ -14,7 +14,6 @@ unittest("StaticAnalysisTests") {
   sources = [
     "APSIntTypeTest.cpp",
     "AnalyzerOptionsTest.cpp",
-    "BlockEntranceCallbackTest.cpp",
     "BugReportInterestingnessTest.cpp",
     "CallDescriptionTest.cpp",
     "CallEventTest.cpp",
@@ -24,7 +23,6 @@ unittest("StaticAnalysisTests") {
     "IsCLibraryFunctionTest.cpp",
     "MemRegionDescriptiveNameTest.cpp",
     "NoStateChangeFuncVisitorTest.cpp",
-    "ObjcBug-124477.cpp",
     "ParamRegionTest.cpp",
     "RangeSetTest.cpp",
     "RegisterCustomCheckersTest.cpp",
@@ -33,7 +31,6 @@ unittest("StaticAnalysisTests") {
     "StoreTest.cpp",
     "SymbolReaperTest.cpp",
     "TestReturnValueUnderConstruction.cpp",
-    "UnsignedStatDemo.cpp",
     "Z3CrosscheckOracleTest.cpp",
   ]
 }

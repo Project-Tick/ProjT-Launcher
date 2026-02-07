@@ -8,17 +8,20 @@
 
 #include "clang/Frontend/SerializedDiagnosticPrinter.h"
 #include "clang/Basic/Diagnostic.h"
-#include "clang/Basic/DiagnosticFrontend.h"
 #include "clang/Basic/DiagnosticOptions.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/DiagnosticRenderer.h"
+#include "clang/Frontend/FrontendDiagnostic.h"
 #include "clang/Frontend/SerializedDiagnosticReader.h"
 #include "clang/Frontend/SerializedDiagnostics.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Lex/Lexer.h"
 #include "llvm/ADT/DenseSet.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Bitstream/BitCodes.h"
+#include "llvm/Bitstream/BitstreamReader.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
 #include <utility>
@@ -54,8 +57,8 @@ class SDiagsRenderer : public DiagnosticNoteRenderer {
   SDiagsWriter &Writer;
 public:
   SDiagsRenderer(SDiagsWriter &Writer, const LangOptions &LangOpts,
-                 DiagnosticOptions &DiagOpts)
-      : DiagnosticNoteRenderer(LangOpts, DiagOpts), Writer(Writer) {}
+                 DiagnosticOptions *DiagOpts)
+    : DiagnosticNoteRenderer(LangOpts, DiagOpts), Writer(Writer) {}
 
   ~SDiagsRenderer() override {}
 
@@ -137,7 +140,7 @@ class SDiagsWriter : public DiagnosticConsumer {
         State(std::move(State)) {}
 
 public:
-  SDiagsWriter(StringRef File, DiagnosticOptions &Diags, bool MergeChildRecords)
+  SDiagsWriter(StringRef File, DiagnosticOptions *Diags, bool MergeChildRecords)
       : LangOpts(nullptr), OriginalInstance(true),
         MergeChildRecords(MergeChildRecords),
         State(std::make_shared<SharedState>(File, Diags)) {
@@ -239,12 +242,12 @@ private:
   /// State that is shared among the various clones of this diagnostic
   /// consumer.
   struct SharedState {
-    SharedState(StringRef File, DiagnosticOptions &DiagOpts)
-        : DiagOpts(DiagOpts), Stream(Buffer), OutputFile(File.str()),
+    SharedState(StringRef File, DiagnosticOptions *Diags)
+        : DiagOpts(Diags), Stream(Buffer), OutputFile(File.str()),
           EmittedAnyDiagBlocks(false) {}
 
     /// Diagnostic options.
-    DiagnosticOptions DiagOpts;
+    IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts;
 
     /// The byte buffer for the serialized content.
     SmallString<1024> Buffer;
@@ -292,11 +295,9 @@ private:
 
 namespace clang {
 namespace serialized_diags {
-std::unique_ptr<DiagnosticConsumer> create(StringRef OutputFile,
-                                           DiagnosticOptions &DiagOpts,
-                                           bool MergeChildRecords) {
-  return std::make_unique<SDiagsWriter>(OutputFile, DiagOpts,
-                                        MergeChildRecords);
+std::unique_ptr<DiagnosticConsumer>
+create(StringRef OutputFile, DiagnosticOptions *Diags, bool MergeChildRecords) {
+  return std::make_unique<SDiagsWriter>(OutputFile, Diags, MergeChildRecords);
 }
 
 } // end namespace serialized_diags
@@ -616,7 +617,7 @@ void SDiagsWriter::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
 
   assert(Info.hasSourceManager() && LangOpts &&
          "Unexpected diagnostic with valid location outside of a source file");
-  SDiagsRenderer Renderer(*this, *LangOpts, State->DiagOpts);
+  SDiagsRenderer Renderer(*this, *LangOpts, &*State->DiagOpts);
   Renderer.emitDiagnostic(
       FullSourceLoc(Info.getLocation(), Info.getSourceManager()), DiagLevel,
       State->diagBuf, Info.getRanges(), Info.getFixItHints(), &Info);
@@ -753,9 +754,11 @@ DiagnosticsEngine *SDiagsWriter::getMetaDiags() {
   //    to be distinct from the engine the writer was being added to and would
   //    normally not be used.
   if (!State->MetaDiagnostics) {
-    auto Client = new TextDiagnosticPrinter(llvm::errs(), State->DiagOpts);
+    IntrusiveRefCntPtr<DiagnosticIDs> IDs(new DiagnosticIDs());
+    auto Client =
+        new TextDiagnosticPrinter(llvm::errs(), State->DiagOpts.get());
     State->MetaDiagnostics = std::make_unique<DiagnosticsEngine>(
-        DiagnosticIDs::create(), State->DiagOpts, Client);
+        IDs, State->DiagOpts.get(), Client);
   }
   return State->MetaDiagnostics.get();
 }

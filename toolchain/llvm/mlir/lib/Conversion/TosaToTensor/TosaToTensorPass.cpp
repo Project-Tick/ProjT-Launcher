@@ -17,10 +17,12 @@
 #include "mlir/Dialect/Tosa/IR/TosaOps.h"
 #include "mlir/Dialect/Tosa/Transforms/Passes.h"
 #include "mlir/IR/PatternMatch.h"
+#include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 namespace mlir {
-#define GEN_PASS_DEF_TOSATOTENSORPASS
+#define GEN_PASS_DEF_TOSATOTENSOR
 #include "mlir/Conversion/Passes.h.inc"
 } // namespace mlir
 
@@ -28,7 +30,7 @@ using namespace mlir;
 using namespace tosa;
 
 namespace {
-struct TosaToTensor : public impl::TosaToTensorPassBase<TosaToTensor> {
+struct TosaToTensor : public impl::TosaToTensorBase<TosaToTensor> {
 public:
   void runOnOperation() override {
     RewritePatternSet patterns(&getContext());
@@ -51,3 +53,7 @@ public:
   }
 };
 } // namespace
+
+std::unique_ptr<Pass> mlir::tosa::createTosaToTensor() {
+  return std::make_unique<TosaToTensor>();
+}

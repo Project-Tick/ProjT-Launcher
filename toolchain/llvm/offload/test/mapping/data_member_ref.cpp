@@ -1,5 +1,4 @@
 // RUN: %libomptarget-compilexx-run-and-check-generic
-// XFAIL: intelgpu
 
 #include <stdio.h>
 
@@ -61,8 +60,7 @@ int main() {
   printf("Host %d %d.\n", Bar.VRef.Data, V.Data);
   // CHECK: Host 123456.
   printf("Host %d.\n", *Baz.VRef.Data);
-#pragma omp target map(Baz.VRef.Data) map(*Baz.VRef.Data) map(V1.Data[0 : 0])  \
-    map(from : D1, D2)
+#pragma omp target map(*Baz.VRef.Data) map(from : D1, D2)
   {
     // CHECK: Device 123456.
     D1 = *Baz.VRef.Data;

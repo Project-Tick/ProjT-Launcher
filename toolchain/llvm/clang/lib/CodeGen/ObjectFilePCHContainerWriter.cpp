@@ -146,7 +146,7 @@ public:
       : CI(CI), Diags(CI.getDiagnostics()), MainFileName(MainFileName),
         OutputFileName(OutputFileName), Ctx(nullptr),
         MMap(CI.getPreprocessor().getHeaderSearchInfo().getModuleMap()),
-        FS(CI.getVirtualFileSystemPtr()),
+        FS(&CI.getVirtualFileSystem()),
         HeaderSearchOpts(CI.getHeaderSearchOpts()),
         PreprocessorOpts(CI.getPreprocessorOpts()),
         TargetOpts(CI.getTargetOpts()), LangOpts(CI.getLangOpts()),
@@ -255,7 +255,7 @@ public:
     if (Diags.hasErrorOccurred())
       return;
 
-    M->setTargetTriple(Ctx.getTargetInfo().getTriple());
+    M->setTargetTriple(Ctx.getTargetInfo().getTriple().getTriple());
     M->setDataLayout(Ctx.getTargetInfo().getDataLayoutString());
 
     // PCH files don't have a signature field in the control block,
@@ -274,7 +274,7 @@ public:
     // Ensure the target exists.
     std::string Error;
     auto Triple = Ctx.getTargetInfo().getTriple();
-    if (!llvm::TargetRegistry::lookupTarget(Triple, Error))
+    if (!llvm::TargetRegistry::lookupTarget(Triple.getTriple(), Error))
       llvm::report_fatal_error(llvm::Twine(Error));
 
     // Emit the serialized Clang AST into its own section.

@@ -107,8 +107,8 @@ public:
 S3 h, k;
 #pragma omp threadprivate(h) // expected-note 2 {{defined as threadprivate or thread local}}
 
-template <class T, class S>       // expected-note {{declared here}}
-T tfoobar2(T argc, S ub) {
+template <class T>       // expected-note {{declared here}}
+T tmain(T argc) {
   const T d = T();       // expected-note 4 {{'d' defined here}}
   const T da[5] = {T()}; // expected-note 2 {{'da' defined here}}
   T qa[5] = {T()};
@@ -118,7 +118,6 @@ T tfoobar2(T argc, S ub) {
   const T &r = da[(int)i];     // expected-note 2 {{'r' defined here}}
   T &q = qa[(int)i];           // expected-note 2 {{'q' defined here}}
   T fl;
-  T *ptr;
 #pragma omp target
 #pragma omp teams reduction // expected-error {{expected '(' after 'reduction'}}
   foo();
@@ -153,7 +152,7 @@ T tfoobar2(T argc, S ub) {
 #pragma omp teams reduction(foo : argc) //omp45-error {{incorrect reduction identifier, expected one of '+', '-', '*', '&', '|', '^', '&&', '||', 'min' or 'max' or declare reduction for type 'float'}} omp45-error {{incorrect reduction identifier, expected one of '+', '-', '*', '&', '|', '^', '&&', '||', 'min' or 'max' or declare reduction for type 'int'}} omp51-error {{incorrect reduction identifier, expected one of '+', '-', '*', '&', '|', '^', '&&', '||', 'min' or 'max' or declare reduction for type 'float'}} omp51-error {{incorrect reduction identifier, expected one of '+', '-', '*', '&', '|', '^', '&&', '||', 'min' or 'max' or declare reduction for type 'int'}} omp52-error {{incorrect reduction identifier, expected one of '+', '-', '*', '&', '|', '^', '&&', '||', 'min' or 'max' or declare reduction for type 'float'}} omp52-error {{incorrect reduction identifier, expected one of '+', '-', '*', '&', '|', '^', '&&', '||', 'min' or 'max' or declare reduction for type 'int'}} omp60-error {{incorrect reduction identifier, expected one of '+', '*', '&', '|', '^', '&&', '||', 'min' or 'max' or declare reduction for type 'float'}} omp60-error {{incorrect reduction identifier, expected one of '+', '*', '&', '|', '^', '&&', '||', 'min' or 'max' or declare reduction for type 'int'}}
   foo();
 #pragma omp target
-#pragma omp teams reduction(&& : argc) allocate , allocate(, allocate(omp_default , allocate(omp_default_mem_alloc, allocate(omp_default_mem_alloc:, allocate(omp_default_mem_alloc: argc, allocate(omp_default_mem_alloc: ub), allocate(ub) // expected-error {{expected '(' after 'allocate'}} expected-error 2 {{expected expression}} expected-error 2 {{expected ')'}} expected-error {{use of undeclared identifier 'omp_default'}} expected-note 2 {{to match this '('}}
+#pragma omp teams reduction(&& : argc) allocate , allocate(, allocate(omp_default , allocate(omp_default_mem_alloc, allocate(omp_default_mem_alloc:, allocate(omp_default_mem_alloc: argc, allocate(omp_default_mem_alloc: argv), allocate(argv) // expected-error {{expected '(' after 'allocate'}} expected-error 2 {{expected expression}} expected-error 2 {{expected ')'}} expected-error {{use of undeclared identifier 'omp_default'}} expected-note 2 {{to match this '('}}
   foo();
 #pragma omp target
 #pragma omp teams reduction(^ : T) // expected-error {{'T' does not refer to a value}}
@@ -225,12 +224,6 @@ T tfoobar2(T argc, S ub) {
 #pragma omp target
 #pragma omp teams reduction(+ : fl)
     foo();
-#pragma omp target
-#pragma omp teams reduction(+ : ptr[0:]) // expected-error 2 {{section length is unspecified and cannot be inferred because subscripted value is not an array}}
-  foo();
-#pragma omp target
-#pragma omp teams reduction(* : ub[:]) // expected-error 2 {{section length is unspecified and cannot be inferred because subscripted value is an array of unknown bound}}
-  foo();
 
   return T();
 }
@@ -243,7 +236,7 @@ namespace B {
 using A::x;
 }
 
-int foobar2(int argc, float ub[]) {
+int main(int argc, char **argv) {
   const int d = 5;       // expected-note 2 {{'d' defined here}}
   const int da[5] = {0}; // expected-note {{'da' defined here}}
   int qa[5] = {0};
@@ -255,7 +248,6 @@ int foobar2(int argc, float ub[]) {
   const int &r = da[i];        // expected-note {{'r' defined here}}
   int &q = qa[i];              // expected-note {{'q' defined here}}
   float fl;
-  float *ptr;
 #pragma omp target
 #pragma omp teams reduction // expected-error {{expected '(' after 'reduction'}}
   foo();
@@ -284,7 +276,7 @@ int foobar2(int argc, float ub[]) {
 #pragma omp teams reduction(| : argc, // expected-error {{expected expression}} expected-error {{expected ')'}} expected-note {{to match this '('}}
   foo();
 #pragma omp target
-#pragma omp teams reduction(|| : argc > 0 ? ub[1] : ub[2]) // expected-error {{expected variable name, array element or array section}}
+#pragma omp teams reduction(|| : argc > 0 ? argv[1] : argv[2]) // expected-error {{expected variable name, array element or array section}}
   foo();
 #pragma omp target
 #pragma omp teams reduction(~ : argc) // expected-error {{expected unqualified-id}}
@@ -372,12 +364,6 @@ int foobar2(int argc, float ub[]) {
 #pragma omp target
 #pragma omp teams reduction(task, + : m) // omp45-error 2 {{expected expression}} omp45-warning {{missing ':' after reduction identifier - ignoring}} omp51-error {{'reduction' clause with 'task' modifier allowed only on non-simd parallel or worksharing constructs}} omp52-error {{'reduction' clause with 'task' modifier allowed only on non-simd parallel or worksharing constructs}} omp60-error {{'reduction' clause with 'task' modifier allowed only on non-simd parallel or worksharing constructs}}
   foo();
-#pragma omp target
-#pragma omp teams reduction(+ : ptr[0:]) // expected-error {{section length is unspecified and cannot be inferred because subscripted value is not an array}}
-  foo();
-#pragma omp target
-#pragma omp teams reduction(* : ub[:]) // expected-error {{section length is unspecified and cannot be inferred because subscripted value is an array of unknown bound}}
-  foo();
 
-  return tfoobar2<int, float []>(argc, ub) + tfoobar2<float, float []>(fl, ub); // expected-note {{in instantiation of function template specialization 'tfoobar2<int, float[]>' requested here}} expected-note {{in instantiation of function template specialization 'tfoobar2<float, float[]>' requested here}}
+  return tmain(argc) + tmain(fl); // expected-note {{in instantiation of function template specialization 'tmain<int>' requested here}} expected-note {{in instantiation of function template specialization 'tmain<float>' requested here}}
 }

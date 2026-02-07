@@ -11,6 +11,7 @@
 #include "gtest/gtest.h"
 
 #include <limits>
+#include <vector>
 
 using namespace llvm;
 using namespace llvm::orc;
@@ -19,7 +20,8 @@ using namespace llvm::orc::rt_bootstrap;
 
 namespace {
 
-CWrapperFunctionBuffer incrementWrapper(const char *ArgData, size_t ArgSize) {
+orc::shared::CWrapperFunctionResult incrementWrapper(const char *ArgData,
+                                                     size_t ArgSize) {
   return WrapperFunction<SPSError(SPSExecutorAddr)>::handle(
              ArgData, ArgSize,
              [](ExecutorAddr A) -> Error {
@@ -33,12 +35,12 @@ TEST(SimpleExecutorMemoryManagerTest, AllocFinalizeFree) {
   SimpleExecutorMemoryManager MemMgr;
 
   constexpr unsigned AllocSize = 16384;
-  auto Mem = MemMgr.reserve(AllocSize);
+  auto Mem = MemMgr.allocate(AllocSize);
   EXPECT_THAT_ERROR(Mem.takeError(), Succeeded());
 
   std::string HW = "Hello, world!";
 
-  int InitializeCounter = 0;
+  int FinalizeCounter = 0;
   int DeallocateCounter = 0;
 
   tpctypes::FinalizeRequest FR;
@@ -51,27 +53,27 @@ TEST(SimpleExecutorMemoryManagerTest, AllocFinalizeFree) {
       {/* Finalize: */
        cantFail(WrapperFunctionCall::Create<SPSArgList<SPSExecutorAddr>>(
            ExecutorAddr::fromPtr(incrementWrapper),
-           ExecutorAddr::fromPtr(&InitializeCounter))),
+           ExecutorAddr::fromPtr(&FinalizeCounter))),
        /*  Deallocate: */
        cantFail(WrapperFunctionCall::Create<SPSArgList<SPSExecutorAddr>>(
            ExecutorAddr::fromPtr(incrementWrapper),
            ExecutorAddr::fromPtr(&DeallocateCounter)))});
 
-  EXPECT_EQ(InitializeCounter, 0);
+  EXPECT_EQ(FinalizeCounter, 0);
   EXPECT_EQ(DeallocateCounter, 0);
 
-  auto InitializeErr = MemMgr.initialize(FR);
-  EXPECT_THAT_EXPECTED(std::move(InitializeErr), Succeeded());
+  auto FinalizeErr = MemMgr.finalize(FR);
+  EXPECT_THAT_ERROR(std::move(FinalizeErr), Succeeded());
 
-  EXPECT_EQ(InitializeCounter, 1);
+  EXPECT_EQ(FinalizeCounter, 1);
   EXPECT_EQ(DeallocateCounter, 0);
 
   EXPECT_EQ(HW, std::string(Mem->toPtr<const char *>()));
 
-  auto ReleaseErr = MemMgr.release({*Mem});
-  EXPECT_THAT_ERROR(std::move(ReleaseErr), Succeeded());
+  auto DeallocateErr = MemMgr.deallocate({*Mem});
+  EXPECT_THAT_ERROR(std::move(DeallocateErr), Succeeded());
 
-  EXPECT_EQ(InitializeCounter, 1);
+  EXPECT_EQ(FinalizeCounter, 1);
   EXPECT_EQ(DeallocateCounter, 1);
 }
 

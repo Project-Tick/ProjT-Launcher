@@ -1,4 +1,4 @@
-; RUN: opt %loadNPMPolly '-passes=polly<no-default-opts>' -polly-print-detect -polly-invariant-load-hoisting=true -disable-output < %s 2>&1 | FileCheck %s
+; RUN: opt %loadNPMPolly '-passes=print<polly-detect>,scop(polly-codegen)' -polly-invariant-load-hoisting=true -disable-output < %s 2>&1 | FileCheck %s
 ;
 ; This crashed at some point as the pointer returned by the call
 ; to @__errno_location is invariant and defined in the SCoP but not
@@ -15,7 +15,7 @@
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 
 ; Function Attrs: nounwind uwtable
-define void @fileblobSetFilename() {
+define void @fileblobSetFilename() #0 {
 entry:
   br i1 undef, label %if.end, label %cleanup
 
@@ -23,7 +23,7 @@ if.end:                                           ; preds = %entry
   br i1 undef, label %land.lhs.true, label %if.end.18
 
 land.lhs.true:                                    ; preds = %if.end
-  %call9 = tail call ptr @__errno_location()
+  %call9 = tail call ptr @__errno_location() #2
   %tmp = load i32, ptr %call9, align 4, !tbaa !1
   br i1 false, label %if.then.12, label %if.end.18
 
@@ -45,7 +45,11 @@ cleanup:                                          ; preds = %if.end.27, %entry
 }
 
 ; Function Attrs: nounwind readnone
-declare ptr @__errno_location()
+declare ptr @__errno_location() #1
+
+attributes #0 = { nounwind uwtable "disable-tail-calls"="false" "less-precise-fpmad"="false" "frame-pointer"="none" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+mmx,+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nounwind readnone "disable-tail-calls"="false" "less-precise-fpmad"="false" "frame-pointer"="none" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+mmx,+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nounwind readnone }
 
 !llvm.ident = !{!0}
 

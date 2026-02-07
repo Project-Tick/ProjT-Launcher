@@ -176,7 +176,9 @@ public:
 
   using promoted_iterator = SmallPtrSet<const GlobalVariable *, 1>::iterator;
 
-  iterator_range<promoted_iterator> promotedGlobals() { return GVars; }
+  iterator_range<promoted_iterator> promotedGlobals() {
+    return iterator_range<promoted_iterator>(GVars.begin(), GVars.end());
+  }
 
   const Constant *getPromotedGlobalInit() const {
     return CVal;

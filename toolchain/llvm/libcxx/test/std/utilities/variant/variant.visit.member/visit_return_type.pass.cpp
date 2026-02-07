@@ -7,6 +7,8 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17, c++20, c++23
+// The tested functionality needs deducing this.
+// XFAIL: apple-clang
 
 // <variant>
 
@@ -206,7 +208,7 @@ void test_exceptions() {
 #endif
 }
 
-// See https://llvm.org/PR31916
+// See https://bugs.llvm.org/show_bug.cgi?id=31916
 template <typename ReturnType>
 void test_caller_accepts_nonconst() {
   struct A {};

@@ -21,8 +21,10 @@ define i32 @check_lr_liveness(ptr %arg) #1 {
   ; CHECK-NEXT:   B %bb.3
   ; CHECK-NEXT: {{  $}}
   ; CHECK-NEXT: bb.1.bb:
+  ; CHECK-NEXT:   successors: %bb.3(0x2aaaaaab), %bb.2(0x55555555)
   ; CHECK-NEXT:   liveins: $w0, $lr
   ; CHECK-NEXT: {{  $}}
+  ; CHECK-NEXT:   CBNZW $wzr, %bb.3
   ; CHECK-NEXT:   B %bb.2
   ; CHECK-NEXT: {{  $}}
   ; CHECK-NEXT: bb.2.bb1:
@@ -51,5 +53,5 @@ bb2:                                              ; preds = %bb1, %bb
   ret i32 %phi
 }
 
-attributes #1 = { minsize nounwind "target-features"="+aes,+crc,+fp-armv8,+fullfp16,+lse,+neon,+ras,+rcpc,+rdm,+reserve-lr-for-ra,+sha2,+v8.1a,+v8.2a,+v8.3a,+v8a" }
+attributes #1 = { minsize nounwind "target-features"="+aes,+crc,+fp-armv8,+fullfp16,+lse,+neon,+ras,+rcpc,+rdm,+reserve-lr-for-ra,+sha2,+v8.1a,+v8.2a,+v8.3a,+v8a,+zcm,+zcz" }
 

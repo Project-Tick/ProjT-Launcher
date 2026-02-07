@@ -9,6 +9,7 @@
 #include "DebugTypes.h"
 #include "COFFLinkerContext.h"
 #include "Chunks.h"
+#include "Driver.h"
 #include "InputFiles.h"
 #include "PDB.h"
 #include "TypeMerger.h"
@@ -474,6 +475,7 @@ static bool equalsPath(StringRef path1, StringRef path2) {
 
 // Find by name an OBJ provided on the command line
 PrecompSource *UsePrecompSource::findObjByName(StringRef fileNameOnly) {
+  SmallString<128> currentPath;
   for (auto kv : ctx.precompSourceMappings) {
     StringRef currentFileName = sys::path::filename(kv.second->file->getName(),
                                                     sys::path::Style::windows);
@@ -1185,7 +1187,8 @@ void TypeMerger::mergeTypesWithGHash() {
 
   // Build a global map of from function ID to function type.
   for (TpiSource *source : ctx.tpiSourceList) {
-    funcIdToType.insert_range(source->funcIdToType);
+    for (auto idToType : source->funcIdToType)
+      funcIdToType.insert(idToType);
     source->funcIdToType.clear();
   }
 

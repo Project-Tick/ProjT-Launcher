@@ -10,6 +10,7 @@
 
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Format.h"
@@ -417,7 +418,6 @@ size_t detail::PassOptions::getOptionWidth() const {
 
 //===----------------------------------------------------------------------===//
 // OpPassManager: OptionValue
-//===----------------------------------------------------------------------===//
 
 llvm::cl::OptionValue<OpPassManager>::OptionValue() = default;
 llvm::cl::OptionValue<OpPassManager>::OptionValue(
@@ -470,7 +470,6 @@ void llvm::cl::OptionValue<OpPassManager>::anchor() {}
 
 //===----------------------------------------------------------------------===//
 // OpPassManager: Parser
-//===----------------------------------------------------------------------===//
 
 namespace llvm {
 namespace cl {
@@ -614,7 +613,7 @@ LogicalResult TextualPipeline::addToPipeline(
   // it's preferrable to just error out if implicit nesting would be required.
   OpPassManager::Nesting nesting = pm.getNesting();
   pm.setNesting(OpPassManager::Nesting::Explicit);
-  llvm::scope_exit restore([&]() { pm.setNesting(nesting); });
+  auto restore = llvm::make_scope_exit([&]() { pm.setNesting(nesting); });
 
   return addToPipeline(pipeline, pm, errorHandler);
 }
@@ -1029,7 +1028,6 @@ LogicalResult PassPipelineCLParser::addToPipeline(
 
 //===----------------------------------------------------------------------===//
 // PassNameCLParser
-//===----------------------------------------------------------------------===//
 
 /// Construct a pass pipeline parser with the given command line description.
 PassNameCLParser::PassNameCLParser(StringRef arg, StringRef description)

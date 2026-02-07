@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "MCTargetDesc/ARMFixupKinds.h"
-#include "MCTargetDesc/ARMMCAsmInfo.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/BinaryFormat/COFF.h"
 #include "llvm/MC/MCAsmBackend.h"
@@ -45,16 +44,16 @@ unsigned ARMWinCOFFObjectWriter::getRelocType(MCContext &Ctx,
                                               const MCFixup &Fixup,
                                               bool IsCrossSection,
                                               const MCAsmBackend &MAB) const {
-  auto Spec = Target.getSpecifier();
+  MCSymbolRefExpr::VariantKind Modifier =
+    Target.isAbsolute() ? MCSymbolRefExpr::VK_None : Target.getSymA()->getKind();
+
   unsigned FixupKind = Fixup.getKind();
-  bool PCRel = false;
   if (IsCrossSection) {
-    if (PCRel || FixupKind != FK_Data_4) {
+    if (FixupKind != FK_Data_4) {
       Ctx.reportError(Fixup.getLoc(), "Cannot represent this expression");
       return COFF::IMAGE_REL_ARM_ADDR32;
     }
-    FixupKind = FK_Data_4;
-    PCRel = true;
+    FixupKind = FK_PCRel_4;
   }
 
 
@@ -64,16 +63,16 @@ unsigned ARMWinCOFFObjectWriter::getRelocType(MCContext &Ctx,
     return COFF::IMAGE_REL_ARM_ABSOLUTE;
   }
   case FK_Data_4:
-    if (PCRel)
-      return COFF::IMAGE_REL_ARM_REL32;
-    switch (Spec) {
+    switch (Modifier) {
     case MCSymbolRefExpr::VK_COFF_IMGREL32:
       return COFF::IMAGE_REL_ARM_ADDR32NB;
-    case ARM::S_COFF_SECREL:
+    case MCSymbolRefExpr::VK_SECREL:
       return COFF::IMAGE_REL_ARM_SECREL;
     default:
       return COFF::IMAGE_REL_ARM_ADDR32;
     }
+  case FK_PCRel_4:
+    return COFF::IMAGE_REL_ARM_REL32;
   case FK_SecRel_2:
     return COFF::IMAGE_REL_ARM_SECTION;
   case FK_SecRel_4:

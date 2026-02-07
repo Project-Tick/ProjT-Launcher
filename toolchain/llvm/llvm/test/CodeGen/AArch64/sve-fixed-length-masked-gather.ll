@@ -12,10 +12,11 @@ target triple = "aarch64-unknown-linux-gnu"
 define void @masked_gather_v2i8(ptr %a, ptr %b) vscale_range(2,0) #0 {
 ; CHECK-LABEL: masked_gather_v2i8:
 ; CHECK:       // %bb.0:
-; CHECK-NEXT:    ldr h0, [x0]
+; CHECK-NEXT:    ldrb w8, [x0]
+; CHECK-NEXT:    ldrb w9, [x0, #1]
 ; CHECK-NEXT:    ptrue p0.d, vl2
-; CHECK-NEXT:    ushll v0.8h, v0.8b, #0
-; CHECK-NEXT:    ushll v0.4s, v0.4h, #0
+; CHECK-NEXT:    fmov s0, w8
+; CHECK-NEXT:    mov v0.s[1], w9
 ; CHECK-NEXT:    cmeq v0.2s, v0.2s, #0
 ; CHECK-NEXT:    sshll v0.2d, v0.2s, #0
 ; CHECK-NEXT:    cmpne p0.d, p0/z, z0.d, #0
@@ -28,7 +29,7 @@ define void @masked_gather_v2i8(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <2 x i8>, ptr %a
   %ptrs = load <2 x ptr>, ptr %b
   %mask = icmp eq <2 x i8> %cval, zeroinitializer
-  %vals = call <2 x i8> @llvm.masked.gather.v2i8(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x i8> poison)
+  %vals = call <2 x i8> @llvm.masked.gather.v2i8(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x i8> undef)
   store <2 x i8> %vals, ptr %a
   ret void
 }
@@ -50,7 +51,7 @@ define void @masked_gather_v4i8(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <4 x i8>, ptr %a
   %ptrs = load <4 x ptr>, ptr %b
   %mask = icmp eq <4 x i8> %cval, zeroinitializer
-  %vals = call <4 x i8> @llvm.masked.gather.v4i8(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x i8> poison)
+  %vals = call <4 x i8> @llvm.masked.gather.v4i8(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x i8> undef)
   store <4 x i8> %vals, ptr %a
   ret void
 }
@@ -105,7 +106,7 @@ define void @masked_gather_v8i8(ptr %a, ptr %b) #0 {
   %cval = load <8 x i8>, ptr %a
   %ptrs = load <8 x ptr>, ptr %b
   %mask = icmp eq <8 x i8> %cval, zeroinitializer
-  %vals = call <8 x i8> @llvm.masked.gather.v8i8(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x i8> poison)
+  %vals = call <8 x i8> @llvm.masked.gather.v8i8(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x i8> undef)
   store <8 x i8> %vals, ptr %a
   ret void
 }
@@ -130,7 +131,7 @@ define void @masked_gather_v16i8(ptr %a, ptr %b) vscale_range(8,0) #0 {
   %cval = load <16 x i8>, ptr %a
   %ptrs = load <16 x ptr>, ptr %b
   %mask = icmp eq <16 x i8> %cval, zeroinitializer
-  %vals = call <16 x i8> @llvm.masked.gather.v16i8(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x i8> poison)
+  %vals = call <16 x i8> @llvm.masked.gather.v16i8(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x i8> undef)
   store <16 x i8> %vals, ptr %a
   ret void
 }
@@ -152,7 +153,7 @@ define void @masked_gather_v32i8(ptr %a, ptr %b) vscale_range(16,0) #0 {
   %cval = load <32 x i8>, ptr %a
   %ptrs = load <32 x ptr>, ptr %b
   %mask = icmp eq <32 x i8> %cval, zeroinitializer
-  %vals = call <32 x i8> @llvm.masked.gather.v32i8(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x i8> poison)
+  %vals = call <32 x i8> @llvm.masked.gather.v32i8(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x i8> undef)
   store <32 x i8> %vals, ptr %a
   ret void
 }
@@ -164,9 +165,11 @@ define void @masked_gather_v32i8(ptr %a, ptr %b) vscale_range(16,0) #0 {
 define void @masked_gather_v2i16(ptr %a, ptr %b) vscale_range(2,0) #0 {
 ; CHECK-LABEL: masked_gather_v2i16:
 ; CHECK:       // %bb.0:
-; CHECK-NEXT:    ldr s0, [x0]
+; CHECK-NEXT:    ldrh w8, [x0]
+; CHECK-NEXT:    ldrh w9, [x0, #2]
 ; CHECK-NEXT:    ptrue p0.d, vl2
-; CHECK-NEXT:    ushll v0.4s, v0.4h, #0
+; CHECK-NEXT:    fmov s0, w8
+; CHECK-NEXT:    mov v0.s[1], w9
 ; CHECK-NEXT:    cmeq v0.2s, v0.2s, #0
 ; CHECK-NEXT:    sshll v0.2d, v0.2s, #0
 ; CHECK-NEXT:    cmpne p0.d, p0/z, z0.d, #0
@@ -179,7 +182,7 @@ define void @masked_gather_v2i16(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <2 x i16>, ptr %a
   %ptrs = load <2 x ptr>, ptr %b
   %mask = icmp eq <2 x i16> %cval, zeroinitializer
-  %vals = call <2 x i16> @llvm.masked.gather.v2i16(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x i16> poison)
+  %vals = call <2 x i16> @llvm.masked.gather.v2i16(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x i16> undef)
   store <2 x i16> %vals, ptr %a
   ret void
 }
@@ -202,7 +205,7 @@ define void @masked_gather_v4i16(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <4 x i16>, ptr %a
   %ptrs = load <4 x ptr>, ptr %b
   %mask = icmp eq <4 x i16> %cval, zeroinitializer
-  %vals = call <4 x i16> @llvm.masked.gather.v4i16(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x i16> poison)
+  %vals = call <4 x i16> @llvm.masked.gather.v4i16(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x i16> undef)
   store <4 x i16> %vals, ptr %a
   ret void
 }
@@ -250,7 +253,7 @@ define void @masked_gather_v8i16(ptr %a, ptr %b) #0 {
   %cval = load <8 x i16>, ptr %a
   %ptrs = load <8 x ptr>, ptr %b
   %mask = icmp eq <8 x i16> %cval, zeroinitializer
-  %vals = call <8 x i16> @llvm.masked.gather.v8i16(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x i16> poison)
+  %vals = call <8 x i16> @llvm.masked.gather.v8i16(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x i16> undef)
   store <8 x i16> %vals, ptr %a
   ret void
 }
@@ -271,7 +274,7 @@ define void @masked_gather_v16i16(ptr %a, ptr %b) vscale_range(8,0) #0 {
   %cval = load <16 x i16>, ptr %a
   %ptrs = load <16 x ptr>, ptr %b
   %mask = icmp eq <16 x i16> %cval, zeroinitializer
-  %vals = call <16 x i16> @llvm.masked.gather.v16i16(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x i16> poison)
+  %vals = call <16 x i16> @llvm.masked.gather.v16i16(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x i16> undef)
   store <16 x i16> %vals, ptr %a
   ret void
 }
@@ -292,7 +295,7 @@ define void @masked_gather_v32i16(ptr %a, ptr %b) vscale_range(16,0) #0 {
   %cval = load <32 x i16>, ptr %a
   %ptrs = load <32 x ptr>, ptr %b
   %mask = icmp eq <32 x i16> %cval, zeroinitializer
-  %vals = call <32 x i16> @llvm.masked.gather.v32i16(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x i16> poison)
+  %vals = call <32 x i16> @llvm.masked.gather.v32i16(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x i16> undef)
   store <32 x i16> %vals, ptr %a
   ret void
 }
@@ -306,8 +309,8 @@ define void @masked_gather_v2i32(ptr %a, ptr %b) vscale_range(2,0) #0 {
 ; CHECK:       // %bb.0:
 ; CHECK-NEXT:    ldr d0, [x0]
 ; CHECK-NEXT:    ptrue p0.d, vl2
-; CHECK-NEXT:    ushll v0.2d, v0.2s, #0
-; CHECK-NEXT:    cmeq v0.2d, v0.2d, #0
+; CHECK-NEXT:    cmeq v0.2s, v0.2s, #0
+; CHECK-NEXT:    sshll v0.2d, v0.2s, #0
 ; CHECK-NEXT:    cmpne p0.d, p0/z, z0.d, #0
 ; CHECK-NEXT:    ldr q0, [x1]
 ; CHECK-NEXT:    ld1w { z0.d }, p0/z, [z0.d]
@@ -317,7 +320,7 @@ define void @masked_gather_v2i32(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <2 x i32>, ptr %a
   %ptrs = load <2 x ptr>, ptr %b
   %mask = icmp eq <2 x i32> %cval, zeroinitializer
-  %vals = call <2 x i32> @llvm.masked.gather.v2i32(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x i32> poison)
+  %vals = call <2 x i32> @llvm.masked.gather.v2i32(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x i32> undef)
   store <2 x i32> %vals, ptr %a
   ret void
 }
@@ -338,7 +341,7 @@ define void @masked_gather_v4i32(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <4 x i32>, ptr %a
   %ptrs = load <4 x ptr>, ptr %b
   %mask = icmp eq <4 x i32> %cval, zeroinitializer
-  %vals = call <4 x i32> @llvm.masked.gather.v4i32(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x i32> poison)
+  %vals = call <4 x i32> @llvm.masked.gather.v4i32(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x i32> undef)
   store <4 x i32> %vals, ptr %a
   ret void
 }
@@ -382,7 +385,7 @@ define void @masked_gather_v8i32(ptr %a, ptr %b) #0 {
   %cval = load <8 x i32>, ptr %a
   %ptrs = load <8 x ptr>, ptr %b
   %mask = icmp eq <8 x i32> %cval, zeroinitializer
-  %vals = call <8 x i32> @llvm.masked.gather.v8i32(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x i32> poison)
+  %vals = call <8 x i32> @llvm.masked.gather.v8i32(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x i32> undef)
   store <8 x i32> %vals, ptr %a
   ret void
 }
@@ -402,7 +405,7 @@ define void @masked_gather_v16i32(ptr %a, ptr %b) vscale_range(8,0) #0 {
   %cval = load <16 x i32>, ptr %a
   %ptrs = load <16 x ptr>, ptr %b
   %mask = icmp eq <16 x i32> %cval, zeroinitializer
-  %vals = call <16 x i32> @llvm.masked.gather.v16i32(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x i32> poison)
+  %vals = call <16 x i32> @llvm.masked.gather.v16i32(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x i32> undef)
   store <16 x i32> %vals, ptr %a
   ret void
 }
@@ -422,7 +425,7 @@ define void @masked_gather_v32i32(ptr %a, ptr %b) vscale_range(16,0) #0 {
   %cval = load <32 x i32>, ptr %a
   %ptrs = load <32 x ptr>, ptr %b
   %mask = icmp eq <32 x i32> %cval, zeroinitializer
-  %vals = call <32 x i32> @llvm.masked.gather.v32i32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x i32> poison)
+  %vals = call <32 x i32> @llvm.masked.gather.v32i32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x i32> undef)
   store <32 x i32> %vals, ptr %a
   ret void
 }
@@ -435,7 +438,8 @@ define void @masked_gather_v32i32(ptr %a, ptr %b) vscale_range(16,0) #0 {
 define void @masked_gather_v1i64(ptr %a, ptr %b) vscale_range(2,0) #0 {
 ; CHECK-LABEL: masked_gather_v1i64:
 ; CHECK:       // %bb.0:
-; CHECK-NEXT:    ldr x8, [x0]
+; CHECK-NEXT:    ldr d0, [x0]
+; CHECK-NEXT:    fmov x8, d0
 ; CHECK-NEXT:    // implicit-def: $d0
 ; CHECK-NEXT:    cbnz x8, .LBB15_2
 ; CHECK-NEXT:  // %bb.1: // %cond.load
@@ -448,7 +452,7 @@ define void @masked_gather_v1i64(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <1 x i64>, ptr %a
   %ptrs = load <1 x ptr>, ptr %b
   %mask = icmp eq <1 x i64> %cval, zeroinitializer
-  %vals = call <1 x i64> @llvm.masked.gather.v1i64(<1 x ptr> %ptrs, i32 8, <1 x i1> %mask, <1 x i64> poison)
+  %vals = call <1 x i64> @llvm.masked.gather.v1i64(<1 x ptr> %ptrs, i32 8, <1 x i1> %mask, <1 x i64> undef)
   store <1 x i64> %vals, ptr %a
   ret void
 }
@@ -456,9 +460,10 @@ define void @masked_gather_v1i64(ptr %a, ptr %b) vscale_range(2,0) #0 {
 define void @masked_gather_v2i64(ptr %a, ptr %b) vscale_range(2,0) #0 {
 ; CHECK-LABEL: masked_gather_v2i64:
 ; CHECK:       // %bb.0:
-; CHECK-NEXT:    ptrue p0.d, vl2
 ; CHECK-NEXT:    ldr q0, [x0]
-; CHECK-NEXT:    cmpeq p0.d, p0/z, z0.d, #0
+; CHECK-NEXT:    ptrue p0.d, vl2
+; CHECK-NEXT:    cmeq v0.2d, v0.2d, #0
+; CHECK-NEXT:    cmpne p0.d, p0/z, z0.d, #0
 ; CHECK-NEXT:    ldr q0, [x1]
 ; CHECK-NEXT:    ld1d { z0.d }, p0/z, [z0.d]
 ; CHECK-NEXT:    str q0, [x0]
@@ -466,7 +471,7 @@ define void @masked_gather_v2i64(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <2 x i64>, ptr %a
   %ptrs = load <2 x ptr>, ptr %b
   %mask = icmp eq <2 x i64> %cval, zeroinitializer
-  %vals = call <2 x i64> @llvm.masked.gather.v2i64(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x i64> poison)
+  %vals = call <2 x i64> @llvm.masked.gather.v2i64(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x i64> undef)
   store <2 x i64> %vals, ptr %a
   ret void
 }
@@ -484,7 +489,7 @@ define void @masked_gather_v4i64(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <4 x i64>, ptr %a
   %ptrs = load <4 x ptr>, ptr %b
   %mask = icmp eq <4 x i64> %cval, zeroinitializer
-  %vals = call <4 x i64> @llvm.masked.gather.v4i64(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x i64> poison)
+  %vals = call <4 x i64> @llvm.masked.gather.v4i64(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x i64> undef)
   store <4 x i64> %vals, ptr %a
   ret void
 }
@@ -518,7 +523,7 @@ define void @masked_gather_v8i64(ptr %a, ptr %b) #0 {
   %cval = load <8 x i64>, ptr %a
   %ptrs = load <8 x ptr>, ptr %b
   %mask = icmp eq <8 x i64> %cval, zeroinitializer
-  %vals = call <8 x i64> @llvm.masked.gather.v8i64(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x i64> poison)
+  %vals = call <8 x i64> @llvm.masked.gather.v8i64(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x i64> undef)
   store <8 x i64> %vals, ptr %a
   ret void
 }
@@ -536,7 +541,7 @@ define void @masked_gather_v16i64(ptr %a, ptr %b) vscale_range(8,0) #0 {
   %cval = load <16 x i64>, ptr %a
   %ptrs = load <16 x ptr>, ptr %b
   %mask = icmp eq <16 x i64> %cval, zeroinitializer
-  %vals = call <16 x i64> @llvm.masked.gather.v16i64(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x i64> poison)
+  %vals = call <16 x i64> @llvm.masked.gather.v16i64(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x i64> undef)
   store <16 x i64> %vals, ptr %a
   ret void
 }
@@ -554,7 +559,7 @@ define void @masked_gather_v32i64(ptr %a, ptr %b) vscale_range(16,0) #0 {
   %cval = load <32 x i64>, ptr %a
   %ptrs = load <32 x ptr>, ptr %b
   %mask = icmp eq <32 x i64> %cval, zeroinitializer
-  %vals = call <32 x i64> @llvm.masked.gather.v32i64(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x i64> poison)
+  %vals = call <32 x i64> @llvm.masked.gather.v32i64(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x i64> undef)
   store <32 x i64> %vals, ptr %a
   ret void
 }
@@ -586,7 +591,7 @@ define void @masked_gather_v2f16(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <2 x half>, ptr %a
   %ptrs = load <2 x ptr>, ptr %b
   %mask = fcmp oeq <2 x half> %cval, zeroinitializer
-  %vals = call <2 x half> @llvm.masked.gather.v2f16(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x half> poison)
+  %vals = call <2 x half> @llvm.masked.gather.v2f16(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x half> undef)
   store <2 x half> %vals, ptr %a
   ret void
 }
@@ -609,7 +614,7 @@ define void @masked_gather_v4f16(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <4 x half>, ptr %a
   %ptrs = load <4 x ptr>, ptr %b
   %mask = fcmp oeq <4 x half> %cval, zeroinitializer
-  %vals = call <4 x half> @llvm.masked.gather.v4f16(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x half> poison)
+  %vals = call <4 x half> @llvm.masked.gather.v4f16(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x half> undef)
   store <4 x half> %vals, ptr %a
   ret void
 }
@@ -657,7 +662,7 @@ define void @masked_gather_v8f16(ptr %a, ptr %b) #0 {
   %cval = load <8 x half>, ptr %a
   %ptrs = load <8 x ptr>, ptr %b
   %mask = fcmp oeq <8 x half> %cval, zeroinitializer
-  %vals = call <8 x half> @llvm.masked.gather.v8f16(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x half> poison)
+  %vals = call <8 x half> @llvm.masked.gather.v8f16(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x half> undef)
   store <8 x half> %vals, ptr %a
   ret void
 }
@@ -678,7 +683,7 @@ define void @masked_gather_v16f16(ptr %a, ptr %b) vscale_range(8,0) #0 {
   %cval = load <16 x half>, ptr %a
   %ptrs = load <16 x ptr>, ptr %b
   %mask = fcmp oeq <16 x half> %cval, zeroinitializer
-  %vals = call <16 x half> @llvm.masked.gather.v16f16(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x half> poison)
+  %vals = call <16 x half> @llvm.masked.gather.v16f16(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x half> undef)
   store <16 x half> %vals, ptr %a
   ret void
 }
@@ -699,7 +704,7 @@ define void @masked_gather_v32f16(ptr %a, ptr %b) vscale_range(16,0) #0 {
   %cval = load <32 x half>, ptr %a
   %ptrs = load <32 x ptr>, ptr %b
   %mask = fcmp oeq <32 x half> %cval, zeroinitializer
-  %vals = call <32 x half> @llvm.masked.gather.v32f16(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x half> poison)
+  %vals = call <32 x half> @llvm.masked.gather.v32f16(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x half> undef)
   store <32 x half> %vals, ptr %a
   ret void
 }
@@ -724,7 +729,7 @@ define void @masked_gather_v2f32(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <2 x float>, ptr %a
   %ptrs = load <2 x ptr>, ptr %b
   %mask = fcmp oeq <2 x float> %cval, zeroinitializer
-  %vals = call <2 x float> @llvm.masked.gather.v2f32(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x float> poison)
+  %vals = call <2 x float> @llvm.masked.gather.v2f32(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x float> undef)
   store <2 x float> %vals, ptr %a
   ret void
 }
@@ -745,7 +750,7 @@ define void @masked_gather_v4f32(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <4 x float>, ptr %a
   %ptrs = load <4 x ptr>, ptr %b
   %mask = fcmp oeq <4 x float> %cval, zeroinitializer
-  %vals = call <4 x float> @llvm.masked.gather.v4f32(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x float> poison)
+  %vals = call <4 x float> @llvm.masked.gather.v4f32(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x float> undef)
   store <4 x float> %vals, ptr %a
   ret void
 }
@@ -789,7 +794,7 @@ define void @masked_gather_v8f32(ptr %a, ptr %b) #0 {
   %cval = load <8 x float>, ptr %a
   %ptrs = load <8 x ptr>, ptr %b
   %mask = fcmp oeq <8 x float> %cval, zeroinitializer
-  %vals = call <8 x float> @llvm.masked.gather.v8f32(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x float> poison)
+  %vals = call <8 x float> @llvm.masked.gather.v8f32(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x float> undef)
   store <8 x float> %vals, ptr %a
   ret void
 }
@@ -809,7 +814,7 @@ define void @masked_gather_v16f32(ptr %a, ptr %b) vscale_range(8,0) #0 {
   %cval = load <16 x float>, ptr %a
   %ptrs = load <16 x ptr>, ptr %b
   %mask = fcmp oeq <16 x float> %cval, zeroinitializer
-  %vals = call <16 x float> @llvm.masked.gather.v16f32(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x float> poison)
+  %vals = call <16 x float> @llvm.masked.gather.v16f32(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x float> undef)
   store <16 x float> %vals, ptr %a
   ret void
 }
@@ -829,7 +834,7 @@ define void @masked_gather_v32f32(ptr %a, ptr %b) vscale_range(16,0) #0 {
   %cval = load <32 x float>, ptr %a
   %ptrs = load <32 x ptr>, ptr %b
   %mask = fcmp oeq <32 x float> %cval, zeroinitializer
-  %vals = call <32 x float> @llvm.masked.gather.v32f32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x float> poison)
+  %vals = call <32 x float> @llvm.masked.gather.v32f32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x float> undef)
   store <32 x float> %vals, ptr %a
   ret void
 }
@@ -856,7 +861,7 @@ define void @masked_gather_v1f64(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <1 x double>, ptr %a
   %ptrs = load <1 x ptr>, ptr %b
   %mask = fcmp oeq <1 x double> %cval, zeroinitializer
-  %vals = call <1 x double> @llvm.masked.gather.v1f64(<1 x ptr> %ptrs, i32 8, <1 x i1> %mask, <1 x double> poison)
+  %vals = call <1 x double> @llvm.masked.gather.v1f64(<1 x ptr> %ptrs, i32 8, <1 x i1> %mask, <1 x double> undef)
   store <1 x double> %vals, ptr %a
   ret void
 }
@@ -875,7 +880,7 @@ define void @masked_gather_v2f64(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <2 x double>, ptr %a
   %ptrs = load <2 x ptr>, ptr %b
   %mask = fcmp oeq <2 x double> %cval, zeroinitializer
-  %vals = call <2 x double> @llvm.masked.gather.v2f64(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x double> poison)
+  %vals = call <2 x double> @llvm.masked.gather.v2f64(<2 x ptr> %ptrs, i32 8, <2 x i1> %mask, <2 x double> undef)
   store <2 x double> %vals, ptr %a
   ret void
 }
@@ -893,7 +898,7 @@ define void @masked_gather_v4f64(ptr %a, ptr %b) vscale_range(2,0) #0 {
   %cval = load <4 x double>, ptr %a
   %ptrs = load <4 x ptr>, ptr %b
   %mask = fcmp oeq <4 x double> %cval, zeroinitializer
-  %vals = call <4 x double> @llvm.masked.gather.v4f64(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x double> poison)
+  %vals = call <4 x double> @llvm.masked.gather.v4f64(<4 x ptr> %ptrs, i32 8, <4 x i1> %mask, <4 x double> undef)
   store <4 x double> %vals, ptr %a
   ret void
 }
@@ -927,7 +932,7 @@ define void @masked_gather_v8f64(ptr %a, ptr %b) #0 {
   %cval = load <8 x double>, ptr %a
   %ptrs = load <8 x ptr>, ptr %b
   %mask = fcmp oeq <8 x double> %cval, zeroinitializer
-  %vals = call <8 x double> @llvm.masked.gather.v8f64(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x double> poison)
+  %vals = call <8 x double> @llvm.masked.gather.v8f64(<8 x ptr> %ptrs, i32 8, <8 x i1> %mask, <8 x double> undef)
   store <8 x double> %vals, ptr %a
   ret void
 }
@@ -945,7 +950,7 @@ define void @masked_gather_v16f64(ptr %a, ptr %b) vscale_range(8,0) #0 {
   %cval = load <16 x double>, ptr %a
   %ptrs = load <16 x ptr>, ptr %b
   %mask = fcmp oeq <16 x double> %cval, zeroinitializer
-  %vals = call <16 x double> @llvm.masked.gather.v16f64(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x double> poison)
+  %vals = call <16 x double> @llvm.masked.gather.v16f64(<16 x ptr> %ptrs, i32 8, <16 x i1> %mask, <16 x double> undef)
   store <16 x double> %vals, ptr %a
   ret void
 }
@@ -963,7 +968,7 @@ define void @masked_gather_v32f64(ptr %a, ptr %b) vscale_range(16,0) #0 {
   %cval = load <32 x double>, ptr %a
   %ptrs = load <32 x ptr>, ptr %b
   %mask = fcmp oeq <32 x double> %cval, zeroinitializer
-  %vals = call <32 x double> @llvm.masked.gather.v32f64(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x double> poison)
+  %vals = call <32 x double> @llvm.masked.gather.v32f64(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x double> undef)
   store <32 x double> %vals, ptr %a
   ret void
 }
@@ -988,7 +993,7 @@ define void @masked_gather_32b_scaled_sext_f16(ptr %a, ptr %b, ptr %base) vscale
   %ext = sext <32 x i32> %idxs to <32 x i64>
   %ptrs = getelementptr half, ptr %base, <32 x i64> %ext
   %mask = fcmp oeq <32 x half> %cvals, zeroinitializer
-  %vals = call <32 x half> @llvm.masked.gather.v32f16(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x half> poison)
+  %vals = call <32 x half> @llvm.masked.gather.v32f16(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x half> undef)
   store <32 x half> %vals, ptr %a
   ret void
 }
@@ -1008,7 +1013,7 @@ define void @masked_gather_32b_scaled_sext_f32(ptr %a, ptr %b, ptr %base) vscale
   %ext = sext <32 x i32> %idxs to <32 x i64>
   %ptrs = getelementptr float, ptr %base, <32 x i64> %ext
   %mask = fcmp oeq <32 x float> %cvals, zeroinitializer
-  %vals = call <32 x float> @llvm.masked.gather.v32f32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x float> poison)
+  %vals = call <32 x float> @llvm.masked.gather.v32f32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x float> undef)
   store <32 x float> %vals, ptr %a
   ret void
 }
@@ -1028,7 +1033,7 @@ define void @masked_gather_32b_scaled_sext_f64(ptr %a, ptr %b, ptr %base) vscale
   %ext = sext <32 x i32> %idxs to <32 x i64>
   %ptrs = getelementptr double, ptr %base, <32 x i64> %ext
   %mask = fcmp oeq <32 x double> %cvals, zeroinitializer
-  %vals = call <32 x double> @llvm.masked.gather.v32f64(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x double> poison)
+  %vals = call <32 x double> @llvm.masked.gather.v32f64(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x double> undef)
   store <32 x double> %vals, ptr %a
   ret void
 }
@@ -1050,7 +1055,7 @@ define void @masked_gather_32b_scaled_zext(ptr %a, ptr %b, ptr %base) vscale_ran
   %ext = zext <32 x i32> %idxs to <32 x i64>
   %ptrs = getelementptr half, ptr %base, <32 x i64> %ext
   %mask = fcmp oeq <32 x half> %cvals, zeroinitializer
-  %vals = call <32 x half> @llvm.masked.gather.v32f16(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x half> poison)
+  %vals = call <32 x half> @llvm.masked.gather.v32f16(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x half> undef)
   store <32 x half> %vals, ptr %a
   ret void
 }
@@ -1073,7 +1078,7 @@ define void @masked_gather_32b_unscaled_sext(ptr %a, ptr %b, ptr %base) vscale_r
   %byte_ptrs = getelementptr i8, ptr %base, <32 x i64> %ext
   %ptrs = bitcast <32 x ptr> %byte_ptrs to <32 x ptr>
   %mask = fcmp oeq <32 x half> %cvals, zeroinitializer
-  %vals = call <32 x half> @llvm.masked.gather.v32f16(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x half> poison)
+  %vals = call <32 x half> @llvm.masked.gather.v32f16(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x half> undef)
   store <32 x half> %vals, ptr %a
   ret void
 }
@@ -1096,7 +1101,7 @@ define void @masked_gather_32b_unscaled_zext(ptr %a, ptr %b, ptr %base) vscale_r
   %byte_ptrs = getelementptr i8, ptr %base, <32 x i64> %ext
   %ptrs = bitcast <32 x ptr> %byte_ptrs to <32 x ptr>
   %mask = fcmp oeq <32 x half> %cvals, zeroinitializer
-  %vals = call <32 x half> @llvm.masked.gather.v32f16(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x half> poison)
+  %vals = call <32 x half> @llvm.masked.gather.v32f16(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x half> undef)
   store <32 x half> %vals, ptr %a
   ret void
 }
@@ -1117,7 +1122,7 @@ define void @masked_gather_64b_scaled(ptr %a, ptr %b, ptr %base) vscale_range(16
   %idxs = load <32 x i64>, ptr %b
   %ptrs = getelementptr float, ptr %base, <32 x i64> %idxs
   %mask = fcmp oeq <32 x float> %cvals, zeroinitializer
-  %vals = call <32 x float> @llvm.masked.gather.v32f32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x float> poison)
+  %vals = call <32 x float> @llvm.masked.gather.v32f32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x float> undef)
   store <32 x float> %vals, ptr %a
   ret void
 }
@@ -1139,7 +1144,7 @@ define void @masked_gather_64b_unscaled(ptr %a, ptr %b, ptr %base) vscale_range(
   %byte_ptrs = getelementptr i8, ptr %base, <32 x i64> %idxs
   %ptrs = bitcast <32 x ptr> %byte_ptrs to <32 x ptr>
   %mask = fcmp oeq <32 x float> %cvals, zeroinitializer
-  %vals = call <32 x float> @llvm.masked.gather.v32f32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x float> poison)
+  %vals = call <32 x float> @llvm.masked.gather.v32f32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x float> undef)
   store <32 x float> %vals, ptr %a
   ret void
 }
@@ -1161,7 +1166,7 @@ define void @masked_gather_vec_plus_reg(ptr %a, ptr %b, i64 %off) vscale_range(1
   %byte_ptrs = getelementptr i8, <32 x ptr> %bases, i64 %off
   %ptrs = bitcast <32 x ptr> %byte_ptrs to <32 x ptr>
   %mask = fcmp oeq <32 x float> %cvals, zeroinitializer
-  %vals = call <32 x float> @llvm.masked.gather.v32f32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x float> poison)
+  %vals = call <32 x float> @llvm.masked.gather.v32f32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x float> undef)
   store <32 x float> %vals, ptr %a
   ret void
 }
@@ -1183,7 +1188,7 @@ define void @masked_gather_vec_plus_imm(ptr %a, ptr %b) vscale_range(16,0) #0 {
   %byte_ptrs = getelementptr i8, <32 x ptr> %bases, i64 4
   %ptrs = bitcast <32 x ptr> %byte_ptrs to <32 x ptr>
   %mask = fcmp oeq <32 x float> %cvals, zeroinitializer
-  %vals = call <32 x float> @llvm.masked.gather.v32f32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x float> poison)
+  %vals = call <32 x float> @llvm.masked.gather.v32f32(<32 x ptr> %ptrs, i32 8, <32 x i1> %mask, <32 x float> undef)
   store <32 x float> %vals, ptr %a
   ret void
 }
@@ -1194,15 +1199,11 @@ define void @masked_gather_passthru(ptr %a, ptr %b, ptr %c) vscale_range(16,0) #
 ; CHECK-NEXT:    ptrue p0.s, vl32
 ; CHECK-NEXT:    ptrue p2.d, vl32
 ; CHECK-NEXT:    ld1w { z0.s }, p0/z, [x0]
+; CHECK-NEXT:    ld1w { z1.s }, p0/z, [x2]
 ; CHECK-NEXT:    fcmeq p1.s, p0/z, z0.s, #0.0
 ; CHECK-NEXT:    ld1d { z0.d }, p2/z, [x1]
 ; CHECK-NEXT:    punpklo p2.h, p1.b
-; CHECK-NEXT:    mov z1.s, p1/z, #-1 // =0xffffffffffffffff
-; CHECK-NEXT:    ptrue p1.s
 ; CHECK-NEXT:    ld1w { z0.d }, p2/z, [z0.d]
-; CHECK-NEXT:    and z1.s, z1.s, #0x1
-; CHECK-NEXT:    cmpne p1.s, p1/z, z1.s, #0
-; CHECK-NEXT:    ld1w { z1.s }, p0/z, [x2]
 ; CHECK-NEXT:    uzp1 z0.s, z0.s, z0.s
 ; CHECK-NEXT:    sel z0.s, p1, z0.s, z1.s
 ; CHECK-NEXT:    st1w { z0.s }, p0, [x0]

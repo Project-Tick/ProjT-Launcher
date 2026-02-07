@@ -11,7 +11,6 @@
 /// pass.
 ///
 //===----------------------------------------------------------------------===//
-#include "llvm/CodeGen/GCEmptyBasicBlocks.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
@@ -27,35 +26,22 @@ using namespace llvm;
 
 STATISTIC(NumEmptyBlocksRemoved, "Number of empty blocks removed");
 
-static bool removeEmptyBlocks(MachineFunction &MF);
-
-PreservedAnalyses
-GCEmptyBasicBlocksPass::run(MachineFunction &MF,
-                            MachineFunctionAnalysisManager &MFAM) {
-  bool Changed = removeEmptyBlocks(MF);
-  if (Changed)
-    return getMachineFunctionPassPreservedAnalyses();
-  return PreservedAnalyses::all();
-}
-
-class GCEmptyBasicBlocksLegacy : public MachineFunctionPass {
+class GCEmptyBasicBlocks : public MachineFunctionPass {
 public:
   static char ID;
 
-  GCEmptyBasicBlocksLegacy() : MachineFunctionPass(ID) {
-    initializeGCEmptyBasicBlocksLegacyPass(*PassRegistry::getPassRegistry());
+  GCEmptyBasicBlocks() : MachineFunctionPass(ID) {
+    initializeGCEmptyBasicBlocksPass(*PassRegistry::getPassRegistry());
   }
 
   StringRef getPassName() const override {
     return "Remove Empty Basic Blocks.";
   }
 
-  bool runOnMachineFunction(MachineFunction &MF) override {
-    return removeEmptyBlocks(MF);
-  }
+  bool runOnMachineFunction(MachineFunction &MF) override;
 };
 
-bool removeEmptyBlocks(MachineFunction &MF) {
+bool GCEmptyBasicBlocks::runOnMachineFunction(MachineFunction &MF) {
   if (MF.size() < 2)
     return false;
   MachineJumpTableInfo *JTI = MF.getJumpTableInfo();
@@ -102,12 +88,12 @@ bool removeEmptyBlocks(MachineFunction &MF) {
   return NumRemoved != 0;
 }
 
-char GCEmptyBasicBlocksLegacy::ID = 0;
-INITIALIZE_PASS(GCEmptyBasicBlocksLegacy, "gc-empty-basic-blocks",
+char GCEmptyBasicBlocks::ID = 0;
+INITIALIZE_PASS(GCEmptyBasicBlocks, "gc-empty-basic-blocks",
                 "Removes empty basic blocks and redirects their uses to their "
                 "fallthrough blocks.",
                 false, false)
 
-MachineFunctionPass *llvm::createGCEmptyBasicBlocksLegacyPass() {
-  return new GCEmptyBasicBlocksLegacy();
+MachineFunctionPass *llvm::createGCEmptyBasicBlocksPass() {
+  return new GCEmptyBasicBlocks();
 }

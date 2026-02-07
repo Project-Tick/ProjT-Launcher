@@ -52,7 +52,7 @@ public:
 
   void CalculateTrapHandlerSymbolNames() override;
 
-  lldb::UnwindPlanSP GetTrapHandlerUnwindPlan(const ArchSpec &arch,
+  lldb::UnwindPlanSP GetTrapHandlerUnwindPlan(const llvm::Triple &triple,
                                               ConstString name) override;
 
   MmapArgList GetMmapArgumentList(const ArchSpec &arch, lldb::addr_t addr,
@@ -61,8 +61,6 @@ public:
                                   lldb::addr_t offset) override;
 
   CompilerType GetSiginfoType(const llvm::Triple &triple) override;
-
-  lldb::StopInfoSP GetStopInfoFromSiginfo(Thread &thread) override;
 
   std::vector<ArchSpec> m_supported_architectures;
 

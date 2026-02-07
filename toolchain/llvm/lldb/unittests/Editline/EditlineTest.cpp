@@ -7,10 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "lldb/Host/Config.h"
-#include "lldb/Host/File.h"
-#include "lldb/Host/HostInfo.h"
-#include "lldb/lldb-forward.h"
-#include "llvm/Testing/Support/Error.h"
 
 #if LLDB_ENABLE_LIBEDIT
 
@@ -27,8 +23,8 @@
 #include "TestingSupport/SubsystemRAII.h"
 #include "lldb/Host/Editline.h"
 #include "lldb/Host/FileSystem.h"
+#include "lldb/Host/Pipe.h"
 #include "lldb/Host/PseudoTerminal.h"
-#include "lldb/Host/StreamFile.h"
 #include "lldb/Utility/Status.h"
 #include "lldb/Utility/StringList.h"
 
@@ -37,6 +33,27 @@ using namespace lldb_private;
 namespace {
 const size_t TIMEOUT_MILLIS = 5000;
 }
+
+class FilePointer {
+public:
+  FilePointer() = delete;
+
+  FilePointer(const FilePointer &) = delete;
+
+  FilePointer(FILE *file_p) : _file_p(file_p) {}
+
+  ~FilePointer() {
+    if (_file_p != nullptr) {
+      const int close_result = fclose(_file_p);
+      EXPECT_EQ(0, close_result);
+    }
+  }
+
+  operator FILE *() { return _file_p; }
+
+private:
+  FILE *_file_p;
+};
 
 /**
  Wraps an Editline class, providing a simple way to feed
@@ -70,40 +87,38 @@ private:
   std::recursive_mutex output_mutex;
   std::unique_ptr<lldb_private::Editline> _editline_sp;
 
-  lldb::FileSP _el_primary_file;
-  lldb::FileSP _el_secondary_file;
+  PseudoTerminal _pty;
+  int _pty_primary_fd = -1;
+  int _pty_secondary_fd = -1;
+
+  std::unique_ptr<FilePointer> _el_secondary_file;
 };
 
-EditlineAdapter::EditlineAdapter() : _editline_sp(), _el_secondary_file() {
+EditlineAdapter::EditlineAdapter()
+    : _editline_sp(), _pty(), _el_secondary_file() {
   lldb_private::Status error;
-  PseudoTerminal pty;
 
   // Open the first primary pty available.
-  EXPECT_THAT_ERROR(pty.OpenFirstAvailablePrimary(O_RDWR), llvm::Succeeded());
-  // Open the corresponding secondary pty.
-  EXPECT_THAT_ERROR(pty.OpenSecondary(O_RDWR), llvm::Succeeded());
+  EXPECT_THAT_ERROR(_pty.OpenFirstAvailablePrimary(O_RDWR), llvm::Succeeded());
 
   // Grab the primary fd.  This is a file descriptor we will:
   // (1) write to when we want to send input to editline.
   // (2) read from when we want to see what editline sends back.
-  _el_primary_file.reset(
-      new NativeFile(pty.ReleasePrimaryFileDescriptor(),
-                     lldb_private::NativeFile::eOpenOptionReadWrite, true));
+  _pty_primary_fd = _pty.GetPrimaryFileDescriptor();
 
-  _el_secondary_file.reset(
-      new NativeFile(pty.ReleaseSecondaryFileDescriptor(),
-                     lldb_private::NativeFile::eOpenOptionReadWrite, true));
+  // Open the corresponding secondary pty.
+  EXPECT_THAT_ERROR(_pty.OpenSecondary(O_RDWR), llvm::Succeeded());
+  _pty_secondary_fd = _pty.GetSecondaryFileDescriptor();
 
-  lldb::LockableStreamFileSP output_stream_sp =
-      std::make_shared<LockableStreamFile>(_el_secondary_file, output_mutex);
-  lldb::LockableStreamFileSP error_stream_sp =
-      std::make_shared<LockableStreamFile>(_el_secondary_file, output_mutex);
+  _el_secondary_file.reset(new FilePointer(fdopen(_pty_secondary_fd, "rw")));
+  EXPECT_FALSE(nullptr == *_el_secondary_file);
+  if (*_el_secondary_file == nullptr)
+    return;
 
   // Create an Editline instance.
   _editline_sp.reset(new lldb_private::Editline(
-      "gtest editor", _el_secondary_file->GetStream(), output_stream_sp,
-      error_stream_sp,
-      /*color=*/false));
+      "gtest editor", *_el_secondary_file, *_el_secondary_file,
+      *_el_secondary_file, /*color=*/false, output_mutex));
   _editline_sp->SetPrompt("> ");
 
   // Hookup our input complete callback.
@@ -115,7 +130,7 @@ EditlineAdapter::EditlineAdapter() : _editline_sp(), _el_secondary_file() {
 
 void EditlineAdapter::CloseInput() {
   if (_el_secondary_file != nullptr)
-    _el_secondary_file->Close();
+    _el_secondary_file.reset(nullptr);
 }
 
 bool EditlineAdapter::SendLine(const std::string &line) {
@@ -123,14 +138,19 @@ bool EditlineAdapter::SendLine(const std::string &line) {
   if (!IsValid())
     return false;
 
-  std::string out = line + "\n";
-
   // Write the line out to the pipe connected to editline's input.
-  size_t num_bytes = out.length() * sizeof(std::string::value_type);
-  EXPECT_THAT_ERROR(_el_primary_file->Write(out.c_str(), num_bytes).takeError(),
-                    llvm::Succeeded());
-  EXPECT_EQ(num_bytes, out.length() * sizeof(std::string::value_type));
-  return true;
+  ssize_t input_bytes_written =
+      ::write(_pty_primary_fd, line.c_str(),
+              line.length() * sizeof(std::string::value_type));
+
+  const char *eoln = "\n";
+  const size_t eoln_length = strlen(eoln);
+  input_bytes_written =
+      ::write(_pty_primary_fd, eoln, eoln_length * sizeof(char));
+
+  EXPECT_NE(-1, input_bytes_written) << strerror(errno);
+  EXPECT_EQ(eoln_length * sizeof(char), size_t(input_bytes_written));
+  return eoln_length * sizeof(char) == size_t(input_bytes_written);
 }
 
 bool EditlineAdapter::SendLines(const std::vector<std::string> &lines) {
@@ -185,7 +205,7 @@ bool EditlineAdapter::IsInputComplete(lldb_private::Editline *editline,
 }
 
 void EditlineAdapter::ConsumeAllOutput() {
-  FILE *output_file = _el_primary_file->GetStream();
+  FilePointer output_file(fdopen(_pty_primary_fd, "r"));
 
   int ch;
   while ((ch = fgetc(output_file)) != EOF) {
@@ -215,7 +235,7 @@ void EditlineAdapter::ConsumeAllOutput() {
 }
 
 class EditlineTestFixture : public ::testing::Test {
-  SubsystemRAII<FileSystem, HostInfo> subsystems;
+  SubsystemRAII<FileSystem> subsystems;
   EditlineAdapter _el_adapter;
   std::shared_ptr<std::thread> _sp_output_thread;
 

@@ -26,20 +26,16 @@ namespace mca {
 class X86InstrPostProcess : public InstrPostProcess {
   /// Called within X86InstrPostProcess to specify certain instructions
   /// as load and store barriers.
-  void setMemBarriers(Instruction &Inst, const MCInst &MCI);
-
-  /// Called within X86InstrPostPorcess to remove some rsp read operands
-  /// on stack instructions to better simulate the stack engine. We currently
-  /// do not model features of the stack engine like sync uops.
-  void useStackEngine(Instruction &Inst, const MCInst &MCI);
+  void setMemBarriers(std::unique_ptr<Instruction> &Inst, const MCInst &MCI);
 
 public:
   X86InstrPostProcess(const MCSubtargetInfo &STI, const MCInstrInfo &MCII)
       : InstrPostProcess(STI, MCII) {}
 
-  ~X86InstrPostProcess() override = default;
+  ~X86InstrPostProcess() = default;
 
-  void postProcessInstruction(Instruction &Inst, const MCInst &MCI) override;
+  void postProcessInstruction(std::unique_ptr<Instruction> &Inst,
+                              const MCInst &MCI) override;
 };
 
 } // namespace mca

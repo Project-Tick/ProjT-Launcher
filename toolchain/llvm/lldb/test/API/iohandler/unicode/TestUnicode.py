@@ -15,8 +15,7 @@ class TestCase(PExpectTest):
     # PExpect uses many timeouts internally and doesn't play well
     # under ASAN on a loaded machine..
     @skipIfAsan
-    @skipIf(oslist=["linux"], archs=["arm$", "aarch64"])  # Randomly fails on buildbot
-    @skipIfEditlineWideCharSupportMissing
+    @skipIf(oslist=["linux"], archs=["arm", "aarch64"])  # Randomly fails on buildbot
     def test_unicode_input(self):
         self.launch()
 

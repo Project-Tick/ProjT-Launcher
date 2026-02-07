@@ -12,7 +12,6 @@ static_library("LTO") {
     "//llvm/lib/MC",
     "//llvm/lib/Object",
     "//llvm/lib/Passes",
-    "//llvm/lib/Plugins",
     "//llvm/lib/Support",
     "//llvm/lib/Target",
     "//llvm/lib/TargetParser",

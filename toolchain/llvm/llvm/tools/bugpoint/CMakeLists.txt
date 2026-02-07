@@ -14,7 +14,6 @@ set(LLVM_LINK_COMPONENTS
   InstCombine
   Instrumentation
   Linker
-  Plugins
   ObjCARCOpts
   ScalarOpts
   Support

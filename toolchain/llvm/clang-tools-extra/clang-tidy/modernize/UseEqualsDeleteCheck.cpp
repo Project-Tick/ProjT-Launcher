@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- UseEqualsDeleteCheck.cpp - clang-tidy-----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -41,13 +41,13 @@ AST_MATCHER(CXXMethodDecl, isSpecialFunction) {
 }
 } // namespace
 
-static constexpr char SpecialFunction[] = "SpecialFunction";
-static constexpr char DeletedNotPublic[] = "DeletedNotPublic";
+static const char SpecialFunction[] = "SpecialFunction";
+static const char DeletedNotPublic[] = "DeletedNotPublic";
 
 UseEqualsDeleteCheck::UseEqualsDeleteCheck(StringRef Name,
                                            ClangTidyContext *Context)
     : ClangTidyCheck(Name, Context),
-      IgnoreMacros(Options.get("IgnoreMacros", true)) {}
+      IgnoreMacros(Options.getLocalOrGlobal("IgnoreMacros", true)) {}
 
 void UseEqualsDeleteCheck::storeOptions(ClangTidyOptions::OptionMap &Opts) {
   Options.store(Opts, "IgnoreMacros", IgnoreMacros);
@@ -74,7 +74,7 @@ void UseEqualsDeleteCheck::registerMatchers(MatchFinder *Finder) {
 void UseEqualsDeleteCheck::check(const MatchFinder::MatchResult &Result) {
   if (const auto *Func =
           Result.Nodes.getNodeAs<CXXMethodDecl>(SpecialFunction)) {
-    const SourceLocation EndLoc = Lexer::getLocForEndOfToken(
+    SourceLocation EndLoc = Lexer::getLocForEndOfToken(
         Func->getEndLoc(), 0, *Result.SourceManager, getLangOpts());
 
     if (IgnoreMacros && Func->getLocation().isMacroID())

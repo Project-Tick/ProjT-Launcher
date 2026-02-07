@@ -21,8 +21,6 @@ include "LanaiRegisterInfo.td"
 include "LanaiCallingConv.td"
 include "LanaiInstrInfo.td"
 
-defm : RemapAllTargetPseudoPointerOperands<GPR>;
-
 def LanaiInstrInfo : InstrInfo;
 
 //===----------------------------------------------------------------------===//

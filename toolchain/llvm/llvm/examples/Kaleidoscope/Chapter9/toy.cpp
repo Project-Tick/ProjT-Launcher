@@ -203,7 +203,7 @@ class ExprAST {
 
 public:
   ExprAST(SourceLocation Loc = CurLoc) : Loc(Loc) {}
-  virtual ~ExprAST() = default;
+  virtual ~ExprAST() {}
   virtual Value *codegen() = 0;
   int getLine() const { return Loc.Line; }
   int getCol() const { return Loc.Col; }

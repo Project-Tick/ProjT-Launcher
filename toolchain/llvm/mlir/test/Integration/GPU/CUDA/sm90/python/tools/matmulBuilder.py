@@ -76,9 +76,9 @@ def debug_print(fmt, *args, predicate=None, threadNumber=-1, forcePrint=False):
     type_formats = []
     for arg in args:
         ty_format = None
-        if isinstance(arg.type, ir.IndexType):
+        if ir.IndexType.isinstance(arg.type):
             ty_format = "%llu"
-        if isinstance(arg.type, ir.IntegerType):
+        if ir.IntegerType.isinstance(arg.type):
             width = ir.IntegerType(arg.type).width
             if width == 64:
                 ty_format = "%llu"
@@ -86,7 +86,7 @@ def debug_print(fmt, *args, predicate=None, threadNumber=-1, forcePrint=False):
                 ty_format = "%d"
             elif width == 1:
                 ty_format = "%i"
-        if isinstance(arg.type, ir.F32Type):
+        if ir.F32Type.isinstance(arg.type):
             ty_format = "%f"
         if ty_format is None:
             raise NotImplementedError(arg.type)
@@ -102,9 +102,9 @@ def debug_print(fmt, *args, predicate=None, threadNumber=-1, forcePrint=False):
 
 
 def get_type_size(ty):
-    if isinstance(ty, ir.FloatType):
+    if ir.FloatType.isinstance(ty):
         return ir.FloatType(ty).width // 8
-    if isinstance(ty, ir.IntegerType):
+    if ir.IntegerType.isinstance(ty):
         return ir.IntegerType(ty).width // 8
     raise NotImplementedError(ty)
 

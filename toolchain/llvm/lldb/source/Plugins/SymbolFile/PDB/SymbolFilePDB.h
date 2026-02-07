@@ -49,8 +49,6 @@ public:
   static lldb_private::SymbolFile *
   CreateInstance(lldb::ObjectFileSP objfile_sp);
 
-  static bool UseNativePDB();
-
   // Constructors and Destructors
   SymbolFilePDB(lldb::ObjectFileSP objfile_sp);
 
@@ -159,8 +157,7 @@ public:
 
   const llvm::pdb::IPDBSession &GetPDBSession() const;
 
-  void DumpClangAST(lldb_private::Stream &s, llvm::StringRef filter,
-                    bool show_color) override;
+  void DumpClangAST(lldb_private::Stream &s) override;
 
 private:
   struct SecContribInfo {

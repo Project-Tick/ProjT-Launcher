@@ -6,10 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 #include "clang/Driver/XRayArgs.h"
-#include "clang/Driver/CommonArgs.h"
+#include "ToolChains/CommonArgs.h"
 #include "clang/Driver/Driver.h"
+#include "clang/Driver/Options.h"
 #include "clang/Driver/ToolChain.h"
-#include "clang/Options/Options.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/Support/SpecialCaseList.h"
@@ -105,9 +105,8 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
       for (const auto &P : BundleParts) {
         // TODO: Automate the generation of the string case table.
         auto Valid = llvm::StringSwitch<bool>(P)
-                         .Cases({"none", "all", "function", "function-entry",
-                                 "function-exit", "custom"},
-                                true)
+                         .Cases("none", "all", "function", "function-entry",
+                                "function-exit", "custom", true)
                          .Default(false);
 
         if (!Valid) {
@@ -158,7 +157,7 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
   // Get the list of modes we want to support.
   auto SpecifiedModes = Args.getAllArgValues(options::OPT_fxray_modes);
   if (SpecifiedModes.empty())
-    llvm::append_range(Modes, XRaySupportedModes);
+    llvm::copy(XRaySupportedModes, std::back_inserter(Modes));
   else
     for (const auto &Arg : SpecifiedModes) {
       // Parse CSV values for -fxray-modes=...
@@ -168,14 +167,14 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
         if (M == "none")
           Modes.clear();
         else if (M == "all")
-          llvm::append_range(Modes, XRaySupportedModes);
+          llvm::copy(XRaySupportedModes, std::back_inserter(Modes));
         else
           Modes.push_back(std::string(M));
     }
 
   // Then we want to sort and unique the modes we've collected.
   llvm::sort(Modes);
-  Modes.erase(llvm::unique(Modes), Modes.end());
+  Modes.erase(std::unique(Modes.begin(), Modes.end()), Modes.end());
 }
 
 void XRayArgs::addArgs(const ToolChain &TC, const ArgList &Args,

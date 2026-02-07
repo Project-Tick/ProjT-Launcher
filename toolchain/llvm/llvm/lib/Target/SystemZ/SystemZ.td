@@ -57,9 +57,6 @@ include "SystemZInstrHFP.td"
 include "SystemZInstrDFP.td"
 include "SystemZInstrSystem.td"
 
-
-defm : RemapAllTargetPseudoPointerOperands<ADDR64Bit>;
-
 def SystemZInstrInfo : InstrInfo { let guessInstructionProperties = 0; }
 
 //===----------------------------------------------------------------------===//

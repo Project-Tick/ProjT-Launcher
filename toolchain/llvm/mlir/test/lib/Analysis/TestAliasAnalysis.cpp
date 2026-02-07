@@ -26,7 +26,8 @@ static void printAliasOperand(Operation *op) {
 static void printAliasOperand(Value value) {
   if (BlockArgument arg = dyn_cast<BlockArgument>(value)) {
     Region *region = arg.getParentRegion();
-    unsigned parentBlockNumber = arg.getOwner()->computeBlockNumber();
+    unsigned parentBlockNumber =
+        std::distance(region->begin(), arg.getOwner()->getIterator());
     llvm::errs() << region->getParentOp()
                         ->getAttrOfType<StringAttr>("test.ptr")
                         .getValue()

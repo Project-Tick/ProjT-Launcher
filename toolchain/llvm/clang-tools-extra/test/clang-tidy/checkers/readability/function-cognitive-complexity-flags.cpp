@@ -11,10 +11,16 @@
 // RUN:             {readability-function-cognitive-complexity.Threshold: 0, \
 // RUN:              readability-function-cognitive-complexity.IgnoreMacros: "true", \
 // RUN:              readability-function-cognitive-complexity.DescribeBasicIncrements: "false"}}'
+// RUN: %check_clang_tidy -check-suffix=GLOBAL-IGNORE-MACROS %s readability-function-cognitive-complexity %t -- \
+// RUN:   -config='{CheckOptions: \
+// RUN:             {readability-function-cognitive-complexity.Threshold: 0, \
+// RUN:              IgnoreMacros: "true", \
+// RUN:              readability-function-cognitive-complexity.DescribeBasicIncrements: "false"}}'
 
 void func_of_complexity_4() {
   // CHECK-NOTES: :[[@LINE-1]]:6: warning: function 'func_of_complexity_4' has cognitive complexity of 4 (threshold 0) [readability-function-cognitive-complexity]
   // CHECK-NOTES-IGNORE-MACROS: :[[@LINE-2]]:6: warning: function 'func_of_complexity_4' has cognitive complexity of 4 (threshold 0) [readability-function-cognitive-complexity]
+  // CHECK-NOTES-GLOBAL-IGNORE-MACROS: :[[@LINE-3]]:6: warning: function 'func_of_complexity_4' has cognitive complexity of 4 (threshold 0) [readability-function-cognitive-complexity]
   if (1) {
     if (1) {
     }
@@ -37,6 +43,7 @@ void function_with_macro() {
   // CHECK-NOTES: :[[@LINE-1]]:6: warning: function 'function_with_macro' has cognitive complexity of 11 (threshold 0) [readability-function-cognitive-complexity]
   // CHECK-NOTES-THRESHOLD5: :[[@LINE-2]]:6: warning: function 'function_with_macro' has cognitive complexity of 11 (threshold 5) [readability-function-cognitive-complexity]
   // CHECK-NOTES-IGNORE-MACROS: :[[@LINE-3]]:6: warning: function 'function_with_macro' has cognitive complexity of 1 (threshold 0) [readability-function-cognitive-complexity]
+  // CHECK-NOTES-GLOBAL-IGNORE-MACROS: :[[@LINE-4]]:6: warning: function 'function_with_macro' has cognitive complexity of 11 (threshold 0) [readability-function-cognitive-complexity]
 
   MacroOfComplexity10;
 
@@ -55,6 +62,7 @@ void function_with_macro() {
 void func_macro_1() {
   // CHECK-NOTES: :[[@LINE-1]]:6: warning: function 'func_macro_1' has cognitive complexity of 2 (threshold 0) [readability-function-cognitive-complexity]
   // CHECK-NOTES-IGNORE-MACROS: :[[@LINE-2]]:6: warning: function 'func_macro_1' has cognitive complexity of 1 (threshold 0) [readability-function-cognitive-complexity]
+  // CHECK-NOTES-GLOBAL-IGNORE-MACROS: :[[@LINE-3]]:6: warning: function 'func_macro_1' has cognitive complexity of 2 (threshold 0) [readability-function-cognitive-complexity]
 
   if (1) {
   }
@@ -64,6 +72,7 @@ void func_macro_1() {
 void func_macro_2() {
   // CHECK-NOTES: :[[@LINE-1]]:6: warning: function 'func_macro_2' has cognitive complexity of 4 (threshold 0) [readability-function-cognitive-complexity]
   // CHECK-NOTES-IGNORE-MACROS: :[[@LINE-2]]:6: warning: function 'func_macro_2' has cognitive complexity of 1 (threshold 0) [readability-function-cognitive-complexity]
+  // CHECK-NOTES-GLOBAL-IGNORE-MACROS: :[[@LINE-3]]:6: warning: function 'func_macro_2' has cognitive complexity of 4 (threshold 0) [readability-function-cognitive-complexity]
 
   if (1) {
   }

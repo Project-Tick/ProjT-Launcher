@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- DesignatedInitializers.cpp - clang-tidy --------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -13,11 +13,12 @@
 
 #include "DesignatedInitializers.h"
 #include "clang/AST/DeclCXX.h"
-#include "clang/AST/Type.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/ScopeExit.h"
 
 namespace clang::tidy::utils {
+
+namespace {
 
 /// Returns true if Name is reserved, like _Foo or __Vector_base.
 static inline bool isReservedName(llvm::StringRef Name) {
@@ -25,8 +26,6 @@ static inline bool isReservedName(llvm::StringRef Name) {
   return Name.size() >= 2 && Name[0] == '_' &&
          (isUppercase(Name[1]) || Name[1] == '_');
 }
-
-namespace {
 
 // Helper class to iterate over the designator names of an aggregate type.
 //
@@ -58,7 +57,7 @@ public:
     }
   }
   // Returns false if the type was not an aggregate.
-  operator bool() const { return Valid; }
+  operator bool() { return Valid; }
   // Advance to the next element in the aggregate.
   void next() {
     if (IsArray)
@@ -112,8 +111,6 @@ private:
   RecordDecl::field_iterator FieldsEnd;
 };
 
-} // namespace
-
 // Collect designator labels describing the elements of an init list.
 //
 // This function contributes the designators of some (sub)object, which is
@@ -129,9 +126,10 @@ private:
 // '.a:' is produced directly without recursing into the written sublist.
 // (The written sublist will have a separate collectDesignators() call later).
 // Recursion with Prefix='.b' and Sem = {3, ImplicitValue} produces '.b.x:'.
-static void collectDesignators(
-    const InitListExpr *Sem, llvm::DenseMap<SourceLocation, std::string> &Out,
-    const llvm::DenseSet<SourceLocation> &NestedBraces, std::string &Prefix) {
+void collectDesignators(const InitListExpr *Sem,
+                        llvm::DenseMap<SourceLocation, std::string> &Out,
+                        const llvm::DenseSet<SourceLocation> &NestedBraces,
+                        std::string &Prefix) {
   if (!Sem || Sem->isTransparent())
     return;
   assert(Sem->isSemanticForm());
@@ -142,7 +140,7 @@ static void collectDesignators(
   if (!Fields)
     return;
   for (const Expr *Init : Sem->inits()) {
-    const llvm::scope_exit Next([&, Size(Prefix.size())] {
+    auto Next = llvm::make_scope_exit([&, Size(Prefix.size())] {
       Fields.next();       // Always advance to the next subobject name.
       Prefix.resize(Size); // Erase any designator we appended.
     });
@@ -170,6 +168,8 @@ static void collectDesignators(
     Out.try_emplace(Init->getBeginLoc(), Prefix);
   }
 }
+
+} // namespace
 
 llvm::DenseMap<SourceLocation, std::string>
 getUnwrittenDesignators(const InitListExpr *Syn) {

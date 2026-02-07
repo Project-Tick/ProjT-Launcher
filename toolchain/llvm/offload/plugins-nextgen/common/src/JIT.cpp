@@ -49,20 +49,29 @@ using namespace omp::target;
 
 namespace {
 
+bool isImageBitcode(const __tgt_device_image &Image) {
+  StringRef Binary(reinterpret_cast<const char *>(Image.ImageStart),
+                   utils::getPtrDiff(Image.ImageEnd, Image.ImageStart));
+
+  return identify_magic(Binary) == file_magic::bitcode;
+}
+
 Expected<std::unique_ptr<Module>>
 createModuleFromMemoryBuffer(std::unique_ptr<MemoryBuffer> &MB,
                              LLVMContext &Context) {
   SMDiagnostic Err;
   auto Mod = parseIR(*MB, Err, Context);
   if (!Mod)
-    return error::createOffloadError(error::ErrorCode::UNKNOWN,
-                                     "failed to create module");
+    return make_error<StringError>("Failed to create module",
+                                   inconvertibleErrorCode());
   return std::move(Mod);
 }
-Expected<std::unique_ptr<Module>> createModuleFromImage(StringRef Image,
-                                                        LLVMContext &Context) {
+Expected<std::unique_ptr<Module>>
+createModuleFromImage(const __tgt_device_image &Image, LLVMContext &Context) {
+  StringRef Data((const char *)Image.ImageStart,
+                 utils::getPtrDiff(Image.ImageEnd, Image.ImageStart));
   std::unique_ptr<MemoryBuffer> MB = MemoryBuffer::getMemBuffer(
-      Image, /*BufferName=*/"", /*RequiresNullTerminator=*/false);
+      Data, /*BufferName=*/"", /*RequiresNullTerminator=*/false);
   return createModuleFromMemoryBuffer(MB, Context);
 }
 
@@ -91,8 +100,7 @@ createTargetMachine(Module &M, std::string CPU, unsigned OptLevel) {
   std::string Msg;
   const Target *T = TargetRegistry::lookupTarget(M.getTargetTriple(), Msg);
   if (!T)
-    return error::createOffloadError(error::ErrorCode::INVALID_BINARY,
-                                     Msg.data());
+    return make_error<StringError>(Msg, inconvertibleErrorCode());
 
   SubtargetFeatures Features;
   Features.getDefaultSubtargetFeatures(TT);
@@ -110,8 +118,8 @@ createTargetMachine(Module &M, std::string CPU, unsigned OptLevel) {
       T->createTargetMachine(M.getTargetTriple(), CPU, Features.getString(),
                              Options, RelocModel, CodeModel, CGOptLevel));
   if (!TM)
-    return error::createOffloadError(error::ErrorCode::INVALID_BINARY,
-                                     "failed to create target machine");
+    return make_error<StringError>("Failed to create target machine",
+                                   inconvertibleErrorCode());
   return std::move(TM);
 }
 
@@ -180,10 +188,9 @@ Expected<std::unique_ptr<MemoryBuffer>>
 JITEngine::backend(Module &M, const std::string &ComputeUnitKind,
                    unsigned OptLevel) {
 
-  Expected<LLVMRemarkFileHandle> RemarksFileOrErr =
-      setupLLVMOptimizationRemarks(
-          M.getContext(), /*RemarksFilename=*/"", /*RemarksPasses=*/"",
-          /*RemarksFormat=*/"", /*RemarksWithHotness=*/false);
+  auto RemarksFileOrErr = setupLLVMOptimizationRemarks(
+      M.getContext(), /*RemarksFilename=*/"", /*RemarksPasses=*/"",
+      /*RemarksFormat=*/"", /*RemarksWithHotness=*/false);
   if (Error E = RemarksFileOrErr.takeError())
     return std::move(E);
   if (*RemarksFileOrErr)
@@ -214,8 +221,7 @@ JITEngine::backend(Module &M, const std::string &ComputeUnitKind,
     raw_fd_stream FD(PostOptIRModuleFileName.get(), EC);
     if (EC)
       return createStringError(
-          error::ErrorCode::HOST_IO,
-          "Could not open %s to write the post-opt IR module\n",
+          EC, "Could not open %s to write the post-opt IR module\n",
           PostOptIRModuleFileName.get().c_str());
     M.print(FD, nullptr);
   }
@@ -230,7 +236,7 @@ JITEngine::backend(Module &M, const std::string &ComputeUnitKind,
 }
 
 Expected<std::unique_ptr<MemoryBuffer>>
-JITEngine::getOrCreateObjFile(StringRef Image, LLVMContext &Ctx,
+JITEngine::getOrCreateObjFile(const __tgt_device_image &Image, LLVMContext &Ctx,
                               const std::string &ComputeUnitKind) {
 
   // Check if the user replaces the module at runtime with a finished object.
@@ -269,28 +275,50 @@ JITEngine::getOrCreateObjFile(StringRef Image, LLVMContext &Ctx,
   return backend(*Mod, ComputeUnitKind, JITOptLevel);
 }
 
-Expected<std::unique_ptr<MemoryBuffer>>
-JITEngine::compile(StringRef Image, const std::string &ComputeUnitKind,
+Expected<const __tgt_device_image *>
+JITEngine::compile(const __tgt_device_image &Image,
+                   const std::string &ComputeUnitKind,
                    PostProcessingFn PostProcessing) {
   std::lock_guard<std::mutex> Lock(ComputeUnitMapMutex);
 
-  LLVMContext Ctz;
-  auto ObjMBOrErr = getOrCreateObjFile(Image, Ctz, ComputeUnitKind);
+  // Check if we JITed this image for the given compute unit kind before.
+  ComputeUnitInfo &CUI = ComputeUnitMap[ComputeUnitKind];
+  if (__tgt_device_image *JITedImage = CUI.TgtImageMap.lookup(&Image))
+    return JITedImage;
+
+  auto ObjMBOrErr = getOrCreateObjFile(Image, CUI.Context, ComputeUnitKind);
   if (!ObjMBOrErr)
     return ObjMBOrErr.takeError();
 
-  return PostProcessing(std::move(*ObjMBOrErr));
+  auto ImageMBOrErr = PostProcessing(std::move(*ObjMBOrErr));
+  if (!ImageMBOrErr)
+    return ImageMBOrErr.takeError();
+
+  CUI.JITImages.push_back(std::move(*ImageMBOrErr));
+  __tgt_device_image *&JITedImage = CUI.TgtImageMap[&Image];
+  JITedImage = new __tgt_device_image();
+  *JITedImage = Image;
+
+  auto &ImageMB = CUI.JITImages.back();
+
+  JITedImage->ImageStart = const_cast<char *>(ImageMB->getBufferStart());
+  JITedImage->ImageEnd = const_cast<char *>(ImageMB->getBufferEnd());
+
+  return JITedImage;
 }
 
-Expected<std::unique_ptr<MemoryBuffer>>
-JITEngine::process(StringRef Image, target::plugin::GenericDeviceTy &Device) {
-  assert(identify_magic(Image) == file_magic::bitcode && "Image not LLVM-IR");
-
+Expected<const __tgt_device_image *>
+JITEngine::process(const __tgt_device_image &Image,
+                   target::plugin::GenericDeviceTy &Device) {
   const std::string &ComputeUnitKind = Device.getComputeUnitKind();
+
   PostProcessingFn PostProcessing = [&Device](std::unique_ptr<MemoryBuffer> MB)
       -> Expected<std::unique_ptr<MemoryBuffer>> {
     return Device.doJITPostProcessing(std::move(MB));
   };
 
-  return compile(Image, ComputeUnitKind, PostProcessing);
+  if (isImageBitcode(Image))
+    return compile(Image, ComputeUnitKind, PostProcessing);
+
+  return &Image;
 }

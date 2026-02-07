@@ -38,7 +38,9 @@ public:
 
   virtual ~Properties();
 
-  lldb::OptionValuePropertiesSP GetValueProperties() const {
+  virtual lldb::OptionValuePropertiesSP GetValueProperties() const {
+    // This function is virtual in case subclasses want to lazily implement
+    // creating the properties.
     return m_collection_sp;
   }
 

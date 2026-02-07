@@ -6,7 +6,7 @@ set(LIBUNWIND_CXX_SOURCES
     Unwind-seh.cpp
     )
 
-if("${CMAKE_SYSTEM_NAME}" MATCHES "AIX")
+if(${CMAKE_SYSTEM_NAME} MATCHES "AIX")
   list(APPEND LIBUNWIND_CXX_SOURCES
     Unwind_AIXExtras.cpp
     )
@@ -36,6 +36,7 @@ set(LIBUNWIND_HEADERS
     AddressSpace.hpp
     assembly.h
     CompactUnwinder.hpp
+    cet_unwind.h
     config.h
     dwarf2.h
     DwarfInstructions.hpp
@@ -45,7 +46,6 @@ set(LIBUNWIND_HEADERS
     libunwind_ext.h
     Registers.hpp
     RWMutex.hpp
-    shadow_stack_unwind.h
     Unwind-EHABI.h
     UnwindCursor.hpp
     ../include/libunwind.h
@@ -71,6 +71,18 @@ set(LIBUNWIND_SOURCES
     ${LIBUNWIND_ASM_SOURCES})
 
 # Generate library list.
+if (CXX_SUPPORTS_NOSTDLIBXX_FLAG)
+  add_link_flags_if_supported(-nostdlib++)
+else()
+  if (LIBUNWIND_USE_COMPILER_RT)
+    add_library_flags("${LIBUNWIND_BUILTINS_LIBRARY}")
+  else()
+    add_library_flags_if(LIBUNWIND_HAS_GCC_S_LIB gcc_s)
+    add_library_flags_if(LIBUNWIND_HAS_GCC_LIB gcc)
+  endif()
+  add_library_flags_if(LIBUNWIND_HAS_C_LIB c)
+endif()
+
 if (NOT APPLE)
   add_library_flags_if(LIBUNWIND_HAS_DL_LIB dl)
 endif()
@@ -106,6 +118,22 @@ if (HAIKU)
 
   add_compile_flags("-D_DEFAULT_SOURCE")
   add_compile_flags("-DPT_GNU_EH_FRAME=PT_EH_FRAME")
+
+  find_path(LIBUNWIND_HAIKU_PRIVATE_HEADERS
+            "commpage_defs.h"
+            PATHS ${CMAKE_SYSTEM_INCLUDE_PATH}
+            PATH_SUFFIXES "/private/system"
+            NO_DEFAULT_PATH
+            REQUIRED)
+
+  include_directories(SYSTEM "${LIBUNWIND_HAIKU_PRIVATE_HEADERS}")
+  if (LIBUNWIND_TARGET_TRIPLE)
+    if (${LIBUNWIND_TARGET_TRIPLE} MATCHES "^x86_64")
+      include_directories(SYSTEM "${LIBUNWIND_HAIKU_PRIVATE_HEADERS}/arch/x86_64")
+    endif()
+  else()
+    include_directories(SYSTEM "${LIBUNWIND_HAIKU_PRIVATE_HEADERS}/arch/${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
 endif ()
 
 string(REPLACE ";" " " LIBUNWIND_COMPILE_FLAGS "${LIBUNWIND_COMPILE_FLAGS}")
@@ -132,10 +160,9 @@ if(CMAKE_C_COMPILER_ID STREQUAL MSVC)
 else()
   target_compile_options(unwind_shared_objects PRIVATE -fno-rtti)
 endif()
+target_link_libraries(unwind_shared_objects PRIVATE unwind-headers ${LIBUNWIND_LIBRARIES})
 target_compile_options(unwind_shared_objects PUBLIC "${LIBUNWIND_ADDITIONAL_COMPILE_FLAGS}")
-target_link_libraries(unwind_shared_objects
-  PUBLIC "${LIBUNWIND_ADDITIONAL_LIBRARIES}"
-  PRIVATE unwind-headers runtimes-libc-headers ${LIBUNWIND_LIBRARIES})
+target_link_libraries(unwind_shared_objects PUBLIC "${LIBUNWIND_ADDITIONAL_LIBRARIES}")
 set_target_properties(unwind_shared_objects
   PROPERTIES
     CXX_EXTENSIONS OFF
@@ -148,7 +175,7 @@ if (CMAKE_POSITION_INDEPENDENT_CODE OR NOT DEFINED CMAKE_POSITION_INDEPENDENT_CO
 endif()
 
 add_library(unwind_shared SHARED)
-target_link_libraries(unwind_shared PUBLIC unwind_shared_objects runtimes-libc-shared)
+target_link_libraries(unwind_shared PUBLIC unwind_shared_objects)
 set_target_properties(unwind_shared
   PROPERTIES
     EXCLUDE_FROM_ALL "$<IF:$<BOOL:${LIBUNWIND_ENABLE_SHARED}>,FALSE,TRUE>"
@@ -159,6 +186,13 @@ set_target_properties(unwind_shared
     SOVERSION   "1"
 )
 
+if (LIBUNWIND_ENABLE_SHARED)
+  list(APPEND LIBUNWIND_BUILD_TARGETS "unwind_shared")
+endif()
+if (LIBUNWIND_INSTALL_SHARED_LIBRARY)
+  list(APPEND LIBUNWIND_INSTALL_TARGETS "unwind_shared")
+endif()
+
 # Build the static library.
 add_library(unwind_static_objects OBJECT EXCLUDE_FROM_ALL ${LIBUNWIND_SOURCES} ${LIBUNWIND_HEADERS})
 cxx_add_warning_flags(unwind_static_objects ${LIBUNWIND_ENABLE_WERROR} ${LIBUNWIND_ENABLE_PEDANTIC})
@@ -167,10 +201,9 @@ if(CMAKE_C_COMPILER_ID STREQUAL MSVC)
 else()
   target_compile_options(unwind_static_objects PRIVATE -fno-rtti)
 endif()
+target_link_libraries(unwind_static_objects PRIVATE unwind-headers ${LIBUNWIND_LIBRARIES})
 target_compile_options(unwind_static_objects PUBLIC "${LIBUNWIND_ADDITIONAL_COMPILE_FLAGS}")
-target_link_libraries(unwind_static_objects
-  PUBLIC "${LIBUNWIND_ADDITIONAL_LIBRARIES}"
-  PRIVATE unwind-headers runtimes-libc-headers ${LIBUNWIND_LIBRARIES})
+target_link_libraries(unwind_static_objects PUBLIC "${LIBUNWIND_ADDITIONAL_LIBRARIES}")
 set_target_properties(unwind_static_objects
   PROPERTIES
     CXX_EXTENSIONS OFF
@@ -189,7 +222,7 @@ if(LIBUNWIND_HIDE_SYMBOLS)
 endif()
 
 add_library(unwind_static STATIC)
-target_link_libraries(unwind_static PUBLIC unwind_static_objects runtimes-libc-static)
+target_link_libraries(unwind_static PUBLIC unwind_static_objects)
 set_target_properties(unwind_static
   PROPERTIES
     EXCLUDE_FROM_ALL "$<IF:$<BOOL:${LIBUNWIND_ENABLE_STATIC}>,FALSE,TRUE>"
@@ -198,40 +231,35 @@ set_target_properties(unwind_static
     OUTPUT_NAME "${LIBUNWIND_STATIC_OUTPUT_NAME}"
 )
 
-# Add a meta-target for both libraries.
-add_custom_target(unwind)
-if (LIBUNWIND_ENABLE_SHARED)
-  add_dependencies(unwind unwind_shared)
-endif()
 if (LIBUNWIND_ENABLE_STATIC)
-  add_dependencies(unwind unwind_static)
+  list(APPEND LIBUNWIND_BUILD_TARGETS "unwind_static")
 endif()
-
-if (LIBUNWIND_INSTALL_SHARED_LIBRARY)
-  install(TARGETS unwind_shared
-    ARCHIVE DESTINATION ${LIBUNWIND_INSTALL_LIBRARY_DIR} COMPONENT unwind
-    LIBRARY DESTINATION ${LIBUNWIND_INSTALL_LIBRARY_DIR} COMPONENT unwind
-    RUNTIME DESTINATION ${LIBUNWIND_INSTALL_RUNTIME_DIR} COMPONENT unwind)
-endif()
-
 if (LIBUNWIND_INSTALL_STATIC_LIBRARY)
-  install(TARGETS unwind_static
-    ARCHIVE DESTINATION ${LIBUNWIND_INSTALL_LIBRARY_DIR} COMPONENT unwind
+  list(APPEND LIBUNWIND_INSTALL_TARGETS "unwind_static")
+endif()
+
+# Add a meta-target for both libraries.
+add_custom_target(unwind DEPENDS ${LIBUNWIND_BUILD_TARGETS})
+
+if (LIBUNWIND_INSTALL_LIBRARY)
+  install(TARGETS ${LIBUNWIND_INSTALL_TARGETS}
     LIBRARY DESTINATION ${LIBUNWIND_INSTALL_LIBRARY_DIR} COMPONENT unwind
+    ARCHIVE DESTINATION ${LIBUNWIND_INSTALL_LIBRARY_DIR} COMPONENT unwind
     RUNTIME DESTINATION ${LIBUNWIND_INSTALL_RUNTIME_DIR} COMPONENT unwind)
 endif()
 
-if (NOT CMAKE_CONFIGURATION_TYPES)
+if (NOT CMAKE_CONFIGURATION_TYPES AND LIBUNWIND_INSTALL_LIBRARY)
   add_custom_target(install-unwind
-    COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component unwind)
+    DEPENDS unwind
+    COMMAND "${CMAKE_COMMAND}"
+            -DCMAKE_INSTALL_COMPONENT=unwind
+            -P "${LIBUNWIND_BINARY_DIR}/cmake_install.cmake")
   add_custom_target(install-unwind-stripped
-    COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component unwind --strip)
-
-  if (LIBUNWIND_INSTALL_LIBRARY)
-    add_dependencies(install-unwind unwind)
-    add_dependencies(install-unwind-stripped unwind)
-  endif()
-
+    DEPENDS unwind
+    COMMAND "${CMAKE_COMMAND}"
+            -DCMAKE_INSTALL_COMPONENT=unwind
+            -DCMAKE_INSTALL_DO_STRIP=1
+            -P "${LIBUNWIND_BINARY_DIR}/cmake_install.cmake")
   if(LIBUNWIND_INSTALL_HEADERS)
     add_dependencies(install-unwind install-unwind-headers)
     add_dependencies(install-unwind-stripped install-unwind-headers-stripped)

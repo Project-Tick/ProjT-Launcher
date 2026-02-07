@@ -34,11 +34,10 @@ SUPPORTED PLATFORMS
 -------------------
 
 :program:`llvm-exegesis` currently only supports X86 (64-bit only), ARM
-(AArch64 only, snippet generation is sparse), MIPS, PowerPC (PowerPC64LE
-only) and RISC-V (RV64I/E and RV32I/E) on Linux for benchmarking. Not all
-benchmarking functionality is guaranteed to work on every platform.
-:program:`llvm-exegesis` also has a separate analysis mode that is supported on
-every platform that LLVM is.
+(AArch64 only, snippet generation is sparse), MIPS, and PowerPC (PowerPC64LE
+only) on Linux for benchmarking. Not all benchmarking functionality is
+guaranteed to work on every platform. :program:`llvm-exegesis` also has a
+separate analysis mode that is supported on every platform that LLVM is.
 
 To enable benchmarking in llvm-exegesis, LLVM must be configured and built with
 `LLVM_ENABLE_LIBPFM` enabled, as :program:`llvm-exegesis` depends on libpfm4
@@ -106,7 +105,7 @@ properly.
   using the loop repetition mode. :program:`llvm-exegesis` needs to keep track
   of the current loop iteration within the loop repetition mode in a performant
   manner (i.e., no memory accesses), and uses a register to do this. This register
-  has an architecture-specific default (e.g., `R8` on X86), but this might conflict
+  has an architecture specific default (e.g., `R8` on X86), but this might conflict
   with some snippets. This annotation allows changing the register to prevent
   interference between the loop index register and the snippet.
 
@@ -438,7 +437,7 @@ OPTIONS
   were measured for, but if you want to analyze them for some other combination
   (specified via `-mtriple`/`-mcpu`), you can pass this flag.
 
-.. option:: --dump-object-to-disk=<filename>
+.. option:: --dump-object-to-disk=true
 
  If set,  llvm-exegesis will dump the generated code to a temporary file to
  enable code inspection. Disabled by default.

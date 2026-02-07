@@ -13,9 +13,6 @@
 // FIXME: Fails for unknown reasons.
 // UNSUPPORTED: powerpc64le-target-arch
 
-// Fails because AArch64 uses TLSDESC instead of __tls_get_addr.
-// UNSUPPORTED: aarch64-target-arch
-
 #ifndef BUILD_SO
 #  include <assert.h>
 #  include <dlfcn.h>

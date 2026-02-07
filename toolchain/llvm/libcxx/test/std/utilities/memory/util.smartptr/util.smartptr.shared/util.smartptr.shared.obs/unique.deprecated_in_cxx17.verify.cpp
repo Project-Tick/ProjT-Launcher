@@ -20,5 +20,5 @@
 
 void f() {
   const std::shared_ptr<int> p;
-  (void)p.unique(); // expected-warning {{'unique' is deprecated}}
+  p.unique(); // expected-warning {{'unique' is deprecated}}
 }

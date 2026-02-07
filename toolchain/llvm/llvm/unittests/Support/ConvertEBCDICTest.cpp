@@ -41,7 +41,7 @@ static const char AccentE[] = "\xaa\x4a\xb1\xc1\x63\x67\x9e\xc5\x74\x71\x72"
 // String with Cyrillic character ya.
 static const char CyrillicUTF[] = "\xd0\xaf";
 
-TEST(ConverterEBCDIC, convertToEBCDIC) {
+TEST(CharSet, FromUTF8) {
   // Hello string.
   StringRef Src(HelloA);
   SmallString<64> Dst;
@@ -72,7 +72,7 @@ TEST(ConverterEBCDIC, convertToEBCDIC) {
   Dst.clear();
 }
 
-TEST(ConverterEBCDIC, convertFromEBCDIC) {
+TEST(CharSet, ToUTF8) {
   // Hello string.
   StringRef Src(HelloE);
   SmallString<64> Dst;

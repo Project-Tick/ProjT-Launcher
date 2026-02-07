@@ -30,8 +30,11 @@ struct CoreFileMemoryRange {
   }
 
   bool operator<(const CoreFileMemoryRange &rhs) const {
-    return std::tie(range, lldb_permissions) <
-           std::tie(rhs.range, rhs.lldb_permissions);
+    if (range < rhs.range)
+      return true;
+    if (range == rhs.range)
+      return lldb_permissions < rhs.lldb_permissions;
+    return false;
   }
 
   std::string Dump() const {
@@ -50,7 +53,7 @@ class CoreFileMemoryRanges
                                            CoreFileMemoryRange> {
 public:
   /// Finalize and merge all overlapping ranges in this collection. Ranges
-  /// will be separated based on permissions.
+  /// will be seperated based on permissions.
   Status FinalizeCoreFileSaveRanges();
 };
 } // namespace lldb_private

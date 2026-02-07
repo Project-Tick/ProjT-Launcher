@@ -1,5 +1,4 @@
 ## Tests the env command in various scenarios: without arguments, setting, unsetting, and mixing envrionment variables.
-# FIXME: All of these tests are broken and will not even call FileCheck.
 
 ## Check default environment.
 # RUN: env | FileCheck -check-prefix=NO-ARGS %s

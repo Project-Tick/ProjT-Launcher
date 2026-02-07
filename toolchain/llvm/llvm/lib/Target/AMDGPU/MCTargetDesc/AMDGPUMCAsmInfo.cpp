@@ -8,29 +8,15 @@
 //===----------------------------------------------------------------------===//
 
 #include "AMDGPUMCAsmInfo.h"
-#include "MCTargetDesc/AMDGPUMCExpr.h"
 #include "MCTargetDesc/AMDGPUMCTargetDesc.h"
-#include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/TargetParser/Triple.h"
 
 using namespace llvm;
 
-const MCAsmInfo::AtSpecifier atSpecifiers[] = {
-    {AMDGPUMCExpr::S_GOTPCREL, "gotpcrel"},
-    {AMDGPUMCExpr::S_GOTPCREL32_LO, "gotpcrel32@lo"},
-    {AMDGPUMCExpr::S_GOTPCREL32_HI, "gotpcrel32@hi"},
-    {AMDGPUMCExpr::S_REL32_LO, "rel32@lo"},
-    {AMDGPUMCExpr::S_REL32_HI, "rel32@hi"},
-    {AMDGPUMCExpr::S_REL64, "rel64"},
-    {AMDGPUMCExpr::S_ABS32_LO, "abs32@lo"},
-    {AMDGPUMCExpr::S_ABS32_HI, "abs32@hi"},
-    {AMDGPUMCExpr::S_ABS64, "abs64"},
-};
-
 AMDGPUMCAsmInfo::AMDGPUMCAsmInfo(const Triple &TT,
                                  const MCTargetOptions &Options) {
-  CodePointerSize = (TT.isAMDGCN()) ? 8 : 4;
+  CodePointerSize = (TT.getArch() == Triple::amdgcn) ? 8 : 4;
   StackGrowsUp = true;
   HasSingleParameterDotFile = false;
   //===------------------------------------------------------------------===//
@@ -38,12 +24,11 @@ AMDGPUMCAsmInfo::AMDGPUMCAsmInfo(const Triple &TT,
 
   // This is the maximum instruction encoded size for gfx10. With a known
   // subtarget, it can be reduced to 8 bytes.
-  MaxInstLength = (TT.isAMDGCN()) ? 20 : 16;
+  MaxInstLength = (TT.getArch() == Triple::amdgcn) ? 20 : 16;
   SeparatorString = "\n";
   CommentString = ";";
   InlineAsmStart = ";#ASMSTART";
   InlineAsmEnd = ";#ASMEND";
-  UsesSetToEquateSymbol = true;
 
   //===--- Data Emission Directives -------------------------------------===//
   UsesELFSectionDirectiveForBSS = true;
@@ -57,7 +42,6 @@ AMDGPUMCAsmInfo::AMDGPUMCAsmInfo(const Triple &TT,
   DwarfRegNumForCFI = true;
 
   UseIntegratedAssembler = false;
-  initializeAtSpecifiers(atSpecifiers);
 }
 
 bool AMDGPUMCAsmInfo::shouldOmitSectionDirective(StringRef SectionName) const {
@@ -75,9 +59,8 @@ unsigned AMDGPUMCAsmInfo::getMaxInstLength(const MCSubtargetInfo *STI) const {
   if (STI->hasFeature(AMDGPU::FeatureNSAEncoding))
     return 20;
 
-  // VOP3PX/VOP3PX2 encoding.
-  if (STI->hasFeature(AMDGPU::FeatureGFX950Insts) ||
-      STI->hasFeature(AMDGPU::FeatureGFX1250Insts))
+  // VOP3PX encoding.
+  if (STI->hasFeature(AMDGPU::FeatureGFX950Insts))
     return 16;
 
   // 64-bit instruction with 32-bit literal.

@@ -34,24 +34,23 @@ namespace members {
   private:
     RefCountable* a = nullptr;
   };
-} // members
+}
 
-namespace unions {
+
+namespace ignore_unions {
   union Foo {
     RefCountable* a;
-    // expected-warning@-1{{Member variable 'a' in 'unions::Foo' is a raw pointer to ref-countable type 'RefCountable'}}
     RefPtr<RefCountable> b;
     Ref<RefCountable> c;
   };
 
   template<class T>
-  union FooTmpl {
+  union RefPtr {
     T* a;
-    // expected-warning@-1{{Member variable 'a' in 'unions::FooTmpl<RefCountable>' is a raw pointer to ref-countable type 'RefCountable'}}
   };
 
-  void forceTmplToInstantiate(FooTmpl<RefCountable>) {}
-} // unions
+  void forceTmplToInstantiate(RefPtr<RefCountable>) {}
+}
 
 namespace ignore_system_header {
 
@@ -61,41 +60,3 @@ void foo(RefCountable* t) {
 }
 
 } // ignore_system_header
-
-namespace ignore_non_ref_countable {
-  struct Foo {
-  };
-
-  struct Bar {
-    Foo* foo;
-  };
-} // ignore_non_ref_countable
-
-namespace checked_ptr_ref_ptr_capable {
-
-  RefCountableAndCheckable* provide();
-  void foo() {
-    CheckedPtr<RefCountableAndCheckable> foo = provide();
-  }
-
-} // checked_ptr_ref_ptr_capable
-
-namespace ptr_to_ptr_to_ref_counted {
-
-  struct List {
-    RefCountable** elements;
-    // expected-warning@-1{{Member variable 'elements' in 'ptr_to_ptr_to_ref_counted::List' contains a raw pointer to ref-countable type 'RefCountable'}}
-  };
-
-  template <typename T>
-  struct TemplateList {
-    T** elements;
-    // expected-warning@-1{{Member variable 'elements' in 'ptr_to_ptr_to_ref_counted::TemplateList<RefCountable>' contains a raw pointer to ref-countable type 'RefCountable'}}
-  };
-  TemplateList<RefCountable> list;
-
-  struct SafeList {
-    RefPtr<RefCountable>* elements;
-  };
-
-} // namespace ptr_to_ptr_to_ref_counted

@@ -4,6 +4,8 @@
 ; RUN: sed 's/iXLen/i64/g' %s | llc -mtriple=riscv64 -mattr=+v \
 ; RUN:   -verify-machineinstrs  | FileCheck %s --check-prefixes=CHECK,RV64
 
+declare i8 @llvm.riscv.vmv.x.s.nxv1i8(<vscale x 1 x i8>)
+
 define signext i8 @intrinsic_vmv.x.s_s_nxv1i8(<vscale x 1 x i8> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv1i8:
 ; CHECK:       # %bb.0: # %entry
@@ -14,6 +16,8 @@ entry:
   %a = call i8 @llvm.riscv.vmv.x.s.nxv1i8(<vscale x 1 x i8> %0)
   ret i8 %a
 }
+
+declare i8 @llvm.riscv.vmv.x.s.nxv2i8(<vscale x 2 x i8>)
 
 define signext i8 @intrinsic_vmv.x.s_s_nxv2i8(<vscale x 2 x i8> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv2i8:
@@ -26,6 +30,8 @@ entry:
   ret i8 %a
 }
 
+declare i8 @llvm.riscv.vmv.x.s.nxv4i8(<vscale x 4 x i8>)
+
 define signext i8 @intrinsic_vmv.x.s_s_nxv4i8(<vscale x 4 x i8> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv4i8:
 ; CHECK:       # %bb.0: # %entry
@@ -36,6 +42,8 @@ entry:
   %a = call i8 @llvm.riscv.vmv.x.s.nxv4i8(<vscale x 4 x i8> %0)
   ret i8 %a
 }
+
+declare i8 @llvm.riscv.vmv.x.s.nxv8i8(<vscale x 8 x i8>)
 
 define signext i8 @intrinsic_vmv.x.s_s_nxv8i8(<vscale x 8 x i8> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv8i8:
@@ -48,6 +56,8 @@ entry:
   ret i8 %a
 }
 
+declare i8 @llvm.riscv.vmv.x.s.nxv16i8(<vscale x 16 x i8>)
+
 define signext i8 @intrinsic_vmv.x.s_s_nxv16i8(<vscale x 16 x i8> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv16i8:
 ; CHECK:       # %bb.0: # %entry
@@ -58,6 +68,8 @@ entry:
   %a = call i8 @llvm.riscv.vmv.x.s.nxv16i8(<vscale x 16 x i8> %0)
   ret i8 %a
 }
+
+declare i8 @llvm.riscv.vmv.x.s.nxv32i8(<vscale x 32 x i8>)
 
 define signext i8 @intrinsic_vmv.x.s_s_nxv32i8(<vscale x 32 x i8> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv32i8:
@@ -70,6 +82,8 @@ entry:
   ret i8 %a
 }
 
+declare i8 @llvm.riscv.vmv.x.s.nxv64i8(<vscale x 64 x i8>)
+
 define signext i8 @intrinsic_vmv.x.s_s_nxv64i8(<vscale x 64 x i8> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv64i8:
 ; CHECK:       # %bb.0: # %entry
@@ -80,6 +94,8 @@ entry:
   %a = call i8 @llvm.riscv.vmv.x.s.nxv64i8(<vscale x 64 x i8> %0)
   ret i8 %a
 }
+
+declare i16 @llvm.riscv.vmv.x.s.nxv1i16(<vscale x 1 x i16>)
 
 define signext i16 @intrinsic_vmv.x.s_s_nxv1i16(<vscale x 1 x i16> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv1i16:
@@ -92,6 +108,8 @@ entry:
   ret i16 %a
 }
 
+declare i16 @llvm.riscv.vmv.x.s.nxv2i16(<vscale x 2 x i16>)
+
 define signext i16 @intrinsic_vmv.x.s_s_nxv2i16(<vscale x 2 x i16> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv2i16:
 ; CHECK:       # %bb.0: # %entry
@@ -102,6 +120,8 @@ entry:
   %a = call i16 @llvm.riscv.vmv.x.s.nxv2i16(<vscale x 2 x i16> %0)
   ret i16 %a
 }
+
+declare i16 @llvm.riscv.vmv.x.s.nxv4i16(<vscale x 4 x i16>)
 
 define signext i16 @intrinsic_vmv.x.s_s_nxv4i16(<vscale x 4 x i16> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv4i16:
@@ -114,6 +134,8 @@ entry:
   ret i16 %a
 }
 
+declare i16 @llvm.riscv.vmv.x.s.nxv8i16(<vscale x 8 x i16>)
+
 define signext i16 @intrinsic_vmv.x.s_s_nxv8i16(<vscale x 8 x i16> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv8i16:
 ; CHECK:       # %bb.0: # %entry
@@ -124,6 +146,8 @@ entry:
   %a = call i16 @llvm.riscv.vmv.x.s.nxv8i16(<vscale x 8 x i16> %0)
   ret i16 %a
 }
+
+declare i16 @llvm.riscv.vmv.x.s.nxv16i16(<vscale x 16 x i16>)
 
 define signext i16 @intrinsic_vmv.x.s_s_nxv16i16(<vscale x 16 x i16> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv16i16:
@@ -136,6 +160,8 @@ entry:
   ret i16 %a
 }
 
+declare i16 @llvm.riscv.vmv.x.s.nxv32i16( <vscale x 32 x i16>)
+
 define signext i16 @intrinsic_vmv.x.s_s_nxv32i16(<vscale x 32 x i16> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv32i16:
 ; CHECK:       # %bb.0: # %entry
@@ -146,6 +172,8 @@ entry:
   %a = call i16 @llvm.riscv.vmv.x.s.nxv32i16( <vscale x 32 x i16> %0)
   ret i16 %a
 }
+
+declare i32 @llvm.riscv.vmv.x.s.nxv1i32( <vscale x 1 x i32>)
 
 define signext i32 @intrinsic_vmv.x.s_s_nxv1i32(<vscale x 1 x i32> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv1i32:
@@ -158,6 +186,8 @@ entry:
   ret i32 %a
 }
 
+declare i32 @llvm.riscv.vmv.x.s.nxv2i32( <vscale x 2 x i32>)
+
 define signext i32 @intrinsic_vmv.x.s_s_nxv2i32(<vscale x 2 x i32> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv2i32:
 ; CHECK:       # %bb.0: # %entry
@@ -168,6 +198,8 @@ entry:
   %a = call i32 @llvm.riscv.vmv.x.s.nxv2i32( <vscale x 2 x i32> %0)
   ret i32 %a
 }
+
+declare i32 @llvm.riscv.vmv.x.s.nxv4i32( <vscale x 4 x i32>)
 
 define signext i32 @intrinsic_vmv.x.s_s_nxv4i32(<vscale x 4 x i32> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv4i32:
@@ -180,6 +212,8 @@ entry:
   ret i32 %a
 }
 
+declare i32 @llvm.riscv.vmv.x.s.nxv8i32( <vscale x 8 x i32>)
+
 define signext i32 @intrinsic_vmv.x.s_s_nxv8i32(<vscale x 8 x i32> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv8i32:
 ; CHECK:       # %bb.0: # %entry
@@ -191,6 +225,8 @@ entry:
   ret i32 %a
 }
 
+declare i32 @llvm.riscv.vmv.x.s.nxv16i32( <vscale x 16 x i32>)
+
 define signext i32 @intrinsic_vmv.x.s_s_nxv16i32(<vscale x 16 x i32> %0) nounwind {
 ; CHECK-LABEL: intrinsic_vmv.x.s_s_nxv16i32:
 ; CHECK:       # %bb.0: # %entry
@@ -201,6 +237,8 @@ entry:
   %a = call i32 @llvm.riscv.vmv.x.s.nxv16i32( <vscale x 16 x i32> %0)
   ret i32 %a
 }
+
+declare i64 @llvm.riscv.vmv.x.s.nxv1i64( <vscale x 1 x i64>)
 
 define i64 @intrinsic_vmv.x.s_s_nxv1i64(<vscale x 1 x i64> %0) nounwind {
 ; RV32-LABEL: intrinsic_vmv.x.s_s_nxv1i64:
@@ -222,6 +260,8 @@ entry:
   ret i64 %a
 }
 
+declare i64 @llvm.riscv.vmv.x.s.nxv2i64( <vscale x 2 x i64>)
+
 define i64 @intrinsic_vmv.x.s_s_nxv2i64(<vscale x 2 x i64> %0) nounwind {
 ; RV32-LABEL: intrinsic_vmv.x.s_s_nxv2i64:
 ; RV32:       # %bb.0: # %entry
@@ -242,6 +282,8 @@ entry:
   ret i64 %a
 }
 
+declare i64 @llvm.riscv.vmv.x.s.nxv4i64( <vscale x 4 x i64>)
+
 define i64 @intrinsic_vmv.x.s_s_nxv4i64(<vscale x 4 x i64> %0) nounwind {
 ; RV32-LABEL: intrinsic_vmv.x.s_s_nxv4i64:
 ; RV32:       # %bb.0: # %entry
@@ -261,6 +303,8 @@ entry:
   %a = call i64 @llvm.riscv.vmv.x.s.nxv4i64( <vscale x 4 x i64> %0)
   ret i64 %a
 }
+
+declare i64 @llvm.riscv.vmv.x.s.nxv8i64(<vscale x 8 x i64>)
 
 define i64 @intrinsic_vmv.x.s_s_nxv8i64(<vscale x 8 x i64> %0) nounwind {
 ; RV32-LABEL: intrinsic_vmv.x.s_s_nxv8i64:

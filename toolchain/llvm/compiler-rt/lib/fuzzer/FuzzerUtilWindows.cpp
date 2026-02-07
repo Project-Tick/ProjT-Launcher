@@ -24,7 +24,7 @@
 // clang-format off
 #include <windows.h>
 // These must be included after windows.h.
-// architecture need to be set before including
+// archicture need to be set before including
 // libloaderapi
 #include <libloaderapi.h>
 #include <stringapiset.h>

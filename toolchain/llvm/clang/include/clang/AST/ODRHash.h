@@ -93,16 +93,9 @@ public:
   void AddQualType(QualType T);
   void AddStmt(const Stmt *S);
   void AddIdentifierInfo(const IdentifierInfo *II);
-  void AddNestedNameSpecifier(NestedNameSpecifier NNS);
-  void AddDependentTemplateName(const DependentTemplateStorage &Name);
+  void AddNestedNameSpecifier(const NestedNameSpecifier *NNS);
   void AddTemplateName(TemplateName Name);
-  void AddDeclarationNameInfo(DeclarationNameInfo NameInfo,
-                              bool TreatAsDecl = false);
-  void AddDeclarationName(DeclarationName Name, bool TreatAsDecl = false) {
-    AddDeclarationNameInfo(DeclarationNameInfo(Name, SourceLocation()),
-                           TreatAsDecl);
-  }
-
+  void AddDeclarationName(DeclarationName Name, bool TreatAsDecl = false);
   void AddTemplateArgument(TemplateArgument TA);
   void AddTemplateParameterList(const TemplateParameterList *TPL);
 
@@ -114,7 +107,7 @@ public:
   static bool isSubDeclToBeProcessed(const Decl *D, const DeclContext *Parent);
 
 private:
-  void AddDeclarationNameInfoImpl(DeclarationNameInfo NameInfo);
+  void AddDeclarationNameImpl(DeclarationName Name);
 };
 
 }  // end namespace clang

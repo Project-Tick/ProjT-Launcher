@@ -26,20 +26,6 @@ add_entrypoint_object(
 )
 
 add_entrypoint_object(
-  chown
-  SRCS
-    chown.cpp
-  HDRS
-    ../chown.h
-  DEPENDS
-    libc.hdr.types.uid_t
-    libc.hdr.types.gid_t
-    libc.include.sys_syscall
-    libc.src.__support.OSUtil.osutil
-    libc.src.errno.errno
-)
-
-add_entrypoint_object(
   close
   SRCS
     close.cpp
@@ -95,19 +81,6 @@ add_entrypoint_object(
 )
 
 add_entrypoint_object(
-  faccessat
-  SRCS
-    faccessat.cpp
-  HDRS
-    ../faccessat.h
-  DEPENDS
-    libc.hdr.fcntl_macros
-    libc.include.sys_syscall
-    libc.src.__support.OSUtil.osutil
-    libc.src.errno.errno
-)
-
-add_entrypoint_object(
   fchdir
   SRCS
     fchdir.cpp
@@ -115,20 +88,6 @@ add_entrypoint_object(
     ../fchdir.h
   DEPENDS
     libc.include.unistd
-    libc.include.sys_syscall
-    libc.src.__support.OSUtil.osutil
-    libc.src.errno.errno
-)
-
-add_entrypoint_object(
-  fchown
-  SRCS
-    fchown.cpp
-  HDRS
-    ../fchown.h
-  DEPENDS
-    libc.hdr.types.uid_t
-    libc.hdr.types.gid_t
     libc.include.sys_syscall
     libc.src.__support.OSUtil.osutil
     libc.src.errno.errno
@@ -213,7 +172,6 @@ add_entrypoint_object(
   DEPENDS
     libc.hdr.types.off_t
     libc.hdr.fcntl_macros
-    libc.hdr.stdint_proxy
     libc.include.unistd
     libc.include.sys_syscall
     libc.src.__support.OSUtil.osutil
@@ -233,30 +191,6 @@ add_entrypoint_object(
     libc.include.sys_syscall
     libc.src.__support.OSUtil.osutil
     libc.src.errno.errno
-)
-
-add_entrypoint_object(
-  gethostname
-  SRCS
-    gethostname.cpp
-  HDRS
-    ../gethostname.h
-  DEPENDS
-    libc.hdr.types.size_t
-    libc.include.sys_syscall
-    libc.include.sys_utsname
-    libc.src.__support.OSUtil.osutil
-    libc.src.errno.errno
-)
-
-add_entrypoint_object(
-  getpagesize
-  SRCS
-    getpagesize.cpp
-  HDRS
-    ../getpagesize.h
-  DEPENDS
-    libc.src.__support.OSUtil.linux.auxv
 )
 
 add_entrypoint_object(
@@ -295,33 +229,6 @@ add_entrypoint_object(
     ../getppid.h
   DEPENDS
     libc.hdr.types.pid_t
-    libc.hdr.fcntl_macros
-    libc.include.unistd
-    libc.include.sys_syscall
-    libc.src.__support.OSUtil.osutil
-)
-
-add_entrypoint_object(
-  getsid
-  SRCS
-    getsid.cpp
-  HDRS
-    ../getsid.h
-  DEPENDS
-    libc.hdr.types.pid_t
-    libc.include.sys_syscall
-    libc.src.__support.OSUtil.osutil
-    libc.src.errno.errno
-)
-
-add_entrypoint_object(
-  getgid
-  SRCS
-    getgid.cpp
-  HDRS
-    ../getgid.h
-  DEPENDS
-    libc.hdr.types.gid_t
     libc.hdr.fcntl_macros
     libc.include.unistd
     libc.include.sys_syscall
@@ -465,7 +372,6 @@ add_entrypoint_object(
     libc.hdr.types.size_t
     libc.hdr.types.ssize_t
     libc.hdr.fcntl_macros
-    libc.hdr.stdint_proxy
     libc.include.unistd
     libc.include.sys_syscall
     libc.src.__support.OSUtil.osutil
@@ -484,7 +390,6 @@ add_entrypoint_object(
     libc.hdr.types.size_t
     libc.hdr.types.ssize_t
     libc.hdr.fcntl_macros
-    libc.hdr.stdint_proxy
     libc.include.unistd
     libc.include.sys_syscall
     libc.src.__support.OSUtil.osutil
@@ -555,18 +460,6 @@ add_entrypoint_object(
 )
 
 add_entrypoint_object(
-  setsid
-  SRCS
-    setsid.cpp
-  HDRS
-    ../setsid.h
-  DEPENDS
-    libc.hdr.types.pid_t
-    libc.include.sys_syscall
-    libc.src.__support.OSUtil.osutil
-)
-
-add_entrypoint_object(
   symlink
   SRCS
     symlink.cpp
@@ -615,8 +508,8 @@ add_entrypoint_object(
   DEPENDS
     libc.include.unistd
     libc.include.sys_auxv
-    libc.src.__support.libc_errno
-    libc.src.__support.OSUtil.linux.auxv
+    libc.src.errno.errno
+    libc.src.sys.auxv.getauxval
 )
 
 add_entrypoint_object(
@@ -628,7 +521,6 @@ add_entrypoint_object(
   DEPENDS
     libc.hdr.types.off_t
     libc.hdr.fcntl_macros
-    libc.hdr.stdint_proxy
     libc.include.unistd
     libc.include.sys_syscall
     libc.src.__support.OSUtil.osutil

@@ -1,6 +1,7 @@
 // RUN: %clang_analyze_cc1 -verify \
 // RUN:   -analyzer-checker=core \
 // RUN:   -analyzer-checker=alpha.deadcode.UnreachableCode \
+// RUN:   -analyzer-checker=alpha.core.CastSize \
 // RUN:   -analyzer-checker=unix.Malloc \
 // RUN:   -analyzer-config unix.DynamicMemoryModeling:Optimistic=true %s
 
@@ -53,19 +54,19 @@ void af1_g(MemoryAllocator &Alloc, struct stuff **pps) {
 void af2(MemoryAllocator &Alloc) {
   void *p = Alloc.my_malloc(12);
   Alloc.my_free(p);
-  free(p); // expected-warning{{Attempt to release already released memory}}
+  free(p); // expected-warning{{Attempt to free released memory}}
 }
 
 void af2b(MemoryAllocator &Alloc) {
   void *p = Alloc.my_malloc(12);
   free(p);
-  Alloc.my_free(p); // expected-warning{{Attempt to release already released memory}}
+  Alloc.my_free(p); // expected-warning{{Attempt to free released memory}}
 }
 
 void af2c(MemoryAllocator &Alloc) {
   void *p = Alloc.my_malloc(12);
   free(p);
-  Alloc.my_hold(p); // expected-warning{{Attempt to release already released memory}}
+  Alloc.my_hold(p); // expected-warning{{Attempt to free released memory}}
 }
 
 // No leak if malloc returns null.
@@ -80,13 +81,13 @@ void af2e(MemoryAllocator &Alloc) {
 void af3(MemoryAllocator &Alloc) {
   void *p = Alloc.my_malloc(12);
   Alloc.my_hold(p);
-  free(p); // expected-warning{{Attempt to release non-owned memory}}
+  free(p); // expected-warning{{Attempt to free non-owned memory}}
 }
 
 void * af4(MemoryAllocator &Alloc) {
   void *p = Alloc.my_malloc(12);
   Alloc.my_free(p);
-  return p; // expected-warning{{Use of memory after it is released}}
+  return p; // expected-warning{{Use of memory after it is freed}}
 }
 
 // This case is (possibly) ok, be conservative

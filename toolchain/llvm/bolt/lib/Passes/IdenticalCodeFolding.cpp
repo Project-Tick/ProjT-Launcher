@@ -368,8 +368,8 @@ typedef std::unordered_map<BinaryFunction *, std::set<BinaryFunction *>,
                            KeyHash, KeyCongruent>
     CongruentBucketsMap;
 
-typedef std::unordered_map<BinaryFunction *, BinaryFunctionListType, KeyHash,
-                           KeyEqual>
+typedef std::unordered_map<BinaryFunction *, std::vector<BinaryFunction *>,
+                           KeyHash, KeyEqual>
     IdenticalBucketsMap;
 
 namespace llvm {
@@ -377,11 +377,9 @@ namespace bolt {
 void IdenticalCodeFolding::initVTableReferences(const BinaryContext &BC) {
   for (const auto &[Address, Data] : BC.getBinaryData()) {
     // Filter out all symbols that are not vtables.
-    if (!Data->getName().starts_with("_ZTV") && // vtable
-        !Data->getName().starts_with("_ZTCN"))  // construction vtable
+    if (!Data->getName().starts_with("_ZTV"))
       continue;
-    for (uint64_t I = Address, End = I + Data->getSize(); I < End;
-         I += VTableAddressGranularity)
+    for (uint64_t I = Address, End = I + Data->getSize(); I < End; I += 8)
       setAddressUsedInVTable(I);
   }
 }
@@ -439,9 +437,8 @@ void IdenticalCodeFolding::markFunctionsUnsafeToFold(BinaryContext &BC) {
   NamedRegionTimer MarkFunctionsUnsafeToFoldTimer(
       "markFunctionsUnsafeToFold", "markFunctionsUnsafeToFold", "ICF breakdown",
       "ICF breakdown", opts::TimeICF);
-  if (!BC.isX86() && !BC.isAArch64())
-    BC.outs()
-        << "BOLT-WARNING: safe ICF is only supported for x86 and AArch64\n";
+  if (!BC.isX86())
+    BC.outs() << "BOLT-WARNING: safe ICF is only supported for x86\n";
   analyzeDataRelocations(BC);
   analyzeFunctions(BC);
 }
@@ -522,7 +519,7 @@ Error IdenticalCodeFolding::runOnFunctions(BinaryContext &BC) {
 
       for (auto &IBI : IdenticalBuckets) {
         // Functions identified as identical.
-        BinaryFunctionListType &Twins = IBI.second;
+        std::vector<BinaryFunction *> &Twins = IBI.second;
         if (Twins.size() < 2)
           continue;
 

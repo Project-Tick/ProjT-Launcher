@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- AvoidReturnWithVoidValueCheck.h - clang-tidy -----------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -17,7 +17,7 @@ namespace clang::tidy::readability {
 /// result types.
 ///
 /// For the user-facing documentation see:
-/// https://clang.llvm.org/extra/clang-tidy/checks/readability/avoid-return-with-void-value.html
+/// http://clang.llvm.org/extra/clang-tidy/checks/readability/avoid-return-with-void-value.html
 class AvoidReturnWithVoidValueCheck : public ClangTidyCheck {
 public:
   AvoidReturnWithVoidValueCheck(StringRef Name, ClangTidyContext *Context);
@@ -34,6 +34,7 @@ private:
   }
   void storeOptions(ClangTidyOptions::OptionMap &Opts) override;
 
+private:
   bool IgnoreMacros;
   bool StrictMode;
 };

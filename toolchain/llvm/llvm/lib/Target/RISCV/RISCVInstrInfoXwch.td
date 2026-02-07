@@ -106,7 +106,6 @@ def QK_C_LBUSP : QKStackInst<0b00, (outs GPRC:$rd_rs2),
                              (ins SPMem:$rs1, uimm4:$imm),
                              "qk.c.lbusp", "$rd_rs2, ${imm}(${rs1})">,
                  Sched<[WriteLDB, ReadMemBase]> {
-  bits<0> rs1;
   bits<4> imm;
   let Inst{10-7} = imm;
 }
@@ -116,7 +115,6 @@ def QK_C_SBSP : QKStackInst<0b10, (outs),
                                  uimm4:$imm),
                             "qk.c.sbsp", "$rd_rs2, ${imm}(${rs1})">,
                 Sched<[WriteSTB, ReadStoreData, ReadMemBase]> {
-  bits<0> rs1;
   bits<4> imm;
   let Inst{10-7} = imm;
 }
@@ -126,7 +124,6 @@ def QK_C_LHUSP : QKStackInst<0b01, (outs GPRC:$rd_rs2),
                              (ins SPMem:$rs1, uimm5_lsb0:$imm),
                              "qk.c.lhusp", "$rd_rs2, ${imm}(${rs1})">,
                  Sched<[WriteLDH, ReadMemBase]> {
-  bits<0> rs1;
   bits<5> imm;
   let Inst{10-8} = imm{3-1};
   let Inst{7} = imm{4};
@@ -136,7 +133,6 @@ def QK_C_SHSP : QKStackInst<0b11, (outs),
                             (ins GPRC:$rd_rs2, SPMem:$rs1, uimm5_lsb0:$imm),
                             "qk.c.shsp", "$rd_rs2, ${imm}(${rs1})">,
                 Sched<[WriteSTH, ReadStoreData, ReadMemBase]> {
-  bits<0> rs1;
   bits<5> imm;
   let Inst{10-8} = imm{3-1};
   let Inst{7} = imm{4};

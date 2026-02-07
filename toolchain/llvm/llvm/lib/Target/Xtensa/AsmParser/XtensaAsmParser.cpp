@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "MCTargetDesc/XtensaMCAsmInfo.h"
+#include "MCTargetDesc/XtensaMCExpr.h"
 #include "MCTargetDesc/XtensaMCTargetDesc.h"
 #include "MCTargetDesc/XtensaTargetStreamer.h"
 #include "TargetInfo/XtensaTargetInfo.h"
@@ -18,7 +18,7 @@
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCInstrInfo.h"
-#include "llvm/MC/MCParser/AsmLexer.h"
+#include "llvm/MC/MCParser/MCAsmLexer.h"
 #include "llvm/MC/MCParser/MCParsedAsmOperand.h"
 #include "llvm/MC/MCParser/MCTargetAsmParser.h"
 #include "llvm/MC/MCRegisterInfo.h"
@@ -35,9 +35,7 @@ using namespace llvm;
 struct XtensaOperand;
 
 class XtensaAsmParser : public MCTargetAsmParser {
-  const MCRegisterInfo &MRI;
 
-  enum XtensaRegisterType { Xtensa_Generic, Xtensa_SR, Xtensa_UR };
   SMLoc getLoc() const { return getParser().getTok().getLoc(); }
 
   XtensaTargetStreamer &getTargetStreamer() {
@@ -64,22 +62,17 @@ class XtensaAsmParser : public MCTargetAsmParser {
 #include "XtensaGenAsmMatcher.inc"
 
   ParseStatus parseImmediate(OperandVector &Operands);
-  ParseStatus
-  parseRegister(OperandVector &Operands, bool AllowParens = false,
-                XtensaRegisterType SR = Xtensa_Generic,
-                Xtensa::RegisterAccessType RAType = Xtensa::REGISTER_EXCHANGE);
+  ParseStatus parseRegister(OperandVector &Operands, bool AllowParens = false,
+                            bool SR = false);
   ParseStatus parseOperandWithModifier(OperandVector &Operands);
-  bool
-  parseOperand(OperandVector &Operands, StringRef Mnemonic,
-               XtensaRegisterType SR = Xtensa_Generic,
-               Xtensa::RegisterAccessType RAType = Xtensa::REGISTER_EXCHANGE);
+  bool parseOperand(OperandVector &Operands, StringRef Mnemonic,
+                    bool SR = false);
   bool ParseInstructionWithSR(ParseInstructionInfo &Info, StringRef Name,
                               SMLoc NameLoc, OperandVector &Operands);
   ParseStatus tryParseRegister(MCRegister &Reg, SMLoc &StartLoc,
                                SMLoc &EndLoc) override {
     return ParseStatus::NoMatch;
   }
-
   ParseStatus parsePCRelTarget(OperandVector &Operands);
   bool parseLiteralDirective(SMLoc L);
 
@@ -93,14 +86,9 @@ public:
 
   XtensaAsmParser(const MCSubtargetInfo &STI, MCAsmParser &Parser,
                   const MCInstrInfo &MII, const MCTargetOptions &Options)
-      : MCTargetAsmParser(Options, STI, MII),
-        MRI(*Parser.getContext().getRegisterInfo()) {
+      : MCTargetAsmParser(Options, STI, MII) {
     setAvailableFeatures(ComputeAvailableFeatures(STI.getFeatureBits()));
   }
-
-  bool hasWindowed() const {
-    return getSTI().getFeatureBits()[Xtensa::FeatureWindowed];
-  };
 };
 
 // Return true if Expr is in the range [MinValue, MaxValue].
@@ -193,11 +181,6 @@ public:
            ((cast<MCConstantExpr>(getImm())->getValue() & 0x3) == 0);
   }
 
-  bool isentry_imm12() const {
-    return isImm(0, 32760) &&
-           ((cast<MCConstantExpr>(getImm())->getValue() % 8) == 0);
-  }
-
   bool isUimm4() const { return isImm(0, 15); }
 
   bool isUimm5() const { return isImm(0, 31); }
@@ -214,11 +197,6 @@ public:
   bool isImm1n_15() const { return isImm(1, 15) || isImm(-1, -1); }
 
   bool isImm32n_95() const { return isImm(-32, 95); }
-
-  bool isImm64n_4n() const {
-    return isImm(-64, -4) &&
-           ((cast<MCConstantExpr>(getImm())->getValue() & 0x3) == 0);
-  }
 
   bool isB4const() const {
     if (Kind != Immediate)
@@ -280,8 +258,6 @@ public:
     return false;
   }
 
-  bool isimm7_22() const { return isImm(7, 22); }
-
   /// getStartLoc - Gets location of the first token of this operand
   SMLoc getStartLoc() const override { return StartLoc; }
   /// getEndLoc - Gets location of the last token of this operand
@@ -302,10 +278,10 @@ public:
     return Tok;
   }
 
-  void print(raw_ostream &OS, const MCAsmInfo &MAI) const override {
+  void print(raw_ostream &OS) const override {
     switch (Kind) {
     case Immediate:
-      MAI.printExpr(OS, *getImm());
+      OS << *getImm();
       break;
     case Register:
       OS << "<register x";
@@ -400,7 +376,9 @@ bool XtensaAsmParser::processInstruction(MCInst &Inst, SMLoc IDLoc,
   case Xtensa::L32R: {
     const MCSymbolRefExpr *OpExpr =
         static_cast<const MCSymbolRefExpr *>(Inst.getOperand(1).getExpr());
-    Inst.getOperand(1).setExpr(OpExpr);
+    XtensaMCExpr::VariantKind Kind = XtensaMCExpr::VK_Xtensa_None;
+    const MCExpr *NewOpExpr = XtensaMCExpr::create(OpExpr, Kind, getContext());
+    Inst.getOperand(1).setExpr(NewOpExpr);
     break;
   }
   case Xtensa::MOVI: {
@@ -417,9 +395,12 @@ bool XtensaAsmParser::processInstruction(MCInst &Inst, SMLoc IDLoc,
         TmpInst.setOpcode(Xtensa::L32R);
         const MCExpr *Value = MCConstantExpr::create(ImmOp64, getContext());
         MCSymbol *Sym = getContext().createTempSymbol();
-        const MCExpr *Expr = MCSymbolRefExpr::create(Sym, getContext());
+        const MCExpr *Expr = MCSymbolRefExpr::create(
+            Sym, MCSymbolRefExpr::VK_None, getContext());
+        const MCExpr *OpExpr = XtensaMCExpr::create(
+            Expr, XtensaMCExpr::VK_Xtensa_None, getContext());
         TmpInst.addOperand(Inst.getOperand(0));
-        MCOperand Op1 = MCOperand::createExpr(Expr);
+        MCOperand Op1 = MCOperand::createExpr(OpExpr);
         TmpInst.addOperand(Op1);
         TS.emitLiteral(Sym, Value, true, IDLoc);
         Inst = TmpInst;
@@ -430,9 +411,12 @@ bool XtensaAsmParser::processInstruction(MCInst &Inst, SMLoc IDLoc,
       TmpInst.setOpcode(Xtensa::L32R);
       const MCExpr *Value = Inst.getOperand(1).getExpr();
       MCSymbol *Sym = getContext().createTempSymbol();
-      const MCExpr *Expr = MCSymbolRefExpr::create(Sym, getContext());
+      const MCExpr *Expr =
+          MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, getContext());
+      const MCExpr *OpExpr = XtensaMCExpr::create(
+          Expr, XtensaMCExpr::VK_Xtensa_None, getContext());
       TmpInst.addOperand(Inst.getOperand(0));
-      MCOperand Op1 = MCOperand::createExpr(Expr);
+      MCOperand Op1 = MCOperand::createExpr(OpExpr);
       TmpInst.addOperand(Op1);
       Inst = TmpInst;
       TS.emitLiteral(Sym, Value, true, IDLoc);
@@ -507,12 +491,6 @@ bool XtensaAsmParser::matchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
   case Match_InvalidImm32n_95:
     return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
                  "expected immediate in range [-32, 95]");
-  case Match_InvalidImm64n_4n:
-    return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
-                 "expected immediate in range [-64, -4]");
-  case Match_InvalidImm8n_7:
-    return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
-                 "expected immediate in range [-8, 7]");
   case Match_InvalidShimm1_31:
     return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
                  "expected immediate in range [1, 31]");
@@ -537,13 +515,6 @@ bool XtensaAsmParser::matchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
     return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
                  "expected immediate in range [0, 60], first 2 bits "
                  "should be zero");
-  case Match_Invalidentry_imm12:
-    return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
-                 "expected immediate in range [0, 32760], first 3 bits "
-                 "should be zero");
-  case Match_Invalidimm7_22:
-    return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
-                 "expected immediate in range [7, 22]");
   }
 
   report_fatal_error("Unknown match type detected!");
@@ -587,9 +558,7 @@ bool XtensaAsmParser::parseRegister(MCRegister &Reg, SMLoc &StartLoc,
 }
 
 ParseStatus XtensaAsmParser::parseRegister(OperandVector &Operands,
-                                           bool AllowParens,
-                                           XtensaRegisterType RegType,
-                                           Xtensa::RegisterAccessType RAType) {
+                                           bool AllowParens, bool SR) {
   SMLoc FirstS = getLoc();
   bool HadParens = false;
   AsmToken Buf[2];
@@ -599,32 +568,25 @@ ParseStatus XtensaAsmParser::parseRegister(OperandVector &Operands,
   if (AllowParens && getLexer().is(AsmToken::LParen)) {
     size_t ReadCount = getLexer().peekTokens(Buf);
     if (ReadCount == 2 && Buf[1].getKind() == AsmToken::RParen) {
-      if (Buf[0].getKind() == AsmToken::Integer && RegType == Xtensa_Generic)
+      if ((Buf[0].getKind() == AsmToken::Integer) && (!SR))
         return ParseStatus::NoMatch;
       HadParens = true;
       getParser().Lex(); // Eat '('
     }
   }
 
-  MCRegister RegNo = 0;
+  unsigned RegNo = 0;
 
   switch (getLexer().getKind()) {
   default:
     return ParseStatus::NoMatch;
   case AsmToken::Integer:
-    if (RegType == Xtensa_Generic)
+    if (!SR)
       return ParseStatus::NoMatch;
-
-    // Parse case when we expect UR register code as special case,
-    // because SR and UR registers may have the same number
-    // and such situation may lead to confilct
-    if (RegType == Xtensa_UR) {
-      int64_t RegCode = getLexer().getTok().getIntVal();
-      RegNo = Xtensa::getUserRegister(RegCode, MRI);
-    } else {
-      RegName = getLexer().getTok().getString();
+    RegName = getLexer().getTok().getString();
+    RegNo = MatchRegisterName(RegName);
+    if (RegNo == 0)
       RegNo = MatchRegisterAltName(RegName);
-    }
     break;
   case AsmToken::Identifier:
     RegName = getLexer().getTok().getIdentifier();
@@ -639,10 +601,6 @@ ParseStatus XtensaAsmParser::parseRegister(OperandVector &Operands,
       getLexer().UnLex(Buf[0]);
     return ParseStatus::NoMatch;
   }
-
-  if (!Xtensa::checkRegister(RegNo, getSTI().getFeatureBits(), RAType))
-    return ParseStatus::NoMatch;
-
   if (HadParens)
     Operands.push_back(XtensaOperand::createToken("(", FirstS));
   SMLoc S = getLoc();
@@ -681,7 +639,7 @@ ParseStatus XtensaAsmParser::parseImmediate(OperandVector &Operands) {
       return ParseStatus::Failure;
 
     MCSymbol *Sym = getContext().getOrCreateSymbol(Identifier);
-    Res = MCSymbolRefExpr::create(Sym, getContext());
+    Res = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, getContext());
     break;
   }
   case AsmToken::Percent:
@@ -701,8 +659,7 @@ ParseStatus XtensaAsmParser::parseOperandWithModifier(OperandVector &Operands) {
 /// from this information, adding to Operands.
 /// If operand was parsed, returns false, else true.
 bool XtensaAsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic,
-                                   XtensaRegisterType RegType,
-                                   Xtensa::RegisterAccessType RAType) {
+                                   bool SR) {
   // Check if the current operand has a custom associated parser, if so, try to
   // custom parse the operand, or fallback to the general approach.
   ParseStatus Res = MatchOperandParserImpl(Operands, Mnemonic);
@@ -716,7 +673,7 @@ bool XtensaAsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic,
     return true;
 
   // Attempt to parse token as register
-  if (parseRegister(Operands, true, RegType, RAType).isSuccess())
+  if (parseRegister(Operands, true, SR).isSuccess())
     return false;
 
   // Attempt to parse token as an immediate
@@ -730,14 +687,11 @@ bool XtensaAsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic,
 bool XtensaAsmParser::ParseInstructionWithSR(ParseInstructionInfo &Info,
                                              StringRef Name, SMLoc NameLoc,
                                              OperandVector &Operands) {
-  Xtensa::RegisterAccessType RAType =
-      Name[0] == 'w' ? Xtensa::REGISTER_WRITE
-                     : (Name[0] == 'r' ? Xtensa::REGISTER_READ
-                                       : Xtensa::REGISTER_EXCHANGE);
-
-  if ((Name.size() > 4) && Name[3] == '.') {
-    // Parse case when instruction name is concatenated with SR/UR register
-    // name, like "wsr.sar a1" or "wur.fcr a1"
+  if ((Name.starts_with("wsr.") || Name.starts_with("rsr.") ||
+       Name.starts_with("xsr.")) &&
+      (Name.size() > 4)) {
+    // Parse case when instruction name is concatenated with SR register
+    // name, like "wsr.sar a1"
 
     // First operand is token for instruction
     Operands.push_back(XtensaOperand::createToken(Name.take_front(3), NameLoc));
@@ -748,7 +702,7 @@ bool XtensaAsmParser::ParseInstructionWithSR(ParseInstructionInfo &Info,
     if (RegNo == 0)
       RegNo = MatchRegisterAltName(RegName);
 
-    if (!Xtensa::checkRegister(RegNo, getSTI().getFeatureBits(), RAType))
+    if (RegNo == 0)
       return Error(NameLoc, "invalid register name");
 
     // Parse operand
@@ -773,8 +727,7 @@ bool XtensaAsmParser::ParseInstructionWithSR(ParseInstructionInfo &Info,
     }
 
     // Parse second operand
-    if (parseOperand(Operands, Name, Name[1] == 's' ? Xtensa_SR : Xtensa_UR,
-                     RAType))
+    if (parseOperand(Operands, Name, true))
       return true;
   }
 
@@ -792,8 +745,7 @@ bool XtensaAsmParser::parseInstruction(ParseInstructionInfo &Info,
                                        StringRef Name, SMLoc NameLoc,
                                        OperandVector &Operands) {
   if (Name.starts_with("wsr") || Name.starts_with("rsr") ||
-      Name.starts_with("xsr") || Name.starts_with("rur") ||
-      Name.starts_with("wur")) {
+      Name.starts_with("xsr")) {
     return ParseInstructionWithSR(Info, Name, NameLoc, Operands);
   }
 

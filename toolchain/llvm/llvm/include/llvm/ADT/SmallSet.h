@@ -14,8 +14,6 @@
 #ifndef LLVM_ADT_SMALLSET_H
 #define LLVM_ADT_SMALLSET_H
 
-#include "llvm/ADT/ADL.h"
-#include "llvm/ADT/STLForwardCompat.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/iterator.h"
@@ -36,6 +34,7 @@ class SmallSetIterator
 private:
   using SetIterTy = typename std::set<T, C>::const_iterator;
   using VecIterTy = typename SmallVector<T, N>::const_iterator;
+  using SelfTy = SmallSetIterator<T, N, C>;
 
   /// Iterators to the parts of the SmallSet containing the data. They are set
   /// depending on isSmall.
@@ -156,9 +155,10 @@ public:
     insert(Begin, End);
   }
 
-  template <typename Range>
-  SmallSet(llvm::from_range_t, Range &&R)
-      : SmallSet(adl_begin(R), adl_end(R)) {}
+  template <typename RangeT>
+  explicit SmallSet(const iterator_range<RangeT> &R) {
+    insert(R.begin(), R.end());
+  }
 
   SmallSet(std::initializer_list<T> L) { insert(L.begin(), L.end()); }
 
@@ -167,14 +167,12 @@ public:
 
   [[nodiscard]] bool empty() const { return Vector.empty() && Set.empty(); }
 
-  [[nodiscard]] size_type size() const {
+  size_type size() const {
     return isSmall() ? Vector.size() : Set.size();
   }
 
   /// count - Return 1 if the element is in the set, 0 otherwise.
-  [[nodiscard]] size_type count(const T &V) const {
-    return contains(V) ? 1 : 0;
-  }
+  size_type count(const T &V) const { return contains(V) ? 1 : 0; }
 
   /// insert - Insert an element into the set if it isn't already there.
   /// Returns a pair. The first value of it is an iterator to the inserted
@@ -190,10 +188,6 @@ public:
   void insert(IterT I, IterT E) {
     for (; I != E; ++I)
       insert(*I);
-  }
-
-  template <typename Range> void insert_range(Range &&R) {
-    insert(adl_begin(R), adl_end(R));
   }
 
   bool erase(const T &V) {
@@ -212,20 +206,20 @@ public:
     Set.clear();
   }
 
-  [[nodiscard]] const_iterator begin() const {
+  const_iterator begin() const {
     if (isSmall())
       return {Vector.begin()};
     return {Set.begin()};
   }
 
-  [[nodiscard]] const_iterator end() const {
+  const_iterator end() const {
     if (isSmall())
       return {Vector.end()};
     return {Set.end()};
   }
 
   /// Check if the SmallSet contains the given element.
-  [[nodiscard]] bool contains(const T &V) const {
+  bool contains(const T &V) const {
     if (isSmall())
       return vfind(V) != Vector.end();
     return Set.find(V) != Set.end();
@@ -270,7 +264,7 @@ private:
 /// If this set is of pointer values, transparently switch over to using
 /// SmallPtrSet for performance.
 template <typename PointeeType, unsigned N>
-class SmallSet<PointeeType *, N> : public SmallPtrSet<PointeeType *, N> {};
+class SmallSet<PointeeType*, N> : public SmallPtrSet<PointeeType*, N> {};
 
 /// Equality comparison for SmallSet.
 ///
@@ -281,8 +275,7 @@ class SmallSet<PointeeType *, N> : public SmallPtrSet<PointeeType *, N> {};
 /// For large-set mode amortized complexity is linear, worst case is O(N^2) (if
 /// every hash collides).
 template <typename T, unsigned LN, unsigned RN, typename C>
-[[nodiscard]] bool operator==(const SmallSet<T, LN, C> &LHS,
-                              const SmallSet<T, RN, C> &RHS) {
+bool operator==(const SmallSet<T, LN, C> &LHS, const SmallSet<T, RN, C> &RHS) {
   if (LHS.size() != RHS.size())
     return false;
 
@@ -294,8 +287,7 @@ template <typename T, unsigned LN, unsigned RN, typename C>
 ///
 /// Equivalent to !(LHS == RHS). See operator== for performance notes.
 template <typename T, unsigned LN, unsigned RN, typename C>
-[[nodiscard]] bool operator!=(const SmallSet<T, LN, C> &LHS,
-                              const SmallSet<T, RN, C> &RHS) {
+bool operator!=(const SmallSet<T, LN, C> &LHS, const SmallSet<T, RN, C> &RHS) {
   return !(LHS == RHS);
 }
 

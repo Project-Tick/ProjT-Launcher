@@ -21,7 +21,6 @@ add_clang_library(clangTidyCppCoreGuidelinesModule STATIC
   OwningMemoryCheck.cpp
   PreferMemberInitializerCheck.cpp
   ProBoundsArrayToPointerDecayCheck.cpp
-  ProBoundsAvoidUncheckedContainerAccessCheck.cpp
   ProBoundsConstantArrayIndexCheck.cpp
   ProBoundsPointerArithmeticCheck.cpp
   ProTypeConstCastCheck.cpp
@@ -34,7 +33,6 @@ add_clang_library(clangTidyCppCoreGuidelinesModule STATIC
   RvalueReferenceParamNotMovedCheck.cpp
   SlicingCheck.cpp
   SpecialMemberFunctionsCheck.cpp
-  UseEnumClassCheck.cpp
   VirtualClassDestructorCheck.cpp
 
   LINK_LIBS

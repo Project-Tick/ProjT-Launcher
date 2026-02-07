@@ -1,3 +1,13 @@
+set(LLVM_LINK_COMPONENTS
+  ${LLVM_TARGETS_TO_BUILD}
+  MC
+  Option
+  FrontendOpenMP
+  Support
+  TargetParser
+  )
+
+
 add_clang_unittest(ToolingTests
   ASTSelectionTest.cpp
   CastExprTest.cpp
@@ -13,7 +23,8 @@ add_clang_unittest(ToolingTests
   LookupTest.cpp
   QualTypeNamesTest.cpp
   RangeSelectorTest.cpp
-  DependencyScannerTest.cpp
+  DependencyScanning/DependencyScannerTest.cpp
+  DependencyScanning/DependencyScanningFilesystemTest.cpp
   RecursiveASTVisitorTests/Attr.cpp
   RecursiveASTVisitorTests/BitfieldInitializer.cpp
   RecursiveASTVisitorTests/CallbacksLeaf.cpp
@@ -58,8 +69,10 @@ add_clang_unittest(ToolingTests
   StencilTest.cpp
   ToolingTest.cpp
   TransformerTest.cpp
+  )
 
-  CLANG_LIBS
+clang_target_link_libraries(ToolingTests
+  PRIVATE
   clangAST
   clangASTMatchers
   clangBasic
@@ -76,19 +89,13 @@ add_clang_unittest(ToolingTests
   clangToolingInclusionsStdlib
   clangToolingRefactoring
   clangTransformer
+  )
 
-  LINK_LIBS
+target_link_libraries(ToolingTests
+  PRIVATE
   LLVMTestingAnnotations
   LLVMTestingSupport
   clangTesting
-
-  LLVM_COMPONENTS
-  ${LLVM_TARGETS_TO_BUILD}
-  MC
-  Option
-  FrontendOpenMP
-  Support
-  TargetParser
-  )
+)
 
 add_subdirectory(Syntax)

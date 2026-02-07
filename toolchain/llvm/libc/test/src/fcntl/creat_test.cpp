@@ -6,18 +6,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "src/errno/libc_errno.h"
 #include "src/fcntl/creat.h"
 #include "src/fcntl/open.h"
 #include "src/unistd/close.h"
-#include "test/UnitTest/ErrnoCheckingTest.h"
 #include "test/UnitTest/ErrnoSetterMatcher.h"
 #include "test/UnitTest/Test.h"
 
 #include <sys/stat.h>
 
-using LlvmLibcCreatTest = LIBC_NAMESPACE::testing::ErrnoCheckingTest;
-
-TEST_F(LlvmLibcCreatTest, CreatAndOpen) {
+TEST(LlvmLibcCreatTest, CreatAndOpen) {
   using LIBC_NAMESPACE::testing::ErrnoSetterMatcher::Succeeds;
   constexpr const char *TEST_FILE = "testdata/creat.test";
   int fd = LIBC_NAMESPACE::creat(TEST_FILE, S_IRWXU);

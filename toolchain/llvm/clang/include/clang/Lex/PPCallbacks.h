@@ -15,7 +15,6 @@
 #define LLVM_CLANG_LEX_PPCALLBACKS_H
 
 #include "clang/Basic/DiagnosticIDs.h"
-#include "clang/Basic/IdentifierTable.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/ModuleLoader.h"
@@ -499,10 +498,10 @@ public:
   }
 
   bool EmbedFileNotFound(StringRef FileName) override {
-    bool Skip = First->EmbedFileNotFound(FileName);
+    bool Skip = First->FileNotFound(FileName);
     // Make sure to invoke the second callback, no matter if the first already
     // returned true to skip the file.
-    Skip |= Second->EmbedFileNotFound(FileName);
+    Skip |= Second->FileNotFound(FileName);
     return Skip;
   }
 

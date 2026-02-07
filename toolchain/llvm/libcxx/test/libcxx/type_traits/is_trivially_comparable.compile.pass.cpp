@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: FROZEN-CXX03-HEADERS-FIXME
+
 #include <__type_traits/conditional.h>
 #include <__type_traits/is_equality_comparable.h>
 #include <__type_traits/is_signed.h>
@@ -14,38 +16,38 @@
 enum Enum : int {};
 enum class EnumClass : int {};
 
-static_assert(std::__is_trivially_equality_comparable_v<int, int>, "");
-static_assert(std::__is_trivially_equality_comparable_v<const int, int>, "");
-static_assert(std::__is_trivially_equality_comparable_v<int, const int>, "");
+static_assert(std::__libcpp_is_trivially_equality_comparable<int, int>::value, "");
+static_assert(std::__libcpp_is_trivially_equality_comparable<const int, int>::value, "");
+static_assert(std::__libcpp_is_trivially_equality_comparable<int, const int>::value, "");
 
-static_assert(std::__is_trivially_equality_comparable_v<unsigned int, unsigned int>, "");
-static_assert(std::__is_trivially_equality_comparable_v<const unsigned int, unsigned int>, "");
-static_assert(!std::__is_trivially_equality_comparable_v<unsigned int, int>, "");
+static_assert(std::__libcpp_is_trivially_equality_comparable<unsigned int, unsigned int>::value, "");
+static_assert(std::__libcpp_is_trivially_equality_comparable<const unsigned int, unsigned int>::value, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<unsigned int, int>::value, "");
 
-static_assert(!std::__is_trivially_equality_comparable_v<std::int32_t, std::int64_t>, "");
-static_assert(!std::__is_trivially_equality_comparable_v<std::int64_t, std::int32_t>, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<std::int32_t, std::int64_t>::value, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<std::int64_t, std::int32_t>::value, "");
 
-static_assert(std::__is_trivially_equality_comparable_v<int*, int*>, "");
-static_assert(std::__is_trivially_equality_comparable_v<int*, void*>, "");
-static_assert(!std::__is_trivially_equality_comparable_v<int*, long*>, "");
+static_assert(std::__libcpp_is_trivially_equality_comparable<int*, int*>::value, "");
+static_assert(std::__libcpp_is_trivially_equality_comparable<int*, void*>::value, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<int*, long*>::value, "");
 
-static_assert(!std::__is_trivially_equality_comparable_v<Enum, int>, "");
-static_assert(!std::__is_trivially_equality_comparable_v<EnumClass, int>, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<Enum, int>::value, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<EnumClass, int>::value, "");
 
-static_assert(!std::__is_trivially_equality_comparable_v<float, int>, "");
-static_assert(!std::__is_trivially_equality_comparable_v<double, long long>, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<float, int>::value, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<double, long long>::value, "");
 
-static_assert(!std::__is_trivially_equality_comparable_v<float, int>, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<float, int>::value, "");
 
-static_assert(!std::__is_trivially_equality_comparable_v<float, float>, "");
-static_assert(!std::__is_trivially_equality_comparable_v<double, double>, "");
-static_assert(!std::__is_trivially_equality_comparable_v<long double, long double>, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<float, float>::value, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<double, double>::value, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<long double, long double>::value, "");
 
-static_assert(std::__is_trivially_equality_comparable_v<
+static_assert(std::__libcpp_is_trivially_equality_comparable<
                   char,
-                  typename std::conditional<std::is_signed<char>::value, signed char, unsigned char>::type>,
+                  typename std::conditional<std::is_signed<char>::value, signed char, unsigned char>::type>::value,
               "");
-static_assert(std::__is_trivially_equality_comparable_v<char16_t, std::uint_least16_t>, "");
+static_assert(std::__libcpp_is_trivially_equality_comparable<char16_t, std::uint_least16_t>::value, "");
 
 struct S {
   char c;
@@ -58,8 +60,8 @@ struct S2 {
 struct VirtualBase : virtual S {};
 struct NonVirtualBase : S, S2 {};
 
-static_assert(!std::__is_trivially_equality_comparable_v<S*, VirtualBase*>, "");
-static_assert(!std::__is_trivially_equality_comparable_v<S2*, VirtualBase*>, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<S*, VirtualBase*>::value, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<S2*, VirtualBase*>::value, "");
 
 // This is trivially_equality_comparable, but we can't detect it currently
-static_assert(!std::__is_trivially_equality_comparable_v<S*, NonVirtualBase*>, "");
+static_assert(!std::__libcpp_is_trivially_equality_comparable<S*, NonVirtualBase*>::value, "");

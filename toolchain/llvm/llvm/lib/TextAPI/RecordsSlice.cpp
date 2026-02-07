@@ -179,7 +179,7 @@ GlobalRecord *RecordsSlice::addGlobal(StringRef Name, RecordLinkage Linkage,
     Flags |= SymbolFlags::Data;
 
   Name = copyString(Name);
-  auto Result = Globals.try_emplace(Name);
+  auto Result = Globals.insert({Name, nullptr});
   if (Result.second)
     Result.first->second =
         std::make_unique<GlobalRecord>(Name, Linkage, Flags, GV, Inlined);
@@ -194,7 +194,7 @@ ObjCInterfaceRecord *RecordsSlice::addObjCInterface(StringRef Name,
                                                     RecordLinkage Linkage,
                                                     ObjCIFSymbolKind SymType) {
   Name = copyString(Name);
-  auto Result = Classes.try_emplace(Name);
+  auto Result = Classes.insert({Name, nullptr});
   if (Result.second)
     Result.first->second =
         std::make_unique<ObjCInterfaceRecord>(Name, Linkage, SymType);
@@ -228,7 +228,8 @@ ObjCCategoryRecord *RecordsSlice::addObjCCategory(StringRef ClassToExtend,
   ClassToExtend = copyString(ClassToExtend);
 
   // Add owning record first into record slice.
-  auto Result = Categories.try_emplace(std::make_pair(ClassToExtend, Category));
+  auto Result =
+      Categories.insert({std::make_pair(ClassToExtend, Category), nullptr});
   if (Result.second)
     Result.first->second =
         std::make_unique<ObjCCategoryRecord>(ClassToExtend, Category);
@@ -259,7 +260,7 @@ ObjCInterfaceRecord::getObjCCategories() const {
 
 ObjCIVarRecord *ObjCContainerRecord::addObjCIVar(StringRef IVar,
                                                  RecordLinkage Linkage) {
-  auto Result = IVars.try_emplace(IVar);
+  auto Result = IVars.insert({IVar, nullptr});
   if (Result.second)
     Result.first->second = std::make_unique<ObjCIVarRecord>(IVar, Linkage);
   return Result.first->second.get();

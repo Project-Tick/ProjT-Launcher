@@ -731,12 +731,6 @@ TEST_F(TargetDeclTest, BuiltinTemplates) {
     using type_pack_element = [[__type_pack_element]]<N, Pack...>;
   )cpp";
   EXPECT_DECLS("TemplateSpecializationTypeLoc", );
-
-  Code = R"cpp(
-    template <template <class...> class Templ, class... Types>
-    using dedup_types = Templ<[[__builtin_dedup_pack]]<Types...>...>;
-  )cpp";
-  EXPECT_DECLS("TemplateSpecializationTypeLoc", );
 }
 
 TEST_F(TargetDeclTest, MemberOfTemplate) {
@@ -844,7 +838,7 @@ TEST_F(TargetDeclTest, OverloadExpr) {
   )cpp";
   // Sized deallocation is enabled by default in C++14 onwards.
   EXPECT_DECLS("CXXDeleteExpr",
-               "void operator delete(void *, __size_t) noexcept");
+               "void operator delete(void *, unsigned long) noexcept");
 }
 
 TEST_F(TargetDeclTest, DependentExprs) {
@@ -998,7 +992,7 @@ TEST_F(TargetDeclTest, DependentTypes) {
       )cpp";
   EXPECT_DECLS("DependentNameTypeLoc", "struct B");
 
-  // Heuristic resolution of dependent type name within a NestedNameSpecifierLoc
+  // Heuristic resolution of dependent type name which doesn't get a TypeLoc
   Code = R"cpp(
         template <typename>
         struct A { struct B { struct C {}; }; };
@@ -1006,7 +1000,7 @@ TEST_F(TargetDeclTest, DependentTypes) {
         template <typename T>
         void foo(typename A<T>::[[B]]::C);
       )cpp";
-  EXPECT_DECLS("DependentNameTypeLoc", "struct B");
+  EXPECT_DECLS("NestedNameSpecifierLoc", "struct B");
 
   // Heuristic resolution of dependent type name whose qualifier is also
   // dependent
@@ -1029,7 +1023,8 @@ TEST_F(TargetDeclTest, DependentTypes) {
         template <typename T>
         void foo(typename A<T>::template [[B]]<int>);
       )cpp";
-  EXPECT_DECLS("TemplateSpecializationTypeLoc", "template <typename> struct B");
+  EXPECT_DECLS("DependentTemplateSpecializationTypeLoc",
+               "template <typename> struct B");
 
   // Dependent name with recursive definition. We don't expect a
   // result, but we shouldn't get into a stack overflow either.
@@ -1494,7 +1489,7 @@ TEST_F(FindExplicitReferencesTest, AllRefsInFoo) {
         "4: targets = {a}\n"
         "5: targets = {a::b}, qualifier = 'a::'\n"
         "6: targets = {a::b::S}\n"
-        "7: targets = {a::b::S::type}, qualifier = 'S::'\n"
+        "7: targets = {a::b::S::type}, qualifier = 'struct S::'\n"
         "8: targets = {y}, decl\n"},
        {R"cpp(
          void foo() {
@@ -1827,7 +1822,7 @@ TEST_F(FindExplicitReferencesTest, AllRefsInFoo) {
               int (*$2^fptr)(int $3^a, int) = nullptr;
              }
            )cpp",
-           "0: targets = {(unnamed class)}\n"
+           "0: targets = {(unnamed)}\n"
            "1: targets = {x}, decl\n"
            "2: targets = {fptr}, decl\n"
            "3: targets = {a}, decl\n"},

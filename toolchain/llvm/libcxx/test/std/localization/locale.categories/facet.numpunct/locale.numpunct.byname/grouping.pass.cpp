@@ -60,7 +60,7 @@ int main(int, char**)
     }
     {
         std::locale l(LOCALE_fr_FR_UTF_8);
-#if defined(TEST_HAS_GLIBC) || defined(_WIN32) || defined(_AIX) || defined(__APPLE__)
+#if defined(TEST_HAS_GLIBC) || defined(_WIN32) || defined(_AIX)
         const char* const group = "\3";
 #else
         const char* const group = "\x7f";

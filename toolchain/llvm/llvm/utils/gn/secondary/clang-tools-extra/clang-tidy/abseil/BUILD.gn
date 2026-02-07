@@ -32,7 +32,6 @@ static_library("abseil") {
     "StringFindStrContainsCheck.cpp",
     "TimeComparisonCheck.cpp",
     "TimeSubtractionCheck.cpp",
-    "UncheckedStatusOrAccessCheck.cpp",
     "UpgradeDurationConversionsCheck.cpp",
   ]
 }

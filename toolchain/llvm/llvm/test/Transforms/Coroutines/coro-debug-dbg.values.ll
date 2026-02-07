@@ -1,8 +1,9 @@
-; Tests whether resume function retains dbg.value information.
+; Tests whether resume function would remain dbg.value infomation.
 ; RUN: opt < %s -passes='module(coro-early),cgscc(coro-split,coro-split)' -S | FileCheck %s
+; RUN: opt --try-experimental-debuginfo-iterators < %s -passes='module(coro-early),cgscc(coro-split,coro-split)' -S | FileCheck %s
 ;
 ; This file is based on coro-debug-frame-variable.ll.
-; CHECK-LABEL: define void @_Z3foov(
+; CHECK-LABEL: define void @f(
 ; CHECK:       %[[frame:.*]] = call {{.*}} @llvm.coro.begin
 ; CHECK:       #dbg_value(ptr %[[frame]]
 ; CHECK-SAME:    !DIExpression(DW_OP_plus_uconst, [[OffsetX:[0-9]*]]),
@@ -20,7 +21,7 @@
 ; CHECK:       #dbg_value(ptr %[[frame]]
 ; CHECK-SAME:    !DIExpression(DW_OP_plus_uconst, [[OffsetJ:[0-9]*]], DW_OP_deref),
 
-; CHECK-LABEL: void @_Z3foov.resume(
+; CHECK-LABEL: void @f.resume(
 ; CHECK-SAME:                 ptr {{.*}} %[[frame:.*]])
 ; CHECK-SAME:  !dbg ![[RESUME_FN_DBG_NUM:[0-9]+]]
 ; CHECK:         %[[frame_alloca:.*]] = alloca ptr
@@ -37,7 +38,7 @@
 ; CHECK:         #dbg_value(ptr %[[frame_alloca]], ![[JVAR_RESUME:[0-9]+]],
 ; CHECK-SAME:        !DIExpression(DW_OP_deref, DW_OP_plus_uconst, [[OffsetJ]], DW_OP_deref)
 ;
-; CHECK: ![[RESUME_FN_DBG_NUM]] = distinct !DISubprogram(name: "foo", linkageName: "_Z3foov.resume"
+; CHECK: ![[RESUME_FN_DBG_NUM]] = distinct !DISubprogram(name: "foo", linkageName: "_Z3foov"
 ; CHECK: ![[FRAME_DI_NUM]] = !DILocalVariable(name: "__coro_frame"
 ; CHECK: ![[IVAR_RESUME]] = !DILocalVariable(name: "i"
 ; CHECK: ![[XVAR_RESUME]] = !DILocalVariable(name: "x"
@@ -46,7 +47,7 @@
 
 declare void @consume(i32)
 
-define void @_Z3foov(i32 %i, i32 %j) presplitcoroutine !dbg !8 {
+define void @f(i32 %i, i32 %j) presplitcoroutine !dbg !8 {
 entry:
   %__promise = alloca i8, align 8
   %x = alloca [10 x i32], align 16
@@ -162,7 +163,7 @@ cleanup.cont:                                     ; preds = %after.coro.free
   br label %coro.ret
 
 coro.ret:                                         ; preds = %cleanup.cont, %after.coro.free, %final.suspend, %await.suspend, %init.suspend
-  call void @llvm.coro.end(ptr null, i1 false, token none)
+  %end = call i1 @llvm.coro.end(ptr null, i1 false, token none)
   ret void
 
 unreachable:                                      ; preds = %after.coro.free
@@ -194,7 +195,7 @@ declare i8 @llvm.coro.suspend(token, i1) #2
 declare ptr @llvm.coro.free(token, ptr nocapture readonly) #1
 
 ; Function Attrs: nounwind
-declare void @llvm.coro.end(ptr, i1, token) #2
+declare i1 @llvm.coro.end(ptr, i1, token) #2
 
 declare ptr @new(i64)
 

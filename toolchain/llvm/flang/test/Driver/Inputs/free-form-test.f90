@@ -1,2 +1,2 @@
-     xy z=1
-      end
+program FreeForm
+end

@@ -21,7 +21,6 @@
 #include "lldb/Core/UserSettingsController.h"
 #include "lldb/Host/File.h"
 #include "lldb/Interpreter/Options.h"
-#include "lldb/Target/StopInfo.h"
 #include "lldb/Utility/ArchSpec.h"
 #include "lldb/Utility/ConstString.h"
 #include "lldb/Utility/FileSpec.h"
@@ -127,7 +126,8 @@ public:
   ///     Returns \b true if this Platform plug-in was able to find
   ///     a suitable executable, \b false otherwise.
   virtual Status ResolveExecutable(const ModuleSpec &module_spec,
-                                   lldb::ModuleSP &exe_module_sp);
+                                   lldb::ModuleSP &exe_module_sp,
+                                   const FileSpecList *module_search_paths_ptr);
 
   /// Find a symbol file given a symbol file module specification.
   ///
@@ -303,11 +303,10 @@ public:
   /// \return
   ///     The Status object for any errors found while searching for
   ///     the binary.
-  virtual Status
-  GetSharedModule(const ModuleSpec &module_spec, Process *process,
-                  lldb::ModuleSP &module_sp,
-                  llvm::SmallVectorImpl<lldb::ModuleSP> *old_modules,
-                  bool *did_create_ptr);
+  virtual Status GetSharedModule(
+      const ModuleSpec &module_spec, Process *process,
+      lldb::ModuleSP &module_sp, const FileSpecList *module_search_paths_ptr,
+      llvm::SmallVectorImpl<lldb::ModuleSP> *old_modules, bool *did_create_ptr);
 
   void CallLocateModuleCallbackIfSet(const ModuleSpec &module_spec,
                                      lldb::ModuleSP &module_sp,
@@ -778,8 +777,8 @@ public:
   /// Try to get a specific unwind plan for a named trap handler.
   /// The default is not to have specific unwind plans for trap handlers.
   ///
-  /// \param[in] arch
-  ///     Architecture of the current target.
+  /// \param[in] triple
+  ///     Triple of the current target.
   ///
   /// \param[in] name
   ///     Name of the trap handler function.
@@ -788,8 +787,8 @@ public:
   ///     A specific unwind plan for that trap handler, or an empty
   ///     shared pointer. The latter means there is no specific plan,
   ///     unwind as normal.
-  virtual lldb::UnwindPlanSP GetTrapHandlerUnwindPlan(const ArchSpec &arch,
-                                                      ConstString name) {
+  virtual lldb::UnwindPlanSP
+  GetTrapHandlerUnwindPlan(const llvm::Triple &triple, ConstString name) {
     return {};
   }
 
@@ -961,8 +960,6 @@ public:
 
   virtual CompilerType GetSiginfoType(const llvm::Triple &triple);
 
-  virtual lldb::StopInfoSP GetStopInfoFromSiginfo(Thread &thread) { return {}; }
-
   virtual Args GetExtraStartupCommands();
 
   typedef std::function<Status(const ModuleSpec &module_spec,
@@ -1039,8 +1036,8 @@ protected:
   /// predefined trap handlers, this method may be a no-op.
   virtual void CalculateTrapHandlerSymbolNames() = 0;
 
-  Status GetCachedExecutable(ModuleSpec &module_spec,
-                             lldb::ModuleSP &module_sp);
+  Status GetCachedExecutable(ModuleSpec &module_spec, lldb::ModuleSP &module_sp,
+                             const FileSpecList *module_search_paths_ptr);
 
   virtual Status DownloadModuleSlice(const FileSpec &src_file_spec,
                                      const uint64_t src_offset,

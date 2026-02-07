@@ -18,14 +18,19 @@
 #include "mlir/Conversion/GPUToNVVM/GPUToNVVMPass.h"
 #include "mlir/Conversion/IndexToLLVM/IndexToLLVM.h"
 #include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
+#include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Conversion/NVGPUToNVVM/NVGPUToNVVM.h"
 #include "mlir/Conversion/NVVMToLLVM/NVVMToLLVM.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
+#include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVMPass.h"
 #include "mlir/Conversion/VectorToSCF/VectorToSCF.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/GPU/IR/GPUDialect.h"
 #include "mlir/Dialect/GPU/Pipelines/Passes.h"
 #include "mlir/Dialect/GPU/Transforms/Passes.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/Linalg/Passes.h"
 #include "mlir/Dialect/MemRef/Transforms/Passes.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Pass/PassOptions.h"
@@ -43,7 +48,7 @@ void buildCommonPassPipeline(
   pm.addPass(createConvertNVGPUToNVVMPass());
   pm.addPass(createGpuKernelOutliningPass());
   pm.addPass(createConvertVectorToSCFPass());
-  pm.addPass(createSCFToControlFlowPass());
+  pm.addPass(createConvertSCFToCFPass());
   pm.addPass(createConvertNVVMToLLVMPass());
   pm.addPass(createConvertFuncToLLVMPass());
   pm.addPass(memref::createExpandStridedMetadataPass());
@@ -53,7 +58,6 @@ void buildCommonPassPipeline(
   nvvmTargetOptions.chip = options.cubinChip;
   nvvmTargetOptions.features = options.cubinFeatures;
   nvvmTargetOptions.optLevel = options.optLevel;
-  nvvmTargetOptions.cmdOptions = options.cmdOptions;
   pm.addPass(createGpuNVVMAttachTarget(nvvmTargetOptions));
   pm.addPass(createLowerAffinePass());
   pm.addPass(createArithToLLVMConversionPass());
@@ -72,7 +76,6 @@ void buildGpuPassPipeline(OpPassManager &pm,
   ConvertGpuOpsToNVVMOpsOptions opt;
   opt.useBarePtrCallConv = options.kernelUseBarePtrCallConv;
   opt.indexBitwidth = options.indexBitWidth;
-  opt.allowPatternRollback = options.allowPatternRollback;
   pm.addNestedPass<gpu::GPUModuleOp>(createConvertGpuOpsToNVVMOps(opt));
   pm.addNestedPass<gpu::GPUModuleOp>(createCanonicalizerPass());
   pm.addNestedPass<gpu::GPUModuleOp>(createCSEPass());

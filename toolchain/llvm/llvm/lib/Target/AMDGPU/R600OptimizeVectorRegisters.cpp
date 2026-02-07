@@ -111,7 +111,8 @@ public:
   }
 
   MachineFunctionProperties getRequiredProperties() const override {
-    return MachineFunctionProperties().setIsSSA();
+    return MachineFunctionProperties()
+      .set(MachineFunctionProperties::Property::IsSSA);
   }
 
   StringRef getPassName() const override {
@@ -181,7 +182,7 @@ MachineInstr *R600VectorRegMerger::RebuildVector(
   Register Reg = RSI->Instr->getOperand(0).getReg();
   MachineBasicBlock::iterator Pos = RSI->Instr;
   MachineBasicBlock &MBB = *Pos->getParent();
-  const DebugLoc &DL = Pos->getDebugLoc();
+  DebugLoc DL = Pos->getDebugLoc();
 
   Register SrcVec = BaseRSI->Instr->getOperand(0).getReg();
   DenseMap<Register, unsigned> UpdatedRegToChan = BaseRSI->RegToChan;
@@ -269,10 +270,9 @@ bool R600VectorRegMerger::tryMergeUsingCommonSlot(RegSeqInfo &RSI,
       MOE = RSI.Instr->operands_end(); MOp != MOE; ++MOp) {
     if (!MOp->isReg())
       continue;
-    auto &Insts = PreviousRegSeqByReg[MOp->getReg()];
-    if (Insts.empty())
+    if (PreviousRegSeqByReg[MOp->getReg()].empty())
       continue;
-    for (MachineInstr *MI : Insts) {
+    for (MachineInstr *MI : PreviousRegSeqByReg[MOp->getReg()]) {
       CompatibleRSI = PreviousRegSeq[MI];
       if (RSI == CompatibleRSI)
         continue;
@@ -287,10 +287,10 @@ bool R600VectorRegMerger::tryMergeUsingFreeSlot(RegSeqInfo &RSI,
     RegSeqInfo &CompatibleRSI,
     std::vector<std::pair<unsigned, unsigned>> &RemapChan) {
   unsigned NeededUndefs = 4 - RSI.UndefReg.size();
+  if (PreviousRegSeqByUndefCount[NeededUndefs].empty())
+    return false;
   std::vector<MachineInstr *> &MIs =
       PreviousRegSeqByUndefCount[NeededUndefs];
-  if (MIs.empty())
-    return false;
   CompatibleRSI = PreviousRegSeq[MIs.back()];
   tryMergeVector(&CompatibleRSI, &RSI, RemapChan);
   return true;
@@ -324,8 +324,11 @@ bool R600VectorRegMerger::runOnMachineFunction(MachineFunction &Fn) {
       if (MI.getOpcode() != R600::REG_SEQUENCE) {
         if (TII->get(MI.getOpcode()).TSFlags & R600_InstFlag::TEX_INST) {
           Register Reg = MI.getOperand(1).getReg();
-          for (MachineInstr &DefMI : MRI->def_instructions(Reg))
-            RemoveMI(&DefMI);
+          for (MachineRegisterInfo::def_instr_iterator
+               It = MRI->def_instr_begin(Reg), E = MRI->def_instr_end();
+               It != E; ++It) {
+            RemoveMI(&(*It));
+          }
         }
         continue;
       }

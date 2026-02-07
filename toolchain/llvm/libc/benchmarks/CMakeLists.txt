@@ -19,8 +19,6 @@ set(LLVM_LINK_COMPONENTS
 # Add Unit Testing Support
 #==============================================================================
 
-make_gtest_target()
-
 function(add_libc_benchmark_unittest target_name)
   if(NOT LLVM_INCLUDE_TESTS)
     return()
@@ -40,8 +38,8 @@ function(add_libc_benchmark_unittest target_name)
   )
   target_link_libraries(${target_name}
     PRIVATE
-    default_gtest_main
-    default_gtest
+    llvm_gtest_main
+    llvm_gtest
     ${LIBC_BENCHMARKS_UNITTEST_DEPENDS}
   )
   llvm_update_compile_flags(${target_name})

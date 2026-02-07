@@ -49,7 +49,6 @@ namespace clang {
 class ASTContext;
 class ASTReader;
 class Attr;
-class CodeGenOptions;
 class CXXRecordDecl;
 class FileEntry;
 class FPOptionsOverride;
@@ -61,7 +60,7 @@ class LangOptions;
 class MacroDefinitionRecord;
 class MacroInfo;
 class Module;
-class ModuleCache;
+class InMemoryModuleCache;
 class ModuleFileExtension;
 class ModuleFileExtensionWriter;
 class NamedDecl;
@@ -75,13 +74,6 @@ class Stmt;
 class StoredDeclsList;
 class SwitchCase;
 class Token;
-
-struct VisibleLookupBlockOffsets;
-struct LookupBlockOffsets;
-
-namespace serialization {
-enum class DeclUpdateKind;
-} // namespace serialization
 
 namespace SrcMgr {
 class FileInfo;
@@ -116,6 +108,8 @@ private:
   using TypeIdxMap = llvm::DenseMap<QualType, serialization::TypeIdx,
                                     serialization::UnsafeQualTypeDenseMapInfo>;
 
+  using LocSeq = SourceLocationSequence;
+
   /// The bitstream writer used to emit this precompiled header.
   llvm::BitstreamWriter &Stream;
 
@@ -123,9 +117,7 @@ private:
   const SmallVectorImpl<char> &Buffer;
 
   /// The PCM manager which manages memory buffers for pcm files.
-  ModuleCache &ModCache;
-
-  const CodeGenOptions &CodeGenOpts;
+  InMemoryModuleCache &ModuleCache;
 
   /// The preprocessor we're writing.
   Preprocessor *PP = nullptr;
@@ -378,12 +370,12 @@ private:
   ///
   /// Only meaningful for standard C++ named modules. See the comments in
   /// createSignatureForNamedModule() for details.
-  llvm::SetVector<Module *> TouchedTopLevelModules;
-  llvm::SetVector<serialization::ModuleFile *> TouchedModuleFiles;
+  llvm::DenseSet<Module *> TouchedTopLevelModules;
 
   /// An update to a Decl.
   class DeclUpdate {
-    serialization::DeclUpdateKind Kind;
+    /// A DeclUpdateKind.
+    unsigned Kind;
     union {
       const Decl *Dcl;
       void *Type;
@@ -394,21 +386,18 @@ private:
     };
 
   public:
-    DeclUpdate(serialization::DeclUpdateKind Kind) : Kind(Kind), Dcl(nullptr) {}
-    DeclUpdate(serialization::DeclUpdateKind Kind, const Decl *Dcl)
-        : Kind(Kind), Dcl(Dcl) {}
-    DeclUpdate(serialization::DeclUpdateKind Kind, QualType Type)
+    DeclUpdate(unsigned Kind) : Kind(Kind), Dcl(nullptr) {}
+    DeclUpdate(unsigned Kind, const Decl *Dcl) : Kind(Kind), Dcl(Dcl) {}
+    DeclUpdate(unsigned Kind, QualType Type)
         : Kind(Kind), Type(Type.getAsOpaquePtr()) {}
-    DeclUpdate(serialization::DeclUpdateKind Kind, SourceLocation Loc)
+    DeclUpdate(unsigned Kind, SourceLocation Loc)
         : Kind(Kind), Loc(Loc.getRawEncoding()) {}
-    DeclUpdate(serialization::DeclUpdateKind Kind, unsigned Val)
-        : Kind(Kind), Val(Val) {}
-    DeclUpdate(serialization::DeclUpdateKind Kind, Module *M)
-        : Kind(Kind), Mod(M) {}
-    DeclUpdate(serialization::DeclUpdateKind Kind, const Attr *Attribute)
-        : Kind(Kind), Attribute(Attribute) {}
+    DeclUpdate(unsigned Kind, unsigned Val) : Kind(Kind), Val(Val) {}
+    DeclUpdate(unsigned Kind, Module *M) : Kind(Kind), Mod(M) {}
+    DeclUpdate(unsigned Kind, const Attr *Attribute)
+          : Kind(Kind), Attribute(Attribute) {}
 
-    serialization::DeclUpdateKind getKind() const { return Kind; }
+    unsigned getKind() const { return Kind; }
     const Decl *getDecl() const { return Dcl; }
     QualType getType() const { return QualType::getFromOpaquePtr(Type); }
 
@@ -582,7 +571,7 @@ private:
   std::pair<ASTFileSignature, ASTFileSignature> createSignature() const;
   ASTFileSignature createSignatureForNamedModule() const;
 
-  void WriteInputFiles(SourceManager &SourceMgr);
+  void WriteInputFiles(SourceManager &SourceMgr, HeaderSearchOptions &HSOpts);
   void WriteSourceManagerBlock(SourceManager &SourceMgr);
   void WritePreprocessor(const Preprocessor &PP, bool IsModule);
   void WriteHeaderSearch(const HeaderSearch &HS);
@@ -596,6 +585,8 @@ private:
   unsigned TypeExtQualAbbrev = 0;
   void WriteTypeAbbrevs();
   void WriteType(ASTContext &Context, QualType T);
+
+  bool isLookupResultExternal(StoredDeclsList &Result, DeclContext *DC);
 
   void GenerateSpecializationInfoLookupTable(
       const NamedDecl *D, llvm::SmallVectorImpl<const Decl *> &Specializations,
@@ -611,7 +602,9 @@ private:
   uint64_t WriteDeclContextLexicalBlock(ASTContext &Context,
                                         const DeclContext *DC);
   void WriteDeclContextVisibleBlock(ASTContext &Context, DeclContext *DC,
-                                    VisibleLookupBlockOffsets &Offsets);
+                                    uint64_t &VisibleBlockOffset,
+                                    uint64_t &ModuleLocalBlockOffset,
+                                    uint64_t &TULocalBlockOffset);
   void WriteTypeDeclOffsets();
   void WriteFileDeclIDsMap();
   void WriteComments(ASTContext &Context);
@@ -640,7 +633,6 @@ private:
   void WriteDeclsWithEffectsToVerify(Sema &SemaRef);
   void WriteModuleFileExtension(Sema &SemaRef,
                                 ModuleFileExtensionWriter &Writer);
-  void WriteRISCVIntrinsicPragmas(Sema &SemaRef);
 
   unsigned DeclParmVarAbbrev = 0;
   unsigned DeclContextLexicalAbbrev = 0;
@@ -690,14 +682,13 @@ public:
   /// Create a new precompiled header writer that outputs to
   /// the given bitstream.
   ASTWriter(llvm::BitstreamWriter &Stream, SmallVectorImpl<char> &Buffer,
-            ModuleCache &ModCache, const CodeGenOptions &CodeGenOpts,
+            InMemoryModuleCache &ModuleCache,
             ArrayRef<std::shared_ptr<ModuleFileExtension>> Extensions,
             bool IncludeTimestamps = true, bool BuildingImplicitModule = false,
             bool GeneratingReducedBMI = false);
   ~ASTWriter() override;
 
   const LangOptions &getLangOpts() const;
-  const CodeGenOptions &getCodeGenOpts() const { return CodeGenOpts; }
 
   /// Get a timestamp for output into the AST file. The actual timestamp
   /// of the specified file may be ignored if we have been instructed to not
@@ -737,14 +728,16 @@ public:
   void AddFileID(FileID FID, RecordDataImpl &Record);
 
   /// Emit a source location.
-  void AddSourceLocation(SourceLocation Loc, RecordDataImpl &Record);
+  void AddSourceLocation(SourceLocation Loc, RecordDataImpl &Record,
+                         LocSeq *Seq = nullptr);
 
   /// Return the raw encodings for source locations.
   SourceLocationEncoding::RawLocEncoding
-  getRawSourceLocationEncoding(SourceLocation Loc);
+  getRawSourceLocationEncoding(SourceLocation Loc, LocSeq *Seq = nullptr);
 
   /// Emit a source range.
-  void AddSourceRange(SourceRange Range, RecordDataImpl &Record);
+  void AddSourceRange(SourceRange Range, RecordDataImpl &Record,
+                      LocSeq *Seq = nullptr);
 
   /// Emit a reference to an identifier.
   void AddIdentifierRef(const IdentifierInfo *II, RecordDataImpl &Record);
@@ -757,6 +750,9 @@ public:
 
   /// Get the unique number used to refer to the given macro.
   serialization::MacroID getMacroRef(MacroInfo *MI, const IdentifierInfo *Name);
+
+  /// Determine the ID of an already-emitted macro.
+  serialization::MacroID getMacroID(MacroInfo *MI);
 
   uint32_t getMacroDirectivesOffset(const IdentifierInfo *Name);
 
@@ -779,13 +775,6 @@ public:
     auto I = DeclIDs.find(D);
     return (I == DeclIDs.end() || I->second >= clang::NUM_PREDEF_DECL_IDS);
   };
-
-  void AddLookupOffsets(const LookupBlockOffsets &Offsets,
-                        RecordDataImpl &Record);
-
-  /// Emit a reference to a macro.
-  void AddMacroRef(MacroInfo *MI, const IdentifierInfo *Name,
-                   RecordDataImpl &Record);
 
   /// Emit a reference to a declaration.
   void AddDeclRef(const Decl *D, RecordDataImpl &Record);
@@ -909,10 +898,6 @@ public:
     return WritingModule && WritingModule->isNamedModule();
   }
 
-  bool isWritingStdCXXHeaderUnit() const {
-    return WritingModule && WritingModule->isHeaderUnit();
-  }
-
   bool isGeneratingReducedBMI() const { return GeneratingReducedBMI; }
 
   bool getDoneWritingDeclsAndTypes() const { return DoneWritingDeclsAndTypes; }
@@ -922,8 +907,6 @@ public:
   }
 
   void handleVTable(CXXRecordDecl *RD);
-
-  void addTouchedModuleFile(serialization::ModuleFile *);
 
 private:
   // ASTDeserializationListener implementation
@@ -954,12 +937,6 @@ private:
   void ResolvedOperatorDelete(const CXXDestructorDecl *DD,
                               const FunctionDecl *Delete,
                               Expr *ThisArg) override;
-  void ResolvedOperatorGlobDelete(const CXXDestructorDecl *DD,
-                                  const FunctionDecl *Delete) override;
-  void ResolvedOperatorArrayDelete(const CXXDestructorDecl *DD,
-                                   const FunctionDecl *Delete) override;
-  void ResolvedOperatorGlobArrayDelete(const CXXDestructorDecl *DD,
-                                       const FunctionDecl *Delete) override;
   void CompletedImplicitDefinition(const FunctionDecl *D) override;
   void InstantiationRequested(const ValueDecl *D) override;
   void VariableDefinitionInstantiated(const VarDecl *D) override;
@@ -1012,9 +989,9 @@ protected:
   virtual Module *getEmittingModule(ASTContext &Ctx);
 
 public:
-  PCHGenerator(Preprocessor &PP, ModuleCache &ModCache, StringRef OutputFile,
-               StringRef isysroot, std::shared_ptr<PCHBuffer> Buffer,
-               const CodeGenOptions &CodeGenOpts,
+  PCHGenerator(Preprocessor &PP, InMemoryModuleCache &ModuleCache,
+               StringRef OutputFile, StringRef isysroot,
+               std::shared_ptr<PCHBuffer> Buffer,
                ArrayRef<std::shared_ptr<ModuleFileExtension>> Extensions,
                bool AllowASTWithErrors = false, bool IncludeTimestamps = true,
                bool BuildingImplicitModule = false,
@@ -1036,15 +1013,14 @@ class CXX20ModulesGenerator : public PCHGenerator {
 protected:
   virtual Module *getEmittingModule(ASTContext &Ctx) override;
 
-  CXX20ModulesGenerator(Preprocessor &PP, ModuleCache &ModCache,
-                        StringRef OutputFile, const CodeGenOptions &CodeGenOpts,
-                        bool GeneratingReducedBMI, bool AllowASTWithErrors);
+  CXX20ModulesGenerator(Preprocessor &PP, InMemoryModuleCache &ModuleCache,
+                        StringRef OutputFile, bool GeneratingReducedBMI,
+                        bool AllowASTWithErrors);
 
 public:
-  CXX20ModulesGenerator(Preprocessor &PP, ModuleCache &ModCache,
-                        StringRef OutputFile, const CodeGenOptions &CodeGenOpts,
-                        bool AllowASTWithErrors = false)
-      : CXX20ModulesGenerator(PP, ModCache, OutputFile, CodeGenOpts,
+  CXX20ModulesGenerator(Preprocessor &PP, InMemoryModuleCache &ModuleCache,
+                        StringRef OutputFile, bool AllowASTWithErrors = false)
+      : CXX20ModulesGenerator(PP, ModuleCache, OutputFile,
                               /*GeneratingReducedBMI=*/false,
                               AllowASTWithErrors) {}
 
@@ -1055,10 +1031,9 @@ class ReducedBMIGenerator : public CXX20ModulesGenerator {
   void anchor() override;
 
 public:
-  ReducedBMIGenerator(Preprocessor &PP, ModuleCache &ModCache,
-                      StringRef OutputFile, const CodeGenOptions &CodeGenOpts,
-                      bool AllowASTWithErrors = false)
-      : CXX20ModulesGenerator(PP, ModCache, OutputFile, CodeGenOpts,
+  ReducedBMIGenerator(Preprocessor &PP, InMemoryModuleCache &ModuleCache,
+                      StringRef OutputFile, bool AllowASTWithErrors = false)
+      : CXX20ModulesGenerator(PP, ModuleCache, OutputFile,
                               /*GeneratingReducedBMI=*/true,
                               AllowASTWithErrors) {}
 };

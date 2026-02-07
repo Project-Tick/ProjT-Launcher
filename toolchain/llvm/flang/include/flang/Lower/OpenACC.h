@@ -22,9 +22,6 @@ class StringRef;
 } // namespace llvm
 
 namespace mlir {
-namespace func {
-class FuncOp;
-} // namespace func
 class Location;
 class Type;
 class ModuleOp;
@@ -34,23 +31,17 @@ class Value;
 
 namespace fir {
 class FirOpBuilder;
-} // namespace fir
+}
 
 namespace Fortran {
-namespace evaluate {
-struct ProcedureDesignator;
-} // namespace evaluate
-
 namespace parser {
 struct AccClauseList;
-struct DoConstruct;
 struct OpenACCConstruct;
 struct OpenACCDeclarativeConstruct;
 struct OpenACCRoutineConstruct;
 } // namespace parser
 
 namespace semantics {
-class OpenACCRoutineInfo;
 class SemanticsContext;
 class Symbol;
 } // namespace semantics
@@ -59,36 +50,44 @@ namespace lower {
 
 class AbstractConverter;
 class StatementContext;
-class SymMap;
 
 namespace pft {
 struct Evaluation;
 } // namespace pft
 
+using AccRoutineInfoMappingList =
+    llvm::SmallVector<std::pair<std::string, mlir::SymbolRefAttr>>;
+
 static constexpr llvm::StringRef declarePostAllocSuffix =
-    "_acc_declare_post_alloc";
+    "_acc_declare_update_desc_post_alloc";
 static constexpr llvm::StringRef declarePreDeallocSuffix =
-    "_acc_declare_pre_dealloc";
+    "_acc_declare_update_desc_pre_dealloc";
 static constexpr llvm::StringRef declarePostDeallocSuffix =
-    "_acc_declare_post_dealloc";
+    "_acc_declare_update_desc_post_dealloc";
 
 static constexpr llvm::StringRef privatizationRecipePrefix = "privatization";
 
 mlir::Value genOpenACCConstruct(AbstractConverter &,
                                 Fortran::semantics::SemanticsContext &,
                                 pft::Evaluation &,
-                                const parser::OpenACCConstruct &,
-                                Fortran::lower::SymMap &localSymbols);
-void genOpenACCDeclarativeConstruct(
-    AbstractConverter &, Fortran::semantics::SemanticsContext &,
-    StatementContext &, const parser::OpenACCDeclarativeConstruct &);
-void genOpenACCRoutineConstruct(
-    AbstractConverter &, mlir::ModuleOp, mlir::func::FuncOp,
-    const std::vector<Fortran::semantics::OpenACCRoutineInfo> &);
+                                const parser::OpenACCConstruct &);
+void genOpenACCDeclarativeConstruct(AbstractConverter &,
+                                    Fortran::semantics::SemanticsContext &,
+                                    StatementContext &,
+                                    const parser::OpenACCDeclarativeConstruct &,
+                                    AccRoutineInfoMappingList &);
+void genOpenACCRoutineConstruct(AbstractConverter &,
+                                Fortran::semantics::SemanticsContext &,
+                                mlir::ModuleOp,
+                                const parser::OpenACCRoutineConstruct &,
+                                AccRoutineInfoMappingList &);
+
+void finalizeOpenACCRoutineAttachment(mlir::ModuleOp,
+                                      AccRoutineInfoMappingList &);
 
 /// Get a acc.private.recipe op for the given type or create it if it does not
 /// exist yet.
-mlir::acc::PrivateRecipeOp createOrGetPrivateRecipe(fir::FirOpBuilder &,
+mlir::acc::PrivateRecipeOp createOrGetPrivateRecipe(mlir::OpBuilder &,
                                                     llvm::StringRef,
                                                     mlir::Location, mlir::Type);
 
@@ -102,7 +101,7 @@ createOrGetReductionRecipe(fir::FirOpBuilder &, llvm::StringRef, mlir::Location,
 /// Get a acc.firstprivate.recipe op for the given type or create it if it does
 /// not exist yet.
 mlir::acc::FirstprivateRecipeOp
-createOrGetFirstprivateRecipe(fir::FirOpBuilder &, llvm::StringRef,
+createOrGetFirstprivateRecipe(mlir::OpBuilder &, llvm::StringRef,
                               mlir::Location, mlir::Type,
                               llvm::SmallVector<mlir::Value> &);
 
@@ -117,36 +116,13 @@ void attachDeclarePostDeallocAction(AbstractConverter &, fir::FirOpBuilder &,
 void genOpenACCTerminator(fir::FirOpBuilder &, mlir::Operation *,
                           mlir::Location);
 
-/// Used to obtain the number of contained loops to look for
-/// since this is dependent on number of tile operands and collapse
-/// clause.
-uint64_t getLoopCountForCollapseAndTile(const Fortran::parser::AccClauseList &);
+int64_t getCollapseValue(const Fortran::parser::AccClauseList &);
 
-/// Parse collapse clause and return {size, force}. If absent, returns
-/// {1,false}.
-std::pair<uint64_t, bool>
-getCollapseSizeAndForce(const Fortran::parser::AccClauseList &);
-
-/// Checks whether the current insertion point is inside OpenACC loop.
 bool isInOpenACCLoop(fir::FirOpBuilder &);
-
-/// Checks whether the current insertion point is inside OpenACC compute
-/// construct.
-bool isInsideOpenACCComputeConstruct(fir::FirOpBuilder &);
 
 void setInsertionPointAfterOpenACCLoopIfInside(fir::FirOpBuilder &);
 
 void genEarlyReturnInOpenACCLoop(fir::FirOpBuilder &, mlir::Location);
-
-/// Generates an OpenACC loop from a do construct in order to
-/// properly capture the loop bounds, parallelism determination mode,
-/// and to privatize the loop variables.
-/// When the conversion is rejected, nullptr is returned.
-mlir::Operation *genOpenACCLoopFromDoConstruct(
-    AbstractConverter &converter,
-    Fortran::semantics::SemanticsContext &semanticsContext,
-    Fortran::lower::SymMap &localSymbols,
-    const Fortran::parser::DoConstruct &doConstruct, pft::Evaluation &eval);
 
 } // namespace lower
 } // namespace Fortran

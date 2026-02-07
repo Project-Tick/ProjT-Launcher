@@ -48,8 +48,9 @@ public:
   explicit operator bool() const { return IsValid(); }
 
   bool operator<(const CompilerDeclContext &rhs) const {
-    return std::tie(m_type_system, m_opaque_decl_ctx) <
-           std::tie(rhs.m_type_system, rhs.m_opaque_decl_ctx);
+    if (m_type_system == rhs.m_type_system)
+      return m_opaque_decl_ctx < rhs.m_opaque_decl_ctx;
+    return m_type_system < rhs.m_type_system;
   }
 
   bool IsValid() const {

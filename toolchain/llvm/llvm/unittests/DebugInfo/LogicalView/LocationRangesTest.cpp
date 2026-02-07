@@ -34,7 +34,7 @@ protected:
 public:
   ReaderTest(ScopedPrinter &W) : LVReader("", "", W) { setInstance(this); }
 
-  Error createScopes() override { return LVReader::createScopes(); }
+  Error createScopes() { return LVReader::createScopes(); }
 };
 
 // Helper function to add a logical element to a given scope.

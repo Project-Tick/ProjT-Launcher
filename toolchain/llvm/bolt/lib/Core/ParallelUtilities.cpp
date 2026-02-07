@@ -103,7 +103,7 @@ inline unsigned estimateTotalCost(const BinaryContext &BC,
 } // namespace
 
 ThreadPoolInterface &getThreadPool(const unsigned ThreadsCount) {
-  if (ThreadPoolPtr)
+  if (ThreadPoolPtr.get())
     return *ThreadPoolPtr;
 
   if (ThreadsCount > 1)

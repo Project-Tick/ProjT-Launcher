@@ -11,6 +11,7 @@
 define spir_kernel void @foo(ptr %p) {
 entry:
   call void @llvm.trap()
+  call void @llvm.debugtrap()
   call void @llvm.ubsantrap(i8 100)
 
   %r1 = call ptr @llvm.invariant.start.p0(i64 1024, ptr %p)

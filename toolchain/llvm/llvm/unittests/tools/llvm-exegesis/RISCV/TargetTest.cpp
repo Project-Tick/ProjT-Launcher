@@ -9,6 +9,7 @@
 #include "Target.h"
 
 #include <cassert>
+#include <memory>
 
 #include "MCTargetDesc/RISCVMCTargetDesc.h"
 #include "TestBase.h"
@@ -19,10 +20,14 @@
 
 namespace llvm {
 namespace exegesis {
+
+void InitializeRISCVExegesisTarget();
+
 namespace {
 
 using testing::IsEmpty;
 using testing::Not;
+using testing::NotNull;
 
 class RISCVTargetTest : public RISCVTestBase {
 protected:

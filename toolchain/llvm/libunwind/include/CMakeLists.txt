@@ -21,10 +21,12 @@ if(LIBUNWIND_INSTALL_HEADERS)
     )
   endforeach()
 
-  if (NOT CMAKE_CONFIGURATION_TYPES)
+  if(NOT CMAKE_CONFIGURATION_TYPES)
     add_custom_target(install-unwind-headers
       DEPENDS unwind-headers
-      COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component unwind-headers)
+      COMMAND "${CMAKE_COMMAND}"
+              -DCMAKE_INSTALL_COMPONENT=unwind-headers
+              -P "${LIBUNWIND_BINARY_DIR}/cmake_install.cmake")
     add_custom_target(install-unwind-headers-stripped DEPENDS install-unwind-headers)
   endif()
 endif()

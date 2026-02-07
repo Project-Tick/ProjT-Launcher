@@ -33,7 +33,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "AArch64InstrInfo.h"
-#include "AArch64Subtarget.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/StringRef.h"
@@ -50,8 +49,8 @@
 #include "llvm/MC/MCInstrDesc.h"
 #include "llvm/MC/MCSchedule.h"
 #include "llvm/Pass.h"
-#include <map>
 #include <unordered_map>
+#include <map>
 
 using namespace llvm;
 
@@ -68,7 +67,7 @@ namespace {
 struct AArch64SIMDInstrOpt : public MachineFunctionPass {
   static char ID;
 
-  const AArch64InstrInfo *TII;
+  const TargetInstrInfo *TII;
   MachineRegisterInfo *MRI;
   TargetSchedModel SchedModel;
 
@@ -148,10 +147,12 @@ struct AArch64SIMDInstrOpt : public MachineFunctionPass {
   };
 
   // A costly instruction is replaced in this work by N efficient instructions
-  // The maximum of N is currently 10 and it is for ST4 case.
+  // The maximum of N is curently 10 and it is for ST4 case.
   static const unsigned MaxNumRepl = 10;
 
-  AArch64SIMDInstrOpt() : MachineFunctionPass(ID) {}
+  AArch64SIMDInstrOpt() : MachineFunctionPass(ID) {
+    initializeAArch64SIMDInstrOptPass(*PassRegistry::getPassRegistry());
+  }
 
   /// Based only on latency of instructions, determine if it is cost efficient
   /// to replace the instruction InstDesc by the instructions stored in the
@@ -695,9 +696,13 @@ bool AArch64SIMDInstrOpt::runOnMachineFunction(MachineFunction &MF) {
   if (skipFunction(MF.getFunction()))
     return false;
 
+  TII = MF.getSubtarget().getInstrInfo();
   MRI = &MF.getRegInfo();
-  const AArch64Subtarget &ST = MF.getSubtarget<AArch64Subtarget>();
-  TII = ST.getInstrInfo();
+  const TargetSubtargetInfo &ST = MF.getSubtarget();
+  const AArch64InstrInfo *AAII =
+      static_cast<const AArch64InstrInfo *>(ST.getInstrInfo());
+  if (!AAII)
+    return false;
   SchedModel.init(&ST);
   if (!SchedModel.hasInstrSchedModel())
     return false;

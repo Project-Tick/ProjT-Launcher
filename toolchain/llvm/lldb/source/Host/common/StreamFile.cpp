@@ -27,8 +27,7 @@ StreamFile::StreamFile(int fd, bool transfer_ownership) : Stream() {
 }
 
 StreamFile::StreamFile(FILE *fh, bool transfer_ownership) : Stream() {
-  m_file_sp = std::make_shared<NativeFile>(fh, File::eOpenOptionWriteOnly,
-                                           transfer_ownership);
+  m_file_sp = std::make_shared<NativeFile>(fh, transfer_ownership);
 }
 
 StreamFile::StreamFile(const char *path, File::OpenOptions options,

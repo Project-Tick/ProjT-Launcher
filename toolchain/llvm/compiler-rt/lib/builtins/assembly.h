@@ -14,7 +14,7 @@
 #ifndef COMPILERRT_ASSEMBLY_H
 #define COMPILERRT_ASSEMBLY_H
 
-#ifdef __CET__
+#if defined(__linux__) && defined(__CET__)
 #if __has_include(<cet.h>)
 #include <cet.h>
 #endif
@@ -61,7 +61,7 @@
 #define LOCAL_LABEL(name) .L ## name
 #define FILE_LEVEL_DIRECTIVE
 #define SYMBOL_IS_FUNC(name)                                                   \
-  .def FUNC_SYMBOL(name) SEPARATOR                                             \
+  .def name SEPARATOR                                                          \
     .scl 2 SEPARATOR                                                           \
     .type 32 SEPARATOR                                                         \
   .endef
@@ -71,35 +71,19 @@
 
 #endif
 
-#if defined(__aarch64__) && defined(__ELF__) &&                                \
-    defined(COMPILER_RT_EXECUTE_ONLY_CODE)
-// The assembler always creates an implicit '.text' section with default flags
-// (SHF_ALLOC | SHF_EXECINSTR), which is incompatible with the execute-only
-// '.text' section we want to create here because of the missing
-// SHF_AARCH64_PURECODE section flag. To solve this, we use 'unique,0' to
-// differentiate the two sections. The output will therefore have two separate
-// sections named '.text', where code will be placed into the execute-only
-// '.text' section, and the implicitly-created one will be empty.
-#define TEXT_SECTION                                                           \
-  .section .text,"axy",@progbits,unique,0
-#else
-#define TEXT_SECTION                                                           \
-  .text
-#endif
-
-#if defined(__arm__) || defined(__aarch64__) || defined(__arm64ec__)
+#if defined(__arm__) || defined(__aarch64__)
 #define FUNC_ALIGN                                                             \
+  .text SEPARATOR                                                              \
   .balign 16 SEPARATOR
 #else
 #define FUNC_ALIGN
 #endif
 
-// BTI, PAC, and GCS gnu property note
+// BTI and PAC gnu property note
 #define NT_GNU_PROPERTY_TYPE_0 5
 #define GNU_PROPERTY_AARCH64_FEATURE_1_AND 0xc0000000
 #define GNU_PROPERTY_AARCH64_FEATURE_1_BTI 1
 #define GNU_PROPERTY_AARCH64_FEATURE_1_PAC 2
-#define GNU_PROPERTY_AARCH64_FEATURE_1_GCS 4
 
 #if defined(__ARM_FEATURE_BTI_DEFAULT)
 #define BTI_FLAG GNU_PROPERTY_AARCH64_FEATURE_1_BTI
@@ -111,12 +95,6 @@
 #define PAC_FLAG GNU_PROPERTY_AARCH64_FEATURE_1_PAC
 #else
 #define PAC_FLAG 0
-#endif
-
-#if defined(__ARM_FEATURE_GCS_DEFAULT)
-#define GCS_FLAG GNU_PROPERTY_AARCH64_FEATURE_1_GCS
-#else
-#define GCS_FLAG 0
 #endif
 
 #define GNU_PROPERTY(type, value)                                              \
@@ -140,12 +118,11 @@
 #define BTI_J
 #endif
 
-#if (BTI_FLAG | PAC_FLAG | GCS_FLAG) != 0
-#define GNU_PROPERTY_BTI_PAC_GCS                                               \
-  GNU_PROPERTY(GNU_PROPERTY_AARCH64_FEATURE_1_AND,                             \
-               BTI_FLAG | PAC_FLAG | GCS_FLAG)
+#if (BTI_FLAG | PAC_FLAG) != 0
+#define GNU_PROPERTY_BTI_PAC                                                   \
+  GNU_PROPERTY(GNU_PROPERTY_AARCH64_FEATURE_1_AND, BTI_FLAG | PAC_FLAG)
 #else
-#define GNU_PROPERTY_BTI_PAC_GCS
+#define GNU_PROPERTY_BTI_PAC
 #endif
 
 #if defined(__clang__) || defined(__GCC_HAVE_DWARF2_CFI_ASM)
@@ -217,23 +194,6 @@
 #else
 #define WIDE(op) op
 #endif
-
-#if defined(__ARM_FEATURE_PAC_DEFAULT) && defined(__ARM_FEATURE_BTI_DEFAULT)
-#define PACBTI_LANDING pacbti r12, lr, sp
-#elif defined(__ARM_FEATURE_PAC_DEFAULT)
-#define PACBTI_LANDING pac r12, lr, sp
-#elif defined(__ARM_FEATURE_BTI_DEFAULT)
-#define PACBTI_LANDING bti
-#else
-#define PACBTI_LANDING
-#endif
-
-#if defined(__ARM_FEATURE_PAUTH)
-#define PAC_RETURN bxaut r12, lr, sp
-#else
-#define PAC_RETURN aut r12, lr, sp SEPARATOR bx lr
-#endif
-
 #else // !defined(__arm)
 #define DECLARE_FUNC_ENCODING
 #define DEFINE_CODE_STATE
@@ -248,16 +208,6 @@
 #define GLUE4(a, b, c, d) GLUE4_(a, b, c, d)
 
 #define SYMBOL_NAME(name) GLUE(__USER_LABEL_PREFIX__, name)
-#ifndef __arm64ec__
-#define FUNC_SYMBOL(name) name
-#else
-// On ARM64EC, function names and calls (but not address-taking or data symbol
-// references) use symbols prefixed with "#".
-#define QUOTE(a) #a
-#define STR(a) QUOTE(a)
-#define HASH #
-#define FUNC_SYMBOL(name) STR(GLUE2(HASH, name))
-#endif
 
 #ifdef VISIBILITY_HIDDEN
 #define DECLARE_SYMBOL_VISIBILITY(name)                                        \
@@ -270,61 +220,56 @@
 #endif
 
 #define DEFINE_COMPILERRT_FUNCTION(name)                                       \
-  TEXT_SECTION SEPARATOR                                                       \
   DEFINE_CODE_STATE                                                            \
   FILE_LEVEL_DIRECTIVE SEPARATOR                                               \
-  .globl FUNC_SYMBOL(SYMBOL_NAME(name)) SEPARATOR                              \
+  .globl SYMBOL_NAME(name) SEPARATOR                                           \
   SYMBOL_IS_FUNC(SYMBOL_NAME(name)) SEPARATOR                                  \
   DECLARE_SYMBOL_VISIBILITY(name)                                              \
   DECLARE_FUNC_ENCODING                                                        \
-  FUNC_SYMBOL(SYMBOL_NAME(name)):
+  SYMBOL_NAME(name):
 
 #define DEFINE_COMPILERRT_THUMB_FUNCTION(name)                                 \
-  TEXT_SECTION SEPARATOR                                                       \
   DEFINE_CODE_STATE                                                            \
   FILE_LEVEL_DIRECTIVE SEPARATOR                                               \
-  .globl FUNC_SYMBOL(SYMBOL_NAME(name)) SEPARATOR                              \
+  .globl SYMBOL_NAME(name) SEPARATOR                                           \
   SYMBOL_IS_FUNC(SYMBOL_NAME(name)) SEPARATOR                                  \
   DECLARE_SYMBOL_VISIBILITY(name) SEPARATOR                                    \
   .thumb_func SEPARATOR                                                        \
-  FUNC_SYMBOL(SYMBOL_NAME(name)):
+  SYMBOL_NAME(name):
 
 #define DEFINE_COMPILERRT_PRIVATE_FUNCTION(name)                               \
-  TEXT_SECTION SEPARATOR                                                       \
   DEFINE_CODE_STATE                                                            \
   FILE_LEVEL_DIRECTIVE SEPARATOR                                               \
-  .globl FUNC_SYMBOL(SYMBOL_NAME(name)) SEPARATOR                              \
+  .globl SYMBOL_NAME(name) SEPARATOR                                           \
   SYMBOL_IS_FUNC(SYMBOL_NAME(name)) SEPARATOR                                  \
   HIDDEN(SYMBOL_NAME(name)) SEPARATOR                                          \
   DECLARE_FUNC_ENCODING                                                        \
-  FUNC_SYMBOL(SYMBOL_NAME(name)):
+  SYMBOL_NAME(name):
 
 #define DEFINE_COMPILERRT_PRIVATE_FUNCTION_UNMANGLED(name)                     \
-  TEXT_SECTION SEPARATOR                                                       \
   DEFINE_CODE_STATE                                                            \
-  .globl FUNC_SYMBOL(name) SEPARATOR                                           \
+  .globl name SEPARATOR                                                        \
   SYMBOL_IS_FUNC(name) SEPARATOR                                               \
   HIDDEN(name) SEPARATOR                                                       \
   DECLARE_FUNC_ENCODING                                                        \
-  FUNC_SYMBOL(name):
+  name:
 
 #define DEFINE_COMPILERRT_OUTLINE_FUNCTION_UNMANGLED(name)                     \
-  TEXT_SECTION SEPARATOR                                                       \
   DEFINE_CODE_STATE                                                            \
   FUNC_ALIGN                                                                   \
-  .globl FUNC_SYMBOL(name) SEPARATOR                                           \
+  .globl name SEPARATOR                                                        \
   SYMBOL_IS_FUNC(name) SEPARATOR                                               \
-  DECLARE_SYMBOL_VISIBILITY_UNMANGLED(FUNC_SYMBOL(name)) SEPARATOR             \
+  DECLARE_SYMBOL_VISIBILITY_UNMANGLED(name) SEPARATOR                          \
   DECLARE_FUNC_ENCODING                                                        \
-  FUNC_SYMBOL(name):                                                           \
+  name:                                                                        \
   SEPARATOR CFI_START                                                          \
   SEPARATOR BTI_C
 
 #define DEFINE_COMPILERRT_FUNCTION_ALIAS(name, target)                         \
-  .globl FUNC_SYMBOL(SYMBOL_NAME(name)) SEPARATOR                              \
+  .globl SYMBOL_NAME(name) SEPARATOR                                           \
   SYMBOL_IS_FUNC(SYMBOL_NAME(name)) SEPARATOR                                  \
   DECLARE_SYMBOL_VISIBILITY(name) SEPARATOR                                    \
-  .set FUNC_SYMBOL(SYMBOL_NAME(name)), FUNC_SYMBOL(SYMBOL_NAME(target)) SEPARATOR
+  .set SYMBOL_NAME(name), SYMBOL_NAME(target) SEPARATOR
 
 #if defined(__ARM_EABI__)
 #define DEFINE_AEABI_FUNCTION_ALIAS(aeabi_name, name)                          \
@@ -355,11 +300,6 @@
 #define VMOV_TO_DOUBLE(dst, src0, src1) vmov dst, src0, src1 SEPARATOR
 #define VMOV_FROM_DOUBLE(dst0, dst1, src) vmov dst0, dst1, src SEPARATOR
 #endif
-#endif
-
-#if defined(__ASSEMBLER__) && (defined(__i386__) || defined(__amd64__)) &&     \
-    !defined(__arm64ec__)
-.att_syntax
 #endif
 
 #endif // COMPILERRT_ASSEMBLY_H

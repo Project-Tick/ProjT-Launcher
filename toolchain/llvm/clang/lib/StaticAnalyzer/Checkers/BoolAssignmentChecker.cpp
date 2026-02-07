@@ -29,8 +29,7 @@ class BoolAssignmentChecker : public Checker<check::Bind> {
                   bool IsTainted = false) const;
 
 public:
-  void checkBind(SVal Loc, SVal Val, const Stmt *S, bool AtDeclInit,
-                 CheckerContext &C) const;
+  void checkBind(SVal Loc, SVal Val, const Stmt *S, CheckerContext &C) const;
 };
 } // end anonymous namespace
 
@@ -56,7 +55,6 @@ static bool isBooleanType(QualType Ty) {
 }
 
 void BoolAssignmentChecker::checkBind(SVal Loc, SVal Val, const Stmt *S,
-                                      bool AtDeclInit,
                                       CheckerContext &C) const {
 
   // We are only interested in stores into Booleans.

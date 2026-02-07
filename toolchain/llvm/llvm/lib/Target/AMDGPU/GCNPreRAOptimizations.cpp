@@ -22,19 +22,11 @@
 /// although the same shall be possible with other register classes and
 /// instructions if necessary.
 ///
-/// This pass also adds register allocation hints to COPY.
-/// The hints will be post-processed by SIRegisterInfo::getRegAllocationHints.
-/// When using True16, we often see COPY moving a 16-bit value between a VGPR_32
-/// and a VGPR_16. If we use the VGPR_16 that corresponds to the lo16 bits of
-/// the VGPR_32, the COPY can be completely eliminated.
-///
 //===----------------------------------------------------------------------===//
 
-#include "GCNPreRAOptimizations.h"
 #include "AMDGPU.h"
 #include "GCNSubtarget.h"
 #include "MCTargetDesc/AMDGPUMCTargetDesc.h"
-#include "SIRegisterInfo.h"
 #include "llvm/CodeGen/LiveIntervals.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/InitializePasses.h"
@@ -45,7 +37,7 @@ using namespace llvm;
 
 namespace {
 
-class GCNPreRAOptimizationsImpl {
+class GCNPreRAOptimizations : public MachineFunctionPass {
 private:
   const SIInstrInfo *TII;
   const SIRegisterInfo *TRI;
@@ -55,16 +47,10 @@ private:
   bool processReg(Register Reg);
 
 public:
-  GCNPreRAOptimizationsImpl(LiveIntervals *LS) : LIS(LS) {}
-  bool run(MachineFunction &MF);
-};
-
-class GCNPreRAOptimizationsLegacy : public MachineFunctionPass {
-public:
   static char ID;
 
-  GCNPreRAOptimizationsLegacy() : MachineFunctionPass(ID) {
-    initializeGCNPreRAOptimizationsLegacyPass(*PassRegistry::getPassRegistry());
+  GCNPreRAOptimizations() : MachineFunctionPass(ID) {
+    initializeGCNPreRAOptimizationsPass(*PassRegistry::getPassRegistry());
   }
 
   bool runOnMachineFunction(MachineFunction &MF) override;
@@ -79,23 +65,24 @@ public:
     MachineFunctionPass::getAnalysisUsage(AU);
   }
 };
+
 } // End anonymous namespace.
 
-INITIALIZE_PASS_BEGIN(GCNPreRAOptimizationsLegacy, DEBUG_TYPE,
+INITIALIZE_PASS_BEGIN(GCNPreRAOptimizations, DEBUG_TYPE,
                       "AMDGPU Pre-RA optimizations", false, false)
 INITIALIZE_PASS_DEPENDENCY(LiveIntervalsWrapperPass)
-INITIALIZE_PASS_END(GCNPreRAOptimizationsLegacy, DEBUG_TYPE,
-                    "Pre-RA optimizations", false, false)
+INITIALIZE_PASS_END(GCNPreRAOptimizations, DEBUG_TYPE, "Pre-RA optimizations",
+                    false, false)
 
-char GCNPreRAOptimizationsLegacy::ID = 0;
+char GCNPreRAOptimizations::ID = 0;
 
-char &llvm::GCNPreRAOptimizationsID = GCNPreRAOptimizationsLegacy::ID;
+char &llvm::GCNPreRAOptimizationsID = GCNPreRAOptimizations::ID;
 
-FunctionPass *llvm::createGCNPreRAOptimizationsLegacyPass() {
-  return new GCNPreRAOptimizationsLegacy();
+FunctionPass *llvm::createGCNPreRAOptimizationsPass() {
+  return new GCNPreRAOptimizations();
 }
 
-bool GCNPreRAOptimizationsImpl::processReg(Register Reg) {
+bool GCNPreRAOptimizations::processReg(Register Reg) {
   MachineInstr *Def0 = nullptr;
   MachineInstr *Def1 = nullptr;
   uint64_t Init = 0;
@@ -136,7 +123,7 @@ bool GCNPreRAOptimizationsImpl::processReg(Register Reg) {
           continue;
 
         if (Def.getOpcode() == AMDGPU::V_ACCVGPR_WRITE_B32_e64) {
-          const MachineOperand &DefSrcMO = Def.getOperand(1);
+          MachineOperand DefSrcMO = Def.getOperand(1);
 
           // Immediates are not an issue and can be propagated in
           // postrapseudos pass. Only handle cases where defining
@@ -225,25 +212,14 @@ bool GCNPreRAOptimizationsImpl::processReg(Register Reg) {
   return true;
 }
 
-bool GCNPreRAOptimizationsLegacy::runOnMachineFunction(MachineFunction &MF) {
+bool GCNPreRAOptimizations::runOnMachineFunction(MachineFunction &MF) {
   if (skipFunction(MF.getFunction()))
     return false;
-  LiveIntervals *LIS = &getAnalysis<LiveIntervalsWrapperPass>().getLIS();
-  return GCNPreRAOptimizationsImpl(LIS).run(MF);
-}
 
-PreservedAnalyses
-GCNPreRAOptimizationsPass::run(MachineFunction &MF,
-                               MachineFunctionAnalysisManager &MFAM) {
-  LiveIntervals *LIS = &MFAM.getResult<LiveIntervalsAnalysis>(MF);
-  GCNPreRAOptimizationsImpl(LIS).run(MF);
-  return PreservedAnalyses::all();
-}
-
-bool GCNPreRAOptimizationsImpl::run(MachineFunction &MF) {
   const GCNSubtarget &ST = MF.getSubtarget<GCNSubtarget>();
   TII = ST.getInstrInfo();
   MRI = &MF.getRegInfo();
+  LIS = &getAnalysis<LiveIntervalsWrapperPass>().getLIS();
   TRI = ST.getRegisterInfo();
 
   bool Changed = false;
@@ -258,39 +234,6 @@ bool GCNPreRAOptimizationsImpl::run(MachineFunction &MF) {
       continue;
 
     Changed |= processReg(Reg);
-  }
-
-  if (!ST.useRealTrue16Insts())
-    return Changed;
-
-  // Add RA hints to improve True16 COPY elimination.
-  for (const MachineBasicBlock &MBB : MF) {
-    for (const MachineInstr &MI : MBB) {
-      if (MI.getOpcode() != AMDGPU::COPY)
-        continue;
-      Register Dst = MI.getOperand(0).getReg();
-      Register Src = MI.getOperand(1).getReg();
-      if (Dst.isVirtual() &&
-          MRI->getRegClass(Dst) == &AMDGPU::VGPR_16RegClass &&
-          Src.isPhysical() &&
-          TRI->getRegClassForReg(*MRI, Src) == &AMDGPU::VGPR_32RegClass)
-        MRI->setRegAllocationHint(Dst, 0, TRI->getSubReg(Src, AMDGPU::lo16));
-      if (Src.isVirtual() &&
-          MRI->getRegClass(Src) == &AMDGPU::VGPR_16RegClass &&
-          Dst.isPhysical() &&
-          TRI->getRegClassForReg(*MRI, Dst) == &AMDGPU::VGPR_32RegClass)
-        MRI->setRegAllocationHint(Src, 0, TRI->getSubReg(Dst, AMDGPU::lo16));
-      if (!Dst.isVirtual() || !Src.isVirtual())
-        continue;
-      if (MRI->getRegClass(Dst) == &AMDGPU::VGPR_32RegClass &&
-          MRI->getRegClass(Src) == &AMDGPU::VGPR_16RegClass) {
-        MRI->setRegAllocationHint(Dst, AMDGPURI::Size32, Src);
-        MRI->setRegAllocationHint(Src, AMDGPURI::Size16, Dst);
-      }
-      if (MRI->getRegClass(Dst) == &AMDGPU::VGPR_16RegClass &&
-          MRI->getRegClass(Src) == &AMDGPU::VGPR_32RegClass)
-        MRI->setRegAllocationHint(Dst, AMDGPURI::Size16, Src);
-    }
   }
 
   return Changed;

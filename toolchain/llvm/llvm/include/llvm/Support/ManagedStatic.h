@@ -13,7 +13,6 @@
 #ifndef LLVM_SUPPORT_MANAGEDSTATIC_H
 #define LLVM_SUPPORT_MANAGEDSTATIC_H
 
-#include "llvm/Support/Compiler.h"
 #include <atomic>
 #include <cstddef>
 
@@ -61,8 +60,7 @@ protected:
   mutable const ManagedStaticBase *Next;
 #endif
 
-  LLVM_ABI void RegisterManagedStatic(void *(*creator)(),
-                                      void (*deleter)(void *)) const;
+  void RegisterManagedStatic(void *(*creator)(), void (*deleter)(void*)) const;
 
 public:
 #ifdef LLVM_USE_CONSTEXPR_CTOR
@@ -72,7 +70,7 @@ public:
   /// isConstructed - Return true if this object has not been created yet.
   bool isConstructed() const { return Ptr != nullptr; }
 
-  LLVM_ABI void destroy() const;
+  void destroy() const;
 };
 
 /// ManagedStatic - This transparently changes the behavior of global statics to
@@ -113,7 +111,7 @@ public:
 };
 
 /// llvm_shutdown - Deallocate and destroy all ManagedStatic variables.
-LLVM_ABI void llvm_shutdown();
+void llvm_shutdown();
 
 /// llvm_shutdown_obj - This is a simple helper class that calls
 /// llvm_shutdown() when it is destroyed.

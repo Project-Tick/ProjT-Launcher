@@ -14,9 +14,7 @@
 #define LLVM_LIB_TARGET_AMDGPU_GCNSCHEDSTRATEGY_H
 
 #include "GCNRegPressure.h"
-#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/MapVector.h"
-#include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineScheduler.h"
 
 namespace llvm {
@@ -44,31 +42,16 @@ raw_ostream &operator<<(raw_ostream &OS, const GCNSchedStageID &StageID);
 /// heuristics to determine excess/critical pressure sets.
 class GCNSchedStrategy : public GenericScheduler {
 protected:
-  SUnit *pickNodeBidirectional(bool &IsTopNode, bool &PickedPending);
+  SUnit *pickNodeBidirectional(bool &IsTopNode);
 
   void pickNodeFromQueue(SchedBoundary &Zone, const CandPolicy &ZonePolicy,
                          const RegPressureTracker &RPTracker,
-                         SchedCandidate &Cand, bool &IsPending,
-                         bool IsBottomUp);
+                         SchedCandidate &Cand, bool IsBottomUp);
 
   void initCandidate(SchedCandidate &Cand, SUnit *SU, bool AtTop,
                      const RegPressureTracker &RPTracker,
                      const SIRegisterInfo *SRI, unsigned SGPRPressure,
                      unsigned VGPRPressure, bool IsBottomUp);
-
-  /// Evaluates instructions in the pending queue using a subset of scheduling
-  /// heuristics.
-  ///
-  /// Instructions that cannot be issued due to hardware constraints are placed
-  /// in the pending queue rather than the available queue, making them normally
-  /// invisible to scheduling heuristics. However, in certain scenarios (such as
-  /// avoiding register spilling), it may be beneficial to consider scheduling
-  /// these not-yet-ready instructions.
-  bool tryPendingCandidate(SchedCandidate &Cand, SchedCandidate &TryCand,
-                           SchedBoundary *Zone) const;
-
-  void printCandidateDecision(const SchedCandidate &Current,
-                              const SchedCandidate &Preferred);
 
   std::vector<unsigned> Pressure;
 
@@ -183,7 +166,7 @@ class ScheduleMetrics {
   unsigned BubbleCycles;
 
 public:
-  ScheduleMetrics() = default;
+  ScheduleMetrics() {}
   ScheduleMetrics(unsigned L, unsigned BC)
       : ScheduleLength(L), BubbleCycles(BC) {}
   unsigned getLength() const { return ScheduleLength; }
@@ -217,7 +200,7 @@ class RegionPressureMap {
   bool IsLiveOut;
 
 public:
-  RegionPressureMap() = default;
+  RegionPressureMap() {}
   RegionPressureMap(GCNScheduleDAGMILive *GCNDAG, bool LiveOut)
       : DAG(GCNDAG), IsLiveOut(LiveOut) {}
   // Build the Instr->LiveReg and RegionIdx->Instr maps
@@ -225,16 +208,11 @@ public:
 
   // Retrieve the LiveReg for a given RegionIdx
   GCNRPTracker::LiveRegSet &getLiveRegsForRegionIdx(unsigned RegionIdx) {
-    assert(IdxToInstruction.contains(RegionIdx));
+    assert(IdxToInstruction.find(RegionIdx) != IdxToInstruction.end());
     MachineInstr *Key = IdxToInstruction[RegionIdx];
     return RegionLiveRegMap[Key];
   }
 };
-
-/// A region's boundaries i.e. a pair of instruction bundle iterators. The lower
-/// boundary is inclusive, the upper boundary is exclusive.
-using RegionBoundaries =
-    std::pair<MachineBasicBlock::iterator, MachineBasicBlock::iterator>;
 
 class GCNScheduleDAGMILive final : public ScheduleDAGMILive {
   friend class GCNSchedStage;
@@ -256,7 +234,12 @@ class GCNScheduleDAGMILive final : public ScheduleDAGMILive {
   unsigned MinOccupancy;
 
   // Vector of regions recorder for later rescheduling
-  SmallVector<RegionBoundaries, 32> Regions;
+  SmallVector<std::pair<MachineBasicBlock::iterator,
+                        MachineBasicBlock::iterator>, 32> Regions;
+
+  // Records if a region is not yet scheduled, or schedule has been reverted,
+  // or we generally desire to reschedule it.
+  BitVector RescheduleRegions;
 
   // Record regions with high register pressure.
   BitVector RegionsWithHighRP;
@@ -264,6 +247,9 @@ class GCNScheduleDAGMILive final : public ScheduleDAGMILive {
   // Record regions with excess register pressure over the physical register
   // limit. Register pressure in these regions usually will result in spilling.
   BitVector RegionsWithExcessRP;
+
+  // Regions that has the same occupancy as the latest MinOccupancy
+  BitVector RegionsWithMinOcc;
 
   // Regions that have IGLP instructions (SCHED_GROUP_BARRIER or IGLP_OPT).
   BitVector RegionsWithIGLPInstrs;
@@ -300,13 +286,12 @@ class GCNScheduleDAGMILive final : public ScheduleDAGMILive {
   // Compute and cache live-ins and pressure for all regions in block.
   void computeBlockPressure(unsigned RegionIdx, const MachineBasicBlock *MBB);
 
-  /// If necessary, updates a region's boundaries following insertion ( \p NewMI
-  /// != nullptr) or removal ( \p NewMI == nullptr) of a \p MI in the region.
-  /// For an MI removal, this must be called before the MI is actually erased
-  /// from its parent MBB.
-  void updateRegionBoundaries(RegionBoundaries &RegionBounds,
-                              MachineBasicBlock::iterator MI,
-                              MachineInstr *NewMI);
+  // Update region boundaries when removing MI or inserting NewMI before MI.
+  void updateRegionBoundaries(
+      SmallVectorImpl<std::pair<MachineBasicBlock::iterator,
+                                MachineBasicBlock::iterator>> &RegionBoundaries,
+      MachineBasicBlock::iterator MI, MachineInstr *NewMI,
+      bool Removing = false);
 
   void runSchedStages();
 
@@ -417,10 +402,6 @@ class UnclusteredHighRPStage : public GCNSchedStage {
 private:
   // Save the initial occupancy before starting this stage.
   unsigned InitialOccupancy;
-  // Save the temporary target occupancy before starting this stage.
-  unsigned TempTargetOccupancy;
-  // Track whether any region was scheduled by this stage.
-  bool IsAnyRegionScheduled;
 
 public:
   bool initGCNSchedStage() override;
@@ -450,70 +431,30 @@ public:
       : GCNSchedStage(StageID, DAG) {}
 };
 
-/// Attempts to reduce function spilling or, if there is no spilling, to
-/// increase function occupancy by one with respect to ArchVGPR usage by sinking
-/// rematerializable instructions to their use. When the stage
-/// estimates reducing spilling or increasing occupancy is possible, as few
-/// instructions as possible are rematerialized to reduce potential negative
-/// effects on function latency.
 class PreRARematStage : public GCNSchedStage {
 private:
-  /// Useful information about a rematerializable instruction.
-  struct RematInstruction {
-    /// Single use of the rematerializable instruction's defined register,
-    /// located in a different block.
-    MachineInstr *UseMI;
-    /// Rematerialized version of \p DefMI, set in
-    /// PreRARematStage::rematerialize. Used for reverting rematerializations.
-    MachineInstr *RematMI;
-    /// Set of regions in which the rematerializable instruction's defined
-    /// register is a live-in.
-    SmallDenseSet<unsigned, 4> LiveInRegions;
+  // Each region at MinOccupancy will have their own list of trivially
+  // rematerializable instructions we can remat to reduce RP. The list maps an
+  // instruction to the position we should remat before, usually the MI using
+  // the rematerializable instruction.
+  MapVector<unsigned, MapVector<MachineInstr *, MachineInstr *>>
+      RematerializableInsts;
 
-    RematInstruction(MachineInstr *UseMI) : UseMI(UseMI) {}
-  };
+  // Map a trivially rematerializable def to a list of regions at MinOccupancy
+  // that has the defined reg as a live-in.
+  DenseMap<MachineInstr *, SmallVector<unsigned, 4>> RematDefToLiveInRegions;
 
-  /// Maps all MIs to their parent region. MI terminators are considered to be
-  /// outside the region they delimitate, and as such are not stored in the map.
-  DenseMap<MachineInstr *, unsigned> MIRegion;
-  /// Parent MBB to each region, in region order.
-  SmallVector<MachineBasicBlock *> RegionBB;
-  /// Collects instructions to rematerialize.
-  MapVector<MachineInstr *, RematInstruction> Rematerializations;
-  /// Collects regions whose live-ins or register pressure will change due to
-  /// rematerializations.
-  DenseMap<unsigned, GCNRegPressure> ImpactedRegions;
-  /// In case we need to rollback rematerializations, save lane masks for all
-  /// rematerialized registers in all regions in which they are live-ins.
-  DenseMap<std::pair<unsigned, Register>, LaneBitmask> RegMasks;
-  /// After successful stage initialization, indicates which regions should be
-  /// rescheduled.
-  BitVector RescheduleRegions;
-  /// The target occupancy the stage is trying to achieve. Empty when the
-  /// objective is spilling reduction.
-  std::optional<unsigned> TargetOcc;
-  /// Achieved occupancy *only* through rematerializations (pre-rescheduling).
-  /// Smaller than or equal to the target occupancy.
-  unsigned AchievedOcc;
+  // Collect all trivially rematerializable VGPR instructions with a single def
+  // and single use outside the defining block into RematerializableInsts.
+  void collectRematerializableInstructions();
 
-  /// Returns whether remat can reduce spilling or increase function occupancy
-  /// by 1 through rematerialization. If it can do one, collects instructions in
-  /// PreRARematStage::Rematerializations and sets the target occupancy in
-  /// PreRARematStage::TargetOccupancy.
-  bool canIncreaseOccupancyOrReduceSpill();
+  bool isTriviallyReMaterializable(const MachineInstr &MI);
 
-  /// Whether the MI is rematerializable
-  bool isReMaterializable(const MachineInstr &MI);
-
-  /// Rematerializes all instructions in PreRARematStage::Rematerializations
-  /// and stores the achieved occupancy after remat in
-  /// PreRARematStage::AchievedOcc.
-  void rematerialize();
-
-  /// If remat alone did not increase occupancy to the target one, rollbacks all
-  /// rematerializations and resets live-ins/RP in all regions impacted by the
-  /// stage to their pre-stage values.
-  void finalizeGCNSchedStage() override;
+  // TODO: Should also attempt to reduce RP of SGPRs and AGPRs
+  // Attempt to reduce RP of VGPR by sinking trivially rematerializable
+  // instructions. Returns true if we were able to sink instruction(s).
+  bool sinkTriviallyRematInsts(const GCNSubtarget &ST,
+                               const TargetInstrInfo *TII);
 
 public:
   bool initGCNSchedStage() override;
@@ -523,7 +464,7 @@ public:
   bool shouldRevertScheduling(unsigned WavesAfter) override;
 
   PreRARematStage(GCNSchedStageID StageID, GCNScheduleDAGMILive &DAG)
-      : GCNSchedStage(StageID, DAG), RescheduleRegions(DAG.Regions.size()) {}
+      : GCNSchedStage(StageID, DAG) {}
 };
 
 class ILPInitialScheduleStage : public GCNSchedStage {

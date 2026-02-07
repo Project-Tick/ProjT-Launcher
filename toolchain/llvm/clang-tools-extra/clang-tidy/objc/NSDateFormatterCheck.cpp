@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- NSDateFormatterCheck.cpp - clang-tidy ----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "NSDateFormatterCheck.h"
+#include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 
@@ -34,7 +35,7 @@ static char ValidDatePatternChars[] = {
 // A string pattern is valid if all the letters(a-z, A-Z) in it belong to the
 // set of reserved characters. See:
 // https://www.unicode.org/reports/tr35/tr35.html#Invalid_Patterns
-static bool isValidDatePattern(StringRef Pattern) {
+bool isValidDatePattern(StringRef Pattern) {
   return llvm::all_of(Pattern, [](const auto &PatternChar) {
     return !isalpha(PatternChar) ||
            llvm::is_contained(ValidDatePatternChars, PatternChar);
@@ -43,16 +44,16 @@ static bool isValidDatePattern(StringRef Pattern) {
 
 // Checks if the string pattern used as a date format specifier contains
 // any incorrect pattern and reports it as a warning.
-// See:
-// https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+// See: http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
 void NSDateFormatterCheck::check(const MatchFinder::MatchResult &Result) {
   // Callback implementation.
   const auto *StrExpr = Result.Nodes.getNodeAs<ObjCStringLiteral>("str_lit");
   const StringLiteral *SL = cast<ObjCStringLiteral>(StrExpr)->getString();
-  const StringRef SR = SL->getString();
+  StringRef SR = SL->getString();
 
-  if (!isValidDatePattern(SR))
+  if (!isValidDatePattern(SR)) {
     diag(StrExpr->getExprLoc(), "invalid date format specifier");
+  }
 
   if (SR.contains('y') && SR.contains('w') && !SR.contains('Y')) {
     diag(StrExpr->getExprLoc(),

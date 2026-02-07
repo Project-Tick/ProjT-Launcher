@@ -17,7 +17,9 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/DialectResourceBlobManager.h"
+#include "mlir/IR/IRMapping.h"
 #include "mlir/IR/OpImplementation.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/TypeRange.h"
 
 using namespace mlir;
@@ -46,6 +48,14 @@ struct BuiltinOpAsmDialectInterface : public OpAsmDialectInterface {
       : OpAsmDialectInterface(dialect), blobManager(mgr) {}
 
   AliasResult getAlias(Attribute attr, raw_ostream &os) const override {
+    if (llvm::isa<AffineMapAttr>(attr)) {
+      os << "map";
+      return AliasResult::OverridableAlias;
+    }
+    if (llvm::isa<IntegerSetAttr>(attr)) {
+      os << "set";
+      return AliasResult::OverridableAlias;
+    }
     if (llvm::isa<LocationAttr>(attr)) {
       os << "loc";
       return AliasResult::OverridableAlias;
@@ -132,7 +142,7 @@ void ModuleOp::build(OpBuilder &builder, OperationState &state,
 /// Construct a module from the given context.
 ModuleOp ModuleOp::create(Location loc, std::optional<StringRef> name) {
   OpBuilder builder(loc->getContext());
-  return ModuleOp::create(builder, loc, name);
+  return builder.create<ModuleOp>(loc, name);
 }
 
 DataLayoutSpecInterface ModuleOp::getDataLayoutSpec() {

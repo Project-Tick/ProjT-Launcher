@@ -16,18 +16,15 @@
 
 #include "llvm/ADT/ilist.h"
 #include "llvm/Support/Allocator.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
 #include <cassert>
-#include <type_traits>
 
 namespace llvm {
 
 /// PrintRecyclingAllocatorStats - Helper for RecyclingAllocator for
 /// printing statistics.
 ///
-LLVM_ABI void PrintRecyclerStats(size_t Size, size_t Align,
-                                 size_t FreeListSize);
+void PrintRecyclerStats(size_t Size, size_t Align, size_t FreeListSize);
 
 /// Recycler - This class manages a linked-list of deallocated nodes
 /// and facilitates reusing deallocated memory in place of allocating
@@ -73,18 +70,18 @@ public:
   /// deleted; calling clear is one way to ensure this.
   template<class AllocatorType>
   void clear(AllocatorType &Allocator) {
-    if constexpr (std::is_same_v<std::decay_t<AllocatorType>,
-                                 BumpPtrAllocator>) {
-      // For BumpPtrAllocator, Deallocate is a no-op, so just drop the free
-      // list.
-      FreeList = nullptr;
-    } else {
-      while (FreeList) {
-        T *t = reinterpret_cast<T *>(pop_val());
-        Allocator.Deallocate(t, Size, Align);
-      }
+    while (FreeList) {
+      T *t = reinterpret_cast<T *>(pop_val());
+      Allocator.Deallocate(t, Size, Align);
     }
   }
+
+  /// Special case for BumpPtrAllocator which has an empty Deallocate()
+  /// function.
+  ///
+  /// There is no need to traverse the free list, pulling all the objects into
+  /// cache.
+  void clear(BumpPtrAllocator &) { FreeList = nullptr; }
 
   template<class SubClass, class AllocatorType>
   SubClass *Allocate(AllocatorType &Allocator) {

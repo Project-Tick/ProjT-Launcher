@@ -10,7 +10,6 @@
 #define FILESYSTEM_ERROR_H
 
 #include <__assert>
-#include <__chrono/time_point.h>
 #include <__config>
 #include <cerrno>
 #include <cstdarg>
@@ -97,11 +96,11 @@ struct ErrorHandler {
     string what = string("in ") + func_name_;
     switch (bool(p1_) + bool(p2_)) {
     case 0:
-      filesystem::__throw_filesystem_error(what, ec);
+      __throw_filesystem_error(what, ec);
     case 1:
-      filesystem::__throw_filesystem_error(what, *p1_, ec);
+      __throw_filesystem_error(what, *p1_, ec);
     case 2:
-      filesystem::__throw_filesystem_error(what, *p1_, *p2_, ec);
+      __throw_filesystem_error(what, *p1_, *p2_, ec);
     }
     __libcpp_unreachable();
   }
@@ -115,11 +114,11 @@ struct ErrorHandler {
     string what = string("in ") + func_name_ + ": " + detail::vformat_string(msg, ap);
     switch (bool(p1_) + bool(p2_)) {
     case 0:
-      filesystem::__throw_filesystem_error(what, ec);
+      __throw_filesystem_error(what, ec);
     case 1:
-      filesystem::__throw_filesystem_error(what, *p1_, ec);
+      __throw_filesystem_error(what, *p1_, ec);
     case 2:
-      filesystem::__throw_filesystem_error(what, *p1_, *p2_, ec);
+      __throw_filesystem_error(what, *p1_, *p2_, ec);
     }
     __libcpp_unreachable();
   }
@@ -128,8 +127,17 @@ struct ErrorHandler {
   T report(const error_code& ec, const char* msg, ...) const {
     va_list ap;
     va_start(ap, msg);
-    __scope_guard guard([&] { va_end(ap); });
-    report_impl(ec, msg, ap);
+#if _LIBCPP_HAS_EXCEPTIONS
+    try {
+#endif // _LIBCPP_HAS_EXCEPTIONS
+      report_impl(ec, msg, ap);
+#if _LIBCPP_HAS_EXCEPTIONS
+    } catch (...) {
+      va_end(ap);
+      throw;
+    }
+#endif // _LIBCPP_HAS_EXCEPTIONS
+    va_end(ap);
     return error_value<T>();
   }
 
@@ -139,8 +147,17 @@ struct ErrorHandler {
   T report(errc const& err, const char* msg, ...) const {
     va_list ap;
     va_start(ap, msg);
-    __scope_guard guard([&] { va_end(ap); });
-    report_impl(make_error_code(err), msg, ap);
+#if _LIBCPP_HAS_EXCEPTIONS
+    try {
+#endif // _LIBCPP_HAS_EXCEPTIONS
+      report_impl(make_error_code(err), msg, ap);
+#if _LIBCPP_HAS_EXCEPTIONS
+    } catch (...) {
+      va_end(ap);
+      throw;
+    }
+#endif // _LIBCPP_HAS_EXCEPTIONS
+    va_end(ap);
     return error_value<T>();
   }
 

@@ -162,7 +162,7 @@ public:
   bool try_lock() { return impl.try_lock(); }
 };
 
-using RWMutex = SmartRWMutex<false>;
+typedef SmartRWMutex<false> RWMutex;
 
 /// ScopedReader - RAII acquisition of a reader lock
 #if !defined(LLVM_USE_RW_MUTEX_IMPL)
@@ -179,7 +179,7 @@ template <bool mt_only> struct SmartScopedReader {
   ~SmartScopedReader() { mutex.unlock_shared(); }
 };
 #endif
-using ScopedReader = SmartScopedReader<false>;
+typedef SmartScopedReader<false> ScopedReader;
 
 /// ScopedWriter - RAII acquisition of a writer lock
 #if !defined(LLVM_USE_RW_MUTEX_IMPL)
@@ -196,7 +196,7 @@ template <bool mt_only> struct SmartScopedWriter {
   ~SmartScopedWriter() { mutex.unlock(); }
 };
 #endif
-using ScopedWriter = SmartScopedWriter<false>;
+typedef SmartScopedWriter<false> ScopedWriter;
 
 } // end namespace sys
 } // end namespace llvm

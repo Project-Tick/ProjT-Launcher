@@ -1,4 +1,3 @@
-//===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -20,7 +19,9 @@
 #include "llvm/Transforms/Coroutines/CoroInstr.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 
-namespace llvm::coro {
+namespace llvm {
+
+namespace coro {
 
 enum class CloneKind {
   /// The shared resume function for a switch lowering.
@@ -47,6 +48,9 @@ protected:
   CloneKind FKind;
   IRBuilder<> Builder;
   TargetTransformInfo &TTI;
+  // Common module-level metadata that's shared between all coroutine clones and
+  // doesn't need to be cloned itself.
+  const MetadataSetTy &CommonDebugInfo;
 
   ValueToValueMapTy VMap;
   Function *NewF = nullptr;
@@ -59,12 +63,12 @@ protected:
   /// Create a cloner for a continuation lowering.
   BaseCloner(Function &OrigF, const Twine &Suffix, coro::Shape &Shape,
              Function *NewF, AnyCoroSuspendInst *ActiveSuspend,
-             TargetTransformInfo &TTI)
+             TargetTransformInfo &TTI, const MetadataSetTy &CommonDebugInfo)
       : OrigF(OrigF), Suffix(Suffix), Shape(Shape),
         FKind(Shape.ABI == ABI::Async ? CloneKind::Async
                                       : CloneKind::Continuation),
-        Builder(OrigF.getContext()), TTI(TTI), NewF(NewF),
-        ActiveSuspend(ActiveSuspend) {
+        Builder(OrigF.getContext()), TTI(TTI), CommonDebugInfo(CommonDebugInfo),
+        NewF(NewF), ActiveSuspend(ActiveSuspend) {
     assert(Shape.ABI == ABI::Retcon || Shape.ABI == ABI::RetconOnce ||
            Shape.ABI == ABI::Async);
     assert(NewF && "need existing function for continuation");
@@ -73,22 +77,26 @@ protected:
 
 public:
   BaseCloner(Function &OrigF, const Twine &Suffix, coro::Shape &Shape,
-             CloneKind FKind, TargetTransformInfo &TTI)
+             CloneKind FKind, TargetTransformInfo &TTI,
+             const MetadataSetTy &CommonDebugInfo)
       : OrigF(OrigF), Suffix(Suffix), Shape(Shape), FKind(FKind),
-        Builder(OrigF.getContext()), TTI(TTI) {}
+        Builder(OrigF.getContext()), TTI(TTI),
+        CommonDebugInfo(CommonDebugInfo) {}
 
-  virtual ~BaseCloner() = default;
+  virtual ~BaseCloner() {}
 
   /// Create a clone for a continuation lowering.
   static Function *createClone(Function &OrigF, const Twine &Suffix,
                                coro::Shape &Shape, Function *NewF,
                                AnyCoroSuspendInst *ActiveSuspend,
-                               TargetTransformInfo &TTI) {
+                               TargetTransformInfo &TTI,
+                               const MetadataSetTy &CommonDebugInfo) {
     assert(Shape.ABI == ABI::Retcon || Shape.ABI == ABI::RetconOnce ||
            Shape.ABI == ABI::Async);
     TimeTraceScope FunctionScope("BaseCloner");
 
-    BaseCloner Cloner(OrigF, Suffix, Shape, NewF, ActiveSuspend, TTI);
+    BaseCloner Cloner(OrigF, Suffix, Shape, NewF, ActiveSuspend, TTI,
+                      CommonDebugInfo);
     Cloner.create();
     return Cloner.getFunction();
   }
@@ -119,7 +127,6 @@ protected:
   void replaceRetconOrAsyncSuspendUses();
   void replaceCoroSuspends();
   void replaceCoroEnds();
-  void replaceCoroIsInRamp();
   void replaceSwiftErrorOps();
   void salvageDebugInfo();
   void handleFinalSuspend();
@@ -129,8 +136,9 @@ class SwitchCloner : public BaseCloner {
 protected:
   /// Create a cloner for a switch lowering.
   SwitchCloner(Function &OrigF, const Twine &Suffix, coro::Shape &Shape,
-               CloneKind FKind, TargetTransformInfo &TTI)
-      : BaseCloner(OrigF, Suffix, Shape, FKind, TTI) {}
+               CloneKind FKind, TargetTransformInfo &TTI,
+               const MetadataSetTy &CommonDebugInfo)
+      : BaseCloner(OrigF, Suffix, Shape, FKind, TTI, CommonDebugInfo) {}
 
   void create() override;
 
@@ -138,16 +146,19 @@ public:
   /// Create a clone for a switch lowering.
   static Function *createClone(Function &OrigF, const Twine &Suffix,
                                coro::Shape &Shape, CloneKind FKind,
-                               TargetTransformInfo &TTI) {
+                               TargetTransformInfo &TTI,
+                               const MetadataSetTy &CommonDebugInfo) {
     assert(Shape.ABI == ABI::Switch);
     TimeTraceScope FunctionScope("SwitchCloner");
 
-    SwitchCloner Cloner(OrigF, Suffix, Shape, FKind, TTI);
+    SwitchCloner Cloner(OrigF, Suffix, Shape, FKind, TTI, CommonDebugInfo);
     Cloner.create();
     return Cloner.getFunction();
   }
 };
 
-} // end namespace llvm::coro
+} // end namespace coro
+
+} // end namespace llvm
 
 #endif // LLVM_LIB_TRANSFORMS_COROUTINES_COROCLONER_H

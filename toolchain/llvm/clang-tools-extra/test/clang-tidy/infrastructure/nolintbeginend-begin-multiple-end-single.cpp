@@ -1,10 +1,10 @@
-// RUN: not clang-tidy %s --checks='-*,google-explicit-constructor,modernize-avoid-c-style-cast' 2>&1 | FileCheck %s
+// RUN: not clang-tidy %s --checks='-*,google-explicit-constructor,google-readability-casting' 2>&1 | FileCheck %s
 
-// NOLINTBEGIN(google-explicit-constructor,modernize-avoid-c-style-cast)
+// NOLINTBEGIN(google-explicit-constructor,google-readability-casting)
 class B { B(int i); };
 // NOLINTEND(google-explicit-constructor)
 auto Num2 = (unsigned int)(-1);
-// NOLINTEND(modernize-avoid-c-style-cast)
+// NOLINTEND(google-readability-casting)
 
 // Note: the expected output has been split over several lines so that clang-tidy
 //       does not see the "no lint" suppression comment and mistakenly assume it

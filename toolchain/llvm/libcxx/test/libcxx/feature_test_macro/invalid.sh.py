@@ -23,7 +23,7 @@ def test_error(data, type, message):
     tmp = sys.argv[2]
     with open(tmp, "w") as file:
         file.write(json.dumps(data))
-    ftm = FeatureTestMacros(tmp, ["charconv"])
+    ftm = FeatureTestMacros(tmp)
     try:
         ftm.implemented_ftms
     except type as error:

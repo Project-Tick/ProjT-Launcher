@@ -66,7 +66,6 @@ protected:
   friend class SBTarget;
   friend class SBSymbolContextList;
 
-  friend class lldb_private::ScriptInterpreter;
   friend class lldb_private::python::SWIGBridge;
 
   SBSymbolContext(const lldb_private::SymbolContext &sc_ptr);
@@ -80,8 +79,6 @@ protected:
   const lldb_private::SymbolContext &operator*() const;
 
   lldb_private::SymbolContext *get() const;
-
-  friend class lldb_private::ScriptInterpreter;
 
 private:
   std::unique_ptr<lldb_private::SymbolContext> m_opaque_up;

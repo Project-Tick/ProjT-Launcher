@@ -11,11 +11,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "CheckExprLifetime.h"
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
-#include "clang/Analysis/Analyses/LifetimeSafety/LifetimeAnnotations.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Lookup.h"
@@ -157,8 +157,8 @@ void Sema::inferGslPointerAttribute(TypedefNameDecl *TD) {
     if (auto *TST =
             dyn_cast<TemplateSpecializationType>(Canonical.getTypePtr())) {
 
-      if (const auto *TD = TST->getTemplateName().getAsTemplateDecl())
-        RD = dyn_cast_or_null<CXXRecordDecl>(TD->getTemplatedDecl());
+      RD = dyn_cast_or_null<CXXRecordDecl>(
+          TST->getTemplateName().getAsTemplateDecl()->getTemplatedDecl());
     }
   }
 
@@ -289,8 +289,8 @@ void Sema::inferLifetimeCaptureByAttribute(FunctionDecl *FD) {
       // We only apply the lifetime_capture_by attribute to parameters of
       // pointer-like reference types (`const T&`, `T&&`).
       if (PVD->getType()->isReferenceType() &&
-          lifetimes::isGslPointerType(PVD->getType().getNonReferenceType())) {
-        int CaptureByThis[] = {LifetimeCaptureByAttr::This};
+          sema::isGLSPointerType(PVD->getType().getNonReferenceType())) {
+        int CaptureByThis[] = {LifetimeCaptureByAttr::THIS};
         PVD->addAttr(
             LifetimeCaptureByAttr::CreateImplicit(Context, CaptureByThis, 1));
       }
@@ -339,23 +339,23 @@ void Sema::ActOnPragmaOptionsAlign(PragmaOptionsAlignKind Kind,
   switch (Kind) {
     // For most of the platforms we support, native and natural are the same.
     // With XL, native is the same as power, natural means something else.
-  case PragmaOptionsAlignKind::Native:
-  case PragmaOptionsAlignKind::Power:
+  case POAK_Native:
+  case POAK_Power:
     Action = Sema::PSK_Push_Set;
     break;
-  case PragmaOptionsAlignKind::Natural:
+  case POAK_Natural:
     Action = Sema::PSK_Push_Set;
     ModeVal = AlignPackInfo::Natural;
     break;
 
     // Note that '#pragma options align=packed' is not equivalent to attribute
     // packed, it has a different precedence relative to attribute aligned.
-  case PragmaOptionsAlignKind::Packed:
+  case POAK_Packed:
     Action = Sema::PSK_Push_Set;
     ModeVal = AlignPackInfo::Packed;
     break;
 
-  case PragmaOptionsAlignKind::Mac68k:
+  case POAK_Mac68k:
     // Check if the target supports this.
     if (!this->Context.getTargetInfo().hasAlignMac68kSupport()) {
       Diag(PragmaLoc, diag::err_pragma_options_align_mac68k_target_unsupported);
@@ -364,7 +364,7 @@ void Sema::ActOnPragmaOptionsAlign(PragmaOptionsAlignKind Kind,
     Action = Sema::PSK_Push_Set;
     ModeVal = AlignPackInfo::Mac68k;
     break;
-  case PragmaOptionsAlignKind::Reset:
+  case POAK_Reset:
     // Reset just pops the top of the stack, or resets the current alignment to
     // default.
     Action = Sema::PSK_Pop;
@@ -393,21 +393,21 @@ void Sema::ActOnPragmaClangSection(SourceLocation PragmaLoc,
   PragmaClangSection *CSec;
   int SectionFlags = ASTContext::PSF_Read;
   switch (SecKind) {
-    case PragmaClangSectionKind::BSS:
+    case PragmaClangSectionKind::PCSK_BSS:
       CSec = &PragmaClangBSSSection;
       SectionFlags |= ASTContext::PSF_Write | ASTContext::PSF_ZeroInit;
       break;
-    case PragmaClangSectionKind::Data:
+    case PragmaClangSectionKind::PCSK_Data:
       CSec = &PragmaClangDataSection;
       SectionFlags |= ASTContext::PSF_Write;
       break;
-    case PragmaClangSectionKind::Rodata:
+    case PragmaClangSectionKind::PCSK_Rodata:
       CSec = &PragmaClangRodataSection;
       break;
-    case PragmaClangSectionKind::Relro:
+    case PragmaClangSectionKind::PCSK_Relro:
       CSec = &PragmaClangRelroSection;
       break;
-    case PragmaClangSectionKind::Text:
+    case PragmaClangSectionKind::PCSK_Text:
       CSec = &PragmaClangTextSection;
       SectionFlags |= ASTContext::PSF_Execute;
       break;
@@ -415,7 +415,7 @@ void Sema::ActOnPragmaClangSection(SourceLocation PragmaLoc,
       llvm_unreachable("invalid clang section kind");
   }
 
-  if (Action == PragmaClangSectionAction::Clear) {
+  if (Action == PragmaClangSectionAction::PCSA_Clear) {
     CSec->Valid = false;
     return;
   }
@@ -436,7 +436,7 @@ void Sema::ActOnPragmaClangSection(SourceLocation PragmaLoc,
 }
 
 void Sema::ActOnPragmaPack(SourceLocation PragmaLoc, PragmaMsStackAction Action,
-                           StringRef SlotLabel, Expr *Alignment) {
+                           StringRef SlotLabel, Expr *alignment) {
   bool IsXLPragma = getLangOpts().XLPragmaPack;
   // XL pragma pack does not support identifier syntax.
   if (IsXLPragma && !SlotLabel.empty()) {
@@ -445,6 +445,7 @@ void Sema::ActOnPragmaPack(SourceLocation PragmaLoc, PragmaMsStackAction Action,
   }
 
   const AlignPackInfo CurVal = AlignPackStack.CurrentValue;
+  Expr *Alignment = static_cast<Expr *>(alignment);
 
   // If specified then alignment must be a "small" power of two.
   unsigned AlignmentVal = 0;
@@ -541,6 +542,7 @@ bool Sema::ConstantFoldAttrArgs(const AttributeCommonInfo &CI,
         Diag(Note.first, Note.second);
       return false;
     }
+    assert(Eval.Val.hasValue());
     E = ConstantExpr::Create(Context, E, Eval.Val);
   }
 
@@ -1193,11 +1195,6 @@ void Sema::ActOnPragmaAttributePop(SourceLocation PragmaLoc,
 void Sema::AddPragmaAttributes(Scope *S, Decl *D) {
   if (PragmaAttributeStack.empty())
     return;
-
-  if (const auto *P = dyn_cast<ParmVarDecl>(D))
-    if (P->getType()->isVoidType())
-      return;
-
   for (auto &Group : PragmaAttributeStack) {
     for (auto &Entry : Group.Entries) {
       ParsedAttr *Attribute = Entry.Attribute;
@@ -1225,11 +1222,10 @@ void Sema::AddPragmaAttributes(Scope *S, Decl *D) {
   }
 }
 
-void Sema::PrintPragmaAttributeInstantiationPoint(
-    InstantiationContextDiagFuncRef DiagFunc) {
+void Sema::PrintPragmaAttributeInstantiationPoint() {
   assert(PragmaAttributeCurrentTargetDecl && "Expected an active declaration");
-  DiagFunc(PragmaAttributeCurrentTargetDecl->getBeginLoc(),
-           PDiag(diag::note_pragma_attribute_applied_decl_here));
+  Diags.Report(PragmaAttributeCurrentTargetDecl->getBeginLoc(),
+               diag::note_pragma_attribute_applied_decl_here);
 }
 
 void Sema::DiagnosePrecisionLossInComplexDivision() {
@@ -1271,7 +1267,7 @@ void Sema::ActOnPragmaMSFunction(
     return;
   }
 
-  MSFunctionNoBuiltins.insert_range(NoBuiltins);
+  MSFunctionNoBuiltins.insert(NoBuiltins.begin(), NoBuiltins.end());
 }
 
 void Sema::AddRangeBasedOptnone(FunctionDecl *FD) {

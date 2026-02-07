@@ -121,13 +121,13 @@ MyLongPointerFromConversion global2;
 
 void initLocalGslPtrWithTempOwner() {
   MyIntPointer p = MyIntOwner{}; // expected-warning {{object backing the pointer will be destroyed at the end of the full-expression}}
-  MyIntPointer pp = p = MyIntOwner{}; // expected-warning {{object backing the pointer 'p' will be}}
-  p = MyIntOwner{}; // expected-warning {{object backing the pointer 'p' }}
+  MyIntPointer pp = p = MyIntOwner{}; // expected-warning {{object backing the pointer p will be}}
+  p = MyIntOwner{}; // expected-warning {{object backing the pointer p }}
   pp = p; // no warning
-  global = MyIntOwner{}; // expected-warning {{object backing the pointer 'global' }}
+  global = MyIntOwner{}; // expected-warning {{object backing the pointer global }}
   MyLongPointerFromConversion p2 = MyLongOwnerWithConversion{}; // expected-warning {{object backing the pointer will be destroyed at the end of the full-expression}}
-  p2 = MyLongOwnerWithConversion{}; // expected-warning {{object backing the pointer 'p2' }}
-  global2 = MyLongOwnerWithConversion{}; // expected-warning {{object backing the pointer 'global2' }}
+  p2 = MyLongOwnerWithConversion{}; // expected-warning {{object backing the pointer p2 }}
+  global2 = MyLongOwnerWithConversion{}; // expected-warning {{object backing the pointer global2 }}
 }
 
 
@@ -707,7 +707,7 @@ std::string_view test1() {
   std::string_view t1 = Ref(std::string()); // expected-warning {{object backing}}
   t1 = Ref(std::string()); // expected-warning {{object backing}}
   return Ref(std::string()); // expected-warning {{returning address}}
-
+  
   std::string_view t2 = TakeSv(std::string()); // expected-warning {{object backing}}
   t2 = TakeSv(std::string()); // expected-warning {{object backing}}
   return TakeSv(std::string()); // expected-warning {{returning address}}
@@ -731,15 +731,15 @@ std::string_view test2(Foo<std::string> r1, Foo<std::string_view> r2) {
   std::string_view t1 = Foo<std::string>().get(); // expected-warning {{object backing}}
   t1 = Foo<std::string>().get(); // expected-warning {{object backing}}
   return r1.get(); // expected-warning {{address of stack}}
-
+  
   std::string_view t2 = Foo<std::string_view>().get();
   t2 = Foo<std::string_view>().get();
   return r2.get();
 
   // no warning on no-LB-annotated method.
-  std::string_view t3 = Foo<std::string>().getNoLB();
-  t3 = Foo<std::string>().getNoLB();
-  return r1.getNoLB();
+  std::string_view t3 = Foo<std::string>().getNoLB(); 
+  t3 = Foo<std::string>().getNoLB(); 
+  return r1.getNoLB(); 
 }
 
 struct Bar {};
@@ -771,7 +771,7 @@ void test4() {
   // Ideally, we would diagnose the following case, but due to implementation
   // constraints, we do not.
   const int& t4 = *MySpan<int>(std::vector<int>{}).begin();
-
+  
   auto it1 = MySpan<int>(v).begin(); // expected-warning {{temporary whose address is use}}
   auto it2 = ReturnFirstIt(MySpan<int>(v)); // expected-warning {{temporary whose address is used}}
 }
@@ -821,7 +821,7 @@ std::string_view foo(std::string_view sv [[clang::lifetimebound]]);
 void test1() {
   std::string_view k1 = S().sv; // OK
   std::string_view k2 = S().s; // expected-warning {{object backing the pointer will}}
-
+  
   std::string_view k3 = Q().get()->sv; // OK
   std::string_view k4  = Q().get()->s; // expected-warning {{object backing the pointer will}}
 
@@ -863,7 +863,7 @@ struct StatusOr {
 const char* foo() {
   StatusOr<std::string> s;
   return s->data(); // expected-warning {{address of stack memory associated with local variable}}
-
+  
   StatusOr<std::string_view> s2;
   return s2->data();
 
@@ -876,141 +876,3 @@ const char* foo() {
 }
 
 } // namespace GH127195
-
-// Lifetimebound on definition vs declaration on implicit this param.
-namespace GH175391 {
-// Version A: Attribute on declaration only
-class StringA {
-public:
-    const char* data() const [[clang::lifetimebound]];  // Declaration with attribute
-private:
-    char buffer[32] = "hello";
-};
-inline const char* StringA::data() const {  // Definition WITHOUT attribute
-    return buffer;
-}
-
-// Version B: Attribute on definition only
-class StringB {
-public:
-    const char* data() const;  // No attribute
-private:
-    char buffer[32] = "hello";
-};
-inline const char* StringB::data() const [[clang::lifetimebound]] {
-    return buffer;
-}
-
-// Version C: Attribute on BOTH declaration and definition
-class StringC {
-public:
-    const char* data() const [[clang::lifetimebound]];
-private:
-    char buffer[32] = "hello";
-};
-inline const char* StringC::data() const [[clang::lifetimebound]] {
-    return buffer;
-}
-
-// TEMPLATED VERSIONS
-
-// Template Version A: Attribute on declaration only
-template<typename T>
-class StringTemplateA {
-public:
-    const T* data() const [[clang::lifetimebound]];  // Declaration with attribute
-private:
-    T buffer[32];
-};
-template<typename T>
-inline const T* StringTemplateA<T>::data() const {  // Definition WITHOUT attribute
-    return buffer;
-}
-
-// Template Version B: Attribute on definition only
-template<typename T>
-class StringTemplateB {
-public:
-    const T* data() const;  // No attribute
-private:
-    T buffer[32];
-};
-template<typename T>
-inline const T* StringTemplateB<T>::data() const [[clang::lifetimebound]] {
-    return buffer;
-}
-
-// Template Version C: Attribute on BOTH declaration and definition
-template<typename T>
-class StringTemplateC {
-public:
-    const T* data() const [[clang::lifetimebound]];
-private:
-    T buffer[32];
-};
-template<typename T>
-inline const T* StringTemplateC<T>::data() const [[clang::lifetimebound]] {
-    return buffer;
-}
-
-// TEMPLATE SPECIALIZATION VERSIONS
-
-// Template predeclarations for specializations
-template<typename T> class StringTemplateSpecA;
-template<typename T> class StringTemplateSpecB;
-template<typename T> class StringTemplateSpecC;
-
-// Template Specialization Version A: Attribute on declaration only - <char> specialization
-template<>
-class StringTemplateSpecA<char> {
-public:
-    const char* data() const [[clang::lifetimebound]];  // Declaration with attribute
-private:
-    char buffer[32] = "hello";
-};
-inline const char* StringTemplateSpecA<char>::data() const {  // Definition WITHOUT attribute
-    return buffer;
-}
-
-// Template Specialization Version B: Attribute on definition only - <char> specialization
-template<>
-class StringTemplateSpecB<char> {
-public:
-    const char* data() const;  // No attribute
-private:
-    char buffer[32] = "hello";
-};
-inline const char* StringTemplateSpecB<char>::data() const [[clang::lifetimebound]] {
-    return buffer;
-}
-
-// Template Specialization Version C: Attribute on BOTH declaration and definition - <char> specialization
-template<>
-class StringTemplateSpecC<char> {
-public:
-    const char* data() const [[clang::lifetimebound]];
-private:
-    char buffer[32] = "hello";
-};
-inline const char* StringTemplateSpecC<char>::data() const [[clang::lifetimebound]] {
-    return buffer;
-}
-
-void test() {
-    // Non-templated tests
-    const auto ptrA = StringA().data();  // Declaration-only attribute  // expected-warning {{temporary whose address is used}}
-    const auto ptrB = StringB().data();  // Definition-only attribute   // expected-warning {{temporary whose address is used}}
-    const auto ptrC = StringC().data();  // Both have attribute         // expected-warning {{temporary whose address is used}}
-
-    // Templated tests (generic templates)
-    const auto ptrTA = StringTemplateA<char>().data();  // Declaration-only attribute // expected-warning {{temporary whose address is used}}
-    // FIXME: Definition is not instantiated until the end of TU. The attribute is not merged when this call is processed.
-    const auto ptrTB = StringTemplateB<char>().data();  // Definition-only attribute
-    const auto ptrTC = StringTemplateC<char>().data();  // Both have attribute        // expected-warning {{temporary whose address is used}}
-
-    // Template specialization tests
-    const auto ptrTSA = StringTemplateSpecA<char>().data();  // Declaration-only attribute  // expected-warning {{temporary whose address is used}}
-    const auto ptrTSB = StringTemplateSpecB<char>().data();  // Definition-only attribute   // expected-warning {{temporary whose address is used}}
-    const auto ptrTSC = StringTemplateSpecC<char>().data();  // Both have attribute         // expected-warning {{temporary whose address is used}}
-}
-} // namespace GH175391

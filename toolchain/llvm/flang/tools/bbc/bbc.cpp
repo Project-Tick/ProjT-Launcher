@@ -14,6 +14,11 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "flang/Common/Fortran-features.h"
+#include "flang/Common/LangOptions.h"
+#include "flang/Common/OpenMP-features.h"
+#include "flang/Common/Version.h"
+#include "flang/Common/default-kinds.h"
 #include "flang/Frontend/CodeGenOptions.h"
 #include "flang/Frontend/TargetOptions.h"
 #include "flang/Lower/Bridge.h"
@@ -37,11 +42,6 @@
 #include "flang/Semantics/runtime-type-info.h"
 #include "flang/Semantics/semantics.h"
 #include "flang/Semantics/unparse-with-symbols.h"
-#include "flang/Support/Fortran-features.h"
-#include "flang/Support/LangOptions.h"
-#include "flang/Support/OpenMP-features.h"
-#include "flang/Support/Version.h"
-#include "flang/Support/default-kinds.h"
 #include "flang/Tools/CrossToolHelpers.h"
 #include "flang/Tools/TargetSetup.h"
 #include "flang/Version.inc"
@@ -142,12 +142,6 @@ static llvm::cl::opt<bool>
                        llvm::cl::desc("enable openmp device compilation"),
                        llvm::cl::init(false));
 
-static llvm::cl::opt<std::string> enableDoConcurrentToOpenMPConversion(
-    "fdo-concurrent-to-openmp",
-    llvm::cl::desc(
-        "Try to map `do concurrent` loops to OpenMP [none|host|device]"),
-    llvm::cl::init("none"));
-
 static llvm::cl::opt<bool>
     enableOpenMPGPU("fopenmp-is-gpu",
                     llvm::cl::desc("enable openmp GPU target codegen"),
@@ -169,7 +163,7 @@ static llvm::cl::list<std::string> targetTriplesOpenMP(
 static llvm::cl::opt<uint32_t>
     setOpenMPVersion("fopenmp-version",
                      llvm::cl::desc("OpenMP standard version"),
-                     llvm::cl::init(31));
+                     llvm::cl::init(11));
 
 static llvm::cl::opt<uint32_t> setOpenMPTargetDebug(
     "fopenmp-target-debug",
@@ -223,16 +217,6 @@ static llvm::cl::opt<bool> enableCUDA("fcuda",
                                       llvm::cl::desc("enable CUDA Fortran"),
                                       llvm::cl::init(false));
 
-static llvm::cl::opt<bool>
-    enableDoConcurrentOffload("fdoconcurrent-offload",
-                              llvm::cl::desc("enable do concurrent offload"),
-                              llvm::cl::init(false));
-
-static llvm::cl::opt<bool>
-    disableCUDAWarpFunction("fcuda-disable-warp-function",
-                            llvm::cl::desc("Disable CUDA Warp Function"),
-                            llvm::cl::init(false));
-
 static llvm::cl::opt<std::string>
     enableGPUMode("gpu", llvm::cl::desc("Enable GPU Mode managed|unified"),
                   llvm::cl::init(""));
@@ -260,32 +244,6 @@ static llvm::cl::opt<bool>
                   llvm::cl::desc("Follow Fortran 2003 rules for (re)allocating "
                                  "the LHS of the intrinsic assignment"),
                   llvm::cl::init(true));
-
-static llvm::cl::opt<bool> stackRepackArrays(
-    "fstack-repack-arrays",
-    llvm::cl::desc("Allocate temporary arrays for -frepack-arrays "
-                   "in stack memory"),
-    llvm::cl::init(false));
-
-static llvm::cl::opt<bool>
-    repackArrays("frepack-arrays",
-                 llvm::cl::desc("Pack non-contiguous assummed shape arrays "
-                                "into contiguous memory"),
-                 llvm::cl::init(false));
-
-static llvm::cl::opt<bool>
-    repackArraysWhole("frepack-arrays-continuity-whole",
-                      llvm::cl::desc("Repack arrays that are non-contiguous "
-                                     "in any dimension. If set to false, "
-                                     "only the arrays non-contiguous in the "
-                                     "leading dimension will be repacked"),
-                      llvm::cl::init(true));
-
-static llvm::cl::opt<std::string> complexRange(
-    "complex-range",
-    llvm::cl::desc("Controls the various implementations for complex "
-                   "multiplication and division [full|improved|basic]"),
-    llvm::cl::init(""));
 
 #define FLANG_EXCLUDE_CODEGEN
 #include "flang/Optimizer/Passes/CommandLineOpts.h"
@@ -316,14 +274,13 @@ createTargetMachine(llvm::StringRef targetTriple, std::string &error) {
   std::string triple{targetTriple};
   if (triple.empty())
     triple = llvm::sys::getDefaultTargetTriple();
-  llvm::Triple parsedTriple(triple);
 
   const llvm::Target *theTarget =
-      llvm::TargetRegistry::lookupTarget(parsedTriple, error);
+      llvm::TargetRegistry::lookupTarget(triple, error);
   if (!theTarget)
     return nullptr;
   return std::unique_ptr<llvm::TargetMachine>{
-      theTarget->createTargetMachine(parsedTriple, /*CPU=*/"",
+      theTarget->createTargetMachine(triple, /*CPU=*/"",
                                      /*Features=*/"", llvm::TargetOptions(),
                                      /*Reloc::Model=*/std::nullopt)};
 }
@@ -335,19 +292,7 @@ createTargetMachine(llvm::StringRef targetTriple, std::string &error) {
 static llvm::LogicalResult runOpenMPPasses(mlir::ModuleOp mlirModule) {
   mlir::PassManager pm(mlirModule->getName(),
                        mlir::OpPassManager::Nesting::Implicit);
-  using DoConcurrentMappingKind =
-      Fortran::frontend::CodeGenOptions::DoConcurrentMappingKind;
-
-  fir::OpenMPFIRPassPipelineOpts opts;
-  opts.isTargetDevice = enableOpenMPDevice;
-  opts.doConcurrentMappingKind =
-      llvm::StringSwitch<DoConcurrentMappingKind>(
-          enableDoConcurrentToOpenMPConversion)
-          .Case("host", DoConcurrentMappingKind::DCMK_Host)
-          .Case("device", DoConcurrentMappingKind::DCMK_Device)
-          .Default(DoConcurrentMappingKind::DCMK_None);
-
-  fir::createOpenMPFIRPassPipeline(pm, opts);
+  fir::createOpenMPFIRPassPipeline(pm, enableOpenMPDevice);
   (void)mlir::applyPassManagerCLOptions(pm);
   if (mlir::failed(pm.run(mlirModule))) {
     llvm::errs() << "FATAL: failed to correctly apply OpenMP pass pipeline";
@@ -418,10 +363,7 @@ static llvm::LogicalResult convertFortranSourceToMLIR(
   }
 
   if (pftDumpTest) {
-    // Use default lowering options for PFT dump test
-    Fortran::lower::LoweringOptions loweringOptions{};
-    if (auto ast = Fortran::lower::createPFT(parseTree, semanticsContext,
-                                             loweringOptions)) {
+    if (auto ast = Fortran::lower::createPFT(parseTree, semanticsContext)) {
       Fortran::lower::dumpPFT(llvm::outs(), *ast);
       return mlir::success();
     }
@@ -446,14 +388,6 @@ static llvm::LogicalResult convertFortranSourceToMLIR(
   loweringOptions.setIntegerWrapAround(integerWrapAround);
   loweringOptions.setInitGlobalZero(initGlobalZero);
   loweringOptions.setReallocateLHS(reallocateLHS);
-  loweringOptions.setStackRepackArrays(stackRepackArrays);
-  loweringOptions.setRepackArrays(repackArrays);
-  loweringOptions.setRepackArraysWhole(repackArraysWhole);
-  loweringOptions.setSkipExternalRttiDefinition(skipExternalRttiDefinition);
-  if (enableCUDA)
-    loweringOptions.setCUDARuntimeCheck(true);
-  if (complexRange == "improved" || complexRange == "basic")
-    loweringOptions.setComplexDivisionToRuntime(false);
   std::vector<Fortran::lower::EnvironmentDefault> envDefaults = {};
   Fortran::frontend::TargetOptions targetOpts;
   Fortran::frontend::CodeGenOptions cgOpts;
@@ -524,9 +458,7 @@ static llvm::LogicalResult convertFortranSourceToMLIR(
 
     if (emitFIR && useHLFIR) {
       // lower HLFIR to FIR
-      fir::EnableOpenMP enableOmp =
-          enableOpenMP ? fir::EnableOpenMP::Full : fir::EnableOpenMP::None;
-      fir::createHLFIRToFIRPassPipeline(pm, enableOmp,
+      fir::createHLFIRToFIRPassPipeline(pm, enableOpenMP,
                                         llvm::OptimizationLevel::O2);
       if (mlir::failed(pm.run(mlirModule))) {
         llvm::errs() << "FATAL: lowering from HLFIR to FIR failed";
@@ -542,7 +474,6 @@ static llvm::LogicalResult convertFortranSourceToMLIR(
 
     // Add O2 optimizer pass pipeline.
     MLIRToLLVMPassPipelineConfig config(llvm::OptimizationLevel::O2);
-    config.SkipConvertComplexPow = targetMachine.getTargetTriple().isAMDGCN();
     if (enableOpenMP)
       config.EnableOpenMP = true;
     config.NSWOnLoopVarInc = !integerWrapAround;
@@ -628,19 +559,9 @@ int main(int argc, char **argv) {
     options.features.Enable(Fortran::common::LanguageFeature::CUDA);
   }
 
-  if (enableDoConcurrentOffload) {
-    options.features.Enable(
-        Fortran::common::LanguageFeature::DoConcurrentOffload);
-  }
-
-  if (disableCUDAWarpFunction) {
-    options.features.Enable(
-        Fortran::common::LanguageFeature::CudaWarpMatchFunction, false);
-  }
-
-  if (enableGPUMode == "managed" || enableGPUMode == "mem:managed") {
+  if (enableGPUMode == "managed") {
     options.features.Enable(Fortran::common::LanguageFeature::CudaManaged);
-  } else if (enableGPUMode == "unified" || enableGPUMode == "mem:unified") {
+  } else if (enableGPUMode == "unified") {
     options.features.Enable(Fortran::common::LanguageFeature::CudaUnified);
   }
 

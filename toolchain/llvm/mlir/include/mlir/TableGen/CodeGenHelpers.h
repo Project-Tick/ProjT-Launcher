@@ -1,4 +1,3 @@
-//===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -21,8 +20,6 @@
 #include "llvm/ADT/MapVector.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/TableGen/CodeGenHelpers.h"
-#include <utility>
 
 namespace llvm {
 class RecordKeeper;
@@ -39,26 +36,46 @@ std::string strfmt(const char *fmt, Parameters &&...parameters) {
   return llvm::formatv(fmt, std::forward<Parameters>(parameters)...).str();
 }
 
-// A helper RAII class to emit nested namespaces for a dialect.
-class DialectNamespaceEmitter {
+// Simple RAII helper for defining ifdef-undef-endif scopes.
+class IfDefScope {
 public:
-  DialectNamespaceEmitter(raw_ostream &os, const Dialect &dialect) {
+  IfDefScope(llvm::StringRef name, llvm::raw_ostream &os)
+      : name(name.str()), os(os) {
+    os << "#ifdef " << name << "\n"
+       << "#undef " << name << "\n\n";
+  }
+  ~IfDefScope() { os << "\n#endif  // " << name << "\n\n"; }
+
+private:
+  std::string name;
+  llvm::raw_ostream &os;
+};
+
+// A helper RAII class to emit nested namespaces for this op.
+class NamespaceEmitter {
+public:
+  NamespaceEmitter(raw_ostream &os, const Dialect &dialect) : os(os) {
     if (!dialect)
       return;
-    nsEmitter.emplace(os, dialect.getCppNamespace());
+    emitNamespaceStarts(os, dialect.getCppNamespace());
+  }
+  NamespaceEmitter(raw_ostream &os, StringRef cppNamespace) : os(os) {
+    emitNamespaceStarts(os, cppNamespace);
+  }
+
+  ~NamespaceEmitter() {
+    for (StringRef ns : llvm::reverse(namespaces))
+      os << "} // namespace " << ns << "\n";
   }
 
 private:
-  std::optional<llvm::NamespaceEmitter> nsEmitter;
-};
-
-/// This class represents how an error stream string being constructed will be
-/// consumed.
-enum class ErrorStreamType {
-  // Inside a string that's streamed into an InflightDiagnostic.
-  InString,
-  // Inside a string inside an OpError.
-  InsideOpError,
+  void emitNamespaceStarts(raw_ostream &os, StringRef cppNamespace) {
+    llvm::SplitString(cppNamespace, namespaces, "::");
+    for (StringRef ns : namespaces)
+      os << "namespace " << ns << " {\n";
+  }
+  raw_ostream &os;
+  SmallVector<StringRef, 2> namespaces;
 };
 
 /// This class deduplicates shared operation verification code by emitting
@@ -97,7 +114,7 @@ public:
   ///
   /// Constraints that do not meet the restriction that they can only reference
   /// `$_self` and `$_op` are not uniqued.
-  void emitOpConstraints();
+  void emitOpConstraints(ArrayRef<const llvm::Record *> opDefs);
 
   /// Unique all compatible type and attribute constraints from a pattern file
   /// and emit them at the top of the generated file.
@@ -136,23 +153,6 @@ public:
   std::optional<StringRef>
   getAttrConstraintFn(const Constraint &constraint) const;
 
-  /// Get the name of the static function used for the given property
-  /// constraint. These functions are in the form:
-  ///
-  ///   LogicalResult(Operation *op, T property, StringRef propName);
-  ///
-  /// where T is the interface type specified in the constraint.
-  /// If a uniqued constraint was not found, this function returns std::nullopt.
-  /// The uniqued constraints cannot be used in the context of an OpAdaptor.
-  ///
-  /// Pattern constraints have the form:
-  ///
-  ///   LogicalResult(PatternRewriter &rewriter, Operation *op, T property,
-  ///                 StringRef failureStr);
-  ///
-  std::optional<StringRef>
-  getPropConstraintFn(const Constraint &constraint) const;
-
   /// Get the name of the static function used for the given successor
   /// constraint. These functions are in the form:
   ///
@@ -175,8 +175,6 @@ private:
   void emitTypeConstraints();
   /// Emit static attribute constraint functions.
   void emitAttrConstraints();
-  /// Emit static property constraint functions.
-  void emitPropConstraints();
   /// Emit static successor constraint functions.
   void emitSuccessorConstraints();
   /// Emit static region constraint functions.
@@ -201,8 +199,7 @@ private:
 
   /// A generic function to emit constraints
   void emitConstraints(const ConstraintMap &constraints, StringRef selfName,
-                       const char *codeTemplate,
-                       ErrorStreamType errorStreamType);
+                       const char *codeTemplate);
 
   /// Assign a unique name to a unique constraint.
   std::string getUniqueName(StringRef kind, unsigned index);
@@ -215,8 +212,6 @@ private:
   ConstraintMap typeConstraints;
   /// The set of attribute constraints used in the current file.
   ConstraintMap attrConstraints;
-  /// The set of property constraints used in the current file.
-  ConstraintMap propConstraints;
   /// The set of successor constraints used in the current file.
   ConstraintMap successorConstraints;
   /// The set of region constraints used in the current file.
@@ -252,18 +247,6 @@ std::string stringify(T &&t) {
   return detail::stringifier<std::remove_reference_t<std::remove_const_t<T>>>::
       apply(std::forward<T>(t));
 }
-
-/// Helper to generate a C++ streaming error message from a given message.
-/// Message can contain '{{...}}' placeholders that are substituted with
-/// C-expressions via tgfmt. It would effectively convert:
-///   "failed to verify {{foo}}"
-/// into:
-///   "failed to verify " << bar
-/// where bar is the result of evaluating 'tgfmt("foo", &ctx)' at compile
-/// time.
-std::string buildErrorStreamingString(
-    StringRef message, const FmtContext &ctx,
-    ErrorStreamType errorStreamType = ErrorStreamType::InString);
 
 } // namespace tblgen
 } // namespace mlir

@@ -15,7 +15,6 @@
 #define LLVM_DEBUGINFO_LOGICALVIEW_CORE_LVLOCATION_H
 
 #include "llvm/DebugInfo/LogicalView/Core/LVObject.h"
-#include "llvm/Support/Compiler.h"
 
 namespace llvm {
 namespace logicalview {
@@ -45,17 +44,17 @@ public:
   ~LVOperation() = default;
 
   LVSmall getOpcode() const { return Opcode; }
-  LLVM_ABI std::string getOperandsDWARFInfo();
-  LLVM_ABI std::string getOperandsCodeViewInfo();
+  std::string getOperandsDWARFInfo();
+  std::string getOperandsCodeViewInfo();
 
-  LLVM_ABI void print(raw_ostream &OS, bool Full = true) const;
+  void print(raw_ostream &OS, bool Full = true) const;
 
 #if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
-  void dump() const { print(dbgs()); }
+  void dump() { print(dbgs()); }
 #endif
 };
 
-class LLVM_ABI LVLocation : public LVObject {
+class LVLocation : public LVObject {
   enum class Property {
     IsAddressRange,
     IsBaseClassOffset,
@@ -100,7 +99,7 @@ public:
   LVLocation() : LVObject() { setIsLocation(); }
   LVLocation(const LVLocation &) = delete;
   LVLocation &operator=(const LVLocation &) = delete;
-  ~LVLocation() override = default;
+  virtual ~LVLocation() = default;
 
   PROPERTY(Property, IsAddressRange);
   PROPERTY(Property, IsBaseClassOffset);
@@ -159,9 +158,13 @@ public:
 
   void print(raw_ostream &OS, bool Full = true) const override;
   void printExtra(raw_ostream &OS, bool Full = true) const override;
+
+#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
+  void dump() const override { print(dbgs()); }
+#endif
 };
 
-class LLVM_ABI LVLocationSymbol final : public LVLocation {
+class LVLocationSymbol final : public LVLocation {
   // Location descriptors for the active range.
   std::unique_ptr<LVOperations> Entries;
 
@@ -171,7 +174,7 @@ public:
   LVLocationSymbol() : LVLocation() {}
   LVLocationSymbol(const LVLocationSymbol &) = delete;
   LVLocationSymbol &operator=(const LVLocationSymbol &) = delete;
-  ~LVLocationSymbol() override = default;
+  ~LVLocationSymbol() = default;
 
   void addObject(LVAddress LowPC, LVAddress HighPC, LVUnsigned SectionOffset,
                  uint64_t LocDescOffset) override;

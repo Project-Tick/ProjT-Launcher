@@ -7,15 +7,16 @@
 //===----------------------------------------------------------------------===//
 
 #include "Solaris.h"
+#include "CommonArgs.h"
 #include "Gnu.h"
 #include "clang/Basic/LangStandard.h"
 #include "clang/Config/config.h"
-#include "clang/Driver/CommonArgs.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
+#include "clang/Driver/DriverDiagnostic.h"
+#include "clang/Driver/Options.h"
 #include "clang/Driver/SanitizerArgs.h"
 #include "clang/Driver/ToolChain.h"
-#include "clang/Options/Options.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/Option/ArgList.h"
 #include "llvm/Support/FileSystem.h"
@@ -39,7 +40,7 @@ void solaris::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
 bool solaris::isLinkerGnuLd(const ToolChain &TC, const ArgList &Args) {
   // Only used if targetting Solaris.
   const Arg *A = Args.getLastArg(options::OPT_fuse_ld_EQ);
-  StringRef UseLinker = A ? A->getValue() : TC.getDriver().getPreferredLinker();
+  StringRef UseLinker = A ? A->getValue() : CLANG_DEFAULT_LINKER;
   return UseLinker == "bfd" || UseLinker == "gld";
 }
 
@@ -52,7 +53,7 @@ static bool getPIE(const ArgList &Args, const ToolChain &TC) {
                       TC.isPIEDefault(Args));
 }
 
-// FIXME: Need to handle PreferredLinker here?
+// FIXME: Need to handle CLANG_DEFAULT_LINKER here?
 std::string solaris::Linker::getLinkerPath(const ArgList &Args) const {
   const ToolChain &ToolChain = getToolChain();
   if (const Arg *A = Args.getLastArg(options::OPT_fuse_ld_EQ)) {
@@ -224,8 +225,8 @@ void solaris::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     // these dependencies need to be listed before the C runtime below.
     if (D.IsFlangMode() &&
         !Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
-      ToolChain.addFortranRuntimeLibraryPath(Args, CmdArgs);
-      ToolChain.addFortranRuntimeLibs(Args, CmdArgs);
+      addFortranRuntimeLibraryPath(getToolChain(), Args, CmdArgs);
+      addFortranRuntimeLibs(getToolChain(), Args, CmdArgs);
       CmdArgs.push_back("-lm");
     }
     if (Args.hasArg(options::OPT_fstack_protector) ||
@@ -242,10 +243,13 @@ void solaris::Linker::ConstructJob(Compilation &C, const JobAction &JA,
       CmdArgs.push_back("-latomic");
       addAsNeededOption(ToolChain, Args, CmdArgs, false);
     }
-
-    AddRunTimeLibs(ToolChain, D, CmdArgs, Args);
+    addAsNeededOption(ToolChain, Args, CmdArgs, true);
+    CmdArgs.push_back("-lgcc_s");
+    addAsNeededOption(ToolChain, Args, CmdArgs, false);
     CmdArgs.push_back("-lc");
-
+    if (!Args.hasArg(options::OPT_shared)) {
+      CmdArgs.push_back("-lgcc");
+    }
     const SanitizerArgs &SA = ToolChain.getSanitizerArgs(Args);
     if (NeedsSanitizerDeps) {
       linkSanitizerRuntimeDeps(ToolChain, Args, CmdArgs);
@@ -345,8 +349,8 @@ SanitizerMask Solaris::getSupportedSanitizers() const {
 
 const char *Solaris::getDefaultLinker() const {
   // FIXME: Only handle Solaris ld and GNU ld here.
-  return llvm::StringSwitch<const char *>(getDriver().getPreferredLinker())
-      .Cases({"bfd", "gld"}, "/usr/gnu/bin/ld")
+  return llvm::StringSwitch<const char *>(CLANG_DEFAULT_LINKER)
+      .Cases("bfd", "gld", "/usr/gnu/bin/ld")
       .Default("/usr/bin/ld");
 }
 
@@ -360,7 +364,7 @@ void Solaris::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                         ArgStringList &CC1Args) const {
   const Driver &D = getDriver();
 
-  if (DriverArgs.hasArg(options::OPT_nostdinc))
+  if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc))
     return;
 
   if (!DriverArgs.hasArg(options::OPT_nostdlibinc))

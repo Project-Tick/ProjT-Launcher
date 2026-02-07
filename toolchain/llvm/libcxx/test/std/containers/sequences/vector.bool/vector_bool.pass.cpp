@@ -14,6 +14,8 @@
 //     size_t operator()(T val) const;
 // };
 
+// Not very portable
+
 #include <vector>
 #include <cassert>
 #include <iterator>
@@ -22,38 +24,46 @@
 #include "test_macros.h"
 #include "min_allocator.h"
 
-template <class VB>
-TEST_CONSTEXPR_CXX20 void test() {
-  typedef std::hash<VB> H;
+TEST_CONSTEXPR_CXX20 bool tests()
+{
+    {
+    typedef std::vector<bool> T;
+    typedef std::hash<T> H;
 #if TEST_STD_VER <= 14
-  static_assert((std::is_same<typename H::argument_type, VB>::value), "");
-  static_assert((std::is_same<typename H::result_type, std::size_t>::value), "");
+    static_assert((std::is_same<H::argument_type, T>::value), "" );
+    static_assert((std::is_same<H::result_type, std::size_t>::value), "" );
 #endif
-  ASSERT_NOEXCEPT(H()(VB()));
+    ASSERT_NOEXCEPT(H()(T()));
 
-  bool ba[] = {true, false, true, true, false};
-  VB vb(std::begin(ba), std::end(ba));
-  H h;
-  if (!TEST_IS_CONSTANT_EVALUATED) {
-    const std::size_t hash_value = h(vb);
-    assert(h(vb) == hash_value);
-    LIBCPP_ASSERT(hash_value != 0);
-  }
-}
-
-TEST_CONSTEXPR_CXX20 bool tests() {
-  test<std::vector<bool> >();
+    bool ba[] = {true, false, true, true, false};
+    T vb(std::begin(ba), std::end(ba));
+    H h;
+    assert(h(vb) != 0);
+    }
 #if TEST_STD_VER >= 11
-  test<std::vector<bool, min_allocator<bool>>>();
+    {
+    typedef std::vector<bool, min_allocator<bool>> T;
+    typedef std::hash<T> H;
+#if TEST_STD_VER <= 14
+    static_assert((std::is_same<H::argument_type, T>::value), "" );
+    static_assert((std::is_same<H::result_type, std::size_t>::value), "" );
+#endif
+    ASSERT_NOEXCEPT(H()(T()));
+    bool ba[] = {true, false, true, true, false};
+    T vb(std::begin(ba), std::end(ba));
+    H h;
+    assert(h(vb) != 0);
+    }
 #endif
 
-  return true;
+    return true;
 }
 
-int main(int, char**) {
-  tests();
+int main(int, char**)
+{
+    tests();
 #if TEST_STD_VER > 17
-  static_assert(tests());
+    static_assert(tests());
 #endif
-  return 0;
+    return 0;
 }

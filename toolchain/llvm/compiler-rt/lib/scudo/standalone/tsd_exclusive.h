@@ -52,20 +52,17 @@ template <class Allocator> struct TSDRegistryExT {
     bool UnlockRequired;
   };
 
-  void init(Allocator *Instance) EXCLUDES(Mutex) {
-    ScopedLock L(Mutex);
-    // If more than one thread is initializing at the exact same moment, the
-    // threads that lose don't need to do anything.
-    if (UNLIKELY(atomic_load_relaxed(&Initialized) != 0))
-      return;
+  void init(Allocator *Instance) REQUIRES(Mutex) {
+    DCHECK(!Initialized);
     Instance->init();
     CHECK_EQ(pthread_key_create(&PThreadKey, teardownThread<Allocator>), 0);
     FallbackTSD.init(Instance);
-    atomic_store_relaxed(&Initialized, 1);
+    Initialized = true;
   }
 
-  void initOnceMaybe(Allocator *Instance) {
-    if (LIKELY(atomic_load_relaxed(&Initialized) != 0))
+  void initOnceMaybe(Allocator *Instance) EXCLUDES(Mutex) {
+    ScopedLock L(Mutex);
+    if (LIKELY(Initialized))
       return;
     init(Instance); // Sets Initialized.
   }
@@ -84,7 +81,7 @@ template <class Allocator> struct TSDRegistryExT {
     FallbackTSD = {};
     State = {};
     ScopedLock L(Mutex);
-    atomic_store_relaxed(&Initialized, 0);
+    Initialized = false;
   }
 
   void drainCaches(Allocator *Instance) {
@@ -161,7 +158,7 @@ private:
   }
 
   pthread_key_t PThreadKey = {};
-  atomic_u8 Initialized = {};
+  bool Initialized GUARDED_BY(Mutex) = false;
   atomic_u8 Disabled = {};
   TSD<Allocator> FallbackTSD;
   HybridMutex Mutex;

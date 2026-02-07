@@ -20,12 +20,26 @@
 #include "../../../test_compare.h"
 #include "min_allocator.h"
 
-int main(int, char**) {
-  {
+int main(int, char**)
+{
+    {
     typedef test_less<int> Cmp;
     typedef std::multimap<int, double, Cmp> C;
     typedef C::value_type V;
-    C m({{1, 1}, {1, 1.5}, {1, 2}, {2, 1}, {2, 1.5}, {2, 2}, {3, 1}, {3, 1.5}, {3, 2}}, Cmp(4));
+    C m(
+           {
+               {1, 1},
+               {1, 1.5},
+               {1, 2},
+               {2, 1},
+               {2, 1.5},
+               {2, 2},
+               {3, 1},
+               {3, 1.5},
+               {3, 2}
+           },
+           Cmp(4)
+        );
     assert(m.size() == 9);
     assert(std::distance(m.begin(), m.end()) == 9);
     C::const_iterator i = m.cbegin();
@@ -39,12 +53,25 @@ int main(int, char**) {
     assert(*++i == V(3, 1.5));
     assert(*++i == V(3, 2));
     assert(m.key_comp() == Cmp(4));
-  }
-  {
+    }
+    {
     typedef test_less<int> Cmp;
     typedef std::multimap<int, double, Cmp, min_allocator<std::pair<const int, double>>> C;
     typedef C::value_type V;
-    C m({{1, 1}, {1, 1.5}, {1, 2}, {2, 1}, {2, 1.5}, {2, 2}, {3, 1}, {3, 1.5}, {3, 2}}, Cmp(4));
+    C m(
+           {
+               {1, 1},
+               {1, 1.5},
+               {1, 2},
+               {2, 1},
+               {2, 1.5},
+               {2, 2},
+               {3, 1},
+               {3, 1.5},
+               {3, 2}
+           },
+           Cmp(4)
+        );
     assert(m.size() == 9);
     assert(std::distance(m.begin(), m.end()) == 9);
     C::const_iterator i = m.cbegin();
@@ -58,7 +85,7 @@ int main(int, char**) {
     assert(*++i == V(3, 1.5));
     assert(*++i == V(3, 2));
     assert(m.key_comp() == Cmp(4));
-  }
+    }
 
   return 0;
 }

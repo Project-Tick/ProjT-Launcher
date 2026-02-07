@@ -48,9 +48,9 @@ void UnqualifiedId::setConstructorTemplateId(TemplateIdAnnotation *TemplateId) {
   EndLocation = TemplateId->RAngleLoc;
 }
 
-void CXXScopeSpec::Make(ASTContext &Context, TypeLoc TL,
-                        SourceLocation ColonColonLoc) {
-  Builder.Make(Context, TL, ColonColonLoc);
+void CXXScopeSpec::Extend(ASTContext &Context, SourceLocation TemplateKWLoc,
+                          TypeLoc TL, SourceLocation ColonColonLoc) {
+  Builder.Extend(Context, TemplateKWLoc, TL, ColonColonLoc);
   if (Range.getBegin().isInvalid())
     Range.setBegin(TL.getBeginLoc());
   Range.setEnd(ColonColonLoc);
@@ -59,13 +59,39 @@ void CXXScopeSpec::Make(ASTContext &Context, TypeLoc TL,
          "NestedNameSpecifierLoc range computation incorrect");
 }
 
-void CXXScopeSpec::Extend(ASTContext &Context, NamespaceBaseDecl *Namespace,
+void CXXScopeSpec::Extend(ASTContext &Context, IdentifierInfo *Identifier,
+                          SourceLocation IdentifierLoc,
+                          SourceLocation ColonColonLoc) {
+  Builder.Extend(Context, Identifier, IdentifierLoc, ColonColonLoc);
+
+  if (Range.getBegin().isInvalid())
+    Range.setBegin(IdentifierLoc);
+  Range.setEnd(ColonColonLoc);
+
+  assert(Range == Builder.getSourceRange() &&
+         "NestedNameSpecifierLoc range computation incorrect");
+}
+
+void CXXScopeSpec::Extend(ASTContext &Context, NamespaceDecl *Namespace,
                           SourceLocation NamespaceLoc,
                           SourceLocation ColonColonLoc) {
   Builder.Extend(Context, Namespace, NamespaceLoc, ColonColonLoc);
 
   if (Range.getBegin().isInvalid())
     Range.setBegin(NamespaceLoc);
+  Range.setEnd(ColonColonLoc);
+
+  assert(Range == Builder.getSourceRange() &&
+         "NestedNameSpecifierLoc range computation incorrect");
+}
+
+void CXXScopeSpec::Extend(ASTContext &Context, NamespaceAliasDecl *Alias,
+                          SourceLocation AliasLoc,
+                          SourceLocation ColonColonLoc) {
+  Builder.Extend(Context, Alias, AliasLoc, ColonColonLoc);
+
+  if (Range.getBegin().isInvalid())
+    Range.setBegin(AliasLoc);
   Range.setEnd(ColonColonLoc);
 
   assert(Range == Builder.getSourceRange() &&
@@ -82,10 +108,10 @@ void CXXScopeSpec::MakeGlobal(ASTContext &Context,
          "NestedNameSpecifierLoc range computation incorrect");
 }
 
-void CXXScopeSpec::MakeMicrosoftSuper(ASTContext &Context, CXXRecordDecl *RD,
-                                      SourceLocation SuperLoc,
-                                      SourceLocation ColonColonLoc) {
-  Builder.MakeMicrosoftSuper(Context, RD, SuperLoc, ColonColonLoc);
+void CXXScopeSpec::MakeSuper(ASTContext &Context, CXXRecordDecl *RD,
+                             SourceLocation SuperLoc,
+                             SourceLocation ColonColonLoc) {
+  Builder.MakeSuper(Context, RD, SuperLoc, ColonColonLoc);
 
   Range.setBegin(SuperLoc);
   Range.setEnd(ColonColonLoc);
@@ -95,7 +121,7 @@ void CXXScopeSpec::MakeMicrosoftSuper(ASTContext &Context, CXXRecordDecl *RD,
 }
 
 void CXXScopeSpec::MakeTrivial(ASTContext &Context,
-                               NestedNameSpecifier Qualifier, SourceRange R) {
+                               NestedNameSpecifier *Qualifier, SourceRange R) {
   Builder.MakeTrivial(Context, Qualifier, R);
   Range = R;
 }
@@ -197,7 +223,7 @@ DeclaratorChunk DeclaratorChunk::getFunction(bool hasProto,
         [&](DeclSpec::TQ TypeQual, StringRef PrintName, SourceLocation SL) {
           I.Fun.MethodQualifiers->SetTypeQual(TypeQual, SL);
         });
-    I.Fun.MethodQualifiers->getAttributes().takeAllPrependingFrom(attrs);
+    I.Fun.MethodQualifiers->getAttributes().takeAllFrom(attrs);
     I.Fun.MethodQualifiers->getAttributePool().takeAllFrom(attrs.getPool());
   }
 
@@ -1369,8 +1395,7 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
 
   if (S.getLangOpts().C23 &&
       getConstexprSpecifier() == ConstexprSpecKind::Constexpr &&
-      getTypeSpecType() != TST_unspecified &&
-      (StorageClassSpec == SCS_extern || StorageClassSpec == SCS_auto)) {
+      StorageClassSpec == SCS_extern) {
     S.Diag(ConstexprLoc, diag::err_invalid_decl_spec_combination)
         << DeclSpec::getSpecifierName(getStorageClassSpec())
         << SourceRange(getStorageClassSpecLoc());

@@ -26,7 +26,6 @@ namespace bufferization {
 
 class AnalysisState;
 struct BufferizationOptions;
-class BufferizationState;
 class OpFilter;
 
 /// Bufferization statistics for debugging. These can be printed after running
@@ -46,13 +45,12 @@ struct BufferizationStatistics {
 /// additional buffer copies or set "options.copyBeforeWrite = true". The
 /// general bufferization entry point is `runOneShotBufferize`.
 LogicalResult bufferizeOp(Operation *op, const BufferizationOptions &options,
-                          BufferizationState &bufferizationState,
                           BufferizationStatistics *statistics = nullptr);
 
 /// Bufferize the signature of `block` and its callers (i.e., ops that have the
 /// given block as a successor). All block argument types are changed to memref
 /// types. All corresponding operands of all callers  are wrapped in
-/// bufferization.to_buffer ops. All uses of bufferized tensor block arguments
+/// bufferization.to_memref ops. All uses of bufferized tensor block arguments
 /// are wrapped in bufferization.to_tensor ops.
 ///
 /// It is expected that all callers implement the `BranchOpInterface`.
@@ -63,8 +61,7 @@ LogicalResult bufferizeOp(Operation *op, const BufferizationOptions &options,
 /// `BufferizableOpInterface`. The buffer types of tensor block arguments are
 /// computed with `BufferizableOpIntercace::getBufferType`.
 LogicalResult bufferizeBlockSignature(Block *block, RewriterBase &rewriter,
-                                      const BufferizationOptions &options,
-                                      BufferizationState &state);
+                                      const BufferizationOptions &options);
 
 } // namespace bufferization
 } // namespace mlir

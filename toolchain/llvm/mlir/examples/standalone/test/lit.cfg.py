@@ -61,8 +61,10 @@ tools = [
 
 llvm_config.add_tool_substitutions(tools, tool_dirs)
 
-python_path = [os.path.join(config.mlir_obj_dir, "python_packages", "standalone")]
-if "PYTHONPATH" in os.environ:
-    python_path += [os.environ["PYTHONPATH"]]
-
-llvm_config.with_environment("PYTHONPATH", python_path, append_path=True)
+llvm_config.with_environment(
+    "PYTHONPATH",
+    [
+        os.path.join(config.mlir_obj_dir, "python_packages", "standalone"),
+    ],
+    append_path=True,
+)

@@ -42,12 +42,9 @@ enum class ARCRuntimeEntryPointKind {
   Autorelease,
   StoreStrong,
   RetainRV,
-  ClaimRV,
   UnsafeClaimRV,
   RetainAutorelease,
   RetainAutoreleaseRV,
-  AutoreleasePoolPush,
-  AutoreleasePoolPop,
 };
 
 /// Declarations for ObjC runtime functions and constants. These are initialized
@@ -65,12 +62,9 @@ public:
     Autorelease = nullptr;
     StoreStrong = nullptr;
     RetainRV = nullptr;
-    ClaimRV = nullptr;
     UnsafeClaimRV = nullptr;
     RetainAutorelease = nullptr;
     RetainAutoreleaseRV = nullptr;
-    AutoreleasePoolPush = nullptr;
-    AutoreleasePoolPop = nullptr;
   }
 
   Function *get(ARCRuntimeEntryPointKind kind) {
@@ -93,9 +87,6 @@ public:
     case ARCRuntimeEntryPointKind::RetainRV:
       return getIntrinsicEntryPoint(RetainRV,
                                 Intrinsic::objc_retainAutoreleasedReturnValue);
-    case ARCRuntimeEntryPointKind::ClaimRV:
-      return getIntrinsicEntryPoint(
-          ClaimRV, Intrinsic::objc_claimAutoreleasedReturnValue);
     case ARCRuntimeEntryPointKind::UnsafeClaimRV:
       return getIntrinsicEntryPoint(
           UnsafeClaimRV, Intrinsic::objc_unsafeClaimAutoreleasedReturnValue);
@@ -105,12 +96,6 @@ public:
     case ARCRuntimeEntryPointKind::RetainAutoreleaseRV:
       return getIntrinsicEntryPoint(RetainAutoreleaseRV,
                                 Intrinsic::objc_retainAutoreleaseReturnValue);
-    case ARCRuntimeEntryPointKind::AutoreleasePoolPush:
-      return getIntrinsicEntryPoint(AutoreleasePoolPush,
-                                    Intrinsic::objc_autoreleasePoolPush);
-    case ARCRuntimeEntryPointKind::AutoreleasePoolPop:
-      return getIntrinsicEntryPoint(AutoreleasePoolPop,
-                                    Intrinsic::objc_autoreleasePoolPop);
     }
 
     llvm_unreachable("Switch should be a covered switch.");
@@ -141,9 +126,6 @@ private:
   /// Declaration for objc_retainAutoreleasedReturnValue().
   Function *RetainRV = nullptr;
 
-  /// Declaration for objc_claimAutoreleasedReturnValue().
-  Function *ClaimRV = nullptr;
-
   /// Declaration for objc_unsafeClaimAutoreleasedReturnValue().
   Function *UnsafeClaimRV = nullptr;
 
@@ -152,12 +134,6 @@ private:
 
   /// Declaration for objc_retainAutoreleaseReturnValue().
   Function *RetainAutoreleaseRV = nullptr;
-
-  /// Declaration for objc_autoreleasePoolPush().
-  Function *AutoreleasePoolPush = nullptr;
-
-  /// Declaration for objc_autoreleasePoolPop().
-  Function *AutoreleasePoolPop = nullptr;
 
   Function *getIntrinsicEntryPoint(Function *&Decl, Intrinsic::ID IntID) {
     if (Decl)

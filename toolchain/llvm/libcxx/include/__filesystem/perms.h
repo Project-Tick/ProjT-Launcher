@@ -51,19 +51,19 @@ enum class perms : unsigned {
   unknown    = 0xFFFF,
 };
 
-[[nodiscard]] _LIBCPP_HIDE_FROM_ABI inline constexpr perms operator&(perms __lhs, perms __rhs) {
+_LIBCPP_HIDE_FROM_ABI inline constexpr perms operator&(perms __lhs, perms __rhs) {
   return static_cast<perms>(static_cast<unsigned>(__lhs) & static_cast<unsigned>(__rhs));
 }
 
-[[nodiscard]] _LIBCPP_HIDE_FROM_ABI inline constexpr perms operator|(perms __lhs, perms __rhs) {
+_LIBCPP_HIDE_FROM_ABI inline constexpr perms operator|(perms __lhs, perms __rhs) {
   return static_cast<perms>(static_cast<unsigned>(__lhs) | static_cast<unsigned>(__rhs));
 }
 
-[[nodiscard]] _LIBCPP_HIDE_FROM_ABI inline constexpr perms operator^(perms __lhs, perms __rhs) {
+_LIBCPP_HIDE_FROM_ABI inline constexpr perms operator^(perms __lhs, perms __rhs) {
   return static_cast<perms>(static_cast<unsigned>(__lhs) ^ static_cast<unsigned>(__rhs));
 }
 
-[[nodiscard]] _LIBCPP_HIDE_FROM_ABI inline constexpr perms operator~(perms __lhs) {
+_LIBCPP_HIDE_FROM_ABI inline constexpr perms operator~(perms __lhs) {
   return static_cast<perms>(~static_cast<unsigned>(__lhs));
 }
 

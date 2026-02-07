@@ -23,6 +23,7 @@
 #include "mlir/Dialect/SPIRV/IR/TargetAndABI.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/Matchers.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/Operation.h"
@@ -34,10 +35,10 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/TypeSwitch.h"
-#include "llvm/Support/InterleavedRange.h"
 #include <cassert>
 #include <numeric>
 #include <optional>
+#include <type_traits>
 
 using namespace mlir;
 using namespace mlir::spirv::AttrNames;
@@ -52,7 +53,7 @@ LogicalResult spirv::extractValueFromConstOp(Operation *op, int32_t &value) {
     return failure();
   }
   auto valueAttr = constOp.getValue();
-  auto integerValueAttr = dyn_cast<IntegerAttr>(valueAttr);
+  auto integerValueAttr = llvm::dyn_cast<IntegerAttr>(valueAttr);
   if (!integerValueAttr) {
     return failure();
   }
@@ -129,7 +130,7 @@ static ParseResult parseOneResultSameOperandTypeOp(OpAsmParser &parser,
         parser.parseOptionalAttrDict(result.attributes) ||
         parser.parseColon() || parser.parseType(type))
       return failure();
-    auto fnType = dyn_cast<FunctionType>(type);
+    auto fnType = llvm::dyn_cast<FunctionType>(type);
     if (!fnType) {
       parser.emitError(loc, "expected function type");
       return failure();
@@ -165,14 +166,43 @@ static void printOneResultOp(Operation *op, OpAsmPrinter &p) {
   p << " : " << resultType;
 }
 
+template <typename Op>
+static LogicalResult verifyImageOperands(Op imageOp,
+                                         spirv::ImageOperandsAttr attr,
+                                         Operation::operand_range operands) {
+  if (!attr) {
+    if (operands.empty())
+      return success();
+
+    return imageOp.emitError("the Image Operands should encode what operands "
+                             "follow, as per Image Operands");
+  }
+
+  // TODO: Add the validation rules for the following Image Operands.
+  spirv::ImageOperands noSupportOperands =
+      spirv::ImageOperands::Bias | spirv::ImageOperands::Lod |
+      spirv::ImageOperands::Grad | spirv::ImageOperands::ConstOffset |
+      spirv::ImageOperands::Offset | spirv::ImageOperands::ConstOffsets |
+      spirv::ImageOperands::Sample | spirv::ImageOperands::MinLod |
+      spirv::ImageOperands::MakeTexelAvailable |
+      spirv::ImageOperands::MakeTexelVisible |
+      spirv::ImageOperands::SignExtend | spirv::ImageOperands::ZeroExtend;
+
+  if (spirv::bitEnumContainsAll(attr.getValue(), noSupportOperands))
+    llvm_unreachable("unimplemented operands of Image Operands");
+
+  return success();
+}
+
 template <typename BlockReadWriteOpTy>
 static LogicalResult verifyBlockReadWritePtrAndValTypes(BlockReadWriteOpTy op,
                                                         Value ptr, Value val) {
   auto valType = val.getType();
-  if (auto valVecTy = dyn_cast<VectorType>(valType))
+  if (auto valVecTy = llvm::dyn_cast<VectorType>(valType))
     valType = valVecTy.getElementType();
 
-  if (valType != cast<spirv::PointerType>(ptr.getType()).getPointeeType()) {
+  if (valType !=
+      llvm::cast<spirv::PointerType>(ptr.getType()).getPointeeType()) {
     return op.emitOpError("mismatch in result type and pointer type");
   }
   return success();
@@ -190,7 +220,7 @@ getElementType(Type type, ArrayRef<int32_t> indices,
   }
 
   for (auto index : indices) {
-    if (auto cType = dyn_cast<spirv::CompositeType>(type)) {
+    if (auto cType = llvm::dyn_cast<spirv::CompositeType>(type)) {
       if (cType.hasCompileTimeKnownNumElements() &&
           (index < 0 ||
            static_cast<uint64_t>(index) >= cType.getNumElements())) {
@@ -210,7 +240,7 @@ getElementType(Type type, ArrayRef<int32_t> indices,
 static Type
 getElementType(Type type, Attribute indices,
                function_ref<InFlightDiagnostic(StringRef)> emitErrorFn) {
-  auto indicesArrayAttr = dyn_cast<ArrayAttr>(indices);
+  auto indicesArrayAttr = llvm::dyn_cast<ArrayAttr>(indices);
   if (!indicesArrayAttr) {
     emitErrorFn("expected a 32-bit integer array attribute for 'indices'");
     return nullptr;
@@ -222,7 +252,7 @@ getElementType(Type type, Attribute indices,
 
   SmallVector<int32_t, 2> indexVals;
   for (auto indexAttr : indicesArrayAttr) {
-    auto indexIntAttr = dyn_cast<IntegerAttr>(indexAttr);
+    auto indexIntAttr = llvm::dyn_cast<IntegerAttr>(indexAttr);
     if (!indexIntAttr) {
       emitErrorFn("expected an 32-bit integer for index, but found '")
           << indexAttr << "'";
@@ -250,7 +280,7 @@ static Type getElementType(Type type, Attribute indices, OpAsmParser &parser,
 
 template <typename ExtendedBinaryOp>
 static LogicalResult verifyArithmeticExtendedBinaryOp(ExtendedBinaryOp op) {
-  auto resultType = cast<spirv::StructType>(op.getType());
+  auto resultType = llvm::cast<spirv::StructType>(op.getType());
   if (resultType.getNumElements() != 2)
     return op.emitOpError("expected result struct type containing two members");
 
@@ -275,7 +305,7 @@ static ParseResult parseArithmeticExtendedBinaryOp(OpAsmParser &parser,
   if (parser.parseType(resultType))
     return failure();
 
-  auto structType = dyn_cast<spirv::StructType>(resultType);
+  auto structType = llvm::dyn_cast<spirv::StructType>(resultType);
   if (!structType || structType.getNumElements() != 2)
     return parser.emitError(loc, "expected spirv.struct type with two members");
 
@@ -345,7 +375,7 @@ LogicalResult spirv::CompositeConstructOp::verify() {
       llvm::TypeSwitch<Type, Type>(getType())
           .Case<spirv::CooperativeMatrixType>(
               [](auto coopType) { return coopType.getElementType(); })
-          .Default(nullptr);
+          .Default([](Type) { return nullptr; });
 
   // Case 1. -- matrices.
   if (coopElementType) {
@@ -360,7 +390,7 @@ LogicalResult spirv::CompositeConstructOp::verify() {
   }
 
   // Case 2./3./4. -- number of constituents matches the number of elements.
-  auto cType = cast<spirv::CompositeType>(getType());
+  auto cType = llvm::cast<spirv::CompositeType>(getType());
   if (constituents.size() == cType.getNumElements()) {
     for (auto index : llvm::seq<uint32_t>(0, constituents.size())) {
       if (constituents[index].getType() != cType.getElementType(index)) {
@@ -373,7 +403,7 @@ LogicalResult spirv::CompositeConstructOp::verify() {
   }
 
   // Case 4. -- check that all constituents add up tp the expected vector type.
-  auto resultType = dyn_cast<VectorType>(cType);
+  auto resultType = llvm::dyn_cast<VectorType>(cType);
   if (!resultType)
     return emitOpError(
         "expected to return a vector or cooperative matrix when the number of "
@@ -381,14 +411,14 @@ LogicalResult spirv::CompositeConstructOp::verify() {
 
   SmallVector<unsigned> sizes;
   for (Value component : constituents) {
-    if (!isa<VectorType>(component.getType()) &&
+    if (!llvm::isa<VectorType>(component.getType()) &&
         !component.getType().isIntOrFloat())
       return emitOpError("operand type mismatch: expected operand to have "
                          "a scalar or vector type, but provided ")
              << component.getType();
 
     Type elementType = component.getType();
-    if (auto vectorType = dyn_cast<VectorType>(component.getType())) {
+    if (auto vectorType = llvm::dyn_cast<VectorType>(component.getType())) {
       sizes.push_back(vectorType.getNumElements());
       elementType = vectorType.getElementType();
     } else {
@@ -399,7 +429,7 @@ LogicalResult spirv::CompositeConstructOp::verify() {
       return emitOpError("operand element type mismatch: expected to be ")
              << resultType.getElementType() << ", but provided " << elementType;
   }
-  unsigned totalCount = llvm::sum_of(sizes);
+  unsigned totalCount = std::accumulate(sizes.begin(), sizes.end(), 0);
   if (totalCount != cType.getNumElements())
     return emitOpError("has incorrect number of operands: expected ")
            << cType.getNumElements() << ", but provided " << totalCount;
@@ -454,7 +484,7 @@ void spirv::CompositeExtractOp::print(OpAsmPrinter &printer) {
 }
 
 LogicalResult spirv::CompositeExtractOp::verify() {
-  auto indicesArrayAttr = dyn_cast<ArrayAttr>(getIndices());
+  auto indicesArrayAttr = llvm::dyn_cast<ArrayAttr>(getIndices());
   auto resultType =
       getElementType(getComposite().getType(), indicesArrayAttr, getLoc());
   if (!resultType)
@@ -499,7 +529,7 @@ ParseResult spirv::CompositeInsertOp::parse(OpAsmParser &parser,
 }
 
 LogicalResult spirv::CompositeInsertOp::verify() {
-  auto indicesArrayAttr = dyn_cast<ArrayAttr>(getIndices());
+  auto indicesArrayAttr = llvm::dyn_cast<ArrayAttr>(getIndices());
   auto objectType =
       getElementType(getComposite().getType(), indicesArrayAttr, getLoc());
   if (!objectType)
@@ -537,17 +567,11 @@ ParseResult spirv::ConstantOp::parse(OpAsmParser &parser,
     return failure();
 
   Type type = NoneType::get(parser.getContext());
-  if (auto typedAttr = dyn_cast<TypedAttr>(value))
+  if (auto typedAttr = llvm::dyn_cast<TypedAttr>(value))
     type = typedAttr.getType();
-  if (isa<NoneType, TensorType>(type)) {
+  if (llvm::isa<NoneType, TensorType>(type)) {
     if (parser.parseColonType(type))
       return failure();
-  }
-
-  if (isa<TensorArmType>(type)) {
-    if (parser.parseOptionalColon().succeeded())
-      if (parser.parseType(type))
-        return failure();
   }
 
   return parser.addTypeToList(type, result.types);
@@ -555,32 +579,25 @@ ParseResult spirv::ConstantOp::parse(OpAsmParser &parser,
 
 void spirv::ConstantOp::print(OpAsmPrinter &printer) {
   printer << ' ' << getValue();
-  if (isa<spirv::ArrayType>(getType()))
+  if (llvm::isa<spirv::ArrayType>(getType()))
     printer << " : " << getType();
 }
 
 static LogicalResult verifyConstantType(spirv::ConstantOp op, Attribute value,
                                         Type opType) {
-  if (isa<spirv::CooperativeMatrixType>(opType)) {
-    auto denseAttr = dyn_cast<DenseElementsAttr>(value);
-    if (!denseAttr || !denseAttr.isSplat())
-      return op.emitOpError("expected a splat dense attribute for cooperative "
-                            "matrix constant, but found ")
-             << denseAttr;
-  }
-  if (isa<IntegerAttr, FloatAttr>(value)) {
-    auto valueType = cast<TypedAttr>(value).getType();
+  if (llvm::isa<IntegerAttr, FloatAttr>(value)) {
+    auto valueType = llvm::cast<TypedAttr>(value).getType();
     if (valueType != opType)
       return op.emitOpError("result type (")
              << opType << ") does not match value type (" << valueType << ")";
     return success();
   }
-  if (isa<DenseIntOrFPElementsAttr, SparseElementsAttr>(value)) {
-    auto valueType = cast<TypedAttr>(value).getType();
+  if (llvm::isa<DenseIntOrFPElementsAttr, SparseElementsAttr>(value)) {
+    auto valueType = llvm::cast<TypedAttr>(value).getType();
     if (valueType == opType)
       return success();
-    auto arrayType = dyn_cast<spirv::ArrayType>(opType);
-    auto shapedType = dyn_cast<ShapedType>(valueType);
+    auto arrayType = llvm::dyn_cast<spirv::ArrayType>(opType);
+    auto shapedType = llvm::dyn_cast<ShapedType>(valueType);
     if (!arrayType)
       return op.emitOpError("result or element type (")
              << opType << ") does not match value type (" << valueType
@@ -588,7 +605,7 @@ static LogicalResult verifyConstantType(spirv::ConstantOp op, Attribute value,
 
     int numElements = arrayType.getNumElements();
     auto opElemType = arrayType.getElementType();
-    while (auto t = dyn_cast<spirv::ArrayType>(opElemType)) {
+    while (auto t = llvm::dyn_cast<spirv::ArrayType>(opElemType)) {
       numElements *= t.getNumElements();
       opElemType = t.getElementType();
     }
@@ -609,8 +626,8 @@ static LogicalResult verifyConstantType(spirv::ConstantOp op, Attribute value,
     }
     return success();
   }
-  if (auto arrayAttr = dyn_cast<ArrayAttr>(value)) {
-    auto arrayType = dyn_cast<spirv::ArrayType>(opType);
+  if (auto arrayAttr = llvm::dyn_cast<ArrayAttr>(value)) {
+    auto arrayType = llvm::dyn_cast<spirv::ArrayType>(opType);
     if (!arrayType)
       return op.emitOpError(
           "must have spirv.array result type for array value");
@@ -634,12 +651,12 @@ LogicalResult spirv::ConstantOp::verify() {
 
 bool spirv::ConstantOp::isBuildableWith(Type type) {
   // Must be valid SPIR-V type first.
-  if (!isa<spirv::SPIRVType>(type))
+  if (!llvm::isa<spirv::SPIRVType>(type))
     return false;
 
   if (isa<SPIRVDialect>(type.getDialect())) {
     // TODO: support constant struct
-    return isa<spirv::ArrayType>(type);
+    return llvm::isa<spirv::ArrayType>(type);
   }
 
   return true;
@@ -647,29 +664,29 @@ bool spirv::ConstantOp::isBuildableWith(Type type) {
 
 spirv::ConstantOp spirv::ConstantOp::getZero(Type type, Location loc,
                                              OpBuilder &builder) {
-  if (auto intType = dyn_cast<IntegerType>(type)) {
+  if (auto intType = llvm::dyn_cast<IntegerType>(type)) {
     unsigned width = intType.getWidth();
     if (width == 1)
-      return spirv::ConstantOp::create(builder, loc, type,
-                                       builder.getBoolAttr(false));
-    return spirv::ConstantOp::create(
-        builder, loc, type, builder.getIntegerAttr(type, APInt(width, 0)));
+      return builder.create<spirv::ConstantOp>(loc, type,
+                                               builder.getBoolAttr(false));
+    return builder.create<spirv::ConstantOp>(
+        loc, type, builder.getIntegerAttr(type, APInt(width, 0)));
   }
-  if (auto floatType = dyn_cast<FloatType>(type)) {
-    return spirv::ConstantOp::create(builder, loc, type,
-                                     builder.getFloatAttr(floatType, 0.0));
+  if (auto floatType = llvm::dyn_cast<FloatType>(type)) {
+    return builder.create<spirv::ConstantOp>(
+        loc, type, builder.getFloatAttr(floatType, 0.0));
   }
-  if (auto vectorType = dyn_cast<VectorType>(type)) {
+  if (auto vectorType = llvm::dyn_cast<VectorType>(type)) {
     Type elemType = vectorType.getElementType();
-    if (isa<IntegerType>(elemType)) {
-      return spirv::ConstantOp::create(
-          builder, loc, type,
+    if (llvm::isa<IntegerType>(elemType)) {
+      return builder.create<spirv::ConstantOp>(
+          loc, type,
           DenseElementsAttr::get(vectorType,
                                  IntegerAttr::get(elemType, 0).getValue()));
     }
-    if (isa<FloatType>(elemType)) {
-      return spirv::ConstantOp::create(
-          builder, loc, type,
+    if (llvm::isa<FloatType>(elemType)) {
+      return builder.create<spirv::ConstantOp>(
+          loc, type,
           DenseFPElementsAttr::get(vectorType,
                                    FloatAttr::get(elemType, 0.0).getValue()));
     }
@@ -680,29 +697,29 @@ spirv::ConstantOp spirv::ConstantOp::getZero(Type type, Location loc,
 
 spirv::ConstantOp spirv::ConstantOp::getOne(Type type, Location loc,
                                             OpBuilder &builder) {
-  if (auto intType = dyn_cast<IntegerType>(type)) {
+  if (auto intType = llvm::dyn_cast<IntegerType>(type)) {
     unsigned width = intType.getWidth();
     if (width == 1)
-      return spirv::ConstantOp::create(builder, loc, type,
-                                       builder.getBoolAttr(true));
-    return spirv::ConstantOp::create(
-        builder, loc, type, builder.getIntegerAttr(type, APInt(width, 1)));
+      return builder.create<spirv::ConstantOp>(loc, type,
+                                               builder.getBoolAttr(true));
+    return builder.create<spirv::ConstantOp>(
+        loc, type, builder.getIntegerAttr(type, APInt(width, 1)));
   }
-  if (auto floatType = dyn_cast<FloatType>(type)) {
-    return spirv::ConstantOp::create(builder, loc, type,
-                                     builder.getFloatAttr(floatType, 1.0));
+  if (auto floatType = llvm::dyn_cast<FloatType>(type)) {
+    return builder.create<spirv::ConstantOp>(
+        loc, type, builder.getFloatAttr(floatType, 1.0));
   }
-  if (auto vectorType = dyn_cast<VectorType>(type)) {
+  if (auto vectorType = llvm::dyn_cast<VectorType>(type)) {
     Type elemType = vectorType.getElementType();
-    if (isa<IntegerType>(elemType)) {
-      return spirv::ConstantOp::create(
-          builder, loc, type,
+    if (llvm::isa<IntegerType>(elemType)) {
+      return builder.create<spirv::ConstantOp>(
+          loc, type,
           DenseElementsAttr::get(vectorType,
                                  IntegerAttr::get(elemType, 1).getValue()));
     }
-    if (isa<FloatType>(elemType)) {
-      return spirv::ConstantOp::create(
-          builder, loc, type,
+    if (llvm::isa<FloatType>(elemType)) {
+      return builder.create<spirv::ConstantOp>(
+          loc, type,
           DenseFPElementsAttr::get(vectorType,
                                    FloatAttr::get(elemType, 1.0).getValue()));
     }
@@ -719,12 +736,10 @@ void mlir::spirv::ConstantOp::getAsmResultNames(
   llvm::raw_svector_ostream specialName(specialNameBuffer);
   specialName << "cst";
 
-  IntegerType intTy = dyn_cast<IntegerType>(type);
+  IntegerType intTy = llvm::dyn_cast<IntegerType>(type);
 
-  if (IntegerAttr intCst = dyn_cast<IntegerAttr>(getValue())) {
-    assert(intTy);
-
-    if (intTy.getWidth() == 1) {
+  if (IntegerAttr intCst = llvm::dyn_cast<IntegerAttr>(getValue())) {
+    if (intTy && intTy.getWidth() == 1) {
       return setNameFn(getResult(), (intCst.getInt() ? "true" : "false"));
     }
 
@@ -737,17 +752,18 @@ void mlir::spirv::ConstantOp::getAsmResultNames(
     }
   }
 
-  if (intTy || isa<FloatType>(type)) {
+  if (intTy || llvm::isa<FloatType>(type)) {
     specialName << '_' << type;
   }
 
-  if (auto vecType = dyn_cast<VectorType>(type)) {
+  if (auto vecType = llvm::dyn_cast<VectorType>(type)) {
     specialName << "_vec_";
     specialName << vecType.getDimSize(0);
 
     Type elementType = vecType.getElementType();
 
-    if (isa<IntegerType>(elementType) || isa<FloatType>(elementType)) {
+    if (llvm::isa<IntegerType>(elementType) ||
+        llvm::isa<FloatType>(elementType)) {
       specialName << "x" << elementType;
     }
   }
@@ -761,50 +777,6 @@ void mlir::spirv::AddressOfOp::getAsmResultNames(
   llvm::raw_svector_ostream specialName(specialNameBuffer);
   specialName << getVariable() << "_addr";
   setNameFn(getResult(), specialName.str());
-}
-
-//===----------------------------------------------------------------------===//
-// spirv.EXTConstantCompositeReplicate
-//===----------------------------------------------------------------------===//
-
-// Returns type of attribute. In case of a TypedAttr this will simply return
-// the type. But for an ArrayAttr which is untyped and can be multidimensional
-// it creates the ArrayType recursively.
-static Type getValueType(Attribute attr) {
-  if (auto typedAttr = dyn_cast<TypedAttr>(attr)) {
-    return typedAttr.getType();
-  }
-
-  if (auto arrayAttr = dyn_cast<ArrayAttr>(attr)) {
-    return spirv::ArrayType::get(getValueType(arrayAttr[0]), arrayAttr.size());
-  }
-
-  return nullptr;
-}
-
-LogicalResult spirv::EXTConstantCompositeReplicateOp::verify() {
-  Type valueType = getValueType(getValue());
-  if (!valueType)
-    return emitError("unknown value attribute type");
-
-  auto compositeType = dyn_cast<spirv::CompositeType>(getType());
-  if (!compositeType)
-    return emitError("result type is not a composite type");
-
-  Type compositeElementType = compositeType.getElementType(0);
-
-  SmallVector<Type, 3> possibleTypes = {compositeElementType};
-  while (auto type = dyn_cast<spirv::CompositeType>(compositeElementType)) {
-    compositeElementType = type.getElementType(0);
-    possibleTypes.push_back(compositeElementType);
-  }
-
-  if (!is_contained(possibleTypes, valueType)) {
-    return emitError("expected value attribute type ")
-           << interleaved(possibleTypes, " or ") << ", but got: " << valueType;
-  }
-
-  return success();
 }
 
 //===----------------------------------------------------------------------===//
@@ -831,6 +803,8 @@ void spirv::EntryPointOp::build(OpBuilder &builder, OperationState &state,
 ParseResult spirv::EntryPointOp::parse(OpAsmParser &parser,
                                        OperationState &result) {
   spirv::ExecutionModel execModel;
+  SmallVector<OpAsmParser::UnresolvedOperand, 0> identifiers;
+  SmallVector<Type, 0> idTypes;
   SmallVector<Attribute, 4> interfaceVars;
 
   FlatSymbolRefAttr fn;
@@ -861,8 +835,10 @@ void spirv::EntryPointOp::print(OpAsmPrinter &printer) {
   printer << " \"" << stringifyExecutionModel(getExecutionModel()) << "\" ";
   printer.printSymbolName(getFn());
   auto interfaceVars = getInterface().getValue();
-  if (!interfaceVars.empty())
-    printer << ", " << llvm::interleaved(interfaceVars);
+  if (!interfaceVars.empty()) {
+    printer << ", ";
+    llvm::interleaveComma(interfaceVars, printer);
+  }
 }
 
 LogicalResult spirv::EntryPointOp::verify() {
@@ -901,7 +877,7 @@ ParseResult spirv::ExecutionModeOp::parse(OpAsmParser &parser,
     if (parser.parseAttribute(value, i32Type, "value", attr)) {
       return failure();
     }
-    values.push_back(cast<IntegerAttr>(value).getInt());
+    values.push_back(llvm::cast<IntegerAttr>(value).getInt());
   }
   StringRef valuesAttrName =
       spirv::ExecutionModeOp::getValuesAttrName(result.name);
@@ -914,9 +890,13 @@ void spirv::ExecutionModeOp::print(OpAsmPrinter &printer) {
   printer << " ";
   printer.printSymbolName(getFn());
   printer << " \"" << stringifyExecutionMode(getExecutionMode()) << "\"";
-  ArrayAttr values = this->getValues();
-  if (!values.empty())
-    printer << ", " << llvm::interleaved(values.getAsValueRange<IntegerAttr>());
+  auto values = this->getValues();
+  if (values.empty())
+    return;
+  printer << ", ";
+  llvm::interleaveComma(values, printer, [&](Attribute a) {
+    printer << llvm::cast<IntegerAttr>(a).getInt();
+  });
 }
 
 //===----------------------------------------------------------------------===//
@@ -937,7 +917,7 @@ ParseResult spirv::FuncOp::parse(OpAsmParser &parser, OperationState &result) {
 
   // Parse the function signature.
   bool isVariadic = false;
-  if (function_interface_impl::parseFunctionSignatureWithArguments(
+  if (function_interface_impl::parseFunctionSignature(
           parser, /*allowVariadic=*/false, entryArgs, isVariadic, resultTypes,
           resultAttrs))
     return failure();
@@ -960,7 +940,7 @@ ParseResult spirv::FuncOp::parse(OpAsmParser &parser, OperationState &result) {
 
   // Add the attributes to the function arguments.
   assert(resultAttrs.size() == resultTypes.size());
-  call_interface_impl::addArgAndResultAttrs(
+  function_interface_impl::addArgAndResultAttrs(
       builder, result, entryArgs, resultAttrs, getArgAttrsAttrName(result.name),
       getResAttrsAttrName(result.name));
 
@@ -1003,7 +983,7 @@ LogicalResult spirv::FuncOp::verifyType() {
 
   auto hasDecorationAttr = [&](spirv::Decoration decoration,
                                unsigned argIndex) {
-    auto func = cast<FunctionOpInterface>(getOperation());
+    auto func = llvm::cast<FunctionOpInterface>(getOperation());
     for (auto argAttr : cast<FunctionOpInterface>(func).getArgAttrs(argIndex)) {
       if (argAttr.getName() != spirv::DecorationAttr::name)
         continue;
@@ -1069,24 +1049,6 @@ LogicalResult spirv::FuncOp::verifyType() {
 
 LogicalResult spirv::FuncOp::verifyBody() {
   FunctionType fnType = getFunctionType();
-  if (!isExternal()) {
-    Block &entryBlock = front();
-
-    unsigned numArguments = this->getNumArguments();
-    if (entryBlock.getNumArguments() != numArguments)
-      return emitOpError("entry block must have ")
-             << numArguments << " arguments to match function signature";
-
-    for (auto [index, fnArgType, blockArgType] :
-         llvm::enumerate(getArgumentTypes(), entryBlock.getArgumentTypes())) {
-      if (blockArgType != fnArgType) {
-        return emitOpError("type of entry block argument #")
-               << index << '(' << blockArgType
-               << ") must match the type of the corresponding argument in "
-               << "function signature(" << fnArgType << ')';
-      }
-    }
-  }
 
   auto walkResult = walk([fnType](Operation *op) -> WalkResult {
     if (auto retOp = dyn_cast<spirv::ReturnOp>(op)) {
@@ -1222,7 +1184,7 @@ ParseResult spirv::GlobalVariableOp::parse(OpAsmParser &parser,
   if (parser.parseColonType(type)) {
     return failure();
   }
-  if (!isa<spirv::PointerType>(type)) {
+  if (!llvm::isa<spirv::PointerType>(type)) {
     return parser.emitError(loc, "expected spirv.ptr type");
   }
   result.addAttribute(typeAttrName, TypeAttr::get(type));
@@ -1255,7 +1217,7 @@ void spirv::GlobalVariableOp::print(OpAsmPrinter &printer) {
 }
 
 LogicalResult spirv::GlobalVariableOp::verify() {
-  if (!isa<spirv::PointerType>(getType()))
+  if (!llvm::isa<spirv::PointerType>(getType()))
     return emitOpError("result must be of a !spv.ptr type");
 
   // SPIR-V spec: "Storage Class is the Storage Class of the memory holding the
@@ -1274,19 +1236,12 @@ LogicalResult spirv::GlobalVariableOp::verify() {
     Operation *initOp = SymbolTable::lookupNearestSymbolFrom(
         (*this)->getParentOp(), init.getAttr());
     // TODO: Currently only variable initialization with specialization
-    // constants is supported. There could be normal constants in the module
-    // scope as well.
-    //
-    // In the current setup we also cannot initialize one global variable with
-    // another. The problem is that if we try to initialize pointer of type X
-    // with another pointer type, the validator fails because it expects the
-    // variable to be initialized to be type X, not pointer to X. Now
-    // `spirv.GlobalVariable` only allows pointer type, so in the current design
-    // we cannot initialize one `spirv.GlobalVariable` with another.
-    if (!initOp ||
-        !isa<spirv::SpecConstantOp, spirv::SpecConstantCompositeOp>(initOp)) {
+    // constants and other variables is supported. They could be normal
+    // constants in the module scope as well.
+    if (!initOp || !isa<spirv::GlobalVariableOp, spirv::SpecConstantOp,
+                        spirv::SpecConstantCompositeOp>(initOp)) {
       return emitOpError("initializer must be result of a "
-                         "spirv.SpecConstant or "
+                         "spirv.SpecConstant or spirv.GlobalVariable or "
                          "spirv.SpecConstantCompositeOp op");
     }
   }
@@ -1323,7 +1278,7 @@ ParseResult spirv::INTELSubgroupBlockWriteOp::parse(OpAsmParser &parser,
   }
 
   auto ptrType = spirv::PointerType::get(elementType, storageClass);
-  if (auto valVecTy = dyn_cast<VectorType>(elementType))
+  if (auto valVecTy = llvm::dyn_cast<VectorType>(elementType))
     ptrType = spirv::PointerType::get(valVecTy.getElementType(), storageClass);
 
   if (parser.resolveOperands(operandInfo, {ptrType, elementType}, loc,
@@ -1537,7 +1492,7 @@ LogicalResult spirv::ModuleOp::verifyRegions() {
       }
       if (auto interface = entryPointOp.getInterface()) {
         for (Attribute varRef : interface) {
-          auto varSymRef = dyn_cast<FlatSymbolRefAttr>(varRef);
+          auto varSymRef = llvm::dyn_cast<FlatSymbolRefAttr>(varRef);
           if (!varSymRef) {
             return entryPointOp.emitError(
                        "expected symbol reference for interface "
@@ -1658,9 +1613,9 @@ LogicalResult spirv::SpecConstantOp::verify() {
       return emitOpError("SpecId cannot be negative");
 
   auto value = getDefaultValue();
-  if (isa<IntegerAttr, FloatAttr>(value)) {
+  if (llvm::isa<IntegerAttr, FloatAttr>(value)) {
     // Make sure bitwidth is allowed.
-    if (!isa<spirv::SPIRVType>(value.getType()))
+    if (!llvm::isa<spirv::SPIRVType>(value.getType()))
       return emitOpError("default value bitwidth disallowed");
     return success();
   }
@@ -1673,7 +1628,7 @@ LogicalResult spirv::SpecConstantOp::verify() {
 //===----------------------------------------------------------------------===//
 
 LogicalResult spirv::VectorShuffleOp::verify() {
-  VectorType resultType = cast<VectorType>(getType());
+  VectorType resultType = llvm::cast<VectorType>(getType());
 
   size_t numResultElements = resultType.getNumElements();
   if (numResultElements != getComponents().size())
@@ -1683,8 +1638,8 @@ LogicalResult spirv::VectorShuffleOp::verify() {
            << getComponents().size() << ")";
 
   size_t totalSrcElements =
-      cast<VectorType>(getVector1().getType()).getNumElements() +
-      cast<VectorType>(getVector2().getType()).getNumElements();
+      llvm::cast<VectorType>(getVector1().getType()).getNumElements() +
+      llvm::cast<VectorType>(getVector2().getType()).getNumElements();
 
   for (const auto &selector : getComponents().getAsValueRange<IntegerAttr>()) {
     uint32_t index = selector.getZExtValue();
@@ -1706,7 +1661,7 @@ LogicalResult spirv::MatrixTimesScalarOp::verify() {
       llvm::TypeSwitch<Type, Type>(getMatrix().getType())
           .Case<spirv::CooperativeMatrixType, spirv::MatrixType>(
               [](auto matrixType) { return matrixType.getElementType(); })
-          .Default(nullptr);
+          .Default([](Type) { return nullptr; });
 
   assert(elementType && "Unhandled type");
 
@@ -1723,8 +1678,8 @@ LogicalResult spirv::MatrixTimesScalarOp::verify() {
 //===----------------------------------------------------------------------===//
 
 LogicalResult spirv::TransposeOp::verify() {
-  auto inputMatrix = cast<spirv::MatrixType>(getMatrix().getType());
-  auto resultMatrix = cast<spirv::MatrixType>(getResult().getType());
+  auto inputMatrix = llvm::cast<spirv::MatrixType>(getMatrix().getType());
+  auto resultMatrix = llvm::cast<spirv::MatrixType>(getResult().getType());
 
   // Verify that the input and output matrices have correct shapes.
   if (inputMatrix.getNumRows() != resultMatrix.getNumColumns())
@@ -1748,9 +1703,9 @@ LogicalResult spirv::TransposeOp::verify() {
 //===----------------------------------------------------------------------===//
 
 LogicalResult spirv::MatrixTimesVectorOp::verify() {
-  auto matrixType = cast<spirv::MatrixType>(getMatrix().getType());
-  auto vectorType = cast<VectorType>(getVector().getType());
-  auto resultType = cast<VectorType>(getType());
+  auto matrixType = llvm::cast<spirv::MatrixType>(getMatrix().getType());
+  auto vectorType = llvm::cast<VectorType>(getVector().getType());
+  auto resultType = llvm::cast<VectorType>(getType());
 
   if (matrixType.getNumColumns() != vectorType.getNumElements())
     return emitOpError("matrix columns (")
@@ -1762,32 +1717,10 @@ LogicalResult spirv::MatrixTimesVectorOp::verify() {
            << resultType.getNumElements() << ") must match the matrix rows ("
            << matrixType.getNumRows() << ")";
 
-  if (matrixType.getElementType() != resultType.getElementType())
-    return emitOpError("matrix and result element types must match");
-
-  return success();
-}
-
-//===----------------------------------------------------------------------===//
-// spirv.VectorTimesMatrix
-//===----------------------------------------------------------------------===//
-
-LogicalResult spirv::VectorTimesMatrixOp::verify() {
-  auto vectorType = cast<VectorType>(getVector().getType());
-  auto matrixType = cast<spirv::MatrixType>(getMatrix().getType());
-  auto resultType = cast<VectorType>(getType());
-
-  if (matrixType.getNumRows() != vectorType.getNumElements())
-    return emitOpError("number of components in vector must equal the number "
-                       "of components in each column in matrix");
-
-  if (resultType.getNumElements() != matrixType.getNumColumns())
-    return emitOpError("number of columns in matrix must equal the number of "
-                       "components in result");
-
-  if (matrixType.getElementType() != resultType.getElementType())
-    return emitOpError("matrix must be a matrix with the same component type "
-                       "as the component type in result");
+  auto matrixElementType = matrixType.getElementType();
+  if (matrixElementType != vectorType.getElementType() ||
+      matrixElementType != resultType.getElementType())
+    return emitOpError("matrix, vector, and result element types must match");
 
   return success();
 }
@@ -1797,9 +1730,9 @@ LogicalResult spirv::VectorTimesMatrixOp::verify() {
 //===----------------------------------------------------------------------===//
 
 LogicalResult spirv::MatrixTimesMatrixOp::verify() {
-  auto leftMatrix = cast<spirv::MatrixType>(getLeftmatrix().getType());
-  auto rightMatrix = cast<spirv::MatrixType>(getRightmatrix().getType());
-  auto resultMatrix = cast<spirv::MatrixType>(getResult().getType());
+  auto leftMatrix = llvm::cast<spirv::MatrixType>(getLeftmatrix().getType());
+  auto rightMatrix = llvm::cast<spirv::MatrixType>(getRightmatrix().getType());
+  auto resultMatrix = llvm::cast<spirv::MatrixType>(getResult().getType());
 
   // left matrix columns' count and right matrix rows' count must be equal
   if (leftMatrix.getNumColumns() != rightMatrix.getNumRows())
@@ -1879,19 +1812,24 @@ ParseResult spirv::SpecConstantCompositeOp::parse(OpAsmParser &parser,
 void spirv::SpecConstantCompositeOp::print(OpAsmPrinter &printer) {
   printer << " ";
   printer.printSymbolName(getSymName());
-  printer << " (" << llvm::interleaved(this->getConstituents().getValue())
-          << ") : " << getType();
+  printer << " (";
+  auto constituents = this->getConstituents().getValue();
+
+  if (!constituents.empty())
+    llvm::interleaveComma(constituents, printer);
+
+  printer << ") : " << getType();
 }
 
 LogicalResult spirv::SpecConstantCompositeOp::verify() {
-  auto cType = dyn_cast<spirv::CompositeType>(getType());
+  auto cType = llvm::dyn_cast<spirv::CompositeType>(getType());
   auto constituents = this->getConstituents().getValue();
 
   if (!cType)
     return emitError("result type must be a composite type, but provided ")
            << getType();
 
-  if (isa<spirv::CooperativeMatrixType>(cType))
+  if (llvm::isa<spirv::CooperativeMatrixType>(cType))
     return emitError("unsupported composite type  ") << cType;
   if (constituents.size() != cType.getNumElements())
     return emitError("has incorrect number of operands: expected ")
@@ -1899,7 +1837,7 @@ LogicalResult spirv::SpecConstantCompositeOp::verify() {
            << constituents.size();
 
   for (auto index : llvm::seq<uint32_t>(0, constituents.size())) {
-    auto constituent = cast<FlatSymbolRefAttr>(constituents[index]);
+    auto constituent = llvm::cast<FlatSymbolRefAttr>(constituents[index]);
 
     auto constituentSpecConstOp =
         dyn_cast<spirv::SpecConstantOp>(SymbolTable::lookupNearestSymbolFrom(
@@ -1911,69 +1849,6 @@ LogicalResult spirv::SpecConstantCompositeOp::verify() {
              << cType.getElementType(index) << ", but provided "
              << constituentSpecConstOp.getDefaultValue().getType();
   }
-
-  return success();
-}
-
-//===----------------------------------------------------------------------===//
-// spirv.EXTSpecConstantCompositeReplicateOp
-//===----------------------------------------------------------------------===//
-
-ParseResult
-spirv::EXTSpecConstantCompositeReplicateOp::parse(OpAsmParser &parser,
-                                                  OperationState &result) {
-  StringAttr compositeName;
-  FlatSymbolRefAttr specConstRef;
-  const char *attrName = "spec_const";
-  NamedAttrList attrs;
-  Type type;
-
-  if (parser.parseSymbolName(compositeName, SymbolTable::getSymbolAttrName(),
-                             result.attributes) ||
-      parser.parseLParen() ||
-      parser.parseAttribute(specConstRef, Type(), attrName, attrs) ||
-      parser.parseRParen() || parser.parseColonType(type))
-    return failure();
-
-  StringAttr compositeSpecConstituentName =
-      spirv::EXTSpecConstantCompositeReplicateOp::getConstituentAttrName(
-          result.name);
-  result.addAttribute(compositeSpecConstituentName, specConstRef);
-
-  StringAttr typeAttrName =
-      spirv::EXTSpecConstantCompositeReplicateOp::getTypeAttrName(result.name);
-  result.addAttribute(typeAttrName, TypeAttr::get(type));
-
-  return success();
-}
-
-void spirv::EXTSpecConstantCompositeReplicateOp::print(OpAsmPrinter &printer) {
-  printer << " ";
-  printer.printSymbolName(getSymName());
-  printer << " (" << this->getConstituent() << ") : " << getType();
-}
-
-LogicalResult spirv::EXTSpecConstantCompositeReplicateOp::verify() {
-  auto compositeType = dyn_cast<spirv::CompositeType>(getType());
-  if (!compositeType)
-    return emitError("result type must be a composite type, but provided ")
-           << getType();
-
-  Operation *constituentOp = SymbolTable::lookupNearestSymbolFrom(
-      (*this)->getParentOp(), this->getConstituent());
-  if (!constituentOp)
-    return emitError(
-        "splat spec constant reference defining constituent not found");
-
-  auto constituentSpecConstOp = dyn_cast<spirv::SpecConstantOp>(constituentOp);
-  if (!constituentSpecConstOp)
-    return emitError("constituent is not a spec constant");
-
-  Type constituentType = constituentSpecConstOp.getDefaultValue().getType();
-  Type compositeElementType = compositeType.getElementType(0);
-  if (constituentType != compositeElementType)
-    return emitError("constituent has incorrect type: expected ")
-           << compositeElementType << ", but provided " << constituentType;
 
   return success();
 }
@@ -1998,7 +1873,7 @@ ParseResult spirv::SpecConstantOperationOp::parse(OpAsmParser &parser,
 
   OpBuilder builder(parser.getContext());
   builder.setInsertionPointToEnd(&block);
-  spirv::YieldOp::create(builder, wrappedOp->getLoc(), wrappedOp->getResult(0));
+  builder.create<spirv::YieldOp>(wrappedOp->getLoc(), wrappedOp->getResult(0));
   result.location = wrappedOp->getLoc();
 
   result.addTypes(wrappedOp->getResult(0).getType());
@@ -2040,19 +1915,19 @@ LogicalResult spirv::SpecConstantOperationOp::verifyRegions() {
 
 LogicalResult spirv::GLFrexpStructOp::verify() {
   spirv::StructType structTy =
-      dyn_cast<spirv::StructType>(getResult().getType());
+      llvm::dyn_cast<spirv::StructType>(getResult().getType());
 
   if (structTy.getNumElements() != 2)
     return emitError("result type must be a struct type with two memebers");
 
   Type significandTy = structTy.getElementType(0);
   Type exponentTy = structTy.getElementType(1);
-  VectorType exponentVecTy = dyn_cast<VectorType>(exponentTy);
-  IntegerType exponentIntTy = dyn_cast<IntegerType>(exponentTy);
+  VectorType exponentVecTy = llvm::dyn_cast<VectorType>(exponentTy);
+  IntegerType exponentIntTy = llvm::dyn_cast<IntegerType>(exponentTy);
 
   Type operandTy = getOperand().getType();
-  VectorType operandVecTy = dyn_cast<VectorType>(operandTy);
-  FloatType operandFTy = dyn_cast<FloatType>(operandTy);
+  VectorType operandVecTy = llvm::dyn_cast<VectorType>(operandTy);
+  FloatType operandFTy = llvm::dyn_cast<FloatType>(operandTy);
 
   if (significandTy != operandTy)
     return emitError("member zero of the resulting struct type must be the "
@@ -2060,7 +1935,7 @@ LogicalResult spirv::GLFrexpStructOp::verify() {
 
   if (exponentVecTy) {
     IntegerType componentIntTy =
-        dyn_cast<IntegerType>(exponentVecTy.getElementType());
+        llvm::dyn_cast<IntegerType>(exponentVecTy.getElementType());
     if (!componentIntTy || componentIntTy.getWidth() != 32)
       return emitError("member one of the resulting struct type must"
                        "be a scalar or vector of 32 bit integer type");
@@ -2089,11 +1964,12 @@ LogicalResult spirv::GLLdexpOp::verify() {
   Type significandType = getX().getType();
   Type exponentType = getExp().getType();
 
-  if (isa<FloatType>(significandType) != isa<IntegerType>(exponentType))
+  if (llvm::isa<FloatType>(significandType) !=
+      llvm::isa<IntegerType>(exponentType))
     return emitOpError("operands must both be scalars or vectors");
 
   auto getNumElements = [](Type type) -> unsigned {
-    if (auto vectorType = dyn_cast<VectorType>(type))
+    if (auto vectorType = llvm::dyn_cast<VectorType>(type))
       return vectorType.getNumElements();
     return 1;
   };
@@ -2102,6 +1978,46 @@ LogicalResult spirv::GLLdexpOp::verify() {
     return emitOpError("operands must have the same number of elements");
 
   return success();
+}
+
+//===----------------------------------------------------------------------===//
+// spirv.ImageDrefGather
+//===----------------------------------------------------------------------===//
+
+LogicalResult spirv::ImageDrefGatherOp::verify() {
+  VectorType resultType = llvm::cast<VectorType>(getResult().getType());
+  auto sampledImageType =
+      llvm::cast<spirv::SampledImageType>(getSampledimage().getType());
+  auto imageType =
+      llvm::cast<spirv::ImageType>(sampledImageType.getImageType());
+
+  if (resultType.getNumElements() != 4)
+    return emitOpError("result type must be a vector of four components");
+
+  Type elementType = resultType.getElementType();
+  Type sampledElementType = imageType.getElementType();
+  if (!llvm::isa<NoneType>(sampledElementType) &&
+      elementType != sampledElementType)
+    return emitOpError(
+        "the component type of result must be the same as sampled type of the "
+        "underlying image type");
+
+  spirv::Dim imageDim = imageType.getDim();
+  spirv::ImageSamplingInfo imageMS = imageType.getSamplingInfo();
+
+  if (imageDim != spirv::Dim::Dim2D && imageDim != spirv::Dim::Cube &&
+      imageDim != spirv::Dim::Rect)
+    return emitOpError(
+        "the Dim operand of the underlying image type must be 2D, Cube, or "
+        "Rect");
+
+  if (imageMS != spirv::ImageSamplingInfo::SingleSampled)
+    return emitOpError("the MS operand of the underlying image type must be 0");
+
+  spirv::ImageOperandsAttr attr = getImageoperandsAttr();
+  auto operandArguments = getOperandArguments();
+
+  return verifyImageOperands(*this, attr, operandArguments);
 }
 
 //===----------------------------------------------------------------------===//
@@ -2129,13 +2045,78 @@ LogicalResult spirv::ShiftRightLogicalOp::verify() {
 }
 
 //===----------------------------------------------------------------------===//
+// spirv.ImageQuerySize
+//===----------------------------------------------------------------------===//
+
+LogicalResult spirv::ImageQuerySizeOp::verify() {
+  spirv::ImageType imageType =
+      llvm::cast<spirv::ImageType>(getImage().getType());
+  Type resultType = getResult().getType();
+
+  spirv::Dim dim = imageType.getDim();
+  spirv::ImageSamplingInfo samplingInfo = imageType.getSamplingInfo();
+  spirv::ImageSamplerUseInfo samplerInfo = imageType.getSamplerUseInfo();
+  switch (dim) {
+  case spirv::Dim::Dim1D:
+  case spirv::Dim::Dim2D:
+  case spirv::Dim::Dim3D:
+  case spirv::Dim::Cube:
+    if (samplingInfo != spirv::ImageSamplingInfo::MultiSampled &&
+        samplerInfo != spirv::ImageSamplerUseInfo::SamplerUnknown &&
+        samplerInfo != spirv::ImageSamplerUseInfo::NoSampler)
+      return emitError(
+          "if Dim is 1D, 2D, 3D, or Cube, "
+          "it must also have either an MS of 1 or a Sampled of 0 or 2");
+    break;
+  case spirv::Dim::Buffer:
+  case spirv::Dim::Rect:
+    break;
+  default:
+    return emitError("the Dim operand of the image type must "
+                     "be 1D, 2D, 3D, Buffer, Cube, or Rect");
+  }
+
+  unsigned componentNumber = 0;
+  switch (dim) {
+  case spirv::Dim::Dim1D:
+  case spirv::Dim::Buffer:
+    componentNumber = 1;
+    break;
+  case spirv::Dim::Dim2D:
+  case spirv::Dim::Cube:
+  case spirv::Dim::Rect:
+    componentNumber = 2;
+    break;
+  case spirv::Dim::Dim3D:
+    componentNumber = 3;
+    break;
+  default:
+    break;
+  }
+
+  if (imageType.getArrayedInfo() == spirv::ImageArrayedInfo::Arrayed)
+    componentNumber += 1;
+
+  unsigned resultComponentNumber = 1;
+  if (auto resultVectorType = llvm::dyn_cast<VectorType>(resultType))
+    resultComponentNumber = resultVectorType.getNumElements();
+
+  if (componentNumber != resultComponentNumber)
+    return emitError("expected the result to have ")
+           << componentNumber << " component(s), but found "
+           << resultComponentNumber << " component(s)";
+
+  return success();
+}
+
+//===----------------------------------------------------------------------===//
 // spirv.VectorTimesScalarOp
 //===----------------------------------------------------------------------===//
 
 LogicalResult spirv::VectorTimesScalarOp::verify() {
   if (getVector().getType() != getType())
     return emitOpError("vector operand and result type mismatch");
-  auto scalarType = cast<VectorType>(getType()).getElementType();
+  auto scalarType = llvm::cast<VectorType>(getType()).getElementType();
   if (getScalar().getType() != scalarType)
     return emitOpError("scalar operand and result element type match");
   return success();

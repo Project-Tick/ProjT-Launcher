@@ -55,8 +55,8 @@ using namespace llvm;
 using namespace llvm::orc;
 
 // Path of the module summary index file.
-static cl::opt<std::string> IndexFile{cl::desc("<module summary index>"),
-                                      cl::Positional, cl::init("-")};
+cl::opt<std::string> IndexFile{cl::desc("<module summary index>"),
+                               cl::Positional, cl::init("-")};
 
 // Describe a fail state that is caused by the given ModuleSummaryIndex
 // providing multiple definitions of the given global value name. It will dump
@@ -77,9 +77,7 @@ public:
 
   void log(raw_ostream &OS) const override {
     OS << "Duplicate symbol for global value '" << GlobalValueName
-       << "' (GUID: "
-       << GlobalValue::getGUIDAssumingExternalLinkage(GlobalValueName)
-       << ") in:\n";
+       << "' (GUID: " << GlobalValue::getGUID(GlobalValueName) << ") in:\n";
     for (const std::string &Path : ModulePaths) {
       OS << "    " << Path << "\n";
     }
@@ -112,9 +110,8 @@ public:
   }
 
   void log(raw_ostream &OS) const override {
-    OS << "No symbol for global value '" << GlobalValueName << "' (GUID: "
-       << GlobalValue::getGUIDAssumingExternalLinkage(GlobalValueName)
-       << ") in:\n";
+    OS << "No symbol for global value '" << GlobalValueName
+       << "' (GUID: " << GlobalValue::getGUID(GlobalValueName) << ") in:\n";
     for (const std::string &Path : ModulePaths) {
       OS << "    " << Path << "\n";
     }
@@ -138,8 +135,7 @@ char DefinitionNotFoundInSummary::ID = 0;
 Expected<StringRef> getMainModulePath(StringRef FunctionName,
                                       ModuleSummaryIndex &Index) {
   // Summaries use unmangled names.
-  GlobalValue::GUID G =
-      GlobalValue::getGUIDAssumingExternalLinkage(FunctionName);
+  GlobalValue::GUID G = GlobalValue::getGUID(FunctionName);
   ValueInfo VI = Index.getValueInfo(G);
 
   // We need a unique definition, otherwise don't try further.
@@ -169,9 +165,7 @@ Expected<ThreadSafeModule> loadModule(StringRef Path,
 
   MemoryBufferRef BitcodeBufferRef = (**BitcodeBuffer).getMemBufferRef();
   Expected<std::unique_ptr<Module>> M =
-      TSCtx.withContextDo([&](LLVMContext *Ctx) {
-        return parseBitcodeFile(BitcodeBufferRef, *Ctx);
-      });
+      parseBitcodeFile(BitcodeBufferRef, *TSCtx.getContext());
   if (!M)
     return M.takeError();
 
@@ -213,7 +207,7 @@ int main(int Argc, char *Argv[]) {
           ExitOnErr(JITTargetMachineBuilder::detectHost()));
     } else {
       Builder.setJITTargetMachineBuilder(
-          JITTargetMachineBuilder(M.getTargetTriple()));
+          JITTargetMachineBuilder(Triple(M.getTargetTriple())));
     }
     if (!M.getDataLayout().getStringRepresentation().empty())
       Builder.setDataLayout(M.getDataLayout());

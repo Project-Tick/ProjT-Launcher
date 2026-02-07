@@ -28,18 +28,18 @@ attributes #0 = {
   "less-precise-fpmad"="false" "frame-pointer"="all"
  "frame-pointer"="non-leaf" "no-infs-fp-math"="false"
   "no-nans-fp-math"="false" "stack-protector-buffer-size"="8"
-  "use-soft-float"="false"
+  "unsafe-fp-math"="false" "use-soft-float"="false"
 }
 attributes #1 = {
   nounwind
   "less-precise-fpmad"="false" "frame-pointer"="all"
  "frame-pointer"="non-leaf" "no-infs-fp-math"="false"
   "no-nans-fp-math"="false" "stack-protector-buffer-size"="8"
-  "use-soft-float"="true"
+  "unsafe-fp-math"="false" "use-soft-float"="true"
 }
 attributes #2 = {
   "less-precise-fpmad"="false" "frame-pointer"="all"
  "frame-pointer"="non-leaf" "no-infs-fp-math"="false"
   "no-nans-fp-math"="false" "stack-protector-buffer-size"="8"
-  "use-soft-float"="true"
+  "unsafe-fp-math"="false" "use-soft-float"="true"
 }

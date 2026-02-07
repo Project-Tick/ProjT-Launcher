@@ -23,7 +23,8 @@
 #include "llvm/ADT/iterator.h"
 #include "llvm/Support/Error.h"
 
-namespace llvm::xray {
+namespace llvm {
+namespace xray {
 
 /// A Graph object represents a Directed Graph and is used in XRay to compute
 /// and store function call graphs and associated statistical information.
@@ -484,6 +485,6 @@ public:
     return p;
   }
 };
-} // namespace llvm::xray
-
+}
+}
 #endif

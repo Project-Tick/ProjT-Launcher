@@ -68,7 +68,7 @@ DumpOutputStyle::DumpOutputStyle(InputFile &File)
     RefTracker.reset(new TypeReferenceTracker(File));
 }
 
-DumpOutputStyle::~DumpOutputStyle() = default;
+DumpOutputStyle::~DumpOutputStyle() {}
 
 PDBFile &DumpOutputStyle::getPdb() { return File.pdb(); }
 object::COFFObjectFile &DumpOutputStyle::getObj() { return File.obj(); }

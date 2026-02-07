@@ -12,6 +12,7 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallVector.h"
 #include <cstdint>
+#include <utility>
 
 namespace llvm {
 namespace dwarf_linker {

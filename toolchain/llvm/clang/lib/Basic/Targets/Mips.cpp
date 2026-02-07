@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "Mips.h"
+#include "Targets.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/MacroBuilder.h"
 #include "clang/Basic/TargetBuiltins.h"
@@ -19,20 +20,13 @@
 using namespace clang;
 using namespace clang::targets;
 
-static constexpr int NumBuiltins =
-    clang::Mips::LastTSBuiltin - Builtin::FirstTSBuiltin;
-
-static constexpr llvm::StringTable BuiltinStrings =
-    CLANG_BUILTIN_STR_TABLE_START
-#define BUILTIN CLANG_BUILTIN_STR_TABLE
+static constexpr Builtin::Info BuiltinInfo[] = {
+#define BUILTIN(ID, TYPE, ATTRS)                                               \
+  {#ID, TYPE, ATTRS, nullptr, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+#define LIBBUILTIN(ID, TYPE, ATTRS, HEADER)                                    \
+  {#ID, TYPE, ATTRS, nullptr, HeaderDesc::HEADER, ALL_LANGUAGES},
 #include "clang/Basic/BuiltinsMips.def"
-    ;
-
-static constexpr auto BuiltinInfos = Builtin::MakeInfos<NumBuiltins>({
-#define BUILTIN CLANG_BUILTIN_ENTRY
-#define LIBBUILTIN CLANG_LIBBUILTIN_ENTRY
-#include "clang/Basic/BuiltinsMips.def"
-});
+};
 
 bool MipsTargetInfo::processorSupportsGPR64() const {
   return llvm::StringSwitch<bool>(CPU)
@@ -46,8 +40,6 @@ bool MipsTargetInfo::processorSupportsGPR64() const {
       .Case("mips64r6", true)
       .Case("octeon", true)
       .Case("octeon+", true)
-      .Case("i6400", true)
-      .Case("i6500", true)
       .Default(false);
 }
 
@@ -55,7 +47,7 @@ static constexpr llvm::StringLiteral ValidCPUNames[] = {
     {"mips1"},  {"mips2"},    {"mips3"},    {"mips4"},    {"mips5"},
     {"mips32"}, {"mips32r2"}, {"mips32r3"}, {"mips32r5"}, {"mips32r6"},
     {"mips64"}, {"mips64r2"}, {"mips64r3"}, {"mips64r5"}, {"mips64r6"},
-    {"octeon"}, {"octeon+"},  {"p5600"},    {"i6400"},    {"i6500"}};
+    {"octeon"}, {"octeon+"}, {"p5600"}};
 
 bool MipsTargetInfo::isValidCPUName(StringRef Name) const {
   return llvm::is_contained(ValidCPUNames, Name);
@@ -68,12 +60,12 @@ void MipsTargetInfo::fillValidCPUList(
 
 unsigned MipsTargetInfo::getISARev() const {
   return llvm::StringSwitch<unsigned>(getCPU())
-      .Cases({"mips32", "mips64"}, 1)
-      .Cases({"mips32r2", "mips64r2", "octeon", "octeon+"}, 2)
-      .Cases({"mips32r3", "mips64r3"}, 3)
-      .Cases({"mips32r5", "mips64r5", "p5600"}, 5)
-      .Cases({"mips32r6", "mips64r6", "i6400", "i6500"}, 6)
-      .Default(0);
+             .Cases("mips32", "mips64", 1)
+             .Cases("mips32r2", "mips64r2", "octeon", "octeon+", 2)
+             .Cases("mips32r3", "mips64r3", 3)
+             .Cases("mips32r5", "mips64r5", 5)
+             .Cases("mips32r6", "mips64r6", 6)
+             .Default(0);
 }
 
 void MipsTargetInfo::getTargetDefines(const LangOptions &Opts,
@@ -231,9 +223,9 @@ bool MipsTargetInfo::hasFeature(StringRef Feature) const {
       .Default(false);
 }
 
-llvm::SmallVector<Builtin::InfosShard>
-MipsTargetInfo::getTargetBuiltins() const {
-  return {{&BuiltinStrings, BuiltinInfos}};
+ArrayRef<Builtin::Info> MipsTargetInfo::getTargetBuiltins() const {
+  return llvm::ArrayRef(BuiltinInfo,
+                        clang::Mips::LastTSBuiltin - Builtin::FirstTSBuiltin);
 }
 
 unsigned MipsTargetInfo::getUnwindWordWidth() const {
@@ -270,9 +262,8 @@ bool MipsTargetInfo::validateTarget(DiagnosticsEngine &Diags) const {
     return false;
   }
   // Mips revision 6 and -mfp32 are incompatible
-  if (FPMode != FP64 && FPMode != FPXX &&
-      (CPU == "mips32r6" || CPU == "mips64r6" || CPU == "i6400" ||
-       CPU == "i6500")) {
+  if (FPMode != FP64 && FPMode != FPXX && (CPU == "mips32r6" ||
+      CPU == "mips64r6")) {
     Diags.Report(diag::err_opt_not_valid_with_opt) << "-mfp32" << CPU;
     return false;
   }
@@ -337,7 +328,7 @@ WindowsMipsTargetInfo::checkCallingConvention(CallingConv CC) const {
   case CC_X86VectorCall:
     return CCCR_Ignore;
   case CC_C:
-  case CC_DeviceKernel:
+  case CC_OpenCLKernel:
   case CC_PreserveMost:
   case CC_PreserveAll:
   case CC_Swift:

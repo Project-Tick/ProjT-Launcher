@@ -36,6 +36,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/TargetParser/Host.h"
 #include <list>
+#include <map>
 #include <plugin-api.h>
 #include <string>
 #include <system_error>
@@ -1116,11 +1117,9 @@ static std::vector<std::pair<SmallString<128>, bool>> runLTO() {
         std::make_unique<llvm::raw_fd_ostream>(FD, true));
   };
 
-  auto AddBuffer = [&](size_t Task, const Twine &ModuleName,
+  auto AddBuffer = [&](size_t Task, const Twine &moduleName,
                        std::unique_ptr<MemoryBuffer> MB) {
-    auto Stream = AddStream(Task, ModuleName);
-    *Stream->OS << MB->getBuffer();
-    check(Stream->commit(), "Failed to commit cache");
+    *AddStream(Task, moduleName)->OS << MB->getBuffer();
   };
 
   FileCache Cache;
@@ -1156,7 +1155,7 @@ static ld_plugin_status allSymbolsReadHook() {
     llvm::timeTraceProfilerInitialize(options::time_trace_granularity,
                                       options::extra.size() ? options::extra[0]
                                                             : "LLVMgold");
-  llvm::scope_exit FinalizeTimeTrace([&]() {
+  auto FinalizeTimeTrace = llvm::make_scope_exit([&]() {
     if (!llvm::timeTraceProfilerEnabled())
       return;
     assert(!options::time_trace_file.empty());

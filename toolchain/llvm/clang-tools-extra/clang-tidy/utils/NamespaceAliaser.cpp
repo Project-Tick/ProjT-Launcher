@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===---------- NamespaceAliaser.cpp - clang-tidy -------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -16,15 +16,14 @@
 namespace clang::tidy::utils {
 
 using namespace ast_matchers;
-namespace {
-AST_MATCHER_P(NamespaceAliasDecl, hasTargetNamespace,
-              ast_matchers::internal::Matcher<NamespaceDecl>, InnerMatcher) {
-  return InnerMatcher.matches(*Node.getNamespace(), Finder, Builder);
-}
-} // namespace
 
 NamespaceAliaser::NamespaceAliaser(const SourceManager &SourceMgr)
     : SourceMgr(SourceMgr) {}
+
+AST_MATCHER_P(NamespaceAliasDecl, hasTargetNamespace,
+              ast_matchers::internal::Matcher<NamespaceDecl>, innerMatcher) {
+  return innerMatcher.matches(*Node.getNamespace(), Finder, Builder);
+}
 
 std::optional<FixItHint>
 NamespaceAliaser::createAlias(ASTContext &Context, const Stmt &Statement,
@@ -34,7 +33,7 @@ NamespaceAliaser::createAlias(ASTContext &Context, const Stmt &Statement,
   if (!Function || !Function->hasBody())
     return std::nullopt;
 
-  if (AddedAliases[Function].contains(Namespace.str()))
+  if (AddedAliases[Function].count(Namespace.str()) != 0)
     return std::nullopt;
 
   // FIXME: Doesn't consider the order of declarations.
@@ -55,7 +54,7 @@ NamespaceAliaser::createAlias(ASTContext &Context, const Stmt &Statement,
   }
 
   for (const auto &Abbreviation : Abbreviations) {
-    const DeclarationMatcher ConflictMatcher = namedDecl(hasName(Abbreviation));
+    DeclarationMatcher ConflictMatcher = namedDecl(hasName(Abbreviation));
     const auto HasConflictingChildren =
         !match(findAll(ConflictMatcher), *Function, Context).empty();
     const auto HasConflictingAncestors =
@@ -65,10 +64,10 @@ NamespaceAliaser::createAlias(ASTContext &Context, const Stmt &Statement,
     if (HasConflictingAncestors || HasConflictingChildren)
       continue;
 
-    const std::string Declaration =
+    std::string Declaration =
         (llvm::Twine("\nnamespace ") + Abbreviation + " = " + Namespace + ";")
             .str();
-    const SourceLocation Loc =
+    SourceLocation Loc =
         Lexer::getLocForEndOfToken(Function->getBody()->getBeginLoc(), 0,
                                    SourceMgr, Context.getLangOpts());
     AddedAliases[Function][Namespace.str()] = Abbreviation;
@@ -84,8 +83,9 @@ std::string NamespaceAliaser::getNamespaceName(ASTContext &Context,
   const auto *Function = getSurroundingFunction(Context, Statement);
   auto FunctionAliases = AddedAliases.find(Function);
   if (FunctionAliases != AddedAliases.end()) {
-    if (FunctionAliases->second.contains(Namespace))
+    if (FunctionAliases->second.count(Namespace) != 0) {
       return FunctionAliases->second.find(Namespace)->getValue();
+    }
   }
   return Namespace.str();
 }

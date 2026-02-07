@@ -36,18 +36,13 @@ struct TestTransformDialectEraseSchedulePass
   }
 
   void runOnOperation() override {
-    SmallVector<Operation *> opsToDelete;
     getOperation()->walk<WalkOrder::PreOrder>([&](Operation *nestedOp) {
       if (isa<transform::TransformOpInterface>(nestedOp)) {
-        opsToDelete.push_back(nestedOp);
+        nestedOp->erase();
         return WalkResult::skip();
       }
       return WalkResult::advance();
     });
-    for (Operation *op : llvm::reverse(opsToDelete)) {
-      // erase the operation
-      op->erase();
-    }
   }
 };
 } // namespace

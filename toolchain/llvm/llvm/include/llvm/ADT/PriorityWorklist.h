@@ -191,17 +191,8 @@ public:
   /// \returns true if any element is removed.
   template <typename UnaryPredicate>
   bool erase_if(UnaryPredicate P) {
-    typename VectorT::iterator E = remove_if(V, [&](const T &Arg) {
-      if (Arg == T())
-        // Skip null values in the PriorityWorklist.
-        return false;
-
-      if (P(Arg)) {
-        M.erase(Arg);
-        return true;
-      }
-      return false;
-    });
+    typename VectorT::iterator E =
+        remove_if(V, TestAndEraseFromMap<UnaryPredicate>(P, M));
     if (E == V.end())
       return false;
     for (auto I = V.begin(); I != E; ++I)
@@ -223,6 +214,34 @@ public:
   }
 
 private:
+  /// A wrapper predicate designed for use with std::remove_if.
+  ///
+  /// This predicate wraps a predicate suitable for use with std::remove_if to
+  /// call M.erase(x) on each element which is slated for removal. This just
+  /// allows the predicate to be move only which we can't do with lambdas
+  /// today.
+  template <typename UnaryPredicateT>
+  class TestAndEraseFromMap {
+    UnaryPredicateT P;
+    MapT &M;
+
+  public:
+    TestAndEraseFromMap(UnaryPredicateT P, MapT &M)
+        : P(std::move(P)), M(M) {}
+
+    bool operator()(const T &Arg) {
+      if (Arg == T())
+        // Skip null values in the PriorityWorklist.
+        return false;
+
+      if (P(Arg)) {
+        M.erase(Arg);
+        return true;
+      }
+      return false;
+    }
+  };
+
   /// The map from value to index in the vector.
   MapT M;
 

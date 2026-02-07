@@ -10,7 +10,8 @@
 ! CHECK: %[[J_VAL_FINAL:.*]] = fir.do_loop %[[J_VAL:.*]] = %{{.*}} to %{{.*}} step %{{.*}} -> index {
 ! CHECK:   %[[J_VAL_CVT1:.*]] = fir.convert %[[J_VAL]] : (index) -> i32
 ! CHECK:   fir.store %[[J_VAL_CVT1]] to %[[J_ADDR]] : !fir.ptr<i32>
-! CHECK:   fir.result %[[J_VAL]] : index
+! CHECK:   %[[J_VAL_NEXT:.*]] = arith.addi %[[J_VAL]], %{{[^ ]*}} overflow<nsw> : index
+! CHECK:   fir.result %[[J_VAL_NEXT]] : index
 ! CHECK: }
 ! CHECK: %[[J_VAL_CVT2:.*]] = fir.convert %[[J_VAL_FINAL]] : (index) -> i32
 ! CHECK: fir.store %[[J_VAL_CVT2]] to %[[J_ADDR]] : !fir.ptr<i32>
@@ -27,7 +28,8 @@ end subroutine
 ! CHECK: %[[J_VAL_FINAL:.*]] = fir.do_loop %[[J_VAL:.*]] = %{{.*}} to %{{.*}} step %{{.*}} -> index {
 ! CHECK: %[[J_VAL_CVT1:.*]] = fir.convert %[[J_VAL]] : (index) -> i32
 ! CHECK: fir.store %[[J_VAL_CVT1]] to %[[J_ADDR]] : !fir.heap<i32>
-! CHECK: fir.result %[[J_VAL]] : index
+! CHECK: %[[J_VAL_NEXT:.*]] = arith.addi %[[J_VAL]], %{{[^ ]*}} overflow<nsw> : index
+! CHECK: fir.result %[[J_VAL_NEXT]] : index
 ! CHECK: }
 ! CHECK: %[[J_VAL_CVT2:.*]] = fir.convert %[[J_VAL_FINAL]] : (index) -> i32
 ! CHECK: fir.store %[[J_VAL_CVT2]] to %[[J_ADDR]] : !fir.heap<i32>

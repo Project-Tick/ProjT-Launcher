@@ -79,15 +79,6 @@ const char *SBFunction::GetMangledName() const {
   return nullptr;
 }
 
-const char *SBFunction::GetBaseName() const {
-  LLDB_INSTRUMENT_VA(this);
-
-  if (!m_opaque_ptr)
-    return nullptr;
-
-  return m_opaque_ptr->GetMangled().GetBaseName().AsCString();
-}
-
 bool SBFunction::operator==(const SBFunction &rhs) const {
   LLDB_INSTRUMENT_VA(this, rhs);
 
@@ -153,7 +144,7 @@ SBAddress SBFunction::GetStartAddress() {
 
   SBAddress addr;
   if (m_opaque_ptr)
-    addr.SetAddress(m_opaque_ptr->GetAddress());
+    addr.SetAddress(m_opaque_ptr->GetAddressRange().GetBaseAddress());
   return addr;
 }
 

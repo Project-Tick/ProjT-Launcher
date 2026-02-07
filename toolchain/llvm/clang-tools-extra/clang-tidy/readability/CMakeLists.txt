@@ -4,8 +4,7 @@ set(LLVM_LINK_COMPONENTS
   )
 
 add_clang_library(clangTidyReadabilityModule STATIC
-  AmbiguousSmartptrResetCallCheck.cpp
-  AvoidConstParamsInDeclsCheck.cpp
+  AvoidConstParamsInDecls.cpp
   AvoidNestedConditionalOperatorCheck.cpp
   AvoidReturnWithVoidValueCheck.cpp
   AvoidUnconditionalPreprocessorIfCheck.cpp
@@ -14,7 +13,7 @@ add_clang_library(clangTidyReadabilityModule STATIC
   ContainerContainsCheck.cpp
   ContainerDataPointerCheck.cpp
   ContainerSizeEmptyCheck.cpp
-  ConvertMemberFunctionsToStaticCheck.cpp
+  ConvertMemberFunctionsToStatic.cpp
   DeleteNullPointerCheck.cpp
   DuplicateIncludeCheck.cpp
   ElseAfterReturnCheck.cpp
@@ -24,7 +23,6 @@ add_clang_library(clangTidyReadabilityModule STATIC
   IdentifierLengthCheck.cpp
   IdentifierNamingCheck.cpp
   ImplicitBoolConversionCheck.cpp
-  InconsistentIfElseBracesCheck.cpp
   RedundantInlineSpecifierCheck.cpp
   InconsistentDeclarationParameterNameCheck.cpp
   IsolateDeclarationCheck.cpp
@@ -45,12 +43,10 @@ add_clang_library(clangTidyReadabilityModule STATIC
   RedundantDeclarationCheck.cpp
   RedundantFunctionPtrDereferenceCheck.cpp
   RedundantMemberInitCheck.cpp
-  RedundantParenthesesCheck.cpp
   RedundantPreprocessorCheck.cpp
   RedundantSmartptrGetCheck.cpp
   RedundantStringCStrCheck.cpp
   RedundantStringInitCheck.cpp
-  RedundantTypenameCheck.cpp
   ReferenceToConstructedTemporaryCheck.cpp
   SimplifyBooleanExprCheck.cpp
   SimplifySubscriptExprCheck.cpp
@@ -61,7 +57,6 @@ add_clang_library(clangTidyReadabilityModule STATIC
   UniqueptrDeleteReleaseCheck.cpp
   UppercaseLiteralSuffixCheck.cpp
   UseAnyOfAllOfCheck.cpp
-  UseConcisePreprocessorDirectivesCheck.cpp
   UseStdMinMaxCheck.cpp
 
   LINK_LIBS

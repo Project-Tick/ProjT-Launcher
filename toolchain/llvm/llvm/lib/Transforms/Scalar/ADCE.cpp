@@ -485,8 +485,10 @@ void AggressiveDeadCodeElimination::markLiveBranchesFromControlDependences() {
   // which currently have dead terminators that are control
   // dependence sources of a block which is in NewLiveBlocks.
 
-  const SmallPtrSet<BasicBlock *, 16> BWDT(llvm::from_range,
-                                           BlocksWithDeadTerminators);
+  const SmallPtrSet<BasicBlock *, 16> BWDT{
+      BlocksWithDeadTerminators.begin(),
+      BlocksWithDeadTerminators.end()
+  };
   SmallVector<BasicBlock *, 32> IDFBlocks;
   ReverseIDFCalculator IDFs(PDT);
   IDFs.setDefiningBlocks(NewLiveBlocks);
@@ -562,7 +564,20 @@ ADCEChanged AggressiveDeadCodeElimination::removeDeadInstructions() {
     if (isLive(&I))
       continue;
 
-    Changed.ChangedNonDebugInstr = true;
+    if (auto *DII = dyn_cast<DbgInfoIntrinsic>(&I)) {
+      // Avoid removing a dbg.assign that is linked to instructions because it
+      // holds information about an existing store.
+      if (auto *DAI = dyn_cast<DbgAssignIntrinsic>(DII))
+        if (!at::getAssignmentInsts(DAI).empty())
+          continue;
+      // Check if the scope of this variable location is alive.
+      if (AliveScopes.count(DII->getDebugLoc()->getScope()))
+        continue;
+
+      // Fallthrough and drop the intrinsic.
+    } else {
+      Changed.ChangedNonDebugInstr = true;
+    }
 
     // Prepare to delete.
     Worklist.push_back(&I);

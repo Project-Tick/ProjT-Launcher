@@ -35,6 +35,7 @@ namespace llvm {
 class Argument;
 class BasicBlock;
 class BranchProbabilityInfo;
+class DbgDeclareInst;
 class Function;
 class Instruction;
 class MachineFunction;
@@ -179,19 +180,20 @@ public:
   /// be updated after processing the current basic block.
   /// TODO: This isn't per-function state, it's per-basic-block state. But
   /// there's no other convenient place for it to live right now.
-  std::vector<std::pair<MachineInstr*, Register>> PHINodesToUpdate;
+  std::vector<std::pair<MachineInstr*, unsigned> > PHINodesToUpdate;
   unsigned OrigNumPHINodesToUpdate;
 
   /// If the current MBB is a landing pad, the exception pointer and exception
   /// selector registers are copied into these virtual registers by
   /// SelectionDAGISel::PrepareEHLandingPad().
-  Register ExceptionPointerVirtReg, ExceptionSelectorVirtReg;
+  unsigned ExceptionPointerVirtReg, ExceptionSelectorVirtReg;
 
   /// The current call site index being processed, if any. 0 if none.
   unsigned CurCallSite = 0;
 
-  /// Collection of dbg_declare instructions handled after argument
+  /// Collection of dbg.declare instructions handled after argument
   /// lowering and before ISel proper.
+  SmallPtrSet<const DbgDeclareInst *, 8> PreprocessedDbgDeclares;
   SmallPtrSet<const DbgVariableRecord *, 8> PreprocessedDVRDeclares;
 
   /// set - Initialize this FunctionLoweringInfo with the given Function

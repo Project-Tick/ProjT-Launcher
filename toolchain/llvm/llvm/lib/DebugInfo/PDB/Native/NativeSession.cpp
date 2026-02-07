@@ -87,19 +87,6 @@ Error NativeSession::createFromPdb(std::unique_ptr<MemoryBuffer> Buffer,
   return Error::success();
 }
 
-static Error validatePdbMagic(StringRef PdbPath) {
-  file_magic Magic;
-  if (auto EC = identify_magic(PdbPath, Magic))
-    return make_error<RawError>(EC);
-
-  if (Magic != file_magic::pdb)
-    return make_error<RawError>(
-        raw_error_code::invalid_format,
-        "The input file did not contain the pdb file magic.");
-
-  return Error::success();
-}
-
 static Expected<std::unique_ptr<PDBFile>>
 loadPdbFile(StringRef PdbPath, std::unique_ptr<BumpPtrAllocator> &Allocator) {
   ErrorOr<std::unique_ptr<MemoryBuffer>> ErrorOrBuffer =
@@ -110,8 +97,10 @@ loadPdbFile(StringRef PdbPath, std::unique_ptr<BumpPtrAllocator> &Allocator) {
   std::unique_ptr<llvm::MemoryBuffer> Buffer = std::move(*ErrorOrBuffer);
 
   PdbPath = Buffer->getBufferIdentifier();
-  if (auto EC = validatePdbMagic(PdbPath))
-    return std::move(EC);
+  file_magic Magic;
+  auto EC = identify_magic(PdbPath, Magic);
+  if (EC || Magic != file_magic::pdb)
+    return make_error<RawError>(EC);
 
   auto Stream = std::make_unique<MemoryBufferByteStream>(
       std::move(Buffer), llvm::endianness::little);
@@ -163,8 +152,10 @@ Error NativeSession::createFromExe(StringRef ExePath,
   if (!PdbPath)
     return PdbPath.takeError();
 
-  if (auto EC = validatePdbMagic(PdbPath.get()))
-    return EC;
+  file_magic Magic;
+  auto EC = identify_magic(PdbPath.get(), Magic);
+  if (EC || Magic != file_magic::pdb)
+    return make_error<RawError>(EC);
 
   auto Allocator = std::make_unique<BumpPtrAllocator>();
   auto File = loadPdbFile(PdbPath.get(), Allocator);

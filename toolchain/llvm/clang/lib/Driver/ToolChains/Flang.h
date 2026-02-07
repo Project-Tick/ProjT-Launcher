@@ -40,14 +40,6 @@ private:
   void addPreprocessingOptions(const llvm::opt::ArgList &Args,
                                llvm::opt::ArgStringList &CmdArgs) const;
 
-  /// Extract LTO options from the driver arguments and add them to
-  /// the command arguments.
-  ///
-  /// \param [in] Args The list of input driver arguments
-  /// \param [out] CmdArgs The list of output command arguments
-  void addLTOOptions(const llvm::opt::ArgList &Args,
-                     llvm::opt::ArgStringList &CmdArgs) const;
-
   /// Extract PIC options from the driver arguments and add them to
   /// the command arguments.
   ///
@@ -125,16 +117,12 @@ private:
   void addCodegenOptions(const llvm::opt::ArgList &Args,
                          llvm::opt::ArgStringList &CmdArgs) const;
 
-  /// Extract debug compilation options from the driver arguments and add them
+  /// Extract other compilation options from the driver arguments and add them
   /// to the command arguments.
   ///
   /// \param [in] Args The list of input driver arguments
-  /// \param [in] JA The job action
-  /// \param [in] Output The output information on the current file output
-  /// \param [in] Input The input information on the current file input
   /// \param [out] CmdArgs The list of output command arguments
-  void addDebugOptions(const llvm::opt::ArgList &Args, const JobAction &JA,
-                       const InputInfo &Output, const InputInfo &Input,
+  void addOtherOptions(const llvm::opt::ArgList &Args,
                        llvm::opt::ArgStringList &CmdArgs) const;
 
 public:

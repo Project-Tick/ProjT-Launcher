@@ -1,29 +1,20 @@
 ! RUN: %python %S/../test_errors.py %s %flang -fopenmp
 ! Check OpenMP clause validity for the following directives:
 !     2.10 Device constructs
-
-subroutine f
-  integer :: i
-  !WARNING: `DISTRIBUTE` must be dynamically enclosed in a `TEAMS` region.
-  !$omp distribute
-  do i = 1, 100
-     print *, "hello"
-  end do
-end subroutine
 program main
 
   real(8) :: arrayA(256), arrayB(256)
   integer :: N
 
-  arrayA = 1.414d0
-  arrayB = 3.14d0
+  arrayA = 1.414
+  arrayB = 3.14
   N = 256
 
   !$omp task
   !ERROR: `DISTRIBUTE` region has to be strictly nested inside `TEAMS` region.
-  !$omp distribute
+  !$omp distribute 
   do i = 1, N
-     a = 3.14d0
+     a = 3.14
   enddo
   !$omp end distribute
   !$omp end task
@@ -33,7 +24,7 @@ program main
       !ERROR: Only `DISTRIBUTE`, `PARALLEL`, or `LOOP` regions are allowed to be strictly nested inside `TEAMS` region.
       !$omp task
       do k = 1, N
-         a = 3.14d0
+         a = 3.14
       enddo
       !$omp end task
    enddo
@@ -43,7 +34,7 @@ program main
    do i = 1, N
       !$omp parallel
       do k = 1, N
-         a = 3.14d0
+         a = 3.14
       enddo
       !$omp end parallel
    enddo
@@ -51,9 +42,9 @@ program main
 
   !$omp parallel
   !ERROR: `DISTRIBUTE` region has to be strictly nested inside `TEAMS` region.
-  !$omp distribute
+  !$omp distribute 
   do i = 1, N
-     a = 3.14d0
+     a = 3.14
   enddo
   !$omp end distribute
   !$omp end parallel
@@ -62,7 +53,7 @@ program main
    !ERROR: Only `DISTRIBUTE`, `PARALLEL`, or `LOOP` regions are allowed to be strictly nested inside `TEAMS` region.
    !$omp target
       !ERROR: `DISTRIBUTE` region has to be strictly nested inside `TEAMS` region.
-      !$omp distribute
+      !$omp distribute 
       do i = 1, 10
          j = j + 1
       end do
@@ -70,7 +61,7 @@ program main
    !$omp end target
   !$omp end teams
 
-  !$omp teams
+  !$omp teams 
    !$omp parallel
    do k = 1,10
       print *, "hello"
@@ -90,7 +81,7 @@ program main
     !$omp end distribute
   !$omp end target teams
 
-  !$omp teams
+  !$omp teams 
       !ERROR: Only `DISTRIBUTE`, `PARALLEL`, or `LOOP` regions are allowed to be strictly nested inside `TEAMS` region.
       !$omp task
       do k = 1,10
@@ -104,7 +95,7 @@ program main
       !$omp end distribute
   !$omp end teams
 
-  !$omp task
+  !$omp task 
       !$omp parallel
       do k = 1,10
          print *, "hello"
@@ -117,8 +108,4 @@ program main
       end do
       !$omp end distribute
   !$omp end task
-
-  !$omp teams
-    call foo
-  !$omp end teams
 end program main

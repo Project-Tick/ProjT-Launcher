@@ -31,7 +31,6 @@
 #include "llvm/ADT/Twine.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Support/Chrono.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/ErrorOr.h"
@@ -56,7 +55,7 @@ using file_t = void *;
 using file_t = int;
 #endif
 
-LLVM_ABI extern const file_t kInvalidFile;
+extern const file_t kInvalidFile;
 
 /// An enumeration for the file system's view of the type.
 enum class file_type {
@@ -184,7 +183,7 @@ public:
   ///
   /// Also see comments on \c getLastModificationTime() related to the precision
   /// of the returned value.
-  LLVM_ABI TimePoint<> getLastAccessedTime() const;
+  TimePoint<> getLastAccessedTime() const;
 
   /// The file modification time as reported from the underlying file system.
   ///
@@ -193,13 +192,13 @@ public:
   /// There is no guarantee for what kind of resolution you can expect, the
   /// resolution can differ across platforms and even across mountpoints on the
   /// same machine.
-  LLVM_ABI TimePoint<> getLastModificationTime() const;
+  TimePoint<> getLastModificationTime() const;
 
-#if defined(LLVM_ON_UNIX)
+  #if defined(LLVM_ON_UNIX)
   uint32_t getUser() const { return fs_st_uid; }
   uint32_t getGroup() const { return fs_st_gid; }
   uint64_t getSize() const { return fs_st_size; }
-#elif defined(_WIN32)
+  #elif defined (_WIN32)
   uint32_t getUser() const {
     return 9999; // Not applicable to Windows, so...
   }
@@ -211,7 +210,7 @@ public:
   uint64_t getSize() const {
     return (uint64_t(FileSizeHigh) << 32) + FileSizeLow;
   }
-#endif
+  #endif
 
   // setters
   void type(file_type v) { Type = v; }
@@ -220,17 +219,17 @@ public:
 
 /// Represents the result of a call to sys::fs::status().
 class file_status : public basic_file_status {
-  LLVM_ABI friend bool equivalent(file_status A, file_status B);
+  friend bool equivalent(file_status A, file_status B);
 
-#if defined(LLVM_ON_UNIX)
+  #if defined(LLVM_ON_UNIX)
   dev_t fs_st_dev = 0;
   nlink_t fs_st_nlinks = 0;
   ino_t fs_st_ino = 0;
-#elif defined(_WIN32)
+  #elif defined (_WIN32)
   uint32_t NumLinks = 0;
   uint32_t VolumeSerialNumber = 0;
   uint64_t PathHash = 0;
-#endif
+  #endif
 
 public:
   file_status() = default;
@@ -258,13 +257,24 @@ public:
         PathHash(PathHash) {}
   #endif
 
-  LLVM_ABI UniqueID getUniqueID() const;
-  LLVM_ABI uint32_t getLinkCount() const;
+  UniqueID getUniqueID() const;
+  uint32_t getLinkCount() const;
 };
 
 /// @}
 /// @name Physical Operators
 /// @{
+
+/// Make \a path an absolute path.
+///
+/// Makes \a path absolute using the \a current_directory if it is not already.
+/// An empty \a path will result in the \a current_directory.
+///
+/// /absolute/path   => /absolute/path
+/// relative/../path => <current-directory>/relative/../path
+///
+/// @param path A path that is modified to be an absolute path.
+void make_absolute(const Twine &current_directory, SmallVectorImpl<char> &path);
 
 /// Make \a path an absolute path.
 ///
@@ -277,7 +287,7 @@ public:
 /// @param path A path that is modified to be an absolute path.
 /// @returns errc::success if \a path has been made absolute, otherwise a
 ///          platform-specific error_code.
-LLVM_ABI std::error_code make_absolute(SmallVectorImpl<char> &path);
+std::error_code make_absolute(SmallVectorImpl<char> &path);
 
 /// Create all the non-existent directories in path.
 ///
@@ -285,9 +295,9 @@ LLVM_ABI std::error_code make_absolute(SmallVectorImpl<char> &path);
 /// @returns errc::success if is_directory(path), otherwise a platform
 ///          specific error_code. If IgnoreExisting is false, also returns
 ///          error if the directory already existed.
-LLVM_ABI std::error_code
-create_directories(const Twine &path, bool IgnoreExisting = true,
-                   perms Perms = owner_all | group_all);
+std::error_code create_directories(const Twine &path,
+                                   bool IgnoreExisting = true,
+                                   perms Perms = owner_all | group_all);
 
 /// Create the directory in path.
 ///
@@ -295,9 +305,8 @@ create_directories(const Twine &path, bool IgnoreExisting = true,
 /// @returns errc::success if is_directory(path), otherwise a platform
 ///          specific error_code. If IgnoreExisting is false, also returns
 ///          error if the directory already existed.
-LLVM_ABI std::error_code create_directory(const Twine &path,
-                                          bool IgnoreExisting = true,
-                                          perms Perms = owner_all | group_all);
+std::error_code create_directory(const Twine &path, bool IgnoreExisting = true,
+                                 perms Perms = owner_all | group_all);
 
 /// Create a link from \a from to \a to.
 ///
@@ -310,7 +319,7 @@ LLVM_ABI std::error_code create_directory(const Twine &path,
 /// @param from The path to hard link from. This is created.
 /// @returns errc::success if the link was created, otherwise a platform
 /// specific error_code.
-LLVM_ABI std::error_code create_link(const Twine &to, const Twine &from);
+std::error_code create_link(const Twine &to, const Twine &from);
 
 /// Create a hard link from \a from to \a to, or return an error.
 ///
@@ -318,7 +327,7 @@ LLVM_ABI std::error_code create_link(const Twine &to, const Twine &from);
 /// @param from The path to hard link from. This is created.
 /// @returns errc::success if the link was created, otherwise a platform
 /// specific error_code.
-LLVM_ABI std::error_code create_hard_link(const Twine &to, const Twine &from);
+std::error_code create_hard_link(const Twine &to, const Twine &from);
 
 /// Collapse all . and .. patterns, resolve all symlinks, and optionally
 ///        expand ~ expressions to the user's home directory.
@@ -327,29 +336,28 @@ LLVM_ABI std::error_code create_hard_link(const Twine &to, const Twine &from);
 /// @param output The location to store the resolved path.
 /// @param expand_tilde If true, resolves ~ expressions to the user's home
 ///                     directory.
-LLVM_ABI std::error_code real_path(const Twine &path,
-                                   SmallVectorImpl<char> &output,
-                                   bool expand_tilde = false);
+std::error_code real_path(const Twine &path, SmallVectorImpl<char> &output,
+                          bool expand_tilde = false);
 
 /// Expands ~ expressions to the user's home directory. On Unix ~user
 /// directories are resolved as well.
 ///
 /// @param path The path to resolve.
-LLVM_ABI void expand_tilde(const Twine &path, SmallVectorImpl<char> &output);
+void expand_tilde(const Twine &path, SmallVectorImpl<char> &output);
 
 /// Get the current path.
 ///
 /// @param result Holds the current path on return.
 /// @returns errc::success if the current path has been stored in result,
 ///          otherwise a platform-specific error_code.
-LLVM_ABI std::error_code current_path(SmallVectorImpl<char> &result);
+std::error_code current_path(SmallVectorImpl<char> &result);
 
 /// Set the current path.
 ///
 /// @param path The path to set.
 /// @returns errc::success if the current path was successfully set,
 ///          otherwise a platform-specific error_code.
-LLVM_ABI std::error_code set_current_path(const Twine &path);
+std::error_code set_current_path(const Twine &path);
 
 /// Remove path. Equivalent to POSIX remove().
 ///
@@ -357,16 +365,14 @@ LLVM_ABI std::error_code set_current_path(const Twine &path);
 /// @returns errc::success if path has been removed or didn't exist, otherwise a
 ///          platform-specific error code. If IgnoreNonExisting is false, also
 ///          returns error if the file didn't exist.
-LLVM_ABI std::error_code remove(const Twine &path,
-                                bool IgnoreNonExisting = true);
+std::error_code remove(const Twine &path, bool IgnoreNonExisting = true);
 
 /// Recursively delete a directory.
 ///
 /// @param path Input path.
 /// @returns errc::success if path has been removed or didn't exist, otherwise a
 ///          platform-specific error code.
-LLVM_ABI std::error_code remove_directories(const Twine &path,
-                                            bool IgnoreErrors = true);
+std::error_code remove_directories(const Twine &path, bool IgnoreErrors = true);
 
 /// Rename \a from to \a to.
 ///
@@ -376,19 +382,19 @@ LLVM_ABI std::error_code remove_directories(const Twine &path,
 ///
 /// @param from The path to rename from.
 /// @param to The path to rename to. This is created.
-LLVM_ABI std::error_code rename(const Twine &from, const Twine &to);
+std::error_code rename(const Twine &from, const Twine &to);
 
 /// Copy the contents of \a From to \a To.
 ///
 /// @param From The path to copy from.
 /// @param To The path to copy to. This is created.
-LLVM_ABI std::error_code copy_file(const Twine &From, const Twine &To);
+std::error_code copy_file(const Twine &From, const Twine &To);
 
 /// Copy the contents of \a From to \a To.
 ///
 /// @param From The path to copy from.
 /// @param ToFD The open file descriptor of the destination file.
-LLVM_ABI std::error_code copy_file(const Twine &From, int ToFD);
+std::error_code copy_file(const Twine &From, int ToFD);
 
 /// Resize path to size. File is resized as if by POSIX truncate().
 ///
@@ -396,12 +402,7 @@ LLVM_ABI std::error_code copy_file(const Twine &From, int ToFD);
 /// @param Size Size to resize to.
 /// @returns errc::success if \a path has been resized to \a size, otherwise a
 ///          platform-specific error_code.
-LLVM_ABI std::error_code resize_file(int FD, uint64_t Size);
-
-/// Resize path to size with sparse files explicitly enabled. It uses
-/// FSCTL_SET_SPARSE On Windows. This is the same as resize_file on
-/// non-Windows
-LLVM_ABI std::error_code resize_file_sparse(int FD, uint64_t Size);
+std::error_code resize_file(int FD, uint64_t Size);
 
 /// Resize \p FD to \p Size before mapping \a mapped_file_region::readwrite. On
 /// non-Windows, this calls \a resize_file(). On Windows, this is a no-op,
@@ -423,10 +424,10 @@ inline std::error_code resize_file_before_mapping_readwrite(int FD,
 /// @param FD Input file descriptor.
 /// @returns An MD5Result with the hash computed, if successful, otherwise a
 ///          std::error_code.
-LLVM_ABI ErrorOr<MD5::MD5Result> md5_contents(int FD);
+ErrorOr<MD5::MD5Result> md5_contents(int FD);
 
 /// Version of compute_md5 that doesn't require an open file descriptor.
-LLVM_ABI ErrorOr<MD5::MD5Result> md5_contents(const Twine &Path);
+ErrorOr<MD5::MD5Result> md5_contents(const Twine &Path);
 
 /// @}
 /// @name Physical Observers
@@ -437,7 +438,7 @@ LLVM_ABI ErrorOr<MD5::MD5Result> md5_contents(const Twine &Path);
 /// @param status A basic_file_status previously returned from stat.
 /// @returns True if the file represented by status exists, false if it does
 ///          not.
-LLVM_ABI bool exists(const basic_file_status &status);
+bool exists(const basic_file_status &status);
 
 enum class AccessMode { Exist, Write, Execute };
 
@@ -446,7 +447,7 @@ enum class AccessMode { Exist, Write, Execute };
 /// @param Path Input path.
 /// @returns errc::success if the path can be accessed, otherwise a
 ///          platform-specific error_code.
-LLVM_ABI std::error_code access(const Twine &Path, AccessMode Mode);
+std::error_code access(const Twine &Path, AccessMode Mode);
 
 /// Does file exist?
 ///
@@ -460,7 +461,7 @@ inline bool exists(const Twine &Path) {
 ///
 /// @param Path Input path.
 /// @returns True if we can execute it, false otherwise.
-LLVM_ABI bool can_execute(const Twine &Path);
+bool can_execute(const Twine &Path);
 
 /// Can we write this file?
 ///
@@ -479,7 +480,7 @@ inline bool can_write(const Twine &Path) {
 ///
 /// @returns True if A and B both represent the same file system entity, false
 ///          otherwise.
-LLVM_ABI bool equivalent(file_status A, file_status B);
+bool equivalent(file_status A, file_status B);
 
 /// Do paths represent the same thing?
 ///
@@ -491,8 +492,7 @@ LLVM_ABI bool equivalent(file_status A, file_status B);
 ///               inode (or equivalent).
 /// @returns errc::success if result has been successfully set, otherwise a
 ///          platform-specific error_code.
-LLVM_ABI std::error_code equivalent(const Twine &A, const Twine &B,
-                                    bool &result);
+std::error_code equivalent(const Twine &A, const Twine &B, bool &result);
 
 /// Simpler version of equivalent for clients that don't need to
 ///        differentiate between an error and false.
@@ -508,10 +508,10 @@ inline bool equivalent(const Twine &A, const Twine &B) {
 ///               false if it is not.
 /// @returns errc::success if result has been successfully set, otherwise a
 ///          platform specific error_code.
-LLVM_ABI std::error_code is_local(const Twine &path, bool &result);
+std::error_code is_local(const Twine &path, bool &result);
 
 /// Version of is_local accepting an open file descriptor.
-LLVM_ABI std::error_code is_local(int FD, bool &result);
+std::error_code is_local(int FD, bool &result);
 
 /// Simpler version of is_local for clients that don't need to
 ///        differentiate between an error and false.
@@ -533,13 +533,13 @@ inline bool is_local(int FD) {
 /// @param Follow For symbolic links, indicates whether to return the file type
 ///               of the link itself, or of the target.
 /// @returns A value from the file_type enumeration indicating the type of file.
-LLVM_ABI file_type get_file_type(const Twine &Path, bool Follow = true);
+file_type get_file_type(const Twine &Path, bool Follow = true);
 
 /// Does status represent a directory?
 ///
 /// @param status A basic_file_status previously returned from status.
 /// @returns status.type() == file_type::directory_file.
-LLVM_ABI bool is_directory(const basic_file_status &status);
+bool is_directory(const basic_file_status &status);
 
 /// Is path a directory?
 ///
@@ -548,7 +548,7 @@ LLVM_ABI bool is_directory(const basic_file_status &status);
 ///               symlinks, false if it is not. Undefined otherwise.
 /// @returns errc::success if result has been successfully set, otherwise a
 ///          platform-specific error_code.
-LLVM_ABI std::error_code is_directory(const Twine &path, bool &result);
+std::error_code is_directory(const Twine &path, bool &result);
 
 /// Simpler version of is_directory for clients that don't need to
 ///        differentiate between an error and false.
@@ -561,7 +561,7 @@ inline bool is_directory(const Twine &Path) {
 ///
 /// @param status A basic_file_status previously returned from status.
 /// @returns status_known(status) && status.type() == file_type::regular_file.
-LLVM_ABI bool is_regular_file(const basic_file_status &status);
+bool is_regular_file(const basic_file_status &status);
 
 /// Is path a regular file?
 ///
@@ -570,7 +570,7 @@ LLVM_ABI bool is_regular_file(const basic_file_status &status);
 ///               symlinks), false if it is not. Undefined otherwise.
 /// @returns errc::success if result has been successfully set, otherwise a
 ///          platform-specific error_code.
-LLVM_ABI std::error_code is_regular_file(const Twine &path, bool &result);
+std::error_code is_regular_file(const Twine &path, bool &result);
 
 /// Simpler version of is_regular_file for clients that don't need to
 ///        differentiate between an error and false.
@@ -585,7 +585,7 @@ inline bool is_regular_file(const Twine &Path) {
 ///
 /// @param status A basic_file_status previously returned from status.
 /// @returns status_known(status) && status.type() == file_type::symlink_file.
-LLVM_ABI bool is_symlink_file(const basic_file_status &status);
+bool is_symlink_file(const basic_file_status &status);
 
 /// Is path a symlink file?
 ///
@@ -594,7 +594,7 @@ LLVM_ABI bool is_symlink_file(const basic_file_status &status);
 ///               Undefined otherwise.
 /// @returns errc::success if result has been successfully set, otherwise a
 ///          platform-specific error_code.
-LLVM_ABI std::error_code is_symlink_file(const Twine &path, bool &result);
+std::error_code is_symlink_file(const Twine &path, bool &result);
 
 /// Simpler version of is_symlink_file for clients that don't need to
 ///        differentiate between an error and false.
@@ -610,7 +610,7 @@ inline bool is_symlink_file(const Twine &Path) {
 ///
 /// @param status A basic_file_status previously returned from status.
 /// @returns exists(s) && !is_regular_file(s) && !is_directory(s)
-LLVM_ABI bool is_other(const basic_file_status &status);
+bool is_other(const basic_file_status &status);
 
 /// Is path something that exists but is not a directory,
 ///        regular file, or symlink?
@@ -620,7 +620,7 @@ LLVM_ABI bool is_other(const basic_file_status &status);
 ///               file, or a symlink, false if it does not. Undefined otherwise.
 /// @returns errc::success if result has been successfully set, otherwise a
 ///          platform-specific error_code.
-LLVM_ABI std::error_code is_other(const Twine &path, bool &result);
+std::error_code is_other(const Twine &path, bool &result);
 
 /// Get file status as if by POSIX stat().
 ///
@@ -630,15 +630,15 @@ LLVM_ABI std::error_code is_other(const Twine &path, bool &result);
 ///               statted.
 /// @returns errc::success if result has been successfully set, otherwise a
 ///          platform-specific error_code.
-LLVM_ABI std::error_code status(const Twine &path, file_status &result,
-                                bool follow = true);
+std::error_code status(const Twine &path, file_status &result,
+                       bool follow = true);
 
 /// A version for when a file descriptor is already available.
-LLVM_ABI std::error_code status(int FD, file_status &Result);
+std::error_code status(int FD, file_status &Result);
 
 #ifdef _WIN32
 /// A version for when a file descriptor is already available.
-LLVM_ABI std::error_code status(file_t FD, file_status &Result);
+std::error_code status(file_t FD, file_status &Result);
 #endif
 
 /// Get file creation mode mask of the process.
@@ -647,7 +647,7 @@ LLVM_ABI std::error_code status(file_t FD, file_status &Result);
 /// @note There is no umask on Windows. This function returns 0 always
 ///       on Windows. This function does not return an error_code because
 ///       umask(2) never fails. It is not thread safe.
-LLVM_ABI unsigned getUmask();
+unsigned getUmask();
 
 /// Set file permissions.
 ///
@@ -658,12 +658,12 @@ LLVM_ABI unsigned getUmask();
 /// @note On Windows, all permissions except *_write are ignored. Using any of
 ///       owner_write, group_write, or all_write will make the file writable.
 ///       Otherwise, the file will be marked as read-only.
-LLVM_ABI std::error_code setPermissions(const Twine &Path, perms Permissions);
+std::error_code setPermissions(const Twine &Path, perms Permissions);
 
 /// Vesion of setPermissions accepting a file descriptor.
 /// TODO Delete the path based overload once we implement the FD based overload
 /// on Windows.
-LLVM_ABI std::error_code setPermissions(int FD, perms Permissions);
+std::error_code setPermissions(int FD, perms Permissions);
 
 /// Get file permissions.
 ///
@@ -673,7 +673,7 @@ LLVM_ABI std::error_code setPermissions(int FD, perms Permissions);
 /// @note On Windows, if the file does not have the FILE_ATTRIBUTE_READONLY
 ///       attribute, all_all will be returned. Otherwise, all_read | all_exe
 ///       will be returned.
-LLVM_ABI ErrorOr<perms> getPermissions(const Twine &Path);
+ErrorOr<perms> getPermissions(const Twine &Path);
 
 /// Get file size.
 ///
@@ -695,9 +695,8 @@ inline std::error_code file_size(const Twine &Path, uint64_t &Result) {
 /// @returns errc::success if the file times were successfully set, otherwise a
 ///          platform-specific error_code or errc::function_not_supported on
 ///          platforms where the functionality isn't available.
-LLVM_ABI std::error_code
-setLastAccessAndModificationTime(int FD, TimePoint<> AccessTime,
-                                 TimePoint<> ModificationTime);
+std::error_code setLastAccessAndModificationTime(int FD, TimePoint<> AccessTime,
+                                                 TimePoint<> ModificationTime);
 
 /// Simpler version that sets both file modification and access time to the same
 /// time.
@@ -710,7 +709,7 @@ inline std::error_code setLastAccessAndModificationTime(int FD,
 ///
 /// @param s Input file status.
 /// @returns True if status() != status_error.
-LLVM_ABI bool status_known(const basic_file_status &s);
+bool status_known(const basic_file_status &s);
 
 /// Is status available?
 ///
@@ -718,7 +717,7 @@ LLVM_ABI bool status_known(const basic_file_status &s);
 /// @param result Set to true if status() != status_error.
 /// @returns errc::success if result has been successfully set, otherwise a
 ///          platform-specific error_code.
-LLVM_ABI std::error_code status_known(const Twine &path, bool &result);
+std::error_code status_known(const Twine &path, bool &result);
 
 enum CreationDisposition : unsigned {
   /// CD_CreateAlways - When opening a file:
@@ -797,9 +796,8 @@ enum OpenFlags : unsigned {
 /// @param Model Name to base unique path off of.
 /// @param ResultPath Set to the file's path.
 /// @param MakeAbsolute Whether to use the system temp directory.
-LLVM_ABI void createUniquePath(const Twine &Model,
-                               SmallVectorImpl<char> &ResultPath,
-                               bool MakeAbsolute);
+void createUniquePath(const Twine &Model, SmallVectorImpl<char> &ResultPath,
+                      bool MakeAbsolute);
 
 /// Create a uniquely named file.
 ///
@@ -824,16 +822,16 @@ LLVM_ABI void createUniquePath(const Twine &Model,
 /// @param Mode Set to the opened file's permissions.
 /// @returns errc::success if Result{FD,Path} have been successfully set,
 ///          otherwise a platform-specific error_code.
-LLVM_ABI std::error_code createUniqueFile(const Twine &Model, int &ResultFD,
-                                          SmallVectorImpl<char> &ResultPath,
-                                          OpenFlags Flags = OF_None,
-                                          unsigned Mode = all_read | all_write);
+std::error_code createUniqueFile(const Twine &Model, int &ResultFD,
+                                 SmallVectorImpl<char> &ResultPath,
+                                 OpenFlags Flags = OF_None,
+                                 unsigned Mode = all_read | all_write);
 
 /// Simpler version for clients that don't want an open file. An empty
 /// file will still be created.
-LLVM_ABI std::error_code createUniqueFile(const Twine &Model,
-                                          SmallVectorImpl<char> &ResultPath,
-                                          unsigned Mode = all_read | all_write);
+std::error_code createUniqueFile(const Twine &Model,
+                                 SmallVectorImpl<char> &ResultPath,
+                                 unsigned Mode = all_read | all_write);
 
 /// Represents a temporary file.
 ///
@@ -844,16 +842,16 @@ LLVM_ABI std::error_code createUniqueFile(const Twine &Model,
 /// properly handle errors in a destructor.
 class TempFile {
   bool Done = false;
-  LLVM_ABI TempFile(StringRef Name, int FD);
+  TempFile(StringRef Name, int FD);
 
 public:
   /// This creates a temporary file with createUniqueFile and schedules it for
   /// deletion with sys::RemoveFileOnSignal.
-  LLVM_ABI static Expected<TempFile>
-  create(const Twine &Model, unsigned Mode = all_read | all_write,
-         OpenFlags ExtraFlags = OF_None);
-  LLVM_ABI TempFile(TempFile &&Other);
-  LLVM_ABI TempFile &operator=(TempFile &&Other);
+  static Expected<TempFile> create(const Twine &Model,
+                                   unsigned Mode = all_read | all_write,
+                                   OpenFlags ExtraFlags = OF_None);
+  TempFile(TempFile &&Other);
+  TempFile &operator=(TempFile &&Other);
 
   // Name of the temporary file.
   std::string TmpName;
@@ -867,16 +865,16 @@ public:
 #endif
 
   // Keep this with the given name.
-  LLVM_ABI Error keep(const Twine &Name);
+  Error keep(const Twine &Name);
 
   // Keep this with the temporary name.
-  LLVM_ABI Error keep();
+  Error keep();
 
   // Delete the file.
-  LLVM_ABI Error discard();
+  Error discard();
 
   // This checks that keep or delete was called.
-  LLVM_ABI ~TempFile();
+  ~TempFile();
 };
 
 /// Create a file in the system temporary directory.
@@ -887,20 +885,19 @@ public:
 ///
 /// This should be used for things like a temporary .s that is removed after
 /// running the assembler.
-LLVM_ABI std::error_code createTemporaryFile(const Twine &Prefix,
-                                             StringRef Suffix, int &ResultFD,
-                                             SmallVectorImpl<char> &ResultPath,
-                                             OpenFlags Flags = OF_None);
+std::error_code createTemporaryFile(const Twine &Prefix, StringRef Suffix,
+                                    int &ResultFD,
+                                    SmallVectorImpl<char> &ResultPath,
+                                    OpenFlags Flags = OF_None);
 
 /// Simpler version for clients that don't want an open file. An empty
 /// file will still be created.
-LLVM_ABI std::error_code createTemporaryFile(const Twine &Prefix,
-                                             StringRef Suffix,
-                                             SmallVectorImpl<char> &ResultPath,
-                                             OpenFlags Flags = OF_None);
+std::error_code createTemporaryFile(const Twine &Prefix, StringRef Suffix,
+                                    SmallVectorImpl<char> &ResultPath,
+                                    OpenFlags Flags = OF_None);
 
-LLVM_ABI std::error_code
-createUniqueDirectory(const Twine &Prefix, SmallVectorImpl<char> &ResultPath);
+std::error_code createUniqueDirectory(const Twine &Prefix,
+                                      SmallVectorImpl<char> &ResultPath);
 
 /// Get a unique name, not currently exisiting in the filesystem. Subject
 /// to race conditions, prefer to use createUniqueFile instead.
@@ -909,9 +906,8 @@ createUniqueDirectory(const Twine &Prefix, SmallVectorImpl<char> &ResultPath);
 /// checks if it exists. This function is subject to race conditions, if you
 /// want to use the returned name to actually create a file, use
 /// createUniqueFile instead.
-LLVM_ABI std::error_code
-getPotentiallyUniqueFileName(const Twine &Model,
-                             SmallVectorImpl<char> &ResultPath);
+std::error_code getPotentiallyUniqueFileName(const Twine &Model,
+                                             SmallVectorImpl<char> &ResultPath);
 
 /// Get a unique temporary file name, not currently exisiting in the
 /// filesystem. Subject to race conditions, prefer to use createTemporaryFile
@@ -921,7 +917,7 @@ getPotentiallyUniqueFileName(const Twine &Model,
 /// checks if it exists. This function is subject to race conditions, if you
 /// want to use the returned name to actually create a file, use
 /// createTemporaryFile instead.
-LLVM_ABI std::error_code
+std::error_code
 getPotentiallyUniqueTempFileName(const Twine &Prefix, StringRef Suffix,
                                  SmallVectorImpl<char> &ResultPath);
 
@@ -959,9 +955,9 @@ inline FileAccess &operator|=(FileAccess &A, FileAccess B) {
 /// @param Mode The access permissions of the file, represented in octal.
 /// @returns errc::success if \a Name has been opened, otherwise a
 ///          platform-specific error_code.
-LLVM_ABI std::error_code openFile(const Twine &Name, int &ResultFD,
-                                  CreationDisposition Disp, FileAccess Access,
-                                  OpenFlags Flags, unsigned Mode = 0666);
+std::error_code openFile(const Twine &Name, int &ResultFD,
+                         CreationDisposition Disp, FileAccess Access,
+                         OpenFlags Flags, unsigned Mode = 0666);
 
 /// @brief Opens a file with the specified creation disposition, access mode,
 /// and flags and returns a platform-specific file object.
@@ -977,15 +973,14 @@ LLVM_ABI std::error_code openFile(const Twine &Name, int &ResultFD,
 /// @param Mode The access permissions of the file, represented in octal.
 /// @returns errc::success if \a Name has been opened, otherwise a
 ///          platform-specific error_code.
-LLVM_ABI Expected<file_t> openNativeFile(const Twine &Name,
-                                         CreationDisposition Disp,
-                                         FileAccess Access, OpenFlags Flags,
-                                         unsigned Mode = 0666);
+Expected<file_t> openNativeFile(const Twine &Name, CreationDisposition Disp,
+                                FileAccess Access, OpenFlags Flags,
+                                unsigned Mode = 0666);
 
 /// Converts from a Posix file descriptor number to a native file handle.
 /// On Windows, this retreives the underlying handle. On non-Windows, this is a
 /// no-op.
-LLVM_ABI file_t convertFDToNativeFile(int FD);
+file_t convertFDToNativeFile(int FD);
 
 #ifndef _WIN32
 inline file_t convertFDToNativeFile(int FD) { return FD; }
@@ -993,15 +988,15 @@ inline file_t convertFDToNativeFile(int FD) { return FD; }
 
 /// Return an open handle to standard in. On Unix, this is typically FD 0.
 /// Returns kInvalidFile when the stream is closed.
-LLVM_ABI file_t getStdinHandle();
+file_t getStdinHandle();
 
 /// Return an open handle to standard out. On Unix, this is typically FD 1.
 /// Returns kInvalidFile when the stream is closed.
-LLVM_ABI file_t getStdoutHandle();
+file_t getStdoutHandle();
 
 /// Return an open handle to standard error. On Unix, this is typically FD 2.
 /// Returns kInvalidFile when the stream is closed.
-LLVM_ABI file_t getStderrHandle();
+file_t getStderrHandle();
 
 /// Reads \p Buf.size() bytes from \p FileHandle into \p Buf. Returns the number
 /// of bytes actually read. On Unix, this is equivalent to `return ::read(FD,
@@ -1010,8 +1005,7 @@ LLVM_ABI file_t getStderrHandle();
 /// @param FileHandle File to read from.
 /// @param Buf Buffer to read into.
 /// @returns The number of bytes read, or error.
-LLVM_ABI Expected<size_t> readNativeFile(file_t FileHandle,
-                                         MutableArrayRef<char> Buf);
+Expected<size_t> readNativeFile(file_t FileHandle, MutableArrayRef<char> Buf);
 
 /// Default chunk size for \a readNativeFileToEOF().
 enum : size_t { DefaultReadChunkSize = 4 * 4096 };
@@ -1029,9 +1023,8 @@ enum : size_t { DefaultReadChunkSize = 4 * 4096 };
 /// \param Buffer Where to put the file content.
 /// \param ChunkSize Size of chunks.
 /// \returns The error if EOF was not found.
-LLVM_ABI Error readNativeFileToEOF(file_t FileHandle,
-                                   SmallVectorImpl<char> &Buffer,
-                                   ssize_t ChunkSize = DefaultReadChunkSize);
+Error readNativeFileToEOF(file_t FileHandle, SmallVectorImpl<char> &Buffer,
+                          ssize_t ChunkSize = DefaultReadChunkSize);
 
 /// Reads \p Buf.size() bytes from \p FileHandle at offset \p Offset into \p
 /// Buf. If 'pread' is available, this will use that, otherwise it will use
@@ -1042,9 +1035,9 @@ LLVM_ABI Error readNativeFileToEOF(file_t FileHandle,
 /// @param Buf Buffer to read into.
 /// @param Offset Offset into the file at which the read should occur.
 /// @returns The number of bytes read, or error.
-LLVM_ABI Expected<size_t> readNativeFileSlice(file_t FileHandle,
-                                              MutableArrayRef<char> Buf,
-                                              uint64_t Offset);
+Expected<size_t> readNativeFileSlice(file_t FileHandle,
+                                     MutableArrayRef<char> Buf,
+                                     uint64_t Offset);
 
 /// @brief Opens the file with the given name in a write-only or read-write
 /// mode, returning its open file descriptor. If the file does not exist, it
@@ -1144,9 +1137,9 @@ inline Expected<file_t> openNativeFileForReadWrite(const Twine &Name,
 ///                 location.
 /// @returns errc::success if \a Name has been opened, otherwise a
 ///          platform-specific error_code.
-LLVM_ABI std::error_code
-openFileForRead(const Twine &Name, int &ResultFD, OpenFlags Flags = OF_None,
-                SmallVectorImpl<char> *RealPath = nullptr);
+std::error_code openFileForRead(const Twine &Name, int &ResultFD,
+                                OpenFlags Flags = OF_None,
+                                SmallVectorImpl<char> *RealPath = nullptr);
 
 /// @brief Opens the file with the given name in a read-only mode, returning
 /// its open file descriptor.
@@ -1160,15 +1153,9 @@ openFileForRead(const Twine &Name, int &ResultFD, OpenFlags Flags = OF_None,
 ///                 location.
 /// @returns a platform-specific file descriptor if \a Name has been opened,
 ///          otherwise an error object.
-LLVM_ABI Expected<file_t>
+Expected<file_t>
 openNativeFileForRead(const Twine &Name, OpenFlags Flags = OF_None,
                       SmallVectorImpl<char> *RealPath = nullptr);
-
-/// An enumeration for the lock kind.
-enum class LockKind {
-  Exclusive, // Exclusive/writer lock
-  Shared     // Shared/reader lock
-};
 
 /// Try to locks the file during the specified time.
 ///
@@ -1183,7 +1170,6 @@ enum class LockKind {
 /// @param Timeout Time in milliseconds that the process should wait before
 ///                reporting lock failure. Zero value means try to get lock only
 ///                once.
-/// @param Kind    The kind of the lock used (exclusive/shared).
 /// @returns errc::success if lock is successfully obtained,
 /// errc::no_lock_available if the file cannot be locked, or platform-specific
 /// error_code otherwise.
@@ -1192,24 +1178,21 @@ enum class LockKind {
 /// context, as it may not prevent other threads in the same process from
 /// obtaining a lock on the same file, even if they are using a different file
 /// descriptor.
-LLVM_ABI std::error_code
+std::error_code
 tryLockFile(int FD,
-            std::chrono::milliseconds Timeout = std::chrono::milliseconds(0),
-            LockKind Kind = LockKind::Exclusive);
+            std::chrono::milliseconds Timeout = std::chrono::milliseconds(0));
 
 /// Lock the file.
 ///
 /// This function acts as @ref tryLockFile but it waits infinitely.
-/// \param FD file descriptor to use for locking.
-/// \param Kind of lock to used (exclusive/shared).
-LLVM_ABI std::error_code lockFile(int FD, LockKind Kind = LockKind::Exclusive);
+std::error_code lockFile(int FD);
 
 /// Unlock the file.
 ///
 /// @param FD The descriptor representing the file to unlock.
 /// @returns errc::success if lock is successfully released or platform-specific
 /// error_code otherwise.
-LLVM_ABI std::error_code unlockFile(int FD);
+std::error_code unlockFile(int FD);
 
 /// @brief Close the file object.  This should be used instead of ::close for
 /// portability. On error, the caller should assume the file is closed, as is
@@ -1220,7 +1203,7 @@ LLVM_ABI std::error_code unlockFile(int FD);
 ///
 /// @returns An error code if closing the file failed. Typically, an error here
 /// means that the filesystem may have failed to perform some buffered writes.
-LLVM_ABI std::error_code closeFile(file_t &F);
+std::error_code closeFile(file_t &F);
 
 #ifdef LLVM_ON_UNIX
 /// @brief Change ownership of a file.
@@ -1229,8 +1212,7 @@ LLVM_ABI std::error_code closeFile(file_t &F);
 /// @param Group The group of the file to change to.
 /// @returns errc::success if successfully updated file ownership, otherwise an
 ///          error code is returned.
-LLVM_ABI std::error_code changeFileOwnership(int FD, uint32_t Owner,
-                                             uint32_t Group);
+std::error_code changeFileOwnership(int FD, uint32_t Owner, uint32_t Group);
 #endif
 
 /// RAII class that facilitates file locking.
@@ -1262,7 +1244,7 @@ public:
   }
 };
 
-LLVM_ABI std::error_code getUniqueID(const Twine Path, UniqueID &Result);
+std::error_code getUniqueID(const Twine Path, UniqueID &Result);
 
 /// Get disk space usage information.
 ///
@@ -1273,7 +1255,7 @@ LLVM_ABI std::error_code getUniqueID(const Twine Path, UniqueID &Result);
 /// @returns a space_info structure filled with the capacity, free, and
 /// available space on the device \a Path is on. A platform specific error_code
 /// is returned on error.
-LLVM_ABI ErrorOr<space_info> disk_space(const Twine &Path);
+ErrorOr<space_info> disk_space(const Twine &Path);
 
 /// This class represents a memory mapped file. It is based on
 /// boost::iostreams::mapped_file.
@@ -1308,12 +1290,10 @@ private:
     Moved.copyFrom(mapped_file_region());
   }
 
-  LLVM_ABI void unmapImpl();
-  LLVM_ABI void dontNeedImpl();
-  LLVM_ABI void willNeedImpl();
+  void unmapImpl();
+  void dontNeedImpl();
 
-  LLVM_ABI std::error_code init(sys::fs::file_t FD, uint64_t Offset,
-                                mapmode Mode);
+  std::error_code init(sys::fs::file_t FD, uint64_t Offset, mapmode Mode);
 
 public:
   mapped_file_region() = default;
@@ -1328,8 +1308,8 @@ public:
   mapped_file_region &operator=(const mapped_file_region &) = delete;
 
   /// \param fd An open file descriptor to map. Does not take ownership of fd.
-  LLVM_ABI mapped_file_region(sys::fs::file_t fd, mapmode mode, size_t length,
-                              uint64_t offset, std::error_code &ec);
+  mapped_file_region(sys::fs::file_t fd, mapmode mode, size_t length, uint64_t offset,
+                     std::error_code &ec);
 
   ~mapped_file_region() { unmapImpl(); }
 
@@ -1342,28 +1322,22 @@ public:
     copyFrom(mapped_file_region());
   }
   void dontNeed() { dontNeedImpl(); }
-  void willNeed() { willNeedImpl(); }
 
-  LLVM_ABI size_t size() const;
-  LLVM_ABI char *data() const;
-
-  /// Write changes to disk and synchronize. Equivalent to POSIX msync. This
-  /// will wait for flushing memory-mapped region back to disk and can be very
-  /// slow.
-  LLVM_ABI std::error_code sync() const;
+  size_t size() const;
+  char *data() const;
 
   /// Get a const view of the data. Modifying this memory has undefined
   /// behavior.
-  LLVM_ABI const char *const_data() const;
+  const char *const_data() const;
 
   /// \returns The minimum alignment offset must be.
-  LLVM_ABI static int alignment();
+  static int alignment();
 };
 
 /// Return the path to the main executable, given the value of argv[0] from
 /// program startup and the address of main itself. In extremis, this function
 /// may fail and return an empty path.
-LLVM_ABI std::string getMainExecutable(const char *argv0, void *MainExecAddr);
+std::string getMainExecutable(const char *argv0, void *MainExecAddr);
 
 /// @}
 /// @name Iterators
@@ -1390,15 +1364,14 @@ public:
 
   directory_entry() = default;
 
-  LLVM_ABI void
-  replace_filename(const Twine &Filename, file_type Type,
-                   basic_file_status Status = basic_file_status());
+  void replace_filename(const Twine &Filename, file_type Type,
+                        basic_file_status Status = basic_file_status());
 
   const std::string &path() const { return Path; }
   // Get basic information about entry file (a subset of fs::status()).
   // On most platforms this is a stat() call.
   // On windows the information was already retrieved from the directory.
-  LLVM_ABI ErrorOr<basic_file_status> status() const;
+  ErrorOr<basic_file_status> status() const;
   // Get the type of this file.
   // On most platforms (Linux/Mac/Windows/BSD), this was already retrieved.
   // On some platforms (e.g. Solaris) this is a stat() call.
@@ -1411,20 +1384,19 @@ public:
 
   bool operator==(const directory_entry& RHS) const { return Path == RHS.Path; }
   bool operator!=(const directory_entry& RHS) const { return !(*this == RHS); }
-  LLVM_ABI bool operator<(const directory_entry &RHS) const;
-  LLVM_ABI bool operator<=(const directory_entry &RHS) const;
-  LLVM_ABI bool operator>(const directory_entry &RHS) const;
-  LLVM_ABI bool operator>=(const directory_entry &RHS) const;
+  bool operator< (const directory_entry& RHS) const;
+  bool operator<=(const directory_entry& RHS) const;
+  bool operator> (const directory_entry& RHS) const;
+  bool operator>=(const directory_entry& RHS) const;
 };
 
 namespace detail {
 
   struct DirIterState;
 
-  LLVM_ABI std::error_code directory_iterator_construct(DirIterState &,
-                                                        StringRef, bool);
-  LLVM_ABI std::error_code directory_iterator_increment(DirIterState &);
-  LLVM_ABI std::error_code directory_iterator_destruct(DirIterState &);
+  std::error_code directory_iterator_construct(DirIterState &, StringRef, bool);
+  std::error_code directory_iterator_increment(DirIterState &);
+  std::error_code directory_iterator_destruct(DirIterState &);
 
   /// Keeps state for the directory_iterator.
   struct DirIterState {

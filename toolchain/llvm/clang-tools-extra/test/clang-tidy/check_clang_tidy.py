@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# ===-----------------------------------------------------------------------===#
+# ===- check_clang_tidy.py - ClangTidy Test Helper ------------*- python -*--===#
 #
 # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
@@ -45,20 +45,18 @@ Notes
 import argparse
 import os
 import pathlib
-import platform
 import re
 import subprocess
 import sys
-from typing import List, Tuple
 
 
-def write_file(file_name: str, text: str) -> None:
+def write_file(file_name, text):
     with open(file_name, "w", encoding="utf-8") as f:
         f.write(text)
         f.truncate()
 
 
-def try_run(args: List[str], raise_error: bool = True) -> str:
+def try_run(args, raise_error=True):
     try:
         process_output = subprocess.check_output(args, stderr=subprocess.STDOUT).decode(
             errors="ignore"
@@ -73,12 +71,12 @@ def try_run(args: List[str], raise_error: bool = True) -> str:
 
 # This class represents the appearance of a message prefix in a file.
 class MessagePrefix:
-    def __init__(self, label: str) -> None:
+    def __init__(self, label):
         self.has_message = False
-        self.prefixes: List[str] = []
+        self.prefixes = []
         self.label = label
 
-    def check(self, file_check_suffix: str, input_text: str) -> bool:
+    def check(self, file_check_suffix, input_text):
         self.prefix = self.label + file_check_suffix
         self.has_message = self.prefix in input_text
         if self.has_message:
@@ -87,7 +85,7 @@ class MessagePrefix:
 
 
 class CheckRunner:
-    def __init__(self, args: argparse.Namespace, extra_args: List[str]) -> None:
+    def __init__(self, args, extra_args):
         self.resource_dir = args.resource_dir
         self.assume_file_name = args.assume_filename
         self.input_file_name = args.input_file_name
@@ -106,7 +104,6 @@ class CheckRunner:
         self.fixes = MessagePrefix("CHECK-FIXES")
         self.messages = MessagePrefix("CHECK-MESSAGES")
         self.notes = MessagePrefix("CHECK-NOTES")
-        self.match_partial_fixes = args.match_partial_fixes
 
         file_name_with_extension = self.assume_file_name or self.input_file_name
         _, extension = os.path.splitext(file_name_with_extension)
@@ -136,7 +133,8 @@ class CheckRunner:
                 "-fblocks",
             ] + self.clang_extra_args
 
-        self.clang_extra_args.append("-std=" + self.std)
+        if extension in [".cpp", ".hpp", ".mm"]:
+            self.clang_extra_args.append("-std=" + self.std)
 
         # Tests should not rely on STL being available, and instead provide mock
         # implementations of relevant APIs.
@@ -145,16 +143,11 @@ class CheckRunner:
         if self.resource_dir is not None:
             self.clang_extra_args.append("-resource-dir=%s" % self.resource_dir)
 
-    def read_input(self) -> None:
-        # Use a "\\?\" prefix on Windows to handle long file paths transparently:
-        # https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
-        file_name = self.input_file_name
-        if platform.system() == "Windows":
-            file_name = "\\\\?\\" + os.path.abspath(file_name)
-        with open(file_name, "r", encoding="utf-8") as input_file:
+    def read_input(self):
+        with open(self.input_file_name, "r", encoding="utf-8") as input_file:
             self.input_text = input_file.read()
 
-    def get_prefixes(self) -> None:
+    def get_prefixes(self):
         for suffix in self.check_suffix:
             if suffix and not re.match("^[A-Z0-9\\-]+$", suffix):
                 sys.exit(
@@ -196,7 +189,7 @@ class CheckRunner:
             )
         assert expect_diagnosis or self.expect_no_diagnosis
 
-    def prepare_test_inputs(self) -> None:
+    def prepare_test_inputs(self):
         # Remove the contents of the CHECK lines to avoid CHECKs matching on
         # themselves.  We need to keep the comments to preserve line numbers while
         # avoiding empty lines which could potentially trigger formatting-related
@@ -205,11 +198,10 @@ class CheckRunner:
         write_file(self.temp_file_name, cleaned_test)
         write_file(self.original_file_name, cleaned_test)
 
-    def run_clang_tidy(self) -> str:
+    def run_clang_tidy(self):
         args = (
             [
                 "clang-tidy",
-                "--experimental-custom-checks",
                 self.temp_file_name,
             ]
             + [
@@ -246,27 +238,23 @@ class CheckRunner:
         print("------------------------------------------------------------------")
         return clang_tidy_output
 
-    def check_no_diagnosis(self, clang_tidy_output: str) -> None:
+    def check_no_diagnosis(self, clang_tidy_output):
         if clang_tidy_output != "":
             sys.exit("No diagnostics were expected, but found the ones above")
 
-    def check_fixes(self) -> None:
+    def check_fixes(self):
         if self.has_check_fixes:
             try_run(
                 [
                     "FileCheck",
-                    "--input-file=" + self.temp_file_name,
+                    "-input-file=" + self.temp_file_name,
                     self.input_file_name,
-                    "--check-prefixes=" + ",".join(self.fixes.prefixes),
-                    (
-                        "--match-full-lines"
-                        if not self.match_partial_fixes
-                        else "--strict-whitespace"  # Keeping past behavior.
-                    ),
+                    "-check-prefixes=" + ",".join(self.fixes.prefixes),
+                    "-strict-whitespace",
                 ]
             )
 
-    def check_messages(self, clang_tidy_output: str) -> None:
+    def check_messages(self, clang_tidy_output):
         if self.has_check_messages:
             messages_file = self.temp_file_name + ".msg"
             write_file(messages_file, clang_tidy_output)
@@ -280,7 +268,7 @@ class CheckRunner:
                 ]
             )
 
-    def check_notes(self, clang_tidy_output: str) -> None:
+    def check_notes(self, clang_tidy_output):
         if self.has_check_notes:
             notes_file = self.temp_file_name + ".notes"
             filtered_output = [
@@ -299,7 +287,7 @@ class CheckRunner:
                 ]
             )
 
-    def run(self) -> None:
+    def run(self):
         self.read_input()
         if self.export_fixes is None:
             self.get_prefixes()
@@ -325,7 +313,7 @@ CPP_STANDARDS = [
 C_STANDARDS = ["c99", ("c11", "c1x"), "c17", ("c23", "c2x"), "c2y"]
 
 
-def expand_std(std: str) -> List[str]:
+def expand_std(std):
     split_std, or_later, _ = std.partition("-or-later")
 
     if not or_later:
@@ -347,11 +335,11 @@ def expand_std(std: str) -> List[str]:
     return [std]
 
 
-def csv(string: str) -> List[str]:
+def csv(string):
     return string.split(",")
 
 
-def parse_arguments() -> Tuple[argparse.Namespace, List[str]]:
+def parse_arguments():
     parser = argparse.ArgumentParser(
         prog=pathlib.Path(__file__).stem,
         description=__doc__,
@@ -380,26 +368,13 @@ def parse_arguments() -> Tuple[argparse.Namespace, List[str]]:
     parser.add_argument(
         "-std",
         type=csv,
-        default=None,
+        default=["c++11-or-later"],
         help="Passed to clang. Special -or-later values are expanded.",
     )
-    parser.add_argument(
-        "--match-partial-fixes",
-        action="store_true",
-        help="allow partial line matches for fixes",
-    )
-
-    args, extra_args = parser.parse_known_args()
-    if args.std is None:
-        _, extension = os.path.splitext(args.assume_filename or args.input_file_name)
-        args.std = ["c99-or-later" if extension in [".c", ".m"] else "c++11-or-later"]
-
-    return (args, extra_args)
+    return parser.parse_known_args()
 
 
-def main() -> None:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+def main():
     args, extra_args = parse_arguments()
 
     abbreviated_stds = args.std

@@ -2,7 +2,6 @@
 ! REQUIRES: flang, amdgpu
 
 ! RUN: %libomptarget-compile-fortran-run-and-check-generic
-! XFAIL: intelgpu
 program main
     integer :: scalar
     scalar = 10

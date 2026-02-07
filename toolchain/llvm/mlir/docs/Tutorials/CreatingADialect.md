@@ -22,7 +22,7 @@ typically defined in FooDialect.cpp, which includes FooOps.cpp.inc and
 FooOpsInterfaces.h.inc.
 
 The 'Transforms' directory contains rewrite rules for the dialect,
-typically described in TableGen file using the [DRR
+typically described in TableGen file using the [DDR
 format](../DeclarativeRewrites.md).
 
 Note that dialect names should not generally be suffixed with “Ops”,

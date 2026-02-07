@@ -8,13 +8,13 @@
 #ifndef LLVM_XRAY_FDRRECORDPRODUCER_H
 #define LLVM_XRAY_FDRRECORDPRODUCER_H
 
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Error.h"
 #include "llvm/XRay/FDRRecords.h"
 #include "llvm/XRay/XRayRecord.h"
 #include <memory>
 
-namespace llvm::xray {
+namespace llvm {
+namespace xray {
 
 class RecordProducer {
 public:
@@ -24,7 +24,7 @@ public:
   virtual ~RecordProducer() = default;
 };
 
-class LLVM_ABI FileBasedRecordProducer : public RecordProducer {
+class FileBasedRecordProducer : public RecordProducer {
   const XRayFileHeader &Header;
   DataExtractor &E;
   uint64_t &OffsetPtr;
@@ -44,6 +44,7 @@ public:
   Expected<std::unique_ptr<Record>> produce() override;
 };
 
-} // namespace llvm::xray
+} // namespace xray
+} // namespace llvm
 
 #endif // LLVM_XRAY_FDRRECORDPRODUCER_H

@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- BranchCloneCheck.cpp - clang-tidy --------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -13,6 +13,7 @@
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Analysis/CloneDetection.h"
 #include "clang/Lex/Lexer.h"
+#include "llvm/Support/Casting.h"
 
 using namespace clang;
 using namespace clang::ast_matchers;
@@ -29,14 +30,21 @@ using SwitchBranch = llvm::SmallVector<const Stmt *, 2>;
 static bool areSwitchBranchesIdentical(const SwitchBranch &LHS,
                                        const SwitchBranch &RHS,
                                        const ASTContext &Context) {
-  return llvm::equal(LHS, RHS, [&](const Stmt *S1, const Stmt *S2) {
+  if (LHS.size() != RHS.size())
+    return false;
+
+  for (size_t I = 0, Size = LHS.size(); I < Size; I++) {
     // NOTE: We strip goto labels and annotations in addition to stripping
     // the `case X:` or `default:` labels, but it is very unlikely that this
     // would cause false positives in real-world code.
-    return tidy::utils::areStatementsIdentical(S1->stripLabelLikeStatements(),
-                                               S2->stripLabelLikeStatements(),
-                                               Context);
-  });
+    if (!tidy::utils::areStatementsIdentical(LHS[I]->stripLabelLikeStatements(),
+                                             RHS[I]->stripLabelLikeStatements(),
+                                             Context)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 static bool isFallthroughSwitchBranch(const SwitchBranch &Branch) {
@@ -55,7 +63,6 @@ static bool isFallthroughSwitchBranch(const SwitchBranch &Branch) {
       return true; // Ignore sub-switches
     }
 
-    // NOLINTNEXTLINE(readability-identifier-naming) - FIXME
     bool TraverseSwitchCase(SwitchCase *, DataRecursionQueue * = nullptr) {
       return true; // Ignore cases
     }
@@ -68,15 +75,19 @@ static bool isFallthroughSwitchBranch(const SwitchBranch &Branch) {
       if (!S)
         return true;
 
-      return llvm::all_of(S->getAttrs(), [](const Attr *A) {
-        return !isa<FallThroughAttr>(A);
-      });
+      for (const Attr *A : S->getAttrs()) {
+        if (isa<FallThroughAttr>(A))
+          return false;
+      }
+
+      return true;
     }
   } Visitor;
 
-  for (const Stmt *Elem : Branch)
+  for (const Stmt *Elem : Branch) {
     if (!Visitor.TraverseStmt(const_cast<Stmt *>(Elem)))
       return true;
+  }
   return false;
 }
 
@@ -106,6 +117,7 @@ void BranchCloneCheck::registerMatchers(MatchFinder *Finder) {
 ///
 static bool isIdenticalStmt(const ASTContext &Ctx, const Stmt *Stmt1,
                             const Stmt *Stmt2, bool IgnoreSideEffects) {
+
   if (!Stmt1 || !Stmt2)
     return !Stmt1 && !Stmt2;
 
@@ -129,10 +141,19 @@ static bool isIdenticalStmt(const ASTContext &Ctx, const Stmt *Stmt1,
       return false;
 
     // If all children of two expressions are identical, return true.
-    if (!llvm::equal(Expr1->children(), Expr2->children(),
-                     [&](const Stmt *S1, const Stmt *S2) {
-                       return isIdenticalStmt(Ctx, S1, S2, IgnoreSideEffects);
-                     }))
+    Expr::const_child_iterator I1 = Expr1->child_begin();
+    Expr::const_child_iterator I2 = Expr2->child_begin();
+    while (I1 != Expr1->child_end() && I2 != Expr2->child_end()) {
+      if (!isIdenticalStmt(Ctx, *I1, *I2, IgnoreSideEffects))
+        return false;
+      ++I1;
+      ++I2;
+    }
+    // If there are different number of children in the statements, return
+    // false.
+    if (I1 != Expr1->child_end())
+      return false;
+    if (I2 != Expr2->child_end())
       return false;
   }
 
@@ -220,19 +241,25 @@ static bool isIdenticalStmt(const ASTContext &Ctx, const Stmt *Stmt1,
       return false;
     return true;
   }
-  case Stmt::DeferStmtClass: {
-    const auto *DefStmt1 = cast<DeferStmt>(Stmt1);
-    const auto *DefStmt2 = cast<DeferStmt>(Stmt2);
-    return isIdenticalStmt(Ctx, DefStmt1->getBody(), DefStmt2->getBody(),
-                           IgnoreSideEffects);
-  }
   case Stmt::CompoundStmtClass: {
     const auto *CompStmt1 = cast<CompoundStmt>(Stmt1);
     const auto *CompStmt2 = cast<CompoundStmt>(Stmt2);
-    return llvm::equal(CompStmt1->body(), CompStmt2->body(),
-                       [&](const Stmt *S1, const Stmt *S2) {
-                         return isIdenticalStmt(Ctx, S1, S2, IgnoreSideEffects);
-                       });
+
+    if (CompStmt1->size() != CompStmt2->size())
+      return false;
+
+    if (!llvm::all_of(llvm::zip(CompStmt1->body(), CompStmt2->body()),
+                      [&Ctx, IgnoreSideEffects](
+                          std::tuple<const Stmt *, const Stmt *> stmtPair) {
+                        const Stmt *stmt0 = std::get<0>(stmtPair);
+                        const Stmt *stmt1 = std::get<1>(stmtPair);
+                        return isIdenticalStmt(Ctx, stmt0, stmt1,
+                                               IgnoreSideEffects);
+                      })) {
+      return false;
+    }
+
+    return true;
   }
   case Stmt::CompoundAssignOperatorClass:
   case Stmt::BinaryOperatorClass: {
@@ -254,8 +281,8 @@ static bool isIdenticalStmt(const ASTContext &Ctx, const Stmt *Stmt1,
     const auto *IntLit1 = cast<IntegerLiteral>(Stmt1);
     const auto *IntLit2 = cast<IntegerLiteral>(Stmt2);
 
-    const llvm::APInt I1 = IntLit1->getValue();
-    const llvm::APInt I2 = IntLit2->getValue();
+    llvm::APInt I1 = IntLit1->getValue();
+    llvm::APInt I2 = IntLit2->getValue();
     if (I1.getBitWidth() != I2.getBitWidth())
       return false;
     return I1 == I2;
@@ -325,7 +352,7 @@ void BranchCloneCheck::check(const MatchFinder::MatchResult &Result) {
       }
     }
 
-    const size_t N = Branches.size();
+    size_t N = Branches.size();
     llvm::BitVector KnownAsClone(N);
 
     for (size_t I = 0; I + 1 < N; I++) {
@@ -348,11 +375,12 @@ void BranchCloneCheck::check(const MatchFinder::MatchResult &Result) {
           // We report the first occurrence only when we find the second one.
           diag(Branches[I]->getBeginLoc(),
                "repeated branch body in conditional chain");
-          const SourceLocation End =
+          SourceLocation End =
               Lexer::getLocForEndOfToken(Branches[I]->getEndLoc(), 0,
                                          *Result.SourceManager, getLangOpts());
-          if (End.isValid())
+          if (End.isValid()) {
             diag(End, "end of the original", DiagnosticIDs::Note);
+          }
         }
 
         diag(Branches[J]->getBeginLoc(), "clone %0 starts here",
@@ -426,7 +454,7 @@ void BranchCloneCheck::check(const MatchFinder::MatchResult &Result) {
 
       diag(BeginCurrent->front()->getBeginLoc(),
            "switch has %0 consecutive identical branches")
-          << std::distance(BeginCurrent, EndCurrent);
+          << static_cast<int>(std::distance(BeginCurrent, EndCurrent));
 
       SourceLocation EndLoc = (EndCurrent - 1)->back()->getEndLoc();
       // If the case statement is generated from a macro, it's SourceLocation
@@ -439,8 +467,9 @@ void BranchCloneCheck::check(const MatchFinder::MatchResult &Result) {
         EndLoc = Context.getSourceManager().getExpansionLoc(EndLoc);
       EndLoc = Lexer::getLocForEndOfToken(EndLoc, 0, *Result.SourceManager,
                                           getLangOpts());
-      if (EndLoc.isValid())
+      if (EndLoc.isValid()) {
         diag(EndLoc, "last of these clones ends here", DiagnosticIDs::Note);
+      }
       BeginCurrent = EndCurrent;
     }
     return;
@@ -448,7 +477,7 @@ void BranchCloneCheck::check(const MatchFinder::MatchResult &Result) {
 
   if (const auto *IS = Result.Nodes.getNodeAs<IfStmt>("ifWithDescendantIf")) {
     const Stmt *Then = IS->getThen();
-    const auto *CS = dyn_cast<CompoundStmt>(Then);
+    auto CS = dyn_cast<CompoundStmt>(Then);
     if (CS && (!CS->body_empty())) {
       const auto *InnerIf = dyn_cast<IfStmt>(*CS->body_begin());
       if (InnerIf && isIdenticalStmt(Context, IS->getCond(), InnerIf->getCond(),

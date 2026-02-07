@@ -22,11 +22,10 @@
 #include "mlir/IR/Operation.h"
 #include "mlir/IR/PatternMatch.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Support/DebugLog.h"
 #include "llvm/Support/raw_ostream.h"
 #include <optional>
 
-#define DEBUG_TYPE "affine-fusion-utils"
+#define DEBUG_TYPE "loop-fusion-utils"
 
 using namespace mlir;
 using namespace mlir::affine;
@@ -50,10 +49,12 @@ static void getLoadAndStoreMemRefAccesses(Operation *opA,
 /// Returns false otherwise.
 static bool isDependentLoadOrStoreOp(Operation *op,
                                      DenseMap<Value, bool> &values) {
-  if (auto loadOp = dyn_cast<AffineReadOpInterface>(op))
+  if (auto loadOp = dyn_cast<AffineReadOpInterface>(op)) {
     return values.count(loadOp.getMemRef()) > 0 && values[loadOp.getMemRef()];
-  if (auto storeOp = dyn_cast<AffineWriteOpInterface>(op))
+  }
+  if (auto storeOp = dyn_cast<AffineWriteOpInterface>(op)) {
     return values.count(storeOp.getMemRef()) > 0;
+  }
   return false;
 }
 
@@ -252,20 +253,20 @@ FusionResult mlir::affine::canFuseLoops(AffineForOp srcForOp,
                                         FusionStrategy fusionStrategy) {
   // Return 'failure' if 'dstLoopDepth == 0'.
   if (dstLoopDepth == 0) {
-    LDBG() << "Cannot fuse loop nests at depth 0";
+    LLVM_DEBUG(llvm::dbgs() << "Cannot fuse loop nests at depth 0\n");
     return FusionResult::FailPrecondition;
   }
   // Return 'failure' if 'srcForOp' and 'dstForOp' are not in the same block.
   auto *block = srcForOp->getBlock();
   if (block != dstForOp->getBlock()) {
-    LDBG() << "Cannot fuse loop nests in different blocks";
+    LLVM_DEBUG(llvm::dbgs() << "Cannot fuse loop nests in different blocks\n");
     return FusionResult::FailPrecondition;
   }
 
   // Return 'failure' if no valid insertion point for fused loop nest in 'block'
   // exists which would preserve dependences.
   if (!getFusedLoopNestInsertionPoint(srcForOp, dstForOp)) {
-    LDBG() << "Fusion would violate dependences in block";
+    LLVM_DEBUG(llvm::dbgs() << "Fusion would violate dependences in block\n");
     return FusionResult::FailBlockDependence;
   }
 
@@ -278,14 +279,14 @@ FusionResult mlir::affine::canFuseLoops(AffineForOp srcForOp,
   // Gather all load and store from 'forOpA' which precedes 'forOpB' in 'block'.
   SmallVector<Operation *, 4> opsA;
   if (!gatherLoadsAndStores(forOpA, opsA)) {
-    LDBG() << "Fusing loops with affine.if unsupported";
+    LLVM_DEBUG(llvm::dbgs() << "Fusing loops with affine.if unsupported\n");
     return FusionResult::FailPrecondition;
   }
 
   // Gather all load and store from 'forOpB' which succeeds 'forOpA' in 'block'.
   SmallVector<Operation *, 4> opsB;
   if (!gatherLoadsAndStores(forOpB, opsB)) {
-    LDBG() << "Fusing loops with affine.if unsupported";
+    LLVM_DEBUG(llvm::dbgs() << "Fusing loops with affine.if unsupported\n");
     return FusionResult::FailPrecondition;
   }
 
@@ -297,7 +298,7 @@ FusionResult mlir::affine::canFuseLoops(AffineForOp srcForOp,
     // TODO: 'getMaxLoopDepth' does not support forward slice fusion.
     assert(isSrcForOpBeforeDstForOp && "Unexpected forward slice fusion");
     if (getMaxLoopDepth(opsA, opsB) < dstLoopDepth) {
-      LDBG() << "Fusion would violate loop dependences";
+      LLVM_DEBUG(llvm::dbgs() << "Fusion would violate loop dependences\n");
       return FusionResult::FailFusionDependence;
     }
   }
@@ -340,12 +341,12 @@ FusionResult mlir::affine::canFuseLoops(AffineForOp srcForOp,
       strategyOpsA, opsB, dstLoopDepth, numCommonLoops,
       isSrcForOpBeforeDstForOp, srcSlice);
   if (sliceComputationResult.value == SliceComputationResult::GenericFailure) {
-    LDBG() << "computeSliceUnion failed";
+    LLVM_DEBUG(llvm::dbgs() << "computeSliceUnion failed\n");
     return FusionResult::FailPrecondition;
   }
   if (sliceComputationResult.value ==
       SliceComputationResult::IncorrectSliceFailure) {
-    LDBG() << "Incorrect slice computation";
+    LLVM_DEBUG(llvm::dbgs() << "Incorrect slice computation\n");
     return FusionResult::FailIncorrectSlice;
   }
 
@@ -478,7 +479,7 @@ bool mlir::affine::getLoopNestStats(AffineForOp forOpRoot,
     auto *parentForOp = forOp->getParentOp();
     if (forOp != forOpRoot) {
       if (!isa<AffineForOp>(parentForOp)) {
-        LDBG() << "Expected parent AffineForOp";
+        LLVM_DEBUG(llvm::dbgs() << "Expected parent AffineForOp\n");
         return WalkResult::interrupt();
       }
       // Add mapping to 'forOp' from its parent AffineForOp.
@@ -499,7 +500,7 @@ bool mlir::affine::getLoopNestStats(AffineForOp forOpRoot,
     std::optional<uint64_t> maybeConstTripCount = getConstantTripCount(forOp);
     if (!maybeConstTripCount) {
       // Currently only constant trip count loop nests are supported.
-      LDBG() << "Non-constant trip count unsupported";
+      LLVM_DEBUG(llvm::dbgs() << "Non-constant trip count unsupported\n");
       return WalkResult::interrupt();
     }
 
@@ -613,8 +614,11 @@ bool mlir::affine::getFusionComputeCost(AffineForOp srcForOp,
         // 'insertPointParent'.
         getAffineForIVs(*user, &loops);
         if (llvm::is_contained(loops, cast<AffineForOp>(insertPointParent))) {
-          if (auto forOp = dyn_cast_or_null<AffineForOp>(user->getParentOp()))
-            --computeCostMap[forOp];
+          if (auto forOp = dyn_cast_or_null<AffineForOp>(user->getParentOp())) {
+            if (computeCostMap.count(forOp) == 0)
+              computeCostMap[forOp] = 0;
+            computeCostMap[forOp] -= 1;
+          }
         }
       }
     }

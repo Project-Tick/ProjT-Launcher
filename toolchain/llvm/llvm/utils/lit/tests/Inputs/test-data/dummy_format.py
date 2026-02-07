@@ -1,5 +1,9 @@
 import os
-import configparser
+
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
 
 import lit.formats
 import lit.Test
@@ -12,7 +16,7 @@ class DummyFormat(lit.formats.FileBasedTest):
 
         source_path = test.getSourcePath()
 
-        cfg = configparser.ConfigParser()
+        cfg = ConfigParser.ConfigParser()
         cfg.read(source_path)
 
         # Create the basic test result.
@@ -23,16 +27,10 @@ class DummyFormat(lit.formats.FileBasedTest):
         # Load additional metrics.
         for key, value_str in cfg.items("results"):
             value = eval(value_str)
-            metric = lit.Test.toMetricValue(value)
             if isinstance(value, int):
-                assert isinstance(metric, lit.Test.IntMetricValue)
-                assert metric.format() == lit.Test.IntMetricValue(value).format()
+                metric = lit.Test.IntMetricValue(value)
             elif isinstance(value, float):
-                assert isinstance(metric, lit.Test.RealMetricValue)
-                assert metric.format() == lit.Test.RealMetricValue(value).format()
-            elif isinstance(value, str):
-                assert isinstance(metric, lit.Test.JSONMetricValue)
-                assert metric.format() == lit.Test.JSONMetricValue(value).format()
+                metric = lit.Test.RealMetricValue(value)
             else:
                 raise RuntimeError("unsupported result type")
             result.addMetric(key, metric)

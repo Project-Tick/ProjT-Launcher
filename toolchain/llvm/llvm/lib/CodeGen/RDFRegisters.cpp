@@ -46,7 +46,7 @@ PhysicalRegisterInfo::PhysicalRegisterInfo(const TargetRegisterInfo &tri,
 
   UnitInfos.resize(TRI.getNumRegUnits());
 
-  for (MCRegUnit U : TRI.regunits()) {
+  for (uint32_t U = 0, NU = TRI.getNumRegUnits(); U != NU; ++U) {
     if (UnitInfos[U].Reg != 0)
       continue;
     MCRegUnitRootIterator R(U, &TRI);
@@ -58,7 +58,7 @@ PhysicalRegisterInfo::PhysicalRegisterInfo(const TargetRegisterInfo &tri,
       UnitInfos[U].Reg = F;
     } else {
       for (MCRegUnitMaskIterator I(F, &TRI); I.isValid(); ++I) {
-        std::pair<MCRegUnit, LaneBitmask> P = *I;
+        std::pair<uint32_t, LaneBitmask> P = *I;
         UnitInfo &UI = UnitInfos[P.first];
         UI.Reg = F;
         UI.Mask = P.second;
@@ -82,13 +82,13 @@ PhysicalRegisterInfo::PhysicalRegisterInfo(const TargetRegisterInfo &tri,
       if (!(MB[I / 32] & (1u << (I % 32))))
         continue;
       for (MCRegUnit Unit : TRI.regunits(MCRegister::from(I)))
-        PU.set(static_cast<unsigned>(Unit));
+        PU.set(Unit);
     }
     MaskInfos[M].Units = PU.flip();
   }
 
   AliasInfos.resize(TRI.getNumRegUnits());
-  for (MCRegUnit U : TRI.regunits()) {
+  for (uint32_t U = 0, NU = TRI.getNumRegUnits(); U != NU; ++U) {
     BitVector AS(TRI.getNumRegs());
     for (MCRegUnitRootIterator R(U, &TRI); R.isValid(); ++R)
       for (MCPhysReg S : TRI.superregs_inclusive(*R))
@@ -101,13 +101,13 @@ bool PhysicalRegisterInfo::alias(RegisterRef RA, RegisterRef RB) const {
   return !disjoint(getUnits(RA), getUnits(RB));
 }
 
-std::set<RegisterId> PhysicalRegisterInfo::getAliasSet(RegisterRef RR) const {
+std::set<RegisterId> PhysicalRegisterInfo::getAliasSet(RegisterId Reg) const {
   // Do not include Reg in the alias set.
   std::set<RegisterId> AS;
-  assert(!RR.isUnit() && "No units allowed");
-  if (RR.isMask()) {
+  assert(!RegisterRef::isUnitId(Reg) && "No units allowed");
+  if (RegisterRef::isMaskId(Reg)) {
     // XXX SLOW
-    const uint32_t *MB = getRegMaskBits(RR);
+    const uint32_t *MB = getRegMaskBits(Reg);
     for (unsigned i = 1, e = TRI.getNumRegs(); i != e; ++i) {
       if (MB[i / 32] & (1u << (i % 32)))
         continue;
@@ -116,8 +116,8 @@ std::set<RegisterId> PhysicalRegisterInfo::getAliasSet(RegisterRef RR) const {
     return AS;
   }
 
-  assert(RR.isReg());
-  for (MCRegAliasIterator AI(RR.asMCReg(), &TRI, false); AI.isValid(); ++AI)
+  assert(RegisterRef::isRegId(Reg));
+  for (MCRegAliasIterator AI(Reg, &TRI, false); AI.isValid(); ++AI)
     AS.insert(*AI);
 
   return AS;
@@ -126,20 +126,23 @@ std::set<RegisterId> PhysicalRegisterInfo::getAliasSet(RegisterRef RR) const {
 std::set<RegisterId> PhysicalRegisterInfo::getUnits(RegisterRef RR) const {
   std::set<RegisterId> Units;
 
+  if (RR.Reg == 0)
+    return Units; // Empty
+
   if (RR.isReg()) {
     if (RR.Mask.none())
       return Units; // Empty
-    for (MCRegUnitMaskIterator UM(RR.asMCReg(), &TRI); UM.isValid(); ++UM) {
+    for (MCRegUnitMaskIterator UM(RR.idx(), &TRI); UM.isValid(); ++UM) {
       auto [U, M] = *UM;
       if ((M & RR.Mask).any())
-        Units.insert(static_cast<unsigned>(U));
+        Units.insert(U);
     }
     return Units;
   }
 
   assert(RR.isMask());
   unsigned NumRegs = TRI.getNumRegs();
-  const uint32_t *MB = getRegMaskBits(RR);
+  const uint32_t *MB = getRegMaskBits(RR.idx());
   for (unsigned I = 0, E = (NumRegs + 31) / 32; I != E; ++I) {
     uint32_t C = ~MB[I]; // Clobbered regs
     if (I == 0)          // Reg 0 should be ignored
@@ -152,20 +155,19 @@ std::set<RegisterId> PhysicalRegisterInfo::getUnits(RegisterRef RR) const {
       unsigned T = llvm::countr_zero(C);
       unsigned CR = 32 * I + T; // Clobbered reg
       for (MCRegUnit U : TRI.regunits(CR))
-        Units.insert(static_cast<unsigned>(U));
+        Units.insert(U);
       C &= ~(1u << T);
     }
   }
   return Units;
 }
 
-RegisterRef PhysicalRegisterInfo::mapTo(RegisterRef RR, RegisterId R) const {
-  if (RR.Id == R)
+RegisterRef PhysicalRegisterInfo::mapTo(RegisterRef RR, unsigned R) const {
+  if (RR.Reg == R)
     return RR;
-  if (unsigned Idx = TRI.getSubRegIndex(RegisterRef(R).asMCReg(), RR.asMCReg()))
+  if (unsigned Idx = TRI.getSubRegIndex(R, RR.Reg))
     return RegisterRef(R, TRI.composeSubRegIndexLaneMask(Idx, RR.Mask));
-  if (unsigned Idx =
-          TRI.getSubRegIndex(RR.asMCReg(), RegisterRef(R).asMCReg())) {
+  if (unsigned Idx = TRI.getSubRegIndex(RR.Reg, R)) {
     const RegInfo &RI = RegInfos[R];
     LaneBitmask RCM =
         RI.RegClass ? RI.RegClass->LaneMask : LaneBitmask::getAll();
@@ -177,16 +179,16 @@ RegisterRef PhysicalRegisterInfo::mapTo(RegisterRef RR, RegisterId R) const {
 
 bool PhysicalRegisterInfo::equal_to(RegisterRef A, RegisterRef B) const {
   if (!A.isReg() || !B.isReg()) {
-    // For non-regs, or comparing reg and non-reg, use only the Id member.
-    return A.Id == B.Id;
+    // For non-regs, or comparing reg and non-reg, use only the Reg member.
+    return A.Reg == B.Reg;
   }
 
-  if (A.Id == B.Id)
+  if (A.Reg == B.Reg)
     return A.Mask == B.Mask;
 
   // Compare reg units lexicographically.
-  MCRegUnitMaskIterator AI(A.asMCReg(), &getTRI());
-  MCRegUnitMaskIterator BI(B.asMCReg(), &getTRI());
+  MCRegUnitMaskIterator AI(A.Reg, &getTRI());
+  MCRegUnitMaskIterator BI(B.Reg, &getTRI());
   while (AI.isValid() && BI.isValid()) {
     auto [AReg, AMask] = *AI;
     auto [BReg, BMask] = *BI;
@@ -213,18 +215,18 @@ bool PhysicalRegisterInfo::equal_to(RegisterRef A, RegisterRef B) const {
 
 bool PhysicalRegisterInfo::less(RegisterRef A, RegisterRef B) const {
   if (!A.isReg() || !B.isReg()) {
-    // For non-regs, or comparing reg and non-reg, use only the Id member.
-    return A.Id < B.Id;
+    // For non-regs, or comparing reg and non-reg, use only the Reg member.
+    return A.Reg < B.Reg;
   }
 
-  if (A.Id == B.Id)
+  if (A.Reg == B.Reg)
     return A.Mask < B.Mask;
   if (A.Mask == B.Mask)
-    return A.Id < B.Id;
+    return A.Reg < B.Reg;
 
   // Compare reg units lexicographically.
-  llvm::MCRegUnitMaskIterator AI(A.asMCReg(), &getTRI());
-  llvm::MCRegUnitMaskIterator BI(B.asMCReg(), &getTRI());
+  llvm::MCRegUnitMaskIterator AI(A.Reg, &getTRI());
+  llvm::MCRegUnitMaskIterator BI(B.Reg, &getTRI());
   while (AI.isValid() && BI.isValid()) {
     auto [AReg, AMask] = *AI;
     auto [BReg, BMask] = *BI;
@@ -250,17 +252,18 @@ bool PhysicalRegisterInfo::less(RegisterRef A, RegisterRef B) const {
 }
 
 void PhysicalRegisterInfo::print(raw_ostream &OS, RegisterRef A) const {
-  if (A.isReg()) {
-    MCRegister Reg = A.asMCReg();
-    if (Reg && Reg.id() < TRI.getNumRegs())
-      OS << TRI.getName(Reg);
+  if (A.Reg == 0 || A.isReg()) {
+    if (0 < A.idx() && A.idx() < TRI.getNumRegs())
+      OS << TRI.getName(A.idx());
     else
-      OS << printReg(Reg, &TRI);
+      OS << printReg(A.idx(), &TRI);
     OS << PrintLaneMaskShort(A.Mask);
   } else if (A.isUnit()) {
-    OS << printRegUnit(A.asMCRegUnit(), &TRI);
+    OS << printRegUnit(A.idx(), &TRI);
   } else {
-    unsigned Idx = A.asMaskIdx();
+    assert(A.isMask());
+    // RegMask SS flag is preserved by idx().
+    unsigned Idx = Register::stackSlot2Index(A.idx());
     const char *Fmt = Idx < 0x10000 ? "%04x" : "%08x";
     OS << "M#" << format(Fmt, Idx);
   }
@@ -269,31 +272,33 @@ void PhysicalRegisterInfo::print(raw_ostream &OS, RegisterRef A) const {
 void PhysicalRegisterInfo::print(raw_ostream &OS, const RegisterAggr &A) const {
   OS << '{';
   for (unsigned U : A.units())
-    OS << ' ' << printRegUnit(static_cast<MCRegUnit>(U), &TRI);
+    OS << ' ' << printRegUnit(U, &TRI);
   OS << " }";
 }
 
 bool RegisterAggr::hasAliasOf(RegisterRef RR) const {
   if (RR.isMask())
-    return Units.anyCommon(PRI.getMaskUnits(RR));
+    return Units.anyCommon(PRI.getMaskUnits(RR.Reg));
 
-  for (MCRegUnitMaskIterator U(RR.asMCReg(), &PRI.getTRI()); U.isValid(); ++U) {
-    auto [Unit, LaneMask] = *U;
-    if ((LaneMask & RR.Mask).any())
-      if (Units.test(static_cast<unsigned>(Unit)))
+  for (MCRegUnitMaskIterator U(RR.Reg, &PRI.getTRI()); U.isValid(); ++U) {
+    std::pair<uint32_t, LaneBitmask> P = *U;
+    if ((P.second & RR.Mask).any())
+      if (Units.test(P.first))
         return true;
   }
   return false;
 }
 
 bool RegisterAggr::hasCoverOf(RegisterRef RR) const {
-  if (RR.isMask())
-    return PRI.getMaskUnits(RR).subsetOf(Units);
+  if (RR.isMask()) {
+    BitVector T(PRI.getMaskUnits(RR.Reg));
+    return T.reset(Units).none();
+  }
 
-  for (MCRegUnitMaskIterator U(RR.asMCReg(), &PRI.getTRI()); U.isValid(); ++U) {
-    auto [Unit, LaneMask] = *U;
-    if ((LaneMask & RR.Mask).any())
-      if (!Units.test(static_cast<unsigned>(Unit)))
+  for (MCRegUnitMaskIterator U(RR.Reg, &PRI.getTRI()); U.isValid(); ++U) {
+    std::pair<uint32_t, LaneBitmask> P = *U;
+    if ((P.second & RR.Mask).any())
+      if (!Units.test(P.first))
         return false;
   }
   return true;
@@ -301,14 +306,14 @@ bool RegisterAggr::hasCoverOf(RegisterRef RR) const {
 
 RegisterAggr &RegisterAggr::insert(RegisterRef RR) {
   if (RR.isMask()) {
-    Units |= PRI.getMaskUnits(RR);
+    Units |= PRI.getMaskUnits(RR.Reg);
     return *this;
   }
 
-  for (MCRegUnitMaskIterator U(RR.asMCReg(), &PRI.getTRI()); U.isValid(); ++U) {
-    auto [Unit, LaneMask] = *U;
-    if ((LaneMask & RR.Mask).any())
-      Units.set(static_cast<unsigned>(Unit));
+  for (MCRegUnitMaskIterator U(RR.Reg, &PRI.getTRI()); U.isValid(); ++U) {
+    std::pair<uint32_t, LaneBitmask> P = *U;
+    if ((P.second & RR.Mask).any())
+      Units.set(P.first);
   }
   return *this;
 }
@@ -359,13 +364,13 @@ RegisterRef RegisterAggr::makeRegRef() const {
   // in this aggregate.
 
   // Get all the registers aliased to the first unit in the bit vector.
-  BitVector Regs = PRI.getUnitAliases(static_cast<MCRegUnit>(U));
+  BitVector Regs = PRI.getUnitAliases(U);
   U = Units.find_next(U);
 
   // For each other unit, intersect it with the set of all registers
   // aliased that unit.
   while (U >= 0) {
-    Regs &= PRI.getUnitAliases(static_cast<MCRegUnit>(U));
+    Regs &= PRI.getUnitAliases(U);
     U = Units.find_next(U);
   }
 
@@ -379,9 +384,9 @@ RegisterRef RegisterAggr::makeRegRef() const {
 
   LaneBitmask M;
   for (MCRegUnitMaskIterator I(F, &PRI.getTRI()); I.isValid(); ++I) {
-    auto [Unit, LaneMask] = *I;
-    if (Units.test(static_cast<unsigned>(Unit)))
-      M |= LaneMask;
+    std::pair<uint32_t, LaneBitmask> P = *I;
+    if (Units.test(P.first))
+      M |= P.second;
   }
   return RegisterRef(F, M);
 }
@@ -389,8 +394,8 @@ RegisterRef RegisterAggr::makeRegRef() const {
 RegisterAggr::ref_iterator::ref_iterator(const RegisterAggr &RG, bool End)
     : Owner(&RG) {
   for (int U = RG.Units.find_first(); U >= 0; U = RG.Units.find_next(U)) {
-    RegisterRef R = RG.PRI.getRefForUnit(static_cast<MCRegUnit>(U));
-    Masks[R.Id] |= R.Mask;
+    RegisterRef R = RG.PRI.getRefForUnit(U);
+    Masks[R.Reg] |= R.Mask;
   }
   Pos = End ? Masks.end() : Masks.begin();
   Index = End ? Masks.size() : 0;

@@ -59,8 +59,6 @@ def is_valid_arch(s):
         "armv7s",
         "armv7k",
         "arm64",
-        "arm64e",
-        "powerpc",
         "powerpc64",
         "powerpc64le",
         "s390x",
@@ -451,14 +449,7 @@ class SymbolizationLoop(object):
             # E.g. in Chrome several binaries may share a single .dSYM.
             self.dsym_hint_producer = dsym_hint_producer
             self.system = os.uname()[0]
-            if self.system not in [
-                "Linux",
-                "Darwin",
-                "FreeBSD",
-                "NetBSD",
-                "SunOS",
-                "AIX",
-            ]:
+            if self.system not in ["Linux", "Darwin", "FreeBSD", "NetBSD", "SunOS"]:
                 raise Exception("Unknown system")
             self.llvm_symbolizers = {}
             self.last_llvm_symbolizer = None
@@ -516,29 +507,20 @@ class SymbolizationLoop(object):
         assert result
         return result
 
-    def get_symbolized_lines(self, symbolized_lines):
+    def get_symbolized_lines(self, symbolized_lines, inc_frame_counter=True):
         if not symbolized_lines:
-            # If it is an unparsable frame, but contains a frame counter and address
-            # replace the frame counter so the stack is still consistent.
-            unknown_stack_frame_format = r"^( *#([0-9]+) +)(0x[0-9a-f]+) +.*"
-            match = re.match(unknown_stack_frame_format, self.current_line)
-            if match:
-                rewritten_line = (
-                    self.current_line[: match.start(2)]
-                    + str(self.frame_no)
-                    + self.current_line[match.end(2) :]
+            if inc_frame_counter:
+                self.frame_no += 1
+            return [self.current_line]
+        else:
+            assert inc_frame_counter
+            result = []
+            for symbolized_frame in symbolized_lines:
+                result.append(
+                    "    #%s %s" % (str(self.frame_no), symbolized_frame.rstrip())
                 )
                 self.frame_no += 1
-                return [rewritten_line]
-            # Not a frame line so don't increment the frame counter.
-            return [self.current_line]
-        result = []
-        for symbolized_frame in symbolized_lines:
-            result.append(
-                "    #%s %s" % (str(self.frame_no), symbolized_frame.rstrip())
-            )
-            self.frame_no += 1
-        return result
+            return result
 
     def process_logfile(self):
         self.frame_no = 0
@@ -564,7 +546,8 @@ class SymbolizationLoop(object):
         match = re.match(stack_trace_line_format, line)
         if not match:
             logging.debug('Line "{}" does not match regex'.format(line))
-            return self.get_symbolized_lines(None)
+            # Not a frame line so don't increment the frame counter.
+            return self.get_symbolized_lines(None, inc_frame_counter=False)
         logging.debug(line)
         _, frameno_str, addr, binary, offset = match.groups()
 

@@ -26,7 +26,7 @@ namespace sys {
 constexpr bool IsBigEndianHost =
     llvm::endianness::native == llvm::endianness::big;
 
-constexpr bool IsLittleEndianHost = !IsBigEndianHost;
+static const bool IsLittleEndianHost = !IsBigEndianHost;
 
 inline unsigned char      getSwappedBytes(unsigned char      C) { return llvm::byteswap(C); }
 inline   signed char      getSwappedBytes( signed  char      C) { return llvm::byteswap(C); }

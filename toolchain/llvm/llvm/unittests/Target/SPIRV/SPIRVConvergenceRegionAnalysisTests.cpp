@@ -11,7 +11,6 @@
 #include "llvm/Analysis/PostDominators.h"
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
@@ -23,6 +22,9 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <queue>
+
+using ::testing::Contains;
+using ::testing::Pair;
 
 using namespace llvm;
 using namespace llvm::SPIRV;

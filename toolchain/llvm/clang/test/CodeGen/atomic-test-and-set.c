@@ -81,8 +81,7 @@ void clear_dynamic(char *ptr, int order) {
 // CHECK-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[PTR_ADDR]], align 8
 // CHECK-NEXT:    [[TMP1:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 monotonic, align 1
 // CHECK-NEXT:    [[TOBOOL:%.*]] = icmp ne i8 [[TMP1]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT:%.*]] = zext i1 [[TOBOOL]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[TMP2:%.*]] = load i8, ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[LOADEDV:%.*]] = trunc i8 [[TMP2]] to i1
 // CHECK-NEXT:    ret void
@@ -100,8 +99,7 @@ void test_and_set_relaxed(char *ptr) {
 // CHECK-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[PTR_ADDR]], align 8
 // CHECK-NEXT:    [[TMP1:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 acquire, align 1
 // CHECK-NEXT:    [[TOBOOL:%.*]] = icmp ne i8 [[TMP1]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT:%.*]] = zext i1 [[TOBOOL]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[TMP2:%.*]] = load i8, ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[LOADEDV:%.*]] = trunc i8 [[TMP2]] to i1
 // CHECK-NEXT:    ret void
@@ -119,8 +117,7 @@ void test_and_set_consume(char *ptr) {
 // CHECK-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[PTR_ADDR]], align 8
 // CHECK-NEXT:    [[TMP1:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 acquire, align 1
 // CHECK-NEXT:    [[TOBOOL:%.*]] = icmp ne i8 [[TMP1]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT:%.*]] = zext i1 [[TOBOOL]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[TMP2:%.*]] = load i8, ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[LOADEDV:%.*]] = trunc i8 [[TMP2]] to i1
 // CHECK-NEXT:    ret void
@@ -138,8 +135,7 @@ void test_and_set_acquire(char *ptr) {
 // CHECK-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[PTR_ADDR]], align 8
 // CHECK-NEXT:    [[TMP1:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 release, align 1
 // CHECK-NEXT:    [[TOBOOL:%.*]] = icmp ne i8 [[TMP1]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT:%.*]] = zext i1 [[TOBOOL]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[TMP2:%.*]] = load i8, ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[LOADEDV:%.*]] = trunc i8 [[TMP2]] to i1
 // CHECK-NEXT:    ret void
@@ -157,8 +153,7 @@ void test_and_set_release(char *ptr) {
 // CHECK-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[PTR_ADDR]], align 8
 // CHECK-NEXT:    [[TMP1:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 acq_rel, align 1
 // CHECK-NEXT:    [[TOBOOL:%.*]] = icmp ne i8 [[TMP1]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT:%.*]] = zext i1 [[TOBOOL]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[TMP2:%.*]] = load i8, ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[LOADEDV:%.*]] = trunc i8 [[TMP2]] to i1
 // CHECK-NEXT:    ret void
@@ -176,8 +171,7 @@ void test_and_set_acq_rel(char *ptr) {
 // CHECK-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[PTR_ADDR]], align 8
 // CHECK-NEXT:    [[TMP1:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 seq_cst, align 1
 // CHECK-NEXT:    [[TOBOOL:%.*]] = icmp ne i8 [[TMP1]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT:%.*]] = zext i1 [[TOBOOL]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[TMP2:%.*]] = load i8, ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[LOADEDV:%.*]] = trunc i8 [[TMP2]] to i1
 // CHECK-NEXT:    ret void
@@ -206,32 +200,27 @@ void test_and_set_seq_cst(char *ptr) {
 // CHECK:       [[MONOTONIC]]:
 // CHECK-NEXT:    [[TMP2:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 monotonic, align 1
 // CHECK-NEXT:    [[TOBOOL:%.*]] = icmp ne i8 [[TMP2]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT:%.*]] = zext i1 [[TOBOOL]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    br label %[[ATOMIC_CONTINUE:.*]]
 // CHECK:       [[ACQUIRE]]:
 // CHECK-NEXT:    [[TMP3:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 acquire, align 1
 // CHECK-NEXT:    [[TOBOOL1:%.*]] = icmp ne i8 [[TMP3]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT1:%.*]] = zext i1 [[TOBOOL1]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT1]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL1]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    br label %[[ATOMIC_CONTINUE]]
 // CHECK:       [[RELEASE]]:
 // CHECK-NEXT:    [[TMP4:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 release, align 1
 // CHECK-NEXT:    [[TOBOOL2:%.*]] = icmp ne i8 [[TMP4]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT2:%.*]] = zext i1 [[TOBOOL2]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT2]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL2]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    br label %[[ATOMIC_CONTINUE]]
 // CHECK:       [[ACQREL]]:
 // CHECK-NEXT:    [[TMP5:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 acq_rel, align 1
 // CHECK-NEXT:    [[TOBOOL3:%.*]] = icmp ne i8 [[TMP5]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT3:%.*]] = zext i1 [[TOBOOL3]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT3]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL3]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    br label %[[ATOMIC_CONTINUE]]
 // CHECK:       [[SEQCST]]:
 // CHECK-NEXT:    [[TMP6:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 seq_cst, align 1
 // CHECK-NEXT:    [[TOBOOL4:%.*]] = icmp ne i8 [[TMP6]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT4:%.*]] = zext i1 [[TOBOOL4]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT4]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL4]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    br label %[[ATOMIC_CONTINUE]]
 // CHECK:       [[ATOMIC_CONTINUE]]:
 // CHECK-NEXT:    [[TMP7:%.*]] = load i8, ptr [[ATOMIC_TEMP]], align 1
@@ -250,8 +239,7 @@ void test_and_set_dynamic(char *ptr, int order) {
 // CHECK-NEXT:    [[ARRAYDECAY:%.*]] = getelementptr inbounds [10 x i32], ptr [[X]], i64 0, i64 0
 // CHECK-NEXT:    [[TMP0:%.*]] = atomicrmw volatile xchg ptr [[ARRAYDECAY]], i8 1 seq_cst, align 4
 // CHECK-NEXT:    [[TOBOOL:%.*]] = icmp ne i8 [[TMP0]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT:%.*]] = zext i1 [[TOBOOL]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[TMP1:%.*]] = load i8, ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[LOADEDV:%.*]] = trunc i8 [[TMP1]] to i1
 // CHECK-NEXT:    ret void
@@ -313,8 +301,7 @@ void clear_incomplete(struct incomplete *ptr) {
 // CHECK-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[PTR_ADDR]], align 8
 // CHECK-NEXT:    [[TMP1:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 monotonic, align 4
 // CHECK-NEXT:    [[TOBOOL:%.*]] = icmp ne i8 [[TMP1]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT:%.*]] = zext i1 [[TOBOOL]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[TMP2:%.*]] = load i8, ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[LOADEDV:%.*]] = trunc i8 [[TMP2]] to i1
 // CHECK-NEXT:    ret void
@@ -331,8 +318,7 @@ void test_and_set_int(int *ptr) {
 // CHECK-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[PTR_ADDR]], align 8
 // CHECK-NEXT:    [[TMP1:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 monotonic, align 1
 // CHECK-NEXT:    [[TOBOOL:%.*]] = icmp ne i8 [[TMP1]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT:%.*]] = zext i1 [[TOBOOL]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[TMP2:%.*]] = load i8, ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[LOADEDV:%.*]] = trunc i8 [[TMP2]] to i1
 // CHECK-NEXT:    ret void
@@ -349,8 +335,7 @@ void test_and_set_void(void *ptr) {
 // CHECK-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[PTR_ADDR]], align 8
 // CHECK-NEXT:    [[TMP1:%.*]] = atomicrmw xchg ptr [[TMP0]], i8 1 monotonic, align 1
 // CHECK-NEXT:    [[TOBOOL:%.*]] = icmp ne i8 [[TMP1]], 0
-// CHECK-NEXT:    [[TOBOOL_ZEXT:%.*]] = zext i1 [[TOBOOL]] to i8
-// CHECK-NEXT:    store i8 [[TOBOOL_ZEXT]], ptr [[ATOMIC_TEMP]], align 1
+// CHECK-NEXT:    store i1 [[TOBOOL]], ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[TMP2:%.*]] = load i8, ptr [[ATOMIC_TEMP]], align 1
 // CHECK-NEXT:    [[LOADEDV:%.*]] = trunc i8 [[TMP2]] to i1
 // CHECK-NEXT:    ret void

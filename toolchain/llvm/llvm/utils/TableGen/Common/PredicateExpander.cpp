@@ -14,7 +14,7 @@
 #include "CodeGenSchedule.h" // Definition of STIPredicateFunction.
 #include "llvm/TableGen/Record.h"
 
-using namespace llvm;
+namespace llvm {
 
 void PredicateExpander::expandTrue(raw_ostream &OS) { OS << "true"; }
 void PredicateExpander::expandFalse(raw_ostream &OS) { OS << "false"; }
@@ -143,6 +143,7 @@ void PredicateExpander::expandCheckOpcode(raw_ostream &OS, const Record *Inst) {
 void PredicateExpander::expandCheckOpcode(raw_ostream &OS,
                                           ArrayRef<const Record *> Opcodes) {
   assert(!Opcodes.empty() && "Expected at least one opcode to check!");
+  bool First = true;
 
   if (Opcodes.size() == 1) {
     OS << "( ";
@@ -151,15 +152,19 @@ void PredicateExpander::expandCheckOpcode(raw_ostream &OS,
     return;
   }
 
-  if (shouldNegate())
-    OS << '!';
-  OS << "llvm::is_contained(";
-  ListSeparator Sep;
-  OS << '{';
-  for (const Record *Inst : Opcodes)
-    OS << Sep << Inst->getValueAsString("Namespace") << "::" << Inst->getName();
-  OS << '}';
-  OS << ", MI" << (isByRef() ? "." : "->") << "getOpcode())";
+  OS << '(';
+  ++Indent;
+  for (const Record *Rec : Opcodes) {
+    OS << '\n' << Indent;
+    if (!First)
+      OS << (shouldNegate() ? "&& " : "|| ");
+
+    expandCheckOpcode(OS, Rec);
+    First = false;
+  }
+
+  --Indent;
+  OS << '\n' << Indent << ')';
 }
 
 void PredicateExpander::expandCheckPseudo(raw_ostream &OS,
@@ -177,15 +182,18 @@ void PredicateExpander::expandPredicateSequence(
     return expandPredicate(OS, Sequence[0]);
 
   // Okay, there is more than one predicate in the set.
-  ListSeparator LS(IsCheckAll ? "&& " : "|| ");
+  bool First = true;
   OS << (shouldNegate() ? "!(" : "(");
   ++Indent;
 
   bool OldValue = shouldNegate();
   setNegatePredicate(false);
   for (const Record *Rec : Sequence) {
-    OS << '\n' << Indent << LS;
+    OS << '\n' << Indent;
+    if (!First)
+      OS << (IsCheckAll ? "&& " : "|| ");
     expandPredicate(OS, Rec);
+    First = false;
   }
   --Indent;
   OS << '\n' << Indent << ')';
@@ -550,3 +558,5 @@ void STIPredicateExpander::expandSTIPredicate(raw_ostream &OS,
     expandEpilogue(OS, Fn);
   }
 }
+
+} // namespace llvm

@@ -1,7 +1,5 @@
-// REQUIRES: crash-recovery
+// REQUIRES: crash-recovery, shell
 // UNSUPPORTED: ms-sdk, target={{.*-(ps4|ps5)}}
-// Some assertions in this test use Linux style (/) file paths.
-// UNSUPPORTED: system-windows
 
 // FIXME: Canonicalizing paths to remove relative traversal components
 // currenty fails a unittest on windows and is disable by default.
@@ -59,7 +57,7 @@
 // RUN: sed -e "s@usr/include@usr/include/../include@g" \
 // RUN:     %t/crash-vfs-*.cache/vfs/vfs.yaml > %t/vfs.yaml
 // RUN: cp %t/vfs.yaml %t/crash-vfs-*.cache/vfs/vfs.yaml
-// RUN: env -u FORCE_CLANG_DIAGNOSTICS_CRASH \
+// RUN: unset FORCE_CLANG_DIAGNOSTICS_CRASH
 // RUN: %clang -E %s -I %S/Inputs/crash-recovery -isysroot %/t/i/ \
 // RUN:     -ivfsoverlay %t/crash-vfs-*.cache/vfs/vfs.yaml -fmodules \
 // RUN:     -fmodules-cache-path=%t/m/ 2>&1 \

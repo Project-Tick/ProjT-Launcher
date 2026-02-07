@@ -35,7 +35,15 @@ class LLVM_LIBRARY_VISIBILITY LanaiTargetInfo : public TargetInfo {
 public:
   LanaiTargetInfo(const llvm::Triple &Triple, const TargetOptions &)
       : TargetInfo(Triple) {
-    resetDataLayout();
+    // Description string has to be kept in sync with backend.
+    resetDataLayout("E"        // Big endian
+                    "-m:e"     // ELF name manging
+                    "-p:32:32" // 32 bit pointers, 32 bit aligned
+                    "-i64:64"  // 64 bit integers, 64 bit aligned
+                    "-a:0:32"  // 32 bit alignment of objects of aggregate type
+                    "-n32"     // 32 bit native integer width
+                    "-S64"     // 64 bit natural stack alignment
+    );
 
     // Setting RegParmMax equal to what mregparm was set to in the old
     // toolchain
@@ -70,9 +78,7 @@ public:
     return TargetInfo::VoidPtrBuiltinVaList;
   }
 
-  llvm::SmallVector<Builtin::InfosShard> getTargetBuiltins() const override {
-    return {};
-  }
+  ArrayRef<Builtin::Info> getTargetBuiltins() const override { return {}; }
 
   bool validateAsmConstraint(const char *&Name,
                              TargetInfo::ConstraintInfo &info) const override {

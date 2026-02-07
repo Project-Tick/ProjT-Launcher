@@ -19,18 +19,13 @@
 #include <list>
 #include <memory>
 
-namespace llvm {
-class Module;
-}
-
 namespace clang {
 class ASTConsumer;
+class CodeGenerator;
 class CompilerInstance;
 class Parser;
 class Sema;
 class TranslationUnitDecl;
-class IncrementalAction;
-struct PartialTranslationUnit;
 
 /// Provides support for incremental compilation. Keeps track of the state
 /// changes between the subsequent incremental input.
@@ -49,14 +44,10 @@ protected:
   /// Counts the number of direct user input lines that have been parsed.
   unsigned InputCount = 0;
 
-  /// The FrontendAction used during incremental parsing.
-  IncrementalAction *Act = nullptr;
-
-  std::list<PartialTranslationUnit> &PTUs;
+  // IncrementalParser();
 
 public:
-  IncrementalParser(CompilerInstance &Instance, IncrementalAction *Act,
-                    llvm::Error &Err, std::list<PartialTranslationUnit> &PTUs);
+  IncrementalParser(CompilerInstance &Instance, llvm::Error &Err);
   virtual ~IncrementalParser();
 
   /// Parses incremental input by creating an in-memory file.
@@ -65,10 +56,6 @@ public:
   virtual llvm::Expected<TranslationUnitDecl *> Parse(llvm::StringRef Input);
 
   void CleanUpPTU(TranslationUnitDecl *MostRecentTU);
-
-  /// Register a PTU produced by Parse.
-  PartialTranslationUnit &RegisterPTU(TranslationUnitDecl *TU,
-                                      std::unique_ptr<llvm::Module> M = {});
 
 private:
   llvm::Expected<TranslationUnitDecl *> ParseOrWrapTopLevelDecl();

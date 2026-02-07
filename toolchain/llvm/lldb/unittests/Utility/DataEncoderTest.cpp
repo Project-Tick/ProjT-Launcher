@@ -41,6 +41,7 @@ TEST(DataEncoderTest, PutU8) {
 
 TEST(DataEncoderTest, AppendUnsignedLittle) {
   const uint32_t addr_size = 4;
+  std::vector<uint8_t> expected;
   DataEncoder encoder(lldb::eByteOrderLittle, addr_size);
   encoder.AppendU8(0x11);
   ASSERT_EQ(encoder.GetData(), ArrayRef<uint8_t>({0x11}));
@@ -58,6 +59,7 @@ TEST(DataEncoderTest, AppendUnsignedLittle) {
 
 TEST(DataEncoderTest, AppendUnsignedBig) {
   const uint32_t addr_size = 4;
+  std::vector<uint8_t> expected;
   DataEncoder encoder(lldb::eByteOrderBig, addr_size);
   encoder.AppendU8(0x11);
   ASSERT_EQ(encoder.GetData(), ArrayRef<uint8_t>({0x11}));
@@ -74,6 +76,7 @@ TEST(DataEncoderTest, AppendUnsignedBig) {
 
 TEST(DataEncoderTest, AppendAddress4Little) {
   const uint32_t addr_size = 4;
+  std::vector<uint8_t> expected;
   DataEncoder encoder(lldb::eByteOrderLittle, addr_size);
   encoder.AppendAddress(0x11223344);
   ASSERT_EQ(encoder.GetData(), ArrayRef<uint8_t>({0x44, 0x33, 0x22, 0x11}));
@@ -84,6 +87,7 @@ TEST(DataEncoderTest, AppendAddress4Little) {
 
 TEST(DataEncoderTest, AppendAddress4Big) {
   const uint32_t addr_size = 4;
+  std::vector<uint8_t> expected;
   DataEncoder encoder(lldb::eByteOrderBig, addr_size);
   encoder.AppendAddress(0x11223344);
   ASSERT_EQ(encoder.GetData(), ArrayRef<uint8_t>({0x11, 0x22, 0x33, 0x44}));
@@ -94,6 +98,7 @@ TEST(DataEncoderTest, AppendAddress4Big) {
 
 TEST(DataEncoderTest, AppendAddress8Little) {
   const uint32_t addr_size = 8;
+  std::vector<uint8_t> expected;
   DataEncoder encoder(lldb::eByteOrderLittle, addr_size);
   encoder.AppendAddress(0x11223344);
   ASSERT_EQ(encoder.GetData(),
@@ -106,6 +111,7 @@ TEST(DataEncoderTest, AppendAddress8Little) {
 
 TEST(DataEncoderTest, AppendAddress8Big) {
   const uint32_t addr_size = 8;
+  std::vector<uint8_t> expected;
   DataEncoder encoder(lldb::eByteOrderBig, addr_size);
   encoder.AppendAddress(0x11223344);
   ASSERT_EQ(encoder.GetData(),
@@ -118,6 +124,7 @@ TEST(DataEncoderTest, AppendAddress8Big) {
 
 TEST(DataEncoderTest, AppendData) {
   const uint32_t addr_size = 4;
+  std::vector<uint8_t> expected;
   DataEncoder encoder(lldb::eByteOrderBig, addr_size);
   // Make sure default constructed StringRef appends nothing
   encoder.AppendData(StringRef());
@@ -132,6 +139,7 @@ TEST(DataEncoderTest, AppendData) {
 
 TEST(DataEncoderTest, AppendCString) {
   const uint32_t addr_size = 4;
+  std::vector<uint8_t> expected;
   DataEncoder encoder(lldb::eByteOrderBig, addr_size);
   // Make sure default constructed StringRef appends nothing
   encoder.AppendCString(StringRef());

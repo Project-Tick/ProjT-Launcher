@@ -24,9 +24,7 @@ namespace detail {
 
 struct AffineMapStorage final
     : public StorageUniquer::BaseStorage,
-      private llvm::TrailingObjects<AffineMapStorage, AffineExpr> {
-  friend llvm::TrailingObjects<AffineMapStorage, AffineExpr>;
-
+      public llvm::TrailingObjects<AffineMapStorage, AffineExpr> {
   /// The hash key used for uniquing.
   using KeyTy = std::tuple<unsigned, unsigned, ArrayRef<AffineExpr>>;
 
@@ -38,7 +36,7 @@ struct AffineMapStorage final
 
   /// The affine expressions for this (multi-dimensional) map.
   ArrayRef<AffineExpr> results() const {
-    return getTrailingObjects(numResults);
+    return {getTrailingObjects<AffineExpr>(), numResults};
   }
 
   bool operator==(const KeyTy &key) const {
@@ -58,7 +56,8 @@ struct AffineMapStorage final
     res->numDims = std::get<0>(key);
     res->numSymbols = std::get<1>(key);
     res->numResults = results.size();
-    llvm::uninitialized_copy(results, res->getTrailingObjects());
+    std::uninitialized_copy(results.begin(), results.end(),
+                            res->getTrailingObjects<AffineExpr>());
     return res;
   }
 };

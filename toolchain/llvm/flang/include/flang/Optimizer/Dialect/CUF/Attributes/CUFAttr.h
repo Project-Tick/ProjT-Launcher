@@ -13,15 +13,11 @@
 #ifndef FORTRAN_OPTIMIZER_DIALECT_CUF_CUFATTR_H
 #define FORTRAN_OPTIMIZER_DIALECT_CUF_CUFATTR_H
 
-#include "flang/Support/Fortran.h"
+#include "flang/Common/Fortran.h"
 #include "mlir/IR/BuiltinAttributes.h"
 
 namespace llvm {
 class StringRef;
-}
-
-namespace mlir {
-class Operation;
 }
 
 #include "flang/Optimizer/Dialect/CUF/Attributes/CUFEnumAttr.h.inc"
@@ -32,7 +28,6 @@ class Operation;
 namespace cuf {
 
 /// Attribute to mark Fortran entities with the CUDA attribute.
-static constexpr llvm::StringRef dataAttrName = "data_attr";
 static constexpr llvm::StringRef getDataAttrName() { return "cuf.data_attr"; }
 static constexpr llvm::StringRef getProcAttrName() { return "cuf.proc_attr"; }
 
@@ -105,12 +100,6 @@ getProcAttribute(mlir::MLIRContext *mlirContext,
   }
   return {};
 }
-
-/// Returns the data attribute if the operation has one.
-cuf::DataAttributeAttr getDataAttr(mlir::Operation *op);
-
-/// Returns true if the operation has a data attribute with the given value.
-bool hasDataAttr(mlir::Operation *op, cuf::DataAttribute value);
 
 } // namespace cuf
 

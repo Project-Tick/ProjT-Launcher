@@ -21,7 +21,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/XRay/XRayRecord.h"
 
-namespace llvm::xray {
+namespace llvm {
+namespace xray {
 
 class LatencyAccountant {
 public:
@@ -106,6 +107,7 @@ private:
   template <class F> void exportStats(const XRayFileHeader &Header, F fn) const;
 };
 
-} // namespace llvm::xray
+} // namespace xray
+} // namespace llvm
 
 #endif // LLVM_TOOLS_LLVM_XRAY_XRAY_ACCOUNT_H

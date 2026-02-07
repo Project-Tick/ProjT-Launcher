@@ -8,7 +8,6 @@
 
 #include "clang/AST/Mangle.h"
 #include "clang/Basic/LangOptions.h"
-#include "clang/Driver/CreateInvocationFromArgs.h"
 #include "clang/Frontend/ASTUnit.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/CompilerInvocation.h"
@@ -221,10 +220,9 @@ static bool printSourceSymbols(const char *Executable,
   SmallVector<const char *, 4> ArgsWithProgName;
   ArgsWithProgName.push_back(Executable);
   ArgsWithProgName.append(Args.begin(), Args.end());
-  auto DiagOpts = std::make_shared<DiagnosticOptions>();
   IntrusiveRefCntPtr<DiagnosticsEngine> Diags(
       CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
-                                          *DiagOpts));
+                                          new DiagnosticOptions));
   CreateInvocationOptions CIOpts;
   CIOpts.Diags = Diags;
   CIOpts.ProbePrecompiled = true; // FIXME: historical default. Needed?
@@ -243,7 +241,7 @@ static bool printSourceSymbols(const char *Executable,
 
   auto PCHContainerOps = std::make_shared<PCHContainerOperations>();
   std::unique_ptr<ASTUnit> Unit(ASTUnit::LoadFromCompilerInvocationAction(
-      std::move(CInvok), PCHContainerOps, DiagOpts, Diags, IndexAction.get()));
+      std::move(CInvok), PCHContainerOps, Diags, IndexAction.get()));
 
   if (!Unit)
     return true;
@@ -274,19 +272,17 @@ static bool printSourceSymbolsFromModule(StringRef modulePath,
     return true;
   }
 
-  HeaderSearchOptions HSOpts;
+  auto HSOpts = std::make_shared<HeaderSearchOptions>();
 
-  auto VFS = llvm::vfs::getRealFileSystem();
-
-  auto DiagOpts = std::make_shared<DiagnosticOptions>();
   IntrusiveRefCntPtr<DiagnosticsEngine> Diags =
-      CompilerInstance::createDiagnostics(*VFS, *DiagOpts);
-  std::unique_ptr<ASTUnit> AU = ASTUnit::LoadFromASTFile(
-      modulePath, *pchRdr, ASTUnit::LoadASTOnly, VFS, DiagOpts, Diags,
-      FileSystemOpts, HSOpts, /*LangOpts=*/nullptr,
-      /*OnlyLocalDecls=*/true, CaptureDiagsKind::None,
-      /*AllowASTWithCompilerErrors=*/true,
-      /*UserFilesAreVolatile=*/false);
+      CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+                                          new DiagnosticOptions());
+  std::unique_ptr<ASTUnit> AU =
+      ASTUnit::LoadFromASTFile(modulePath, *pchRdr, ASTUnit::LoadASTOnly, Diags,
+                               FileSystemOpts, HSOpts, /*LangOpts=*/nullptr,
+                               /*OnlyLocalDecls=*/true, CaptureDiagsKind::None,
+                               /*AllowASTWithCompilerErrors=*/true,
+                               /*UserFilesAreVolatile=*/false);
   if (!AU) {
     errs() << "failed to create TU for: " << modulePath << '\n';
     return true;

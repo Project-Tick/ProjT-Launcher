@@ -11,7 +11,6 @@
 
 #include "llvm/IR/Function.h"
 #include "llvm/SandboxIR/Constant.h"
-#include "llvm/Support/Compiler.h"
 
 namespace llvm::sandboxir {
 
@@ -57,24 +56,14 @@ public:
     LLVMBBToBB BBGetter(Ctx);
     return iterator(cast<llvm::Function>(Val)->end(), BBGetter);
   }
-  LLVM_ABI FunctionType *getFunctionType() const;
-
-  /// Returns the alignment of the given function.
-  MaybeAlign getAlign() const { return cast<llvm::Function>(Val)->getAlign(); }
-
-  // TODO: Add missing: setAligment(Align)
-
-  /// Sets the alignment attribute of the Function.
-  /// This method will be deprecated as the alignment property should always be
-  /// defined.
-  LLVM_ABI void setAlignment(MaybeAlign Align);
+  FunctionType *getFunctionType() const;
 
 #ifndef NDEBUG
   void verify() const final {
     assert(isa<llvm::Function>(Val) && "Expected Function!");
   }
-  LLVM_ABI_FOR_TEST void dumpNameAndArgs(raw_ostream &OS) const;
-  LLVM_ABI_FOR_TEST void dumpOS(raw_ostream &OS) const final;
+  void dumpNameAndArgs(raw_ostream &OS) const;
+  void dumpOS(raw_ostream &OS) const final;
 #endif
 };
 

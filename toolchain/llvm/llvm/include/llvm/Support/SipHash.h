@@ -17,7 +17,6 @@
 #ifndef LLVM_SUPPORT_SIPHASH_H
 #define LLVM_SUPPORT_SIPHASH_H
 
-#include "llvm/Support/Compiler.h"
 #include <cstdint>
 
 namespace llvm {
@@ -26,19 +25,12 @@ template <typename T> class ArrayRef;
 class StringRef;
 
 /// Computes a SipHash-2-4 64-bit result.
-LLVM_ABI void getSipHash_2_4_64(ArrayRef<uint8_t> In, const uint8_t (&K)[16],
-                                uint8_t (&Out)[8]);
+void getSipHash_2_4_64(ArrayRef<uint8_t> In, const uint8_t (&K)[16],
+                       uint8_t (&Out)[8]);
 
 /// Computes a SipHash-2-4 128-bit result.
-LLVM_ABI void getSipHash_2_4_128(ArrayRef<uint8_t> In, const uint8_t (&K)[16],
-                                 uint8_t (&Out)[16]);
-
-/// Compute a stable 64-bit hash of the given string.
-///
-/// The exact algorithm is the little-endian interpretation of the
-/// non-doubled (i.e. 64-bit) result of applying a SipHash-2-4 using
-/// a specific seed value which can be found in the source.
-LLVM_ABI uint64_t getStableSipHash(StringRef Str);
+void getSipHash_2_4_128(ArrayRef<uint8_t> In, const uint8_t (&K)[16],
+                        uint8_t (&Out)[16]);
 
 /// Compute a stable non-zero 16-bit hash of the given string.
 ///
@@ -53,7 +45,7 @@ LLVM_ABI uint64_t getStableSipHash(StringRef Str);
 /// 16 bits is also sufficiently compact to not inflate a loader relocation.
 /// We disallow zero to guarantee a different discriminator from the places
 /// in the ABI that use a constant zero.
-LLVM_ABI uint16_t getPointerAuthStableSipHash(StringRef S);
+uint16_t getPointerAuthStableSipHash(StringRef S);
 
 } // end namespace llvm
 

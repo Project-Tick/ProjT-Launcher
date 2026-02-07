@@ -34,15 +34,10 @@
 #define LIBC_COMPILER_GCC_VER (__GNUC__ * 100 + __GNUC_MINOR__)
 #endif
 
-#if defined(_MSC_VER) && !defined(__clang__)
-#define LIBC_COMPILER_IS_MSVC
+#if defined(_MSC_VER)
+#define LIBC_COMPILER_IS_MSC
 // https://learn.microsoft.com/en-us/cpp/preprocessor/predefined-macros
-#define LIBC_COMPILER_MSVC_VER (_MSC_VER)
-#ifdef _M_X64
-#define LIBC_COMPILER_IS_MSVC_X64
-#else
-#define LIBC_COMPILER_IS_MSVC_X86
-#endif
+#define LIBC_COMPILER_MSC_VER (_MSC_VER)
 #endif
 
 #endif // LLVM_LIBC_SRC___SUPPORT_MACROS_PROPERTIES_COMPILER_H

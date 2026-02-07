@@ -39,14 +39,26 @@ public:
   std::unique_ptr<MCObjectTargetWriter>
   createObjectTargetWriter() const override;
 
-  void applyFixup(const MCFragment &, const MCFixup &, const MCValue &Target,
-                  uint8_t *Data, uint64_t Value, bool IsResolved) override;
+  void applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
+                  const MCValue &Target, MutableArrayRef<char> Data,
+                  uint64_t Value, bool IsResolved,
+                  const MCSubtargetInfo *STI) const override;
 
   std::optional<MCFixupKind> getFixupKind(StringRef Name) const override;
-  MCFixupKindInfo getFixupKindInfo(MCFixupKind Kind) const override;
+  const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override;
+
+  unsigned getNumFixupKinds() const override {
+    return Mips::NumTargetFixupKinds;
+  }
 
   bool writeNopData(raw_ostream &OS, uint64_t Count,
                     const MCSubtargetInfo *STI) const override;
+
+  bool shouldForceRelocation(const MCAssembler &Asm, const MCFixup &Fixup,
+                             const MCValue &Target, const uint64_t Value,
+                             const MCSubtargetInfo *STI) override;
+
+  bool isMicroMips(const MCSymbol *Sym) const override;
 }; // class MipsAsmBackend
 
 } // namespace

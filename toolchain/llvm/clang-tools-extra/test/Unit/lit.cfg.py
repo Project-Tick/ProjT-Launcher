@@ -21,7 +21,7 @@ config.test_format = lit.formats.GoogleTest(".", "Tests")
 
 if platform.system() == "Darwin":
     shlibpath_var = "DYLD_LIBRARY_PATH"
-elif platform.system() == "Windows" or sys.platform == "cygwin":
+elif platform.system() == "Windows":
     shlibpath_var = "PATH"
 else:
     shlibpath_var = "LD_LIBRARY_PATH"

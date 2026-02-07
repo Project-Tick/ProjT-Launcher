@@ -15,7 +15,6 @@
 #include "CXString.h"
 #include "CXTranslationUnit.h"
 #include "clang/AST/ASTConsumer.h"
-#include "clang/Driver/CreateInvocationFromArgs.h"
 #include "clang/Frontend/ASTUnit.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/CompilerInvocation.h"
@@ -138,7 +137,7 @@ public:
 
   void addParsedRegions(ArrayRef<PPRegion> Regions) {
     std::lock_guard<std::mutex> MG(Mutex);
-    ParsedRegions.insert_range(Regions);
+    ParsedRegions.insert(Regions.begin(), Regions.end());
   }
 };
 
@@ -305,8 +304,7 @@ public:
       : DataConsumer(dataConsumer) {}
 
   void Initialize(ASTContext &Context) override {
-    // TODO: accept Context as IntrusiveRefCntPtr?
-    DataConsumer.setASTContext(&Context);
+    DataConsumer.setASTContext(Context);
     DataConsumer.startedTranslationUnit();
   }
 
@@ -357,7 +355,7 @@ public:
         DataConsumer->importedPCH(*File);
     }
 
-    DataConsumer->setASTContext(CI.getASTContextPtr());
+    DataConsumer->setASTContext(CI.getASTContext());
     Preprocessor &PP = CI.getPreprocessor();
     PP.addPPCallbacks(std::make_unique<IndexPPCallbacks>(PP, *DataConsumer));
     DataConsumer->setPreprocessor(CI.getPreprocessorPtr());
@@ -391,7 +389,9 @@ public:
     if (SM.isInSystemHeader(Loc))
       return true; // always skip bodies from system headers.
 
-    auto [FID, Offset] = SM.getDecomposedLoc(Loc);
+    FileID FID;
+    unsigned Offset;
+    std::tie(FID, Offset) = SM.getDecomposedLoc(Loc);
     // Don't skip bodies from main files; this may be revisited.
     if (SM.getMainFileID() == FID)
       return false;
@@ -480,10 +480,9 @@ static CXErrorCode clang_indexSourceFile_Impl(
     CaptureDiag = new CaptureDiagnosticConsumer();
 
   // Configure the diagnostics.
-  auto DiagOpts = std::make_shared<DiagnosticOptions>();
   IntrusiveRefCntPtr<DiagnosticsEngine> Diags(
       CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
-                                          *DiagOpts, CaptureDiag,
+                                          new DiagnosticOptions, CaptureDiag,
                                           /*ShouldOwnClient=*/true));
 
   // Recover resources if we crash before exiting this function.
@@ -555,7 +554,7 @@ static CXErrorCode clang_indexSourceFile_Impl(
   CInvok->getHeaderSearchOpts().ModuleFormat = std::string(
       CXXIdx->getPCHContainerOperations()->getRawReader().getFormats().front());
 
-  auto Unit = ASTUnit::create(CInvok, DiagOpts, Diags, CaptureDiagnostics,
+  auto Unit = ASTUnit::create(CInvok, Diags, CaptureDiagnostics,
                               /*UserFilesAreVolatile=*/true);
   if (!Unit)
     return CXError_InvalidArguments;
@@ -618,7 +617,7 @@ static CXErrorCode clang_indexSourceFile_Impl(
       !PrecompilePreamble ? 0 : 2 - CreatePreambleOnFirstParse;
   DiagnosticErrorTrap DiagTrap(*Diags);
   bool Success = ASTUnit::LoadFromCompilerInvocationAction(
-      std::move(CInvok), CXXIdx->getPCHContainerOperations(), DiagOpts, Diags,
+      std::move(CInvok), CXXIdx->getPCHContainerOperations(), Diags,
       IndexAction.get(), UPtr, Persistent, CXXIdx->getClangResourcesPath(),
       OnlyLocalDecls, CaptureDiagnostics, PrecompilePreambleAfterNParses,
       CacheCodeCompletionResults, /*UserFilesAreVolatile=*/true);
@@ -708,7 +707,7 @@ static CXErrorCode clang_indexTranslationUnit_Impl(
   else
     DataConsumer.enteredMainFile(std::nullopt);
 
-  DataConsumer.setASTContext(Unit->getASTContextPtr());
+  DataConsumer.setASTContext(Unit->getASTContext());
   DataConsumer.startedTranslationUnit();
 
   indexPreprocessingRecord(*Unit, DataConsumer);

@@ -15,7 +15,7 @@
 
 #include "clang/AST/DependenceFlags.h"
 #include "clang/Basic/ExceptionSpecificationType.h"
-#include "clang/Basic/LLVM.h"
+#include "llvm/ADT/ArrayRef.h"
 
 namespace clang {
 
@@ -28,7 +28,6 @@ class ParenExpr;
 class UnaryOperator;
 class UnaryExprOrTypeTraitExpr;
 class ArraySubscriptExpr;
-class MatrixSingleSubscriptExpr;
 class MatrixSubscriptExpr;
 class CompoundLiteralExpr;
 class ImplicitCastExpr;
@@ -118,7 +117,6 @@ ExprDependence computeDependence(ParenExpr *E);
 ExprDependence computeDependence(UnaryOperator *E, const ASTContext &Ctx);
 ExprDependence computeDependence(UnaryExprOrTypeTraitExpr *E);
 ExprDependence computeDependence(ArraySubscriptExpr *E);
-ExprDependence computeDependence(MatrixSingleSubscriptExpr *E);
 ExprDependence computeDependence(MatrixSubscriptExpr *E);
 ExprDependence computeDependence(CompoundLiteralExpr *E);
 ExprDependence computeDependence(ImplicitCastExpr *E);
@@ -182,7 +180,7 @@ ExprDependence computeDependence(ConceptSpecializationExpr *E,
 
 ExprDependence computeDependence(SYCLUniqueStableNameExpr *E);
 ExprDependence computeDependence(PredefinedExpr *E);
-ExprDependence computeDependence(CallExpr *E, ArrayRef<Expr *> PreArgs);
+ExprDependence computeDependence(CallExpr *E, llvm::ArrayRef<Expr *> PreArgs);
 ExprDependence computeDependence(OffsetOfExpr *E);
 ExprDependence computeDependence(MemberExpr *E);
 ExprDependence computeDependence(ShuffleVectorExpr *E);

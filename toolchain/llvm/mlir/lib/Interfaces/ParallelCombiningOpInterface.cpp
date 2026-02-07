@@ -11,11 +11,11 @@
 using namespace mlir;
 
 //===----------------------------------------------------------------------===//
-// InParallelOpInterface (formerly ParallelCombiningOpInterface)
+// ParallelCombiningOpInterface
 //===----------------------------------------------------------------------===//
 
 // TODO: Single region single block interface on interfaces ?
-LogicalResult mlir::detail::verifyInParallelOpInterface(Operation *op) {
+LogicalResult mlir::detail::verifyParallelCombiningOpInterface(Operation *op) {
   if (op->getNumRegions() != 1)
     return op->emitError("expected single region op");
   if (!op->getRegion(0).hasOneBlock())

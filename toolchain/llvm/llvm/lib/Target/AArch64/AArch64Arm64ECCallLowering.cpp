@@ -26,6 +26,7 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/Module.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Object/COFF.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
@@ -62,7 +63,9 @@ struct ThunkArgInfo {
 class AArch64Arm64ECCallLowering : public ModulePass {
 public:
   static char ID;
-  AArch64Arm64ECCallLowering() : ModulePass(ID) {}
+  AArch64Arm64ECCallLowering() : ModulePass(ID) {
+    initializeAArch64Arm64ECCallLoweringPass(*PassRegistry::getPassRegistry());
+  }
 
   Function *buildExitThunk(FunctionType *FnTy, AttributeList Attrs);
   Function *buildEntryThunk(Function *F);
@@ -77,7 +80,9 @@ public:
 private:
   int cfguard_module_flag = 0;
   FunctionType *GuardFnType = nullptr;
+  PointerType *GuardFnPtrType = nullptr;
   FunctionType *DispatchFnType = nullptr;
+  PointerType *DispatchFnPtrType = nullptr;
   Constant *GuardFnCFGlobal = nullptr;
   Constant *GuardFnGlobal = nullptr;
   Constant *DispatchFnGlobal = nullptr;
@@ -316,12 +321,6 @@ ThunkArgInfo AArch64Arm64ECCallLowering::canonicalizeThunkType(
                         ThunkArgTranslation::PointerIndirection};
   };
 
-  if (T->isHalfTy()) {
-    // Prefix with `llvm` since MSVC doesn't specify `_Float16`
-    Out << "__llvm_h__";
-    return direct(T);
-  }
-
   if (T->isFloatTy()) {
     Out << "f";
     return direct(T);
@@ -333,8 +332,8 @@ ThunkArgInfo AArch64Arm64ECCallLowering::canonicalizeThunkType(
   }
 
   if (T->isFloatingPointTy()) {
-    report_fatal_error("Only 16, 32, and 64 bit floating points are supported "
-                       "for ARM64EC thunks");
+    report_fatal_error(
+        "Only 32 and 64 bit floating points are supported for ARM64EC thunks");
   }
 
   auto &DL = M->getDataLayout();
@@ -348,16 +347,8 @@ ThunkArgInfo AArch64Arm64ECCallLowering::canonicalizeThunkType(
     uint64_t ElementCnt = T->getArrayNumElements();
     uint64_t ElementSizePerBytes = DL.getTypeSizeInBits(ElementTy) / 8;
     uint64_t TotalSizeBytes = ElementCnt * ElementSizePerBytes;
-    if (ElementTy->isHalfTy() || ElementTy->isFloatTy() ||
-        ElementTy->isDoubleTy()) {
-      if (ElementTy->isHalfTy())
-        // Prefix with `llvm` since MSVC doesn't specify `_Float16`
-        Out << "__llvm_H__";
-      else if (ElementTy->isFloatTy())
-        Out << "F";
-      else if (ElementTy->isDoubleTy())
-        Out << "D";
-      Out << TotalSizeBytes;
+    if (ElementTy->isFloatTy() || ElementTy->isDoubleTy()) {
+      Out << (ElementTy->isFloatTy() ? "F" : "D") << TotalSizeBytes;
       if (Alignment.value() >= 16 && !Ret)
         Out << "a" << Alignment.value();
       if (TotalSizeBytes <= 8) {
@@ -369,9 +360,8 @@ ThunkArgInfo AArch64Arm64ECCallLowering::canonicalizeThunkType(
         return pointerIndirection(T);
       }
     } else if (T->isFloatingPointTy()) {
-      report_fatal_error(
-          "Only 16, 32, and 64 bit floating points are supported "
-          "for ARM64EC thunks");
+      report_fatal_error("Only 32 and 64 bit floating points are supported for "
+                         "ARM64EC thunks");
     }
   }
 
@@ -475,7 +465,7 @@ Function *AArch64Arm64ECCallLowering::buildExitThunk(FunctionType *FT,
       IRB.CreateStore(&Arg, Mem);
       if (ArgTranslation == ThunkArgTranslation::Bitcast) {
         Type *IntTy = IRB.getIntNTy(DL.getTypeStoreSizeInBits(Arg.getType()));
-        Args.push_back(IRB.CreateLoad(IntTy, Mem));
+        Args.push_back(IRB.CreateLoad(IntTy, IRB.CreateBitCast(Mem, PtrTy)));
       } else {
         assert(ArgTranslation == ThunkArgTranslation::PointerIndirection);
         Args.push_back(Mem);
@@ -487,6 +477,7 @@ Function *AArch64Arm64ECCallLowering::buildExitThunk(FunctionType *FT,
   }
   // FIXME: Transfer necessary attributes? sret? anything else?
 
+  Callee = IRB.CreateBitCast(Callee, PtrTy);
   CallInst *Call = IRB.CreateCall(X64Ty, Callee, Args);
   Call->setCallingConv(CallingConv::ARM64EC_Thunk_X64);
 
@@ -498,7 +489,7 @@ Function *AArch64Arm64ECCallLowering::buildExitThunk(FunctionType *FT,
       RetVal = IRB.CreateLoad(RetTy, Args[1]);
     } else {
       Value *CastAlloca = IRB.CreateAlloca(RetTy);
-      IRB.CreateStore(Call, CastAlloca);
+      IRB.CreateStore(Call, IRB.CreateBitCast(CastAlloca, PtrTy));
       RetVal = IRB.CreateLoad(RetTy, CastAlloca);
     }
   }
@@ -553,11 +544,11 @@ Function *AArch64Arm64ECCallLowering::buildEntryThunk(Function *F) {
       // Translate array/struct arguments to the expected type.
       if (ArgTranslation == ThunkArgTranslation::Bitcast) {
         Value *CastAlloca = IRB.CreateAlloca(ArgTy);
-        IRB.CreateStore(Arg, CastAlloca);
+        IRB.CreateStore(Arg, IRB.CreateBitCast(CastAlloca, PtrTy));
         Arg = IRB.CreateLoad(ArgTy, CastAlloca);
       } else {
         assert(ArgTranslation == ThunkArgTranslation::PointerIndirection);
-        Arg = IRB.CreateLoad(ArgTy, Arg);
+        Arg = IRB.CreateLoad(ArgTy, IRB.CreateBitCast(Arg, PtrTy));
       }
     }
     assert(Arg->getType() == ArgTy);
@@ -582,6 +573,7 @@ Function *AArch64Arm64ECCallLowering::buildEntryThunk(Function *F) {
 
   // Call the function passed to the thunk.
   Value *Callee = Thunk->getArg(0);
+  Callee = IRB.CreateBitCast(Callee, PtrTy);
   CallInst *Call = IRB.CreateCall(Arm64Ty, Callee, Args);
 
   auto SRetAttr = F->getAttributes().getParamAttr(0, Attribute::StructRet);
@@ -593,10 +585,10 @@ Function *AArch64Arm64ECCallLowering::buildEntryThunk(Function *F) {
 
   Value *RetVal = Call;
   if (TransformDirectToSRet) {
-    IRB.CreateStore(RetVal, Thunk->getArg(1));
+    IRB.CreateStore(RetVal, IRB.CreateBitCast(Thunk->getArg(1), PtrTy));
   } else if (X64RetType != RetTy) {
     Value *CastAlloca = IRB.CreateAlloca(X64RetType);
-    IRB.CreateStore(Call, CastAlloca);
+    IRB.CreateStore(Call, IRB.CreateBitCast(CastAlloca, PtrTy));
     RetVal = IRB.CreateLoad(X64RetType, CastAlloca);
   }
 
@@ -612,14 +604,6 @@ Function *AArch64Arm64ECCallLowering::buildEntryThunk(Function *F) {
   return Thunk;
 }
 
-std::optional<std::string> getArm64ECMangledFunctionName(GlobalValue &GV) {
-  if (!GV.hasName()) {
-    GV.setName("__unnamed");
-  }
-
-  return llvm::getArm64ECMangledFunctionName(GV.getName());
-}
-
 // Builds the "guest exit thunk", a helper to call a function which may or may
 // not be an exit thunk. (We optimistically assume non-dllimport function
 // declarations refer to functions defined in AArch64 code; if the linker
@@ -631,7 +615,7 @@ Function *AArch64Arm64ECCallLowering::buildGuestExitThunk(Function *F) {
   getThunkType(F->getFunctionType(), F->getAttributes(),
                Arm64ECThunkType::GuestExit, NullThunkName, Arm64Ty, X64Ty,
                ArgTranslations);
-  auto MangledName = getArm64ECMangledFunctionName(*F);
+  auto MangledName = getArm64ECMangledFunctionName(F->getName().str());
   assert(MangledName && "Can't guest exit to function that's already native");
   std::string ThunkName = *MangledName;
   if (ThunkName[0] == '?' && ThunkName.find("@") != std::string::npos) {
@@ -643,10 +627,10 @@ Function *AArch64Arm64ECCallLowering::buildGuestExitThunk(Function *F) {
       Function::Create(Arm64Ty, GlobalValue::WeakODRLinkage, 0, ThunkName, M);
   GuestExit->setComdat(M->getOrInsertComdat(ThunkName));
   GuestExit->setSection(".wowthk$aa");
-  GuestExit->addMetadata(
+  GuestExit->setMetadata(
       "arm64ec_unmangled_name",
-      *MDNode::get(M->getContext(),
-                   MDString::get(M->getContext(), F->getName())));
+      MDNode::get(M->getContext(),
+                  MDString::get(M->getContext(), F->getName())));
   GuestExit->setMetadata(
       "arm64ec_ecmangled_name",
       MDNode::get(M->getContext(),
@@ -655,22 +639,29 @@ Function *AArch64Arm64ECCallLowering::buildGuestExitThunk(Function *F) {
   BasicBlock *BB = BasicBlock::Create(M->getContext(), "", GuestExit);
   IRBuilder<> B(BB);
 
-  // Create new call instruction. The call check should always be a call,
-  // even if the original CallBase is an Invoke or CallBr instructio.
-  // This is treated as a direct call, so do not use GuardFnCFGlobal.
-  LoadInst *GuardCheckLoad = B.CreateLoad(PtrTy, GuardFnGlobal);
+  // Load the global symbol as a pointer to the check function.
+  Value *GuardFn;
+  if (cfguard_module_flag == 2 && !F->hasFnAttribute("guard_nocf"))
+    GuardFn = GuardFnCFGlobal;
+  else
+    GuardFn = GuardFnGlobal;
+  LoadInst *GuardCheckLoad = B.CreateLoad(GuardFnPtrType, GuardFn);
+
+  // Create new call instruction. The CFGuard check should always be a call,
+  // even if the original CallBase is an Invoke or CallBr instruction.
   Function *Thunk = buildExitThunk(F->getFunctionType(), F->getAttributes());
   CallInst *GuardCheck = B.CreateCall(
-      GuardFnType, GuardCheckLoad, {F, Thunk});
-  Value *GuardCheckDest = B.CreateExtractValue(GuardCheck, 0);
-  Value *GuardFinalDest = B.CreateExtractValue(GuardCheck, 1);
+      GuardFnType, GuardCheckLoad,
+      {B.CreateBitCast(F, B.getPtrTy()), B.CreateBitCast(Thunk, B.getPtrTy())});
 
   // Ensure that the first argument is passed in the correct register.
   GuardCheck->setCallingConv(CallingConv::CFGuard_Check);
 
-  SmallVector<Value *> Args(llvm::make_pointer_range(GuestExit->args()));
-  OperandBundleDef OB("cfguardtarget", GuardFinalDest);
-  CallInst *Call = B.CreateCall(Arm64Ty, GuardCheckDest, Args, OB);
+  Value *GuardRetVal = B.CreateBitCast(GuardCheck, PtrTy);
+  SmallVector<Value *> Args;
+  for (Argument &Arg : GuestExit->args())
+    Args.push_back(&Arg);
+  CallInst *Call = B.CreateCall(Arm64Ty, GuardRetVal, Args);
   Call->setTailCallKind(llvm::CallInst::TCK_MustTail);
 
   if (Call->getType()->isVoidTy())
@@ -713,7 +704,7 @@ AArch64Arm64ECCallLowering::buildPatchableThunk(GlobalAlias *UnmangledAlias,
   IRBuilder<> B(BB);
 
   // Load the global symbol as a pointer to the check function.
-  LoadInst *DispatchLoad = B.CreateLoad(PtrTy, DispatchFnGlobal);
+  LoadInst *DispatchLoad = B.CreateLoad(DispatchFnPtrType, DispatchFnGlobal);
 
   // Create new dispatch call instruction.
   Function *ExitThunk =
@@ -725,8 +716,11 @@ AArch64Arm64ECCallLowering::buildPatchableThunk(GlobalAlias *UnmangledAlias,
   // Ensure that the first arguments are passed in the correct registers.
   Dispatch->setCallingConv(CallingConv::CFGuard_Check);
 
-  SmallVector<Value *> Args(llvm::make_pointer_range(GuestExit->args()));
-  CallInst *Call = B.CreateCall(Arm64Ty, Dispatch, Args);
+  Value *DispatchRetVal = B.CreateBitCast(Dispatch, PtrTy);
+  SmallVector<Value *> Args;
+  for (Argument &Arg : GuestExit->args())
+    Args.push_back(&Arg);
+  CallInst *Call = B.CreateCall(Arm64Ty, DispatchRetVal, Args);
   Call->setTailCallKind(llvm::CallInst::TCK_MustTail);
 
   if (Call->getType()->isVoidTy())
@@ -747,6 +741,9 @@ AArch64Arm64ECCallLowering::buildPatchableThunk(GlobalAlias *UnmangledAlias,
 
 // Lower an indirect call with inline code.
 void AArch64Arm64ECCallLowering::lowerCall(CallBase *CB) {
+  assert(Triple(CB->getModule()->getTargetTriple()).isOSWindows() &&
+         "Only applicable for Windows targets");
+
   IRBuilder<> B(CB);
   Value *CalledOperand = CB->getCalledOperand();
 
@@ -762,29 +759,22 @@ void AArch64Arm64ECCallLowering::lowerCall(CallBase *CB) {
     GuardFn = GuardFnCFGlobal;
   else
     GuardFn = GuardFnGlobal;
-  LoadInst *GuardCheckLoad = B.CreateLoad(PtrTy, GuardFn);
+  LoadInst *GuardCheckLoad = B.CreateLoad(GuardFnPtrType, GuardFn);
 
   // Create new call instruction. The CFGuard check should always be a call,
   // even if the original CallBase is an Invoke or CallBr instruction.
   Function *Thunk = buildExitThunk(CB->getFunctionType(), CB->getAttributes());
   CallInst *GuardCheck =
-      B.CreateCall(GuardFnType, GuardCheckLoad, {CalledOperand, Thunk},
+      B.CreateCall(GuardFnType, GuardCheckLoad,
+                   {B.CreateBitCast(CalledOperand, B.getPtrTy()),
+                    B.CreateBitCast(Thunk, B.getPtrTy())},
                    Bundles);
-  Value *GuardCheckDest = B.CreateExtractValue(GuardCheck, 0);
-  Value *GuardFinalDest = B.CreateExtractValue(GuardCheck, 1);
 
   // Ensure that the first argument is passed in the correct register.
   GuardCheck->setCallingConv(CallingConv::CFGuard_Check);
 
-  // Update the call: set the callee, and add a bundle with the final
-  // destination,
-  CB->setCalledOperand(GuardCheckDest);
-  OperandBundleDef OB("cfguardtarget", GuardFinalDest);
-  auto *NewCall = CallBase::addOperandBundle(CB, LLVMContext::OB_cfguardtarget,
-                                             OB, CB->getIterator());
-  NewCall->copyMetadata(*CB);
-  CB->replaceAllUsesWith(NewCall);
-  CB->eraseFromParent();
+  Value *GuardRetVal = B.CreateBitCast(GuardCheck, CalledOperand->getType());
+  CB->setCalledOperand(GuardRetVal);
 }
 
 bool AArch64Arm64ECCallLowering::runOnModule(Module &Mod) {
@@ -802,56 +792,31 @@ bool AArch64Arm64ECCallLowering::runOnModule(Module &Mod) {
   I64Ty = Type::getInt64Ty(M->getContext());
   VoidTy = Type::getVoidTy(M->getContext());
 
-  GuardFnType =
-      FunctionType::get(StructType::get(PtrTy, PtrTy), {PtrTy, PtrTy}, false);
+  GuardFnType = FunctionType::get(PtrTy, {PtrTy, PtrTy}, false);
+  GuardFnPtrType = PointerType::get(M->getContext(), 0);
   DispatchFnType = FunctionType::get(PtrTy, {PtrTy, PtrTy, PtrTy}, false);
-  GuardFnCFGlobal = M->getOrInsertGlobal("__os_arm64x_check_icall_cfg", PtrTy);
-  GuardFnGlobal = M->getOrInsertGlobal("__os_arm64x_check_icall", PtrTy);
-  DispatchFnGlobal = M->getOrInsertGlobal("__os_arm64x_dispatch_call", PtrTy);
-
-  // Mangle names of function aliases and add the alias name to
-  // arm64ec_unmangled_name metadata to ensure a weak anti-dependency symbol is
-  // emitted for the alias as well. Do this early, before handling
-  // hybrid_patchable functions, to avoid mangling their aliases.
-  for (GlobalAlias &A : Mod.aliases()) {
-    auto F = dyn_cast_or_null<Function>(A.getAliaseeObject());
-    if (!F)
-      continue;
-    if (std::optional<std::string> MangledName =
-            getArm64ECMangledFunctionName(A)) {
-      F->addMetadata("arm64ec_unmangled_name",
-                     *MDNode::get(M->getContext(),
-                                  MDString::get(M->getContext(), A.getName())));
-      A.setName(MangledName.value());
-    }
-  }
+  DispatchFnPtrType = PointerType::get(M->getContext(), 0);
+  GuardFnCFGlobal =
+      M->getOrInsertGlobal("__os_arm64x_check_icall_cfg", GuardFnPtrType);
+  GuardFnGlobal =
+      M->getOrInsertGlobal("__os_arm64x_check_icall", GuardFnPtrType);
+  DispatchFnGlobal =
+      M->getOrInsertGlobal("__os_arm64x_dispatch_call", DispatchFnPtrType);
 
   DenseMap<GlobalAlias *, GlobalAlias *> FnsMap;
   SetVector<GlobalAlias *> PatchableFns;
 
   for (Function &F : Mod) {
-    if (F.hasPersonalityFn()) {
-      GlobalValue *PersFn =
-          cast<GlobalValue>(F.getPersonalityFn()->stripPointerCasts());
-      if (PersFn->getValueType() && PersFn->getValueType()->isFunctionTy()) {
-        if (std::optional<std::string> MangledName =
-                getArm64ECMangledFunctionName(*PersFn)) {
-          PersFn->setName(MangledName.value());
-        }
-      }
-    }
-
-    if (!F.hasFnAttribute(Attribute::HybridPatchable) ||
-        F.isDeclarationForLinker() || F.hasLocalLinkage() ||
-        F.getName().ends_with(HybridPatchableTargetSuffix))
+    if (!F.hasFnAttribute(Attribute::HybridPatchable) || F.isDeclaration() ||
+        F.hasLocalLinkage() || F.getName().ends_with("$hp_target"))
       continue;
 
     // Rename hybrid patchable functions and change callers to use a global
     // alias instead.
     if (std::optional<std::string> MangledName =
-            getArm64ECMangledFunctionName(F)) {
+            getArm64ECMangledFunctionName(F.getName().str())) {
       std::string OrigName(F.getName());
-      F.setName(MangledName.value() + HybridPatchableTargetSuffix);
+      F.setName(MangledName.value() + "$hp_target");
 
       // The unmangled symbol is a weak alias to an undefined symbol with the
       // "EXP+" prefix. This undefined symbol is resolved by the linker by
@@ -861,31 +826,27 @@ bool AArch64Arm64ECCallLowering::runOnModule(Module &Mod) {
       // emitGlobalAlias to emit the right alias.
       auto *A =
           GlobalAlias::create(GlobalValue::LinkOnceODRLinkage, OrigName, &F);
-      auto *AM = GlobalAlias::create(GlobalValue::LinkOnceODRLinkage,
-                                     MangledName.value(), &F);
-      F.replaceUsesWithIf(AM,
-                          [](Use &U) { return isa<GlobalAlias>(U.getUser()); });
       F.replaceAllUsesWith(A);
       F.setMetadata("arm64ec_exp_name",
                     MDNode::get(M->getContext(),
                                 MDString::get(M->getContext(),
                                               "EXP+" + MangledName.value())));
       A->setAliasee(&F);
-      AM->setAliasee(&F);
 
       if (F.hasDLLExportStorageClass()) {
         A->setDLLStorageClass(GlobalValue::DLLExportStorageClass);
         F.setDLLStorageClass(GlobalValue::DefaultStorageClass);
       }
 
-      FnsMap[A] = AM;
+      FnsMap[A] = GlobalAlias::create(GlobalValue::LinkOnceODRLinkage,
+                                      MangledName.value(), &F);
       PatchableFns.insert(A);
     }
   }
 
   SetVector<GlobalValue *> DirectCalledFns;
   for (Function &F : Mod)
-    if (!F.isDeclarationForLinker() &&
+    if (!F.isDeclaration() &&
         F.getCallingConv() != CallingConv::ARM64EC_Thunk_Native &&
         F.getCallingConv() != CallingConv::ARM64EC_Thunk_X64)
       processFunction(F, DirectCalledFns, FnsMap);
@@ -897,8 +858,7 @@ bool AArch64Arm64ECCallLowering::runOnModule(Module &Mod) {
   };
   SmallVector<ThunkInfo> ThunkMapping;
   for (Function &F : Mod) {
-    if (!F.isDeclarationForLinker() &&
-        (!F.hasLocalLinkage() || F.hasAddressTaken()) &&
+    if (!F.isDeclaration() && (!F.hasLocalLinkage() || F.hasAddressTaken()) &&
         F.getCallingConv() != CallingConv::ARM64EC_Thunk_Native &&
         F.getCallingConv() != CallingConv::ARM64EC_Thunk_X64) {
       if (!F.hasComdat())
@@ -926,7 +886,8 @@ bool AArch64Arm64ECCallLowering::runOnModule(Module &Mod) {
     SmallVector<Constant *> ThunkMappingArrayElems;
     for (ThunkInfo &Thunk : ThunkMapping) {
       ThunkMappingArrayElems.push_back(ConstantStruct::getAnon(
-          {Thunk.Src, Thunk.Dst,
+          {ConstantExpr::getBitCast(Thunk.Src, PtrTy),
+           ConstantExpr::getBitCast(Thunk.Dst, PtrTy),
            ConstantInt::get(M->getContext(), APInt(32, uint8_t(Thunk.Kind)))}));
     }
     Constant *ThunkMappingArray = ConstantArray::get(
@@ -955,10 +916,10 @@ bool AArch64Arm64ECCallLowering::processFunction(
   // FIXME: Handle functions with weak linkage?
   if (!F.hasLocalLinkage() || F.hasAddressTaken()) {
     if (std::optional<std::string> MangledName =
-            getArm64ECMangledFunctionName(F)) {
-      F.addMetadata("arm64ec_unmangled_name",
-                    *MDNode::get(M->getContext(),
-                                 MDString::get(M->getContext(), F.getName())));
+            getArm64ECMangledFunctionName(F.getName().str())) {
+      F.setMetadata("arm64ec_unmangled_name",
+                    MDNode::get(M->getContext(),
+                                MDString::get(M->getContext(), F.getName())));
       if (F.hasComdat() && F.getComdat()->getName() == F.getName()) {
         Comdat *MangledComdat = M->getOrInsertComdat(MangledName.value());
         SmallVector<GlobalObject *> ComdatUsers =
@@ -988,7 +949,7 @@ bool AArch64Arm64ECCallLowering::processFunction(
       // unprototyped functions in C)
       if (Function *F = CB->getCalledFunction()) {
         if (!LowerDirectToIndirect || F->hasLocalLinkage() ||
-            F->isIntrinsic() || !F->isDeclarationForLinker())
+            F->isIntrinsic() || !F->isDeclaration())
           continue;
 
         DirectCalledFns.insert(F);

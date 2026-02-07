@@ -14,6 +14,7 @@
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/TypeSwitch.h"
 
 #include <optional>
 
@@ -55,8 +56,8 @@ static bool validateFullTilesOnDims(linalg::LinalgOp linalgOp,
   // Skip the batch dimension if present.
   // Offset all dimensions accordingly.
   SmallVector<int64_t, 3> offsetDims(dims);
-  for (int64_t &offsetDim : offsetDims)
-    offsetDim += batchDimsOffset;
+  for (size_t i = 0; i < offsetDims.size(); i++)
+    offsetDims[i] += batchDimsOffset;
 
   auto tileOp = cast<TilingInterface>(linalgOp.getOperation());
   OpBuilder builder(tileOp);
@@ -87,7 +88,7 @@ static bool validateFullTilesOnDims(linalg::LinalgOp linalgOp,
 /// Return failure or packed matmul with one of its operands transposed.
 static FailureOr<PackTransposeResult>
 transposePackedMatmul(RewriterBase &rewriter, linalg::LinalgOp linalgOp,
-                      linalg::PackOp packOp, AffineMap operandMap,
+                      tensor::PackOp packOp, AffineMap operandMap,
                       ArrayRef<unsigned> blocksStartDimPos,
                       bool transposeOuterBlocks, bool transposeInnerBlocks) {
   assert(operandMap.getNumDims() >= 4 &&
@@ -137,16 +138,6 @@ transposePackedMatmul(RewriterBase &rewriter, linalg::LinalgOp linalgOp,
 FailureOr<PackResult>
 linalg::blockPackMatmul(RewriterBase &rewriter, linalg::LinalgOp linalgOp,
                         const ControlBlockPackMatmulFn &controlPackMatmul) {
-  // Check to not let go the batch_matmul with extended semantic, through this
-  // transform.
-  if (auto *batchMatmulOp = dyn_cast<linalg::BatchMatmulOp>(&linalgOp)) {
-    if (batchMatmulOp->hasUserDefinedMaps()) {
-      return rewriter.notifyMatchFailure(
-          *batchMatmulOp,
-          "only batch_matmul ops with non-extended semantics are supported");
-    }
-  }
-
   if (linalgOp.hasPureBufferSemantics())
     return rewriter.notifyMatchFailure(linalgOp, "require tensor semantics");
 
@@ -320,6 +311,10 @@ void linalg::populateBlockPackMatmulPatterns(
     RewritePatternSet &patterns, const ControlBlockPackMatmulFn &controlFn) {
   patterns.add<BlockPackMatmul<linalg::GenericOp>,
                BlockPackMatmul<linalg::MatmulOp>,
-               BlockPackMatmul<linalg::BatchMatmulOp>>(patterns.getContext(),
-                                                       controlFn);
+               BlockPackMatmul<linalg::BatchMatmulOp>,
+               BlockPackMatmul<linalg::MatmulTransposeAOp>,
+               BlockPackMatmul<linalg::BatchMatmulTransposeAOp>,
+               BlockPackMatmul<linalg::MatmulTransposeBOp>,
+               BlockPackMatmul<linalg::BatchMatmulTransposeBOp>>(
+      patterns.getContext(), controlFn);
 }

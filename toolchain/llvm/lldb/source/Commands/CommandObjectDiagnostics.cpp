@@ -96,6 +96,7 @@ protected:
     result.GetOutputStream() << "diagnostics written to " << *directory << '\n';
 
     result.SetStatus(eReturnStatusSuccessFinishResult);
+    return;
   }
 
   CommandOptions m_options;

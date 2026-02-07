@@ -31,6 +31,7 @@
 #include "lld/Common/Driver.h"
 #include "lld/Common/CommonLinkerContext.h"
 #include "lld/Common/ErrorHandler.h"
+#include "lld/Common/Memory.h"
 #include "lld/Common/Version.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringExtras.h"
@@ -69,7 +70,7 @@ enum {
 static constexpr opt::OptTable::Info infoTable[] = {
 #define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS,         \
                VISIBILITY, PARAM, HELPTEXT, HELPTEXTSFORVARIANTS, METAVAR,     \
-               VALUES, SUBCOMMANDIDS_OFFSET)                                   \
+               VALUES)                                                         \
   {PREFIX,                                                                     \
    NAME,                                                                       \
    HELPTEXT,                                                                   \
@@ -83,8 +84,7 @@ static constexpr opt::OptTable::Info infoTable[] = {
    OPT_##GROUP,                                                                \
    OPT_##ALIAS,                                                                \
    ALIASARGS,                                                                  \
-   VALUES,                                                                     \
-   SUBCOMMANDIDS_OFFSET},
+   VALUES},
 #include "Options.inc"
 #undef OPTION
 };
@@ -139,9 +139,8 @@ static std::optional<std::string> findFile(StringRef path1,
 }
 
 // This is for -lfoo. We'll look for libfoo.dll.a or libfoo.a from search paths.
-static std::string searchLibrary(StringRef name,
-                                 ArrayRef<StringRef> searchPaths, bool bStatic,
-                                 StringRef prefix) {
+static std::string
+searchLibrary(StringRef name, ArrayRef<StringRef> searchPaths, bool bStatic) {
   if (name.starts_with(":")) {
     for (StringRef dir : searchPaths)
       if (std::optional<std::string> s = findFile(dir, name.substr(1)))
@@ -162,7 +161,7 @@ static std::string searchLibrary(StringRef name,
     if (std::optional<std::string> s = findFile(dir, name + ".lib"))
       return *s;
     if (!bStatic) {
-      if (std::optional<std::string> s = findFile(dir, prefix + name + ".dll"))
+      if (std::optional<std::string> s = findFile(dir, "lib" + name + ".dll"))
         return *s;
       if (std::optional<std::string> s = findFile(dir, name + ".dll"))
         return *s;
@@ -170,14 +169,6 @@ static std::string searchLibrary(StringRef name,
   }
   error("unable to find library -l" + name);
   return "";
-}
-
-static bool isI386Target(const opt::InputArgList &args,
-                         const Triple &defaultTarget) {
-  auto *a = args.getLastArg(OPT_m);
-  if (a)
-    return StringRef(a->getValue()) == "i386pe";
-  return defaultTarget.getArch() == Triple::x86;
 }
 
 namespace lld {
@@ -225,8 +216,6 @@ bool link(ArrayRef<const char *> argsArr, llvm::raw_ostream &stdoutOS,
     return false;
   }
 
-  Triple defaultTarget(Triple::normalize(sys::getDefaultTargetTriple()));
-
   std::vector<std::string> linkArgs;
   auto add = [&](const Twine &s) { linkArgs.push_back(s.str()); };
 
@@ -235,7 +224,7 @@ bool link(ArrayRef<const char *> argsArr, llvm::raw_ostream &stdoutOS,
 
   if (auto *a = args.getLastArg(OPT_entry)) {
     StringRef s = a->getValue();
-    if (isI386Target(args, defaultTarget) && s.starts_with("_"))
+    if (args.getLastArgValue(OPT_m) == "i386pe" && s.starts_with("_"))
       add("-entry:" + s.substr(1));
     else if (!s.empty())
       add("-entry:" + s);
@@ -449,10 +438,6 @@ bool link(ArrayRef<const char *> argsArr, llvm::raw_ostream &stdoutOS,
       add("-machine:arm64");
     else if (s == "arm64ecpe")
       add("-machine:arm64ec");
-    else if (s == "arm64xpe")
-      add("-machine:arm64x");
-    else if (s == "mipspe")
-      add("-machine:mips");
     else
       error("unknown parameter: -m" + s);
   }
@@ -518,10 +503,6 @@ bool link(ArrayRef<const char *> argsArr, llvm::raw_ostream &stdoutOS,
     add("-thinlto-object-suffix-replace:" + StringRef(arg->getValue()));
   if (auto *arg = args.getLastArg(OPT_thinlto_prefix_replace_eq))
     add("-thinlto-prefix-replace:" + StringRef(arg->getValue()));
-  if (args.hasFlag(OPT_fat_lto_objects, OPT_no_fat_lto_objects, false))
-    add("-fat-lto-objects");
-  else
-    add("-fat-lto-objects:no");
 
   for (auto *a : args.filtered(OPT_plugin_opt_eq_minus))
     add("-mllvm:-" + StringRef(a->getValue()));
@@ -540,7 +521,7 @@ bool link(ArrayRef<const char *> argsArr, llvm::raw_ostream &stdoutOS,
   for (auto *a : args.filtered(OPT_Xlink))
     add(a->getValue());
 
-  if (isI386Target(args, defaultTarget))
+  if (args.getLastArgValue(OPT_m) == "i386pe")
     add("-alternatename:__image_base__=___ImageBase");
   else
     add("-alternatename:__image_base__=__ImageBase");
@@ -564,10 +545,6 @@ bool link(ArrayRef<const char *> argsArr, llvm::raw_ostream &stdoutOS,
     add("-libpath:" + StringRef(a->getValue()));
   }
 
-  StringRef dllPrefix = "lib";
-  if (auto *arg = args.getLastArg(OPT_dll_search_prefix))
-    dllPrefix = arg->getValue();
-
   StringRef prefix = "";
   bool isStatic = false;
   for (auto *a : args) {
@@ -579,8 +556,7 @@ bool link(ArrayRef<const char *> argsArr, llvm::raw_ostream &stdoutOS,
         add(prefix + StringRef(a->getValue()));
       break;
     case OPT_l:
-      add(prefix +
-          searchLibrary(a->getValue(), searchPaths, isStatic, dllPrefix));
+      add(prefix + searchLibrary(a->getValue(), searchPaths, isStatic));
       break;
     case OPT_whole_archive:
       prefix = "-wholearchive:";

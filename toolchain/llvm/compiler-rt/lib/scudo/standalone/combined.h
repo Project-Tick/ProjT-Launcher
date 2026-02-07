@@ -15,6 +15,7 @@
 #include "common.h"
 #include "flags.h"
 #include "flags_parser.h"
+#include "local_cache.h"
 #include "mem_map.h"
 #include "memtag.h"
 #include "mutex.h"
@@ -22,10 +23,8 @@
 #include "quarantine.h"
 #include "report.h"
 #include "secondary.h"
-#include "size_class_allocator.h"
 #include "stack_depot.h"
 #include "string_utils.h"
-#include "tracing.h"
 #include "tsd.h"
 
 #include "scudo/interface.h"
@@ -55,7 +54,7 @@ public:
       typename AllocatorConfig::template PrimaryT<PrimaryConfig<Config>>;
   using SecondaryT =
       typename AllocatorConfig::template SecondaryT<SecondaryConfig<Config>>;
-  using SizeClassAllocatorT = typename PrimaryT::SizeClassAllocatorT;
+  using CacheT = typename PrimaryT::CacheT;
   typedef Allocator<Config, PostInitCallback> ThisT;
   typedef typename AllocatorConfig::template TSDRegistryT<ThisT> TSDRegistryT;
 
@@ -64,9 +63,8 @@ public:
   }
 
   struct QuarantineCallback {
-    explicit QuarantineCallback(ThisT &Instance,
-                                SizeClassAllocatorT &SizeClassAllocator)
-        : Allocator(Instance), SizeClassAllocator(SizeClassAllocator) {}
+    explicit QuarantineCallback(ThisT &Instance, CacheT &LocalCache)
+        : Allocator(Instance), Cache(LocalCache) {}
 
     // Chunk recycling function, returns a quarantined chunk to the backend,
     // first making sure it hasn't been tampered with.
@@ -82,7 +80,7 @@ public:
       if (allocatorSupportsMemoryTagging<AllocatorConfig>())
         Ptr = untagPointer(Ptr);
       void *BlockBegin = Allocator::getBlockBegin(Ptr, &Header);
-      SizeClassAllocator.deallocate(Header.ClassId, BlockBegin);
+      Cache.deallocate(Header.ClassId, BlockBegin);
     }
 
     // We take a shortcut when allocating a quarantine batch by working with the
@@ -91,7 +89,7 @@ public:
     void *allocate(UNUSED uptr Size) {
       const uptr QuarantineClassId = SizeClassMap::getClassIdBySize(
           sizeof(QuarantineBatch) + Chunk::getHeaderSize());
-      void *Ptr = SizeClassAllocator.allocate(QuarantineClassId);
+      void *Ptr = Cache.allocate(QuarantineClassId);
       // Quarantine batch allocation failure is fatal.
       if (UNLIKELY(!Ptr))
         reportOutOfMemory(SizeClassMap::getSizeByClassId(QuarantineClassId));
@@ -101,7 +99,7 @@ public:
       Chunk::UnpackedHeader Header = {};
       Header.ClassId = QuarantineClassId & Chunk::ClassIdMask;
       Header.SizeOrUnusedBytes = sizeof(QuarantineBatch);
-      Header.State = Chunk::State::Quarantined;
+      Header.State = Chunk::State::Allocated;
       Chunk::storeHeader(Allocator.Cookie, Ptr, &Header);
 
       // Reset tag to 0 as this chunk may have been previously used for a tagged
@@ -120,7 +118,7 @@ public:
       Chunk::UnpackedHeader Header;
       Chunk::loadHeader(Allocator.Cookie, Ptr, &Header);
 
-      if (UNLIKELY(Header.State != Chunk::State::Quarantined))
+      if (UNLIKELY(Header.State != Chunk::State::Allocated))
         reportInvalidChunkState(AllocatorAction::Deallocating, Ptr);
       DCHECK_EQ(Header.ClassId, QuarantineClassId);
       DCHECK_EQ(Header.Offset, 0);
@@ -128,15 +126,14 @@ public:
 
       Header.State = Chunk::State::Available;
       Chunk::storeHeader(Allocator.Cookie, Ptr, &Header);
-      SizeClassAllocator.deallocate(
-          QuarantineClassId,
-          reinterpret_cast<void *>(reinterpret_cast<uptr>(Ptr) -
-                                   Chunk::getHeaderSize()));
+      Cache.deallocate(QuarantineClassId,
+                       reinterpret_cast<void *>(reinterpret_cast<uptr>(Ptr) -
+                                                Chunk::getHeaderSize()));
     }
 
   private:
     ThisT &Allocator;
-    SizeClassAllocatorT &SizeClassAllocator;
+    CacheT &Cache;
   };
 
   typedef GlobalQuarantine<QuarantineCallback, void> QuarantineT;
@@ -171,15 +168,12 @@ public:
       Primary.Options.set(OptionBit::DeallocTypeMismatch);
     if (getFlags()->delete_size_mismatch)
       Primary.Options.set(OptionBit::DeleteSizeMismatch);
-    if (systemSupportsMemoryTagging())
+    if (allocatorSupportsMemoryTagging<AllocatorConfig>() &&
+        systemSupportsMemoryTagging())
       Primary.Options.set(OptionBit::UseMemoryTagging);
 
     QuarantineMaxChunkSize =
         static_cast<u32>(getFlags()->quarantine_max_chunk_size);
-#if SCUDO_FUCHSIA
-    ZeroOnDeallocMaxSize =
-        static_cast<u32>(getFlags()->zero_on_dealloc_max_size);
-#endif
 
     Stats.init();
     // TODO(chiahungduan): Given that we support setting the default value in
@@ -188,11 +182,9 @@ public:
     const s32 ReleaseToOsIntervalMs = getFlags()->release_to_os_interval_ms;
     Primary.init(ReleaseToOsIntervalMs);
     Secondary.init(&Stats, ReleaseToOsIntervalMs);
-    if (!AllocatorConfig::getQuarantineDisabled()) {
-      Quarantine.init(
-          static_cast<uptr>(getFlags()->quarantine_size_kb << 10),
-          static_cast<uptr>(getFlags()->thread_local_quarantine_size_kb << 10));
-    }
+    Quarantine.init(
+        static_cast<uptr>(getFlags()->quarantine_size_kb << 10),
+        static_cast<uptr>(getFlags()->thread_local_quarantine_size_kb << 10));
   }
 
   void enableRingBuffer() NO_THREAD_SAFETY_ANALYSIS {
@@ -271,9 +263,7 @@ public:
   QuarantineT *getQuarantine() { return &Quarantine; }
 
   // The Cache must be provided zero-initialized.
-  void initAllocator(SizeClassAllocatorT *SizeClassAllocator) {
-    SizeClassAllocator->init(&Stats, &Primary);
-  }
+  void initCache(CacheT *Cache) { Cache->init(&Stats, &Primary); }
 
   // Release the resources used by a TSD, which involves:
   // - draining the local quarantine cache to the global quarantine;
@@ -282,21 +272,16 @@ public:
   //   the last two items).
   void commitBack(TSD<ThisT> *TSD) {
     TSD->assertLocked(/*BypassCheck=*/true);
-    if (!AllocatorConfig::getQuarantineDisabled()) {
-      Quarantine.drain(&TSD->getQuarantineCache(),
-                       QuarantineCallback(*this, TSD->getSizeClassAllocator()));
-    }
-    TSD->getSizeClassAllocator().destroy(&Stats);
+    Quarantine.drain(&TSD->getQuarantineCache(),
+                     QuarantineCallback(*this, TSD->getCache()));
+    TSD->getCache().destroy(&Stats);
   }
 
   void drainCache(TSD<ThisT> *TSD) {
     TSD->assertLocked(/*BypassCheck=*/true);
-    if (!AllocatorConfig::getQuarantineDisabled()) {
-      Quarantine.drainAndRecycle(
-          &TSD->getQuarantineCache(),
-          QuarantineCallback(*this, TSD->getSizeClassAllocator()));
-    }
-    TSD->getSizeClassAllocator().drain();
+    Quarantine.drainAndRecycle(&TSD->getQuarantineCache(),
+                               QuarantineCallback(*this, TSD->getCache()));
+    TSD->getCache().drain();
   }
   void drainCaches() { TSDRegistry.drainCaches(this); }
 
@@ -405,13 +390,13 @@ public:
       ClassId = SizeClassMap::getClassIdBySize(NeededSize);
       DCHECK_NE(ClassId, 0U);
       typename TSDRegistryT::ScopedTSD TSD(TSDRegistry);
-      Block = TSD->getSizeClassAllocator().allocate(ClassId);
+      Block = TSD->getCache().allocate(ClassId);
       // If the allocation failed, retry in each successively larger class until
       // it fits. If it fails to fit in the largest class, fallback to the
       // Secondary.
       if (UNLIKELY(!Block)) {
         while (ClassId < SizeClassMap::LargestClassId && !Block)
-          Block = TSD->getSizeClassAllocator().allocate(++ClassId);
+          Block = TSD->getCache().allocate(++ClassId);
         if (!Block)
           ClassId = 0;
       }
@@ -622,8 +607,7 @@ public:
 #endif
     TSDRegistry.disable();
     Stats.disable();
-    if (!AllocatorConfig::getQuarantineDisabled())
-      Quarantine.disable();
+    Quarantine.disable();
     Primary.disable();
     Secondary.disable();
     disableRingBuffer();
@@ -634,8 +618,7 @@ public:
     enableRingBuffer();
     Secondary.enable();
     Primary.enable();
-    if (!AllocatorConfig::getQuarantineDisabled())
-      Quarantine.enable();
+    Quarantine.enable();
     Stats.enable();
     TSDRegistry.enable();
 #ifdef GWP_ASAN_HOOKS
@@ -675,11 +658,10 @@ public:
 
   void releaseToOS(ReleaseToOS ReleaseType) {
     initThreadMaybe();
-    SCUDO_SCOPED_TRACE(GetReleaseToOSTraceName(ReleaseType));
     if (ReleaseType == ReleaseToOS::ForceAll)
       drainCaches();
     Primary.releaseToOS(ReleaseType);
-    Secondary.releaseToOS(ReleaseType);
+    Secondary.releaseToOS();
   }
 
   // Iterate over all chunks and call a callback for all busy chunks located
@@ -692,15 +674,16 @@ public:
       Base = untagPointer(Base);
     const uptr From = Base;
     const uptr To = Base + Size;
-    const Options Options = Primary.Options.load();
-    bool MayHaveTaggedPrimary = useMemoryTagging<AllocatorConfig>(Options);
+    bool MayHaveTaggedPrimary =
+        allocatorSupportsMemoryTagging<AllocatorConfig>() &&
+        systemSupportsMemoryTagging();
     auto Lambda = [this, From, To, MayHaveTaggedPrimary, Callback,
                    Arg](uptr Block) {
       if (Block < From || Block >= To)
         return;
       uptr Chunk;
       Chunk::UnpackedHeader Header;
-      if (UNLIKELY(MayHaveTaggedPrimary)) {
+      if (MayHaveTaggedPrimary) {
         // A chunk header can either have a zero tag (tagged primary) or the
         // header tag (secondary, or untagged primary). We don't know which so
         // try both.
@@ -708,26 +691,19 @@ public:
         if (!getChunkFromBlock(Block, &Chunk, &Header) &&
             !getChunkFromBlock(addHeaderTag(Block), &Chunk, &Header))
           return;
-      } else if (!getChunkFromBlock(addHeaderTag(Block), &Chunk, &Header)) {
-        return;
-      }
-
-      if (Header.State != Chunk::State::Allocated)
-        return;
-
-      uptr TaggedChunk = Chunk;
-      if (allocatorSupportsMemoryTagging<AllocatorConfig>())
-        TaggedChunk = untagPointer(TaggedChunk);
-      uptr Size;
-      if (UNLIKELY(useMemoryTagging<AllocatorConfig>(Primary.Options.load()))) {
-        TaggedChunk = loadTag(Chunk);
-        Size = getSize(reinterpret_cast<void *>(Chunk), &Header);
-      } else if (AllocatorConfig::getExactUsableSize()) {
-        Size = getSize(reinterpret_cast<void *>(Chunk), &Header);
       } else {
-        Size = getUsableSize(reinterpret_cast<void *>(Chunk), &Header);
+        if (!getChunkFromBlock(addHeaderTag(Block), &Chunk, &Header))
+          return;
       }
-      Callback(TaggedChunk, Size, Arg);
+      if (Header.State == Chunk::State::Allocated) {
+        uptr TaggedChunk = Chunk;
+        if (allocatorSupportsMemoryTagging<AllocatorConfig>())
+          TaggedChunk = untagPointer(TaggedChunk);
+        if (useMemoryTagging<AllocatorConfig>(Primary.Options.load()))
+          TaggedChunk = loadTag(Chunk);
+        Callback(TaggedChunk, getSize(reinterpret_cast<void *>(Chunk), &Header),
+                 Arg);
+      }
     };
     Primary.iterateOverBlocks(Lambda);
     Secondary.iterateOverBlocks(Lambda);
@@ -768,50 +744,16 @@ public:
     return false;
   }
 
-  ALWAYS_INLINE uptr getUsableSize(const void *Ptr,
-                                   Chunk::UnpackedHeader *Header) {
-    void *BlockBegin = getBlockBegin(Ptr, Header);
-    if (LIKELY(Header->ClassId)) {
-      return SizeClassMap::getSizeByClassId(Header->ClassId) -
-             (reinterpret_cast<uptr>(Ptr) - reinterpret_cast<uptr>(BlockBegin));
-    }
-
-    uptr UntaggedPtr = reinterpret_cast<uptr>(Ptr);
-    if (allocatorSupportsMemoryTagging<AllocatorConfig>()) {
-      UntaggedPtr = untagPointer(UntaggedPtr);
-      BlockBegin = untagPointer(BlockBegin);
-    }
-    return SecondaryT::getBlockEnd(BlockBegin) - UntaggedPtr;
-  }
-
-  // Return the usable size for a given chunk. If MTE is enabled or if the
-  // ExactUsableSize config parameter is true, we report the exact size of
-  // the original allocation size. Otherwise, we will return the total
-  // actual usable size.
+  // Return the usable size for a given chunk. Technically we lie, as we just
+  // report the actual size of a chunk. This is done to counteract code actively
+  // writing past the end of a chunk (like sqlite3) when the usable size allows
+  // for it, which then forces realloc to copy the usable size of a chunk as
+  // opposed to its actual size.
   uptr getUsableSize(const void *Ptr) {
     if (UNLIKELY(!Ptr))
       return 0;
 
-    if (AllocatorConfig::getExactUsableSize() ||
-        UNLIKELY(useMemoryTagging<AllocatorConfig>(Primary.Options.load())))
-      return getAllocSize(Ptr);
-
-    initThreadMaybe();
-
-#ifdef GWP_ASAN_HOOKS
-    if (UNLIKELY(GuardedAlloc.pointerIsMine(Ptr)))
-      return GuardedAlloc.getSize(Ptr);
-#endif // GWP_ASAN_HOOKS
-
-    Ptr = getHeaderTaggedPointer(const_cast<void *>(Ptr));
-    Chunk::UnpackedHeader Header;
-    Chunk::loadHeader(Cookie, Ptr, &Header);
-
-    // Getting the alloc size of a chunk only makes sense if it's allocated.
-    if (UNLIKELY(Header.State != Chunk::State::Allocated))
-      reportInvalidChunkState(AllocatorAction::Sizing, Ptr);
-
-    return getUsableSize(Ptr, &Header);
+    return getAllocSize(Ptr);
   }
 
   uptr getAllocSize(const void *Ptr) {
@@ -828,7 +770,7 @@ public:
 
     // Getting the alloc size of a chunk only makes sense if it's allocated.
     if (UNLIKELY(Header.State != Chunk::State::Allocated))
-      reportInvalidChunkState(AllocatorAction::Sizing, Ptr);
+      reportInvalidChunkState(AllocatorAction::Sizing, const_cast<void *>(Ptr));
 
     return getSize(Ptr, &Header);
   }
@@ -994,19 +936,6 @@ public:
                          MemorySize, 2, 16);
   }
 
-  uptr getBlockBeginTestOnly(const void *Ptr) {
-    Chunk::UnpackedHeader Header;
-    Chunk::loadHeader(Cookie, Ptr, &Header);
-    DCHECK(Header.State == Chunk::State::Allocated);
-
-    if (allocatorSupportsMemoryTagging<AllocatorConfig>())
-      Ptr = untagPointer(const_cast<void *>(Ptr));
-    void *Begin = getBlockBegin(Ptr, &Header);
-    if (allocatorSupportsMemoryTagging<AllocatorConfig>())
-      Begin = untagPointer(Begin);
-    return reinterpret_cast<uptr>(Begin);
-  }
-
 private:
   typedef typename PrimaryT::SizeClassMap SizeClassMap;
 
@@ -1037,9 +966,6 @@ private:
 
   u32 Cookie = 0;
   u32 QuarantineMaxChunkSize = 0;
-#if SCUDO_FUCHSIA
-  u32 ZeroOnDeallocMaxSize = 0;
-#endif
 
   GlobalStats Stats;
   PrimaryT Primary;
@@ -1321,8 +1247,7 @@ private:
     // If the quarantine is disabled, the actual size of a chunk is 0 or larger
     // than the maximum allowed, we return a chunk directly to the backend.
     // This purposefully underflows for Size == 0.
-    const bool BypassQuarantine = AllocatorConfig::getQuarantineDisabled() ||
-                                  !Quarantine.getCacheSize() ||
+    const bool BypassQuarantine = !Quarantine.getCacheSize() ||
                                   ((Size - 1) >= QuarantineMaxChunkSize) ||
                                   !Header->ClassId;
     if (BypassQuarantine)
@@ -1350,25 +1275,12 @@ private:
         BlockBegin = retagBlock(Options, TaggedPtr, Ptr, Header, Size, true);
       }
 
-#if SCUDO_FUCHSIA
-      if (AllocatorConfig::getEnableZeroOnDealloc()) {
-        // Clearing the header is incompatible with quarantine and tagging.
-        // Hence, it is fine to implement it only when quarantine is bypassed.
-        DCHECK(!useMemoryTagging<AllocatorConfig>(Options));
-        uptr length = reinterpret_cast<uptr>(Ptr) + Size -
-                      reinterpret_cast<uptr>(BlockBegin);
-        if (length <= ZeroOnDeallocMaxSize)
-          memset(BlockBegin, 0, length);
-      }
-#endif // SCUDO_FUCHSIA
-
       const uptr ClassId = Header->ClassId;
       if (LIKELY(ClassId)) {
         bool CacheDrained;
         {
           typename TSDRegistryT::ScopedTSD TSD(TSDRegistry);
-          CacheDrained =
-              TSD->getSizeClassAllocator().deallocate(ClassId, BlockBegin);
+          CacheDrained = TSD->getCache().deallocate(ClassId, BlockBegin);
         }
         // When we have drained some blocks back to the Primary from TSD, that
         // implies that we may have the chance to release some pages as well.
@@ -1384,8 +1296,7 @@ private:
         retagBlock(Options, TaggedPtr, Ptr, Header, Size, false);
       typename TSDRegistryT::ScopedTSD TSD(TSDRegistry);
       Quarantine.put(&TSD->getQuarantineCache(),
-                     QuarantineCallback(*this, TSD->getSizeClassAllocator()),
-                     Ptr, Size);
+                     QuarantineCallback(*this, TSD->getCache()), Ptr, Size);
     }
   }
 
@@ -1724,8 +1635,7 @@ private:
   uptr getStats(ScopedString *Str) {
     Primary.getStats(Str);
     Secondary.getStats(Str);
-    if (!AllocatorConfig::getQuarantineDisabled())
-      Quarantine.getStats(Str);
+    Quarantine.getStats(Str);
     TSDRegistry.getStats(Str);
     return Str->length();
   }

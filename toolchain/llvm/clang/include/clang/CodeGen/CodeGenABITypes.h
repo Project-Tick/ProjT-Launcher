@@ -32,7 +32,6 @@
 namespace llvm {
 class AttrBuilder;
 class Constant;
-class ConstantInt;
 class Function;
 class FunctionType;
 class Type;
@@ -126,12 +125,6 @@ uint16_t getPointerAuthDeclDiscriminator(CodeGenModule &CGM, GlobalDecl GD);
 /// Return a type discriminator for the given function type.
 uint16_t getPointerAuthTypeDiscriminator(CodeGenModule &CGM,
                                          QualType FunctionType);
-
-/// Return a signed constant pointer.
-llvm::Constant *getConstantSignedPointer(CodeGenModule &CGM,
-                                         llvm::Constant *Pointer, unsigned Key,
-                                         llvm::Constant *StorageAddress,
-                                         llvm::ConstantInt *OtherDiscriminator);
 
 /// Given the language and code-generation options that Clang was configured
 /// with, set the default LLVM IR attributes for a function definition.
