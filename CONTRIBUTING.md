@@ -49,7 +49,7 @@ ctest --preset your_os
 | Component | Requirement |
 | --------- | ----------- |
 | CMake | 3.22+ |
-| Qt | 6.10.0 |
+| Qt | 6.10.2 |
 | Compiler | C++20 support |
 | Python | 3.9+ (for metadata tools) |
 | Node.js | 18+ (for website) |
