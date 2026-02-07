@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2020 Kai Uwe Broulik <kde@broulik.de>
 # SPDX-FileCopyrightText: 2020 Henri Chain <henri.chain@enioka.com>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

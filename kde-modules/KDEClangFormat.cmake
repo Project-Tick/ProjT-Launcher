@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2019 Christoph Cullmann <cullmann@kde.org>
 # SPDX-FileCopyrightText: 2021 Alexander Lohnau <alexander.lohnau@gmx.de>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

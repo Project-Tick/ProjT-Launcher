@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2013 Aleix Pol Gonzalez <aleixpol@blue-systems.com>
 # SPDX-FileCopyrightText: 2014 Alex Merry <alex.merry@kdemail.net>
 # SPDX-FileCopyrightText: 2015 Patrick Spendrin <patrick.spendrin@kdab.com>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

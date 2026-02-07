@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2020-2023 Alexander Lohnau <alexander.lohnau@gmx.de>
 # SPDX-FileCopyrightText: 2022 Ahmad Samir <a.samirh78@gmail.com>
 # SPDX-FileCopyrightText: 2023 Johannes Zarl-Zierl <johannes@zarl-zierl.at>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

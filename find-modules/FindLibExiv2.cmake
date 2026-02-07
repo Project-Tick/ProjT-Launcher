@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2018 Christophe Giboudeaux <christophe@krop.fr>
 # SPDX-FileCopyrightText: 2010 Alexander Neundorf <neundorf@kde.org>
 # SPDX-FileCopyrightText: 2008 Gilles Caulier <caulier.gilles@gmail.com>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

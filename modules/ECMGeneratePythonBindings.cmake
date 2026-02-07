@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2023 The Qt Company Ltd.
 # SPDX-FileCopyrightText: 2024 Manuel Alcaraz Zambrano <manuelalcarazzam@gmail.com>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 # SPDX-License-Identifier: BSD-3-Clause
 
 # Based on https://code.qt.io/cgit/pyside/pyside-setup.git/tree/examples/widgetbinding/CMakeLists.txt

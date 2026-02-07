@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2014 Aleix Pol Gonzalez <aleixpol@kde.org>
 # SPDX-FileCopyrightText: 2014 David Faure <faure@kde.org>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

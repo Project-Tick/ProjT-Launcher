@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2008 Matthias Kretz <kretz@kde.org>
 # SPDX-FileCopyrightText: 2009 Marcus Hufgard <Marcus.Hufgard@hufgard.de>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

@@ -3,6 +3,7 @@
 # SPDX-FileCopyrightText: 2014-2016 Aleix Pol <aleixpol@kde.org>
 # SPDX-FileCopyrightText: 2017 Friedrich W. H. Kossebau <kossebau@kde.org>
 # SPDX-FileCopyrightText: 2022 Ahmad Samir <a.samir78@gmail.com>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #[=======================================================================[.rst:

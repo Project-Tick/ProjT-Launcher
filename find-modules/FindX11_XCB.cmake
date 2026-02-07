@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: 2011 Fredrik Höglund <fredrik@kde.org>
 # SPDX-FileCopyrightText: 2008 Helio Chissini de Castro <helio@kde.org>
 # SPDX-FileCopyrightText: 2007 Matthias Kretz <kretz@kde.org>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

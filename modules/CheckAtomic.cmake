@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2003-2018 University of Illinois at Urbana-Champaign.
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

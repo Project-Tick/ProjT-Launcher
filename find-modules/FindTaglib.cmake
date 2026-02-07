@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2006 Laurent Montel <montel@kde.org>
 # SPDX-FileCopyrightText: 2019 Heiko Becker <heirecka@exherbo.org>
 # SPDX-FileCopyrightText: 2020 Elvis Angelaccio <elvis.angelaccio@kde.org>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

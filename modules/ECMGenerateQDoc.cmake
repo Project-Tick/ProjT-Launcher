@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2025 Nicolas Fella <nicolas.fella@gmx.de>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

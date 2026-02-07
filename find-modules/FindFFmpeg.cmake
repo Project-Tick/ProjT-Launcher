@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: 2008 Alexander Neundorf <neundorf@kde.org>
 # SPDX-FileCopyrightText: 2011 Michael Jansen <kde@michael-jansen.biz>
 # SPDX-FileCopyrightText: 2021 Stefan Brüns <stefan.bruens@rwth-aachen.de>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

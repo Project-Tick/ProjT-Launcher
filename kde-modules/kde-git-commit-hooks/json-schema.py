@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # Version in sysadmin/ci-utilities should be single source of truth
 # SPDX-FileCopyrightText: 2023 Alexander Lohnau <alexander.lohnau@gmx.de>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 # SPDX-License-Identifier: BSD-2-Clause
 
 import os

@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2017 Aleix Pol Gonzalez <aleixpol@kde.org>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2014 Alex Merry <alex.merry@kde.org>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # Based on cmake.py from CMake:
 # SPDX-FileCopyrightText: 2000-2013 Kitware Inc., Insight Software Consortium

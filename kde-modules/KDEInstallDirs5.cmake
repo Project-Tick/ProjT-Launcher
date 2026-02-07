@@ -4,6 +4,7 @@
 # SPDX-FileCopyrightText: 2007 Matthias Kretz <kretz@kde.org>
 # SPDX-FileCopyrightText: 2006-2007 Laurent Montel <montel@kde.org>
 # SPDX-FileCopyrightText: 2006-2013 Alex Neundorf <neundorf@kde.org>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

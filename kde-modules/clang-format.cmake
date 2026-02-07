@@ -1,6 +1,7 @@
 ---
 # SPDX-FileCopyrightText: 2019 Christoph Cullmann <cullmann@kde.org>
 # SPDX-FileCopyrightText: 2019 Gernot Gebhard <gebhard@absint.com>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: MIT
 

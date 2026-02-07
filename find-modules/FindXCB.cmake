@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2011 Fredrik Höglund <fredrik@kde.org>
 # SPDX-FileCopyrightText: 2013 Martin Gräßlin <mgraesslin@kde.org>
 # SPDX-FileCopyrightText: 2014-2015 Alex Merry <alex.merry@kde.org>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

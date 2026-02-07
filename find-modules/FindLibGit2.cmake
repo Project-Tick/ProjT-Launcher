@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: 2014 Martin Gräßlin <mgraesslin@kde.org>
 # SPDX-FileCopyrightText: 2014 Christoph Cullmann <cullmann@kde.org>
 # SPDX-FileCopyrightText: 2023 Louis Moureaux <m_louis30@yahoo.com>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

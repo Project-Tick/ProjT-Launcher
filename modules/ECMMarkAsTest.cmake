@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2012 Stephen Kelly <steveire@gmail.com>
 # SPDX-FileCopyrightText: 2012 Alex Neundorf <neundorf@kde.org>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

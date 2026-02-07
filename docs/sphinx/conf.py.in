@@ -1,6 +1,7 @@
 #=============================================================================
 # CMake - Cross Platform Makefile Generator
 # SPDX-FileCopyrightText: 2000-2013 Kitware Inc., Insight Software Consortium
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #=============================================================================

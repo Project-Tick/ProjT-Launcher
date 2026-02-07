@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2017 Martin Flöser <mgraesslin@kde.org>
 # SPDX-FileCopyrightText: 2017 David Kahles <david.kahles96@gmail.com>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 

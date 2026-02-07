@@ -3,6 +3,7 @@
 # SPDX-FileCopyrightText: 2018-2020 Aleix Pol Gonzalez <aleixpol@kde.org>
 # SPDX-FileCopyrightText: 2019-2020 Ben Cooksley <bcooksley@kde.org>
 # SPDX-FileCopyrightText: 2020 Volker Krause <vkrause@kde.org>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #

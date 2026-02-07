@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: 2013 David Edmundson <kde@davidedmundson.co.uk>
 # SPDX-FileCopyrightText: 2008 Chusslove Illich <caslav.ilic@gmx.net>
 # SPDX-FileCopyrightText: 2006 Alex Neundorf <neundorf@kde.org>
+# SPDX-FileCopyrightText: 2026 Project Tick <projecttick@projecttick.org>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
