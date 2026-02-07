@@ -173,7 +173,7 @@ QT_CONFIGURE_FEATURES += \
 endif
 
 # Use bundled libpng
-ifeq ($(CONFIG_LIB_LIBPNG),y)
+ifeq ($(CONFIG_LIBPNG),y)
 QT_CONFIGURE_FEATURES += \
 	-system-libpng \
 	-- -DPNG_ROOT=$(LIBDIR)

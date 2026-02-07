@@ -304,7 +304,7 @@ export QT_CFLAGS QT_LIBS QT_MOC QT_UIC QT_RCC
 
 SUBTREE_LIBS :=
 
-ifeq ($(call cfg-yes,$(CONFIG_MOD_ZLIB)),y)
+ifeq ($(call cfg-yes,$(CONFIG_LIB_ZLIB)),y)
     SUBTREE_LIBS += $(LIBDIR)/libz.a
 endif
 

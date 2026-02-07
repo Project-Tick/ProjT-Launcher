@@ -769,8 +769,8 @@ listconfig: prepare
 	@echo "Build dir:   $(KBUILD_OUTPUT)"
 	@echo ""
 	@echo "Build Settings:"
-	@echo "  BUILD_TYPE:          $(CONFIG_BUILD_TYPE)"
-	@echo "  ENABLE_LTO:          $(CONFIG_ENABLE_LTO)"
+	@echo "  BUILD_TYPE:          $(if $(CONFIG_BUILD_DEBUG),Debug,$(if $(CONFIG_BUILD_RELWITHDEBINFO),RelWithDebInfo,Release))"
+	@echo "  ENABLE_LTO:          $(CONFIG_LTO)"
 	@echo ""
 	@echo "Target:"
 	@echo "  TARGET_OS:           $(TARGET_OS)"
@@ -783,8 +783,8 @@ listconfig: prepare
 	@echo ""
 	@echo "Qt Settings:"
 	@echo "  QT_VERSION_MAJOR:    $(CONFIG_QT_VERSION_MAJOR)"
-	@echo "  USE_BUNDLED_QT:      $(CONFIG_USE_BUNDLED_QT)"
-	@echo "  WITH_WEBENGINE:      $(CONFIG_LAUNCHER_WITH_WEBENGINE)"
+	@echo "  QT_BUNDLED:          $(CONFIG_QT_BUNDLED)"
+	@echo "  WITH_WEBENGINE:      $(CONFIG_QT_MODULE_QTWEBENGINE)"
 
 info:
 	@echo "=== $(NAME) ===" 
