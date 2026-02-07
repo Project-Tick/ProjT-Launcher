@@ -11,3 +11,4 @@ qtwebchannel qt/qtwebchannel https://github.com/qt/qtwebchannel.git dev
 qtwebengine qt/qtwebengine https://github.com/qt/qtwebengine.git dev
 gcc toolchain/gcc https://gcc.gnu.org/git/gcc.git releases/gcc-15
 llvm toolchain/llvm https://github.com/llvm/llvm-project release/20.x
+extra-cmake-modules extra-cmake-modules https://github.com/Project-Tick/extra-cmake-modules master
