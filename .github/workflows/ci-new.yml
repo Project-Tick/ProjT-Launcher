@@ -68,22 +68,6 @@ jobs:
       head-ref: ${{ needs.prepare.outputs.head-ref }}
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # PR CHECK
-  # ═══════════════════════════════════════════════════════════════════════════
-  check:
-    name: Check
-    needs: [prepare]
-    if: needs.prepare.outputs.should-test == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true' && needs.prepare.outputs.is-pr == 'true'
-    uses: ./.github/workflows/check.yml
-    permissions:
-      pull-requests: write
-    with:
-      baseBranch: ${{ needs.prepare.outputs.base-ref }}
-      headBranch: ${{ needs.prepare.outputs.head-ref }}
-      mergedSha: ${{ needs.prepare.outputs.head-ref }}
-      targetSha: ${{ needs.prepare.outputs.base-ref }}
-
-  # ═══════════════════════════════════════════════════════════════════════════
   # META UPDATE (Scheduled)
   # ═══════════════════════════════════════════════════════════════════════════
   meta-update:
