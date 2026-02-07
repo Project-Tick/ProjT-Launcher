@@ -1,0 +1,36 @@
+name: Close Pull Requests
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  close-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Close PR and post comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Close the PR
+            await github.rest.pulls.update({
+              owner: owner,
+              repo: repo,
+              pull_number: pr.number,
+              state: 'closed'
+            });
+
+            // Post a comment
+            await github.rest.issues.createComment({
+              owner: owner,
+              repo: repo,
+              issue_number: pr.number,
+              body: `🙏 **Thank you for your interest!**\n\nProject Tick accepts contributions via **mailing list** only. Please:\n\n1. Subscribe to the [**Mailing List**](https://lists.projecttick.org)\n2. Send your code as a patch via email\n\n\`\`\`bash\ngit send-email --to=devel@lists.projecttick.org *.patch\n\`\`\`\n\n**Note:** GitHub pull requests are automatically closed. For more information about our contribution workflow, please see [CONTRIBUTING.md](./CONTRIBUTING.md).`
+            });
