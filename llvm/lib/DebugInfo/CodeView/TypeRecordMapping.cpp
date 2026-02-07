@@ -28,6 +28,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 using namespace llvm;
 using namespace llvm::codeview;

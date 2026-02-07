@@ -13,7 +13,6 @@
 #ifndef LLVM_SUPPORT_BLOCKFREQUENCY_H
 #define LLVM_SUPPORT_BLOCKFREQUENCY_H
 
-#include "llvm/Support/Compiler.h"
 #include <cassert>
 #include <cstdint>
 #include <optional>
@@ -40,13 +39,13 @@ public:
 
   /// Multiplies with a branch probability. The computation will never
   /// overflow.
-  LLVM_ABI BlockFrequency &operator*=(BranchProbability Prob);
-  LLVM_ABI BlockFrequency operator*(BranchProbability Prob) const;
+  BlockFrequency &operator*=(BranchProbability Prob);
+  BlockFrequency operator*(BranchProbability Prob) const;
 
   /// Divide by a non-zero branch probability using saturating
   /// arithmetic.
-  LLVM_ABI BlockFrequency &operator/=(BranchProbability Prob);
-  LLVM_ABI BlockFrequency operator/(BranchProbability Prob) const;
+  BlockFrequency &operator/=(BranchProbability Prob);
+  BlockFrequency operator/(BranchProbability Prob) const;
 
   /// Adds another block frequency using saturating arithmetic.
   BlockFrequency &operator+=(BlockFrequency Freq) {
@@ -81,7 +80,7 @@ public:
   }
 
   /// Multiplies frequency with `Factor`. Returns `nullopt` in case of overflow.
-  LLVM_ABI std::optional<BlockFrequency> mul(uint64_t Factor) const;
+  std::optional<BlockFrequency> mul(uint64_t Factor) const;
 
   /// Shift block frequency to the right by count digits saturating to 1.
   BlockFrequency &operator>>=(const unsigned count) {
@@ -121,8 +120,8 @@ public:
   }
 };
 
-LLVM_ABI void printRelativeBlockFreq(raw_ostream &OS, BlockFrequency EntryFreq,
-                                     BlockFrequency Freq);
+void printRelativeBlockFreq(raw_ostream &OS, BlockFrequency EntryFreq,
+                            BlockFrequency Freq);
 
 } // namespace llvm
 

@@ -6,18 +6,21 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "src/errno/libc_errno.h"
 #include "src/signal/raise.h"
 #include "src/signal/signal.h"
-#include "test/UnitTest/ErrnoCheckingTest.h"
+
 #include "test/UnitTest/ErrnoSetterMatcher.h"
 #include "test/UnitTest/Test.h"
 
-using LlvmLibcSignalTest = LIBC_NAMESPACE::testing::ErrnoCheckingTest;
+#include "hdr/types/sighandler_t.h"
+
 using LIBC_NAMESPACE::testing::ErrnoSetterMatcher::Fails;
 using LIBC_NAMESPACE::testing::ErrnoSetterMatcher::Succeeds;
 
-TEST(LlvmLibcSignalTest, Invalid) {
-  auto *valid = +[](int) {};
+TEST(LlvmLibcSignal, Invalid) {
+  LIBC_NAMESPACE::libc_errno = 0;
+  sighandler_t valid = +[](int) {};
   EXPECT_THAT((void *)LIBC_NAMESPACE::signal(0, valid),
               Fails(EINVAL, (void *)SIG_ERR));
   EXPECT_THAT((void *)LIBC_NAMESPACE::signal(65, valid),
@@ -25,7 +28,7 @@ TEST(LlvmLibcSignalTest, Invalid) {
 }
 
 static int sum;
-TEST(LlvmLibcSignalTest, Basic) {
+TEST(LlvmLibcSignal, Basic) {
   // In case test get run multiple times.
   sum = 0;
   ASSERT_NE(LIBC_NAMESPACE::signal(

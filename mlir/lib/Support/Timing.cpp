@@ -19,11 +19,13 @@
 #include "llvm/Support/Allocator.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Format.h"
+#include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/RWMutex.h"
 #include "llvm/Support/Threading.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include <atomic>
 #include <chrono>
 #include <optional>
 
@@ -50,8 +52,7 @@ public:
   llvm::sys::SmartRWMutex<true> identifierMutex;
 
   /// A thread local cache of identifiers to reduce lock contention.
-  ThreadLocalCache<
-      llvm::StringMap<llvm::StringMapEntry<llvm::EmptyStringSetTag> *>>
+  ThreadLocalCache<llvm::StringMap<llvm::StringMapEntry<std::nullopt_t> *>>
       localIdentifierCache;
 
   TimingManagerImpl() : identifiers(identifierAllocator) {}
@@ -320,6 +321,7 @@ public:
   void mergeChildren(AsyncChildrenMap &&other) {
     for (auto &thread : other) {
       mergeChildren(std::move(thread.second));
+      assert(thread.second.empty());
     }
     other.clear();
   }
@@ -619,17 +621,11 @@ void mlir::applyDefaultTimingManagerCLOptions(DefaultTimingManager &tm) {
     return;
   tm.setEnabled(options->timing);
   tm.setDisplayMode(options->displayMode);
-  tm.setOutput(createOutputStrategy(options->outputFormat, llvm::errs()));
-}
 
-std::unique_ptr<OutputStrategy>
-mlir::createOutputStrategy(DefaultTimingManager::OutputFormat fmt,
-                           raw_ostream &os) {
-  switch (fmt) {
-  case OutputFormat::Text:
-    return std::make_unique<OutputTextStrategy>(os);
-  case OutputFormat::Json:
-    return std::make_unique<OutputJsonStrategy>(os);
-  }
-  llvm_unreachable("Invalid output format");
+  std::unique_ptr<OutputStrategy> printer;
+  if (options->outputFormat == OutputFormat::Text)
+    printer = std::make_unique<OutputTextStrategy>(llvm::errs());
+  else if (options->outputFormat == OutputFormat::Json)
+    printer = std::make_unique<OutputJsonStrategy>(llvm::errs());
+  tm.setOutput(std::move(printer));
 }

@@ -1,4 +1,4 @@
-FROM docker.io/ubuntu:bionic
+FROM ubuntu:bionic
 
 RUN apt-get update && apt-get install -y \
     apt-transport-https \

@@ -11,7 +11,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "../SPIRVCommon/Pattern.h"
+#include "mlir/Conversion/SPIRVToLLVM/SPIRVToLLVMPass.h"
+
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
@@ -46,12 +47,14 @@ static constexpr const char kSPIRVModule[] = "__spv__";
 
 /// Returns the string name of the `DescriptorSet` decoration.
 static std::string descriptorSetName() {
-  return spirv::getDecorationString(spirv::Decoration::DescriptorSet);
+  return llvm::convertToSnakeFromCamelCase(
+      stringifyDecoration(spirv::Decoration::DescriptorSet));
 }
 
 /// Returns the string name of the `Binding` decoration.
 static std::string bindingName() {
-  return spirv::getDecorationString(spirv::Decoration::Binding);
+  return llvm::convertToSnakeFromCamelCase(
+      stringifyDecoration(spirv::Decoration::Binding));
 }
 
 /// Calculates the index of the kernel's operand that is represented by the
@@ -67,7 +70,7 @@ static unsigned calculateGlobalIndex(spirv::GlobalVariableOp op) {
 /// Copies the given number of bytes from src to dst pointers.
 static void copy(Location loc, Value dst, Value src, Value size,
                  OpBuilder &builder) {
-  LLVM::MemcpyOp::create(builder, loc, dst, src, size, /*isVolatile=*/false);
+  builder.create<LLVM::MemcpyOp>(loc, dst, src, size, /*isVolatile=*/false);
 }
 
 /// Encodes the binding and descriptor set numbers into a new symbolic name.
@@ -193,8 +196,8 @@ class GPULaunchLowering : public ConvertOpToLLVMPattern<gpu::LaunchFuncOp> {
     if (!kernelFunc) {
       OpBuilder::InsertionGuard guard(rewriter);
       rewriter.setInsertionPointToStart(module.getBody());
-      kernelFunc = LLVM::LLVMFuncOp::create(
-          rewriter, rewriter.getUnknownLoc(), newKernelFuncName,
+      kernelFunc = rewriter.create<LLVM::LLVMFuncOp>(
+          rewriter.getUnknownLoc(), newKernelFuncName,
           LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(context),
                                       ArrayRef<Type>()));
       rewriter.setInsertionPoint(launchOp);
@@ -244,8 +247,8 @@ class GPULaunchLowering : public ConvertOpToLLVMPattern<gpu::LaunchFuncOp> {
       if (!dstGlobal) {
         OpBuilder::InsertionGuard guard(rewriter);
         rewriter.setInsertionPointToStart(module.getBody());
-        dstGlobal = LLVM::GlobalOp::create(
-            rewriter, loc, dstGlobalType,
+        dstGlobal = rewriter.create<LLVM::GlobalOp>(
+            loc, dstGlobalType,
             /*isConstant=*/false, LLVM::Linkage::Linkonce, name, Attribute(),
             /*alignment=*/0);
         rewriter.setInsertionPoint(launchOp);
@@ -254,8 +257,8 @@ class GPULaunchLowering : public ConvertOpToLLVMPattern<gpu::LaunchFuncOp> {
       // Copy the data from src operand pointer to dst global variable. Save
       // src, dst and size so that we can copy data back after emulating the
       // kernel call.
-      Value dst = LLVM::AddressOfOp::create(
-          rewriter, loc, typeConverter->convertType(spirvGlobal.getType()),
+      Value dst = rewriter.create<LLVM::AddressOfOp>(
+          loc, typeConverter->convertType(spirvGlobal.getType()),
           dstGlobal.getSymName());
       copy(loc, dst, src, sizeBytes, rewriter);
 

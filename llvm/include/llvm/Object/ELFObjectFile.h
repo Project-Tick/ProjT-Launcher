@@ -18,7 +18,6 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/BinaryFormat/ELF.h"
-#include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/Object/Binary.h"
 #include "llvm/Object/ELF.h"
 #include "llvm/Object/ELFTypes.h"
@@ -26,7 +25,6 @@
 #include "llvm/Object/ObjectFile.h"
 #include "llvm/Object/SymbolicFile.h"
 #include "llvm/Support/Casting.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/ELFAttributeParser.h"
 #include "llvm/Support/ELFAttributes.h"
 #include "llvm/Support/Error.h"
@@ -46,8 +44,7 @@ template <typename T> class SmallVectorImpl;
 namespace object {
 
 constexpr int NumElfSymbolTypes = 16;
-LLVM_ABI extern const llvm::EnumEntry<unsigned>
-    ElfSymbolTypes[NumElfSymbolTypes];
+extern const llvm::EnumEntry<unsigned> ElfSymbolTypes[NumElfSymbolTypes];
 
 class elf_symbol_iterator;
 
@@ -57,7 +54,7 @@ struct ELFPltEntry {
   uint64_t Address;
 };
 
-class LLVM_ABI ELFObjectFileBase : public ObjectFile {
+class ELFObjectFileBase : public ObjectFile {
   friend class ELFRelocationRef;
   friend class ELFSectionRef;
   friend class ELFSymbolRef;
@@ -110,7 +107,7 @@ public:
 
   virtual uint8_t getEIdentABIVersion() const = 0;
 
-  std::vector<ELFPltEntry> getPltEntries(const MCSubtargetInfo &STI) const;
+  std::vector<ELFPltEntry> getPltEntries() const;
 
   /// Returns a vector containing a symbol version for each dynamic symbol.
   /// Returns an empty vector if version sections do not exist.
@@ -412,9 +409,6 @@ protected:
     switch (getEMachine()) {
     case ELF::EM_ARM:
       Type = ELF::SHT_ARM_ATTRIBUTES;
-      break;
-    case ELF::EM_AARCH64:
-      Type = ELF::SHT_AARCH64_ATTRIBUTES;
       break;
     case ELF::EM_RISCV:
       Type = ELF::SHT_RISCV_ATTRIBUTES;
@@ -1218,12 +1212,12 @@ ELFObjectFile<ELFT>::ELFObjectFile(MemoryBufferRef Object, ELFFile<ELFT> EF,
     : ELFObjectFileBase(getELFType(ELFT::Endianness == llvm::endianness::little,
                                    ELFT::Is64Bits),
                         Object),
-      EF(std::move(EF)), DotDynSymSec(DotDynSymSec), DotSymtabSec(DotSymtabSec),
+      EF(EF), DotDynSymSec(DotDynSymSec), DotSymtabSec(DotSymtabSec),
       DotSymtabShndxSec(DotSymtabShndx) {}
 
 template <class ELFT>
 ELFObjectFile<ELFT>::ELFObjectFile(ELFObjectFile<ELFT> &&Other)
-    : ELFObjectFile(Other.Data, std::move(Other.EF), Other.DotDynSymSec,
+    : ELFObjectFile(Other.Data, Other.EF, Other.DotDynSymSec,
                     Other.DotSymtabSec, Other.DotSymtabShndxSec) {}
 
 template <class ELFT>
@@ -1312,7 +1306,7 @@ StringRef ELFObjectFile<ELFT>::getFileFormatName() const {
     case ELF::EM_PPC:
       return (IsLittleEndian ? "elf32-powerpcle" : "elf32-powerpc");
     case ELF::EM_RISCV:
-      return (IsLittleEndian ? "elf32-littleriscv" : "elf32-bigriscv");
+      return "elf32-littleriscv";
     case ELF::EM_CSKY:
       return "elf32-csky";
     case ELF::EM_SPARC:
@@ -1338,7 +1332,7 @@ StringRef ELFObjectFile<ELFT>::getFileFormatName() const {
     case ELF::EM_PPC64:
       return (IsLittleEndian ? "elf64-powerpcle" : "elf64-powerpc");
     case ELF::EM_RISCV:
-      return (IsLittleEndian ? "elf64-littleriscv" : "elf64-bigriscv");
+      return "elf64-littleriscv";
     case ELF::EM_S390:
       return "elf64-s390";
     case ELF::EM_SPARCV9:
@@ -1400,9 +1394,9 @@ template <class ELFT> Triple::ArchType ELFObjectFile<ELFT>::getArch() const {
   case ELF::EM_RISCV:
     switch (EF.getHeader().e_ident[ELF::EI_CLASS]) {
     case ELF::ELFCLASS32:
-      return IsLittleEndian ? Triple::riscv32 : Triple::riscv32be;
+      return Triple::riscv32;
     case ELF::ELFCLASS64:
-      return IsLittleEndian ? Triple::riscv64 : Triple::riscv64be;
+      return Triple::riscv64;
     default:
       report_fatal_error("Invalid ELFCLASS!");
     }
@@ -1479,7 +1473,6 @@ template <class ELFT> Triple::OSType ELFObjectFile<ELFT>::getOS() const {
   case ELF::ELFOSABI_OPENBSD:
     return Triple::OpenBSD;
   case ELF::ELFOSABI_CUDA:
-  case ELF::ELFOSABI_CUDA_V2:
     return Triple::CUDA;
   case ELF::ELFOSABI_AMDGPU_HSA:
     return Triple::AMDHSA;

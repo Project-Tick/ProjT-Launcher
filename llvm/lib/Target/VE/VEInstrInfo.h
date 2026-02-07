@@ -53,7 +53,7 @@ class VEInstrInfo : public VEGenInstrInfo {
   virtual void anchor();
 
 public:
-  explicit VEInstrInfo(const VESubtarget &ST);
+  explicit VEInstrInfo(VESubtarget &ST);
 
   /// getRegisterInfo - TargetInstrInfo is a superset of MRegister info.  As
   /// such, whenever a client has an instance of instruction info, it should
@@ -80,7 +80,7 @@ public:
   /// } Branch Analysis & Modification
 
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
-                   const DebugLoc &DL, Register DestReg, Register SrcReg,
+                   const DebugLoc &DL, MCRegister DestReg, MCRegister SrcReg,
                    bool KillSrc, bool RenamableDest = false,
                    bool RenamableSrc = false) const override;
 
@@ -92,14 +92,13 @@ public:
   void storeRegToStackSlot(
       MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI, Register SrcReg,
       bool isKill, int FrameIndex, const TargetRegisterClass *RC,
-
-      Register VReg,
+      const TargetRegisterInfo *TRI, Register VReg,
       MachineInstr::MIFlag Flags = MachineInstr::NoFlags) const override;
 
   void loadRegFromStackSlot(
       MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
       Register DestReg, int FrameIndex, const TargetRegisterClass *RC,
-      Register VReg, unsigned SubReg = 0,
+      const TargetRegisterInfo *TRI, Register VReg,
       MachineInstr::MIFlag Flags = MachineInstr::NoFlags) const override;
   /// } Stack Spill & Reload
 

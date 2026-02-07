@@ -93,7 +93,7 @@ public:
   /// \param[in] user_data
   ///     User data where the SymbolFile parser can store data.
   ///
-  /// \param[in] support_file_nsp
+  /// \param[in] support_file_sp
   ///     The file specification for the source file of this compile
   ///     unit.
   ///
@@ -118,7 +118,7 @@ public:
   ///     An rvalue list of already parsed support files.
   /// \see lldb::LanguageType
   CompileUnit(const lldb::ModuleSP &module_sp, void *user_data,
-              SupportFileNSP support_file_nsp, lldb::user_id_t uid,
+              lldb::SupportFileSP support_file_sp, lldb::user_id_t uid,
               lldb::LanguageType language, lldb_private::LazyBool is_optimized,
               SupportFileList &&support_files = {});
 
@@ -230,12 +230,12 @@ public:
 
   /// Return the primary source spec associated with this compile unit.
   const FileSpec &GetPrimaryFile() const {
-    return m_primary_support_file_nsp->GetSpecOnly();
+    return m_primary_support_file_sp->GetSpecOnly();
   }
 
   /// Return the primary source file associated with this compile unit.
-  SupportFileNSP GetPrimarySupportFile() const {
-    return m_primary_support_file_nsp;
+  lldb::SupportFileSP GetPrimarySupportFile() const {
+    return m_primary_support_file_sp;
   }
 
   /// Get the line table for the compile unit.
@@ -430,7 +430,7 @@ protected:
   /// compile unit.
   std::vector<SourceModule> m_imported_modules;
   /// The primary file associated with this compile unit.
-  SupportFileNSP m_primary_support_file_nsp;
+  lldb::SupportFileSP m_primary_support_file_sp;
   /// Files associated with this compile unit's line table and declarations.
   SupportFileList m_support_files;
   /// Line table that will get parsed on demand.

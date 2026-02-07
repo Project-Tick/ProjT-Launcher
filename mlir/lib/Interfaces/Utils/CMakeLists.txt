@@ -8,7 +8,6 @@ add_mlir_library(MLIRInferIntRangeCommon
     MLIRInferIntRangeInterfaceIncGen
 
     LINK_LIBS PUBLIC
-    MLIRShapedOpInterfaces
     MLIRInferIntRangeInterface
     MLIRIR
 )

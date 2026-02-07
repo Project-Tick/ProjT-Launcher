@@ -13,11 +13,12 @@
 #include "clang/StaticAnalyzer/Core/BugReporter/BugReporter.h"
 #include "clang/StaticAnalyzer/Core/Checker.h"
 #include "clang/StaticAnalyzer/Core/CheckerManager.h"
-#include "clang/StaticAnalyzer/Core/PathSensitive/EntryPointStats.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ExplodedGraph.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ExprEngine.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/ADT/SmallString.h"
+#include "llvm/ADT/Statistic.h"
 #include "llvm/Support/raw_ostream.h"
 #include <optional>
 
@@ -26,9 +27,10 @@ using namespace ento;
 
 #define DEBUG_TYPE "StatsChecker"
 
-STAT_COUNTER(NumBlocks, "The # of blocks in top level functions");
-STAT_COUNTER(NumBlocksUnreachable,
-             "The # of unreachable blocks in analyzing top level functions");
+STATISTIC(NumBlocks,
+          "The # of blocks in top level functions");
+STATISTIC(NumBlocksUnreachable,
+          "The # of unreachable blocks in analyzing top level functions");
 
 namespace {
 class AnalyzerStatsChecker : public Checker<check::EndAnalysis> {
@@ -44,7 +46,9 @@ void AnalyzerStatsChecker::checkEndAnalysis(ExplodedGraph &G,
   const SourceManager &SM = B.getSourceManager();
   llvm::SmallPtrSet<const CFGBlock*, 32> reachable;
 
-  const LocationContext *LC = Eng.getRootLocationContext();
+  // Root node should have the location context of the top most function.
+  const ExplodedNode *GraphRoot = *G.roots_begin();
+  const LocationContext *LC = GraphRoot->getLocation().getLocationContext();
 
   const Decl *D = LC->getDecl();
 

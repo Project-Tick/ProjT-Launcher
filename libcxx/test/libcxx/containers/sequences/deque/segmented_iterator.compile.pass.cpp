@@ -8,5 +8,6 @@
 
 #include <deque>
 
+
 using DequeIterator = typename std::deque<int>::iterator;
-static_assert(std::__is_segmented_iterator_v<DequeIterator>, "");
+static_assert(std::__is_segmented_iterator<DequeIterator>::value, "");

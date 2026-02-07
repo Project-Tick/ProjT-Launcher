@@ -15,5 +15,5 @@
 
 ! WITHOUT-NOT: Could not scan
 
-     +continue
-      end
+1 continue
+end

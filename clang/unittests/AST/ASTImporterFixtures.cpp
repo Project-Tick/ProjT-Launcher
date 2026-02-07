@@ -173,8 +173,9 @@ std::tuple<Decl *, Decl *> ASTImporterTestBase::getImportedDecl(
 TranslationUnitDecl *ASTImporterTestBase::getTuDecl(StringRef SrcCode,
                                                     TestLanguage Lang,
                                                     StringRef FileName) {
-  assert(llvm::none_of(
-      FromTUs, [FileName](const TU &E) { return E.FileName == FileName; }));
+  assert(llvm::find_if(FromTUs, [FileName](const TU &E) {
+           return E.FileName == FileName;
+         }) == FromTUs.end());
 
   std::vector<std::string> Args = getCommandLineArgsForLanguage(Lang);
   FromTUs.emplace_back(SrcCode, FileName, Args, Creator, ODRHandling);

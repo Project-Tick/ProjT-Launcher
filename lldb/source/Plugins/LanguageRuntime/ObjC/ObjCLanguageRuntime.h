@@ -386,8 +386,16 @@ private:
     }
 
     bool operator<(const ClassAndSel &rhs) const {
-      return std::tie(class_addr, sel_addr) <
-             std::tie(rhs.class_addr, rhs.sel_addr);
+      if (class_addr < rhs.class_addr)
+        return true;
+      else if (class_addr > rhs.class_addr)
+        return false;
+      else {
+        if (sel_addr < rhs.sel_addr)
+          return true;
+        else
+          return false;
+      }
     }
 
     lldb::addr_t class_addr = LLDB_INVALID_ADDRESS;
@@ -465,10 +473,6 @@ protected:
 
   ObjCLanguageRuntime(const ObjCLanguageRuntime &) = delete;
   const ObjCLanguageRuntime &operator=(const ObjCLanguageRuntime &) = delete;
-
-private:
-  CompilerType LookupInRuntime(ConstString class_name);
-  CompilerType LookupInModulesVendor(ConstString class_name, Target &process);
 };
 
 } // namespace lldb_private

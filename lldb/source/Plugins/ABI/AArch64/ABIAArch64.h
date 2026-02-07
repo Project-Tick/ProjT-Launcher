@@ -19,9 +19,6 @@ public:
   lldb::addr_t FixCodeAddress(lldb::addr_t pc) override;
   lldb::addr_t FixDataAddress(lldb::addr_t pc) override;
 
-  lldb::UnwindPlanSP CreateFunctionEntryUnwindPlan() override;
-  lldb::UnwindPlanSP CreateDefaultUnwindPlan() override;
-
 protected:
   virtual lldb::addr_t FixAddress(lldb::addr_t pc, lldb::addr_t mask) {
     return pc;

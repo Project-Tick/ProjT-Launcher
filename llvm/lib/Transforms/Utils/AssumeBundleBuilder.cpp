@@ -20,14 +20,13 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Operator.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/DebugCounter.h"
 #include "llvm/Transforms/Utils/Local.h"
 
 using namespace llvm;
 
 namespace llvm {
-LLVM_ABI cl::opt<bool> ShouldPreserveAllAttributes(
+cl::opt<bool> ShouldPreserveAllAttributes(
     "assume-preserve-all", cl::init(false), cl::Hidden,
     cl::desc("enable preservation of all attributes. even those that are "
              "unlikely to be useful"));
@@ -115,12 +114,12 @@ struct AssumeBuilderState {
       : M(M), InstBeingModified(I), AC(AC), DT(DT) {}
 
   bool tryToPreserveWithoutAddingAssume(RetainedKnowledge RK) {
-    if (!InstBeingModified || !RK.WasOn || !AC)
+    if (!InstBeingModified || !RK.WasOn)
       return false;
     bool HasBeenPreserved = false;
     Use* ToUpdate = nullptr;
     getKnowledgeForValue(
-        RK.WasOn, {RK.AttrKind}, *AC,
+        RK.WasOn, {RK.AttrKind}, AC,
         [&](RetainedKnowledge RKOther, Instruction *Assume,
             const CallInst::BundleOpInfo *Bundle) {
           if (!isValidAssumeForContext(Assume, InstBeingModified, DT))
@@ -179,9 +178,11 @@ struct AssumeBuilderState {
     if (tryToPreserveWithoutAddingAssume(RK))
       return;
     MapKey Key{RK.WasOn, RK.AttrKind};
-    auto [Lookup, Inserted] = AssumedKnowledgeMap.try_emplace(Key, RK.ArgValue);
-    if (Inserted)
+    auto Lookup = AssumedKnowledgeMap.find(Key);
+    if (Lookup == AssumedKnowledgeMap.end()) {
+      AssumedKnowledgeMap[Key] = RK.ArgValue;
       return;
+    }
     assert(((Lookup->second == 0 && RK.ArgValue == 0) ||
             (Lookup->second != 0 && RK.ArgValue != 0)) &&
            "inconsistent argument value");

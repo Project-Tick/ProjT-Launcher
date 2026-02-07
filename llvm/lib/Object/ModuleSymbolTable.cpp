@@ -78,19 +78,20 @@ initializeRecordStreamer(const Module &M,
 
   std::string Err;
   const Triple TT(M.getTargetTriple());
-  const Target *T = TargetRegistry::lookupTarget(TT, Err);
+  const Target *T = TargetRegistry::lookupTarget(TT.str(), Err);
   assert(T && T->hasMCAsmParser());
 
-  std::unique_ptr<MCRegisterInfo> MRI(T->createMCRegInfo(TT));
+  std::unique_ptr<MCRegisterInfo> MRI(T->createMCRegInfo(TT.str()));
   if (!MRI)
     return;
 
   MCTargetOptions MCOptions;
-  std::unique_ptr<MCAsmInfo> MAI(T->createMCAsmInfo(*MRI, TT, MCOptions));
+  std::unique_ptr<MCAsmInfo> MAI(T->createMCAsmInfo(*MRI, TT.str(), MCOptions));
   if (!MAI)
     return;
 
-  std::unique_ptr<MCSubtargetInfo> STI(T->createMCSubtargetInfo(TT, "", ""));
+  std::unique_ptr<MCSubtargetInfo> STI(
+      T->createMCSubtargetInfo(TT.str(), "", ""));
   if (!STI)
     return;
 

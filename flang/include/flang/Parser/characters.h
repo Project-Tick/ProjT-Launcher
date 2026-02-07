@@ -69,6 +69,10 @@ inline constexpr char ToLowerCaseLetter(char ch) {
   return IsUpperCaseLetter(ch) ? ch - 'A' + 'a' : ch;
 }
 
+inline constexpr char ToLowerCaseLetter(char &&ch) {
+  return IsUpperCaseLetter(ch) ? ch - 'A' + 'a' : ch;
+}
+
 inline std::string ToLowerCaseLetters(std::string_view str) {
   std::string lowered{str};
   for (char &ch : lowered) {
@@ -78,6 +82,10 @@ inline std::string ToLowerCaseLetters(std::string_view str) {
 }
 
 inline constexpr char ToUpperCaseLetter(char ch) {
+  return IsLowerCaseLetter(ch) ? ch - 'a' + 'A' : ch;
+}
+
+inline constexpr char ToUpperCaseLetter(char &&ch) {
   return IsLowerCaseLetter(ch) ? ch - 'a' + 'A' : ch;
 }
 

@@ -18,6 +18,7 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/LogicalResult.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
 #include <functional>
@@ -34,7 +35,7 @@ using Direction = Simplex::Direction;
 const int nullIndex = std::numeric_limits<int>::max();
 
 // Return a + scale*b;
-[[maybe_unused]]
+LLVM_ATTRIBUTE_UNUSED
 static SmallVector<DynamicAPInt, 8>
 scaleAndAddForAssert(ArrayRef<DynamicAPInt> a, const DynamicAPInt &scale,
                      ArrayRef<DynamicAPInt> b) {
@@ -433,7 +434,7 @@ LogicalResult SymbolicLexSimplex::addSymbolicCut(unsigned row) {
   normalizeDiv(divCoeffs, divDenom);
 
   domainSimplex.addDivisionVariable(divCoeffs, divDenom);
-  (void)domainPoly.addLocalFloorDiv(divCoeffs, divDenom);
+  domainPoly.addLocalFloorDiv(divCoeffs, divDenom);
 
   // Update `this` to account for the additional symbol we just added.
   appendSymbol();
@@ -1506,8 +1507,8 @@ Simplex Simplex::makeProduct(const Simplex &a, const Simplex &b) {
   auto concat = [](ArrayRef<Unknown> v, ArrayRef<Unknown> w) {
     SmallVector<Unknown, 8> result;
     result.reserve(v.size() + w.size());
-    llvm::append_range(result, v);
-    llvm::append_range(result, w);
+    result.insert(result.end(), v.begin(), v.end());
+    result.insert(result.end(), w.begin(), w.end());
     return result;
   };
   result.con = concat(a.con, b.con);
@@ -1663,7 +1664,7 @@ public:
   /// First pushes a snapshot for the current simplex state to the stack so
   /// that this can be rolled back later.
   void addEqualityForDirection(ArrayRef<DynamicAPInt> dir) {
-    assert(llvm::any_of(dir, [](const DynamicAPInt &X) { return X != 0; }) &&
+    assert(llvm::any_of(dir, [](const DynamicAPInt &x) { return x != 0; }) &&
            "Direction passed is the zero vector!");
     snapshotStack.emplace_back(simplex.getSnapshot());
     simplex.addEquality(getCoeffsForDirection(dir));
@@ -2156,10 +2157,10 @@ void SimplexBase::print(raw_ostream &os) const {
   for (unsigned row = 0, numRows = getNumRows(); row < numRows; ++row)
     for (unsigned col = 0, numCols = getNumColumns(); col < numCols; ++col)
       updatePrintMetrics<DynamicAPInt>(tableau(row, col), ptm);
-  unsigned minSpacing = 1;
+  unsigned MIN_SPACING = 1;
   for (unsigned row = 0, numRows = getNumRows(); row < numRows; ++row) {
     for (unsigned col = 0, numCols = getNumColumns(); col < numCols; ++col) {
-      printWithPrintMetrics<DynamicAPInt>(os, tableau(row, col), minSpacing,
+      printWithPrintMetrics<DynamicAPInt>(os, tableau(row, col), MIN_SPACING,
                                           ptm);
     }
     os << '\n';

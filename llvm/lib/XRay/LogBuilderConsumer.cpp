@@ -7,8 +7,8 @@
 //===----------------------------------------------------------------------===//
 #include "llvm/XRay/FDRRecordConsumer.h"
 
-using namespace llvm;
-using namespace llvm::xray;
+namespace llvm {
+namespace xray {
 
 Error LogBuilderConsumer::consume(std::unique_ptr<Record> R) {
   if (!R)
@@ -32,3 +32,6 @@ Error PipelineConsumer::consume(std::unique_ptr<Record> R) {
     Result = joinErrors(std::move(Result), R->apply(*V));
   return Result;
 }
+
+} // namespace xray
+} // namespace llvm

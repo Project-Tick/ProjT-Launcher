@@ -4,6 +4,7 @@
 ; RUN: llc -mtriple=riscv64 -mattr=+d,+zfh,+zvfh,+v -target-abi=lp64d \
 ; RUN:     -verify-machineinstrs < %s | FileCheck %s --check-prefixes=CHECK,RV64
 
+declare <1 x i1> @llvm.experimental.constrained.fptosi.v1i1.v1f16(<1 x half>, metadata)
 define <1 x i1> @vfptosi_v1f16_v1i1(<1 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f16_v1i1:
 ; CHECK:       # %bb.0:
@@ -16,6 +17,7 @@ define <1 x i1> @vfptosi_v1f16_v1i1(<1 x half> %va) strictfp {
   ret <1 x i1> %evec
 }
 
+declare <1 x i1> @llvm.experimental.constrained.fptoui.v1i1.v1f16(<1 x half>, metadata)
 define <1 x i1> @vfptoui_v1f16_v1i1(<1 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f16_v1i1:
 ; CHECK:       # %bb.0:
@@ -28,6 +30,7 @@ define <1 x i1> @vfptoui_v1f16_v1i1(<1 x half> %va) strictfp {
   ret <1 x i1> %evec
 }
 
+declare <1 x i7> @llvm.experimental.constrained.fptosi.v1i7.v1f16(<1 x half>, metadata)
 define <1 x i7> @vfptosi_v1f16_v1i7(<1 x half> %va) strictfp {
 ; RV32-LABEL: vfptosi_v1f16_v1i7:
 ; RV32:       # %bb.0:
@@ -46,6 +49,7 @@ define <1 x i7> @vfptosi_v1f16_v1i7(<1 x half> %va) strictfp {
   ret <1 x i7> %evec
 }
 
+declare <1 x i7> @llvm.experimental.constrained.fptoui.v1i7.v1f16(<1 x half>, metadata)
 define <1 x i7> @vfptoui_v1f16_v1i7(<1 x half> %va) strictfp {
 ; RV32-LABEL: vfptoui_v1f16_v1i7:
 ; RV32:       # %bb.0:
@@ -64,6 +68,7 @@ define <1 x i7> @vfptoui_v1f16_v1i7(<1 x half> %va) strictfp {
   ret <1 x i7> %evec
 }
 
+declare <1 x i8> @llvm.experimental.constrained.fptosi.v1i8.v1f16(<1 x half>, metadata)
 define <1 x i8> @vfptosi_v1f16_v1i8(<1 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f16_v1i8:
 ; CHECK:       # %bb.0:
@@ -75,6 +80,7 @@ define <1 x i8> @vfptosi_v1f16_v1i8(<1 x half> %va) strictfp {
   ret <1 x i8> %evec
 }
 
+declare <1 x i8> @llvm.experimental.constrained.fptoui.v1i8.v1f16(<1 x half>, metadata)
 define <1 x i8> @vfptoui_v1f16_v1i8(<1 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f16_v1i8:
 ; CHECK:       # %bb.0:
@@ -86,6 +92,7 @@ define <1 x i8> @vfptoui_v1f16_v1i8(<1 x half> %va) strictfp {
   ret <1 x i8> %evec
 }
 
+declare <1 x i16> @llvm.experimental.constrained.fptosi.v1i16.v1f16(<1 x half>, metadata)
 define <1 x i16> @vfptosi_v1f16_v1i16(<1 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f16_v1i16:
 ; CHECK:       # %bb.0:
@@ -96,6 +103,7 @@ define <1 x i16> @vfptosi_v1f16_v1i16(<1 x half> %va) strictfp {
   ret <1 x i16> %evec
 }
 
+declare <1 x i16> @llvm.experimental.constrained.fptoui.v1i16.v1f16(<1 x half>, metadata)
 define <1 x i16> @vfptoui_v1f16_v1i16(<1 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f16_v1i16:
 ; CHECK:       # %bb.0:
@@ -106,6 +114,7 @@ define <1 x i16> @vfptoui_v1f16_v1i16(<1 x half> %va) strictfp {
   ret <1 x i16> %evec
 }
 
+declare <1 x i32> @llvm.experimental.constrained.fptosi.v1i32.v1f16(<1 x half>, metadata)
 define <1 x i32> @vfptosi_v1f16_v1i32(<1 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f16_v1i32:
 ; CHECK:       # %bb.0:
@@ -117,6 +126,7 @@ define <1 x i32> @vfptosi_v1f16_v1i32(<1 x half> %va) strictfp {
   ret <1 x i32> %evec
 }
 
+declare <1 x i32> @llvm.experimental.constrained.fptoui.v1i32.v1f16(<1 x half>, metadata)
 define <1 x i32> @vfptoui_v1f16_v1i32(<1 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f16_v1i32:
 ; CHECK:       # %bb.0:
@@ -128,6 +138,7 @@ define <1 x i32> @vfptoui_v1f16_v1i32(<1 x half> %va) strictfp {
   ret <1 x i32> %evec
 }
 
+declare <1 x i64> @llvm.experimental.constrained.fptosi.v1i64.v1f16(<1 x half>, metadata)
 define <1 x i64> @vfptosi_v1f16_v1i64(<1 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f16_v1i64:
 ; CHECK:       # %bb.0:
@@ -140,6 +151,7 @@ define <1 x i64> @vfptosi_v1f16_v1i64(<1 x half> %va) strictfp {
   ret <1 x i64> %evec
 }
 
+declare <1 x i64> @llvm.experimental.constrained.fptoui.v1i64.v1f16(<1 x half>, metadata)
 define <1 x i64> @vfptoui_v1f16_v1i64(<1 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f16_v1i64:
 ; CHECK:       # %bb.0:
@@ -152,6 +164,7 @@ define <1 x i64> @vfptoui_v1f16_v1i64(<1 x half> %va) strictfp {
   ret <1 x i64> %evec
 }
 
+declare <2 x i1> @llvm.experimental.constrained.fptosi.v2i1.v2f16(<2 x half>, metadata)
 define <2 x i1> @vfptosi_v2f16_v2i1(<2 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f16_v2i1:
 ; CHECK:       # %bb.0:
@@ -164,6 +177,7 @@ define <2 x i1> @vfptosi_v2f16_v2i1(<2 x half> %va) strictfp {
   ret <2 x i1> %evec
 }
 
+declare <2 x i1> @llvm.experimental.constrained.fptoui.v2i1.v2f16(<2 x half>, metadata)
 define <2 x i1> @vfptoui_v2f16_v2i1(<2 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f16_v2i1:
 ; CHECK:       # %bb.0:
@@ -176,6 +190,7 @@ define <2 x i1> @vfptoui_v2f16_v2i1(<2 x half> %va) strictfp {
   ret <2 x i1> %evec
 }
 
+declare <2 x i8> @llvm.experimental.constrained.fptosi.v2i8.v2f16(<2 x half>, metadata)
 define <2 x i8> @vfptosi_v2f16_v2i8(<2 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f16_v2i8:
 ; CHECK:       # %bb.0:
@@ -187,6 +202,7 @@ define <2 x i8> @vfptosi_v2f16_v2i8(<2 x half> %va) strictfp {
   ret <2 x i8> %evec
 }
 
+declare <2 x i8> @llvm.experimental.constrained.fptoui.v2i8.v2f16(<2 x half>, metadata)
 define <2 x i8> @vfptoui_v2f16_v2i8(<2 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f16_v2i8:
 ; CHECK:       # %bb.0:
@@ -198,6 +214,7 @@ define <2 x i8> @vfptoui_v2f16_v2i8(<2 x half> %va) strictfp {
   ret <2 x i8> %evec
 }
 
+declare <2 x i16> @llvm.experimental.constrained.fptosi.v2i16.v2f16(<2 x half>, metadata)
 define <2 x i16> @vfptosi_v2f16_v2i16(<2 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f16_v2i16:
 ; CHECK:       # %bb.0:
@@ -208,6 +225,7 @@ define <2 x i16> @vfptosi_v2f16_v2i16(<2 x half> %va) strictfp {
   ret <2 x i16> %evec
 }
 
+declare <2 x i16> @llvm.experimental.constrained.fptoui.v2i16.v2f16(<2 x half>, metadata)
 define <2 x i16> @vfptoui_v2f16_v2i16(<2 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f16_v2i16:
 ; CHECK:       # %bb.0:
@@ -218,6 +236,7 @@ define <2 x i16> @vfptoui_v2f16_v2i16(<2 x half> %va) strictfp {
   ret <2 x i16> %evec
 }
 
+declare <2 x i32> @llvm.experimental.constrained.fptosi.v2i32.v2f16(<2 x half>, metadata)
 define <2 x i32> @vfptosi_v2f16_v2i32(<2 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f16_v2i32:
 ; CHECK:       # %bb.0:
@@ -229,6 +248,7 @@ define <2 x i32> @vfptosi_v2f16_v2i32(<2 x half> %va) strictfp {
   ret <2 x i32> %evec
 }
 
+declare <2 x i32> @llvm.experimental.constrained.fptoui.v2i32.v2f16(<2 x half>, metadata)
 define <2 x i32> @vfptoui_v2f16_v2i32(<2 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f16_v2i32:
 ; CHECK:       # %bb.0:
@@ -240,6 +260,7 @@ define <2 x i32> @vfptoui_v2f16_v2i32(<2 x half> %va) strictfp {
   ret <2 x i32> %evec
 }
 
+declare <2 x i64> @llvm.experimental.constrained.fptosi.v2i64.v2f16(<2 x half>, metadata)
 define <2 x i64> @vfptosi_v2f16_v2i64(<2 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f16_v2i64:
 ; CHECK:       # %bb.0:
@@ -252,6 +273,7 @@ define <2 x i64> @vfptosi_v2f16_v2i64(<2 x half> %va) strictfp {
   ret <2 x i64> %evec
 }
 
+declare <2 x i64> @llvm.experimental.constrained.fptoui.v2i64.v2f16(<2 x half>, metadata)
 define <2 x i64> @vfptoui_v2f16_v2i64(<2 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f16_v2i64:
 ; CHECK:       # %bb.0:
@@ -264,6 +286,7 @@ define <2 x i64> @vfptoui_v2f16_v2i64(<2 x half> %va) strictfp {
   ret <2 x i64> %evec
 }
 
+declare <4 x i1> @llvm.experimental.constrained.fptosi.v4i1.v4f16(<4 x half>, metadata)
 define <4 x i1> @vfptosi_v4f16_v4i1(<4 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f16_v4i1:
 ; CHECK:       # %bb.0:
@@ -276,6 +299,7 @@ define <4 x i1> @vfptosi_v4f16_v4i1(<4 x half> %va) strictfp {
   ret <4 x i1> %evec
 }
 
+declare <4 x i1> @llvm.experimental.constrained.fptoui.v4i1.v4f16(<4 x half>, metadata)
 define <4 x i1> @vfptoui_v4f16_v4i1(<4 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f16_v4i1:
 ; CHECK:       # %bb.0:
@@ -288,6 +312,7 @@ define <4 x i1> @vfptoui_v4f16_v4i1(<4 x half> %va) strictfp {
   ret <4 x i1> %evec
 }
 
+declare <4 x i8> @llvm.experimental.constrained.fptosi.v4i8.v4f16(<4 x half>, metadata)
 define <4 x i8> @vfptosi_v4f16_v4i8(<4 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f16_v4i8:
 ; CHECK:       # %bb.0:
@@ -299,6 +324,7 @@ define <4 x i8> @vfptosi_v4f16_v4i8(<4 x half> %va) strictfp {
   ret <4 x i8> %evec
 }
 
+declare <4 x i8> @llvm.experimental.constrained.fptoui.v4i8.v4f16(<4 x half>, metadata)
 define <4 x i8> @vfptoui_v4f16_v4i8(<4 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f16_v4i8:
 ; CHECK:       # %bb.0:
@@ -310,6 +336,7 @@ define <4 x i8> @vfptoui_v4f16_v4i8(<4 x half> %va) strictfp {
   ret <4 x i8> %evec
 }
 
+declare <4 x i16> @llvm.experimental.constrained.fptosi.v4i16.v4f16(<4 x half>, metadata)
 define <4 x i16> @vfptosi_v4f16_v4i16(<4 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f16_v4i16:
 ; CHECK:       # %bb.0:
@@ -320,6 +347,7 @@ define <4 x i16> @vfptosi_v4f16_v4i16(<4 x half> %va) strictfp {
   ret <4 x i16> %evec
 }
 
+declare <4 x i16> @llvm.experimental.constrained.fptoui.v4i16.v4f16(<4 x half>, metadata)
 define <4 x i16> @vfptoui_v4f16_v4i16(<4 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f16_v4i16:
 ; CHECK:       # %bb.0:
@@ -330,6 +358,7 @@ define <4 x i16> @vfptoui_v4f16_v4i16(<4 x half> %va) strictfp {
   ret <4 x i16> %evec
 }
 
+declare <4 x i32> @llvm.experimental.constrained.fptosi.v4i32.v4f16(<4 x half>, metadata)
 define <4 x i32> @vfptosi_v4f16_v4i32(<4 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f16_v4i32:
 ; CHECK:       # %bb.0:
@@ -341,6 +370,7 @@ define <4 x i32> @vfptosi_v4f16_v4i32(<4 x half> %va) strictfp {
   ret <4 x i32> %evec
 }
 
+declare <4 x i32> @llvm.experimental.constrained.fptoui.v4i32.v4f16(<4 x half>, metadata)
 define <4 x i32> @vfptoui_v4f16_v4i32(<4 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f16_v4i32:
 ; CHECK:       # %bb.0:
@@ -352,6 +382,7 @@ define <4 x i32> @vfptoui_v4f16_v4i32(<4 x half> %va) strictfp {
   ret <4 x i32> %evec
 }
 
+declare <4 x i64> @llvm.experimental.constrained.fptosi.v4i64.v4f16(<4 x half>, metadata)
 define <4 x i64> @vfptosi_v4f16_v4i64(<4 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f16_v4i64:
 ; CHECK:       # %bb.0:
@@ -364,6 +395,7 @@ define <4 x i64> @vfptosi_v4f16_v4i64(<4 x half> %va) strictfp {
   ret <4 x i64> %evec
 }
 
+declare <4 x i64> @llvm.experimental.constrained.fptoui.v4i64.v4f16(<4 x half>, metadata)
 define <4 x i64> @vfptoui_v4f16_v4i64(<4 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f16_v4i64:
 ; CHECK:       # %bb.0:
@@ -376,6 +408,7 @@ define <4 x i64> @vfptoui_v4f16_v4i64(<4 x half> %va) strictfp {
   ret <4 x i64> %evec
 }
 
+declare <8 x i1> @llvm.experimental.constrained.fptosi.v8i1.v8f16(<8 x half>, metadata)
 define <8 x i1> @vfptosi_v8f16_v8i1(<8 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f16_v8i1:
 ; CHECK:       # %bb.0:
@@ -388,6 +421,7 @@ define <8 x i1> @vfptosi_v8f16_v8i1(<8 x half> %va) strictfp {
   ret <8 x i1> %evec
 }
 
+declare <8 x i1> @llvm.experimental.constrained.fptoui.v8i1.v8f16(<8 x half>, metadata)
 define <8 x i1> @vfptoui_v8f16_v8i1(<8 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f16_v8i1:
 ; CHECK:       # %bb.0:
@@ -400,6 +434,7 @@ define <8 x i1> @vfptoui_v8f16_v8i1(<8 x half> %va) strictfp {
   ret <8 x i1> %evec
 }
 
+declare <8 x i8> @llvm.experimental.constrained.fptosi.v8i8.v8f16(<8 x half>, metadata)
 define <8 x i8> @vfptosi_v8f16_v8i8(<8 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f16_v8i8:
 ; CHECK:       # %bb.0:
@@ -411,6 +446,7 @@ define <8 x i8> @vfptosi_v8f16_v8i8(<8 x half> %va) strictfp {
   ret <8 x i8> %evec
 }
 
+declare <8 x i8> @llvm.experimental.constrained.fptoui.v8i8.v8f16(<8 x half>, metadata)
 define <8 x i8> @vfptoui_v8f16_v8i8(<8 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f16_v8i8:
 ; CHECK:       # %bb.0:
@@ -422,6 +458,7 @@ define <8 x i8> @vfptoui_v8f16_v8i8(<8 x half> %va) strictfp {
   ret <8 x i8> %evec
 }
 
+declare <8 x i16> @llvm.experimental.constrained.fptosi.v8i16.v8f16(<8 x half>, metadata)
 define <8 x i16> @vfptosi_v8f16_v8i16(<8 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f16_v8i16:
 ; CHECK:       # %bb.0:
@@ -432,6 +469,7 @@ define <8 x i16> @vfptosi_v8f16_v8i16(<8 x half> %va) strictfp {
   ret <8 x i16> %evec
 }
 
+declare <8 x i16> @llvm.experimental.constrained.fptoui.v8i16.v8f16(<8 x half>, metadata)
 define <8 x i16> @vfptoui_v8f16_v8i16(<8 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f16_v8i16:
 ; CHECK:       # %bb.0:
@@ -442,28 +480,31 @@ define <8 x i16> @vfptoui_v8f16_v8i16(<8 x half> %va) strictfp {
   ret <8 x i16> %evec
 }
 
+declare <8 x i32> @llvm.experimental.constrained.fptosi.v8i32.v8f16(<8 x half>, metadata)
 define <8 x i32> @vfptosi_v8f16_v8i32(<8 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f16_v8i32:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 8, e16, m1, ta, ma
-; CHECK-NEXT:    vmv1r.v v10, v8
-; CHECK-NEXT:    vfwcvt.rtz.x.f.v v8, v10
+; CHECK-NEXT:    vfwcvt.rtz.x.f.v v10, v8
+; CHECK-NEXT:    vmv2r.v v8, v10
 ; CHECK-NEXT:    ret
   %evec = call <8 x i32> @llvm.experimental.constrained.fptosi.v8i32.v8f16(<8 x half> %va, metadata !"fpexcept.strict")
   ret <8 x i32> %evec
 }
 
+declare <8 x i32> @llvm.experimental.constrained.fptoui.v8i32.v8f16(<8 x half>, metadata)
 define <8 x i32> @vfptoui_v8f16_v8i32(<8 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f16_v8i32:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 8, e16, m1, ta, ma
-; CHECK-NEXT:    vmv1r.v v10, v8
-; CHECK-NEXT:    vfwcvt.rtz.xu.f.v v8, v10
+; CHECK-NEXT:    vfwcvt.rtz.xu.f.v v10, v8
+; CHECK-NEXT:    vmv2r.v v8, v10
 ; CHECK-NEXT:    ret
   %evec = call <8 x i32> @llvm.experimental.constrained.fptoui.v8i32.v8f16(<8 x half> %va, metadata !"fpexcept.strict")
   ret <8 x i32> %evec
 }
 
+declare <8 x i64> @llvm.experimental.constrained.fptosi.v8i64.v8f16(<8 x half>, metadata)
 define <8 x i64> @vfptosi_v8f16_v8i64(<8 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f16_v8i64:
 ; CHECK:       # %bb.0:
@@ -476,6 +517,7 @@ define <8 x i64> @vfptosi_v8f16_v8i64(<8 x half> %va) strictfp {
   ret <8 x i64> %evec
 }
 
+declare <8 x i64> @llvm.experimental.constrained.fptoui.v8i64.v8f16(<8 x half>, metadata)
 define <8 x i64> @vfptoui_v8f16_v8i64(<8 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f16_v8i64:
 ; CHECK:       # %bb.0:
@@ -488,6 +530,7 @@ define <8 x i64> @vfptoui_v8f16_v8i64(<8 x half> %va) strictfp {
   ret <8 x i64> %evec
 }
 
+declare <16 x i1> @llvm.experimental.constrained.fptosi.v16i1.v16f16(<16 x half>, metadata)
 define <16 x i1> @vfptosi_v16f16_v16i1(<16 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v16f16_v16i1:
 ; CHECK:       # %bb.0:
@@ -500,6 +543,7 @@ define <16 x i1> @vfptosi_v16f16_v16i1(<16 x half> %va) strictfp {
   ret <16 x i1> %evec
 }
 
+declare <16 x i1> @llvm.experimental.constrained.fptoui.v16i1.v16f16(<16 x half>, metadata)
 define <16 x i1> @vfptoui_v16f16_v16i1(<16 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v16f16_v16i1:
 ; CHECK:       # %bb.0:
@@ -512,6 +556,7 @@ define <16 x i1> @vfptoui_v16f16_v16i1(<16 x half> %va) strictfp {
   ret <16 x i1> %evec
 }
 
+declare <16 x i8> @llvm.experimental.constrained.fptosi.v16i8.v16f16(<16 x half>, metadata)
 define <16 x i8> @vfptosi_v16f16_v16i8(<16 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v16f16_v16i8:
 ; CHECK:       # %bb.0:
@@ -523,6 +568,7 @@ define <16 x i8> @vfptosi_v16f16_v16i8(<16 x half> %va) strictfp {
   ret <16 x i8> %evec
 }
 
+declare <16 x i8> @llvm.experimental.constrained.fptoui.v16i8.v16f16(<16 x half>, metadata)
 define <16 x i8> @vfptoui_v16f16_v16i8(<16 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v16f16_v16i8:
 ; CHECK:       # %bb.0:
@@ -534,6 +580,7 @@ define <16 x i8> @vfptoui_v16f16_v16i8(<16 x half> %va) strictfp {
   ret <16 x i8> %evec
 }
 
+declare <16 x i16> @llvm.experimental.constrained.fptosi.v16i16.v16f16(<16 x half>, metadata)
 define <16 x i16> @vfptosi_v16f16_v16i16(<16 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v16f16_v16i16:
 ; CHECK:       # %bb.0:
@@ -544,6 +591,7 @@ define <16 x i16> @vfptosi_v16f16_v16i16(<16 x half> %va) strictfp {
   ret <16 x i16> %evec
 }
 
+declare <16 x i16> @llvm.experimental.constrained.fptoui.v16i16.v16f16(<16 x half>, metadata)
 define <16 x i16> @vfptoui_v16f16_v16i16(<16 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v16f16_v16i16:
 ; CHECK:       # %bb.0:
@@ -554,28 +602,31 @@ define <16 x i16> @vfptoui_v16f16_v16i16(<16 x half> %va) strictfp {
   ret <16 x i16> %evec
 }
 
+declare <16 x i32> @llvm.experimental.constrained.fptosi.v16i32.v16f16(<16 x half>, metadata)
 define <16 x i32> @vfptosi_v16f16_v16i32(<16 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v16f16_v16i32:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 16, e16, m2, ta, ma
-; CHECK-NEXT:    vmv2r.v v12, v8
-; CHECK-NEXT:    vfwcvt.rtz.x.f.v v8, v12
+; CHECK-NEXT:    vfwcvt.rtz.x.f.v v12, v8
+; CHECK-NEXT:    vmv4r.v v8, v12
 ; CHECK-NEXT:    ret
   %evec = call <16 x i32> @llvm.experimental.constrained.fptosi.v16i32.v16f16(<16 x half> %va, metadata !"fpexcept.strict")
   ret <16 x i32> %evec
 }
 
+declare <16 x i32> @llvm.experimental.constrained.fptoui.v16i32.v16f16(<16 x half>, metadata)
 define <16 x i32> @vfptoui_v16f16_v16i32(<16 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v16f16_v16i32:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 16, e16, m2, ta, ma
-; CHECK-NEXT:    vmv2r.v v12, v8
-; CHECK-NEXT:    vfwcvt.rtz.xu.f.v v8, v12
+; CHECK-NEXT:    vfwcvt.rtz.xu.f.v v12, v8
+; CHECK-NEXT:    vmv4r.v v8, v12
 ; CHECK-NEXT:    ret
   %evec = call <16 x i32> @llvm.experimental.constrained.fptoui.v16i32.v16f16(<16 x half> %va, metadata !"fpexcept.strict")
   ret <16 x i32> %evec
 }
 
+declare <32 x i1> @llvm.experimental.constrained.fptosi.v32i1.v32f16(<32 x half>, metadata)
 define <32 x i1> @vfptosi_v32f16_v32i1(<32 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v32f16_v32i1:
 ; CHECK:       # %bb.0:
@@ -589,6 +640,7 @@ define <32 x i1> @vfptosi_v32f16_v32i1(<32 x half> %va) strictfp {
   ret <32 x i1> %evec
 }
 
+declare <32 x i1> @llvm.experimental.constrained.fptoui.v32i1.v32f16(<32 x half>, metadata)
 define <32 x i1> @vfptoui_v32f16_v32i1(<32 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v32f16_v32i1:
 ; CHECK:       # %bb.0:
@@ -602,6 +654,7 @@ define <32 x i1> @vfptoui_v32f16_v32i1(<32 x half> %va) strictfp {
   ret <32 x i1> %evec
 }
 
+declare <32 x i8> @llvm.experimental.constrained.fptosi.v32i8.v32f16(<32 x half>, metadata)
 define <32 x i8> @vfptosi_v32f16_v32i8(<32 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v32f16_v32i8:
 ; CHECK:       # %bb.0:
@@ -614,6 +667,7 @@ define <32 x i8> @vfptosi_v32f16_v32i8(<32 x half> %va) strictfp {
   ret <32 x i8> %evec
 }
 
+declare <32 x i8> @llvm.experimental.constrained.fptoui.v32i8.v32f16(<32 x half>, metadata)
 define <32 x i8> @vfptoui_v32f16_v32i8(<32 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v32f16_v32i8:
 ; CHECK:       # %bb.0:
@@ -626,6 +680,7 @@ define <32 x i8> @vfptoui_v32f16_v32i8(<32 x half> %va) strictfp {
   ret <32 x i8> %evec
 }
 
+declare <32 x i16> @llvm.experimental.constrained.fptosi.v32i16.v32f16(<32 x half>, metadata)
 define <32 x i16> @vfptosi_v32f16_v32i16(<32 x half> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v32f16_v32i16:
 ; CHECK:       # %bb.0:
@@ -637,6 +692,7 @@ define <32 x i16> @vfptosi_v32f16_v32i16(<32 x half> %va) strictfp {
   ret <32 x i16> %evec
 }
 
+declare <32 x i16> @llvm.experimental.constrained.fptoui.v32i16.v32f16(<32 x half>, metadata)
 define <32 x i16> @vfptoui_v32f16_v32i16(<32 x half> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v32f16_v32i16:
 ; CHECK:       # %bb.0:
@@ -648,6 +704,7 @@ define <32 x i16> @vfptoui_v32f16_v32i16(<32 x half> %va) strictfp {
   ret <32 x i16> %evec
 }
 
+declare <1 x i1> @llvm.experimental.constrained.fptosi.v1i1.v1f32(<1 x float>, metadata)
 define <1 x i1> @vfptosi_v1f32_v1i1(<1 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f32_v1i1:
 ; CHECK:       # %bb.0:
@@ -660,6 +717,7 @@ define <1 x i1> @vfptosi_v1f32_v1i1(<1 x float> %va) strictfp {
   ret <1 x i1> %evec
 }
 
+declare <1 x i1> @llvm.experimental.constrained.fptoui.v1i1.v1f32(<1 x float>, metadata)
 define <1 x i1> @vfptoui_v1f32_v1i1(<1 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f32_v1i1:
 ; CHECK:       # %bb.0:
@@ -672,6 +730,7 @@ define <1 x i1> @vfptoui_v1f32_v1i1(<1 x float> %va) strictfp {
   ret <1 x i1> %evec
 }
 
+declare <1 x i8> @llvm.experimental.constrained.fptosi.v1i8.v1f32(<1 x float>, metadata)
 define <1 x i8> @vfptosi_v1f32_v1i8(<1 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f32_v1i8:
 ; CHECK:       # %bb.0:
@@ -684,6 +743,7 @@ define <1 x i8> @vfptosi_v1f32_v1i8(<1 x float> %va) strictfp {
   ret <1 x i8> %evec
 }
 
+declare <1 x i8> @llvm.experimental.constrained.fptoui.v1i8.v1f32(<1 x float>, metadata)
 define <1 x i8> @vfptoui_v1f32_v1i8(<1 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f32_v1i8:
 ; CHECK:       # %bb.0:
@@ -696,6 +756,7 @@ define <1 x i8> @vfptoui_v1f32_v1i8(<1 x float> %va) strictfp {
   ret <1 x i8> %evec
 }
 
+declare <1 x i16> @llvm.experimental.constrained.fptosi.v1i16.v1f32(<1 x float>, metadata)
 define <1 x i16> @vfptosi_v1f32_v1i16(<1 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f32_v1i16:
 ; CHECK:       # %bb.0:
@@ -707,6 +768,7 @@ define <1 x i16> @vfptosi_v1f32_v1i16(<1 x float> %va) strictfp {
   ret <1 x i16> %evec
 }
 
+declare <1 x i16> @llvm.experimental.constrained.fptoui.v1i16.v1f32(<1 x float>, metadata)
 define <1 x i16> @vfptoui_v1f32_v1i16(<1 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f32_v1i16:
 ; CHECK:       # %bb.0:
@@ -718,6 +780,7 @@ define <1 x i16> @vfptoui_v1f32_v1i16(<1 x float> %va) strictfp {
   ret <1 x i16> %evec
 }
 
+declare <1 x i32> @llvm.experimental.constrained.fptosi.v1i32.v1f32(<1 x float>, metadata)
 define <1 x i32> @vfptosi_v1f32_v1i32(<1 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f32_v1i32:
 ; CHECK:       # %bb.0:
@@ -728,6 +791,7 @@ define <1 x i32> @vfptosi_v1f32_v1i32(<1 x float> %va) strictfp {
   ret <1 x i32> %evec
 }
 
+declare <1 x i32> @llvm.experimental.constrained.fptoui.v1i32.v1f32(<1 x float>, metadata)
 define <1 x i32> @vfptoui_v1f32_v1i32(<1 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f32_v1i32:
 ; CHECK:       # %bb.0:
@@ -738,6 +802,7 @@ define <1 x i32> @vfptoui_v1f32_v1i32(<1 x float> %va) strictfp {
   ret <1 x i32> %evec
 }
 
+declare <1 x i64> @llvm.experimental.constrained.fptosi.v1i64.v1f32(<1 x float>, metadata)
 define <1 x i64> @vfptosi_v1f32_v1i64(<1 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f32_v1i64:
 ; CHECK:       # %bb.0:
@@ -749,6 +814,7 @@ define <1 x i64> @vfptosi_v1f32_v1i64(<1 x float> %va) strictfp {
   ret <1 x i64> %evec
 }
 
+declare <1 x i64> @llvm.experimental.constrained.fptoui.v1i64.v1f32(<1 x float>, metadata)
 define <1 x i64> @vfptoui_v1f32_v1i64(<1 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f32_v1i64:
 ; CHECK:       # %bb.0:
@@ -760,6 +826,7 @@ define <1 x i64> @vfptoui_v1f32_v1i64(<1 x float> %va) strictfp {
   ret <1 x i64> %evec
 }
 
+declare <2 x i1> @llvm.experimental.constrained.fptosi.v2i1.v2f32(<2 x float>, metadata)
 define <2 x i1> @vfptosi_v2f32_v2i1(<2 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f32_v2i1:
 ; CHECK:       # %bb.0:
@@ -772,6 +839,7 @@ define <2 x i1> @vfptosi_v2f32_v2i1(<2 x float> %va) strictfp {
   ret <2 x i1> %evec
 }
 
+declare <2 x i1> @llvm.experimental.constrained.fptoui.v2i1.v2f32(<2 x float>, metadata)
 define <2 x i1> @vfptoui_v2f32_v2i1(<2 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f32_v2i1:
 ; CHECK:       # %bb.0:
@@ -784,6 +852,7 @@ define <2 x i1> @vfptoui_v2f32_v2i1(<2 x float> %va) strictfp {
   ret <2 x i1> %evec
 }
 
+declare <2 x i8> @llvm.experimental.constrained.fptosi.v2i8.v2f32(<2 x float>, metadata)
 define <2 x i8> @vfptosi_v2f32_v2i8(<2 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f32_v2i8:
 ; CHECK:       # %bb.0:
@@ -796,6 +865,7 @@ define <2 x i8> @vfptosi_v2f32_v2i8(<2 x float> %va) strictfp {
   ret <2 x i8> %evec
 }
 
+declare <2 x i8> @llvm.experimental.constrained.fptoui.v2i8.v2f32(<2 x float>, metadata)
 define <2 x i8> @vfptoui_v2f32_v2i8(<2 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f32_v2i8:
 ; CHECK:       # %bb.0:
@@ -808,6 +878,7 @@ define <2 x i8> @vfptoui_v2f32_v2i8(<2 x float> %va) strictfp {
   ret <2 x i8> %evec
 }
 
+declare <2 x i16> @llvm.experimental.constrained.fptosi.v2i16.v2f32(<2 x float>, metadata)
 define <2 x i16> @vfptosi_v2f32_v2i16(<2 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f32_v2i16:
 ; CHECK:       # %bb.0:
@@ -819,6 +890,7 @@ define <2 x i16> @vfptosi_v2f32_v2i16(<2 x float> %va) strictfp {
   ret <2 x i16> %evec
 }
 
+declare <2 x i16> @llvm.experimental.constrained.fptoui.v2i16.v2f32(<2 x float>, metadata)
 define <2 x i16> @vfptoui_v2f32_v2i16(<2 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f32_v2i16:
 ; CHECK:       # %bb.0:
@@ -830,6 +902,7 @@ define <2 x i16> @vfptoui_v2f32_v2i16(<2 x float> %va) strictfp {
   ret <2 x i16> %evec
 }
 
+declare <2 x i32> @llvm.experimental.constrained.fptosi.v2i32.v2f32(<2 x float>, metadata)
 define <2 x i32> @vfptosi_v2f32_v2i32(<2 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f32_v2i32:
 ; CHECK:       # %bb.0:
@@ -840,6 +913,7 @@ define <2 x i32> @vfptosi_v2f32_v2i32(<2 x float> %va) strictfp {
   ret <2 x i32> %evec
 }
 
+declare <2 x i32> @llvm.experimental.constrained.fptoui.v2i32.v2f32(<2 x float>, metadata)
 define <2 x i32> @vfptoui_v2f32_v2i32(<2 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f32_v2i32:
 ; CHECK:       # %bb.0:
@@ -850,6 +924,7 @@ define <2 x i32> @vfptoui_v2f32_v2i32(<2 x float> %va) strictfp {
   ret <2 x i32> %evec
 }
 
+declare <2 x i64> @llvm.experimental.constrained.fptosi.v2i64.v2f32(<2 x float>, metadata)
 define <2 x i64> @vfptosi_v2f32_v2i64(<2 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f32_v2i64:
 ; CHECK:       # %bb.0:
@@ -861,6 +936,7 @@ define <2 x i64> @vfptosi_v2f32_v2i64(<2 x float> %va) strictfp {
   ret <2 x i64> %evec
 }
 
+declare <2 x i64> @llvm.experimental.constrained.fptoui.v2i64.v2f32(<2 x float>, metadata)
 define <2 x i64> @vfptoui_v2f32_v2i64(<2 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f32_v2i64:
 ; CHECK:       # %bb.0:
@@ -872,6 +948,7 @@ define <2 x i64> @vfptoui_v2f32_v2i64(<2 x float> %va) strictfp {
   ret <2 x i64> %evec
 }
 
+declare <4 x i1> @llvm.experimental.constrained.fptosi.v4i1.v4f32(<4 x float>, metadata)
 define <4 x i1> @vfptosi_v4f32_v4i1(<4 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f32_v4i1:
 ; CHECK:       # %bb.0:
@@ -884,6 +961,7 @@ define <4 x i1> @vfptosi_v4f32_v4i1(<4 x float> %va) strictfp {
   ret <4 x i1> %evec
 }
 
+declare <4 x i1> @llvm.experimental.constrained.fptoui.v4i1.v4f32(<4 x float>, metadata)
 define <4 x i1> @vfptoui_v4f32_v4i1(<4 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f32_v4i1:
 ; CHECK:       # %bb.0:
@@ -896,6 +974,7 @@ define <4 x i1> @vfptoui_v4f32_v4i1(<4 x float> %va) strictfp {
   ret <4 x i1> %evec
 }
 
+declare <4 x i8> @llvm.experimental.constrained.fptosi.v4i8.v4f32(<4 x float>, metadata)
 define <4 x i8> @vfptosi_v4f32_v4i8(<4 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f32_v4i8:
 ; CHECK:       # %bb.0:
@@ -908,6 +987,7 @@ define <4 x i8> @vfptosi_v4f32_v4i8(<4 x float> %va) strictfp {
   ret <4 x i8> %evec
 }
 
+declare <4 x i8> @llvm.experimental.constrained.fptoui.v4i8.v4f32(<4 x float>, metadata)
 define <4 x i8> @vfptoui_v4f32_v4i8(<4 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f32_v4i8:
 ; CHECK:       # %bb.0:
@@ -920,6 +1000,7 @@ define <4 x i8> @vfptoui_v4f32_v4i8(<4 x float> %va) strictfp {
   ret <4 x i8> %evec
 }
 
+declare <4 x i16> @llvm.experimental.constrained.fptosi.v4i16.v4f32(<4 x float>, metadata)
 define <4 x i16> @vfptosi_v4f32_v4i16(<4 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f32_v4i16:
 ; CHECK:       # %bb.0:
@@ -931,6 +1012,7 @@ define <4 x i16> @vfptosi_v4f32_v4i16(<4 x float> %va) strictfp {
   ret <4 x i16> %evec
 }
 
+declare <4 x i16> @llvm.experimental.constrained.fptoui.v4i16.v4f32(<4 x float>, metadata)
 define <4 x i16> @vfptoui_v4f32_v4i16(<4 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f32_v4i16:
 ; CHECK:       # %bb.0:
@@ -942,6 +1024,7 @@ define <4 x i16> @vfptoui_v4f32_v4i16(<4 x float> %va) strictfp {
   ret <4 x i16> %evec
 }
 
+declare <4 x i32> @llvm.experimental.constrained.fptosi.v4i32.v4f32(<4 x float>, metadata)
 define <4 x i32> @vfptosi_v4f32_v4i32(<4 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f32_v4i32:
 ; CHECK:       # %bb.0:
@@ -952,6 +1035,7 @@ define <4 x i32> @vfptosi_v4f32_v4i32(<4 x float> %va) strictfp {
   ret <4 x i32> %evec
 }
 
+declare <4 x i32> @llvm.experimental.constrained.fptoui.v4i32.v4f32(<4 x float>, metadata)
 define <4 x i32> @vfptoui_v4f32_v4i32(<4 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f32_v4i32:
 ; CHECK:       # %bb.0:
@@ -962,28 +1046,31 @@ define <4 x i32> @vfptoui_v4f32_v4i32(<4 x float> %va) strictfp {
   ret <4 x i32> %evec
 }
 
+declare <4 x i64> @llvm.experimental.constrained.fptosi.v4i64.v4f32(<4 x float>, metadata)
 define <4 x i64> @vfptosi_v4f32_v4i64(<4 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f32_v4i64:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 4, e32, m1, ta, ma
-; CHECK-NEXT:    vmv1r.v v10, v8
-; CHECK-NEXT:    vfwcvt.rtz.x.f.v v8, v10
+; CHECK-NEXT:    vfwcvt.rtz.x.f.v v10, v8
+; CHECK-NEXT:    vmv2r.v v8, v10
 ; CHECK-NEXT:    ret
   %evec = call <4 x i64> @llvm.experimental.constrained.fptosi.v4i64.v4f32(<4 x float> %va, metadata !"fpexcept.strict")
   ret <4 x i64> %evec
 }
 
+declare <4 x i64> @llvm.experimental.constrained.fptoui.v4i64.v4f32(<4 x float>, metadata)
 define <4 x i64> @vfptoui_v4f32_v4i64(<4 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f32_v4i64:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 4, e32, m1, ta, ma
-; CHECK-NEXT:    vmv1r.v v10, v8
-; CHECK-NEXT:    vfwcvt.rtz.xu.f.v v8, v10
+; CHECK-NEXT:    vfwcvt.rtz.xu.f.v v10, v8
+; CHECK-NEXT:    vmv2r.v v8, v10
 ; CHECK-NEXT:    ret
   %evec = call <4 x i64> @llvm.experimental.constrained.fptoui.v4i64.v4f32(<4 x float> %va, metadata !"fpexcept.strict")
   ret <4 x i64> %evec
 }
 
+declare <8 x i1> @llvm.experimental.constrained.fptosi.v8i1.v8f32(<8 x float>, metadata)
 define <8 x i1> @vfptosi_v8f32_v8i1(<8 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f32_v8i1:
 ; CHECK:       # %bb.0:
@@ -996,6 +1083,7 @@ define <8 x i1> @vfptosi_v8f32_v8i1(<8 x float> %va) strictfp {
   ret <8 x i1> %evec
 }
 
+declare <8 x i1> @llvm.experimental.constrained.fptoui.v8i1.v8f32(<8 x float>, metadata)
 define <8 x i1> @vfptoui_v8f32_v8i1(<8 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f32_v8i1:
 ; CHECK:       # %bb.0:
@@ -1008,6 +1096,7 @@ define <8 x i1> @vfptoui_v8f32_v8i1(<8 x float> %va) strictfp {
   ret <8 x i1> %evec
 }
 
+declare <8 x i8> @llvm.experimental.constrained.fptosi.v8i8.v8f32(<8 x float>, metadata)
 define <8 x i8> @vfptosi_v8f32_v8i8(<8 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f32_v8i8:
 ; CHECK:       # %bb.0:
@@ -1020,6 +1109,7 @@ define <8 x i8> @vfptosi_v8f32_v8i8(<8 x float> %va) strictfp {
   ret <8 x i8> %evec
 }
 
+declare <8 x i8> @llvm.experimental.constrained.fptoui.v8i8.v8f32(<8 x float>, metadata)
 define <8 x i8> @vfptoui_v8f32_v8i8(<8 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f32_v8i8:
 ; CHECK:       # %bb.0:
@@ -1032,6 +1122,7 @@ define <8 x i8> @vfptoui_v8f32_v8i8(<8 x float> %va) strictfp {
   ret <8 x i8> %evec
 }
 
+declare <8 x i16> @llvm.experimental.constrained.fptosi.v8i16.v8f32(<8 x float>, metadata)
 define <8 x i16> @vfptosi_v8f32_v8i16(<8 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f32_v8i16:
 ; CHECK:       # %bb.0:
@@ -1043,6 +1134,7 @@ define <8 x i16> @vfptosi_v8f32_v8i16(<8 x float> %va) strictfp {
   ret <8 x i16> %evec
 }
 
+declare <8 x i16> @llvm.experimental.constrained.fptoui.v8i16.v8f32(<8 x float>, metadata)
 define <8 x i16> @vfptoui_v8f32_v8i16(<8 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f32_v8i16:
 ; CHECK:       # %bb.0:
@@ -1054,6 +1146,7 @@ define <8 x i16> @vfptoui_v8f32_v8i16(<8 x float> %va) strictfp {
   ret <8 x i16> %evec
 }
 
+declare <8 x i32> @llvm.experimental.constrained.fptosi.v8i32.v8f32(<8 x float>, metadata)
 define <8 x i32> @vfptosi_v8f32_v8i32(<8 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f32_v8i32:
 ; CHECK:       # %bb.0:
@@ -1064,6 +1157,7 @@ define <8 x i32> @vfptosi_v8f32_v8i32(<8 x float> %va) strictfp {
   ret <8 x i32> %evec
 }
 
+declare <8 x i32> @llvm.experimental.constrained.fptoui.v8i32.v8f32(<8 x float>, metadata)
 define <8 x i32> @vfptoui_v8f32_v8i32(<8 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f32_v8i32:
 ; CHECK:       # %bb.0:
@@ -1074,28 +1168,31 @@ define <8 x i32> @vfptoui_v8f32_v8i32(<8 x float> %va) strictfp {
   ret <8 x i32> %evec
 }
 
+declare <8 x i64> @llvm.experimental.constrained.fptosi.v8i64.v8f32(<8 x float>, metadata)
 define <8 x i64> @vfptosi_v8f32_v8i64(<8 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f32_v8i64:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 8, e32, m2, ta, ma
-; CHECK-NEXT:    vmv2r.v v12, v8
-; CHECK-NEXT:    vfwcvt.rtz.x.f.v v8, v12
+; CHECK-NEXT:    vfwcvt.rtz.x.f.v v12, v8
+; CHECK-NEXT:    vmv4r.v v8, v12
 ; CHECK-NEXT:    ret
   %evec = call <8 x i64> @llvm.experimental.constrained.fptosi.v8i64.v8f32(<8 x float> %va, metadata !"fpexcept.strict")
   ret <8 x i64> %evec
 }
 
+declare <8 x i64> @llvm.experimental.constrained.fptoui.v8i64.v8f32(<8 x float>, metadata)
 define <8 x i64> @vfptoui_v8f32_v8i64(<8 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f32_v8i64:
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    vsetivli zero, 8, e32, m2, ta, ma
-; CHECK-NEXT:    vmv2r.v v12, v8
-; CHECK-NEXT:    vfwcvt.rtz.xu.f.v v8, v12
+; CHECK-NEXT:    vfwcvt.rtz.xu.f.v v12, v8
+; CHECK-NEXT:    vmv4r.v v8, v12
 ; CHECK-NEXT:    ret
   %evec = call <8 x i64> @llvm.experimental.constrained.fptoui.v8i64.v8f32(<8 x float> %va, metadata !"fpexcept.strict")
   ret <8 x i64> %evec
 }
 
+declare <16 x i1> @llvm.experimental.constrained.fptosi.v16i1.v16f32(<16 x float>, metadata)
 define <16 x i1> @vfptosi_v16f32_v16i1(<16 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v16f32_v16i1:
 ; CHECK:       # %bb.0:
@@ -1108,6 +1205,7 @@ define <16 x i1> @vfptosi_v16f32_v16i1(<16 x float> %va) strictfp {
   ret <16 x i1> %evec
 }
 
+declare <16 x i1> @llvm.experimental.constrained.fptoui.v16i1.v16f32(<16 x float>, metadata)
 define <16 x i1> @vfptoui_v16f32_v16i1(<16 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v16f32_v16i1:
 ; CHECK:       # %bb.0:
@@ -1120,6 +1218,7 @@ define <16 x i1> @vfptoui_v16f32_v16i1(<16 x float> %va) strictfp {
   ret <16 x i1> %evec
 }
 
+declare <16 x i8> @llvm.experimental.constrained.fptosi.v16i8.v16f32(<16 x float>, metadata)
 define <16 x i8> @vfptosi_v16f32_v16i8(<16 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v16f32_v16i8:
 ; CHECK:       # %bb.0:
@@ -1132,6 +1231,7 @@ define <16 x i8> @vfptosi_v16f32_v16i8(<16 x float> %va) strictfp {
   ret <16 x i8> %evec
 }
 
+declare <16 x i8> @llvm.experimental.constrained.fptoui.v16i8.v16f32(<16 x float>, metadata)
 define <16 x i8> @vfptoui_v16f32_v16i8(<16 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v16f32_v16i8:
 ; CHECK:       # %bb.0:
@@ -1144,6 +1244,7 @@ define <16 x i8> @vfptoui_v16f32_v16i8(<16 x float> %va) strictfp {
   ret <16 x i8> %evec
 }
 
+declare <16 x i16> @llvm.experimental.constrained.fptosi.v16i16.v16f32(<16 x float>, metadata)
 define <16 x i16> @vfptosi_v16f32_v16i16(<16 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v16f32_v16i16:
 ; CHECK:       # %bb.0:
@@ -1155,6 +1256,7 @@ define <16 x i16> @vfptosi_v16f32_v16i16(<16 x float> %va) strictfp {
   ret <16 x i16> %evec
 }
 
+declare <16 x i16> @llvm.experimental.constrained.fptoui.v16i16.v16f32(<16 x float>, metadata)
 define <16 x i16> @vfptoui_v16f32_v16i16(<16 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v16f32_v16i16:
 ; CHECK:       # %bb.0:
@@ -1166,6 +1268,7 @@ define <16 x i16> @vfptoui_v16f32_v16i16(<16 x float> %va) strictfp {
   ret <16 x i16> %evec
 }
 
+declare <16 x i32> @llvm.experimental.constrained.fptosi.v16i32.v16f32(<16 x float>, metadata)
 define <16 x i32> @vfptosi_v16f32_v16i32(<16 x float> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v16f32_v16i32:
 ; CHECK:       # %bb.0:
@@ -1176,6 +1279,7 @@ define <16 x i32> @vfptosi_v16f32_v16i32(<16 x float> %va) strictfp {
   ret <16 x i32> %evec
 }
 
+declare <16 x i32> @llvm.experimental.constrained.fptoui.v16i32.v16f32(<16 x float>, metadata)
 define <16 x i32> @vfptoui_v16f32_v16i32(<16 x float> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v16f32_v16i32:
 ; CHECK:       # %bb.0:
@@ -1186,6 +1290,7 @@ define <16 x i32> @vfptoui_v16f32_v16i32(<16 x float> %va) strictfp {
   ret <16 x i32> %evec
 }
 
+declare <1 x i1> @llvm.experimental.constrained.fptosi.v1i1.v1f64(<1 x double>, metadata)
 define <1 x i1> @vfptosi_v1f64_v1i1(<1 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f64_v1i1:
 ; CHECK:       # %bb.0:
@@ -1198,6 +1303,7 @@ define <1 x i1> @vfptosi_v1f64_v1i1(<1 x double> %va) strictfp {
   ret <1 x i1> %evec
 }
 
+declare <1 x i1> @llvm.experimental.constrained.fptoui.v1i1.v1f64(<1 x double>, metadata)
 define <1 x i1> @vfptoui_v1f64_v1i1(<1 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f64_v1i1:
 ; CHECK:       # %bb.0:
@@ -1210,6 +1316,7 @@ define <1 x i1> @vfptoui_v1f64_v1i1(<1 x double> %va) strictfp {
   ret <1 x i1> %evec
 }
 
+declare <1 x i8> @llvm.experimental.constrained.fptosi.v1i8.v1f64(<1 x double>, metadata)
 define <1 x i8> @vfptosi_v1f64_v1i8(<1 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f64_v1i8:
 ; CHECK:       # %bb.0:
@@ -1224,6 +1331,7 @@ define <1 x i8> @vfptosi_v1f64_v1i8(<1 x double> %va) strictfp {
   ret <1 x i8> %evec
 }
 
+declare <1 x i8> @llvm.experimental.constrained.fptoui.v1i8.v1f64(<1 x double>, metadata)
 define <1 x i8> @vfptoui_v1f64_v1i8(<1 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f64_v1i8:
 ; CHECK:       # %bb.0:
@@ -1238,6 +1346,7 @@ define <1 x i8> @vfptoui_v1f64_v1i8(<1 x double> %va) strictfp {
   ret <1 x i8> %evec
 }
 
+declare <1 x i16> @llvm.experimental.constrained.fptosi.v1i16.v1f64(<1 x double>, metadata)
 define <1 x i16> @vfptosi_v1f64_v1i16(<1 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f64_v1i16:
 ; CHECK:       # %bb.0:
@@ -1250,6 +1359,7 @@ define <1 x i16> @vfptosi_v1f64_v1i16(<1 x double> %va) strictfp {
   ret <1 x i16> %evec
 }
 
+declare <1 x i16> @llvm.experimental.constrained.fptoui.v1i16.v1f64(<1 x double>, metadata)
 define <1 x i16> @vfptoui_v1f64_v1i16(<1 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f64_v1i16:
 ; CHECK:       # %bb.0:
@@ -1262,6 +1372,7 @@ define <1 x i16> @vfptoui_v1f64_v1i16(<1 x double> %va) strictfp {
   ret <1 x i16> %evec
 }
 
+declare <1 x i32> @llvm.experimental.constrained.fptosi.v1i32.v1f64(<1 x double>, metadata)
 define <1 x i32> @vfptosi_v1f64_v1i32(<1 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f64_v1i32:
 ; CHECK:       # %bb.0:
@@ -1273,6 +1384,7 @@ define <1 x i32> @vfptosi_v1f64_v1i32(<1 x double> %va) strictfp {
   ret <1 x i32> %evec
 }
 
+declare <1 x i32> @llvm.experimental.constrained.fptoui.v1i32.v1f64(<1 x double>, metadata)
 define <1 x i32> @vfptoui_v1f64_v1i32(<1 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f64_v1i32:
 ; CHECK:       # %bb.0:
@@ -1284,6 +1396,7 @@ define <1 x i32> @vfptoui_v1f64_v1i32(<1 x double> %va) strictfp {
   ret <1 x i32> %evec
 }
 
+declare <1 x i64> @llvm.experimental.constrained.fptosi.v1i64.v1f64(<1 x double>, metadata)
 define <1 x i64> @vfptosi_v1f64_v1i64(<1 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v1f64_v1i64:
 ; CHECK:       # %bb.0:
@@ -1294,6 +1407,7 @@ define <1 x i64> @vfptosi_v1f64_v1i64(<1 x double> %va) strictfp {
   ret <1 x i64> %evec
 }
 
+declare <1 x i64> @llvm.experimental.constrained.fptoui.v1i64.v1f64(<1 x double>, metadata)
 define <1 x i64> @vfptoui_v1f64_v1i64(<1 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v1f64_v1i64:
 ; CHECK:       # %bb.0:
@@ -1304,6 +1418,7 @@ define <1 x i64> @vfptoui_v1f64_v1i64(<1 x double> %va) strictfp {
   ret <1 x i64> %evec
 }
 
+declare <2 x i1> @llvm.experimental.constrained.fptosi.v2i1.v2f64(<2 x double>, metadata)
 define <2 x i1> @vfptosi_v2f64_v2i1(<2 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f64_v2i1:
 ; CHECK:       # %bb.0:
@@ -1316,6 +1431,7 @@ define <2 x i1> @vfptosi_v2f64_v2i1(<2 x double> %va) strictfp {
   ret <2 x i1> %evec
 }
 
+declare <2 x i1> @llvm.experimental.constrained.fptoui.v2i1.v2f64(<2 x double>, metadata)
 define <2 x i1> @vfptoui_v2f64_v2i1(<2 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f64_v2i1:
 ; CHECK:       # %bb.0:
@@ -1328,6 +1444,7 @@ define <2 x i1> @vfptoui_v2f64_v2i1(<2 x double> %va) strictfp {
   ret <2 x i1> %evec
 }
 
+declare <2 x i8> @llvm.experimental.constrained.fptosi.v2i8.v2f64(<2 x double>, metadata)
 define <2 x i8> @vfptosi_v2f64_v2i8(<2 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f64_v2i8:
 ; CHECK:       # %bb.0:
@@ -1342,6 +1459,7 @@ define <2 x i8> @vfptosi_v2f64_v2i8(<2 x double> %va) strictfp {
   ret <2 x i8> %evec
 }
 
+declare <2 x i8> @llvm.experimental.constrained.fptoui.v2i8.v2f64(<2 x double>, metadata)
 define <2 x i8> @vfptoui_v2f64_v2i8(<2 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f64_v2i8:
 ; CHECK:       # %bb.0:
@@ -1356,6 +1474,7 @@ define <2 x i8> @vfptoui_v2f64_v2i8(<2 x double> %va) strictfp {
   ret <2 x i8> %evec
 }
 
+declare <2 x i16> @llvm.experimental.constrained.fptosi.v2i16.v2f64(<2 x double>, metadata)
 define <2 x i16> @vfptosi_v2f64_v2i16(<2 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f64_v2i16:
 ; CHECK:       # %bb.0:
@@ -1368,6 +1487,7 @@ define <2 x i16> @vfptosi_v2f64_v2i16(<2 x double> %va) strictfp {
   ret <2 x i16> %evec
 }
 
+declare <2 x i16> @llvm.experimental.constrained.fptoui.v2i16.v2f64(<2 x double>, metadata)
 define <2 x i16> @vfptoui_v2f64_v2i16(<2 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f64_v2i16:
 ; CHECK:       # %bb.0:
@@ -1380,6 +1500,7 @@ define <2 x i16> @vfptoui_v2f64_v2i16(<2 x double> %va) strictfp {
   ret <2 x i16> %evec
 }
 
+declare <2 x i32> @llvm.experimental.constrained.fptosi.v2i32.v2f64(<2 x double>, metadata)
 define <2 x i32> @vfptosi_v2f64_v2i32(<2 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f64_v2i32:
 ; CHECK:       # %bb.0:
@@ -1391,6 +1512,7 @@ define <2 x i32> @vfptosi_v2f64_v2i32(<2 x double> %va) strictfp {
   ret <2 x i32> %evec
 }
 
+declare <2 x i32> @llvm.experimental.constrained.fptoui.v2i32.v2f64(<2 x double>, metadata)
 define <2 x i32> @vfptoui_v2f64_v2i32(<2 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f64_v2i32:
 ; CHECK:       # %bb.0:
@@ -1402,6 +1524,7 @@ define <2 x i32> @vfptoui_v2f64_v2i32(<2 x double> %va) strictfp {
   ret <2 x i32> %evec
 }
 
+declare <2 x i64> @llvm.experimental.constrained.fptosi.v2i64.v2f64(<2 x double>, metadata)
 define <2 x i64> @vfptosi_v2f64_v2i64(<2 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v2f64_v2i64:
 ; CHECK:       # %bb.0:
@@ -1412,6 +1535,7 @@ define <2 x i64> @vfptosi_v2f64_v2i64(<2 x double> %va) strictfp {
   ret <2 x i64> %evec
 }
 
+declare <2 x i64> @llvm.experimental.constrained.fptoui.v2i64.v2f64(<2 x double>, metadata)
 define <2 x i64> @vfptoui_v2f64_v2i64(<2 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v2f64_v2i64:
 ; CHECK:       # %bb.0:
@@ -1422,6 +1546,7 @@ define <2 x i64> @vfptoui_v2f64_v2i64(<2 x double> %va) strictfp {
   ret <2 x i64> %evec
 }
 
+declare <4 x i1> @llvm.experimental.constrained.fptosi.v4i1.v4f64(<4 x double>, metadata)
 define <4 x i1> @vfptosi_v4f64_v4i1(<4 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f64_v4i1:
 ; CHECK:       # %bb.0:
@@ -1434,6 +1559,7 @@ define <4 x i1> @vfptosi_v4f64_v4i1(<4 x double> %va) strictfp {
   ret <4 x i1> %evec
 }
 
+declare <4 x i1> @llvm.experimental.constrained.fptoui.v4i1.v4f64(<4 x double>, metadata)
 define <4 x i1> @vfptoui_v4f64_v4i1(<4 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f64_v4i1:
 ; CHECK:       # %bb.0:
@@ -1446,6 +1572,7 @@ define <4 x i1> @vfptoui_v4f64_v4i1(<4 x double> %va) strictfp {
   ret <4 x i1> %evec
 }
 
+declare <4 x i8> @llvm.experimental.constrained.fptosi.v4i8.v4f64(<4 x double>, metadata)
 define <4 x i8> @vfptosi_v4f64_v4i8(<4 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f64_v4i8:
 ; CHECK:       # %bb.0:
@@ -1460,6 +1587,7 @@ define <4 x i8> @vfptosi_v4f64_v4i8(<4 x double> %va) strictfp {
   ret <4 x i8> %evec
 }
 
+declare <4 x i8> @llvm.experimental.constrained.fptoui.v4i8.v4f64(<4 x double>, metadata)
 define <4 x i8> @vfptoui_v4f64_v4i8(<4 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f64_v4i8:
 ; CHECK:       # %bb.0:
@@ -1474,6 +1602,7 @@ define <4 x i8> @vfptoui_v4f64_v4i8(<4 x double> %va) strictfp {
   ret <4 x i8> %evec
 }
 
+declare <4 x i16> @llvm.experimental.constrained.fptosi.v4i16.v4f64(<4 x double>, metadata)
 define <4 x i16> @vfptosi_v4f64_v4i16(<4 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f64_v4i16:
 ; CHECK:       # %bb.0:
@@ -1486,6 +1615,7 @@ define <4 x i16> @vfptosi_v4f64_v4i16(<4 x double> %va) strictfp {
   ret <4 x i16> %evec
 }
 
+declare <4 x i16> @llvm.experimental.constrained.fptoui.v4i16.v4f64(<4 x double>, metadata)
 define <4 x i16> @vfptoui_v4f64_v4i16(<4 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f64_v4i16:
 ; CHECK:       # %bb.0:
@@ -1498,6 +1628,7 @@ define <4 x i16> @vfptoui_v4f64_v4i16(<4 x double> %va) strictfp {
   ret <4 x i16> %evec
 }
 
+declare <4 x i32> @llvm.experimental.constrained.fptosi.v4i32.v4f64(<4 x double>, metadata)
 define <4 x i32> @vfptosi_v4f64_v4i32(<4 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f64_v4i32:
 ; CHECK:       # %bb.0:
@@ -1509,6 +1640,7 @@ define <4 x i32> @vfptosi_v4f64_v4i32(<4 x double> %va) strictfp {
   ret <4 x i32> %evec
 }
 
+declare <4 x i32> @llvm.experimental.constrained.fptoui.v4i32.v4f64(<4 x double>, metadata)
 define <4 x i32> @vfptoui_v4f64_v4i32(<4 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f64_v4i32:
 ; CHECK:       # %bb.0:
@@ -1520,6 +1652,7 @@ define <4 x i32> @vfptoui_v4f64_v4i32(<4 x double> %va) strictfp {
   ret <4 x i32> %evec
 }
 
+declare <4 x i64> @llvm.experimental.constrained.fptosi.v4i64.v4f64(<4 x double>, metadata)
 define <4 x i64> @vfptosi_v4f64_v4i64(<4 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v4f64_v4i64:
 ; CHECK:       # %bb.0:
@@ -1530,6 +1663,7 @@ define <4 x i64> @vfptosi_v4f64_v4i64(<4 x double> %va) strictfp {
   ret <4 x i64> %evec
 }
 
+declare <4 x i64> @llvm.experimental.constrained.fptoui.v4i64.v4f64(<4 x double>, metadata)
 define <4 x i64> @vfptoui_v4f64_v4i64(<4 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v4f64_v4i64:
 ; CHECK:       # %bb.0:
@@ -1540,6 +1674,7 @@ define <4 x i64> @vfptoui_v4f64_v4i64(<4 x double> %va) strictfp {
   ret <4 x i64> %evec
 }
 
+declare <8 x i1> @llvm.experimental.constrained.fptosi.v8i1.v8f64(<8 x double>, metadata)
 define <8 x i1> @vfptosi_v8f64_v8i1(<8 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f64_v8i1:
 ; CHECK:       # %bb.0:
@@ -1552,6 +1687,7 @@ define <8 x i1> @vfptosi_v8f64_v8i1(<8 x double> %va) strictfp {
   ret <8 x i1> %evec
 }
 
+declare <8 x i1> @llvm.experimental.constrained.fptoui.v8i1.v8f64(<8 x double>, metadata)
 define <8 x i1> @vfptoui_v8f64_v8i1(<8 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f64_v8i1:
 ; CHECK:       # %bb.0:
@@ -1564,6 +1700,7 @@ define <8 x i1> @vfptoui_v8f64_v8i1(<8 x double> %va) strictfp {
   ret <8 x i1> %evec
 }
 
+declare <8 x i8> @llvm.experimental.constrained.fptosi.v8i8.v8f64(<8 x double>, metadata)
 define <8 x i8> @vfptosi_v8f64_v8i8(<8 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f64_v8i8:
 ; CHECK:       # %bb.0:
@@ -1578,6 +1715,7 @@ define <8 x i8> @vfptosi_v8f64_v8i8(<8 x double> %va) strictfp {
   ret <8 x i8> %evec
 }
 
+declare <8 x i8> @llvm.experimental.constrained.fptoui.v8i8.v8f64(<8 x double>, metadata)
 define <8 x i8> @vfptoui_v8f64_v8i8(<8 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f64_v8i8:
 ; CHECK:       # %bb.0:
@@ -1592,6 +1730,7 @@ define <8 x i8> @vfptoui_v8f64_v8i8(<8 x double> %va) strictfp {
   ret <8 x i8> %evec
 }
 
+declare <8 x i16> @llvm.experimental.constrained.fptosi.v8i16.v8f64(<8 x double>, metadata)
 define <8 x i16> @vfptosi_v8f64_v8i16(<8 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f64_v8i16:
 ; CHECK:       # %bb.0:
@@ -1604,6 +1743,7 @@ define <8 x i16> @vfptosi_v8f64_v8i16(<8 x double> %va) strictfp {
   ret <8 x i16> %evec
 }
 
+declare <8 x i16> @llvm.experimental.constrained.fptoui.v8i16.v8f64(<8 x double>, metadata)
 define <8 x i16> @vfptoui_v8f64_v8i16(<8 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f64_v8i16:
 ; CHECK:       # %bb.0:
@@ -1616,6 +1756,7 @@ define <8 x i16> @vfptoui_v8f64_v8i16(<8 x double> %va) strictfp {
   ret <8 x i16> %evec
 }
 
+declare <8 x i32> @llvm.experimental.constrained.fptosi.v8i32.v8f64(<8 x double>, metadata)
 define <8 x i32> @vfptosi_v8f64_v8i32(<8 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f64_v8i32:
 ; CHECK:       # %bb.0:
@@ -1627,6 +1768,7 @@ define <8 x i32> @vfptosi_v8f64_v8i32(<8 x double> %va) strictfp {
   ret <8 x i32> %evec
 }
 
+declare <8 x i32> @llvm.experimental.constrained.fptoui.v8i32.v8f64(<8 x double>, metadata)
 define <8 x i32> @vfptoui_v8f64_v8i32(<8 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f64_v8i32:
 ; CHECK:       # %bb.0:
@@ -1638,6 +1780,7 @@ define <8 x i32> @vfptoui_v8f64_v8i32(<8 x double> %va) strictfp {
   ret <8 x i32> %evec
 }
 
+declare <8 x i64> @llvm.experimental.constrained.fptosi.v8i64.v8f64(<8 x double>, metadata)
 define <8 x i64> @vfptosi_v8f64_v8i64(<8 x double> %va) strictfp {
 ; CHECK-LABEL: vfptosi_v8f64_v8i64:
 ; CHECK:       # %bb.0:
@@ -1648,6 +1791,7 @@ define <8 x i64> @vfptosi_v8f64_v8i64(<8 x double> %va) strictfp {
   ret <8 x i64> %evec
 }
 
+declare <8 x i64> @llvm.experimental.constrained.fptoui.v8i64.v8f64(<8 x double>, metadata)
 define <8 x i64> @vfptoui_v8f64_v8i64(<8 x double> %va) strictfp {
 ; CHECK-LABEL: vfptoui_v8f64_v8i64:
 ; CHECK:       # %bb.0:

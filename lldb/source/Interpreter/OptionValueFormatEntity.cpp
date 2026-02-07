@@ -10,7 +10,6 @@
 
 #include "lldb/Core/Module.h"
 #include "lldb/Interpreter/CommandInterpreter.h"
-#include "lldb/Interpreter/OptionValue.h"
 #include "lldb/Utility/Stream.h"
 #include "lldb/Utility/StringList.h"
 using namespace lldb;
@@ -34,9 +33,10 @@ void OptionValueFormatEntity::Clear() {
   m_value_was_set = false;
 }
 
-static std::string EscapeBackticks(llvm::StringRef str) {
-  std::string dst;
+static void EscapeBackticks(llvm::StringRef str, std::string &dst) {
+  dst.clear();
   dst.reserve(str.size());
+
   for (size_t i = 0, e = str.size(); i != e; ++i) {
     char c = str[i];
     if (c == '`') {
@@ -45,7 +45,6 @@ static std::string EscapeBackticks(llvm::StringRef str) {
     }
     dst += c;
   }
-  return dst;
 }
 
 void OptionValueFormatEntity::DumpValue(const ExecutionContext *exe_ctx,
@@ -55,18 +54,17 @@ void OptionValueFormatEntity::DumpValue(const ExecutionContext *exe_ctx,
   if (dump_mask & eDumpOptionValue) {
     if (dump_mask & eDumpOptionType)
       strm.PutCString(" = ");
-    strm << '"' << EscapeBackticks(m_current_format) << '"';
-    if (dump_mask & eDumpOptionDefaultValue &&
-        m_current_format != m_default_format) {
-      DefaultValueFormat label(strm);
-      strm << '"' << EscapeBackticks(m_default_format) << '"';
-    }
+    std::string escaped;
+    EscapeBackticks(m_current_format, escaped);
+    strm << '"' << escaped << '"';
   }
 }
 
 llvm::json::Value
-OptionValueFormatEntity::ToJSON(const ExecutionContext *exe_ctx) const {
-  return EscapeBackticks(m_current_format);
+OptionValueFormatEntity::ToJSON(const ExecutionContext *exe_ctx) {
+  std::string escaped;
+  EscapeBackticks(m_current_format, escaped);
+  return escaped;
 }
 
 Status OptionValueFormatEntity::SetValueFromString(llvm::StringRef value_str,

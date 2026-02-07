@@ -35,11 +35,9 @@ class ARCAsmPrinter : public AsmPrinter {
   ARCMCInstLower MCInstLowering;
 
 public:
-  static char ID;
-
   explicit ARCAsmPrinter(TargetMachine &TM,
                          std::unique_ptr<MCStreamer> Streamer)
-      : AsmPrinter(TM, std::move(Streamer), ID),
+      : AsmPrinter(TM, std::move(Streamer)),
         MCInstLowering(&OutContext, *this) {}
 
   StringRef getPassName() const override { return "ARC Assembly Printer"; }
@@ -73,11 +71,6 @@ bool ARCAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
   MF.ensureAlignment(Align(4));
   return AsmPrinter::runOnMachineFunction(MF);
 }
-
-char ARCAsmPrinter::ID = 0;
-
-INITIALIZE_PASS(ARCAsmPrinter, "arc-asm-printer", "ARC Assmebly Printer", false,
-                false)
 
 // Force static initialization.
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeARCAsmPrinter() {

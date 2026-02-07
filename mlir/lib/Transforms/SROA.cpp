@@ -12,7 +12,6 @@
 #include "mlir/Analysis/TopologicalSortUtils.h"
 #include "mlir/Interfaces/MemorySlotInterfaces.h"
 #include "mlir/Transforms/Passes.h"
-#include "llvm/Support/DebugLog.h"
 
 namespace mlir {
 #define GEN_PASS_DEF_SROA
@@ -155,8 +154,10 @@ static void destructureSlot(
     statistics.maxSubelementAmount->updateMax(slot.subelementTypes.size());
 
   SetVector<Operation *> usersToRewire;
-  usersToRewire.insert_range(llvm::make_first_range(info.userToBlockingUses));
-  usersToRewire.insert_range(info.accessors);
+  for (Operation *user : llvm::make_first_range(info.userToBlockingUses))
+    usersToRewire.insert(user);
+  for (DestructurableAccessorOpInterface accessor : info.accessors)
+    usersToRewire.insert(accessor);
   usersToRewire = mlir::topologicalSort(usersToRewire);
 
   llvm::SmallVector<Operation *> toErase;
@@ -181,7 +182,8 @@ static void destructureSlot(
   assert(slot.ptr.use_empty() && "after destructuring, the original slot "
                                  "pointer should no longer be used");
 
-  LDBG() << "Destructured memory slot: " << slot.ptr;
+  LLVM_DEBUG(llvm::dbgs() << "[sroa] Destructured memory slot: " << slot.ptr
+                          << "\n");
 
   if (statistics.destructuredAmount)
     (*statistics.destructuredAmount)++;

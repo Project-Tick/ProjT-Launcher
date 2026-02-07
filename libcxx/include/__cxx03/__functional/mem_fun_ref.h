@@ -20,8 +20,10 @@
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
+#if _LIBCPP_STD_VER <= 14 || defined(_LIBCPP_ENABLE_CXX17_REMOVED_BINDERS)
+
 template <class _Sp, class _Tp>
-class _LIBCPP_TEMPLATE_VIS mem_fun_t : public __unary_function<_Tp*, _Sp> {
+class _LIBCPP_TEMPLATE_VIS _LIBCPP_DEPRECATED_IN_CXX11 mem_fun_t : public __unary_function<_Tp*, _Sp> {
   _Sp (_Tp::*__p_)();
 
 public:
@@ -30,7 +32,7 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _LIBCPP_TEMPLATE_VIS mem_fun1_t : public __binary_function<_Tp*, _Ap, _Sp> {
+class _LIBCPP_TEMPLATE_VIS _LIBCPP_DEPRECATED_IN_CXX11 mem_fun1_t : public __binary_function<_Tp*, _Ap, _Sp> {
   _Sp (_Tp::*__p_)(_Ap);
 
 public:
@@ -39,17 +41,17 @@ public:
 };
 
 template <class _Sp, class _Tp>
-inline _LIBCPP_HIDE_FROM_ABI mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)()) {
+_LIBCPP_DEPRECATED_IN_CXX11 inline _LIBCPP_HIDE_FROM_ABI mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)()) {
   return mem_fun_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-inline _LIBCPP_HIDE_FROM_ABI mem_fun1_t<_Sp, _Tp, _Ap> mem_fun(_Sp (_Tp::*__f)(_Ap)) {
+_LIBCPP_DEPRECATED_IN_CXX11 inline _LIBCPP_HIDE_FROM_ABI mem_fun1_t<_Sp, _Tp, _Ap> mem_fun(_Sp (_Tp::*__f)(_Ap)) {
   return mem_fun1_t<_Sp, _Tp, _Ap>(__f);
 }
 
 template <class _Sp, class _Tp>
-class _LIBCPP_TEMPLATE_VIS mem_fun_ref_t : public __unary_function<_Tp, _Sp> {
+class _LIBCPP_TEMPLATE_VIS _LIBCPP_DEPRECATED_IN_CXX11 mem_fun_ref_t : public __unary_function<_Tp, _Sp> {
   _Sp (_Tp::*__p_)();
 
 public:
@@ -58,7 +60,7 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _LIBCPP_TEMPLATE_VIS mem_fun1_ref_t : public __binary_function<_Tp, _Ap, _Sp> {
+class _LIBCPP_TEMPLATE_VIS _LIBCPP_DEPRECATED_IN_CXX11 mem_fun1_ref_t : public __binary_function<_Tp, _Ap, _Sp> {
   _Sp (_Tp::*__p_)(_Ap);
 
 public:
@@ -67,17 +69,18 @@ public:
 };
 
 template <class _Sp, class _Tp>
-inline _LIBCPP_HIDE_FROM_ABI mem_fun_ref_t<_Sp, _Tp> mem_fun_ref(_Sp (_Tp::*__f)()) {
+_LIBCPP_DEPRECATED_IN_CXX11 inline _LIBCPP_HIDE_FROM_ABI mem_fun_ref_t<_Sp, _Tp> mem_fun_ref(_Sp (_Tp::*__f)()) {
   return mem_fun_ref_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-inline _LIBCPP_HIDE_FROM_ABI mem_fun1_ref_t<_Sp, _Tp, _Ap> mem_fun_ref(_Sp (_Tp::*__f)(_Ap)) {
+_LIBCPP_DEPRECATED_IN_CXX11 inline _LIBCPP_HIDE_FROM_ABI mem_fun1_ref_t<_Sp, _Tp, _Ap>
+mem_fun_ref(_Sp (_Tp::*__f)(_Ap)) {
   return mem_fun1_ref_t<_Sp, _Tp, _Ap>(__f);
 }
 
 template <class _Sp, class _Tp>
-class _LIBCPP_TEMPLATE_VIS const_mem_fun_t : public __unary_function<const _Tp*, _Sp> {
+class _LIBCPP_TEMPLATE_VIS _LIBCPP_DEPRECATED_IN_CXX11 const_mem_fun_t : public __unary_function<const _Tp*, _Sp> {
   _Sp (_Tp::*__p_)() const;
 
 public:
@@ -86,7 +89,8 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _LIBCPP_TEMPLATE_VIS const_mem_fun1_t : public __binary_function<const _Tp*, _Ap, _Sp> {
+class _LIBCPP_TEMPLATE_VIS
+_LIBCPP_DEPRECATED_IN_CXX11 const_mem_fun1_t : public __binary_function<const _Tp*, _Ap, _Sp> {
   _Sp (_Tp::*__p_)(_Ap) const;
 
 public:
@@ -95,17 +99,18 @@ public:
 };
 
 template <class _Sp, class _Tp>
-inline _LIBCPP_HIDE_FROM_ABI const_mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)() const) {
+_LIBCPP_DEPRECATED_IN_CXX11 inline _LIBCPP_HIDE_FROM_ABI const_mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)() const) {
   return const_mem_fun_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-inline _LIBCPP_HIDE_FROM_ABI const_mem_fun1_t<_Sp, _Tp, _Ap> mem_fun(_Sp (_Tp::*__f)(_Ap) const) {
+_LIBCPP_DEPRECATED_IN_CXX11 inline _LIBCPP_HIDE_FROM_ABI const_mem_fun1_t<_Sp, _Tp, _Ap>
+mem_fun(_Sp (_Tp::*__f)(_Ap) const) {
   return const_mem_fun1_t<_Sp, _Tp, _Ap>(__f);
 }
 
 template <class _Sp, class _Tp>
-class _LIBCPP_TEMPLATE_VIS const_mem_fun_ref_t : public __unary_function<_Tp, _Sp> {
+class _LIBCPP_TEMPLATE_VIS _LIBCPP_DEPRECATED_IN_CXX11 const_mem_fun_ref_t : public __unary_function<_Tp, _Sp> {
   _Sp (_Tp::*__p_)() const;
 
 public:
@@ -114,7 +119,7 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _LIBCPP_TEMPLATE_VIS const_mem_fun1_ref_t : public __binary_function<_Tp, _Ap, _Sp> {
+class _LIBCPP_TEMPLATE_VIS _LIBCPP_DEPRECATED_IN_CXX11 const_mem_fun1_ref_t : public __binary_function<_Tp, _Ap, _Sp> {
   _Sp (_Tp::*__p_)(_Ap) const;
 
 public:
@@ -123,14 +128,18 @@ public:
 };
 
 template <class _Sp, class _Tp>
-inline _LIBCPP_HIDE_FROM_ABI const_mem_fun_ref_t<_Sp, _Tp> mem_fun_ref(_Sp (_Tp::*__f)() const) {
+_LIBCPP_DEPRECATED_IN_CXX11 inline _LIBCPP_HIDE_FROM_ABI const_mem_fun_ref_t<_Sp, _Tp>
+mem_fun_ref(_Sp (_Tp::*__f)() const) {
   return const_mem_fun_ref_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-inline _LIBCPP_HIDE_FROM_ABI const_mem_fun1_ref_t<_Sp, _Tp, _Ap> mem_fun_ref(_Sp (_Tp::*__f)(_Ap) const) {
+_LIBCPP_DEPRECATED_IN_CXX11 inline _LIBCPP_HIDE_FROM_ABI const_mem_fun1_ref_t<_Sp, _Tp, _Ap>
+mem_fun_ref(_Sp (_Tp::*__f)(_Ap) const) {
   return const_mem_fun1_ref_t<_Sp, _Tp, _Ap>(__f);
 }
+
+#endif // _LIBCPP_STD_VER <= 14 || defined(_LIBCPP_ENABLE_CXX17_REMOVED_BINDERS)
 
 _LIBCPP_END_NAMESPACE_STD
 

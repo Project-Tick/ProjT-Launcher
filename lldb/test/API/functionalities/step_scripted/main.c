@@ -8,6 +8,6 @@ void foo() {
 }
 
 int main() {
-  foo(); // Break on branch instruction.
+  foo();
   return 0;
 }

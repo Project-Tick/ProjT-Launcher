@@ -41,9 +41,9 @@ entry:
   %add = add nsw i32 %0, %1
   ret i32 %add
 ; CHECK-NOT:  retq
-; CHECK:      popq %rsi
+; CHECK:      popq %rcx
 ; CHECK-NEXT: lfence
-; CHECK-NEXT: jmpq *%rsi
+; CHECK-NEXT: jmpq *%rcx
 }
 
 ; Function Attrs: noinline nounwind optnone uwtable
@@ -52,9 +52,9 @@ define dso_local preserve_mostcc void @preserve_most() #0 {
 entry:
   ret void
 ; CHECK-NOT:  retq
-; CHECK:      popq %r11
+; CHECK:      popq %rax
 ; CHECK-NEXT: lfence
-; CHECK-NEXT: jmpq *%r11
+; CHECK-NEXT: jmpq *%rax
 }
 
 ; Function Attrs: noinline nounwind optnone uwtable
@@ -63,9 +63,9 @@ define dso_local preserve_allcc void @preserve_all() #0 {
 entry:
   ret void
 ; CHECK-NOT:  retq
-; CHECK:      popq %r11
+; CHECK:      popq %rax
 ; CHECK-NEXT: lfence
-; CHECK-NEXT: jmpq *%r11
+; CHECK-NEXT: jmpq *%rax
 }
 
 define { i64, i128 } @ret_i64_i128() #0 {

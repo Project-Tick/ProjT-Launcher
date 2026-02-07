@@ -889,8 +889,7 @@ SDValue SelectionDAGBuilder::LowerAsSTATEPOINT(
     }
 
     // Handle multiple gc.relocates of the same input efficiently.
-    auto [VRegIt, Inserted] = VirtRegs.try_emplace(SD);
-    if (!Inserted)
+    if (VirtRegs.count(SD))
       continue;
 
     auto *RetTy = Relocate->getType();
@@ -901,7 +900,7 @@ SDValue SelectionDAGBuilder::LowerAsSTATEPOINT(
     RFV.getCopyToRegs(Relocated, DAG, getCurSDLoc(), Chain, nullptr);
     PendingExports.push_back(Chain);
 
-    VRegIt->second = Reg;
+    VirtRegs[SD] = Reg;
   }
 
   // Record for later use how each relocation was lowered.  This is needed to
@@ -916,16 +915,13 @@ SDValue SelectionDAGBuilder::LowerAsSTATEPOINT(
     bool IsLocal = (Relocate->getParent() == StatepointInstr->getParent());
 
     RecordType Record;
-    if (LowerAsVReg.count(SDV)) {
-      if (IsLocal) {
-        // Result is already stored in StatepointLowering
-        Record.type = RecordType::SDValueNode;
-      } else {
-        Record.type = RecordType::VReg;
-        auto It = VirtRegs.find(SDV);
-        assert(It != VirtRegs.end());
-        Record.payload.Reg = It->second;
-      }
+    if (IsLocal && LowerAsVReg.count(SDV)) {
+      // Result is already stored in StatepointLowering
+      Record.type = RecordType::SDValueNode;
+    } else if (LowerAsVReg.count(SDV)) {
+      Record.type = RecordType::VReg;
+      assert(VirtRegs.count(SDV));
+      Record.payload.Reg = VirtRegs[SDV];
     } else if (Loc.getNode()) {
       Record.type = RecordType::Spill;
       Record.payload.FI = cast<FrameIndexSDNode>(Loc)->getIndex();
@@ -1145,8 +1141,6 @@ void SelectionDAGBuilder::LowerCallSiteWithDeoptBundleImpl(
     const CallBase *Call, SDValue Callee, const BasicBlock *EHPadBB,
     bool VarArgDisallowed, bool ForceVoidReturnTy) {
   StatepointLoweringInfo SI(DAG);
-  SI.CLI.CB = Call;
-
   unsigned ArgBeginIndex = Call->arg_begin() - Call->op_begin();
   populateCallLoweringInfo(
       SI.CLI, Call, ArgBeginIndex, Call->arg_size(), Callee,
@@ -1260,7 +1254,7 @@ void SelectionDAGBuilder::visitGCRelocate(const GCRelocateInst &Relocate) {
 
   if (Record.type == RecordType::Spill) {
     unsigned Index = Record.payload.FI;
-    SDValue SpillSlot = DAG.getFrameIndex(Index, getFrameIndexTy());
+    SDValue SpillSlot = DAG.getTargetFrameIndex(Index, getFrameIndexTy());
 
     // All the reloads are independent and are reading memory only modified by
     // statepoints (i.e. no other aliasing stores); informing SelectionDAG of
@@ -1307,17 +1301,9 @@ void SelectionDAGBuilder::visitGCRelocate(const GCRelocateInst &Relocate) {
 
 void SelectionDAGBuilder::LowerDeoptimizeCall(const CallInst *CI) {
   const auto &TLI = DAG.getTargetLoweringInfo();
+  SDValue Callee = DAG.getExternalSymbol(TLI.getLibcallName(RTLIB::DEOPTIMIZE),
+                                         TLI.getPointerTy(DAG.getDataLayout()));
 
-  RTLIB::LibcallImpl DeoptImpl = TLI.getLibcallImpl(RTLIB::DEOPTIMIZE);
-  if (DeoptImpl == RTLIB::Unsupported) {
-    DAG.getContext()->emitError("no deoptimize libcall available");
-    return;
-  }
-
-  SDValue Callee =
-      DAG.getExternalSymbol(DeoptImpl, TLI.getPointerTy(DAG.getDataLayout()));
-
-  // FIXME: Should pass in the calling convention for the LibcallImpl.
   // We don't lower calls to __llvm_deoptimize as varargs, but as a regular
   // call.  We also do not lower the return value to any virtual register, and
   // change the immediately following return to a trap instruction.

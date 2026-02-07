@@ -1,9 +1,8 @@
-; RUN: opt < %s -passes='module(sancov-module)' -sanitizer-coverage-level=4 -sanitizer-coverage-trace-pc-guard -mtriple=x86_64 -S | FileCheck %s --check-prefixes=CHECK,CHECK-CTOR,COMDAT,ELF,ELF-CTOR
-; RUN: opt < %s -passes='module(sancov-module)' -sanitizer-coverage-level=4 -sanitizer-coverage-trace-pc-guard -sanitizer-coverage-drop-ctors=1 -mtriple=x86_64 -S | FileCheck %s --check-prefixes=CHECK,COMDAT,ELF
+; RUN: opt < %s -passes='module(sancov-module)' -sanitizer-coverage-level=4 -sanitizer-coverage-trace-pc-guard -mtriple=x86_64 -S | FileCheck %s --check-prefixes=CHECK,COMDAT,ELF
 
-; RUN: opt < %s -passes='module(sancov-module)' -sanitizer-coverage-level=4 -sanitizer-coverage-trace-pc-guard -mtriple=aarch64-apple-darwin -S | FileCheck %s --check-prefixes=CHECK,CHECK-CTOR,MACHO
+; RUN: opt < %s -passes='module(sancov-module)' -sanitizer-coverage-level=4 -sanitizer-coverage-trace-pc-guard -mtriple=aarch64-apple-darwin -S | FileCheck %s --check-prefixes=CHECK,MACHO
 
-; RUN: opt < %s -passes='module(sancov-module)' -sanitizer-coverage-level=4 -sanitizer-coverage-trace-pc-guard -mtriple=x86_64-windows -S | FileCheck %s --check-prefixes=CHECK,CHECK-CTOR,COMDAT,WIN
+; RUN: opt < %s -passes='module(sancov-module)' -sanitizer-coverage-level=4 -sanitizer-coverage-trace-pc-guard -mtriple=x86_64-windows -S | FileCheck %s --check-prefixes=CHECK,COMDAT,WIN
 
 ; COMDAT:     $foo = comdat nodeduplicate
 ; COMDAT:     $CallViaVptr = comdat nodeduplicate
@@ -21,7 +20,7 @@
 ; WIN-NEXT:   @__sancov_gen_.1 = private global [1 x i32] zeroinitializer, section ".SCOV$GM", comdat($CallViaVptr), align 4{{$}}
 ; WIN-NEXT:   @__sancov_gen_.2 = private global [1 x i32] zeroinitializer, section ".SCOV$GM", comdat($DirectBitcastCall), align 4{{$}}
 
-; ELF-CTOR:   @llvm.used = appending global [1 x ptr] [ptr @sancov.module_ctor_trace_pc_guard]
+; ELF:        @llvm.used = appending global [1 x ptr] [ptr @sancov.module_ctor_trace_pc_guard]
 ; ELF:        @llvm.compiler.used = appending global [3 x ptr] [ptr @__sancov_gen_, ptr @__sancov_gen_.1, ptr @__sancov_gen_.2], section "llvm.metadata"
 ; MACHO:      @llvm.used = appending global [4 x ptr] [ptr @sancov.module_ctor_trace_pc_guard, ptr @__sancov_gen_, ptr @__sancov_gen_.1, ptr @__sancov_gen_.2]
 ; MACHO-NOT:  @llvm.compiler.used =
@@ -74,7 +73,7 @@ define void @DirectBitcastCall() sanitize_address {
   ret void
 }
 
-; ELF-CTOR-LABEL: define internal void @sancov.module_ctor_trace_pc_guard() #2 comdat {
+; ELF-LABEL: define internal void @sancov.module_ctor_trace_pc_guard() #2 comdat {
 ; MACHO-LABEL: define internal void @sancov.module_ctor_trace_pc_guard() #2 {
 
-; CHECK-CTOR: attributes #2 = { nounwind }
+; CHECK: attributes #2 = { nounwind }

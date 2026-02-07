@@ -10,7 +10,6 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/RegionInfoImpl.h"
 #include "llvm/CodeGen/MachinePostDominators.h"
-#include "llvm/CodeGen/Passes.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
@@ -128,7 +127,7 @@ LLVM_DUMP_METHOD void MachineRegionInfoPass::dump() const {
 #endif
 
 char MachineRegionInfoPass::ID = 0;
-char &llvm::MachineRegionInfoPassID = MachineRegionInfoPass::ID;
+char &MachineRegionInfoPassID = MachineRegionInfoPass::ID;
 
 INITIALIZE_PASS_BEGIN(MachineRegionInfoPass, DEBUG_TYPE,
                       "Detect single entry single exit regions", true, true)

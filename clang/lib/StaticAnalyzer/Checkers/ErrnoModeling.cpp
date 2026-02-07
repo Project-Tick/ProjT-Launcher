@@ -19,6 +19,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "ErrnoModeling.h"
+#include "clang/AST/ParentMapContext.h"
 #include "clang/StaticAnalyzer/Checkers/BuiltinCheckerRegistration.h"
 #include "clang/StaticAnalyzer/Core/Checker.h"
 #include "clang/StaticAnalyzer/Core/CheckerManager.h"
@@ -27,6 +28,7 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/SVals.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/Support/FormatVariadic.h"
 #include <optional>
 
 using namespace clang;
@@ -122,7 +124,7 @@ void ErrnoModeling::checkBeginFunction(CheckerContext &C) const {
     // of the data member `ErrnoDecl` of the singleton `ErrnoModeling` checker
     // object.
     const SymbolConjured *Sym = SVB.conjureSymbol(
-        C.getCFGElementRef(), C.getLocationContext(),
+        nullptr, C.getLocationContext(),
         ACtx.getLValueReferenceType(ACtx.IntTy), C.blockCount(), &ErrnoDecl);
 
     // The symbolic region is untyped, create a typed sub-region in it.
@@ -254,11 +256,11 @@ ProgramStateRef setErrnoForStdFailure(ProgramStateRef State, CheckerContext &C,
 
 ProgramStateRef setErrnoStdMustBeChecked(ProgramStateRef State,
                                          CheckerContext &C,
-                                         ConstCFGElementRef Elem) {
+                                         const Expr *InvalE) {
   const MemRegion *ErrnoR = State->get<ErrnoRegion>();
   if (!ErrnoR)
     return State;
-  State = State->invalidateRegions(ErrnoR, Elem, C.blockCount(),
+  State = State->invalidateRegions(ErrnoR, InvalE, C.blockCount(),
                                    C.getLocationContext(), false);
   if (!State)
     return nullptr;

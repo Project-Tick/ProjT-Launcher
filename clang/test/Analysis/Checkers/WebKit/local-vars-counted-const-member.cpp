@@ -21,8 +21,10 @@ public:
   RefCountable& ensureObj4() {
     if (!m_obj4)
       const_cast<RefPtr<RefCountable>&>(m_obj4) = RefCountable::create();
-    if (auto* next = m_obj4->next())
+    if (auto* next = m_obj4->next()) {
+      // expected-warning@-1{{Local variable 'next' is uncounted and unsafe [alpha.webkit.UncountedLocalVarsChecker]}}
       return *next;
+    }
     return *m_obj4;
   }
 

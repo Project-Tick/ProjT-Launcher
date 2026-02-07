@@ -1,11 +1,14 @@
 """
-Test lldb-dap module request
+Test lldb-dap setBreakpoints request
 """
 
+import dap_server
 from lldbsuite.test.decorators import *
 from lldbsuite.test.lldbtest import *
+from lldbsuite.test import lldbutil
 import lldbdap_testcase
 import re
+
 
 class TestDAP_module(lldbdap_testcase.DAPTestCaseBase):
     def run_test(self, symbol_basename, expect_debug_info_size):
@@ -13,11 +16,7 @@ class TestDAP_module(lldbdap_testcase.DAPTestCaseBase):
         program = self.getBuildArtifact(program_basename)
         self.build_and_launch(program)
         functions = ["foo"]
-
-        # This breakpoint will be resolved only when the libfoo module is loaded
-        breakpoint_ids = self.set_function_breakpoints(
-            functions, wait_for_resolve=False
-        )
+        breakpoint_ids = self.set_function_breakpoints(functions)
         self.assertEqual(len(breakpoint_ids), len(functions), "expect one breakpoint")
         self.continue_to_breakpoints(breakpoint_ids)
         active_modules = self.dap_server.get_modules()
@@ -42,49 +41,21 @@ class TestDAP_module(lldbdap_testcase.DAPTestCaseBase):
             context="repl",
         )
 
-        def check_symbols_loaded_with_size():
+        def checkSymbolsLoadedWithSize():
             active_modules = self.dap_server.get_modules()
             program_module = active_modules[program_basename]
             self.assertIn("symbolFilePath", program_module)
             self.assertIn(symbols_path, program_module["symbolFilePath"])
-            size_regex = re.compile(r"[0-9]+(\.[0-9]*)?[KMG]?B")
-            return size_regex.match(program_module["debugInfoSize"])
+            symbol_regex = re.compile(r"[0-9]+(\.[0-9]*)?[KMG]?B")
+            return symbol_regex.match(program_module["symbolStatus"])
 
         if expect_debug_info_size:
-            self.assertTrue(
-                self.wait_until(check_symbols_loaded_with_size),
-                "expect has debug info size",
-            )
-
+            self.waitUntil(checkSymbolsLoadedWithSize)
         active_modules = self.dap_server.get_modules()
         program_module = active_modules[program_basename]
         self.assertEqual(program_basename, program_module["name"])
         self.assertEqual(program, program_module["path"])
         self.assertIn("addressRange", program_module)
-
-        # Collect all the module names we saw as events.
-        module_new_names = []
-        module_changed_names = []
-        module_event = self.dap_server.wait_for_event(["module"])
-        while module_event is not None:
-            reason = module_event["body"]["reason"]
-            if reason == "new":
-                module_new_names.append(module_event["body"]["module"]["name"])
-            elif reason == "changed":
-                module_changed_names.append(module_event["body"]["module"]["name"])
-
-            module_event = self.dap_server.wait_for_event(["module"])
-
-        # Make sure we got an event for every active module.
-        self.assertNotEqual(len(module_new_names), 0)
-        for module in active_modules:
-            self.assertIn(module, module_new_names)
-
-        # Make sure we got an update event for the program module when the
-        # symbols got added.
-        self.assertNotEqual(len(module_changed_names), 0)
-        self.assertIn(program_module["name"], module_changed_names)
-        self.continue_to_exit()
 
     @skipIfWindows
     def test_modules(self):
@@ -126,5 +97,3 @@ class TestDAP_module(lldbdap_testcase.DAPTestCaseBase):
         self.assertTrue(response["body"])
         cu_paths = [cu["compileUnitPath"] for cu in response["body"]["compileUnits"]]
         self.assertIn(main_source_path, cu_paths, "Real path to main.cpp matches")
-
-        self.continue_to_exit()

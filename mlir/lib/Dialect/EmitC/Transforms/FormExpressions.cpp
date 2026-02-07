@@ -18,7 +18,7 @@
 
 namespace mlir {
 namespace emitc {
-#define GEN_PASS_DEF_FORMEXPRESSIONSPASS
+#define GEN_PASS_DEF_FORMEXPRESSIONS
 #include "mlir/Dialect/EmitC/Transforms/Passes.h.inc"
 } // namespace emitc
 } // namespace mlir
@@ -28,7 +28,7 @@ using namespace emitc;
 
 namespace {
 struct FormExpressionsPass
-    : public emitc::impl::FormExpressionsPassBase<FormExpressionsPass> {
+    : public emitc::impl::FormExpressionsBase<FormExpressionsPass> {
   void runOnOperation() override {
     Operation *rootOp = getOperation();
     MLIRContext *context = rootOp->getContext();
@@ -36,7 +36,7 @@ struct FormExpressionsPass
     // Wrap each C operator op with an expression op.
     OpBuilder builder(context);
     auto matchFun = [&](Operation *op) {
-      if (isa<emitc::CExpressionInterface>(*op) &&
+      if (op->hasTrait<OpTrait::emitc::CExpression>() &&
           !op->getParentOfType<emitc::ExpressionOp>() &&
           op->getNumResults() == 1)
         createExpression(op, builder);
@@ -56,3 +56,7 @@ struct FormExpressionsPass
   }
 };
 } // namespace
+
+std::unique_ptr<Pass> mlir::emitc::createFormExpressionsPass() {
+  return std::make_unique<FormExpressionsPass>();
+}

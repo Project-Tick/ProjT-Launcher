@@ -77,13 +77,17 @@ public:
       : MCAsmBackend(llvm::endianness::little) {}
   ~DXILAsmBackend() override = default;
 
-  void applyFixup(const MCFragment &, const MCFixup &, const MCValue &Target,
-                  uint8_t *Data, uint64_t Value, bool IsResolved) override {}
+  void applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
+                  const MCValue &Target, MutableArrayRef<char> Data,
+                  uint64_t Value, bool IsResolved,
+                  const MCSubtargetInfo *STI) const override {}
 
   std::unique_ptr<MCObjectTargetWriter>
   createObjectTargetWriter() const override {
     return createDXContainerTargetObjectWriter();
   }
+
+  unsigned getNumFixupKinds() const override { return 0; }
 
   bool writeNopData(raw_ostream &OS, uint64_t Count,
                     const MCSubtargetInfo *STI) const override {
@@ -132,8 +136,7 @@ static MCRegisterInfo *createDirectXMCRegisterInfo(const Triple &Triple) {
 
 static MCInstrInfo *createDirectXMCInstrInfo() { return new MCInstrInfo(); }
 
-extern "C" LLVM_ABI LLVM_EXTERNAL_VISIBILITY void
-LLVMInitializeDirectXTargetMC() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeDirectXTargetMC() {
   Target &T = getTheDirectXTarget();
   RegisterMCAsmInfo<DirectXMCAsmInfo> X(T);
   TargetRegistry::RegisterMCInstrInfo(T, createDirectXMCInstrInfo);

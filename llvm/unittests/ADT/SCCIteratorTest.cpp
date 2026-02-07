@@ -21,7 +21,7 @@ TEST(SCCIteratorTest, AllSmallGraphs) {
   // create graphs for which every node has a self-edge.
 #define NUM_NODES 4
 #define NUM_GRAPHS (NUM_NODES * (NUM_NODES - 1))
-  using GT = Graph<NUM_NODES>;
+  typedef Graph<NUM_NODES> GT;
 
   /// Enumerate all graphs using NUM_GRAPHS bits.
   static_assert(NUM_GRAPHS < sizeof(unsigned) * CHAR_BIT, "Too many graphs!");

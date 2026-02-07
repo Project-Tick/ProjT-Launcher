@@ -2,10 +2,13 @@
 // RUN: %clang_cc1 -triple aarch64-none-linux-gnu -emit-llvm -o - %s | FileCheck %s
 
 // Priority biskmasks after feature dependency expansion:
+//
 // MSB                                                    LSB
+//
 // sme2 | wfxt | sme | bf16 |       |      | fp16 | simd | fp
 // -----+------+-----+------+-------+------+------+------+---
 // sme2 |      | sme | bf16 | rcpc2 | rcpc | fp16 | simd | fp
+//
 // Dependencies should not affect priorities, since a
 // feature can only depend on lower priority features:
 // https://github.com/ARM-software/acle/pull/376
@@ -29,8 +32,7 @@ int call() { return fn(); }
 // CHECK-NEXT:    ret i32 [[CALL]]
 //
 //
-// CHECK-LABEL: define weak_odr ptr @fn.resolver()
-// CHECK-SAME: #[[ATTR_RESOLVER:[0-9]+]] comdat {
+// CHECK-LABEL: define weak_odr ptr @fn.resolver() comdat {
 // CHECK-NEXT:  [[RESOLVER_ENTRY:.*:]]
 // CHECK-NEXT:    call void @__init_cpu_features_resolver()
 // CHECK-NEXT:    [[TMP0:%.*]] = load i64, ptr @__aarch64_cpu_features, align 8

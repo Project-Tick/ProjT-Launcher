@@ -16,11 +16,9 @@
 #define LLVM_CLANG_FRONTEND_TEXTDIAGNOSTIC_H
 
 #include "clang/Frontend/DiagnosticRenderer.h"
-#include "llvm/Support/FormattedStream.h"
+#include "llvm/Support/raw_ostream.h"
 
 namespace clang {
-
-using llvm::formatted_raw_ostream;
 
 /// Class to encapsulate the logic for formatting and printing a textual
 /// diagnostic message.
@@ -35,12 +33,12 @@ using llvm::formatted_raw_ostream;
 /// DiagnosticClient is implemented through this class as is diagnostic
 /// printing coming out of libclang.
 class TextDiagnostic : public DiagnosticRenderer {
-  formatted_raw_ostream OS;
+  raw_ostream &OS;
   const Preprocessor *PP;
 
 public:
   TextDiagnostic(raw_ostream &OS, const LangOptions &LangOpts,
-                 DiagnosticOptions &DiagOpts, const Preprocessor *PP = nullptr);
+                 DiagnosticOptions *DiagOpts, const Preprocessor *PP = nullptr);
 
   ~TextDiagnostic() override;
 
@@ -49,7 +47,7 @@ public:
     unsigned End;
     enum llvm::raw_ostream::Colors Color;
     StyleRange(unsigned S, unsigned E, enum llvm::raw_ostream::Colors C)
-        : Start(S), End(E), Color(C) {};
+        : Start(S), End(E), Color(C){};
   };
 
   /// Print the diagonstic level to a raw_ostream.

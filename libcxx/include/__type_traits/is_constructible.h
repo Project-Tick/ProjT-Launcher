@@ -10,7 +10,8 @@
 #define _LIBCPP___TYPE_IS_CONSTRUCTIBLE_H
 
 #include <__config>
-#include <__type_traits/add_reference.h>
+#include <__type_traits/add_lvalue_reference.h>
+#include <__type_traits/add_rvalue_reference.h>
 #include <__type_traits/integral_constant.h>
 
 #if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
@@ -20,7 +21,8 @@
 _LIBCPP_BEGIN_NAMESPACE_STD
 
 template <class _Tp, class... _Args>
-struct _LIBCPP_NO_SPECIALIZATIONS is_constructible : integral_constant<bool, __is_constructible(_Tp, _Args...)> {};
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_NO_SPECIALIZATIONS is_constructible
+    : public integral_constant<bool, __is_constructible(_Tp, _Args...)> {};
 
 #if _LIBCPP_STD_VER >= 17
 template <class _Tp, class... _Args>
@@ -28,8 +30,8 @@ _LIBCPP_NO_SPECIALIZATIONS inline constexpr bool is_constructible_v = __is_const
 #endif
 
 template <class _Tp>
-struct _LIBCPP_NO_SPECIALIZATIONS is_copy_constructible
-    : integral_constant<bool, __is_constructible(_Tp, __add_lvalue_reference_t<const _Tp>)> {};
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_NO_SPECIALIZATIONS is_copy_constructible
+    : public integral_constant<bool, __is_constructible(_Tp, __add_lvalue_reference_t<const _Tp>)> {};
 
 #if _LIBCPP_STD_VER >= 17
 template <class _Tp>
@@ -37,8 +39,8 @@ _LIBCPP_NO_SPECIALIZATIONS inline constexpr bool is_copy_constructible_v = is_co
 #endif
 
 template <class _Tp>
-struct _LIBCPP_NO_SPECIALIZATIONS is_move_constructible
-    : integral_constant<bool, __is_constructible(_Tp, __add_rvalue_reference_t<_Tp>)> {};
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_NO_SPECIALIZATIONS is_move_constructible
+    : public integral_constant<bool, __is_constructible(_Tp, __add_rvalue_reference_t<_Tp>)> {};
 
 #if _LIBCPP_STD_VER >= 17
 template <class _Tp>
@@ -46,7 +48,8 @@ _LIBCPP_NO_SPECIALIZATIONS inline constexpr bool is_move_constructible_v = is_mo
 #endif
 
 template <class _Tp>
-struct _LIBCPP_NO_SPECIALIZATIONS is_default_constructible : integral_constant<bool, __is_constructible(_Tp)> {};
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_NO_SPECIALIZATIONS is_default_constructible
+    : public integral_constant<bool, __is_constructible(_Tp)> {};
 
 #if _LIBCPP_STD_VER >= 17
 template <class _Tp>

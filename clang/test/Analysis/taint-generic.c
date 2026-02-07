@@ -1,16 +1,12 @@
-// RUN: rm -rf %t && mkdir %t
-// RUN: sed -e "s|DIR|%/S/Inputs|g" %S/Inputs/taint-generic-config-vfs.json > %t/taint-generic-config-vfs.json
-
 // RUN: %clang_analyze_cc1 -Wno-format-security -Wno-pointer-to-int-cast \
 // RUN:   -Wno-incompatible-library-redeclaration -verify %s \
 // RUN:   -analyzer-checker=optin.taint.GenericTaint \
 // RUN:   -analyzer-checker=optin.taint.TaintedDiv \
 // RUN:   -analyzer-checker=core \
-// RUN:   -analyzer-checker=security.ArrayBound \
+// RUN:   -analyzer-checker=alpha.security.ArrayBoundV2 \
 // RUN:   -analyzer-checker=debug.ExprInspection \
 // RUN:   -analyzer-config \
-// RUN:     optin.taint.TaintPropagation:Config=%S/Inputs/taint-generic-config-virtual.yaml \
-// RUN:   -ivfsoverlay %t/taint-generic-config-vfs.json
+// RUN:     optin.taint.TaintPropagation:Config=%S/Inputs/taint-generic-config.yaml
 
 // RUN: %clang_analyze_cc1 -Wno-format-security -Wno-pointer-to-int-cast \
 // RUN:   -Wno-incompatible-library-redeclaration -verify %s \
@@ -18,7 +14,7 @@
 // RUN:   -analyzer-checker=optin.taint.GenericTaint \
 // RUN:   -analyzer-checker=optin.taint.TaintedDiv \
 // RUN:   -analyzer-checker=core \
-// RUN:   -analyzer-checker=security.ArrayBound \
+// RUN:   -analyzer-checker=alpha.security.ArrayBoundV2 \
 // RUN:   -analyzer-checker=debug.ExprInspection \
 // RUN:   -analyzer-config \
 // RUN:     optin.taint.TaintPropagation:Config=%S/Inputs/taint-generic-config.yaml
@@ -414,19 +410,6 @@ int testTaintedDivFP(void) {
   if (!x)
     return 0;
   return 5/x; // x cannot be 0, so no tainted warning either
-}
-
-void clang_analyzer_warnIfReached();
-
-int testTaintDivZeroNonfatal() {
-  int x;
-  scanf("%d", &x);
-  int y = 5/x; // expected-warning {{Division by a tainted value, possibly zero}}
-  if (x == 0)
-    clang_analyzer_warnIfReached();
-  else
-    clang_analyzer_warnIfReached(); // expected-warning {{REACHABLE}}
-  return y;
 }
 
 // Zero-sized VLAs.

@@ -31,6 +31,7 @@ public:
   void emitWindowsUnwindTables() override;
   void emitWindowsUnwindTables(WinEH::FrameInfo *Frame) override;
 
+  void emitThumbFunc(MCSymbol *Symbol) override;
   void finishImpl() override;
 };
 
@@ -53,8 +54,12 @@ void ARMWinCOFFStreamer::emitWindowsUnwindTables() {
   EHStreamer.Emit(*this);
 }
 
+void ARMWinCOFFStreamer::emitThumbFunc(MCSymbol *Symbol) {
+  getAssembler().setIsThumbFunc(Symbol);
+}
+
 void ARMWinCOFFStreamer::finishImpl() {
-  emitFrames();
+  emitFrames(nullptr);
   emitWindowsUnwindTables();
 
   MCWinCOFFStreamer::finishImpl();
@@ -72,13 +77,15 @@ llvm::createARMWinCOFFStreamer(MCContext &Context,
 
 namespace {
 class ARMTargetWinCOFFStreamer : public llvm::ARMTargetStreamer {
+private:
+  // True if we are processing SEH directives in an epilogue.
+  bool InEpilogCFI = false;
+
+  // Symbol of the current epilog for which we are processing SEH directives.
+  MCSymbol *CurrentEpilog = nullptr;
+
 public:
   ARMTargetWinCOFFStreamer(llvm::MCStreamer &S) : ARMTargetStreamer(S) {}
-
-  ARMWinCOFFStreamer &getStreamer() {
-    return static_cast<ARMWinCOFFStreamer &>(Streamer);
-  }
-  void emitThumbFunc(MCSymbol *Symbol) override;
 
   // The unwind codes on ARM Windows are documented at
   // https://docs.microsoft.com/en-us/cpp/build/arm-exception-handling
@@ -97,10 +104,6 @@ private:
   void emitARMWinUnwindCode(unsigned UnwindCode, int Reg, int Offset);
 };
 
-void ARMTargetWinCOFFStreamer::emitThumbFunc(MCSymbol *Symbol) {
-  getStreamer().getAssembler().setIsThumbFunc(Symbol);
-}
-
 // Helper function to common out unwind code setup for those codes that can
 // belong to both prolog and epilog.
 void ARMTargetWinCOFFStreamer::emitARMWinUnwindCode(unsigned UnwindCode,
@@ -111,8 +114,8 @@ void ARMTargetWinCOFFStreamer::emitARMWinUnwindCode(unsigned UnwindCode,
     return;
   MCSymbol *Label = S.emitCFILabel();
   auto Inst = WinEH::Instruction(UnwindCode, Label, Reg, Offset);
-  if (S.isInEpilogCFI())
-    S.getCurrentWinEpilog()->Instructions.push_back(Inst);
+  if (InEpilogCFI)
+    CurFrame->EpilogMap[CurrentEpilog].Instructions.push_back(Inst);
   else
     CurFrame->Instructions.push_back(Inst);
 }
@@ -221,10 +224,9 @@ void ARMTargetWinCOFFStreamer::emitARMWinCFIEpilogStart(unsigned Condition) {
   if (!CurFrame)
     return;
 
-  S.emitWinCFIBeginEpilogue();
-  if (S.isInEpilogCFI()) {
-    S.getCurrentWinEpilog()->Condition = Condition;
-  }
+  InEpilogCFI = true;
+  CurrentEpilog = S.emitCFILabel();
+  CurFrame->EpilogMap[CurrentEpilog].Condition = Condition;
 }
 
 void ARMTargetWinCOFFStreamer::emitARMWinCFIEpilogEnd() {
@@ -233,26 +235,33 @@ void ARMTargetWinCOFFStreamer::emitARMWinCFIEpilogEnd() {
   if (!CurFrame)
     return;
 
-  if (S.isInEpilogCFI()) {
-    std::vector<WinEH::Instruction> &Epilog =
-        S.getCurrentWinEpilog()->Instructions;
-
-    unsigned UnwindCode = Win64EH::UOP_End;
-    if (!Epilog.empty()) {
-      WinEH::Instruction EndInstr = Epilog.back();
-      if (EndInstr.Operation == Win64EH::UOP_Nop) {
-        UnwindCode = Win64EH::UOP_EndNop;
-        Epilog.pop_back();
-      } else if (EndInstr.Operation == Win64EH::UOP_WideNop) {
-        UnwindCode = Win64EH::UOP_WideEndNop;
-        Epilog.pop_back();
-      }
-    }
-
-    WinEH::Instruction Inst = WinEH::Instruction(UnwindCode, nullptr, -1, 0);
-    S.getCurrentWinEpilog()->Instructions.push_back(Inst);
+  if (!CurrentEpilog) {
+    S.getContext().reportError(SMLoc(), "Stray .seh_endepilogue in " +
+                                            CurFrame->Function->getName());
+    return;
   }
-  S.emitWinCFIEndEpilogue();
+
+  std::vector<WinEH::Instruction> &Epilog =
+      CurFrame->EpilogMap[CurrentEpilog].Instructions;
+
+  unsigned UnwindCode = Win64EH::UOP_End;
+  if (!Epilog.empty()) {
+    WinEH::Instruction EndInstr = Epilog.back();
+    if (EndInstr.Operation == Win64EH::UOP_Nop) {
+      UnwindCode = Win64EH::UOP_EndNop;
+      Epilog.pop_back();
+    } else if (EndInstr.Operation == Win64EH::UOP_WideNop) {
+      UnwindCode = Win64EH::UOP_WideEndNop;
+      Epilog.pop_back();
+    }
+  }
+
+  InEpilogCFI = false;
+  WinEH::Instruction Inst = WinEH::Instruction(UnwindCode, nullptr, -1, 0);
+  CurFrame->EpilogMap[CurrentEpilog].Instructions.push_back(Inst);
+  MCSymbol *Label = S.emitCFILabel();
+  CurFrame->EpilogMap[CurrentEpilog].End = Label;
+  CurrentEpilog = nullptr;
 }
 
 void ARMTargetWinCOFFStreamer::emitARMWinCFICustom(unsigned Opcode) {

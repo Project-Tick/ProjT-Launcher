@@ -188,9 +188,7 @@ enum class TemplateSubstitutionKind : char {
     bool isAnyArgInstantiationDependent() const {
       for (ArgumentListLevel ListLevel : TemplateArgumentLists)
         for (const TemplateArgument &TA : ListLevel.Args)
-          // There might be null template arguments representing unused template
-          // parameter mappings in an MLTAL during concept checking.
-          if (!TA.isNull() && TA.isInstantiationDependent())
+          if (TA.isInstantiationDependent())
             return true;
       return false;
     }
@@ -207,8 +205,8 @@ enum class TemplateSubstitutionKind : char {
 
     /// Add a new outmost level to the multi-level template argument
     /// list.
-    /// A 'Final' substitution means that these Args don't need to be
-    /// resugared later.
+    /// A 'Final' substitution means that Subst* nodes won't be built
+    /// for the replacements.
     void addOuterTemplateArguments(Decl *AssociatedDecl, ArgList Args,
                                    bool Final) {
       assert(!NumRetainedOuterLevels &&
@@ -236,25 +234,21 @@ enum class TemplateSubstitutionKind : char {
     /// Replaces the current 'innermost' level with the provided argument list.
     /// This is useful for type deduction cases where we need to get the entire
     /// list from the AST, but then add the deduced innermost list.
-    void replaceInnermostTemplateArguments(Decl *AssociatedDecl, ArgList Args,
-                                           bool Final = false) {
+    void replaceInnermostTemplateArguments(Decl *AssociatedDecl, ArgList Args) {
       assert((!TemplateArgumentLists.empty() || NumRetainedOuterLevels) &&
              "Replacing in an empty list?");
 
       if (!TemplateArgumentLists.empty()) {
+        assert((TemplateArgumentLists[0].AssociatedDeclAndFinal.getPointer() ||
+                TemplateArgumentLists[0].AssociatedDeclAndFinal.getPointer() ==
+                    AssociatedDecl) &&
+               "Trying to change incorrect declaration?");
         TemplateArgumentLists[0].Args = Args;
-        return;
+      } else {
+        --NumRetainedOuterLevels;
+        TemplateArgumentLists.push_back(
+            {{AssociatedDecl, /*Final=*/false}, Args});
       }
-      --NumRetainedOuterLevels;
-      TemplateArgumentLists.push_back(
-          {{AssociatedDecl, /*Final=*/Final}, Args});
-    }
-
-    void replaceOutermostTemplateArguments(Decl *AssociatedDecl, ArgList Args) {
-      assert((!TemplateArgumentLists.empty()) && "Replacing in an empty list?");
-      TemplateArgumentLists.back().AssociatedDeclAndFinal.setPointer(
-          AssociatedDecl);
-      TemplateArgumentLists.back().Args = Args;
     }
 
     /// Add an outermost level that we are not substituting. We have no
@@ -371,7 +365,7 @@ enum class TemplateSubstitutionKind : char {
   class LocalInstantiationScope {
   public:
     /// A set of declarations.
-    using DeclArgumentPack = SmallVector<ValueDecl *, 4>;
+    using DeclArgumentPack = SmallVector<VarDecl *, 4>;
 
   private:
     /// Reference to the semantic analysis that is performing
@@ -528,12 +522,6 @@ enum class TemplateSubstitutionKind : char {
     llvm::PointerUnion<Decl *, DeclArgumentPack *> *
     findInstantiationOf(const Decl *D);
 
-    /// Similar to \p findInstantiationOf(), but it wouldn't assert if the
-    /// instantiation was not found within the current instantiation scope. This
-    /// is helpful for on-demand declaration instantiation.
-    llvm::PointerUnion<Decl *, DeclArgumentPack *> *
-    getInstantiationOfIfExists(const Decl *D);
-
     void InstantiatedLocal(const Decl *D, Decl *Inst);
     void InstantiatedLocalPackArg(const Decl *D, VarDecl *Inst);
     void MakeInstantiatedLocalArgPack(const Decl *D);
@@ -581,7 +569,7 @@ enum class TemplateSubstitutionKind : char {
     : public DeclVisitor<TemplateDeclInstantiator, Decl *>
   {
     Sema &SemaRef;
-    Sema::ArgPackSubstIndexRAII SubstIndex;
+    Sema::ArgumentPackSubstitutionIndexRAII SubstIndex;
     DeclContext *Owner;
     const MultiLevelTemplateArgumentList &TemplateArgs;
     Sema::LateInstantiatedAttrVec* LateAttrs = nullptr;
@@ -593,22 +581,22 @@ enum class TemplateSubstitutionKind : char {
     /// specializations that will need to be instantiated after the
     /// enclosing class's instantiation is complete.
     SmallVector<std::pair<ClassTemplateDecl *,
-                          ClassTemplatePartialSpecializationDecl *>,
-                1>
-        OutOfLinePartialSpecs;
+                                ClassTemplatePartialSpecializationDecl *>, 4>
+      OutOfLinePartialSpecs;
 
     /// A list of out-of-line variable template partial
     /// specializations that will need to be instantiated after the
     /// enclosing variable's instantiation is complete.
     /// FIXME: Verify that this is needed.
     SmallVector<
-        std::pair<VarTemplateDecl *, VarTemplatePartialSpecializationDecl *>, 1>
-        OutOfLineVarPartialSpecs;
+        std::pair<VarTemplateDecl *, VarTemplatePartialSpecializationDecl *>, 4>
+    OutOfLineVarPartialSpecs;
 
   public:
     TemplateDeclInstantiator(Sema &SemaRef, DeclContext *Owner,
                              const MultiLevelTemplateArgumentList &TemplateArgs)
-        : SemaRef(SemaRef), SubstIndex(SemaRef, SemaRef.ArgPackSubstIndex),
+        : SemaRef(SemaRef),
+          SubstIndex(SemaRef, SemaRef.ArgumentPackSubstitutionIndex),
           Owner(Owner), TemplateArgs(TemplateArgs) {}
 
     void setEvaluateConstraints(bool B) {
@@ -729,8 +717,9 @@ enum class TemplateSubstitutionKind : char {
     bool SubstQualifier(const TagDecl *OldDecl,
                         TagDecl *NewDecl);
 
-    VarTemplateSpecializationDecl *VisitVarTemplateSpecializationDecl(
+    Decl *VisitVarTemplateSpecializationDecl(
         VarTemplateDecl *VarTemplate, VarDecl *FromVar,
+        const TemplateArgumentListInfo &TemplateArgsInfo,
         ArrayRef<TemplateArgument> Converted,
         VarTemplateSpecializationDecl *PrevDecl = nullptr);
 

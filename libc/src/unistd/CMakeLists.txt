@@ -28,13 +28,6 @@ add_entrypoint_object(
 )
 
 add_entrypoint_object(
-  chown
-  ALIAS
-  DEPENDS
-    .${LIBC_TARGET_OS}.chown
-)
-
-add_entrypoint_object(
   close
   ALIAS
   DEPENDS
@@ -63,24 +56,10 @@ add_entrypoint_object(
 )
 
 add_entrypoint_object(
-  faccessat
-  ALIAS
-  DEPENDS
-    .${LIBC_TARGET_OS}.faccessat
-)
-
-add_entrypoint_object(
   fchdir
   ALIAS
   DEPENDS
     .${LIBC_TARGET_OS}.fchdir
-)
-
-add_entrypoint_object(
-  fchown
-  ALIAS
-  DEPENDS
-    .${LIBC_TARGET_OS}.fchown
 )
 
 add_entrypoint_object(
@@ -133,20 +112,6 @@ add_entrypoint_object(
 )
 
 add_entrypoint_object(
-  gethostname
-  ALIAS
-  DEPENDS
-    .${LIBC_TARGET_OS}.gethostname
-)
-
-add_entrypoint_object(
-  getpagesize
-  ALIAS
-  DEPENDS
-    .${LIBC_TARGET_OS}.getpagesize
-)
-
-add_entrypoint_object(
   getpid
   ALIAS
   DEPENDS
@@ -161,13 +126,6 @@ add_entrypoint_object(
 )
 
 add_entrypoint_object(
-  getsid
-  ALIAS
-  DEPENDS
-    .${LIBC_TARGET_OS}.getsid
-)
-
-add_entrypoint_object(
   geteuid
   ALIAS
   DEPENDS
@@ -179,13 +137,6 @@ add_entrypoint_object(
   ALIAS
   DEPENDS
     .${LIBC_TARGET_OS}.getuid
-)
-
-add_entrypoint_object(
-  getgid
-  ALIAS
-  DEPENDS
-    .${LIBC_TARGET_OS}.getgid
 )
 
 add_entrypoint_object(
@@ -278,13 +229,6 @@ add_entrypoint_object(
   ALIAS
   DEPENDS
     .${LIBC_TARGET_OS}.rmdir
-)
-
-add_entrypoint_object(
-  setsid
-  ALIAS
-  DEPENDS
-    .${LIBC_TARGET_OS}.setsid
 )
 
 add_entrypoint_object(

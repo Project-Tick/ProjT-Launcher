@@ -56,7 +56,7 @@ let TargetPrefix = "riscv" in {
 
   def int_riscv_cv_bitmanip_bitrev
     : DefaultAttrsIntrinsic<[llvm_i32_ty], [llvm_i32_ty, llvm_i32_ty, llvm_i32_ty],
-                            [IntrNoMem, IntrSpeculatable,
+                            [IntrNoMem, IntrWillReturn, IntrSpeculatable,
                             ImmArg<ArgIndex<1>>, ImmArg<ArgIndex<2>>]>;
 
   def int_riscv_cv_alu_clip   : ScalarCoreVAluGprGprIntrinsic;
@@ -90,8 +90,4 @@ let TargetPrefix = "riscv" in {
   def int_riscv_cv_mac_machhuRN : ScalarCoreVMacGprGprGprImmIntrinsic;
   def int_riscv_cv_mac_macsRN   : ScalarCoreVMacGprGprGprImmIntrinsic;
   def int_riscv_cv_mac_machhsRN : ScalarCoreVMacGprGprGprImmIntrinsic;
-
-  def int_riscv_cv_elw_elw
-    : Intrinsic<[llvm_i32_ty], [llvm_ptr_ty],
-                [IntrReadMem, IntrArgMemOnly, IntrHasSideEffects]>;
 } // TargetPrefix = "riscv"

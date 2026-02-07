@@ -42,9 +42,9 @@ template <class Ptr, class USE_iterator> // Predecessor Iterator
 class PredIterator {
 public:
   using iterator_category = std::forward_iterator_tag;
-  using value_type = Ptr *;
+  using value_type = Ptr;
   using difference_type = std::ptrdiff_t;
-  using pointer = Ptr **;
+  using pointer = Ptr *;
   using reference = Ptr *;
 
 protected:
@@ -54,10 +54,9 @@ protected:
   inline void advancePastNonTerminators() {
     // Loop to ignore non-terminator uses (for example BlockAddresses).
     while (!It.atEnd()) {
-      if (auto *Inst = dyn_cast<Instruction>(*It)) {
-        assert(Inst->isTerminator() && "BasicBlock used in non-terminator");
-        break;
-      }
+      if (auto *Inst = dyn_cast<Instruction>(*It))
+        if (Inst->isTerminator())
+          break;
 
       ++It;
     }
@@ -141,8 +140,7 @@ class SuccIterator
                                   std::random_access_iterator_tag, BlockT, int,
                                   BlockT *, BlockT *> {
 public:
-  using value_type = BlockT *;
-  using difference_type = std::ptrdiff_t;
+  using difference_type = int;
   using pointer = BlockT *;
   using reference = BlockT *;
 

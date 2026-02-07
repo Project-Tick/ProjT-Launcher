@@ -1,5 +1,9 @@
-from clang.cindex import TLSKind
+import os
 
+from clang.cindex import Config, TLSKind
+
+if "CLANG_LIBRARY_PATH" in os.environ:
+    Config.set_library_path(os.environ["CLANG_LIBRARY_PATH"])
 
 import unittest
 

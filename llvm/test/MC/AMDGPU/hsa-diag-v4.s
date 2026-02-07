@@ -1,10 +1,9 @@
-// RUN: not llvm-mc --amdhsa-code-object-version=4 -triple amdgcn-amd-amdhsa -mcpu=gfx810 -mattr=+xnack %s -filetype=null 2>&1 | FileCheck %s -DMCPU=gfx810 --check-prefixes=ALL,GCN,GFX8,PREGFX10,NOWGP,AMDHSA
-// RUN: not llvm-mc --amdhsa-code-object-version=4 -triple amdgcn-amd-amdhsa -mcpu=gfx1010 -mattr=+xnack %s -filetype=null 2>&1 | FileCheck %s --check-prefixes=ALL,GCN,GFX10PLUS,GFX10,AMDHSA
-// RUN: not llvm-mc --amdhsa-code-object-version=4 -triple amdgcn-amd-amdhsa -mcpu=gfx1100 %s -filetype=null 2>&1 | FileCheck %s --check-prefixes=ALL,GCN,GFX10PLUS,GFX11,AMDHSA
-// RUN: not llvm-mc --amdhsa-code-object-version=4 -triple amdgcn-amd-amdhsa -mcpu=gfx1200 %s -filetype=null 2>&1 | FileCheck %s -DMCPU=gfx1200 --check-prefixes=ALL,GCN,GFX10PLUS,GFX12,AMDHSA
-// RUN: not llvm-mc --amdhsa-code-object-version=4 -triple amdgcn-amd- -mcpu=gfx810 -mattr=+xnack %s -filetype=null 2>&1 | FileCheck %s --check-prefixes=ALL,GCN,NONAMDHSA
-// RUN: not llvm-mc --amdhsa-code-object-version=4 -triple amdgcn-amd-amdhsa -mcpu=gfx90a -mattr=+xnack %s -filetype=null 2>&1 | FileCheck %s -DMCPU=gfx90a --check-prefixes=ALL,GFX90A,PREGFX10,NOWGP,AMDHSA
-// RUN: not llvm-mc --amdhsa-code-object-version=4 -triple amdgcn-amd-amdhsa -mcpu=gfx1250 %s -filetype=null 2>&1 | FileCheck %s -DMCPU=gfx1250 --check-prefixes=ALL,GCN,GFX10PLUS,GFX12,NOWGP,AMDHSA
+// RUN: not llvm-mc --amdhsa-code-object-version=4 -triple amdgcn-amd-amdhsa -mcpu=gfx810 -mattr=+xnack -show-encoding %s 2>&1 >/dev/null | FileCheck %s --check-prefixes=ALL,GCN,GFX8,PREGFX10,AMDHSA
+// RUN: not llvm-mc --amdhsa-code-object-version=4 -triple amdgcn-amd-amdhsa -mcpu=gfx1010 -mattr=+xnack -show-encoding %s 2>&1 >/dev/null | FileCheck %s --check-prefixes=ALL,GCN,GFX10PLUS,GFX10,AMDHSA
+// RUN: not llvm-mc --amdhsa-code-object-version=4 -triple amdgcn-amd-amdhsa -mcpu=gfx1100 -show-encoding %s 2>&1 >/dev/null | FileCheck %s --check-prefixes=ALL,GCN,GFX10PLUS,GFX11,AMDHSA
+// RUN: not llvm-mc --amdhsa-code-object-version=4 -triple amdgcn-amd-amdhsa -mcpu=gfx1200 -show-encoding %s 2>&1 >/dev/null | FileCheck %s --check-prefixes=ALL,GCN,GFX10PLUS,GFX12,AMDHSA
+// RUN: not llvm-mc --amdhsa-code-object-version=4 -triple amdgcn-amd- -mcpu=gfx810 -mattr=+xnack -show-encoding %s 2>&1 >/dev/null | FileCheck %s --check-prefixes=ALL,GCN,NONAMDHSA
+// RUN: not llvm-mc --amdhsa-code-object-version=4 -triple amdgcn-amd-amdhsa -mcpu=gfx90a -mattr=+xnack -show-encoding %s 2>&1 >/dev/null | FileCheck %s --check-prefixes=ALL,GFX90A,PREGFX10,AMDHSA
 
 .text
 
@@ -12,7 +11,7 @@
 // GFX8-NOT: error:
 // GFX10: error: .amdgcn_target directive's target id amdgcn-amd-amdhsa--gfx810:xnack+ does not match the specified target id amdgcn-amd-amdhsa--gfx1010:xnack+
 // GFX11: error: .amdgcn_target directive's target id amdgcn-amd-amdhsa--gfx810:xnack+ does not match the specified target id amdgcn-amd-amdhsa--gfx1100
-// GFX12: error: .amdgcn_target directive's target id amdgcn-amd-amdhsa--gfx810:xnack+ does not match the specified target id amdgcn-amd-amdhsa--[[MCPU]]
+// GFX12: error: .amdgcn_target directive's target id amdgcn-amd-amdhsa--gfx810:xnack+ does not match the specified target id amdgcn-amd-amdhsa--gfx1200
 // NONAMDHSA: error: .amdgcn_target directive's target id amdgcn-amd-amdhsa--gfx810:xnack+ does not match the specified target id amdgcn-amd-unknown--gfx810
 .warning "test_target"
 .amdgcn_target "amdgcn-amd-amdhsa--gfx810:xnack+"
@@ -177,7 +176,8 @@
 .end_amdhsa_kernel
 
 // GCN-LABEL: warning: test_amdhsa_workgroup_processor_mode
-// NOWGP: error: directive unsupported on [[MCPU]]
+// PREGFX10: error: directive requires gfx10+
+// GFX10PLUS: error: .amdhsa_next_free_vgpr directive is required
 // NONAMDHSA: error: unknown directive
 .warning "test_amdhsa_workgroup_processor_mode"
 .amdhsa_kernel test_amdhsa_workgroup_processor_mode
@@ -185,7 +185,8 @@
 .end_amdhsa_kernel
 
 // GCN-LABEL: warning: test_amdhsa_workgroup_processor_mode_invalid
-// NOWGP: error: directive unsupported on [[MCPU]]
+// PREGFX10: error: directive requires gfx10+
+// GFX10PLUS: error: value out of range
 // NONAMDHSA: error: unknown directive
 .warning "test_amdhsa_workgroup_processor_mode_invalid"
 .amdhsa_kernel test_amdhsa_workgroup_processor_mode_invalid
@@ -277,34 +278,6 @@
   .amdhsa_next_free_vgpr 273
   .amdhsa_next_free_sgpr 0
   .amdhsa_shared_vgpr_count 15
-.end_amdhsa_kernel
-
-// GCN-LABEL: warning: test_amdhsa_inst_pref_size_invalid
-// PREGFX10: error: directive requires gfx11+
-// NONAMDHSA: error: unknown directive
-.warning "test_amdhsa_inst_pref_size_invalid"
-.amdhsa_kernel test_amdhsa_inst_pref_size_invalid
-  .amdhsa_next_free_vgpr 273
-  .amdhsa_next_free_sgpr 0
-  .amdhsa_inst_pref_size 15
-.end_amdhsa_kernel
-
-// GCN-LABEL: warning: test_amdhsa_dx10_clamp_bit
-// GFX12: error: directive unsupported on gfx12+
-.warning "test_amdhsa_dx10_clamp_bit"
-.amdhsa_kernel test_amdhsa_dx10_clamp_bit
-  .amdhsa_next_free_vgpr 32
-  .amdhsa_next_free_sgpr 0
-  .amdhsa_dx10_clamp 1
-.end_amdhsa_kernel
-
-// GCN-LABEL: warning: test_amdhsa_ieee_mode_bit
-// GFX12: error: directive unsupported on gfx12+
-.warning "test_amdhsa_ieee_mode_bit"
-.amdhsa_kernel test_amdhsa_ieee_mode_bit
-  .amdhsa_next_free_vgpr 32
-  .amdhsa_next_free_sgpr 0
-  .amdhsa_ieee_mode 1
 .end_amdhsa_kernel
 
 // GCN-LABEL: warning: test_next_free_vgpr_invalid

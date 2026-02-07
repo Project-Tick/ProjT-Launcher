@@ -17,7 +17,6 @@
 #include "llvm/Support/Errno.h"
 
 #include <climits>
-#include <fcntl.h>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -123,14 +122,8 @@ struct ForkLaunchInfo {
         ExitWithError(error_fd, "close");
       break;
     case FileAction::eFileActionDuplicate:
-      if (action.fd != action.arg) {
-        if (dup2(action.fd, action.arg) == -1)
-          ExitWithError(error_fd, "dup2");
-      } else {
-        if (fcntl(action.fd, F_SETFD,
-                  fcntl(action.fd, F_GETFD) & ~FD_CLOEXEC) == -1)
-          ExitWithError(error_fd, "fcntl");
-      }
+      if (dup2(action.fd, action.arg) == -1)
+        ExitWithError(error_fd, "dup2");
       break;
     case FileAction::eFileActionOpen:
       DupDescriptor(error_fd, action.path.c_str(), action.fd, action.arg);
@@ -229,8 +222,8 @@ struct ForkLaunchInfo {
 // End of code running in the child process.
 
 ForkFileAction::ForkFileAction(const FileAction &act)
-    : action(act.GetAction()), fd(act.GetFD()),
-      path(act.GetFileSpec().GetPath()), arg(act.GetActionArgument()) {}
+    : action(act.GetAction()), fd(act.GetFD()), path(act.GetPath().str()),
+      arg(act.GetActionArgument()) {}
 
 static std::vector<ForkFileAction>
 MakeForkActions(const ProcessLaunchInfo &info) {
@@ -238,6 +231,16 @@ MakeForkActions(const ProcessLaunchInfo &info) {
   for (size_t i = 0; i < info.GetNumFileActions(); ++i)
     result.emplace_back(*info.GetFileActionAtIndex(i));
   return result;
+}
+
+static Environment::Envp FixupEnvironment(Environment env) {
+#ifdef __ANDROID__
+  // If there is no PATH variable specified inside the environment then set the
+  // path to /system/bin. It is required because the default path used by
+  // execve() is wrong on android.
+  env.try_emplace("PATH", "/system/bin");
+#endif
+  return env.getEnvp();
 }
 
 ForkLaunchInfo::ForkLaunchInfo(const ProcessLaunchInfo &info)
@@ -248,14 +251,16 @@ ForkLaunchInfo::ForkLaunchInfo(const ProcessLaunchInfo &info)
       wd(info.GetWorkingDirectory().GetPath()),
       executable(info.GetExecutableFile().GetPath()),
       argv(info.GetArguments().GetConstArgumentVector()),
-      envp(info.GetEnvironment().getEnvp()), actions(MakeForkActions(info)) {}
+      envp(FixupEnvironment(info.GetEnvironment())),
+      actions(MakeForkActions(info)) {}
 
 HostProcess
 ProcessLauncherPosixFork::LaunchProcess(const ProcessLaunchInfo &launch_info,
                                         Status &error) {
   // A pipe used by the child process to report errors.
   PipePosix pipe;
-  error = pipe.CreateNew();
+  const bool child_processes_inherit = false;
+  error = pipe.CreateNew(child_processes_inherit);
   if (error.Fail())
     return HostProcess();
 

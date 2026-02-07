@@ -6,10 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <__system_error/throw_system_error.h>
 #include <__thread/poll_with_backoff.h>
 #include <__thread/timed_backoff_policy.h>
-#include <__utility/pair.h>
 #include <exception>
 #include <future>
 #include <limits>
@@ -48,7 +46,7 @@ void thread::join() {
   }
 
   if (ec)
-    std::__throw_system_error(ec, "thread::join failed");
+    __throw_system_error(ec, "thread::join failed");
 }
 
 void thread::detach() {
@@ -60,7 +58,7 @@ void thread::detach() {
   }
 
   if (ec)
-    std::__throw_system_error(ec, "thread::detach failed");
+    __throw_system_error(ec, "thread::detach failed");
 }
 
 unsigned thread::hardware_concurrency() noexcept {
@@ -74,7 +72,9 @@ unsigned thread::hardware_concurrency() noexcept {
     return 0;
   return static_cast<unsigned>(result);
 #elif defined(_LIBCPP_WIN32API)
-  return static_cast<unsigned>(GetActiveProcessorCount(ALL_PROCESSOR_GROUPS));
+  SYSTEM_INFO info;
+  GetSystemInfo(&info);
+  return info.dwNumberOfProcessors;
 #else // defined(CTL_HW) && defined(HW_NCPU)
   // TODO: grovel through /proc or check cpuid on x86 and similar
   // instructions on other architectures.

@@ -8,8 +8,6 @@
 //===----------------------------------------------------------------------===//
 
 #include <__verbose_abort>
-#include <exception>
-#include "include/atomic_support.h"
 
 namespace std {
 

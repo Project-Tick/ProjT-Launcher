@@ -16,7 +16,6 @@
 #include "InputElement.h"
 #include "OutputSegment.h"
 #include "SymbolTable.h"
-#include "llvm/BinaryFormat/Wasm.h"
 #include "llvm/Support/Path.h"
 #include <optional>
 
@@ -134,14 +133,6 @@ void DylinkSection::writeBody() {
 
     sub.writeTo(os);
   }
-
-  if (!ctx.arg.rpath.empty()) {
-    SubSection sub(WASM_DYLINK_RUNTIME_PATH);
-    writeUleb128(sub.os, ctx.arg.rpath.size(), "num rpath entries");
-    for (const auto ref : ctx.arg.rpath)
-      writeStr(sub.os, ref, "rpath entry");
-    sub.writeTo(os);
-  }
 }
 
 uint32_t TypeSection::registerType(const WasmSignature &sig) {
@@ -196,9 +187,7 @@ void ImportSection::addImport(Symbol *sym) {
   StringRef module = sym->importModule.value_or(defaultModule);
   StringRef name = sym->importName.value_or(sym->getName());
   if (auto *f = dyn_cast<FunctionSymbol>(sym)) {
-    const WasmSignature *sig = f->getSignature();
-    assert(sig && "imported functions must have a signature");
-    ImportKey<WasmSignature> key(*sig, module, name);
+    ImportKey<WasmSignature> key(*(f->getSignature()), module, name);
     auto entry = importedFunctions.try_emplace(key, numImportedFunctions);
     if (entry.second) {
       importedSymbols.emplace_back(sym);
@@ -260,10 +249,6 @@ void ImportSection::writeBody() {
       import.Memory.Flags |= WASM_LIMITS_FLAG_IS_SHARED;
     if (is64)
       import.Memory.Flags |= WASM_LIMITS_FLAG_IS_64;
-    if (ctx.arg.pageSize != WasmDefaultPageSize) {
-      import.Memory.Flags |= WASM_LIMITS_FLAG_HAS_PAGE_SIZE;
-      import.Memory.PageSize = ctx.arg.pageSize;
-    }
     writeImport(os, import);
   }
 
@@ -375,14 +360,10 @@ void MemorySection::writeBody() {
     flags |= WASM_LIMITS_FLAG_IS_SHARED;
   if (ctx.arg.is64.value_or(false))
     flags |= WASM_LIMITS_FLAG_IS_64;
-  if (ctx.arg.pageSize != WasmDefaultPageSize)
-    flags |= WASM_LIMITS_FLAG_HAS_PAGE_SIZE;
   writeUleb128(os, flags, "memory limits flags");
   writeUleb128(os, numMemoryPages, "initial pages");
   if (hasMax)
     writeUleb128(os, maxMemoryPages, "max pages");
-  if (ctx.arg.pageSize != WasmDefaultPageSize)
-    writeUleb128(os, llvm::Log2_64(ctx.arg.pageSize), "page size");
 }
 
 void TagSection::writeBody() {
@@ -436,6 +417,8 @@ void GlobalSection::addInternalGOTEntry(Symbol *sym) {
 void GlobalSection::generateRelocationCode(raw_ostream &os, bool TLS) const {
   assert(!ctx.arg.extendedConst);
   bool is64 = ctx.arg.is64.value_or(false);
+  unsigned opcode_ptr_const = is64 ? WASM_OPCODE_I64_CONST
+                                   : WASM_OPCODE_I32_CONST;
   unsigned opcode_ptr_add = is64 ? WASM_OPCODE_I64_ADD
                                  : WASM_OPCODE_I32_ADD;
 
@@ -452,7 +435,8 @@ void GlobalSection::generateRelocationCode(raw_ostream &os, bool TLS) const {
         writeUleb128(os, ctx.sym.memoryBase->getGlobalIndex(), "__memory_base");
 
       // Add the virtual address of the data symbol
-      writePtrConst(os, d->getVA(), is64, "offset");
+      writeU8(os, opcode_ptr_const, "CONST");
+      writeSleb128(os, d->getVA(), "offset");
     } else if (auto *f = dyn_cast<FunctionSymbol>(sym)) {
       if (f->isStub)
         continue;
@@ -461,7 +445,8 @@ void GlobalSection::generateRelocationCode(raw_ostream &os, bool TLS) const {
       writeUleb128(os, ctx.sym.tableBase->getGlobalIndex(), "__table_base");
 
       // Add the table index to __table_base
-      writePtrConst(os, f->getTableIndex(), is64, "offset");
+      writeU8(os, opcode_ptr_const, "CONST");
+      writeSleb128(os, f->getTableIndex(), "offset");
     } else {
       assert(isa<UndefinedData>(sym) || isa<SharedData>(sym));
       continue;

@@ -31,14 +31,15 @@ using namespace CodeGen;
 uint64_t CGObjCRuntime::ComputeIvarBaseOffset(CodeGen::CodeGenModule &CGM,
                                               const ObjCInterfaceDecl *OID,
                                               const ObjCIvarDecl *Ivar) {
-  return CGM.getContext().lookupFieldBitOffset(OID, Ivar) /
+  return CGM.getContext().lookupFieldBitOffset(OID, nullptr, Ivar) /
          CGM.getContext().getCharWidth();
 }
 
 uint64_t CGObjCRuntime::ComputeIvarBaseOffset(CodeGen::CodeGenModule &CGM,
                                               const ObjCImplementationDecl *OID,
                                               const ObjCIvarDecl *Ivar) {
-  return CGM.getContext().lookupFieldBitOffset(OID->getClassInterface(), Ivar) /
+  return CGM.getContext().lookupFieldBitOffset(OID->getClassInterface(), OID,
+                                               Ivar) /
          CGM.getContext().getCharWidth();
 }
 
@@ -46,7 +47,8 @@ unsigned CGObjCRuntime::ComputeBitfieldBitOffset(
     CodeGen::CodeGenModule &CGM,
     const ObjCInterfaceDecl *ID,
     const ObjCIvarDecl *Ivar) {
-  return CGM.getContext().lookupFieldBitOffset(ID, Ivar);
+  return CGM.getContext().lookupFieldBitOffset(ID, ID->getImplementation(),
+                                               Ivar);
 }
 
 LValue CGObjCRuntime::EmitValueForIvarAtOffset(CodeGen::CodeGenFunction &CGF,
@@ -84,7 +86,7 @@ LValue CGObjCRuntime::EmitValueForIvarAtOffset(CodeGen::CodeGenFunction &CGF,
   // non-synthesized ivars but we may be called for synthesized ivars.  However,
   // a synthesized ivar can never be a bit-field, so this is safe.
   uint64_t FieldBitOffset =
-      CGF.CGM.getContext().lookupFieldBitOffset(OID, Ivar);
+      CGF.CGM.getContext().lookupFieldBitOffset(OID, nullptr, Ivar);
   uint64_t BitOffset = FieldBitOffset % CGF.CGM.getContext().getCharWidth();
   uint64_t AlignmentBits = CGF.CGM.getTarget().getCharAlign();
   uint64_t BitFieldSize = Ivar->getBitWidthValue();
@@ -220,7 +222,9 @@ void CGObjCRuntime::EmitTryCatchStmt(CodeGenFunction &CGF,
   CGBuilderTy::InsertPoint SavedIP = CGF.Builder.saveAndClearIP();
 
   // Emit the handlers.
-  for (CatchHandler &Handler : Handlers) {
+  for (unsigned I = 0, E = Handlers.size(); I != E; ++I) {
+    CatchHandler &Handler = Handlers[I];
+
     CGF.EmitBlock(Handler.Block);
 
     CodeGenFunction::LexicalScope Cleanups(CGF, Handler.Body->getSourceRange());
@@ -382,9 +386,11 @@ CGObjCRuntime::getMessageSendInfo(const ObjCMethodDecl *method,
   return MessageSendInfo(argsInfo, signatureType);
 }
 
-bool CGObjCRuntime::canMessageReceiverBeNull(
-    CodeGenFunction &CGF, const ObjCMethodDecl *method, bool isSuper,
-    const ObjCInterfaceDecl *classReceiver, llvm::Value *receiver) {
+bool CGObjCRuntime::canMessageReceiverBeNull(CodeGenFunction &CGF,
+                                             const ObjCMethodDecl *method,
+                                             bool isSuper,
+                                       const ObjCInterfaceDecl *classReceiver,
+                                             llvm::Value *receiver) {
   // Super dispatch assumes that self is non-null; even the messenger
   // doesn't have a null check internally.
   if (isSuper)
@@ -397,7 +403,8 @@ bool CGObjCRuntime::canMessageReceiverBeNull(
 
   // If we're emitting a method, and self is const (meaning just ARC, for now),
   // and the receiver is a load of self, then self is a valid object.
-  if (auto curMethod = dyn_cast_or_null<ObjCMethodDecl>(CGF.CurCodeDecl)) {
+  if (auto curMethod =
+               dyn_cast_or_null<ObjCMethodDecl>(CGF.CurCodeDecl)) {
     auto self = curMethod->getSelfDecl();
     if (self->getType().isConstQualified()) {
       if (auto LI = dyn_cast<llvm::LoadInst>(receiver->stripPointerCasts())) {
@@ -436,8 +443,8 @@ void CGObjCRuntime::destroyCalleeDestroyedArguments(CodeGenFunction &CGF,
       CGF.EmitARCRelease(RV.getScalarVal(), ARCImpreciseLifetime);
     } else {
       QualType QT = param->getType();
-      auto *RD = QT->getAsRecordDecl();
-      if (RD && RD->isParamDestroyedInCallee()) {
+      auto *RT = QT->getAs<RecordType>();
+      if (RT && RT->getDecl()->isParamDestroyedInCallee()) {
         RValue RV = I->getRValue(CGF);
         QualType::DestructionKind DtorKind = QT.isDestructedType();
         switch (DtorKind) {
@@ -463,11 +470,11 @@ clang::CodeGen::emitObjCProtocolObject(CodeGenModule &CGM,
 }
 
 std::string CGObjCRuntime::getSymbolNameForMethod(const ObjCMethodDecl *OMD,
-                                                  bool includeCategoryName,
-                                                  bool includePrefixByte) {
+                                                  bool includeCategoryName) {
   std::string buffer;
   llvm::raw_string_ostream out(buffer);
-  CGM.getCXXABI().getMangleContext().mangleObjCMethodName(
-      OMD, out, includePrefixByte, includeCategoryName);
+  CGM.getCXXABI().getMangleContext().mangleObjCMethodName(OMD, out,
+                                       /*includePrefixByte=*/true,
+                                       includeCategoryName);
   return buffer;
 }

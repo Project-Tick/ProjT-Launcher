@@ -146,23 +146,6 @@ Language Selection and Mode Options
 
    ISO C 2017 with GNU extensions
 
-  | ``c23``
-  | ``iso9899:2024``
-
-   ISO C 2023
-
-  | ``gnu23``
-
-   ISO C 2023 with GNU extensions
-
-  | ``c2y``
-
-   ISO C 202y
-
-  | ``gnu2y``
-
-   ISO C 202y with GNU extensions
-
  The default C language standard is ``gnu17``, except on PS4, where it is
  ``gnu99``.
 
@@ -279,10 +262,9 @@ Language Selection and Mode Options
 .. option:: -ffreestanding
 
  Indicate that the file should be compiled for a freestanding, not a hosted,
- environment. Note that a freestanding build still requires linking against a C
- Standard Library which supports the freestanding interfaces for the specified
- language mode and target environment. This includes functions like `memcpy`,
- `memmove`, and `memset`.
+ environment. Note that it is assumed that a freestanding environment will
+ additionally provide `memcpy`, `memmove`, `memset` and `memcmp`
+ implementations, as these are needed for efficient codegen for many programs.
 
 .. option:: -fno-builtin
 
@@ -460,11 +442,8 @@ Code Generation Options
     :option:`-Oz` Like :option:`-Os` (and thus :option:`-O2`), but reduces code
     size further.
 
-    :option:`-Og` Similar to :option:`-O1`, but with slightly reduced
-    optimization and better variable visibility. The same optimizations are run
-    as at :option:`-O1`, but the ``-fextend-variable-liveness`` flag is
-    also set, which tries to prevent optimizations from reducing the liveness of
-    user variables, improving their availability when debugging.
+    :option:`-Og` Like :option:`-O1`. In future versions, this option might
+    disable different optimizations in order to improve debuggability.
 
     :option:`-O` Equivalent to :option:`-O1`.
 
@@ -645,7 +624,7 @@ Driver Options
 
   Save internal code generation (LLVM) statistics to a file in the current
   directory (:option:`-save-stats`/"-save-stats=cwd") or the directory
-  of the output file ("-save-stats=obj").
+  of the output file ("-save-state=obj").
 
   You can also use environment variables to control the statistics reporting.
   Setting ``CC_PRINT_INTERNAL_STAT`` to ``1`` enables the feature, the report
@@ -754,19 +733,16 @@ ENVIRONMENT
 
 .. envvar:: CPATH
 
-  This environment variable specifies additional (non-system) header search
-  paths to be used to find included header files. These paths are searched after
-  paths specified with the :option:`-I\<directory\>` option, but before any
-  system header search paths. Paths are delimited by the platform dependent
-  delimiter as used in the ``PATH`` environment variable. Empty entries in the
-  delimited path list, including those at the beginning or end of the list, are
-  treated as specifying the compiler's current working directory.
+  If this environment variable is present, it is treated as a delimited list of
+  paths to be added to the default system include path list. The delimiter is
+  the platform dependent delimiter, as used in the PATH environment variable.
+
+  Empty components in the environment variable are ignored.
 
 .. envvar:: C_INCLUDE_PATH, OBJC_INCLUDE_PATH, CPLUS_INCLUDE_PATH, OBJCPLUS_INCLUDE_PATH
 
-  These environment variables specify additional system header file search
-  paths to be used when processing the corresponding language. Search paths are
-  delimited as for the :envvar:`CPATH` environment variable.
+  These environment variables specify additional paths, as for :envvar:`CPATH`, which are
+  only used when processing the appropriate language.
 
 .. envvar:: MACOSX_DEPLOYMENT_TARGET
 

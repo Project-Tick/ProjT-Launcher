@@ -8,6 +8,8 @@
 
 // UNSUPPORTED: c++03, c++11, c++14
 
+// UNSUPPORTED: availability-filesystem-missing
+
 // <fstream>
 
 // plate <class charT, class traits = char_traits<charT> >

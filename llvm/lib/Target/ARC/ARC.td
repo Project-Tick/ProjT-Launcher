@@ -24,8 +24,6 @@ include "ARCRegisterInfo.td"
 include "ARCInstrInfo.td"
 include "ARCCallingConv.td"
 
-defm : RemapAllTargetPseudoPointerOperands<GPR32>;
-
 def ARCInstrInfo : InstrInfo;
 
 class Proc<string Name, list<SubtargetFeature> Features>

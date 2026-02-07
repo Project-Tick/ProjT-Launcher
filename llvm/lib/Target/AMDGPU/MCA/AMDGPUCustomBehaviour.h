@@ -17,7 +17,6 @@
 #ifndef LLVM_LIB_TARGET_AMDGPU_MCA_AMDGPUCUSTOMBEHAVIOUR_H
 #define LLVM_LIB_TARGET_AMDGPU_MCA_AMDGPUCUSTOMBEHAVIOUR_H
 
-#include "Utils/AMDGPUBaseInfo.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/MCA/CustomBehaviour.h"
 #include "llvm/TargetParser/TargetParser.h"
@@ -26,15 +25,16 @@ namespace llvm {
 namespace mca {
 
 class AMDGPUInstrPostProcess : public InstrPostProcess {
-  void processWaitCnt(Instruction &Inst, const MCInst &MCI);
+  void processWaitCnt(std::unique_ptr<Instruction> &Inst, const MCInst &MCI);
 
 public:
   AMDGPUInstrPostProcess(const MCSubtargetInfo &STI, const MCInstrInfo &MCII)
       : InstrPostProcess(STI, MCII) {}
 
-  ~AMDGPUInstrPostProcess() override = default;
+  ~AMDGPUInstrPostProcess() = default;
 
-  void postProcessInstruction(Instruction &Inst, const MCInst &MCI) override;
+  void postProcessInstruction(std::unique_ptr<Instruction> &Inst,
+                              const MCInst &MCI) override;
 };
 
 struct WaitCntInfo {
@@ -66,7 +66,7 @@ class AMDGPUCustomBehaviour : public CustomBehaviour {
   void generateWaitCntInfo();
   /// Helper function used in generateWaitCntInfo()
   bool hasModifiersSet(const std::unique_ptr<Instruction> &Inst,
-                       AMDGPU::OpName OpName) const;
+                       unsigned OpName) const;
   /// Helper function used in generateWaitCntInfo()
   bool isGWS(uint16_t Opcode) const;
   /// Helper function used in generateWaitCntInfo()
@@ -88,7 +88,7 @@ public:
   AMDGPUCustomBehaviour(const MCSubtargetInfo &STI,
                         const mca::SourceMgr &SrcMgr, const MCInstrInfo &MCII);
 
-  ~AMDGPUCustomBehaviour() override = default;
+  ~AMDGPUCustomBehaviour() = default;
   /// This method is used to determine if an instruction
   /// should be allowed to be dispatched. The return value is
   /// how many cycles until the instruction can be dispatched.

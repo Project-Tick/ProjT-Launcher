@@ -85,7 +85,6 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/IntrinsicsWebAssembly.h"
 #include "llvm/IR/Module.h"
-#include "llvm/IR/RuntimeLibcalls.h"
 #include "llvm/InitializePasses.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
@@ -202,8 +201,10 @@ bool WasmEHPrepareImpl::prepareThrows(Function &F) {
   // delete all following instructions within the BB, and delete all the dead
   // children of the BB as well.
   for (User *U : ThrowF->users()) {
-    auto *ThrowI = dyn_cast<CallInst>(U);
-    if (!ThrowI || ThrowI->getFunction() != &F)
+    // A call to @llvm.wasm.throw() is only generated from __cxa_throw()
+    // builtin call within libcxxabi, and cannot be an InvokeInst.
+    auto *ThrowI = cast<CallInst>(U);
+    if (ThrowI->getFunction() != &F)
       continue;
     Changed = true;
     auto *BB = ThrowI->getParent();
@@ -248,7 +249,8 @@ bool WasmEHPrepareImpl::prepareEHPads(Function &F) {
   // we depend on CoalesceFeaturesAndStripAtomics to downgrade it to
   // non-thread-local ones, in which case we don't allow this object to be
   // linked with other objects using shared memory.
-  LPadContextGV = M.getOrInsertGlobal("__wasm_lpad_context", LPadContextTy);
+  LPadContextGV = cast<GlobalVariable>(
+      M.getOrInsertGlobal("__wasm_lpad_context", LPadContextTy));
   LPadContextGV->setThreadLocalMode(GlobalValue::GeneralDynamicTLSModel);
 
   LPadIndexField = LPadContextGV;
@@ -274,13 +276,8 @@ bool WasmEHPrepareImpl::prepareEHPads(Function &F) {
   // instruction selection.
   CatchF = Intrinsic::getOrInsertDeclaration(&M, Intrinsic::wasm_catch);
 
-  // FIXME: Verify this is really supported for current module.
-  StringRef UnwindCallPersonalityName =
-      RTLIB::RuntimeLibcallsInfo::getLibcallImplName(
-          RTLIB::impl__Unwind_CallPersonality);
-
   // _Unwind_CallPersonality() wrapper function, which calls the personality
-  CallPersonalityF = M.getOrInsertFunction(UnwindCallPersonalityName,
+  CallPersonalityF = M.getOrInsertFunction("_Unwind_CallPersonality",
                                            IRB.getInt32Ty(), IRB.getPtrTy());
   if (Function *F = dyn_cast<Function>(CallPersonalityF.getCallee()))
     F->setDoesNotThrow();

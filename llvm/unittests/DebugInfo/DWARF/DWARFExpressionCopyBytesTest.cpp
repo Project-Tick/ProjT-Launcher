@@ -11,7 +11,7 @@
 #include "llvm/DebugInfo/DWARF/DWARFContext.h"
 #include "llvm/DebugInfo/DWARF/DWARFDebugFrame.h"
 #include "llvm/DebugInfo/DWARF/DWARFDie.h"
-#include "llvm/DebugInfo/DWARF/LowLevel/DWARFExpression.h"
+#include "llvm/DebugInfo/DWARF/DWARFExpression.h"
 #include "llvm/MC/MCAsmBackend.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCCodeEmitter.h"
@@ -45,27 +45,25 @@ namespace {
 /// debug info from input to output binary.
 class DWARFExpressionCopyBytesTest : public ::testing::Test {
 public:
-  static constexpr char TripleName[] = "x86_64-pc-linux";
-  Triple TheTriple;
-
+  const char *TripleName = "x86_64-pc-linux";
   std::unique_ptr<MCRegisterInfo> MRI;
   std::unique_ptr<MCAsmInfo> MAI;
   std::unique_ptr<const MCSubtargetInfo> STI;
   const Target *TheTarget;
 
-  DWARFExpressionCopyBytesTest() : TheTriple(TripleName) {
+  DWARFExpressionCopyBytesTest() {
     InitializeAllTargets();
     InitializeAllTargetMCs();
     InitializeAllAsmPrinters();
 
     std::string ErrorStr;
-    TheTarget = TargetRegistry::lookupTarget(TheTriple, ErrorStr);
+    TheTarget = TargetRegistry::lookupTarget(TripleName, ErrorStr);
     if (!TheTarget)
       return;
 
-    MRI.reset(TheTarget->createMCRegInfo(TheTriple));
-    MAI.reset(TheTarget->createMCAsmInfo(*MRI, TheTriple, MCTargetOptions()));
-    STI.reset(TheTarget->createMCSubtargetInfo(TheTriple, "", ""));
+    MRI.reset(TheTarget->createMCRegInfo(TripleName));
+    MAI.reset(TheTarget->createMCAsmInfo(*MRI, TripleName, MCTargetOptions()));
+    STI.reset(TheTarget->createMCSubtargetInfo(TripleName, "", ""));
   }
 
   struct StreamerContext {

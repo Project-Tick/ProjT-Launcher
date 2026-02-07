@@ -8,7 +8,7 @@
 
 // <forward_list>
 
-// forward_list(); // constexpr since C++26
+// forward_list();
 
 #include <forward_list>
 #include <cassert>
@@ -16,35 +16,27 @@
 #include "test_macros.h"
 #include "min_allocator.h"
 
-TEST_CONSTEXPR_CXX26 bool test() {
-  {
-    typedef int T;
-    typedef std::forward_list<T> C;
-    C c;
-    assert(c.empty());
-  }
+int main(int, char**)
+{
+    {
+        typedef int T;
+        typedef std::forward_list<T> C;
+        C c;
+        assert(c.empty());
+    }
 #if TEST_STD_VER >= 11
-  {
-    typedef int T;
-    typedef std::forward_list<T, min_allocator<T>> C;
-    C c;
-    assert(c.empty());
-  }
-  {
-    typedef int T;
-    typedef std::forward_list<T> C;
-    C c = {};
-    assert(c.empty());
-  }
-#endif
-
-  return true;
-}
-
-int main(int, char**) {
-  assert(test());
-#if TEST_STD_VER >= 26
-  static_assert(test());
+    {
+        typedef int T;
+        typedef std::forward_list<T, min_allocator<T>> C;
+        C c;
+        assert(c.empty());
+    }
+    {
+        typedef int T;
+        typedef std::forward_list<T> C;
+        C c = {};
+        assert(c.empty());
+    }
 #endif
 
   return 0;

@@ -1,6 +1,4 @@
-// RUN: %clang_cc1 %s -Wmicrosoft -verify -triple x86_64-pc-win32
-// RUN: %clang_cc1 %s -Wmicrosoft -verify -triple x86_64-w64-mingw32
-// RUN: %clang_cc1 %s -Wmicrosoft -verify -triple x86_64-pc-cygwin
+// RUN: %clang_cc1 %s -Wmicrosoft -verify -fms-compatibility -triple x86_64-pc-win32
 
 // None of these should warn. stdcall is treated as equivalent to cdecl on
 // x64.

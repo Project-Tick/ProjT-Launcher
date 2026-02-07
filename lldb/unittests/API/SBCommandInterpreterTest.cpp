@@ -6,28 +6,25 @@
 //
 //===----------------------------------------------------------------------===/
 
-// Use the umbrella header for -Wdocumentation.
-#include "lldb/API/LLDB.h"
-
-#include "TestingSupport/SubsystemRAII.h"
-#include "lldb/API/SBDebugger.h"
 #include "gtest/gtest.h"
+
+#include "lldb/API/SBCommandInterpreter.h"
+#include "lldb/API/SBCommandReturnObject.h"
+#include "lldb/API/SBDebugger.h"
+
 #include <cstring>
 #include <string>
 
 using namespace lldb;
-using namespace lldb_private;
 
 class SBCommandInterpreterTest : public testing::Test {
 protected:
   void SetUp() override {
-    debugger = SBDebugger::Create(/*source_init_files=*/false);
+    SBDebugger::Initialize();
+    m_dbg = SBDebugger::Create(/*source_init_files=*/false);
   }
 
-  void TearDown() override { SBDebugger::Destroy(debugger); }
-
-  SubsystemRAII<lldb::SBDebugger> subsystems;
-  SBDebugger debugger;
+  SBDebugger m_dbg;
 };
 
 class DummyCommand : public SBCommandPluginInterface {
@@ -48,7 +45,7 @@ private:
 TEST_F(SBCommandInterpreterTest, SingleWordCommand) {
   // We first test a command without autorepeat
   DummyCommand dummy("It worked");
-  SBCommandInterpreter interp = debugger.GetCommandInterpreter();
+  SBCommandInterpreter interp = m_dbg.GetCommandInterpreter();
   interp.AddCommand("dummy", &dummy, /*help=*/nullptr);
   {
     SBCommandReturnObject result;
@@ -60,7 +57,7 @@ TEST_F(SBCommandInterpreterTest, SingleWordCommand) {
     SBCommandReturnObject result;
     interp.HandleCommand("", result);
     EXPECT_FALSE(result.Succeeded());
-    EXPECT_STREQ(result.GetError(), "error: no auto repeat\n");
+    EXPECT_STREQ(result.GetError(), "error: No auto repeat.\n");
   }
 
   // Now we test a command with autorepeat
@@ -82,7 +79,7 @@ TEST_F(SBCommandInterpreterTest, SingleWordCommand) {
 }
 
 TEST_F(SBCommandInterpreterTest, MultiWordCommand) {
-  SBCommandInterpreter interp = debugger.GetCommandInterpreter();
+  SBCommandInterpreter interp = m_dbg.GetCommandInterpreter();
   auto command = interp.AddMultiwordCommand("multicommand", /*help=*/nullptr);
   // We first test a subcommand without autorepeat
   DummyCommand subcommand("It worked again");
@@ -98,7 +95,7 @@ TEST_F(SBCommandInterpreterTest, MultiWordCommand) {
     SBCommandReturnObject result;
     interp.HandleCommand("", result);
     EXPECT_FALSE(result.Succeeded());
-    EXPECT_STREQ(result.GetError(), "error: no auto repeat\n");
+    EXPECT_STREQ(result.GetError(), "error: No auto repeat.\n");
   }
 
   // We first test a subcommand with autorepeat

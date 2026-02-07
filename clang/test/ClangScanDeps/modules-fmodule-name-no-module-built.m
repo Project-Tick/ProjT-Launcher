@@ -46,8 +46,7 @@
 // CHECK:            "file-deps": [
 // CHECK-NEXT:         "[[PREFIX]]/modules-fmodule-name-no-module-built.m",
 // CHECK-NEXT:         "[[PREFIX]]/Inputs/header3.h",
-// CHECK-NEXT:         "[[PREFIX]]/Inputs/header.h",
-// CHECK-NEXT:         "[[PREFIX]]/Inputs/module.modulemap"
+// CHECK-NEXT:         "[[PREFIX]]/Inputs/header.h"
 // CHECK-NEXT:       ],
 // CHECK-NEXT:       "input-file": "[[PREFIX]]/modules-fmodule-name-no-module-built.m"
 // CHECK-NEXT:     }

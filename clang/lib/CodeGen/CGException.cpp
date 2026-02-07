@@ -12,7 +12,6 @@
 
 #include "CGCXXABI.h"
 #include "CGCleanup.h"
-#include "CGDebugInfo.h"
 #include "CGObjCRuntime.h"
 #include "CodeGenFunction.h"
 #include "ConstantEmitter.h"
@@ -131,21 +130,20 @@ const EHPersonality EHPersonality::ZOS_CPlusPlus = {"__zos_cxx_personality_v2",
                                                     nullptr};
 
 static const EHPersonality &getCPersonality(const TargetInfo &Target,
-                                            const CodeGenOptions &CGOpts) {
+                                            const LangOptions &L) {
   const llvm::Triple &T = Target.getTriple();
   if (T.isWindowsMSVCEnvironment())
     return EHPersonality::MSVC_CxxFrameHandler3;
-  if (CGOpts.hasSjLjExceptions())
+  if (L.hasSjLjExceptions())
     return EHPersonality::GNU_C_SJLJ;
-  if (CGOpts.hasDWARFExceptions())
+  if (L.hasDWARFExceptions())
     return EHPersonality::GNU_C;
-  if (CGOpts.hasSEHExceptions())
+  if (L.hasSEHExceptions())
     return EHPersonality::GNU_C_SEH;
   return EHPersonality::GNU_C;
 }
 
 static const EHPersonality &getObjCPersonality(const TargetInfo &Target,
-                                               const CodeGenOptions &CGOpts,
                                                const LangOptions &L) {
   const llvm::Triple &T = Target.getTriple();
   if (T.isWindowsMSVCEnvironment())
@@ -153,7 +151,7 @@ static const EHPersonality &getObjCPersonality(const TargetInfo &Target,
 
   switch (L.ObjCRuntime.getKind()) {
   case ObjCRuntime::FragileMacOSX:
-    return getCPersonality(Target, CGOpts);
+    return getCPersonality(Target, L);
   case ObjCRuntime::MacOSX:
   case ObjCRuntime::iOS:
   case ObjCRuntime::WatchOS:
@@ -166,9 +164,9 @@ static const EHPersonality &getObjCPersonality(const TargetInfo &Target,
     [[fallthrough]];
   case ObjCRuntime::GCC:
   case ObjCRuntime::ObjFW:
-    if (CGOpts.hasSjLjExceptions())
+    if (L.hasSjLjExceptions())
       return EHPersonality::GNU_ObjC_SJLJ;
-    if (CGOpts.hasSEHExceptions())
+    if (L.hasSEHExceptions())
       return EHPersonality::GNU_ObjC_SEH;
     return EHPersonality::GNU_ObjC;
   }
@@ -176,19 +174,19 @@ static const EHPersonality &getObjCPersonality(const TargetInfo &Target,
 }
 
 static const EHPersonality &getCXXPersonality(const TargetInfo &Target,
-                                              const CodeGenOptions &CGOpts) {
+                                              const LangOptions &L) {
   const llvm::Triple &T = Target.getTriple();
   if (T.isWindowsMSVCEnvironment())
     return EHPersonality::MSVC_CxxFrameHandler3;
   if (T.isOSAIX())
     return EHPersonality::XL_CPlusPlus;
-  if (CGOpts.hasSjLjExceptions())
+  if (L.hasSjLjExceptions())
     return EHPersonality::GNU_CPlusPlus_SJLJ;
-  if (CGOpts.hasDWARFExceptions())
+  if (L.hasDWARFExceptions())
     return EHPersonality::GNU_CPlusPlus;
-  if (CGOpts.hasSEHExceptions())
+  if (L.hasSEHExceptions())
     return EHPersonality::GNU_CPlusPlus_SEH;
-  if (CGOpts.hasWasmExceptions())
+  if (L.hasWasmExceptions())
     return EHPersonality::GNU_Wasm_CPlusPlus;
   if (T.isOSzOS())
     return EHPersonality::ZOS_CPlusPlus;
@@ -198,7 +196,6 @@ static const EHPersonality &getCXXPersonality(const TargetInfo &Target,
 /// Determines the personality function to use when both C++
 /// and Objective-C exceptions are being caught.
 static const EHPersonality &getObjCXXPersonality(const TargetInfo &Target,
-                                                 const CodeGenOptions &CGOpts,
                                                  const LangOptions &L) {
   if (Target.getTriple().isWindowsMSVCEnvironment())
     return EHPersonality::MSVC_CxxFrameHandler3;
@@ -207,7 +204,7 @@ static const EHPersonality &getObjCXXPersonality(const TargetInfo &Target,
   // In the fragile ABI, just use C++ exception handling and hope
   // they're not doing crazy exception mixing.
   case ObjCRuntime::FragileMacOSX:
-    return getCXXPersonality(Target, CGOpts);
+    return getCXXPersonality(Target, L);
 
   // The ObjC personality defers to the C++ personality for non-ObjC
   // handlers.  Unlike the C++ case, we use the same personality
@@ -215,7 +212,7 @@ static const EHPersonality &getObjCXXPersonality(const TargetInfo &Target,
   case ObjCRuntime::MacOSX:
   case ObjCRuntime::iOS:
   case ObjCRuntime::WatchOS:
-    return getObjCPersonality(Target, CGOpts, L);
+    return getObjCPersonality(Target, L);
 
   case ObjCRuntime::GNUstep:
     return Target.getTriple().isOSCygMing() ? EHPersonality::GNU_CPlusPlus_SEH
@@ -225,7 +222,7 @@ static const EHPersonality &getObjCXXPersonality(const TargetInfo &Target,
   // mixed EH.  Use the ObjC personality just to avoid returning null.
   case ObjCRuntime::GCC:
   case ObjCRuntime::ObjFW:
-    return getObjCPersonality(Target, CGOpts, L);
+    return getObjCPersonality(Target, L);
   }
   llvm_unreachable("bad runtime kind");
 }
@@ -239,7 +236,6 @@ static const EHPersonality &getSEHPersonalityMSVC(const llvm::Triple &T) {
 const EHPersonality &EHPersonality::get(CodeGenModule &CGM,
                                         const FunctionDecl *FD) {
   const llvm::Triple &T = CGM.getTarget().getTriple();
-  const CodeGenOptions &CGOpts = CGM.getCodeGenOpts();
   const LangOptions &L = CGM.getLangOpts();
   const TargetInfo &Target = CGM.getTarget();
 
@@ -248,10 +244,10 @@ const EHPersonality &EHPersonality::get(CodeGenModule &CGM,
     return getSEHPersonalityMSVC(T);
 
   if (L.ObjC)
-    return L.CPlusPlus ? getObjCXXPersonality(Target, CGOpts, L)
-                       : getObjCPersonality(Target, CGOpts, L);
-  return L.CPlusPlus ? getCXXPersonality(Target, CGOpts)
-                     : getCPersonality(Target, CGOpts);
+    return L.CPlusPlus ? getObjCXXPersonality(Target, L)
+                       : getObjCPersonality(Target, L);
+  return L.CPlusPlus ? getCXXPersonality(Target, L)
+                     : getCPersonality(Target, L);
 }
 
 const EHPersonality &EHPersonality::get(CodeGenFunction &CGF) {
@@ -322,9 +318,9 @@ static bool PersonalityHasOnlyCXXUses(llvm::Constant *Fn) {
     llvm::Function *F = dyn_cast<llvm::Function>(U);
     if (!F) return false;
 
-    for (llvm::BasicBlock &BB : *F) {
-      if (BB.isLandingPad())
-        if (!LandingPadHasOnlyCXXUses(BB.getLandingPadInst()))
+    for (auto BB = F->begin(), E = F->end(); BB != E; ++BB) {
+      if (BB->isLandingPad())
+        if (!LandingPadHasOnlyCXXUses(BB->getLandingPadInst()))
           return false;
     }
   }
@@ -347,7 +343,7 @@ void CodeGenModule::SimplifyPersonality() {
     return;
 
   const EHPersonality &ObjCXX = EHPersonality::get(*this, /*FD=*/nullptr);
-  const EHPersonality &CXX = getCXXPersonality(getTarget(), CodeGenOpts);
+  const EHPersonality &CXX = getCXXPersonality(getTarget(), LangOpts);
   if (&ObjCXX == &CXX)
     return;
 
@@ -450,7 +446,7 @@ void CodeGenFunction::EmitCXXThrowExpr(const CXXThrowExpr *E,
   // Therefore, we emit a trap which will abort the program, and
   // prompt a warning indicating that a trap will be emitted.
   const llvm::Triple &T = Target.getTriple();
-  if (CGM.getLangOpts().OpenMPIsTargetDevice && T.isGPU()) {
+  if (CGM.getLangOpts().OpenMPIsTargetDevice && (T.isNVPTX() || T.isAMDGCN())) {
     EmitTrapCall(llvm::Intrinsic::trap);
     return;
   }
@@ -503,7 +499,7 @@ void CodeGenFunction::EmitStartEHSpec(const Decl *D) {
     // In Wasm EH we currently treat 'throw()' in the same way as 'noexcept'. In
     // case of throw with types, we ignore it and print a warning for now.
     // TODO Correctly handle exception specification in Wasm EH
-    if (CGM.getCodeGenOpts().hasWasmExceptions()) {
+    if (CGM.getLangOpts().hasWasmExceptions()) {
       if (EST == EST_DynamicNone)
         EHStack.pushTerminate();
       else
@@ -518,8 +514,8 @@ void CodeGenFunction::EmitStartEHSpec(const Decl *D) {
     // throw with types.
     // TODO Correctly handle exception specification in Emscripten EH
     if (getTarget().getCXXABI() == TargetCXXABI::WebAssembly &&
-        CGM.getCodeGenOpts().getExceptionHandling() ==
-            CodeGenOptions::ExceptionHandlingKind::None &&
+        CGM.getLangOpts().getExceptionHandling() ==
+            LangOptions::ExceptionHandlingKind::None &&
         EST == EST_Dynamic)
       CGM.getDiags().Report(D->getLocation(),
                             diag::warn_wasm_dynamic_exception_spec_ignored)
@@ -607,7 +603,7 @@ void CodeGenFunction::EmitEndEHSpec(const Decl *D) {
     // In wasm we currently treat 'throw()' in the same way as 'noexcept'. In
     // case of throw with types, we ignore it and print a warning for now.
     // TODO Correctly handle exception specification in wasm
-    if (CGM.getCodeGenOpts().hasWasmExceptions()) {
+    if (CGM.getLangOpts().hasWasmExceptions()) {
       if (EST == EST_DynamicNone)
         EHStack.popTerminate();
       return;
@@ -627,7 +623,7 @@ void CodeGenFunction::EmitCXXTryStmt(const CXXTryStmt &S) {
   // If we encounter a try statement on in an OpenMP target region offloaded to
   // a GPU, we treat it as a basic block.
   const bool IsTargetDevice =
-      (CGM.getLangOpts().OpenMPIsTargetDevice && T.isGPU());
+      (CGM.getLangOpts().OpenMPIsTargetDevice && (T.isNVPTX() || T.isAMDGCN()));
   if (!IsTargetDevice)
     EnterCXXTryStmt(S);
   EmitStmt(S.getTryBlock());
@@ -940,8 +936,8 @@ llvm::BasicBlock *CodeGenFunction::EmitLandingPad() {
                              filterTypes[0]->getType() : Int8PtrTy,
                            filterTypes.size());
 
-    for (llvm::Value *filterType : filterTypes)
-      Filters.push_back(cast<llvm::Constant>(filterType));
+    for (unsigned i = 0, e = filterTypes.size(); i != e; ++i)
+      Filters.push_back(cast<llvm::Constant>(filterTypes[i]));
     llvm::Constant *FilterArray = llvm::ConstantArray::get(AType, Filters);
     LPadInst->addClause(FilterArray);
 
@@ -1159,8 +1155,9 @@ static void emitCatchDispatchBlock(CodeGenFunction &CGF,
     assert(typeValue && "fell into catch-all case!");
     // With opaque ptrs, only the address space can be a mismatch.
     if (typeValue->getType() != argTy)
-      typeValue = CGF.getTargetHooks().performAddrSpaceCast(CGF, typeValue,
-                                                            globAS, argTy);
+      typeValue =
+        CGF.getTargetHooks().performAddrSpaceCast(CGF, typeValue, globAS,
+                                                  LangAS::Default, argTy);
 
     // Figure out the next block.
     bool nextIsEnd;
@@ -2148,7 +2145,7 @@ llvm::Value *CodeGenFunction::EmitSEHExceptionInfo() {
   // Sema should diagnose calling this builtin outside of a filter context, but
   // don't crash if we screw up.
   if (!SEHInfo)
-    return llvm::PoisonValue::get(Int8PtrTy);
+    return llvm::UndefValue::get(Int8PtrTy);
   assert(SEHInfo->getType() == Int8PtrTy);
   return SEHInfo;
 }

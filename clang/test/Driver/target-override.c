@@ -1,4 +1,5 @@
-// REQUIRES: x86-registered-target, symlinks
+// REQUIRES: shell
+// REQUIRES: x86-registered-target
 
 // RUN: rm -rf %t && mkdir %t
 // RUN: ln -s %clang %t/i386-clang

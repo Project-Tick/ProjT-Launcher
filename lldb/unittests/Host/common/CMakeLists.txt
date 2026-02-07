@@ -1,5 +1,4 @@
 set (FILES
-  DiagnosticsRenderingTest.cpp
   ZipFileResolverTest.cpp
 )
 

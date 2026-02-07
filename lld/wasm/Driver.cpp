@@ -23,6 +23,7 @@
 #include "lld/Common/Version.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Config/llvm-config.h"
+#include "llvm/Object/Wasm.h"
 #include "llvm/Option/Arg.h"
 #include "llvm/Option/ArgList.h"
 #include "llvm/Support/CommandLine.h"
@@ -157,7 +158,7 @@ bool link(ArrayRef<const char *> args, llvm::raw_ostream &stdoutOS,
 static constexpr opt::OptTable::Info optInfo[] = {
 #define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS,         \
                VISIBILITY, PARAM, HELPTEXT, HELPTEXTSFORVARIANTS, METAVAR,     \
-               VALUES, SUBCOMMANDIDS_OFFSET)                                   \
+               VALUES)                                                         \
   {PREFIX,                                                                     \
    NAME,                                                                       \
    HELPTEXT,                                                                   \
@@ -171,8 +172,7 @@ static constexpr opt::OptTable::Info optInfo[] = {
    OPT_##GROUP,                                                                \
    OPT_##ALIAS,                                                                \
    ALIASARGS,                                                                  \
-   VALUES,                                                                     \
-   SUBCOMMANDIDS_OFFSET},
+   VALUES},
 #include "Options.inc"
 #undef OPTION
 };
@@ -318,6 +318,10 @@ void LinkerDriver::addFile(StringRef path) {
     if (inWholeArchive) {
       for (const auto &[m, offset] : members) {
         auto *object = createObjectFile(m, path, offset);
+        // Mark object as live; object members are normally not
+        // live by default but -whole-archive is designed to treat
+        // them as such.
+        object->markLive();
         files.push_back(object);
       }
 
@@ -407,8 +411,7 @@ void LinkerDriver::createFiles(opt::InputArgList &args) {
       ctx.arg.isStatic = true;
       break;
     case OPT_Bdynamic:
-      if (!ctx.arg.relocatable)
-        ctx.arg.isStatic = false;
+      ctx.arg.isStatic = false;
       break;
     case OPT_whole_archive:
       inWholeArchive = true;
@@ -543,19 +546,22 @@ static void readConfigs(opt::InputArgList &args) {
   ctx.arg.noinhibitExec = args.hasArg(OPT_noinhibit_exec);
 
   if (args.hasArg(OPT_import_memory_with_name)) {
-    auto argValue = args.getLastArgValue(OPT_import_memory_with_name);
-    if (argValue.contains(','))
-      ctx.arg.memoryImport = argValue.split(",");
-    else
-      ctx.arg.memoryImport = {defaultModule, argValue};
+    ctx.arg.memoryImport =
+        args.getLastArgValue(OPT_import_memory_with_name).split(",");
   } else if (args.hasArg(OPT_import_memory)) {
-    ctx.arg.memoryImport = {defaultModule, memoryName};
+    ctx.arg.memoryImport =
+        std::pair<llvm::StringRef, llvm::StringRef>(defaultModule, memoryName);
+  } else {
+    ctx.arg.memoryImport =
+        std::optional<std::pair<llvm::StringRef, llvm::StringRef>>();
   }
 
   if (args.hasArg(OPT_export_memory_with_name)) {
     ctx.arg.memoryExport = args.getLastArgValue(OPT_export_memory_with_name);
   } else if (args.hasArg(OPT_export_memory)) {
     ctx.arg.memoryExport = memoryName;
+  } else {
+    ctx.arg.memoryExport = std::optional<llvm::StringRef>();
   }
 
   ctx.arg.sharedMemory = args.hasArg(OPT_shared_memory);
@@ -578,7 +584,6 @@ static void readConfigs(opt::InputArgList &args) {
   ctx.arg.optimize = args::getInteger(args, OPT_O, 1);
   ctx.arg.outputFile = args.getLastArgValue(OPT_o);
   ctx.arg.relocatable = args.hasArg(OPT_relocatable);
-  ctx.arg.rpath = args::getStrings(args, OPT_rpath);
   ctx.arg.gcSections =
       args.hasFlag(OPT_gc_sections, OPT_no_gc_sections, !ctx.arg.relocatable);
   for (auto *arg : args.filtered(OPT_keep_section))
@@ -595,7 +600,7 @@ static void readConfigs(opt::InputArgList &args) {
   ctx.arg.shlibSigCheck = !args.hasArg(OPT_no_shlib_sigcheck);
   ctx.arg.stripAll = args.hasArg(OPT_strip_all);
   ctx.arg.stripDebug = args.hasArg(OPT_strip_debug);
-  ctx.arg.stackFirst = args.hasFlag(OPT_stack_first, OPT_no_stack_first, true);
+  ctx.arg.stackFirst = args.hasArg(OPT_stack_first);
   ctx.arg.trace = args.hasArg(OPT_trace);
   ctx.arg.thinLTOCacheDir = args.getLastArgValue(OPT_thinlto_cache_dir);
   ctx.arg.thinLTOCachePolicy = CHECK(
@@ -638,10 +643,7 @@ static void readConfigs(opt::InputArgList &args) {
   ctx.arg.maxMemory = args::getInteger(args, OPT_max_memory, 0);
   ctx.arg.noGrowableMemory = args.hasArg(OPT_no_growable_memory);
   ctx.arg.zStackSize =
-      args::getZOptionValue(args, OPT_z, "stack-size", WasmDefaultPageSize);
-  ctx.arg.pageSize = args::getInteger(args, OPT_page_size, WasmDefaultPageSize);
-  if (ctx.arg.pageSize != 1 && ctx.arg.pageSize != WasmDefaultPageSize)
-    error("--page_size=N must be either 1 or 65536");
+      args::getZOptionValue(args, OPT_z, "stack-size", WasmPageSize);
 
   // -Bdynamic by default if -pie or -shared is specified.
   if (ctx.arg.pie || ctx.arg.shared)
@@ -746,7 +748,8 @@ static void setConfigs() {
       error("--export-memory is incompatible with --shared");
     }
     if (!ctx.arg.memoryImport.has_value()) {
-      ctx.arg.memoryImport = {defaultModule, memoryName};
+      ctx.arg.memoryImport = std::pair<llvm::StringRef, llvm::StringRef>(
+          defaultModule, memoryName);
     }
   }
 
@@ -915,10 +918,9 @@ static InputGlobal *createGlobal(StringRef name, bool isMutable) {
   return make<InputGlobal>(wasmGlobal, nullptr);
 }
 
-static GlobalSymbol *createGlobalVariable(StringRef name, bool isMutable,
-                                          uint32_t flags = 0) {
+static GlobalSymbol *createGlobalVariable(StringRef name, bool isMutable) {
   InputGlobal *g = createGlobal(name, isMutable);
-  return symtab->addSyntheticGlobal(name, flags, g);
+  return symtab->addSyntheticGlobal(name, WASM_SYMBOL_VISIBILITY_HIDDEN, g);
 }
 
 static GlobalSymbol *createOptionalGlobal(StringRef name, bool isMutable) {
@@ -968,13 +970,9 @@ static void createSyntheticSymbols() {
   }
 
   if (ctx.arg.sharedMemory) {
-    // TLS symbols are all hidden/dso-local
-    ctx.sym.tlsBase =
-        createGlobalVariable("__tls_base", true, WASM_SYMBOL_VISIBILITY_HIDDEN);
-    ctx.sym.tlsSize = createGlobalVariable("__tls_size", false,
-                                           WASM_SYMBOL_VISIBILITY_HIDDEN);
-    ctx.sym.tlsAlign = createGlobalVariable("__tls_align", false,
-                                            WASM_SYMBOL_VISIBILITY_HIDDEN);
+    ctx.sym.tlsBase = createGlobalVariable("__tls_base", true);
+    ctx.sym.tlsSize = createGlobalVariable("__tls_size", false);
+    ctx.sym.tlsAlign = createGlobalVariable("__tls_align", false);
     ctx.sym.initTLS = symtab->addSyntheticFunction(
         "__wasm_init_tls", WASM_SYMBOL_VISIBILITY_HIDDEN,
         make<SyntheticFunction>(is64 ? i64ArgSignature : i32ArgSignature,
@@ -1000,10 +998,6 @@ static void createOptionalSymbols() {
     ctx.sym.definedMemoryBase = symtab->addOptionalDataSymbol("__memory_base");
     ctx.sym.definedTableBase = symtab->addOptionalDataSymbol("__table_base");
   }
-
-  ctx.sym.firstPageEnd = symtab->addOptionalDataSymbol("__wasm_first_page_end");
-  if (ctx.sym.firstPageEnd)
-    ctx.sym.firstPageEnd->setVA(ctx.arg.pageSize);
 
   // For non-shared memory programs we still need to define __tls_base since we
   // allow object files built with TLS to be linked into single threaded
@@ -1105,7 +1099,7 @@ static void processStubLibraries() {
       // the names of the stub imports
       for (auto [name, deps]: stub_file->symbolDependencies) {
         auto* sym = symtab->find(name);
-        if (sym && sym->isUndefined() && sym->isUsedInRegularObj) {
+        if (sym && sym->isUndefined()) {
           depsAdded |= addStubSymbolDeps(stub_file, sym, deps);
         } else {
           if (sym && sym->traced)
@@ -1173,10 +1167,9 @@ struct WrappedSymbol {
   Symbol *wrap;
 };
 
-static Symbol *addUndefined(StringRef name,
-                            const WasmSignature *signature = nullptr) {
+static Symbol *addUndefined(StringRef name) {
   return symtab->addUndefinedFunction(name, std::nullopt, std::nullopt,
-                                      WASM_SYMBOL_UNDEFINED, nullptr, signature,
+                                      WASM_SYMBOL_UNDEFINED, nullptr, nullptr,
                                       false);
 }
 
@@ -1199,8 +1192,7 @@ static std::vector<WrappedSymbol> addWrappedSymbols(opt::InputArgList &args) {
       continue;
 
     Symbol *real = addUndefined(saver().save("__real_" + name));
-    Symbol *wrap =
-        addUndefined(saver().save("__wrap_" + name), sym->getSignature());
+    Symbol *wrap = addUndefined(saver().save("__wrap_" + name));
     v.push_back({sym, real, wrap});
 
     // We want to tell LTO not to inline symbols to be overwritten
@@ -1231,9 +1223,9 @@ static void wrapSymbols(ArrayRef<WrappedSymbol> wrapped) {
   // Update pointers in input files.
   parallelForEach(ctx.objectFiles, [&](InputFile *file) {
     MutableArrayRef<Symbol *> syms = file->getMutableSymbols();
-    for (Symbol *&sym : syms)
-      if (Symbol *s = map.lookup(sym))
-        sym = s;
+    for (size_t i = 0, e = syms.size(); i != e; ++i)
+      if (Symbol *s = map.lookup(syms[i]))
+        syms[i] = s;
   });
 
   // Update pointers in the symbol table.

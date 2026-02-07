@@ -93,7 +93,8 @@ BitVector VERegisterInfo::getReservedRegs(const MachineFunction &MF) const {
 }
 
 const TargetRegisterClass *
-VERegisterInfo::getPointerRegClass(unsigned Kind) const {
+VERegisterInfo::getPointerRegClass(const MachineFunction &MF,
+                                   unsigned Kind) const {
   return &VE::I64RegClass;
 }
 

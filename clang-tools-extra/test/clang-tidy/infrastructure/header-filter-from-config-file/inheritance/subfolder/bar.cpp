@@ -1,8 +1,6 @@
-// UNSUPPORTED: system-windows
-// RUN: pushd %S
-// RUN: cd ..
-// RUN: clang-tidy -checks=-*,google-explicit-constructor %s -- -I "." 2>&1 | FileCheck %s
-// RUN: popd
+// shell is required for the "dirname" command
+// REQUIRES: shell
+// RUN: clang-tidy -checks=-*,google-explicit-constructor %s -- -I "$(dirname %S)" 2>&1 | FileCheck %s
 #include "foo.h"
 // CHECK-NOT: foo.h:1:12: warning: single-argument constructors must be marked explicit
 

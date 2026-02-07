@@ -59,8 +59,7 @@ bool generateDsymCompanion(
     llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> VFS, const DebugMap &DM,
     MCStreamer &MS, raw_fd_ostream &OutFile,
     const std::vector<MachOUtils::DwarfRelocationApplicationInfo>
-        &RelocationsToApply,
-    bool AllowSectionHeaderOffsetOverflow);
+        &RelocationsToApply);
 
 std::string getArchName(StringRef Arch);
 } // namespace MachOUtils

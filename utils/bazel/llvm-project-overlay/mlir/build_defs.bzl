@@ -4,8 +4,6 @@
 
 """Rules and macros for MLIR"""
 
-load("@rules_cc//cc:defs.bzl", "CcInfo", "cc_library")
-
 def if_cuda_available(if_true, if_false = []):
     return select({
         # CUDA auto-detection is not yet supported.
@@ -51,20 +49,20 @@ def mlir_c_api_cc_library(
     """
     capi_header_deps = ["%sHeaders" % d for d in capi_deps]
     capi_object_deps = ["%sObjects" % d for d in capi_deps]
-    cc_library(
+    native.cc_library(
         name = name,
         srcs = srcs,
         hdrs = hdrs,
         deps = deps + capi_deps + header_deps,
         **kwargs
     )
-    cc_library(
+    native.cc_library(
         name = name + "Headers",
         hdrs = hdrs,
         deps = header_deps + capi_header_deps,
         **kwargs
     )
-    cc_library(
+    native.cc_library(
         name = name + "Objects",
         srcs = srcs,
         hdrs = hdrs,

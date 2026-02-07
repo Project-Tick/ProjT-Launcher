@@ -10,13 +10,6 @@
 # alphabetic macros. Also ensure that we don't swallow the definition of user
 # provided macros (in other words, ensure that we push/pop correctly everywhere).
 
-# This test fails with MSVC headers, with Clang 20 (and early 21 versions);
-# the headers end up pulling in Clang intrinsics headers, which in 20.x and
-# early 21.x versions use unreserved identifiers,
-# see https://github.com/llvm/llvm-project/issues/161808.
-#
-# UNSUPPORTED: clang-20 && msvc
-
 # RUN: %{python} %s %{libcxx-dir}/utils
 # END.
 
@@ -35,6 +28,8 @@ for header in public_headers:
 //--- {header}.compile.pass.cpp
 {lit_header_restrictions.get(header, '')}
 {lit_header_undeprecations.get(header, '')}
+
+// UNSUPPORTED: FROZEN-CXX03-HEADERS-FIXME
 
 // This is required to detect the platform we're building for below.
 #include <__config>
@@ -83,7 +78,7 @@ for header in public_headers:
 
 // Test that libc++ doesn't use names that collide with FreeBSD system macros.
 // newlib and picolibc also define these macros
-#if !defined(__FreeBSD__) && !_LIBCPP_LIBC_NEWLIB
+#if !defined(__FreeBSD__) && !defined(_NEWLIB_VERSION)
 #  define __null_sentinel SYSTEM_RESERVED_NAME
 #  define __generic SYSTEM_RESERVED_NAME
 #endif
@@ -122,18 +117,13 @@ for header in public_headers:
 #endif
 
 // Newlib & picolibc use __input as a parameter name of a64l & l64a
-#if !_LIBCPP_LIBC_NEWLIB
+#ifndef _NEWLIB_VERSION
 # define __input SYSTEM_RESERVED_NAME
 #endif
 #define __output SYSTEM_RESERVED_NAME
 
 #define __acquire SYSTEM_RESERVED_NAME
 #define __release SYSTEM_RESERVED_NAME
-
-// Android and FreeBSD use this for __attribute__((__unused__))
-#if !defined(__FreeBSD__)  && !defined(__ANDROID__)
-#define __unused SYSTEM_RESERVED_NAME
-#endif
 
 // These names are not reserved, so the user can macro-define them.
 // These are intended to find improperly _Uglified template parameters.

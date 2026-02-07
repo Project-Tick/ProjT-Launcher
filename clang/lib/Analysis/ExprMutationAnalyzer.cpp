@@ -80,17 +80,6 @@ static bool canExprResolveTo(const Expr *Source, const Expr *Target) {
 
 namespace {
 
-// `ArraySubscriptExpr` can switch base and idx, e.g. `a[4]` is the same as
-// `4[a]`. When type is dependent, we conservatively assume both sides are base.
-AST_MATCHER_P(ArraySubscriptExpr, hasBaseConservative,
-              ast_matchers::internal::Matcher<Expr>, InnerMatcher) {
-  if (Node.isTypeDependent()) {
-    return InnerMatcher.matches(*Node.getLHS(), Finder, Builder) ||
-           InnerMatcher.matches(*Node.getRHS(), Finder, Builder);
-  }
-  return InnerMatcher.matches(*Node.getBase(), Finder, Builder);
-}
-
 AST_MATCHER(Type, isDependentType) { return Node.isDependentType(); }
 
 AST_MATCHER_P(LambdaExpr, hasCaptureInit, const Expr *, E) {
@@ -135,18 +124,12 @@ class ExprPointeeResolve {
     if (const auto *PE = dyn_cast<ParenExpr>(E))
       return resolveExpr(PE->getSubExpr());
 
-    if (const auto *UO = dyn_cast<UnaryOperator>(E)) {
-      if (UO->getOpcode() == UO_AddrOf)
-        return resolveExpr(UO->getSubExpr());
-    }
-
     if (const auto *ICE = dyn_cast<ImplicitCastExpr>(E)) {
       // only implicit cast needs to be treated as resolvable.
       // explicit cast will be checked in `findPointeeToNonConst`
       const CastKind kind = ICE->getCastKind();
       if (kind == CK_LValueToRValue || kind == CK_DerivedToBase ||
-          kind == CK_UncheckedDerivedToBase ||
-          (kind == CK_NoOp && (ICE->getType() == ICE->getSubExpr()->getType())))
+          kind == CK_UncheckedDerivedToBase)
         return resolveExpr(ICE->getSubExpr());
       return false;
     }
@@ -243,12 +226,10 @@ const auto isMoveOnly = [] {
 };
 
 template <class T> struct NodeID;
-template <> struct NodeID<Expr> {
-  static constexpr StringRef value = "expr";
-};
-template <> struct NodeID<Decl> {
-  static constexpr StringRef value = "decl";
-};
+template <> struct NodeID<Expr> { static constexpr StringRef value = "expr"; };
+template <> struct NodeID<Decl> { static constexpr StringRef value = "decl"; };
+constexpr StringRef NodeID<Expr>::value;
+constexpr StringRef NodeID<Decl>::value;
 
 template <class T,
           class F = const Stmt *(ExprMutationAnalyzer::Analyzer::*)(const T *)>
@@ -532,8 +513,8 @@ ExprMutationAnalyzer::Analyzer::findArrayElementMutation(const Expr *Exp) {
   // Check whether any element of an array is mutated.
   const auto SubscriptExprs = match(
       findAll(arraySubscriptExpr(
-                  anyOf(hasBaseConservative(canResolveToExpr(Exp)),
-                        hasBaseConservative(implicitCastExpr(allOf(
+                  anyOf(hasBase(canResolveToExpr(Exp)),
+                        hasBase(implicitCastExpr(allOf(
                             hasCastKind(CK_ArrayToPointerDecay),
                             hasSourceExpression(canResolveToExpr(Exp)))))))
                   .bind(NodeID<Expr>::value)),
@@ -711,8 +692,7 @@ ExprMutationAnalyzer::Analyzer::findFunctionArgMutation(const Expr *Exp) {
     // definition and see whether the param is mutated inside.
     if (const auto *RefType = ParmType->getAs<RValueReferenceType>()) {
       if (!RefType->getPointeeType().getQualifiers() &&
-          isa<TemplateTypeParmType>(
-              RefType->getPointeeType().getCanonicalType())) {
+          RefType->getPointeeType()->getAs<TemplateTypeParmType>()) {
         FunctionParmMutationAnalyzer *Analyzer =
             FunctionParmMutationAnalyzer::getFunctionParmMutationAnalyzer(
                 *Func, Context, Memorized);
@@ -736,8 +716,7 @@ ExprMutationAnalyzer::Analyzer::findPointeeValueMutation(const Expr *Exp) {
                    unaryOperator(hasOperatorName("*"),
                                  hasUnaryOperand(canResolveToExprPointee(Exp))),
                    // deref by []
-                   arraySubscriptExpr(
-                       hasBaseConservative(canResolveToExprPointee(Exp)))))
+                   arraySubscriptExpr(hasBase(canResolveToExprPointee(Exp)))))
               .bind(NodeID<Expr>::value))),
       Stm, Context);
   return findExprMutation(Matches);
@@ -753,36 +732,32 @@ ExprMutationAnalyzer::Analyzer::findPointeeMemberMutation(const Expr *Exp) {
                     Stm, Context));
   if (MemberCallExpr)
     return MemberCallExpr;
-  const auto Matches = match(
-      stmt(forEachDescendant(
-          expr(anyOf(memberExpr(
-                         hasObjectExpression(canResolveToExprPointee(Exp))),
-                     binaryOperator(hasOperatorName("->*"),
-                                    hasLHS(canResolveToExprPointee(Exp)))))
-              .bind(NodeID<Expr>::value))),
-      Stm, Context);
+  const auto Matches =
+      match(stmt(forEachDescendant(
+                memberExpr(hasObjectExpression(canResolveToExprPointee(Exp)))
+                    .bind(NodeID<Expr>::value))),
+            Stm, Context);
   return findExprMutation(Matches);
 }
 
 const Stmt *
 ExprMutationAnalyzer::Analyzer::findPointeeToNonConst(const Expr *Exp) {
-  const auto NonConstPointerOrNonConstRefOrDependentType = type(
-      anyOf(nonConstPointerType(), nonConstReferenceType(), isDependentType()));
+  const auto NonConstPointerOrDependentType =
+      type(anyOf(nonConstPointerType(), isDependentType()));
 
   // assign
   const auto InitToNonConst =
-      varDecl(hasType(NonConstPointerOrNonConstRefOrDependentType),
+      varDecl(hasType(NonConstPointerOrDependentType),
               hasInitializer(expr(canResolveToExprPointee(Exp)).bind("stmt")));
-  const auto AssignToNonConst = binaryOperation(
-      hasOperatorName("="),
-      hasLHS(expr(hasType(NonConstPointerOrNonConstRefOrDependentType))),
-      hasRHS(canResolveToExprPointee(Exp)));
+  const auto AssignToNonConst =
+      binaryOperation(hasOperatorName("="),
+                      hasLHS(expr(hasType(NonConstPointerOrDependentType))),
+                      hasRHS(canResolveToExprPointee(Exp)));
   // arguments like
   const auto ArgOfInstantiationDependent = allOf(
       hasAnyArgument(canResolveToExprPointee(Exp)), isInstantiationDependent());
-  const auto ArgOfNonConstParameter =
-      forEachArgumentWithParamType(canResolveToExprPointee(Exp),
-                                   NonConstPointerOrNonConstRefOrDependentType);
+  const auto ArgOfNonConstParameter = forEachArgumentWithParamType(
+      canResolveToExprPointee(Exp), NonConstPointerOrDependentType);
   const auto CallLikeMatcher =
       anyOf(ArgOfNonConstParameter, ArgOfInstantiationDependent);
   const auto PassAsNonConstArg =
@@ -791,24 +766,21 @@ ExprMutationAnalyzer::Analyzer::findPointeeToNonConst(const Expr *Exp) {
                  parenListExpr(has(canResolveToExprPointee(Exp))),
                  initListExpr(hasAnyInit(canResolveToExprPointee(Exp)))));
   // cast
-  const auto CastToNonConst = explicitCastExpr(
-      hasSourceExpression(canResolveToExprPointee(Exp)),
-      hasDestinationType(NonConstPointerOrNonConstRefOrDependentType));
+  const auto CastToNonConst =
+      explicitCastExpr(hasSourceExpression(canResolveToExprPointee(Exp)),
+                       hasDestinationType(NonConstPointerOrDependentType));
 
   // capture
   // FIXME: false positive if the pointee does not change in lambda
   const auto CaptureNoConst = lambdaExpr(hasCaptureInit(Exp));
 
-  const auto ReturnNoConst =
-      returnStmt(hasReturnValue(canResolveToExprPointee(Exp)));
-
-  const auto Matches = match(
-      stmt(anyOf(forEachDescendant(
-                     stmt(anyOf(AssignToNonConst, PassAsNonConstArg,
-                                CastToNonConst, CaptureNoConst, ReturnNoConst))
-                         .bind("stmt")),
-                 forEachDescendant(InitToNonConst))),
-      Stm, Context);
+  const auto Matches =
+      match(stmt(anyOf(forEachDescendant(
+                           stmt(anyOf(AssignToNonConst, PassAsNonConstArg,
+                                      CastToNonConst, CaptureNoConst))
+                               .bind("stmt")),
+                       forEachDescendant(InitToNonConst))),
+            Stm, Context);
   return selectFirst<Stmt>("stmt", Matches);
 }
 
@@ -834,15 +806,17 @@ FunctionParmMutationAnalyzer::FunctionParmMutationAnalyzer(
 
 const Stmt *
 FunctionParmMutationAnalyzer::findMutation(const ParmVarDecl *Parm) {
-  auto [Place, Inserted] = Results.try_emplace(Parm);
-  if (!Inserted)
-    return Place->second;
-
+  const auto Memoized = Results.find(Parm);
+  if (Memoized != Results.end())
+    return Memoized->second;
   // To handle call A -> call B -> call A. Assume parameters of A is not mutated
   // before analyzing parameters of A. Then when analyzing the second "call A",
   // FunctionParmMutationAnalyzer can use this memoized value to avoid infinite
   // recursion.
-  return Place->second = BodyAnalyzer.findMutation(Parm);
+  Results[Parm] = nullptr;
+  if (const Stmt *S = BodyAnalyzer.findMutation(Parm))
+    return Results[Parm] = S;
+  return Results[Parm];
 }
 
 } // namespace clang

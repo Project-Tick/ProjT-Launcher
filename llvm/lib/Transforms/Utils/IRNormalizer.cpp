@@ -23,7 +23,13 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/InstIterator.h"
+#include "llvm/IR/Module.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
+#include "llvm/PassRegistry.h"
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Transforms/Utils.h"
+#include <algorithm>
 #include <stack>
 
 #define DEBUG_TYPE "normalize"
@@ -34,13 +40,21 @@ namespace {
 /// IRNormalizer aims to transform LLVM IR into normal form.
 class IRNormalizer {
 public:
+  /// \name Normalizer flags.
+  /// @{
+  /// Preserves original order of instructions.
+  static cl::opt<bool> PreserveOrder;
+  /// Renames all instructions (including user-named).
+  static cl::opt<bool> RenameAll; // TODO: Don't rename on empty name
+  /// Folds all regular instructions (including pre-outputs).
+  static cl::opt<bool> FoldPreOutputs;
+  /// Sorts and reorders operands in commutative instructions.
+  static cl::opt<bool> ReorderOperands;
+  /// @}
+
   bool runOnFunction(Function &F);
 
-  IRNormalizer(IRNormalizerOptions Options) : Options(Options) {}
-
 private:
-  const IRNormalizerOptions Options;
-
   // Random constant for hashing, so the state isn't zero.
   const uint64_t MagicHashConstant = 0x6acaa36bef8325c5ULL;
   DenseSet<const Instruction *> NamedInstructions;
@@ -82,6 +96,19 @@ private:
 };
 } // namespace
 
+cl::opt<bool> IRNormalizer::PreserveOrder(
+    "norm-preserve-order", cl::Hidden, cl::init(false),
+    cl::desc("Preserves original instruction order"));
+cl::opt<bool> IRNormalizer::RenameAll(
+    "norm-rename-all", cl::Hidden, cl::init(true),
+    cl::desc("Renames all instructions (including user-named)"));
+cl::opt<bool> IRNormalizer::FoldPreOutputs(
+    "norm-fold-all", cl::Hidden, cl::init(true),
+    cl::desc("Folds all regular instructions (including pre-outputs)"));
+cl::opt<bool> IRNormalizer::ReorderOperands(
+    "norm-reorder-operands", cl::Hidden, cl::init(true),
+    cl::desc("Sorts and reorders operands in commutative instructions"));
+
 /// Entry method to the IRNormalizer.
 ///
 /// \param F Function to normalize.
@@ -91,7 +118,7 @@ bool IRNormalizer::runOnFunction(Function &F) {
 
   Outputs = collectOutputInstructions(F);
 
-  if (!Options.PreserveOrder)
+  if (!PreserveOrder)
     reorderInstructions(F);
 
   // TODO: Reorder basic blocks via a topological sort.
@@ -100,8 +127,8 @@ bool IRNormalizer::runOnFunction(Function &F) {
     nameInstruction(I);
 
   for (auto &I : instructions(F)) {
-    if (!Options.PreserveOrder) {
-      if (Options.ReorderOperands)
+    if (!PreserveOrder) {
+      if (ReorderOperands)
         reorderInstructionOperandsByNames(&I);
 
       if (auto *Phi = dyn_cast<PHINode>(&I))
@@ -119,7 +146,7 @@ bool IRNormalizer::runOnFunction(Function &F) {
 void IRNormalizer::nameFunctionArguments(Function &F) const {
   int ArgumentCounter = 0;
   for (auto &A : F.args()) {
-    if (Options.RenameAll || A.getName().empty()) {
+    if (RenameAll || A.getName().empty()) {
       A.setName("a" + Twine(ArgumentCounter));
       ArgumentCounter += 1;
     }
@@ -140,7 +167,7 @@ void IRNormalizer::nameBasicBlocks(Function &F) const {
       if (isOutput(&I))
         Hash = hashing::detail::hash_16_bytes(Hash, I.getOpcode());
 
-    if (Options.RenameAll || B.getName().empty()) {
+    if (RenameAll || B.getName().empty()) {
       // Name basic block. Substring hash to make diffs more readable.
       B.setName("bb" + std::to_string(Hash).substr(0, 5));
     }
@@ -192,7 +219,7 @@ void IRNormalizer::sortCommutativeOperands(Instruction *I, T &Operands) const {
 void IRNormalizer::nameAsInitialInstruction(Instruction *I) const {
   if (I->getType()->isVoidTy())
     return;
-  if (!(I->getName().empty() || Options.RenameAll))
+  if (!(I->getName().empty() || RenameAll))
     return;
   LLVM_DEBUG(dbgs() << "Naming initial instruction: " << *I << "\n");
 
@@ -332,7 +359,7 @@ void IRNormalizer::nameAsRegularInstruction(Instruction *I) {
   }
   Name.append(")");
 
-  if ((I->getName().empty() || Options.RenameAll) && !I->getType()->isVoidTy())
+  if ((I->getName().empty() || RenameAll) && !I->getType()->isVoidTy())
     I->setName(Name);
 }
 
@@ -352,7 +379,7 @@ void IRNormalizer::nameAsRegularInstruction(Instruction *I) {
 void IRNormalizer::foldInstructionName(Instruction *I) const {
   // If this flag is raised, fold all regular
   // instructions (including pre-outputs).
-  if (!Options.FoldPreOutputs) {
+  if (!FoldPreOutputs) {
     // Don't fold if one of the users is an output instruction.
     for (auto *U : I->users())
       if (auto *IU = dyn_cast<Instruction>(U))
@@ -361,7 +388,7 @@ void IRNormalizer::foldInstructionName(Instruction *I) const {
   }
 
   // Don't fold if it is an output instruction or has no op prefix.
-  if (isOutput(I) || !I->getName().starts_with("op"))
+  if (isOutput(I) || I->getName().substr(0, 2) != "op")
     return;
 
   // Instruction operands.
@@ -369,8 +396,8 @@ void IRNormalizer::foldInstructionName(Instruction *I) const {
 
   for (auto &Op : I->operands()) {
     if (const auto *I = dyn_cast<Instruction>(Op)) {
-      bool HasNormalName =
-          I->getName().starts_with("op") || I->getName().starts_with("vl");
+      bool HasNormalName = I->getName().substr(0, 2) == "op" ||
+                           I->getName().substr(0, 2) == "vl";
 
       Operands.push_back(HasNormalName ? I->getName().substr(0, 7)
                                        : I->getName());
@@ -427,7 +454,7 @@ void IRNormalizer::reorderInstructions(Function &F) const {
       // Process the remaining instructions.
       //
       // TODO: Do more a intelligent sorting of these instructions. For example,
-      // separate between dead instructinos and instructions used in another
+      // seperate between dead instructinos and instructions used in another
       // block. Use properties of the CFG the order instructions that are used
       // in another block.
       if (Visited.contains(&I))
@@ -652,7 +679,7 @@ SetVector<int> IRNormalizer::getOutputFootprint(
         // Vector for outputs which use UI.
         SetVector<int> OutputsUsingUI = getOutputFootprint(UI, Visited);
         // Insert the indexes of outputs using UI.
-        Outputs.insert_range(OutputsUsingUI);
+        Outputs.insert(OutputsUsingUI.begin(), OutputsUsingUI.end());
       }
     }
   }
@@ -663,7 +690,7 @@ SetVector<int> IRNormalizer::getOutputFootprint(
 
 PreservedAnalyses IRNormalizerPass::run(Function &F,
                                         FunctionAnalysisManager &AM) const {
-  IRNormalizer(Options).runOnFunction(F);
+  IRNormalizer{}.runOnFunction(F);
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();
   return PA;

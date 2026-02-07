@@ -11,7 +11,6 @@
 
 #include "llvm/ADT/StringSet.h"
 #include "llvm/Linker/IRMover.h"
-#include "llvm/Support/Compiler.h"
 
 namespace llvm {
 class Module;
@@ -26,29 +25,30 @@ class Linker {
 public:
   enum Flags {
     None = 0,
-    /// Have symbols from Src shadow those in the Dest.
     OverrideFromSrc = (1 << 0),
     LinkOnlyNeeded = (1 << 1),
   };
 
-  LLVM_ABI Linker(Module &M);
+  Linker(Module &M);
 
   /// Link \p Src into the composite.
+  ///
+  /// Passing OverrideSymbols as true will have symbols from Src
+  /// shadow those in the Dest.
   ///
   /// Passing InternalizeCallback will have the linker call the function with
   /// the new module and a list of global value names to be internalized by the
   /// callback.
   ///
   /// Returns true on error.
-  LLVM_ABI bool linkInModule(std::unique_ptr<Module> Src,
-                             unsigned Flags = Flags::None,
-                             std::function<void(Module &, const StringSet<> &)>
-                                 InternalizeCallback = {});
+  bool linkInModule(std::unique_ptr<Module> Src, unsigned Flags = Flags::None,
+                    std::function<void(Module &, const StringSet<> &)>
+                        InternalizeCallback = {});
 
-  LLVM_ABI static bool linkModules(
-      Module &Dest, std::unique_ptr<Module> Src, unsigned Flags = Flags::None,
-      std::function<void(Module &, const StringSet<> &)> InternalizeCallback =
-          {});
+  static bool linkModules(Module &Dest, std::unique_ptr<Module> Src,
+                          unsigned Flags = Flags::None,
+                          std::function<void(Module &, const StringSet<> &)>
+                              InternalizeCallback = {});
 };
 
 } // End llvm namespace

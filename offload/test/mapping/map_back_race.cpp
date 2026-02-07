@@ -2,9 +2,6 @@
 
 // Taken from https://github.com/llvm/llvm-project/issues/54216
 
-// FIXME: https://github.com/llvm/llvm-project/issues/161265
-// UNSUPPORTED: gpu
-
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>

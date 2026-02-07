@@ -37,10 +37,14 @@ public:
 
   unsigned size() const { return NumDecls; }
 
-  Decl *&operator[](unsigned i) { return getTrailingObjects(NumDecls)[i]; }
+  Decl*& operator[](unsigned i) {
+    assert (i < NumDecls && "Out-of-bounds access.");
+    return getTrailingObjects<Decl *>()[i];
+  }
 
   Decl* const& operator[](unsigned i) const {
-    return getTrailingObjects(NumDecls)[i];
+    assert (i < NumDecls && "Out-of-bounds access.");
+    return getTrailingObjects<Decl *>()[i];
   }
 };
 

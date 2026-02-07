@@ -13,16 +13,13 @@
 #ifndef POLLY_CODEPREPARATION_H
 #define POLLY_CODEPREPARATION_H
 
-namespace llvm {
-class DominatorTree;
-class Function;
-class LoopInfo;
-class RegionInfo;
-} // namespace llvm
+#include "llvm/IR/PassManager.h"
 
 namespace polly {
-bool runCodePreparation(llvm::Function &F, llvm::DominatorTree *DT,
-                        llvm::LoopInfo *LI, llvm::RegionInfo *RI);
+struct CodePreparationPass final : llvm::PassInfoMixin<CodePreparationPass> {
+  llvm::PreservedAnalyses run(llvm::Function &F,
+                              llvm::FunctionAnalysisManager &FAM);
+};
 } // namespace polly
 
 #endif /* POLLY_CODEPREPARATION_H */

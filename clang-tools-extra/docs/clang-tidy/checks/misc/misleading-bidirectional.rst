@@ -3,7 +3,7 @@
 misc-misleading-bidirectional
 =============================
 
-Warns about unterminated bidirectional unicode sequence, detecting potential attack
+Warn about unterminated bidirectional unicode sequence, detecting potential attack
 as described in the `Trojan Source <https://www.trojansource.codes>`_ attack.
 
 Example:

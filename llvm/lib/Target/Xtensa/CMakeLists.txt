@@ -10,7 +10,6 @@ tablegen(LLVM XtensaGenDisassemblerTables.inc -gen-disassembler)
 tablegen(LLVM XtensaGenInstrInfo.inc -gen-instr-info)
 tablegen(LLVM XtensaGenMCCodeEmitter.inc -gen-emitter)
 tablegen(LLVM XtensaGenRegisterInfo.inc -gen-register-info)
-tablegen(LLVM XtensaGenSDNodeInfo.inc -gen-sd-node-info)
 tablegen(LLVM XtensaGenSubtargetInfo.inc -gen-subtarget)
 
 add_public_tablegen_target(XtensaCommonTableGen)
@@ -23,7 +22,6 @@ add_llvm_target(XtensaCodeGen
   XtensaISelDAGToDAG.cpp
   XtensaISelLowering.cpp
   XtensaRegisterInfo.cpp
-  XtensaSelectionDAGInfo.cpp
   XtensaSubtarget.cpp
   XtensaTargetMachine.cpp
 
@@ -35,7 +33,6 @@ add_llvm_target(XtensaCodeGen
   SelectionDAG
   Support
   Target
-  TargetParser
   XtensaDesc
   XtensaInfo
 

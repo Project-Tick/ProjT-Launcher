@@ -8,17 +8,10 @@
 
 #include "hdr/math_macros.h"
 #include "src/__support/FPUtil/FPBits.h"
-#include "src/__support/macros/optimization.h"
 #include "src/math/cbrt.h"
 #include "test/UnitTest/FPMatcher.h"
 #include "test/UnitTest/Test.h"
 #include "utils/MPFRWrapper/MPFRUtils.h"
-
-#ifdef LIBC_MATH_HAS_SKIP_ACCURATE_PASS
-#define TOLERANCE 1
-#else
-#define TOLERANCE 0
-#endif // LIBC_MATH_HAS_SKIP_ACCURATE_PASS
 
 using LlvmLibcCbrtTest = LIBC_NAMESPACE::testing::FPTest<double>;
 
@@ -56,7 +49,7 @@ TEST_F(LlvmLibcCbrtTest, InDoubleRange) {
       ++tested;
 
       if (!TEST_MPFR_MATCH_ROUNDING_SILENTLY(mpfr::Operation::Cbrt, x, result,
-                                             TOLERANCE + 0.5, rounding_mode)) {
+                                             0.5, rounding_mode)) {
         ++fails;
         while (!TEST_MPFR_MATCH_ROUNDING_SILENTLY(mpfr::Operation::Cbrt, x,
                                                   result, ulp, rounding_mode)) {
@@ -105,8 +98,8 @@ TEST_F(LlvmLibcCbrtTest, SpecialValues) {
   for (double v : INPUTS) {
     double x = FPBits(v).get_val();
     ASSERT_MPFR_MATCH_ALL_ROUNDING(mpfr::Operation::Cbrt, x,
-                                   LIBC_NAMESPACE::cbrt(x), TOLERANCE + 0.5);
+                                   LIBC_NAMESPACE::cbrt(x), 0.5);
     ASSERT_MPFR_MATCH_ALL_ROUNDING(mpfr::Operation::Cbrt, -x,
-                                   LIBC_NAMESPACE::cbrt(-x), TOLERANCE + 0.5);
+                                   LIBC_NAMESPACE::cbrt(-x), 0.5);
   }
 }

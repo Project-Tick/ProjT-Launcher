@@ -40,7 +40,9 @@ struct Foo {
 struct CheckMethodPointer : CheckFunctionTraits<decltype(&Foo::func)> {};
 
 /// Test lambda references.
-[[maybe_unused]] auto lambdaFunc = [](const int &v) -> bool { return true; };
+LLVM_ATTRIBUTE_UNUSED auto lambdaFunc = [](const int &v) -> bool {
+  return true;
+};
 struct CheckLambda : CheckFunctionTraits<decltype(lambdaFunc)> {};
 
 } // end anonymous namespace

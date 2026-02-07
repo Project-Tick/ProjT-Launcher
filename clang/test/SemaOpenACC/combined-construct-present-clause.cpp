@@ -47,7 +47,8 @@ void uses(int IntParam, char *PointerParam, float ArrayParam[5], Complete Compos
 #pragma acc parallel loop present(ArrayParam[2:5])
   for(unsigned I = 0; I < 5; ++I);
 
-  // expected-error@+1{{OpenACC sub-array specified range [2:5] would be out of the range of the subscripted array size of 5}}
+  // expected-error@+2{{OpenACC sub-array specified range [2:5] would be out of the range of the subscripted array size of 5}}
+  // expected-error@+1{{OpenACC variable is not a valid variable name, sub-array, array element, member of a composite variable, or composite variable member}}
 #pragma acc parallel loop present((float*)ArrayParam[2:5])
   for(unsigned I = 0; I < 5; ++I);
   // expected-error@+1{{OpenACC variable is not a valid variable name, sub-array, array element, member of a composite variable, or composite variable member}}

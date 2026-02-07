@@ -6,11 +6,13 @@
 
 include "APIDefs.td"
 
-def ol_foo_handle_t : Handle {
+def : Handle {
+    let name = "ol_foo_handle_t";
     let desc = "Example handle type";
 }
 
-def FunctionA : Function {
+def : Function {
+    let name = "FunctionA";
     let desc = "Function A description";
     let details = [ "Function A detailed information" ];
     let params = [
@@ -32,7 +34,7 @@ def FunctionA : Function {
 
 // CHECK-VALIDATION: FunctionA_val
 // CHECK-VALIDATION: if (NULL == ParamHandle)
-// CHECK-VALIDATION-NEXT: return createOffloadError(error::ErrorCode::INVALID_NULL_HANDLE, "validation failure: NULL == ParamHandle");
+// CHECK-VALIDATION-NEXT: return OL_ERRC_INVALID_NULL_HANDLE;
 // CHECK-VALIDATION: if (NULL == ParamPointer)
-// CHECK-VALIDATION-NEXT: return createOffloadError(error::ErrorCode::INVALID_NULL_POINTER, "validation failure: NULL == ParamPointer");
+// CHECK-VALIDATION-NEXT: return OL_ERRC_INVALID_NULL_POINTER;
 // CHECK-VALIDATION-NOT: if (NULL == ParamPointerOpt)

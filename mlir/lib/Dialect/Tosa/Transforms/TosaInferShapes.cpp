@@ -18,12 +18,14 @@
 #include "mlir/Dialect/Tosa/IR/TosaOps.h"
 #include "mlir/Dialect/Tosa/Utils/ShapeUtils.h"
 #include "mlir/IR/Builders.h"
+#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/Interfaces/InferTypeOpInterface.h"
+#include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mlir {
 namespace tosa {
-#define GEN_PASS_DEF_TOSAINFERSHAPESPASS
+#define GEN_PASS_DEF_TOSAINFERSHAPES
 #include "mlir/Dialect/Tosa/Transforms/Passes.h.inc"
 } // namespace tosa
 } // namespace mlir
@@ -112,7 +114,7 @@ public:
           OpBuilder builder{value.getContext()};
           builder.setInsertionPointAfter(value.getDefiningOp());
           castValue =
-              tensor::CastOp::create(builder, value.getLoc(), oldType, value);
+              builder.create<tensor::CastOp>(value.getLoc(), oldType, value);
         }
 
         use->set(castValue);
@@ -331,7 +333,7 @@ void validateSameOperandsAndResultRankTrait(Region &region) {
 /// Pass that performs shape propagation across TOSA operations. This includes
 /// migrating to within the regions of if/while operations.
 struct TosaInferShapes
-    : public tosa::impl::TosaInferShapesPassBase<TosaInferShapes> {
+    : public tosa::impl::TosaInferShapesBase<TosaInferShapes> {
 public:
   void runOnOperation() override {
     func::FuncOp func = getOperation();
@@ -343,3 +345,7 @@ public:
   }
 };
 } // namespace
+
+std::unique_ptr<Pass> mlir::tosa::createTosaInferShapesPass() {
+  return std::make_unique<TosaInferShapes>();
+}

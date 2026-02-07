@@ -47,10 +47,8 @@ catch:
 ; CHECK: .Ltmp{{.*}}
 ; CHECK: .LBB{{.*}} # Block address taken
 ; CHECK: movaps  -16(%rbp), %xmm6
-; CHECK: .seh_startepilogue
 ; CHECK: addq    $64, %rsp
 ; CHECK: popq    %rbp
-; CHECK: .seh_endepilogue
 ; CHECK: retq
 ; CHECK: .seh_handlerdata
 ; CHECK: # %catch
@@ -65,8 +63,6 @@ catch:
 ; CHECK: .seh_endprologue
 ; CHECK: movapd  32(%rsp), %xmm6
 ; CHECK: leaq    .LBB0_1(%rip), %rax
-; CHECK: .seh_startepilogue
 ; CHECK: addq    $48, %rsp
 ; CHECK: popq    %rbp
-; CHECK: .seh_endepilogue
 ; CHECK: retq # CATCHRET

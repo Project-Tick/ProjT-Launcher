@@ -15,7 +15,6 @@
 #define LLVM_TRANSFORMS_UTILS_MEM2REG_H
 
 #include "llvm/IR/PassManager.h"
-#include "llvm/Support/Compiler.h"
 
 namespace llvm {
 
@@ -23,7 +22,7 @@ class Function;
 
 class PromotePass : public PassInfoMixin<PromotePass> {
 public:
-  LLVM_ABI PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
 };
 
 } // end namespace llvm

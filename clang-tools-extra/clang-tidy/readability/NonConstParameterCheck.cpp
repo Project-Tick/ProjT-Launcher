@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- NonConstParameterCheck.cpp - clang-tidy---------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -59,8 +59,9 @@ void NonConstParameterCheck::check(const MatchFinder::MatchResult &Result) {
       // Typically, if a parameter is const then it is fine to make the data
       // const. But sometimes the data is written even though the parameter
       // is const. Mark all data passed by address to the function.
-      for (const auto *Arg : CE->arguments())
+      for (const auto *Arg : CE->arguments()) {
         markCanNotBeConst(Arg->IgnoreParenCasts(), true);
+      }
 
       // Data passed by nonconst reference should not be made const.
       if (const FunctionDecl *FD = CE->getDirectCallee()) {
@@ -77,8 +78,9 @@ void NonConstParameterCheck::check(const MatchFinder::MatchResult &Result) {
         }
       }
     } else if (const auto *CE = dyn_cast<CXXConstructExpr>(S)) {
-      for (const auto *Arg : CE->arguments())
+      for (const auto *Arg : CE->arguments()) {
         markCanNotBeConst(Arg->IgnoreParenCasts(), true);
+      }
       // Data passed by nonconst reference should not be made const.
       unsigned ArgNr = 0U;
       if (const auto *CD = CE->getConstructor()) {
@@ -117,12 +119,13 @@ void NonConstParameterCheck::addParm(const ParmVarDecl *Parm) {
         T->getPointeeType()->isFloatingType()))
     return;
 
-  auto [It, Inserted] = Parameters.try_emplace(Parm);
-  if (!Inserted)
+  if (Parameters.find(Parm) != Parameters.end())
     return;
 
-  It->second.IsReferenced = false;
-  It->second.CanBeConst = true;
+  ParmInfo PI;
+  PI.IsReferenced = false;
+  PI.CanBeConst = true;
+  Parameters[Parm] = PI;
 }
 
 void NonConstParameterCheck::setReferenced(const DeclRefExpr *Ref) {
@@ -153,7 +156,7 @@ void NonConstParameterCheck::diagnoseNonConstParameters() {
         dyn_cast_or_null<const FunctionDecl>(Par->getParentFunctionOrMethod());
     if (!Function)
       continue;
-    const unsigned Index = Par->getFunctionScopeIndex();
+    unsigned Index = Par->getFunctionScopeIndex();
     for (FunctionDecl *FnDecl : Function->redecls()) {
       if (FnDecl->getNumParams() <= Index)
         continue;
@@ -214,9 +217,10 @@ void NonConstParameterCheck::markCanNotBeConst(const Expr *E,
   } else if (const auto *CLE = dyn_cast<CompoundLiteralExpr>(E)) {
     markCanNotBeConst(CLE->getInitializer(), true);
   } else if (const auto *Constr = dyn_cast<CXXConstructExpr>(E)) {
-    for (const auto *Arg : Constr->arguments())
+    for (const auto *Arg : Constr->arguments()) {
       if (const auto *M = dyn_cast<MaterializeTemporaryExpr>(Arg))
         markCanNotBeConst(cast<Expr>(M->getSubExpr()), CanNotBeConst);
+    }
   } else if (const auto *ILE = dyn_cast<InitListExpr>(E)) {
     for (unsigned I = 0U; I < ILE->getNumInits(); ++I)
       markCanNotBeConst(ILE->getInit(I), true);

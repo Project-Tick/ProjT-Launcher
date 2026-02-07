@@ -22,7 +22,7 @@ TEST(ScopeExitTest, Basic) {
   };
   bool Called = false;
   {
-    llvm::scope_exit g((Callable(Called)));
+    auto g = make_scope_exit(Callable(Called));
     EXPECT_FALSE(Called);
   }
   EXPECT_TRUE(Called);
@@ -32,14 +32,14 @@ TEST(ScopeExitTest, Release) {
   int Count = 0;
   auto Increment = [&] { ++Count; };
   {
-    llvm::scope_exit G(Increment);
+    auto G = make_scope_exit(Increment);
     auto H = std::move(G);
     auto I = std::move(G);
     EXPECT_EQ(0, Count);
   }
   EXPECT_EQ(1, Count);
   {
-    llvm::scope_exit G(Increment);
+    auto G = make_scope_exit(Increment);
     G.release();
   }
   EXPECT_EQ(1, Count);

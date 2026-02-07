@@ -11,7 +11,6 @@ add_flang_library(flangFrontendTool
 
   LINK_COMPONENTS
   Option
-  Plugins
   Support
 
   MLIR_LIBS
@@ -19,6 +18,5 @@ add_flang_library(flangFrontendTool
 
   CLANG_LIBS
   clangBasic
-  clangOptions
   clangDriver
 )

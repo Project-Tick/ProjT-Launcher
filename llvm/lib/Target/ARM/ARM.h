@@ -61,7 +61,6 @@ FunctionPass *createARMFixCortexA57AES1742098Pass();
 void LowerARMMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
                                   ARMAsmPrinter &AP);
 
-void initializeARMAsmPrinterPass(PassRegistry &);
 void initializeARMBlockPlacementPass(PassRegistry &);
 void initializeARMBranchTargetsPass(PassRegistry &);
 void initializeARMConstantIslandsPass(PassRegistry &);

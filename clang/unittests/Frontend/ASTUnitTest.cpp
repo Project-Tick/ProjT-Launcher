@@ -9,8 +9,6 @@
 #include <fstream>
 
 #include "clang/Basic/FileManager.h"
-#include "clang/Driver/CreateASTUnitFromArgs.h"
-#include "clang/Driver/CreateInvocationFromArgs.h"
 #include "clang/Frontend/ASTUnit.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/CompilerInvocation.h"
@@ -32,8 +30,6 @@ protected:
   int FD;
   llvm::SmallString<256> InputFileName;
   std::unique_ptr<ToolOutputFile> input_file;
-  std::shared_ptr<DiagnosticOptions> DiagOpts =
-      std::make_shared<DiagnosticOptions>();
   IntrusiveRefCntPtr<DiagnosticsEngine> Diags;
   std::shared_ptr<CompilerInvocation> CInvok;
   std::shared_ptr<PCHContainerOperations> PCHContainerOps;
@@ -47,7 +43,7 @@ protected:
     const char *Args[] = {"clang", "-xc++", InputFileName.c_str()};
 
     auto VFS = llvm::vfs::getRealFileSystem();
-    Diags = CompilerInstance::createDiagnostics(*VFS, *DiagOpts);
+    Diags = CompilerInstance::createDiagnostics(*VFS, new DiagnosticOptions());
 
     CreateInvocationOptions CIOpts;
     CIOpts.Diags = Diags;
@@ -57,13 +53,12 @@ protected:
     if (!CInvok)
       return nullptr;
 
-    auto FileMgr =
-        llvm::makeIntrusiveRefCnt<FileManager>(FileSystemOptions(), VFS);
+    FileManager *FileMgr = new FileManager(FileSystemOptions(), VFS);
     PCHContainerOps = std::make_shared<PCHContainerOperations>();
 
     return ASTUnit::LoadFromCompilerInvocation(
-        CInvok, PCHContainerOps, DiagOpts, Diags, FileMgr, false,
-        CaptureDiagsKind::None, 0, TU_Complete, false, false, isVolatile);
+        CInvok, PCHContainerOps, Diags, FileMgr, false, CaptureDiagsKind::None,
+        0, TU_Complete, false, false, isVolatile);
   }
 };
 
@@ -96,12 +91,11 @@ TEST_F(ASTUnitTest, SaveLoadPreservesLangOptionsInPrintingPolicy) {
   AST->Save(ASTFileName.str());
 
   EXPECT_TRUE(llvm::sys::fs::exists(ASTFileName));
-  HeaderSearchOptions HSOpts;
+  auto HSOpts = std::make_shared<HeaderSearchOptions>();
 
   std::unique_ptr<ASTUnit> AU = ASTUnit::LoadFromASTFile(
       ASTFileName, PCHContainerOps->getRawReader(), ASTUnit::LoadEverything,
-      llvm::vfs::getRealFileSystem(), DiagOpts, Diags, FileSystemOptions(),
-      HSOpts);
+      Diags, FileSystemOptions(), HSOpts);
 
   if (!AU)
     FAIL() << "failed to load ASTUnit";
@@ -123,7 +117,8 @@ TEST_F(ASTUnitTest, GetBufferForFileMemoryMapping) {
 }
 
 TEST_F(ASTUnitTest, ModuleTextualHeader) {
-  auto InMemoryFs = llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFs =
+      new llvm::vfs::InMemoryFileSystem();
   InMemoryFs->addFile("test.cpp", 0, llvm::MemoryBuffer::getMemBuffer(R"cpp(
       #include "Textual.h"
       void foo() {}
@@ -141,19 +136,19 @@ TEST_F(ASTUnitTest, ModuleTextualHeader) {
 
   const char *Args[] = {"clang", "test.cpp", "-fmodule-map-file=m.modulemap",
                         "-fmodule-name=M"};
-  Diags = CompilerInstance::createDiagnostics(*InMemoryFs, *DiagOpts);
+  Diags =
+      CompilerInstance::createDiagnostics(*InMemoryFs, new DiagnosticOptions());
   CreateInvocationOptions CIOpts;
   CIOpts.Diags = Diags;
   CInvok = createInvocation(Args, std::move(CIOpts));
   ASSERT_TRUE(CInvok);
 
-  auto FileMgr =
-      llvm::makeIntrusiveRefCnt<FileManager>(FileSystemOptions(), InMemoryFs);
+  FileManager *FileMgr = new FileManager(FileSystemOptions(), InMemoryFs);
   PCHContainerOps = std::make_shared<PCHContainerOperations>();
 
   auto AU = ASTUnit::LoadFromCompilerInvocation(
-      CInvok, PCHContainerOps, DiagOpts, Diags, FileMgr, false,
-      CaptureDiagsKind::None, 1, TU_Complete, false, false, false);
+      CInvok, PCHContainerOps, Diags, FileMgr, false, CaptureDiagsKind::None, 1,
+      TU_Complete, false, false, false);
   ASSERT_TRUE(AU);
   auto File = AU->getFileManager().getFileRef("Textual.h", false, false);
   ASSERT_TRUE(bool(File));
@@ -171,15 +166,15 @@ TEST_F(ASTUnitTest, LoadFromCommandLineEarlyError) {
   const char *Args[] = {"clang", "-target", "foobar", InputFileName.c_str()};
 
   auto Diags = CompilerInstance::createDiagnostics(
-      *llvm::vfs::getRealFileSystem(), *DiagOpts);
+      *llvm::vfs::getRealFileSystem(), new DiagnosticOptions());
   auto PCHContainerOps = std::make_shared<PCHContainerOperations>();
   std::unique_ptr<clang::ASTUnit> ErrUnit;
 
-  std::unique_ptr<ASTUnit> AST = CreateASTUnitFromCommandLine(
-      &Args[0], &Args[4], PCHContainerOps, DiagOpts, Diags, "", false, "",
-      false, CaptureDiagsKind::All, {}, true, 0, TU_Complete, false, false,
-      false, SkipFunctionBodiesScope::None, false, true, false, false,
-      std::nullopt, &ErrUnit, nullptr);
+  std::unique_ptr<ASTUnit> AST = ASTUnit::LoadFromCommandLine(
+      &Args[0], &Args[4], PCHContainerOps, Diags, "", false, "", false,
+      CaptureDiagsKind::All, {}, true, 0, TU_Complete, false, false, false,
+      SkipFunctionBodiesScope::None, false, true, false, false, std::nullopt,
+      &ErrUnit, nullptr);
 
   ASSERT_EQ(AST, nullptr);
   ASSERT_NE(ErrUnit, nullptr);
@@ -199,15 +194,15 @@ TEST_F(ASTUnitTest, LoadFromCommandLineWorkingDirectory) {
                         InputFileName.c_str()};
 
   auto Diags = CompilerInstance::createDiagnostics(
-      *llvm::vfs::getRealFileSystem(), *DiagOpts);
+      *llvm::vfs::getRealFileSystem(), new DiagnosticOptions());
   auto PCHContainerOps = std::make_shared<PCHContainerOperations>();
   std::unique_ptr<clang::ASTUnit> ErrUnit;
 
-  std::unique_ptr<ASTUnit> AST = CreateASTUnitFromCommandLine(
-      &Args[0], &Args[4], PCHContainerOps, DiagOpts, Diags, "", false, "",
-      false, CaptureDiagsKind::All, {}, true, 0, TU_Complete, false, false,
-      false, SkipFunctionBodiesScope::None, false, true, false, false,
-      std::nullopt, &ErrUnit, nullptr);
+  std::unique_ptr<ASTUnit> AST = ASTUnit::LoadFromCommandLine(
+      &Args[0], &Args[4], PCHContainerOps, Diags, "", false, "", false,
+      CaptureDiagsKind::All, {}, true, 0, TU_Complete, false, false, false,
+      SkipFunctionBodiesScope::None, false, true, false, false, std::nullopt,
+      &ErrUnit, nullptr);
 
   ASSERT_NE(AST, nullptr);
   ASSERT_FALSE(Diags->hasErrorOccurred());

@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- MacroToEnumCheck.cpp - clang-tidy --------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -13,6 +13,7 @@
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Lex/Preprocessor.h"
 #include "llvm/ADT/STLExtras.h"
+#include <algorithm>
 #include <cassert>
 #include <cctype>
 #include <string>
@@ -23,7 +24,7 @@ static bool hasOnlyComments(SourceLocation Loc, const LangOptions &Options,
                             StringRef Text) {
   // Use a lexer to look for tokens; if we find something other than a single
   // hash, then there were intervening tokens between macro definitions.
-  const std::string Buffer{Text};
+  std::string Buffer{Text};
   Lexer Lex(Loc, Options, Buffer.c_str(), Buffer.c_str(),
             Buffer.c_str() + Buffer.size());
   Token Tok;
@@ -47,7 +48,7 @@ static bool hasOnlyComments(SourceLocation Loc, const LangOptions &Options,
   };
 
   WhiteSpace State = WhiteSpace::Nothing;
-  for (const char C : Text) {
+  for (char C : Text) {
     switch (C) {
     case '\r':
       if (State == WhiteSpace::CR)
@@ -161,7 +162,7 @@ public:
     checkName(MacroNameTok);
   }
   void Elifdef(SourceLocation Loc, SourceRange ConditionRange,
-               SourceLocation IfLoc) override {
+      SourceLocation IfLoc) override {
     PPCallbacks::Elifdef(Loc, ConditionRange, IfLoc);
   }
   void Elifndef(SourceLocation Loc, const Token &MacroNameTok,
@@ -169,7 +170,7 @@ public:
     checkName(MacroNameTok);
   }
   void Elifndef(SourceLocation Loc, SourceRange ConditionRange,
-                SourceLocation IfLoc) override {
+      SourceLocation IfLoc) override {
     PPCallbacks::Elifndef(Loc, ConditionRange, IfLoc);
   }
   void Endif(SourceLocation Loc, SourceLocation IfLoc) override;
@@ -227,17 +228,17 @@ bool MacroToEnumCallbacks::isConsecutiveMacro(const MacroDirective *MD) const {
   if (CurrentFile->LastMacroLocation.isInvalid())
     return false;
 
-  const SourceLocation Loc = MD->getLocation();
+  SourceLocation Loc = MD->getLocation();
   if (CurrentFile->LastLine + 1 == SM.getSpellingLineNumber(Loc))
     return true;
 
-  const SourceLocation Define =
+  SourceLocation Define =
       SM.translateLineCol(SM.getFileID(Loc), SM.getSpellingLineNumber(Loc), 1);
-  const CharSourceRange BetweenMacros{
+  CharSourceRange BetweenMacros{
       SourceRange{CurrentFile->LastMacroLocation, Define}, true};
-  const CharSourceRange CharRange =
+  CharSourceRange CharRange =
       Lexer::makeFileCharRange(BetweenMacros, SM, LangOpts);
-  const StringRef BetweenText = Lexer::getSourceText(CharRange, SM, LangOpts);
+  StringRef BetweenText = Lexer::getSourceText(CharRange, SM, LangOpts);
   return hasOnlyComments(Define, LangOpts, BetweenText);
 }
 
@@ -258,7 +259,7 @@ void MacroToEnumCallbacks::conditionStart(const SourceLocation &Loc) {
 }
 
 void MacroToEnumCallbacks::checkCondition(SourceRange Range) {
-  const CharSourceRange CharRange = Lexer::makeFileCharRange(
+  CharSourceRange CharRange = Lexer::makeFileCharRange(
       CharSourceRange::getTokenRange(Range), SM, LangOpts);
   std::string Text = Lexer::getSourceText(CharRange, SM, LangOpts).str();
   Lexer Lex(CharRange.getBegin(), LangOpts, Text.data(), Text.data(),
@@ -285,17 +286,19 @@ void MacroToEnumCallbacks::checkName(const Token &MacroNameTok) {
 }
 
 void MacroToEnumCallbacks::rememberExpressionName(const Token &Tok) {
-  const std::string Id = getTokenName(Tok).str();
+  std::string Id = getTokenName(Tok).str();
   auto Pos = llvm::lower_bound(ExpressionNames, Id);
-  if (Pos == ExpressionNames.end() || *Pos != Id)
+  if (Pos == ExpressionNames.end() || *Pos != Id) {
     ExpressionNames.insert(Pos, Id);
+  }
 }
 
 void MacroToEnumCallbacks::rememberExpressionTokens(
     ArrayRef<Token> MacroTokens) {
-  for (const Token Tok : MacroTokens)
+  for (Token Tok : MacroTokens) {
     if (Tok.isAnyIdentifier())
       rememberExpressionName(Tok);
+  }
 }
 
 void MacroToEnumCallbacks::FileChanged(SourceLocation Loc,
@@ -314,16 +317,18 @@ void MacroToEnumCallbacks::FileChanged(SourceLocation Loc,
   CurrentFile = &Files.back();
 }
 
-bool MacroToEnumCallbacks::isInitializer(ArrayRef<Token> MacroTokens) {
+bool MacroToEnumCallbacks::isInitializer(ArrayRef<Token> MacroTokens)
+{
   IntegralLiteralExpressionMatcher Matcher(MacroTokens, LangOpts.C99 == 0);
-  const bool Matched = Matcher.match();
-  const bool IsC = !LangOpts.CPlusPlus;
-  if (IsC && (Matcher.largestLiteralSize() != LiteralSize::Int &&
+  bool Matched = Matcher.match();
+  bool isC = !LangOpts.CPlusPlus;
+  if (isC && (Matcher.largestLiteralSize() != LiteralSize::Int &&
               Matcher.largestLiteralSize() != LiteralSize::UnsignedInt))
     return false;
 
   return Matched;
 }
+
 
 // Any defined but rejected macro is scanned for identifiers that
 // are to be excluded as enums.
@@ -342,7 +347,7 @@ void MacroToEnumCallbacks::MacroDefined(const Token &MacroNameTok,
     return;
 
   const MacroInfo *Info = MD->getMacroInfo();
-  const ArrayRef<Token> MacroTokens = Info->tokens();
+  ArrayRef<Token> MacroTokens = Info->tokens();
   if (Info->isBuiltinMacro() || MacroTokens.empty())
     return;
   if (Info->isFunctionLike()) {
@@ -370,7 +375,7 @@ void MacroToEnumCallbacks::MacroUndefined(const Token &MacroNameTok,
     return getTokenName(Macro.Name) == getTokenName(MacroNameTok);
   };
 
-  auto *It = llvm::find_if(Enums, [MatchesToken](const MacroList &MacroList) {
+  auto It = llvm::find_if(Enums, [MatchesToken](const MacroList &MacroList) {
     return llvm::any_of(MacroList, MatchesToken);
   });
   if (It != Enums.end())
@@ -393,12 +398,16 @@ void MacroToEnumCallbacks::Endif(SourceLocation Loc, SourceLocation IfLoc) {
   --CurrentFile->ConditionScopes;
 }
 
+namespace {
+
 template <size_t N>
-static bool textEquals(const char (&Needle)[N], const char *HayStack) {
+bool textEquals(const char (&Needle)[N], const char *HayStack) {
   return StringRef{HayStack, N - 1} == Needle;
 }
 
-template <size_t N> static size_t len(const char (&)[N]) { return N - 1; }
+template <size_t N> size_t len(const char (&)[N]) { return N - 1; }
+
+} // namespace
 
 void MacroToEnumCallbacks::PragmaDirective(SourceLocation Loc,
                                            PragmaIntroducerKind Introducer) {
@@ -436,8 +445,8 @@ void MacroToEnumCallbacks::invalidateExpressionNames() {
 }
 
 void MacroToEnumCallbacks::EndOfMainFile() {
-  invalidateExpressionNames();
-  issueDiagnostics();
+    invalidateExpressionNames();
+    issueDiagnostics();
 }
 
 void MacroToEnumCallbacks::invalidateRange(SourceRange Range) {
@@ -472,26 +481,26 @@ void MacroToEnumCallbacks::fixEnumMacro(const MacroList &MacroList) const {
       MacroList.front().Directive->getMacroInfo()->getDefinitionLoc();
   Begin = SM.translateLineCol(SM.getFileID(Begin),
                               SM.getSpellingLineNumber(Begin), 1);
-  const DiagnosticBuilder Diagnostic =
+  DiagnosticBuilder Diagnostic =
       Check->diag(Begin, "replace macro with enum")
       << FixItHint::CreateInsertion(Begin, "enum {\n");
 
   for (size_t I = 0U; I < MacroList.size(); ++I) {
     const EnumMacro &Macro = MacroList[I];
-    const SourceLocation DefineEnd =
+    SourceLocation DefineEnd =
         Macro.Directive->getMacroInfo()->getDefinitionLoc();
-    const SourceLocation DefineBegin = SM.translateLineCol(
+    SourceLocation DefineBegin = SM.translateLineCol(
         SM.getFileID(DefineEnd), SM.getSpellingLineNumber(DefineEnd), 1);
     CharSourceRange DefineRange;
     DefineRange.setBegin(DefineBegin);
     DefineRange.setEnd(DefineEnd);
     Diagnostic << FixItHint::CreateRemoval(DefineRange);
 
-    const SourceLocation NameEnd = Lexer::getLocForEndOfToken(
+    SourceLocation NameEnd = Lexer::getLocForEndOfToken(
         Macro.Directive->getMacroInfo()->getDefinitionLoc(), 0, SM, LangOpts);
     Diagnostic << FixItHint::CreateInsertion(NameEnd, " =");
 
-    const SourceLocation ValueEnd = Lexer::getLocForEndOfToken(
+    SourceLocation ValueEnd = Lexer::getLocForEndOfToken(
         Macro.Directive->getMacroInfo()->getDefinitionEndLoc(), 0, SM,
         LangOpts);
     if (I < MacroList.size() - 1)
@@ -509,8 +518,7 @@ void MacroToEnumCallbacks::fixEnumMacro(const MacroList &MacroList) const {
 void MacroToEnumCheck::registerPPCallbacks(const SourceManager &SM,
                                            Preprocessor *PP,
                                            Preprocessor *ModuleExpanderPP) {
-  auto Callback =
-      std::make_unique<MacroToEnumCallbacks>(this, getLangOpts(), SM);
+  auto Callback = std::make_unique<MacroToEnumCallbacks>(this, getLangOpts(), SM);
   PPCallback = Callback.get();
   PP->addPPCallbacks(std::move(Callback));
 }
@@ -533,7 +541,7 @@ void MacroToEnumCheck::check(
     const ast_matchers::MatchFinder::MatchResult &Result) {
   auto *TLDecl = Result.Nodes.getNodeAs<Decl>("top");
   if (TLDecl == nullptr)
-    return;
+      return;
 
   SourceRange Range = TLDecl->getSourceRange();
   if (auto *TemplateFn = Result.Nodes.getNodeAs<FunctionTemplateDecl>("top")) {

@@ -8,8 +8,6 @@
 
 #include "PipSqueak.h"
 
-#include <vector>
-
 struct Global {
   std::string *Str;
   std::vector<std::string> *Vec;

@@ -10,7 +10,6 @@
 #include "QueryParser.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/IRMapping.h"
-#include "mlir/IR/Verifier.h"
 #include "mlir/Query/Matcher/MatchFinder.h"
 #include "mlir/Query/QuerySession.h"
 #include "llvm/Support/SourceMgr.h"
@@ -25,6 +24,15 @@ QueryRef parse(llvm::StringRef line, const QuerySession &qs) {
 std::vector<llvm::LineEditor::Completion>
 complete(llvm::StringRef line, size_t pos, const QuerySession &qs) {
   return QueryParser::complete(line, pos, qs);
+}
+
+static void printMatch(llvm::raw_ostream &os, QuerySession &qs, Operation *op,
+                       const std::string &binding) {
+  auto fileLoc = op->getLoc()->findInstanceOf<FileLineColLoc>();
+  auto smloc = qs.getSourceManager().FindLocForLineAndColumn(
+      qs.getBufferId(), fileLoc.getLine(), fileLoc.getColumn());
+  qs.getSourceManager().PrintMessage(os, smloc, llvm::SourceMgr::DK_Note,
+                                     "\"" + binding + "\" binds here");
 }
 
 // TODO: Extract into a helper function that can be reused outside query
@@ -46,10 +54,12 @@ static Operation *extractFunction(std::vector<Operation *> &ops,
       slice.push_back(op);
 
     // All results are returned by the extracted function.
-    llvm::append_range(outputTypes, op->getResults().getTypes());
+    outputTypes.insert(outputTypes.end(), op->getResults().getTypes().begin(),
+                       op->getResults().getTypes().end());
 
     // Track all values that need to be taken as input to function.
-    llvm::append_range(values, op->getOperands());
+    values.insert(values.end(), op->getOperands().begin(),
+                  op->getOperands().end());
   }
 
   // Create the function
@@ -68,8 +78,6 @@ static Operation *extractFunction(std::vector<Operation *> &ops,
   // Clone operations and build function body
   std::vector<Operation *> clonedOps;
   std::vector<Value> clonedVals;
-  // TODO: Handle extraction of operations with compute payloads defined via
-  // regions.
   for (Operation *slicedOp : slice) {
     Operation *clonedOp =
         clonedOps.emplace_back(builder.clone(*slicedOp, mapper));
@@ -77,16 +85,15 @@ static Operation *extractFunction(std::vector<Operation *> &ops,
                       clonedOp->result_end());
   }
   // Add return operation
-  func::ReturnOp::create(builder, loc, clonedVals);
+  builder.create<func::ReturnOp>(loc, clonedVals);
 
   // Remove unused function arguments
   size_t currentIndex = 0;
   while (currentIndex < funcOp.getNumArguments()) {
-    // Erase if possible.
     if (funcOp.getArgument(currentIndex).use_empty())
-      if (succeeded(funcOp.eraseArgument(currentIndex)))
-        continue;
-    ++currentIndex;
+      funcOp.eraseArgument(currentIndex);
+    else
+      ++currentIndex;
   }
 
   return funcOp;
@@ -120,37 +127,28 @@ LogicalResult QuitQuery::run(llvm::raw_ostream &os, QuerySession &qs) const {
 LogicalResult MatchQuery::run(llvm::raw_ostream &os, QuerySession &qs) const {
   Operation *rootOp = qs.getRootOp();
   int matchCount = 0;
-  matcher::MatchFinder finder;
-
-  StringRef functionName = matcher.getFunctionName();
-  auto matches = finder.collectMatches(rootOp, std::move(matcher));
+  std::vector<Operation *> matches =
+      matcher::MatchFinder().getMatches(rootOp, matcher);
 
   // An extract call is recognized by considering if the matcher has a name.
   // TODO: Consider making the extract more explicit.
-  if (!functionName.empty()) {
-    std::vector<Operation *> flattenedMatches =
-        finder.flattenMatchedOps(matches);
+  if (matcher.hasFunctionName()) {
+    auto functionName = matcher.getFunctionName();
     Operation *function =
-        extractFunction(flattenedMatches, rootOp->getContext(), functionName);
-    if (failed(verify(function)))
-      return mlir::failure();
+        extractFunction(matches, rootOp->getContext(), functionName);
     os << "\n" << *function << "\n\n";
     function->erase();
     return mlir::success();
   }
 
   os << "\n";
-  for (auto &results : matches) {
+  for (Operation *op : matches) {
     os << "Match #" << ++matchCount << ":\n\n";
-    for (Operation *op : results.matchedOps) {
-      if (op == results.rootOp) {
-        finder.printMatch(os, qs, op, "root");
-      } else {
-        finder.printMatch(os, qs, op);
-      }
-    }
+    // Placeholder "root" binding for the initial draft.
+    printMatch(os, qs, op, "root");
   }
   os << matchCount << (matchCount == 1 ? " match.\n\n" : " matches.\n\n");
+
   return mlir::success();
 }
 

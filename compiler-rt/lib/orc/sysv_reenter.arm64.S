@@ -13,9 +13,7 @@
 // The content of this file is arm64-only
 #if defined(__arm64__) || defined(__aarch64__)
 
-#include "builtins/assembly.h"
-
-        TEXT_SECTION
+        .text
 
         // Saves GPRs, calls __orc_rt_resolve
         .globl __orc_rt_sysv_reenter

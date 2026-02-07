@@ -94,9 +94,6 @@ char buffer[] = {
 #embed "embed_parsing_errors.c" prefix() // OK: tokens within parens are optional
 #embed "embed_parsing_errors.c" prefix)
 // expected-error@-1 {{expected '('}}
-#embed "embed_parsing_errors.c" prefix()) // expected-error {{expected identifier}}
-#embed "embed_parsing_errors.c" prefix(]) // expected-error {{expected ')'}}
-#embed "embed_parsing_errors.c" prefix(}) // expected-error {{expected ')'}}
 
 #embed "embed_parsing_errors.c" suffix
 // expected-error@-1 {{expected '('}}
@@ -118,9 +115,6 @@ char buffer[] = {
 #embed "embed_parsing_errors.c" suffix() // OK: tokens within parens are optional
 #embed "embed_parsing_errors.c" suffix)
 // expected-error@-1 {{expected '('}}
-#embed "embed_parsing_errors.c" suffix()) // expected-error {{expected identifier}}
-#embed "embed_parsing_errors.c" suffix(]) // expected-error {{expected ')'}}
-#embed "embed_parsing_errors.c" suffix(}) // expected-error {{expected ')'}}
 
 #embed "embed_parsing_errors.c" if_empty(1/0) // OK: emitted as tokens, not evaluated yet.
 #embed "embed_parsing_errors.c" if_empty(([{}])) // OK: delimiters balanced
@@ -134,6 +128,3 @@ char buffer[] = {
 #embed "embed_parsing_errors.c" if_empty)
 // expected-error@-1 {{expected '('}}
 };
-#embed "embed_parsing_errors.c" if_empty()) // expected-error {{expected identifier}}
-#embed "embed_parsing_errors.c" if_empty(]) // expected-error {{expected ')'}}
-#embed "embed_parsing_errors.c" if_empty(}) // expected-error {{expected ')'}}

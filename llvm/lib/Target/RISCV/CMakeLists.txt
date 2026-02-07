@@ -7,8 +7,7 @@ tablegen(LLVM RISCVGenAsmWriter.inc -gen-asm-writer)
 tablegen(LLVM RISCVGenCompressInstEmitter.inc -gen-compress-inst-emitter)
 tablegen(LLVM RISCVGenMacroFusion.inc -gen-macro-fusion-pred)
 tablegen(LLVM RISCVGenDAGISel.inc -gen-dag-isel)
-tablegen(LLVM RISCVGenDisassemblerTables.inc -gen-disassembler
-              --specialize-decoders-per-bitwidth)
+tablegen(LLVM RISCVGenDisassemblerTables.inc -gen-disassembler)
 tablegen(LLVM RISCVGenInstrInfo.inc -gen-instr-info)
 tablegen(LLVM RISCVGenMCCodeEmitter.inc -gen-emitter)
 tablegen(LLVM RISCVGenMCPseudoLowering.inc -gen-pseudo-lowering)
@@ -17,7 +16,6 @@ tablegen(LLVM RISCVGenRegisterInfo.inc -gen-register-info)
 tablegen(LLVM RISCVGenSearchableTables.inc -gen-searchable-tables)
 tablegen(LLVM RISCVGenSubtargetInfo.inc -gen-subtarget)
 tablegen(LLVM RISCVGenExegesis.inc -gen-exegesis)
-tablegen(LLVM RISCVGenSDNodeInfo.inc -gen-sd-node-info)
 
 set(LLVM_TARGET_DEFINITIONS RISCVGISel.td)
 tablegen(LLVM RISCVGenGlobalISel.inc -gen-global-isel)
@@ -36,32 +34,26 @@ add_llvm_target(RISCVCodeGen
   RISCVCodeGenPrepare.cpp
   RISCVConstantPoolValue.cpp
   RISCVDeadRegisterDefinitions.cpp
+  RISCVMakeCompressible.cpp
   RISCVExpandAtomicPseudoInsts.cpp
   RISCVExpandPseudoInsts.cpp
-  RISCVFoldMemOffset.cpp
   RISCVFrameLowering.cpp
   RISCVGatherScatterLowering.cpp
   RISCVIndirectBranchTracking.cpp
-  RISCVInsertReadWriteCSR.cpp
   RISCVInsertVSETVLI.cpp
+  RISCVInsertReadWriteCSR.cpp
   RISCVInsertWriteVXRM.cpp
   RISCVInstrInfo.cpp
-  RISCVInterleavedAccess.cpp
   RISCVISelDAGToDAG.cpp
   RISCVISelLowering.cpp
   RISCVLandingPadSetup.cpp
-  RISCVLateBranchOpt.cpp
-  RISCVLoadStoreOptimizer.cpp
   RISCVMachineFunctionInfo.cpp
-  RISCVMakeCompressible.cpp
-  RISCVMachineScheduler.cpp
   RISCVMergeBaseOffset.cpp
-  RISCVMoveMerger.cpp
   RISCVOptWInstrs.cpp
   RISCVPostRAExpandPseudoInsts.cpp
-  RISCVPromoteConstant.cpp
-  RISCVPushPopOptimizer.cpp
   RISCVRedundantCopyElimination.cpp
+  RISCVMoveMerger.cpp
+  RISCVPushPopOptimizer.cpp
   RISCVRegisterInfo.cpp
   RISCVSelectionDAGInfo.cpp
   RISCVSubtarget.cpp
@@ -71,10 +63,7 @@ add_llvm_target(RISCVCodeGen
   RISCVVectorMaskDAGMutation.cpp
   RISCVVectorPeephole.cpp
   RISCVVLOptimizer.cpp
-  RISCVVMV0Elimination.cpp
-  RISCVVSETVLIInfoAnalysis.cpp
   RISCVZacasABIFix.cpp
-  RISCVZilsdOptimizer.cpp
   GISel/RISCVCallLowering.cpp
   GISel/RISCVInstructionSelector.cpp
   GISel/RISCVLegalizerInfo.cpp
@@ -92,7 +81,6 @@ add_llvm_target(RISCVCodeGen
   GlobalISel
   IPO
   MC
-  Passes
   RISCVDesc
   RISCVInfo
   Scalar

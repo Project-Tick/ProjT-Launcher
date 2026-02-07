@@ -24,6 +24,8 @@
 ; RUN:   -mattr=+zhinxmin -verify-machineinstrs -target-abi lp64 | \
 ; RUN:   FileCheck -check-prefix=RV64IZDINXZHINXMIN %s
 
+declare half @llvm.experimental.constrained.sqrt.f16(half, metadata, metadata)
+
 define half @sqrt_f16(half %a) nounwind strictfp {
 ; RV32IZFHMIN-LABEL: sqrt_f16:
 ; RV32IZFHMIN:       # %bb.0:
@@ -69,6 +71,8 @@ define half @sqrt_f16(half %a) nounwind strictfp {
   %1 = call half @llvm.experimental.constrained.sqrt.f16(half %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret half %1
 }
+
+declare half @llvm.experimental.constrained.floor.f16(half, metadata)
 
 define half @floor_f16(half %a) nounwind strictfp {
 ; RV32IZFHMIN-LABEL: floor_f16:
@@ -140,6 +144,8 @@ define half @floor_f16(half %a) nounwind strictfp {
   ret half %1
 }
 
+declare half @llvm.experimental.constrained.ceil.f16(half, metadata)
+
 define half @ceil_f16(half %a) nounwind strictfp {
 ; RV32IZFHMIN-LABEL: ceil_f16:
 ; RV32IZFHMIN:       # %bb.0:
@@ -209,6 +215,8 @@ define half @ceil_f16(half %a) nounwind strictfp {
   %1 = call half @llvm.experimental.constrained.ceil.f16(half %a, metadata !"fpexcept.strict") strictfp
   ret half %1
 }
+
+declare half @llvm.experimental.constrained.trunc.f16(half, metadata)
 
 define half @trunc_f16(half %a) nounwind strictfp {
 ; RV32IZFHMIN-LABEL: trunc_f16:
@@ -280,6 +288,8 @@ define half @trunc_f16(half %a) nounwind strictfp {
   ret half %1
 }
 
+declare half @llvm.experimental.constrained.rint.f16(half, metadata, metadata)
+
 define half @rint_f16(half %a) nounwind strictfp {
 ; RV32IZFHMIN-LABEL: rint_f16:
 ; RV32IZFHMIN:       # %bb.0:
@@ -349,6 +359,8 @@ define half @rint_f16(half %a) nounwind strictfp {
   %1 = call half @llvm.experimental.constrained.rint.f16(half %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret half %1
 }
+
+declare half @llvm.experimental.constrained.nearbyint.f16(half, metadata, metadata)
 
 define half @nearbyint_f16(half %a) nounwind strictfp {
 ; RV32IZFHMIN-LABEL: nearbyint_f16:
@@ -420,6 +432,8 @@ define half @nearbyint_f16(half %a) nounwind strictfp {
   ret half %1
 }
 
+declare half @llvm.experimental.constrained.round.f16(half, metadata)
+
 define half @round_f16(half %a) nounwind strictfp {
 ; RV32IZFHMIN-LABEL: round_f16:
 ; RV32IZFHMIN:       # %bb.0:
@@ -489,6 +503,8 @@ define half @round_f16(half %a) nounwind strictfp {
   %1 = call half @llvm.experimental.constrained.round.f16(half %a, metadata !"fpexcept.strict") strictfp
   ret half %1
 }
+
+declare half @llvm.experimental.constrained.roundeven.f16(half, metadata)
 
 define half @roundeven_f16(half %a) nounwind strictfp {
 ; RV32IZFHMIN-LABEL: roundeven_f16:
@@ -560,6 +576,8 @@ define half @roundeven_f16(half %a) nounwind strictfp {
   ret half %1
 }
 
+declare iXLen @llvm.experimental.constrained.lrint.iXLen.f16(half, metadata, metadata)
+
 define iXLen @lrint_f16(half %a) nounwind strictfp {
 ; RV32IZFHMIN-LABEL: lrint_f16:
 ; RV32IZFHMIN:       # %bb.0:
@@ -600,6 +618,8 @@ define iXLen @lrint_f16(half %a) nounwind strictfp {
   ret iXLen %1
 }
 
+declare iXLen @llvm.experimental.constrained.lround.iXLen.f16(half, metadata)
+
 define iXLen @lround_f16(half %a) nounwind strictfp {
 ; RV32IZFHMIN-LABEL: lround_f16:
 ; RV32IZFHMIN:       # %bb.0:
@@ -639,6 +659,8 @@ define iXLen @lround_f16(half %a) nounwind strictfp {
   %1 = call iXLen @llvm.experimental.constrained.lround.iXLen.f16(half %a, metadata !"fpexcept.strict") strictfp
   ret iXLen %1
 }
+
+declare i64 @llvm.experimental.constrained.llrint.i64.f16(half, metadata, metadata)
 
 define i64 @llrint_f16(half %a) nounwind strictfp {
 ; RV32IZFHMIN-LABEL: llrint_f16:
@@ -691,6 +713,8 @@ define i64 @llrint_f16(half %a) nounwind strictfp {
   %1 = call i64 @llvm.experimental.constrained.llrint.i64.f16(half %a, metadata !"round.dynamic", metadata !"fpexcept.strict") strictfp
   ret i64 %1
 }
+
+declare i64 @llvm.experimental.constrained.llround.i64.f16(half, metadata)
 
 define i64 @llround_f16(half %a) nounwind strictfp {
 ; RV32IZFHMIN-LABEL: llround_f16:

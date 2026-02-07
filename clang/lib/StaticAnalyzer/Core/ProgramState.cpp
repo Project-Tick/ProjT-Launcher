@@ -17,6 +17,7 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/CallEvent.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/DynamicType.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ExprEngine.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/ProgramStateTrait.h"
 #include "llvm/Support/raw_ostream.h"
 #include <optional>
 
@@ -115,14 +116,13 @@ ProgramStateRef ProgramState::bindLoc(Loc LV,
                                       const LocationContext *LCtx,
                                       bool notifyChanges) const {
   ProgramStateManager &Mgr = getStateManager();
-  ExprEngine &Eng = Mgr.getOwningEngine();
-  ProgramStateRef State = makeWithStore(Mgr.StoreMgr->Bind(getStore(), LV, V));
+  ProgramStateRef newState = makeWithStore(Mgr.StoreMgr->Bind(getStore(),
+                                                             LV, V));
   const MemRegion *MR = LV.getAsRegion();
-
   if (MR && notifyChanges)
-    return Eng.processRegionChange(State, MR, LCtx);
+    return Mgr.getOwningEngine().processRegionChange(newState, MR, LCtx);
 
-  return State;
+  return newState;
 }
 
 ProgramStateRef
@@ -130,25 +130,25 @@ ProgramState::bindDefaultInitial(SVal loc, SVal V,
                                  const LocationContext *LCtx) const {
   ProgramStateManager &Mgr = getStateManager();
   const MemRegion *R = loc.castAs<loc::MemRegionVal>().getRegion();
-  BindResult BindRes = Mgr.StoreMgr->BindDefaultInitial(getStore(), R, V);
-  ProgramStateRef State = makeWithStore(BindRes);
-  return Mgr.getOwningEngine().processRegionChange(State, R, LCtx);
+  const StoreRef &newStore = Mgr.StoreMgr->BindDefaultInitial(getStore(), R, V);
+  ProgramStateRef new_state = makeWithStore(newStore);
+  return Mgr.getOwningEngine().processRegionChange(new_state, R, LCtx);
 }
 
 ProgramStateRef
 ProgramState::bindDefaultZero(SVal loc, const LocationContext *LCtx) const {
   ProgramStateManager &Mgr = getStateManager();
   const MemRegion *R = loc.castAs<loc::MemRegionVal>().getRegion();
-  BindResult BindRes = Mgr.StoreMgr->BindDefaultZero(getStore(), R);
-  ProgramStateRef State = makeWithStore(BindRes);
-  return Mgr.getOwningEngine().processRegionChange(State, R, LCtx);
+  const StoreRef &newStore = Mgr.StoreMgr->BindDefaultZero(getStore(), R);
+  ProgramStateRef new_state = makeWithStore(newStore);
+  return Mgr.getOwningEngine().processRegionChange(new_state, R, LCtx);
 }
 
 typedef ArrayRef<const MemRegion *> RegionList;
 typedef ArrayRef<SVal> ValueList;
 
 ProgramStateRef ProgramState::invalidateRegions(
-    RegionList Regions, ConstCFGElementRef Elem, unsigned Count,
+    RegionList Regions, const Stmt *S, unsigned Count,
     const LocationContext *LCtx, bool CausedByPointerEscape,
     InvalidatedSymbols *IS, const CallEvent *Call,
     RegionAndSymbolInvalidationTraits *ITraits) const {
@@ -156,12 +156,12 @@ ProgramStateRef ProgramState::invalidateRegions(
   for (const MemRegion *Reg : Regions)
     Values.push_back(loc::MemRegionVal(Reg));
 
-  return invalidateRegions(Values, Elem, Count, LCtx, CausedByPointerEscape, IS,
+  return invalidateRegions(Values, S, Count, LCtx, CausedByPointerEscape, IS,
                            Call, ITraits);
 }
 
 ProgramStateRef ProgramState::invalidateRegions(
-    ValueList Values, ConstCFGElementRef Elem, unsigned Count,
+    ValueList Values, const Stmt *S, unsigned Count,
     const LocationContext *LCtx, bool CausedByPointerEscape,
     InvalidatedSymbols *IS, const CallEvent *Call,
     RegionAndSymbolInvalidationTraits *ITraits) const {
@@ -180,7 +180,7 @@ ProgramStateRef ProgramState::invalidateRegions(
   StoreManager::InvalidatedRegions TopLevelInvalidated;
   StoreManager::InvalidatedRegions Invalidated;
   const StoreRef &NewStore = Mgr.StoreMgr->invalidateRegions(
-      getStore(), Values, Elem, Count, LCtx, Call, *IS, *ITraits,
+      getStore(), Values, S, Count, LCtx, Call, *IS, *ITraits,
       &TopLevelInvalidated, &Invalidated);
 
   ProgramStateRef NewState = makeWithStore(NewStore);
@@ -232,8 +232,9 @@ SVal ProgramState::wrapSymbolicRegion(SVal Val) const {
 ProgramStateRef
 ProgramState::enterStackFrame(const CallEvent &Call,
                               const StackFrameContext *CalleeCtx) const {
-  return makeWithStore(
-      getStateManager().StoreMgr->enterStackFrame(getStore(), Call, CalleeCtx));
+  const StoreRef &NewStore =
+    getStateManager().StoreMgr->enterStackFrame(getStore(), Call, CalleeCtx);
+  return makeWithStore(NewStore);
 }
 
 SVal ProgramState::getSelfSVal(const LocationContext *LCtx) const {
@@ -434,18 +435,6 @@ ProgramStateRef ProgramState::makeWithStore(const StoreRef &store) const {
   ProgramState NewSt(*this);
   NewSt.setStore(store);
   return getStateManager().getPersistentState(NewSt);
-}
-
-ProgramStateRef ProgramState::makeWithStore(const BindResult &BindRes) const {
-  ExprEngine &Eng = getStateManager().getOwningEngine();
-  ProgramStateRef State = makeWithStore(BindRes.ResultingStore);
-
-  // We must always notify the checkers for failing binds because otherwise they
-  // may keep stale traits for these symbols.
-  // Eg., Malloc checker may report leaks if we failed to bind that symbol.
-  if (BindRes.FailedToBindValues.empty())
-    return State;
-  return Eng.escapeValues(State, BindRes.FailedToBindValues, PSK_EscapeOnBind);
 }
 
 ProgramStateRef ProgramState::cloneAsPosteriorlyOverconstrained() const {

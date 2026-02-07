@@ -24,10 +24,12 @@ using namespace lldb;
 
 class PECallFrameInfoTest : public testing::Test {
   SubsystemRAII<FileSystem, ObjectFilePECOFF> subsystems;
+
+protected:
+  void GetUnwindPlan(addr_t file_addr, UnwindPlan &plan) const;
 };
 
-static llvm::Expected<std::unique_ptr<UnwindPlan>>
-GetUnwindPlan(addr_t file_addr) {
+void PECallFrameInfoTest::GetUnwindPlan(addr_t file_addr, UnwindPlan &plan) const {
   llvm::Expected<TestFile> ExpectedFile = TestFile::fromYaml(
       R"(
 --- !COFF
@@ -188,34 +190,24 @@ sections:
 symbols:         []
 ...
 )");
-  if (!ExpectedFile)
-    return ExpectedFile.takeError();
+  ASSERT_THAT_EXPECTED(ExpectedFile, llvm::Succeeded());
 
   ModuleSP module_sp = std::make_shared<Module>(ExpectedFile->moduleSpec());
   ObjectFile *object_file = module_sp->GetObjectFile();
-  if (!object_file)
-    return llvm::createStringError("object file is null");
+  ASSERT_NE(object_file, nullptr);
 
   std::unique_ptr<CallFrameInfo> cfi = object_file->CreateCallFrameInfo();
-  if (!cfi)
-    return llvm::createStringError("call frame info is null");
+  ASSERT_NE(cfi.get(), nullptr);
 
   SectionList *sect_list = object_file->GetSectionList();
-  if (!sect_list)
-    return llvm::createStringError("section list is null");
+  ASSERT_NE(sect_list, nullptr);
 
-  std::unique_ptr<UnwindPlan> plan_up =
-      cfi->GetUnwindPlan(Address(file_addr, sect_list));
-  if (!plan_up)
-    return llvm::createStringError("unwind plan is null");
-  return plan_up;
+  EXPECT_TRUE(cfi->GetUnwindPlan(Address(file_addr, sect_list), plan));
 }
 
 TEST_F(PECallFrameInfoTest, Basic_eh) {
-  llvm::Expected<std::unique_ptr<UnwindPlan>> expected_plan =
-      GetUnwindPlan(0x1001080);
-  ASSERT_THAT_EXPECTED(expected_plan, llvm::Succeeded());
-  UnwindPlan &plan = **expected_plan;
+  UnwindPlan plan(eRegisterKindLLDB);
+  GetUnwindPlan(0x1001080, plan);
   EXPECT_EQ(plan.GetRowCount(), 7);
 
   UnwindPlan::Row row;
@@ -256,10 +248,8 @@ TEST_F(PECallFrameInfoTest, Basic_eh) {
 }
 
 TEST_F(PECallFrameInfoTest, Chained_eh) {
-  llvm::Expected<std::unique_ptr<UnwindPlan>> expected_plan =
-      GetUnwindPlan(0x1001180);
-  ASSERT_THAT_EXPECTED(expected_plan, llvm::Succeeded());
-  UnwindPlan &plan = **expected_plan;
+  UnwindPlan plan(eRegisterKindLLDB);
+  GetUnwindPlan(0x1001180, plan);
   EXPECT_EQ(plan.GetRowCount(), 2);
 
   UnwindPlan::Row row;
@@ -280,10 +270,8 @@ TEST_F(PECallFrameInfoTest, Chained_eh) {
 }
 
 TEST_F(PECallFrameInfoTest, Frame_reg_eh) {
-  llvm::Expected<std::unique_ptr<UnwindPlan>> expected_plan =
-      GetUnwindPlan(0x1001280);
-  ASSERT_THAT_EXPECTED(expected_plan, llvm::Succeeded());
-  UnwindPlan &plan = **expected_plan;
+  UnwindPlan plan(eRegisterKindLLDB);
+  GetUnwindPlan(0x1001280, plan);
   EXPECT_EQ(plan.GetRowCount(), 11);
 
   UnwindPlan::Row row;

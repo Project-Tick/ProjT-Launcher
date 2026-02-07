@@ -1,5 +1,4 @@
 C_SOURCES := main.c
-CFLAGS_EXTRAS := -no-pie
 
 all: stripped.out
 

@@ -81,12 +81,15 @@ class AArch64A53Fix835769 : public MachineFunctionPass {
 
 public:
   static char ID;
-  explicit AArch64A53Fix835769() : MachineFunctionPass(ID) {}
+  explicit AArch64A53Fix835769() : MachineFunctionPass(ID) {
+    initializeAArch64A53Fix835769Pass(*PassRegistry::getPassRegistry());
+  }
 
   bool runOnMachineFunction(MachineFunction &F) override;
 
   MachineFunctionProperties getRequiredProperties() const override {
-    return MachineFunctionProperties().setNoVRegs();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::NoVRegs);
   }
 
   StringRef getPassName() const override {
@@ -178,10 +181,11 @@ static void insertNopBeforeInstruction(MachineBasicBlock &MBB, MachineInstr* MI,
     MachineInstr *I = getLastNonPseudo(MBB, TII);
     assert(I && "Expected instruction");
     DebugLoc DL = I->getDebugLoc();
-    BuildMI(I->getParent(), DL, TII->get(AArch64::NOP));
-  } else {
+    BuildMI(I->getParent(), DL, TII->get(AArch64::HINT)).addImm(0);
+  }
+  else {
     DebugLoc DL = MI->getDebugLoc();
-    BuildMI(MBB, MI, DL, TII->get(AArch64::NOP));
+    BuildMI(MBB, MI, DL, TII->get(AArch64::HINT)).addImm(0);
   }
 
   ++NumNopsAdded;

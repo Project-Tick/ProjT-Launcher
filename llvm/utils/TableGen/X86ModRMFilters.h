@@ -19,7 +19,9 @@
 
 #include <cstdint>
 
-namespace llvm::X86Disassembler {
+namespace llvm {
+
+namespace X86Disassembler {
 
 /// ModRMFilter - Abstract base class for clases that recognize patterns in
 ///   ModR/M bytes.
@@ -28,7 +30,7 @@ class ModRMFilter {
 
 public:
   /// Destructor    - Override as necessary.
-  virtual ~ModRMFilter() = default;
+  virtual ~ModRMFilter() {}
 
   /// isDumb        - Indicates whether this filter returns the same value for
   ///                 any value of the ModR/M byte.
@@ -133,6 +135,8 @@ public:
   bool accepts(uint8_t modRM) const override { return (ModRM == modRM); }
 };
 
-} // namespace llvm::X86Disassembler
+} // namespace X86Disassembler
+
+} // namespace llvm
 
 #endif

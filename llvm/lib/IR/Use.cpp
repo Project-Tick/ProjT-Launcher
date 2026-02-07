@@ -9,7 +9,7 @@
 #include "llvm/IR/Use.h"
 #include "llvm/IR/User.h"
 
-using namespace llvm;
+namespace llvm {
 
 void Use::swap(Use &RHS) {
   if (Val == RHS.Val)
@@ -19,15 +19,11 @@ void Use::swap(Use &RHS) {
   std::swap(Next, RHS.Next);
   std::swap(Prev, RHS.Prev);
 
-  if (Prev)
-    *Prev = this;
-
+  *Prev = this;
   if (Next)
     Next->Prev = &Next;
 
-  if (RHS.Prev)
-    *RHS.Prev = &RHS;
-
+  *RHS.Prev = &RHS;
   if (RHS.Next)
     RHS.Next->Prev = &RHS.Next;
 }
@@ -42,3 +38,5 @@ void Use::zap(Use *Start, const Use *Stop, bool del) {
   if (del)
     ::operator delete(Start);
 }
+
+} // namespace llvm

@@ -35,7 +35,7 @@
 
 using namespace clang;
 using namespace clang::installapi;
-using namespace clang::options;
+using namespace clang::driver::options;
 using namespace llvm::opt;
 using namespace llvm::MachO;
 
@@ -59,7 +59,7 @@ static bool runFrontend(StringRef ProgName, Twine Label, bool Verbose,
   // headers.
   std::vector<std::string> Args = {ProgName.data(), "-target",
                                    Ctx.Slice->getTriple().str().c_str()};
-  llvm::append_range(Args, InitialArgs);
+  llvm::copy(InitialArgs, std::back_inserter(Args));
   Args.push_back(InputFile);
 
   // Create & run invocation.
@@ -70,28 +70,26 @@ static bool runFrontend(StringRef ProgName, Twine Label, bool Verbose,
 
 static bool run(ArrayRef<const char *> Args, const char *ProgName) {
   // Setup Diagnostics engine.
-  DiagnosticOptions DiagOpts;
-  const llvm::opt::OptTable &ClangOpts = getDriverOptTable();
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+  const llvm::opt::OptTable &ClangOpts = clang::driver::getDriverOptTable();
   unsigned MissingArgIndex, MissingArgCount;
   llvm::opt::InputArgList ParsedArgs = ClangOpts.ParseArgs(
       ArrayRef(Args).slice(1), MissingArgIndex, MissingArgCount);
-  ParseDiagnosticArgs(DiagOpts, ParsedArgs);
+  ParseDiagnosticArgs(*DiagOpts, ParsedArgs);
 
-  auto Diag = llvm::makeIntrusiveRefCnt<clang::DiagnosticsEngine>(
-      clang::DiagnosticIDs::create(), DiagOpts,
-      new clang::TextDiagnosticPrinter(llvm::errs(), DiagOpts));
+  IntrusiveRefCntPtr<DiagnosticsEngine> Diag = new clang::DiagnosticsEngine(
+      new clang::DiagnosticIDs(), DiagOpts.get(),
+      new clang::TextDiagnosticPrinter(llvm::errs(), DiagOpts.get()));
 
   // Create file manager for all file operations and holding in-memory generated
   // inputs.
-  auto OverlayFileSystem =
-      llvm::makeIntrusiveRefCnt<llvm::vfs::OverlayFileSystem>(
-          llvm::vfs::getRealFileSystem());
-  auto InMemoryFileSystem =
-      llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  llvm::IntrusiveRefCntPtr<llvm::vfs::OverlayFileSystem> OverlayFileSystem(
+      new llvm::vfs::OverlayFileSystem(llvm::vfs::getRealFileSystem()));
+  llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
+      new llvm::vfs::InMemoryFileSystem);
   OverlayFileSystem->pushOverlay(InMemoryFileSystem);
-  IntrusiveRefCntPtr<clang::FileManager> FM =
-      llvm::makeIntrusiveRefCnt<FileManager>(clang::FileSystemOptions(),
-                                             OverlayFileSystem);
+  IntrusiveRefCntPtr<clang::FileManager> FM(
+      new FileManager(clang::FileSystemOptions(), OverlayFileSystem));
 
   // Capture all options and diagnose any errors.
   Options Opts(*Diag, FM.get(), Args, ProgName);
@@ -104,8 +102,8 @@ static bool run(ArrayRef<const char *> Args, const char *ProgName) {
 
   if (!Opts.DriverOpts.DylibToVerify.empty()) {
     TargetList Targets;
-    for (const auto &T : Opts.DriverOpts.Targets)
-      Targets.push_back(T.first);
+    llvm::for_each(Opts.DriverOpts.Targets,
+                   [&](const auto &T) { Targets.push_back(T.first); });
     if (!Ctx.Verifier->verifyBinaryAttrs(Targets, Ctx.BA, Ctx.Reexports,
                                          Opts.LinkerOpts.AllowableClients,
                                          Opts.LinkerOpts.RPaths, Ctx.FT))
@@ -114,9 +112,10 @@ static bool run(ArrayRef<const char *> Args, const char *ProgName) {
 
   // Set up compilation.
   std::unique_ptr<CompilerInstance> CI(new CompilerInstance());
-  CI->setVirtualFileSystem(FM->getVirtualFileSystemPtr());
-  CI->setFileManager(FM);
-  CI->createDiagnostics();
+  CI->setFileManager(FM.get());
+  CI->createDiagnostics(FM->getVirtualFileSystem());
+  if (!CI->hasDiagnostics())
+    return EXIT_FAILURE;
 
   // Execute, verify and gather AST results.
   // An invocation is ran for each unique target triple and for each header
@@ -152,15 +151,12 @@ static bool run(ArrayRef<const char *> Args, const char *ProgName) {
     return EXIT_FAILURE;
 
   // After symbols have been collected, prepare to write output.
-  auto Out = CI->getOrCreateOutputManager().createFile(
-      Ctx.OutputLoc, llvm::vfs::OutputConfig()
-                         .setTextWithCRLF()
-                         .setNoImplyCreateDirectories()
-                         .setNoAtomicWrite());
-  if (!Out) {
-    Diag->Report(diag::err_cannot_open_file) << Ctx.OutputLoc;
+  auto Out = CI->createOutputFile(Ctx.OutputLoc, /*Binary=*/false,
+                                  /*RemoveFileOnSignal=*/false,
+                                  /*UseTemporary=*/false,
+                                  /*CreateMissingDirectories=*/false);
+  if (!Out)
     return EXIT_FAILURE;
-  }
 
   // Assign attributes for serialization.
   InterfaceFile IF(Ctx.Verifier->takeExports());
@@ -174,9 +170,9 @@ static bool run(ArrayRef<const char *> Args, const char *ProgName) {
       [&IF](
           const auto &Attrs,
           std::function<void(InterfaceFile *, StringRef, const Target &)> Add) {
-        for (const auto &[Attr, ArchSet] : Attrs.get())
-          for (const auto &T : IF.targets(ArchSet))
-            Add(&IF, Attr, T);
+        for (const auto &Lib : Attrs)
+          for (const auto &T : IF.targets(Lib.getValue()))
+            Add(&IF, Lib.getKey(), T);
       };
 
   assignLibAttrs(Opts.LinkerOpts.AllowableClients,
@@ -188,15 +184,11 @@ static bool run(ArrayRef<const char *> Args, const char *ProgName) {
   if (auto Err = TextAPIWriter::writeToStream(*Out, IF, Ctx.FT)) {
     Diag->Report(diag::err_cannot_write_file)
         << Ctx.OutputLoc << std::move(Err);
-    if (auto Err = Out->discard())
-      llvm::consumeError(std::move(Err));
+    CI->clearOutputFiles(/*EraseFiles=*/true);
     return EXIT_FAILURE;
   }
-  if (auto Err = Out->keep()) {
-    Diag->Report(diag::err_cannot_write_file)
-        << Ctx.OutputLoc << std::move(Err);
-    return EXIT_FAILURE;
-  }
+
+  CI->clearOutputFiles(/*EraseFiles=*/false);
   return EXIT_SUCCESS;
 }
 

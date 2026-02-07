@@ -11,9 +11,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "RISCVMCAsmInfo.h"
+#include "MCTargetDesc/RISCVMCExpr.h"
 #include "llvm/BinaryFormat/Dwarf.h"
-#include "llvm/BinaryFormat/ELF.h"
-#include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/TargetParser/Triple.h"
 using namespace llvm;
@@ -21,13 +20,11 @@ using namespace llvm;
 void RISCVMCAsmInfo::anchor() {}
 
 RISCVMCAsmInfo::RISCVMCAsmInfo(const Triple &TT) {
-  IsLittleEndian = TT.isLittleEndian();
   CodePointerSize = CalleeSaveStackSlotSize = TT.isArch64Bit() ? 8 : 4;
   CommentString = "#";
   AlignmentIsInBytes = false;
   SupportsDebugInformation = true;
   ExceptionsType = ExceptionHandling::DwarfCFI;
-  UseAtForSpecifier = false;
   Data16bitsDirective = "\t.half\t";
   Data32bitsDirective = "\t.word\t";
 }
@@ -43,31 +40,8 @@ const MCExpr *RISCVMCAsmInfo::getExprForFDESymbol(const MCSymbol *Sym,
   // enabled, so we follow binutils in using the R_RISCV_32_PCREL relocation
   // for the FDE initial location.
   MCContext &Ctx = Streamer.getContext();
-  const MCExpr *ME = MCSymbolRefExpr::create(Sym, Ctx);
+  const MCExpr *ME =
+      MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, Ctx);
   assert(Encoding & dwarf::DW_EH_PE_sdata4 && "Unexpected encoding");
-  return MCSpecifierExpr::create(ME, ELF::R_RISCV_32_PCREL, Ctx);
-}
-
-void RISCVMCAsmInfo::printSpecifierExpr(raw_ostream &OS,
-                                        const MCSpecifierExpr &Expr) const {
-  auto S = Expr.getSpecifier();
-  bool HasSpecifier = S != 0 && S != ELF::R_RISCV_CALL_PLT;
-  if (HasSpecifier)
-    OS << '%' << RISCV::getSpecifierName(S) << '(';
-  printExpr(OS, *Expr.getSubExpr());
-  if (HasSpecifier)
-    OS << ')';
-}
-
-RISCVMCAsmInfoDarwin::RISCVMCAsmInfoDarwin() {
-  CodePointerSize = 4;
-  PrivateGlobalPrefix = "L";
-  PrivateLabelPrefix = "L";
-  SeparatorString = "%%";
-  CommentString = ";";
-  AlignmentIsInBytes = false;
-  SupportsDebugInformation = true;
-  ExceptionsType = ExceptionHandling::DwarfCFI;
-  Data16bitsDirective = "\t.half\t";
-  Data32bitsDirective = "\t.word\t";
+  return RISCVMCExpr::create(ME, RISCVMCExpr::VK_RISCV_32_PCREL, Ctx);
 }

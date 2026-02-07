@@ -32,16 +32,13 @@ public:
     StringRef name;
   };
 
-  explicit InterfaceMethod(const llvm::Record *def, std::string uniqueName);
+  explicit InterfaceMethod(const llvm::Record *def);
 
   // Return the return type of this method.
   StringRef getReturnType() const;
 
   // Return the name of this method.
   StringRef getName() const;
-
-  // Return the dedup name of this method.
-  StringRef getUniqueName() const;
 
   // Return if this method is static.
   bool isStatic() const;
@@ -65,10 +62,6 @@ private:
 
   // The arguments of this method.
   SmallVector<Argument, 2> arguments;
-
-  // The unique name of this method, to distinguish it from other methods with
-  // the same name (overloaded methods)
-  std::string uniqueName;
 };
 
 //===----------------------------------------------------------------------===//
@@ -157,13 +150,6 @@ struct TypeInterface : public Interface {
 
   static bool classof(const Interface *interface);
 };
-// An interface that is registered to a Dialect.
-struct DialectInterface : public Interface {
-  using Interface::Interface;
-
-  static bool classof(const Interface *interface);
-};
-
 } // namespace tblgen
 } // namespace mlir
 

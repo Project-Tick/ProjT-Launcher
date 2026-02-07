@@ -29,7 +29,8 @@ class EarlyTailDuplicatePass
     : public TailDuplicatePassBase<EarlyTailDuplicatePass, true> {
 public:
   MachineFunctionProperties getClearedProperties() const {
-    return MachineFunctionProperties().setNoPHIs();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::NoPHIs);
   }
 };
 

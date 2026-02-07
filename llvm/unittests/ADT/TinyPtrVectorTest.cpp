@@ -28,14 +28,14 @@ template <typename PointerTy, unsigned IntBits, typename IntType,
           typename PtrTraits, typename Info>
 struct RemovePointer<
     PointerIntPair<PointerTy, IntBits, IntType, PtrTraits, Info>> {
-  using type = typename RemovePointer<PointerTy>::type;
+  typedef typename RemovePointer<PointerTy>::type type;
 };
 
 template <typename VectorT>
 class TinyPtrVectorTest : public testing::Test {
 protected:
-  using PtrT = typename VectorT::value_type;
-  using ValueT = typename RemovePointer<PtrT>::type;
+  typedef typename VectorT::value_type PtrT;
+  typedef typename RemovePointer<PtrT>::type ValueT;
   using PtrTraits = PointerLikeTypeTraits<PtrT>;
 
   VectorT V;
@@ -78,9 +78,9 @@ protected:
   }
 };
 
-using TinyPtrVectorTestTypes =
-    ::testing::Types<TinyPtrVector<int *>, TinyPtrVector<double *>,
-                     TinyPtrVector<PointerIntPair<int *, 1>>>;
+typedef ::testing::Types<TinyPtrVector<int *>, TinyPtrVector<double *>,
+                         TinyPtrVector<PointerIntPair<int *, 1>>>
+    TinyPtrVectorTestTypes;
 TYPED_TEST_SUITE(TinyPtrVectorTest, TinyPtrVectorTestTypes, );
 
 TYPED_TEST(TinyPtrVectorTest, EmptyTest) {

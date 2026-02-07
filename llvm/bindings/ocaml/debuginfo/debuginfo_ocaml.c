@@ -15,7 +15,6 @@
 |*                                                                            *|
 \*===----------------------------------------------------------------------===*/
 
-#include <assert.h>
 #include <string.h>
 
 #include "caml/memory.h"
@@ -138,8 +137,6 @@ static LLVMDIFlags map_DIFlag(LLVMDIFlag_i DIF) {
   case i_DIFlagPtrToMemberRep:
     return LLVMDIFlagPtrToMemberRep;
   }
-  assert(0 && "Invalid LLVMDIFlag");
-  return 0;
 }
 
 /* unit -> int */
@@ -383,6 +380,7 @@ value llvm_dibuild_get_or_create_array(value Builder, value Data) {
 
 value llvm_dibuild_create_subroutine_type(value Builder, value File,
                                           value ParameterTypes, value Flags) {
+  mlsize_t Count = Wosize_val(ParameterTypes);
   LLVMMetadataRef *Temp = from_val_array(ParameterTypes);
   LLVMMetadataRef Metadata = LLVMDIBuilderCreateSubroutineType(
       DIBuilder_val(Builder), Metadata_val(File), Temp,

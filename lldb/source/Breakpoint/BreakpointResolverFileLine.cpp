@@ -139,7 +139,7 @@ void BreakpointResolverFileLine::FilterContexts(SymbolContextList &sc_list) {
     if (!sc.block)
       continue;
 
-    SupportFileNSP file_sp = std::make_shared<SupportFile>();
+    SupportFileSP file_sp;
     uint32_t line;
     const Block *inline_block = sc.block->GetContainingInlinedBlock();
     if (inline_block) {

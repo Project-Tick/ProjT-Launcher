@@ -6,16 +6,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "src/errno/libc_errno.h"
 #include "src/sched/sched_get_priority_max.h"
 #include "src/sched/sched_get_priority_min.h"
-#include "test/UnitTest/ErrnoCheckingTest.h"
 #include "test/UnitTest/Test.h"
 
-#include "hdr/sched_macros.h"
+#include <sched.h>
 
-using LlvmLibcSchedGetPriorityTest = LIBC_NAMESPACE::testing::ErrnoCheckingTest;
-
-TEST_F(LlvmLibcSchedGetPriorityTest, HandleBadPolicyTest) {
+TEST(LlvmLibcSchedGetPriorityTest, HandleBadPolicyTest) {
 
   // Test arbitrary values for which there is no policy.
   {
@@ -59,7 +57,9 @@ TEST_F(LlvmLibcSchedGetPriorityTest, HandleBadPolicyTest) {
   }
 }
 
-TEST_F(LlvmLibcSchedGetPriorityTest, SmokeTest) {
+TEST(LlvmLibcSchedGetPriorityTest, SmokeTest) {
+  LIBC_NAMESPACE::libc_errno = 0;
+
   // We Test:
   // SCHED_OTHER, SCHED_FIFO, SCHED_RR
   // Linux specific test could also include:

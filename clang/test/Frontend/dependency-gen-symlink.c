@@ -1,4 +1,4 @@
-// REQUIRES: symlinks
+// REQUIRES: shell
 
 // Basic test
 // RUN: rm -rf %t.dir

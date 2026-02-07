@@ -8,7 +8,7 @@
 
 // <forward_list>
 
-// void resize(size_type n, const value_type& v); // constexpr since C++26
+// void resize(size_type n, const value_type& v);
 
 #include <forward_list>
 #include <cassert>
@@ -19,93 +19,85 @@
 #include "min_allocator.h"
 
 #if TEST_STD_VER >= 11
-#  include "container_test_types.h"
+#include "container_test_types.h"
 #endif
 
-TEST_CONSTEXPR_CXX26 bool test() {
-  {
-    typedef int T;
-    typedef std::forward_list<T> C;
-    const T t[] = {0, 1, 2, 3, 4};
-    C c(std::begin(t), std::end(t));
-
-    c.resize(3, 10);
-    assert(std::distance(c.begin(), c.end()) == 3);
-    assert(*std::next(c.begin(), 0) == 0);
-    assert(*std::next(c.begin(), 1) == 1);
-    assert(*std::next(c.begin(), 2) == 2);
-
-    c.resize(6, 10);
-    assert(std::distance(c.begin(), c.end()) == 6);
-    assert(*std::next(c.begin(), 0) == 0);
-    assert(*std::next(c.begin(), 1) == 1);
-    assert(*std::next(c.begin(), 2) == 2);
-    assert(*std::next(c.begin(), 3) == 10);
-    assert(*std::next(c.begin(), 4) == 10);
-    assert(*std::next(c.begin(), 5) == 10);
-
-    c.resize(6, 12);
-    assert(std::distance(c.begin(), c.end()) == 6);
-    assert(*std::next(c.begin(), 0) == 0);
-    assert(*std::next(c.begin(), 1) == 1);
-    assert(*std::next(c.begin(), 2) == 2);
-    assert(*std::next(c.begin(), 3) == 10);
-    assert(*std::next(c.begin(), 4) == 10);
-    assert(*std::next(c.begin(), 5) == 10);
-  }
-#if TEST_STD_VER >= 11
-  {
-    typedef int T;
-    typedef std::forward_list<T, min_allocator<T>> C;
-    const T t[] = {0, 1, 2, 3, 4};
-    C c(std::begin(t), std::end(t));
-
-    c.resize(3, 10);
-    assert(std::distance(c.begin(), c.end()) == 3);
-    assert(*std::next(c.begin(), 0) == 0);
-    assert(*std::next(c.begin(), 1) == 1);
-    assert(*std::next(c.begin(), 2) == 2);
-
-    c.resize(6, 10);
-    assert(std::distance(c.begin(), c.end()) == 6);
-    assert(*std::next(c.begin(), 0) == 0);
-    assert(*std::next(c.begin(), 1) == 1);
-    assert(*std::next(c.begin(), 2) == 2);
-    assert(*std::next(c.begin(), 3) == 10);
-    assert(*std::next(c.begin(), 4) == 10);
-    assert(*std::next(c.begin(), 5) == 10);
-
-    c.resize(6, 12);
-    assert(std::distance(c.begin(), c.end()) == 6);
-    assert(*std::next(c.begin(), 0) == 0);
-    assert(*std::next(c.begin(), 1) == 1);
-    assert(*std::next(c.begin(), 2) == 2);
-    assert(*std::next(c.begin(), 3) == 10);
-    assert(*std::next(c.begin(), 4) == 10);
-    assert(*std::next(c.begin(), 5) == 10);
-  }
-  if (!TEST_IS_CONSTANT_EVALUATED) {
-    // Test that the allocator's construct method is being used to
-    // construct the new elements and that it's called exactly N times.
-    typedef std::forward_list<int, ContainerTestAllocator<int, int>> Container;
-    ConstructController* cc = getConstructController();
-    cc->reset();
+int main(int, char**)
+{
     {
-      Container c;
-      cc->expect<int const&>(6);
-      c.resize(6, 42);
-      assert(!cc->unchecked());
+        typedef int T;
+        typedef std::forward_list<T> C;
+        const T t[] = {0, 1, 2, 3, 4};
+        C c(std::begin(t), std::end(t));
+
+        c.resize(3, 10);
+        assert(std::distance(c.begin(), c.end()) == 3);
+        assert(*std::next(c.begin(), 0) == 0);
+        assert(*std::next(c.begin(), 1) == 1);
+        assert(*std::next(c.begin(), 2) == 2);
+
+        c.resize(6, 10);
+        assert(std::distance(c.begin(), c.end()) == 6);
+        assert(*std::next(c.begin(), 0) == 0);
+        assert(*std::next(c.begin(), 1) == 1);
+        assert(*std::next(c.begin(), 2) == 2);
+        assert(*std::next(c.begin(), 3) == 10);
+        assert(*std::next(c.begin(), 4) == 10);
+        assert(*std::next(c.begin(), 5) == 10);
+
+        c.resize(6, 12);
+        assert(std::distance(c.begin(), c.end()) == 6);
+        assert(*std::next(c.begin(), 0) == 0);
+        assert(*std::next(c.begin(), 1) == 1);
+        assert(*std::next(c.begin(), 2) == 2);
+        assert(*std::next(c.begin(), 3) == 10);
+        assert(*std::next(c.begin(), 4) == 10);
+        assert(*std::next(c.begin(), 5) == 10);
     }
-  }
-#endif
+#if TEST_STD_VER >= 11
+    {
+        typedef int T;
+        typedef std::forward_list<T, min_allocator<T>> C;
+        const T t[] = {0, 1, 2, 3, 4};
+        C c(std::begin(t), std::end(t));
 
-  return true;
-}
+        c.resize(3, 10);
+        assert(std::distance(c.begin(), c.end()) == 3);
+        assert(*std::next(c.begin(), 0) == 0);
+        assert(*std::next(c.begin(), 1) == 1);
+        assert(*std::next(c.begin(), 2) == 2);
 
-int main(int, char**) {
-  assert(test());
-#if TEST_STD_VER >= 26
-  static_assert(test());
+        c.resize(6, 10);
+        assert(std::distance(c.begin(), c.end()) == 6);
+        assert(*std::next(c.begin(), 0) == 0);
+        assert(*std::next(c.begin(), 1) == 1);
+        assert(*std::next(c.begin(), 2) == 2);
+        assert(*std::next(c.begin(), 3) == 10);
+        assert(*std::next(c.begin(), 4) == 10);
+        assert(*std::next(c.begin(), 5) == 10);
+
+        c.resize(6, 12);
+        assert(std::distance(c.begin(), c.end()) == 6);
+        assert(*std::next(c.begin(), 0) == 0);
+        assert(*std::next(c.begin(), 1) == 1);
+        assert(*std::next(c.begin(), 2) == 2);
+        assert(*std::next(c.begin(), 3) == 10);
+        assert(*std::next(c.begin(), 4) == 10);
+        assert(*std::next(c.begin(), 5) == 10);
+    }
+    {
+        // Test that the allocator's construct method is being used to
+        // construct the new elements and that it's called exactly N times.
+        typedef std::forward_list<int, ContainerTestAllocator<int, int>> Container;
+        ConstructController* cc = getConstructController();
+        cc->reset();
+        {
+            Container c;
+            cc->expect<int const&>(6);
+            c.resize(6, 42);
+            assert(!cc->unchecked());
+        }
+    }
 #endif
 
   return 0;

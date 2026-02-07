@@ -14,9 +14,12 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Tools/mlir-reduce/MlirReduceMain.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/Parser/Parser.h"
+#include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Reducer/Passes.h"
+#include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Support/FileUtilities.h"
 #include "mlir/Tools/ParseUtilities.h"
 #include "llvm/Support/InitLLVM.h"
@@ -26,9 +29,9 @@
 using namespace mlir;
 
 // Parse and verify the input MLIR file. Returns null on error.
-static OwningOpRef<Operation *> loadModule(MLIRContext &context,
-                                           StringRef inputFilename,
-                                           bool insertImplictModule) {
+OwningOpRef<Operation *> loadModule(MLIRContext &context,
+                                    StringRef inputFilename,
+                                    bool insertImplictModule) {
   // Set up the input file.
   std::string errorMessage;
   auto file = openInputFile(inputFilename, &errorMessage);
@@ -65,11 +68,6 @@ LogicalResult mlir::mlirReduceMain(int argc, char **argv,
           "Disable implicit addition of a top-level module op during parsing"),
       llvm::cl::init(false)};
 
-  static llvm::cl::opt<bool> allowUnregisteredDialects(
-      "allow-unregistered-dialect",
-      llvm::cl::desc("Allow operation with no registered dialects"),
-      llvm::cl::init(false));
-
   llvm::cl::HideUnrelatedOptions(mlirReduceCategory);
 
   llvm::InitLLVM y(argc, argv);
@@ -84,8 +82,6 @@ LogicalResult mlir::mlirReduceMain(int argc, char **argv,
     llvm::cl::PrintHelpMessage();
     return success();
   }
-  if (allowUnregisteredDialects)
-    context.allowUnregisteredDialects();
 
   std::string errorMessage;
 

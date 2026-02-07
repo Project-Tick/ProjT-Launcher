@@ -24,7 +24,7 @@ using namespace mlir::vector;
 namespace {
 
 struct StepToArithConstantOpRewrite final : OpRewritePattern<vector::StepOp> {
-  using Base::Base;
+  using OpRewritePattern::OpRewritePattern;
 
   LogicalResult matchAndRewrite(vector::StepOp stepOp,
                                 PatternRewriter &rewriter) const override {

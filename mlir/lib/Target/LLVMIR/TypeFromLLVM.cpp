@@ -12,6 +12,7 @@
 #include "mlir/IR/MLIRContext.h"
 
 #include "llvm/ADT/TypeSwitch.h"
+#include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Type.h"
 
@@ -24,9 +25,7 @@ namespace detail {
 class TypeFromLLVMIRTranslatorImpl {
 public:
   /// Constructs a class creating types in the given MLIR context.
-  TypeFromLLVMIRTranslatorImpl(MLIRContext &context,
-                               bool importStructsAsLiterals)
-      : context(context), importStructsAsLiterals(importStructsAsLiterals) {}
+  TypeFromLLVMIRTranslatorImpl(MLIRContext &context) : context(context) {}
 
   /// Translates the given type.
   Type translateType(llvm::Type *type) {
@@ -104,7 +103,7 @@ private:
   /// Translates the given structure type.
   Type translate(llvm::StructType *type) {
     SmallVector<Type, 8> subtypes;
-    if (type->isLiteral() || importStructsAsLiterals) {
+    if (type->isLiteral()) {
       translateTypes(type->subtypes(), subtypes);
       return LLVM::LLVMStructType::getLiteral(&context, subtypes,
                                               type->isPacked());
@@ -125,15 +124,14 @@ private:
 
   /// Translates the given fixed-vector type.
   Type translate(llvm::FixedVectorType *type) {
-    return VectorType::get(type->getNumElements(),
-                           translateType(type->getElementType()));
+    return LLVM::getFixedVectorType(translateType(type->getElementType()),
+                                    type->getNumElements());
   }
 
   /// Translates the given scalable-vector type.
   Type translate(llvm::ScalableVectorType *type) {
-    return VectorType::get(type->getMinNumElements(),
-                           translateType(type->getElementType()),
-                           /*scalableDims=*/true);
+    return LLVM::LLVMScalableVectorType::get(
+        translateType(type->getElementType()), type->getMinNumElements());
   }
 
   /// Translates the given target extension type.
@@ -159,20 +157,14 @@ private:
 
   /// The context in which MLIR types are created.
   MLIRContext &context;
-
-  /// Controls if structs should be imported as literal structs, i.e., nameless
-  /// structs.
-  bool importStructsAsLiterals;
 };
 
 } // namespace detail
 } // namespace LLVM
 } // namespace mlir
 
-LLVM::TypeFromLLVMIRTranslator::TypeFromLLVMIRTranslator(
-    MLIRContext &context, bool importStructsAsLiterals)
-    : impl(std::make_unique<detail::TypeFromLLVMIRTranslatorImpl>(
-          context, importStructsAsLiterals)) {}
+LLVM::TypeFromLLVMIRTranslator::TypeFromLLVMIRTranslator(MLIRContext &context)
+    : impl(new detail::TypeFromLLVMIRTranslatorImpl(context)) {}
 
 LLVM::TypeFromLLVMIRTranslator::~TypeFromLLVMIRTranslator() = default;
 

@@ -74,6 +74,7 @@
 
 #include "MCTargetDesc/MipsABIInfo.h"
 #include "MCTargetDesc/MipsBaseInfo.h"
+#include "MCTargetDesc/MipsMCNaCl.h"
 #include "MCTargetDesc/MipsMCTargetDesc.h"
 #include "Mips.h"
 #include "MipsInstrInfo.h"
@@ -134,8 +135,9 @@ class MipsBranchExpansion : public MachineFunctionPass {
 public:
   static char ID;
 
-  MipsBranchExpansion()
-      : MachineFunctionPass(ID), ABI(MipsABIInfo::Unknown()) {}
+  MipsBranchExpansion() : MachineFunctionPass(ID), ABI(MipsABIInfo::Unknown()) {
+    initializeMipsBranchExpansionPass(*PassRegistry::getPassRegistry());
+  }
 
   StringRef getPassName() const override {
     return "Mips Branch Expansion Pass";
@@ -144,7 +146,8 @@ public:
   bool runOnMachineFunction(MachineFunction &F) override;
 
   MachineFunctionProperties getRequiredProperties() const override {
-    return MachineFunctionProperties().setNoVRegs();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::NoVRegs);
   }
 
 private:
@@ -517,19 +520,27 @@ void MipsBranchExpansion::expandToLongBranch(MBBInfo &I) {
       BuildMI(*BalTgtMBB, Pos, DL, TII->get(Mips::LW), Mips::RA)
           .addReg(Mips::SP)
           .addImm(0);
+      if (STI->isTargetNaCl())
+        // Bundle-align the target of indirect branch JR.
+        TgtMBB->setAlignment(MIPS_NACL_BUNDLE_ALIGN);
 
+      // In NaCl, modifying the sp is not allowed in branch delay slot.
       // For MIPS32R6, we can skip using a delay slot branch.
       bool hasDelaySlot = buildProperJumpMI(BalTgtMBB, Pos, DL);
 
-      if (!hasDelaySlot) {
+      if (STI->isTargetNaCl() || !hasDelaySlot) {
         BuildMI(*BalTgtMBB, std::prev(Pos), DL, TII->get(Mips::ADDiu), Mips::SP)
             .addReg(Mips::SP)
             .addImm(8);
       }
       if (hasDelaySlot) {
-        BuildMI(*BalTgtMBB, Pos, DL, TII->get(Mips::ADDiu), Mips::SP)
-            .addReg(Mips::SP)
-            .addImm(8);
+        if (STI->isTargetNaCl()) {
+          TII->insertNop(*BalTgtMBB, Pos, DL);
+        } else {
+          BuildMI(*BalTgtMBB, Pos, DL, TII->get(Mips::ADDiu), Mips::SP)
+              .addReg(Mips::SP)
+              .addImm(8);
+        }
         BalTgtMBB->rbegin()->bundleWithPred();
       }
     } else {
@@ -890,6 +901,14 @@ bool MipsBranchExpansion::handlePossibleLongBranch() {
            (Br->isUnconditionalBranch() && IsPIC))) {
         int64_t Offset = computeOffset(&*Br);
 
+        if (STI->isTargetNaCl()) {
+          // The offset calculation does not include sandboxing instructions
+          // that will be added later in the MC layer.  Since at this point we
+          // don't know the exact amount of code that "sandboxing" will add, we
+          // conservatively estimate that code will not grow more than 100%.
+          Offset *= 2;
+        }
+
         if (ForceLongBranchFirstPass ||
             !TII->isBranchOffsetInRange(Br->getOpcode(), Offset)) {
           MBBInfos[I].Offset = Offset;
@@ -924,7 +943,7 @@ bool MipsBranchExpansion::runOnMachineFunction(MachineFunction &MF) {
   IsPIC = TM.isPositionIndependent();
   ABI = static_cast<const MipsTargetMachine &>(TM).getABI();
   STI = &MF.getSubtarget<MipsSubtarget>();
-  TII = STI->getInstrInfo();
+  TII = static_cast<const MipsInstrInfo *>(STI->getInstrInfo());
 
   if (IsPIC && ABI.IsO32() &&
       MF.getInfo<MipsFunctionInfo>()->globalBaseRegSet())

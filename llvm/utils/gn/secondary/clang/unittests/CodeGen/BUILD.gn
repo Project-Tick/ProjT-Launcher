@@ -17,7 +17,6 @@ unittest("ClangCodeGenTests") {
     "BufferSourceTest.cpp",
     "CheckTargetFeaturesTest.cpp",
     "CodeGenExternalTest.cpp",
-    "DemangleTrapReasonInDebugInfo.cpp",
     "TBAAMetadataTest.cpp",
   ]
 }

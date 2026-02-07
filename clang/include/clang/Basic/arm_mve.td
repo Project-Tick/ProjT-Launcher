@@ -167,9 +167,7 @@ multiclass FMA<bit add> {
   // second multiply input.
   defvar m2_cg = !if(add, (id $m2), (fneg $m2));
 
-  defvar fma = strictFPAlt<IRIntBase<"fma", [Vector]>,
-                           IRInt<"fma", [Vector]>>;
-  defvar unpred_cg = (fma $m1, m2_cg, $addend);
+  defvar unpred_cg = (IRIntBase<"fma", [Vector]> $m1, m2_cg, $addend);
   defvar pred_cg   = (IRInt<"fma_predicated", [Vector, Predicate]>
                           $m1, m2_cg, $addend, $pred);
 
@@ -598,7 +596,7 @@ foreach half = [ "b", "t" ] in {
   } // params = [f16], pnt = PNT_None
 } // loop over half = "b", "t"
 
-multiclass float_int_conversions<Type FScalar, Type IScalar, Builder ftoi, Builder itof> {
+multiclass float_int_conversions<Type FScalar, Type IScalar, IRBuilderBase ftoi, IRBuilderBase itof> {
   defvar FVector = VecOf<FScalar>;
   defvar IVector = VecOf<IScalar>;
 
@@ -700,8 +698,7 @@ let params = [s16, s32] in {
 
 multiclass vrnd<IRIntBase ir_int, string suffix> {
   let params = T.Float in {
-    def "": Intrinsic<Vector, (args Vector:$a),
-                              (strictFPAlt<ir_int, IRInt<"vrint"#suffix, [Vector]>> $a)>;
+    def "": Intrinsic<Vector, (args Vector:$a), (ir_int $a)>;
     defm "": IntrinsicMX<Vector, (args Vector:$a, Predicate:$pred),
         (IRInt<"vrint"#suffix#"_predicated", [Vector, Predicate]>
             $a, $pred, $inactive)>;
@@ -713,7 +710,7 @@ defm vrndmq: vrnd<IRIntBase<"floor", [Vector]>, "m">;
 defm vrndpq: vrnd<IRIntBase<"ceil",  [Vector]>, "p">;
 defm vrndaq: vrnd<IRIntBase<"round", [Vector]>, "a">;
 defm vrndxq: vrnd<IRIntBase<"rint",  [Vector]>, "x">;
-defm vrndnq: vrnd<IRIntBase<"roundeven", [Vector]>, "n">;
+defm vrndnq: vrnd<IRInt<"vrintn",    [Vector]>, "n">;
 
 multiclass compare_with_pred<string condname, dag arguments,
                              dag cmp, string suffix> {
@@ -726,7 +723,7 @@ multiclass compare_with_pred<string condname, dag arguments,
        NameOverride<"vcmp" # condname # "q_m" # suffix>;
 }
 
-multiclass compare<string condname, Builder cmpop> {
+multiclass compare<string condname, IRBuilder cmpop> {
   // Make all four variants of a comparison: the vector/vector and
   // vector/scalar forms, each using compare_with_pred to make a
   // predicated and unpredicated version.
@@ -784,15 +781,15 @@ let params = T.Unsigned in {
 }
 let params = T.Float in {
   def vminnmq: Intrinsic<Vector, (args Vector:$a, Vector:$b),
-                                 (fminnm $a, $b)>;
+                                 (IRIntBase<"minnum", [Vector]> $a, $b)>;
   def vmaxnmq: Intrinsic<Vector, (args Vector:$a, Vector:$b),
-                                 (fmaxnm $a, $b)>;
+                                 (IRIntBase<"maxnum", [Vector]> $a, $b)>;
   def vminnmaq: Intrinsic<Vector, (args Vector:$a, Vector:$b),
-                                  (fminnm
+                                  (IRIntBase<"minnum", [Vector]>
                                    (IRIntBase<"fabs", [Vector]> $a),
                                    (IRIntBase<"fabs", [Vector]> $b))>;
   def vmaxnmaq: Intrinsic<Vector, (args Vector:$a, Vector:$b),
-                                  (fmaxnm
+                                  (IRIntBase<"maxnum", [Vector]>
                                    (IRIntBase<"fabs", [Vector]> $a),
                                    (IRIntBase<"fabs", [Vector]> $b))>;
 }
@@ -834,8 +831,9 @@ multiclass contiguous_load<string mnemonic, PrimitiveType memtype,
          NameOverride<mnemonic>;
     def: Intrinsic<Vector, (args CPtr<CopyKind<same_size[0], Scalar>>:$addr,
                                  Predicate:$pred),
-                   (masked_load Vector, (CPtr<Vector> $addr),
-                       !srl(memtype.size,3), $pred, (zeroinit Vector))>,
+                   (IRIntBase<"masked_load", [Vector, CPtr<Vector>]>
+                        (CPtr<Vector> $addr), !srl(memtype.size,3),
+                        $pred, (zeroinit Vector))>,
          NameOverride<mnemonic # "_z">;
   }
 
@@ -848,8 +846,9 @@ multiclass contiguous_load<string mnemonic, PrimitiveType memtype,
          NameOverride<"vld1q">;
     def: Intrinsic<Vector, (args CPtr<CopyKind<same_size[0], Scalar>>:$addr,
                                  Predicate:$pred),
-                   (masked_load Vector, (CPtr<Vector> $addr),
-                        !srl(memtype.size,3), $pred, (zeroinit Vector))>,
+                   (IRIntBase<"masked_load", [Vector, CPtr<Vector>]>
+                        (CPtr<Vector> $addr), !srl(memtype.size,3),
+                        $pred, (zeroinit Vector))>,
          NameOverride<"vld1q_z">;
   }
 
@@ -864,7 +863,9 @@ multiclass contiguous_load<string mnemonic, PrimitiveType memtype,
          NameOverride<mnemonic>;
     def: Intrinsic<Vector, (args CPtr<CopyKind<same_size[0], Scalar>>:$addr,
                                  Predicate:$pred),
-                   (extend (masked_load NarrowedVecOf<memtype,Vector>,
+                   (extend (IRIntBase<"masked_load",
+                                      [NarrowedVecOf<memtype,Vector>,
+                                      CPtr<NarrowedVecOf<memtype,Vector>>]>
                                 (CPtr<NarrowedVecOf<memtype,Vector>> $addr),
                                 !srl(memtype.size,3), $pred,
                                 (zeroinit NarrowedVecOf<memtype,Vector>)),
@@ -889,7 +890,8 @@ multiclass contiguous_store<string mnemonic, PrimitiveType memtype,
          NameOverride<mnemonic>;
     def: Intrinsic<Void, (args Ptr<CopyKind<same_size[0], Scalar>>:$addr,
                                Vector:$value, Predicate:$pred),
-                   (masked_store $value, (Ptr<Vector> $addr),
+                   (IRIntBase<"masked_store", [Vector, Ptr<Vector>]>
+                        $value, (Ptr<Vector> $addr),
                         !srl(memtype.size,3), $pred)>,
          NameOverride<mnemonic # "_p">;
   }
@@ -905,7 +907,8 @@ multiclass contiguous_store<string mnemonic, PrimitiveType memtype,
          NameOverride<"vst1q">;
     def: Intrinsic<Void, (args Ptr<CopyKind<same_size[0], Scalar>>:$addr,
                                Vector:$value, Predicate:$pred),
-                   (masked_store $value, (Ptr<Vector> $addr),
+                   (IRIntBase<"masked_store", [Vector, Ptr<Vector>]>
+                        $value, (Ptr<Vector> $addr),
                         !srl(memtype.size,3), $pred)>,
          NameOverride<"vst1q_p">;
   }
@@ -922,7 +925,9 @@ multiclass contiguous_store<string mnemonic, PrimitiveType memtype,
          NameOverride<mnemonic>;
     def: Intrinsic<Void, (args Ptr<CopyKind<same_size[0], Scalar>>:$addr,
                                Vector:$value, Predicate:$pred),
-                   (masked_store
+                   (IRIntBase<"masked_store",
+                              [NarrowedVecOf<memtype,Vector>,
+                               Ptr<NarrowedVecOf<memtype,Vector>>]>
                         (trunc $value, NarrowedVecOf<memtype,Vector>),
                         (Ptr<NarrowedVecOf<memtype,Vector>> $addr),
                         !srl(memtype.size,3), $pred)>,
@@ -1532,7 +1537,7 @@ foreach desttype = T.All in {
 let params = T.All in {
   let pnt = PNT_None in {
     def vcreateq: Intrinsic<Vector, (args u64:$a, u64:$b),
-        (vreinterpret (ielt_const (ielt_const (poison VecOf<u64>), $a, 0),
+        (vreinterpret (ielt_const (ielt_const (undef VecOf<u64>), $a, 0),
                              $b, 1), Vector)>;
     def vuninitializedq: Intrinsic<Vector, (args), (undef Vector)>;
   }

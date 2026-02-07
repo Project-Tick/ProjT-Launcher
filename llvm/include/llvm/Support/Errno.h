@@ -13,7 +13,6 @@
 #ifndef LLVM_SUPPORT_ERRNO_H
 #define LLVM_SUPPORT_ERRNO_H
 
-#include "llvm/Support/Compiler.h"
 #include <cerrno>
 #include <string>
 
@@ -24,10 +23,10 @@ namespace sys {
 /// thread-safe variant of strerror() is available.  Be sure to call this
 /// immediately after the function that set errno, or errno may have been
 /// overwritten by an intervening call.
-LLVM_ABI std::string StrError();
+std::string StrError();
 
 /// Like the no-argument version above, but uses \p errnum instead of errno.
-LLVM_ABI std::string StrError(int errnum);
+std::string StrError(int errnum);
 
 template <typename FailT, typename Fun, typename... Args>
 inline decltype(auto) RetryAfterSignal(const FailT &Fail, const Fun &F,

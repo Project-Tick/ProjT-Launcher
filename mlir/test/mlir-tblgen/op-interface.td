@@ -31,6 +31,11 @@ def ExtraShardDeclsInterface : OpInterface<"ExtraShardDeclsInterface"> {
 // DECL-NEXT:   return (*this).someOtherMethod();
 // DECL-NEXT: }
 
+// DECL: struct ExtraShardDeclsInterfaceTrait
+// DECL:      bool sharedMethodDeclaration() {
+// DECL-NEXT:   return (*static_cast<ConcreteOp *>(this)).someOtherMethod();
+// DECL-NEXT: }
+
 def TestInheritanceMultiBaseInterface : OpInterface<"TestInheritanceMultiBaseInterface"> {
   let methods = [
     InterfaceMethod<
@@ -66,7 +71,7 @@ def TestInheritanceMiddleBaseInterface
 def TestInheritanceZDerivedInterface
   : OpInterface<"TestInheritanceZDerivedInterface", [TestInheritanceMiddleBaseInterface]>;
 
-// DECL: struct TestInheritanceZDerivedInterfaceInterfaceTraits
+// DECL: class TestInheritanceZDerivedInterface
 // DECL: struct Concept {
 // DECL:     const TestInheritanceMultiBaseInterface::Concept *implTestInheritanceMultiBaseInterface = nullptr;
 // DECL-NOT: const TestInheritanceMultiBaseInterface::Concept
@@ -168,16 +173,10 @@ def DeclareMethodsWithDefaultOp : Op<TestDialect, "declare_methods_op",
 // DECL: /// some function comment
 // DECL: int foo(int input);
 
-// Trait declarations / definitions come after interface definitions.
-// DECL: struct ExtraShardDeclsInterfaceTrait : public
-// DECL:      bool sharedMethodDeclaration() {
-// DECL-NEXT:   return (*static_cast<ConcreteOp *>(this)).someOtherMethod();
-// DECL-NEXT: }
-
-// DECL-LABEL: struct TestOpInterfaceVerifyTrait : public
+// DECL-LABEL: struct TestOpInterfaceVerifyTrait
 // DECL: verifyTrait
 
-// DECL-LABEL: struct TestOpInterfaceVerifyRegionTrait : public
+// DECL-LABEL: struct TestOpInterfaceVerifyRegionTrait
 // DECL: verifyRegionTrait
 
 // Method implementations come last, after all class definitions.

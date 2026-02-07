@@ -46,8 +46,7 @@ public:
     eTypeUInt16,
     eTypeUInt32,
     eTypeUInt64,
-    eTypeUIntN, /// < This value is used when the (integer) register is larger
-                /// than 64-bits.
+    eTypeUInt128,
     eTypeFloat,
     eTypeDouble,
     eTypeLongDouble,
@@ -70,7 +69,7 @@ public:
     m_scalar = inst;
   }
 
-  explicit RegisterValue(llvm::APInt inst) : m_type(eTypeUIntN) {
+  explicit RegisterValue(llvm::APInt inst) : m_type(eTypeUInt128) {
     m_scalar = llvm::APInt(std::move(inst));
   }
 
@@ -179,7 +178,7 @@ public:
   }
 
   void operator=(llvm::APInt uint) {
-    m_type = eTypeUIntN;
+    m_type = eTypeUInt128;
     m_scalar = llvm::APInt(std::move(uint));
   }
 
@@ -218,8 +217,8 @@ public:
     m_scalar = uint;
   }
 
-  void SetUIntN(llvm::APInt uint) {
-    m_type = eTypeUIntN;
+  void SetUInt128(llvm::APInt uint) {
+    m_type = eTypeUInt128;
     m_scalar = std::move(uint);
   }
 

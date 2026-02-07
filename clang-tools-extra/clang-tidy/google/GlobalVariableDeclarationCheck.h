@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- GlobalVariableDeclarationCheck.h - clang-tidy-----------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_GOOGLE_GLOBALVARIABLEDECLARATIONCHECK_H
-#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_GOOGLE_GLOBALVARIABLEDECLARATIONCHECK_H
+#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_GOOGLE_OBJC_GLOBAL_VARIABLE_DECLARATION_H
+#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_GOOGLE_OBJC_GLOBAL_VARIABLE_DECLARATION_H
 
 #include "../ClangTidyCheck.h"
 
@@ -18,9 +18,9 @@ namespace clang::tidy::google::objc {
 /// 'g[A-Z].*' (variables).
 ///
 /// For the user-facing documentation see:
-/// https://clang.llvm.org/extra/clang-tidy/checks/google/objc-global-variable-declaration.html
+/// http://clang.llvm.org/extra/clang-tidy/checks/google/objc-global-variable-declaration.html
 class GlobalVariableDeclarationCheck : public ClangTidyCheck {
-public:
+ public:
   GlobalVariableDeclarationCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   bool isLanguageVersionSupported(const LangOptions &LangOpts) const override {
@@ -32,4 +32,4 @@ public:
 
 } // namespace clang::tidy::google::objc
 
-#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_GOOGLE_GLOBALVARIABLEDECLARATIONCHECK_H
+#endif  // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_GOOGLE_OBJC_GLOBAL_VARIABLE_DECLARATION_H

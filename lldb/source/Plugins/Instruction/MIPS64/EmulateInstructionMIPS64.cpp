@@ -67,7 +67,7 @@ EmulateInstructionMIPS64::EmulateInstructionMIPS64(
   std::string Status;
   llvm::Triple triple = arch.GetTriple();
   const llvm::Target *target =
-      llvm::TargetRegistry::lookupTarget(triple, Status);
+      llvm::TargetRegistry::lookupTarget(triple.getTriple(), Status);
 
 /*
  * If we fail to get the target then we haven't registered it. The
@@ -84,7 +84,7 @@ EmulateInstructionMIPS64::EmulateInstructionMIPS64(
     LLVMInitializeMipsAsmPrinter();
     LLVMInitializeMipsTargetMC();
     LLVMInitializeMipsDisassembler();
-    target = llvm::TargetRegistry::lookupTarget(triple, Status);
+    target = llvm::TargetRegistry::lookupTarget(triple.getTriple(), Status);
   }
 #endif
 
@@ -151,15 +151,17 @@ EmulateInstructionMIPS64::EmulateInstructionMIPS64(
   if (arch_flags & ArchSpec::eMIPSAse_micromips)
     features += "+micromips,";
 
-  m_reg_info.reset(target->createMCRegInfo(triple));
+  m_reg_info.reset(target->createMCRegInfo(triple.getTriple()));
   assert(m_reg_info.get());
 
   m_insn_info.reset(target->createMCInstrInfo());
   assert(m_insn_info.get());
 
   llvm::MCTargetOptions MCOptions;
-  m_asm_info.reset(target->createMCAsmInfo(*m_reg_info, triple, MCOptions));
-  m_subtype_info.reset(target->createMCSubtargetInfo(triple, cpu, features));
+  m_asm_info.reset(
+      target->createMCAsmInfo(*m_reg_info, triple.getTriple(), MCOptions));
+  m_subtype_info.reset(
+      target->createMCSubtargetInfo(triple.getTriple(), cpu, features));
   assert(m_asm_info.get() && m_subtype_info.get());
 
   m_context = std::make_unique<llvm::MCContext>(
@@ -1015,17 +1017,17 @@ bool EmulateInstructionMIPS64::CreateFunctionEntryUnwind(
   unwind_plan.Clear();
   unwind_plan.SetRegisterKind(eRegisterKindDWARF);
 
-  UnwindPlan::Row row;
+  UnwindPlan::RowSP row(new UnwindPlan::Row);
   const bool can_replace = false;
 
   // Our previous Call Frame Address is the stack pointer
-  row.GetCFAValue().SetIsRegisterPlusOffset(dwarf_sp_mips64, 0);
+  row->GetCFAValue().SetIsRegisterPlusOffset(dwarf_sp_mips64, 0);
 
   // Our previous PC is in the RA
-  row.SetRegisterLocationToRegister(dwarf_pc_mips64, dwarf_ra_mips64,
-                                    can_replace);
+  row->SetRegisterLocationToRegister(dwarf_pc_mips64, dwarf_ra_mips64,
+                                     can_replace);
 
-  unwind_plan.AppendRow(std::move(row));
+  unwind_plan.AppendRow(row);
 
   // All other registers are the same.
   unwind_plan.SetSourceName("EmulateInstructionMIPS64");

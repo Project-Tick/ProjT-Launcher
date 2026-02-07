@@ -120,7 +120,8 @@ bool operator==(const Replacement &LHS, const Replacement &RHS) {
 void Replacement::setFromSourceLocation(const SourceManager &Sources,
                                         SourceLocation Start, unsigned Length,
                                         StringRef ReplacementText) {
-  const FileIDAndOffset DecomposedLocation = Sources.getDecomposedLoc(Start);
+  const std::pair<FileID, unsigned> DecomposedLocation =
+      Sources.getDecomposedLoc(Start);
   OptionalFileEntryRef Entry =
       Sources.getFileEntryRefForID(DecomposedLocation.first);
   this->FilePath = std::string(Entry ? Entry->getName() : InvalidLocation);
@@ -136,8 +137,8 @@ static int getRangeSize(const SourceManager &Sources,
                         const LangOptions &LangOpts) {
   SourceLocation SpellingBegin = Sources.getSpellingLoc(Range.getBegin());
   SourceLocation SpellingEnd = Sources.getSpellingLoc(Range.getEnd());
-  FileIDAndOffset Start = Sources.getDecomposedLoc(SpellingBegin);
-  FileIDAndOffset End = Sources.getDecomposedLoc(SpellingEnd);
+  std::pair<FileID, unsigned> Start = Sources.getDecomposedLoc(SpellingBegin);
+  std::pair<FileID, unsigned> End = Sources.getDecomposedLoc(SpellingEnd);
   if (Start.first != End.first) return -1;
   if (Range.isTokenRange())
     End.second += Lexer::MeasureTokenLength(SpellingEnd, Sources, LangOpts);
@@ -581,11 +582,12 @@ llvm::Expected<std::string> applyAllReplacements(StringRef Code,
   if (Replaces.empty())
     return Code.str();
 
-  auto InMemoryFileSystem =
-      llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
+      new llvm::vfs::InMemoryFileSystem);
   FileManager Files(FileSystemOptions(), InMemoryFileSystem);
-  DiagnosticOptions DiagOpts;
-  DiagnosticsEngine Diagnostics(DiagnosticIDs::create(), DiagOpts);
+  DiagnosticsEngine Diagnostics(
+      IntrusiveRefCntPtr<DiagnosticIDs>(new DiagnosticIDs),
+      new DiagnosticOptions);
   SourceManager SourceMgr(Diagnostics, Files);
   Rewriter Rewrite(SourceMgr, LangOptions());
   InMemoryFileSystem->addFile(

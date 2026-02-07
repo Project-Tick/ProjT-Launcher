@@ -21,6 +21,8 @@
 #include "Symbols.h"
 #include "SyntheticSections.h"
 #include "Target.h"
+#include "lld/Common/CommonLinkerContext.h"
+#include "lld/Common/Strings.h"
 #include "llvm/Support/Endian.h"
 #include <algorithm>
 
@@ -352,11 +354,11 @@ void ARMErr657417Patcher::init() {
     llvm::stable_sort(mapSyms, [](const Defined *a, const Defined *b) {
       return a->value < b->value;
     });
-    mapSyms.erase(llvm::unique(mapSyms,
-                               [=](const Defined *a, const Defined *b) {
-                                 return (isThumbMapSymbol(a) ==
-                                         isThumbMapSymbol(b));
-                               }),
+    mapSyms.erase(std::unique(mapSyms.begin(), mapSyms.end(),
+                              [=](const Defined *a, const Defined *b) {
+                                return (isThumbMapSymbol(a) ==
+                                        isThumbMapSymbol(b));
+                              }),
                   mapSyms.end());
     // Always start with a Thumb Mapping Symbol
     if (!mapSyms.empty() && !isThumbMapSymbol(mapSyms.front()))

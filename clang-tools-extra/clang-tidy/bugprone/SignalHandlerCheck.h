@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- SignalHandlerCheck.h - clang-tidy ----------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -19,7 +19,7 @@ namespace clang::tidy::bugprone {
 /// Checker for signal handler functions.
 ///
 /// For the user-facing documentation see:
-/// https://clang.llvm.org/extra/clang-tidy/checks/bugprone/signal-handler.html
+/// http://clang.llvm.org/extra/clang-tidy/checks/bugprone/signal-handler.html
 class SignalHandlerCheck : public ClangTidyCheck {
 public:
   enum class AsyncSafeFunctionSetKind { Minimal, POSIX };
@@ -48,10 +48,10 @@ private:
   /// The bool parameter is used like \c SkipPathEnd in \c reportHandlerChain .
   /// \return Returns true if a diagnostic was emitted for this function.
   bool checkFunction(const FunctionDecl *FD, const Expr *CallOrRef,
-                     llvm::function_ref<void(bool)> ChainReporter);
+                     std::function<void(bool)> ChainReporter);
   /// Similar as \c checkFunction but only check for C++14 rules.
   bool checkFunctionCPP14(const FunctionDecl *FD, const Expr *CallOrRef,
-                          llvm::function_ref<void(bool)> ChainReporter);
+                          std::function<void(bool)> ChainReporter);
   /// Returns true if a standard library function is considered
   /// asynchronous-safe.
   bool isStandardFunctionAsyncSafe(const FunctionDecl *FD) const;
@@ -65,9 +65,8 @@ private:
   /// registered as signal handler.
   /// @param SkipPathEnd If true the last item of the call chain (farthest away
   /// from the \c signal call) is omitted from note generation.
-  void
-  reportHandlerChain(const llvm::df_iterator<const clang::CallGraphNode *> &Itr,
-                     const DeclRefExpr *HandlerRef, bool SkipPathEnd);
+  void reportHandlerChain(const llvm::df_iterator<clang::CallGraphNode *> &Itr,
+                          const DeclRefExpr *HandlerRef, bool SkipPathEnd);
 
   clang::CallGraph CG;
 

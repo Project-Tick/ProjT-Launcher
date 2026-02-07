@@ -81,7 +81,6 @@ protected:
   friend class SBFileSpec;
   friend class SBFileSpecList;
   friend class SBFrame;
-  friend class SBFrameList;
   friend class SBFunction;
   friend class SBInstruction;
   friend class SBInstructionList;

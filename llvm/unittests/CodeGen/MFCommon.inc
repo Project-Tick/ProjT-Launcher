@@ -2,8 +2,7 @@
 // depending on a real target.
 class BogusTargetLowering : public TargetLowering {
 public:
-  BogusTargetLowering(const TargetMachine &TM, const TargetSubtargetInfo &STI)
-      : TargetLowering(TM, STI) {}
+  BogusTargetLowering(TargetMachine &TM) : TargetLowering(TM) {}
 };
 
 class BogusFrameLowering : public TargetFrameLowering {
@@ -46,7 +45,7 @@ public:
     static RegClassWeight Bogus{1, 16};
     return Bogus;
   }
-  unsigned getRegUnitWeight(MCRegUnit RegUnit) const override { return 1; }
+  unsigned getRegUnitWeight(unsigned RegUnit) const override { return 1; }
   unsigned getNumRegPressureSets() const override { return 0; }
   const char *getRegPressureSetName(unsigned Idx) const override {
     return "bogus";
@@ -60,7 +59,7 @@ public:
     static const int Bogus[] = {0, -1};
     return &Bogus[0];
   }
-  const int *getRegUnitPressureSets(MCRegUnit RegUnit) const override {
+  const int *getRegUnitPressureSets(unsigned RegUnit) const override {
     static const int Bogus[] = {0, -1};
     return &Bogus[0];
   }
@@ -76,20 +75,13 @@ public:
   }
 };
 
-class BogusTargetInstrInfo : public TargetInstrInfo {
-  BogusRegisterInfo RegInfo;
-
-public:
-  BogusTargetInstrInfo() : TargetInstrInfo(RegInfo) {}
-};
-
 class BogusSubtarget : public TargetSubtargetInfo {
 public:
   BogusSubtarget(TargetMachine &TM)
       : TargetSubtargetInfo(Triple(""), "", "", "", {}, {}, {}, nullptr,
                             nullptr, nullptr, nullptr, nullptr, nullptr),
-        FL(), TL(TM, *this) {}
-  ~BogusSubtarget() override = default;
+        FL(), TL(TM) {}
+  ~BogusSubtarget() override {}
 
   const TargetFrameLowering *getFrameLowering() const override { return &FL; }
 
@@ -103,7 +95,7 @@ private:
   BogusFrameLowering FL;
   BogusRegisterInfo TRI;
   BogusTargetLowering TL;
-  BogusTargetInstrInfo TII;
+  TargetInstrInfo TII;
 };
 
 static TargetOptions getTargetOptionsForBogusMachine() {
@@ -120,7 +112,7 @@ public:
             Reloc::Static, CodeModel::Small, CodeGenOptLevel::Default),
         ST(*this) {}
 
-  ~BogusTargetMachine() override = default;
+  ~BogusTargetMachine() override {}
 
   const TargetSubtargetInfo *getSubtargetImpl(const Function &) const override {
     return &ST;
@@ -135,10 +127,10 @@ BogusTargetMachine *createTargetMachine() {
   return &BogusTM;
 }
 
-std::unique_ptr<MachineFunction>
-createMachineFunction(LLVMContext &Ctx, Module &M, const Twine &Name = "Test") {
+std::unique_ptr<MachineFunction> createMachineFunction(LLVMContext &Ctx,
+                                                       Module &M) {
   auto Type = FunctionType::get(Type::getVoidTy(Ctx), false);
-  auto F = Function::Create(Type, GlobalValue::ExternalLinkage, Name, &M);
+  auto F = Function::Create(Type, GlobalValue::ExternalLinkage, "Test", &M);
 
   auto TM = createTargetMachine();
   unsigned FunctionNum = 42;
@@ -148,3 +140,4 @@ createMachineFunction(LLVMContext &Ctx, Module &M, const Twine &Name = "Test") {
   return std::make_unique<MachineFunction>(*F, *TM, STI, MMI.getContext(),
                                            FunctionNum);
 }
+

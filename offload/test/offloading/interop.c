@@ -1,6 +1,5 @@
 // RUN: %libomptarget-compile-run-and-check-generic
-
-// XFAIL: !intelgpu
+// REQUIRES: nvptx64-nvidia-cuda
 
 #include <assert.h>
 #include <omp.h>

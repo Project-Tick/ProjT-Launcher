@@ -129,8 +129,8 @@ Module *Module::findSubModule(llvm::StringRef SubName) {
 // Implementation functions:
 
 // Reserved keywords in module.modulemap syntax.
-// Keep in sync with keywords in module map parser in Lex/ModuleMapFile.cpp,
-// such as in ModuleMapFileParser::consumeToken().
+// Keep in sync with keywords in module map parser in Lex/ModuleMap.cpp,
+// such as in ModuleMapParser::consumeToken().
 static const char *const ReservedNames[] = {
   "config_macros", "export",   "module", "conflict", "framework",
   "requires",      "exclude",  "header", "private",  "explicit",
@@ -156,8 +156,8 @@ ensureNoCollisionWithReservedName(llvm::StringRef MightBeReservedName) {
 static std::string
 ensureVaidModuleName(llvm::StringRef MightBeInvalidName) {
   std::string SafeName(MightBeInvalidName);
-  llvm::replace(SafeName, '-', '_');
-  llvm::replace(SafeName, '.', '_');
+  std::replace(SafeName.begin(), SafeName.end(), '-', '_');
+  std::replace(SafeName.begin(), SafeName.end(), '.', '_');
   if (isdigit(SafeName[0]))
     SafeName = "_" + SafeName;
   return SafeName;
@@ -192,7 +192,7 @@ static bool addModuleDescription(Module *RootModule,
     return true;
   }
   // Make canonical.
-  llvm::replace(FilePath, '\\', '/');
+  std::replace(FilePath.begin(), FilePath.end(), '\\', '/');
   // Insert module into tree, using subdirectories as submodules.
   for (llvm::sys::path::const_iterator I = llvm::sys::path::begin(FilePath),
                                        E = llvm::sys::path::end(FilePath);

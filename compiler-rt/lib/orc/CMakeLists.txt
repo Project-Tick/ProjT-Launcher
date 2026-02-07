@@ -4,8 +4,7 @@
 set(ORC_COMMON_SOURCES
   debug.cpp
   dlfcn_wrapper.cpp
-  reoptimize.cpp
-  rtti.cpp
+  extensible_rtti.cpp
   log_error_to_stderr.cpp
   run_program_wrapper.cpp
   resolve.cpp
@@ -19,7 +18,7 @@ set(ORC_COMMON_IMPL_HEADERS
   endianness.h
   error.h
   executor_address.h
-  rtti.h
+  extensible_rtti.h
   simple_packed_serialization.h
   stl_extras.h
   wrapper_function_utils.h
@@ -120,7 +119,6 @@ else() # not Apple
       elfnix_tls.x86-64.S
       elfnix_tls.aarch64.S
       elfnix_tls.ppc64.S
-      elfnix_tls.systemz.S
       sysv_reenter.arm64.S
       sysv_reenter.x86-64.S
       )

@@ -615,10 +615,11 @@ define <1 x i8> @getL() {
 ; CHECK-NEXT: ; kill
 ; CHECK-NEXT: [[LDRGOT_LABEL:Lloh[0-9]+]]:
 ; CHECK-NEXT: ldr {{[xw]}}[[LDRGOT_REG:[0-9]+]], [[[ADRP_REG]], _L@GOTPAGEOFF]
-; CHECK-NEXT: [[STR_LABEL:Lloh[0-9]+]]:
-; CHECK-NEXT: str b0, [x[[LDRGOT_REG]]]
+; Ultimately we should generate str b0, but right now, we match the vector
+; variant which does not allow to fold the immediate into the store.
+; CHECK-NEXT: st1.b { v0 }[0], [x[[LDRGOT_REG]]]
 ; CHECK-NEXT: ret
-; CHECK: .loh AdrpLdrGotStr [[ADRP_LABEL]], [[LDRGOT_LABEL]], [[STR_LABEL]]
+; CHECK: .loh AdrpLdrGot [[ADRP_LABEL]], [[LDRGOT_LABEL]]
 define void @setL(<1 x i8> %t) {
   store <1 x i8> %t, ptr @L, align 4
   ret void
@@ -661,9 +662,9 @@ define void @uninterestingSub(ptr nocapture %row) #0 {
 @.str.89 = external unnamed_addr constant [12 x i8], align 1
 @.str.90 = external unnamed_addr constant [5 x i8], align 1
 ; CHECK-LABEL: test_r274582
-define void @test_r274582(double %x, i1 %arg) {
+define void @test_r274582(double %x) {
 entry:
-  br i1 %arg, label %if.then.i, label %if.end.i
+  br i1 undef, label %if.then.i, label %if.end.i
 if.then.i:
   ret void
 if.end.i:
@@ -677,6 +678,6 @@ if.end.i:
   call void (ptr, ...) @callee(ptr @.str.89, ptr @.str.90, double %sub)
   unreachable
 }
-declare void @callee(ptr nocapture readonly, ...)
+declare void @callee(ptr nocapture readonly, ...) 
 
 attributes #0 = { "target-cpu"="cyclone" }

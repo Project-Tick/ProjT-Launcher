@@ -112,9 +112,6 @@ public:
 
   bool IsValid() const;
 
-  /// Returns true if this platform is the host platform, otherwise false.
-  bool IsHost() const;
-
   void Clear();
 
   const char *GetWorkingDirectory();

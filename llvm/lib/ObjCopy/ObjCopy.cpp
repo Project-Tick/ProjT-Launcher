@@ -9,8 +9,6 @@
 #include "llvm/ObjCopy/ObjCopy.h"
 #include "llvm/ObjCopy/COFF/COFFConfig.h"
 #include "llvm/ObjCopy/COFF/COFFObjcopy.h"
-#include "llvm/ObjCopy/DXContainer/DXContainerConfig.h"
-#include "llvm/ObjCopy/DXContainer/DXContainerObjcopy.h"
 #include "llvm/ObjCopy/ELF/ELFConfig.h"
 #include "llvm/ObjCopy/ELF/ELFObjcopy.h"
 #include "llvm/ObjCopy/MachO/MachOConfig.h"
@@ -21,7 +19,6 @@
 #include "llvm/ObjCopy/wasm/WasmConfig.h"
 #include "llvm/ObjCopy/wasm/WasmObjcopy.h"
 #include "llvm/Object/COFF.h"
-#include "llvm/Object/DXContainer.h"
 #include "llvm/Object/ELFObjectFile.h"
 #include "llvm/Object/Error.h"
 #include "llvm/Object/MachO.h"
@@ -29,13 +26,15 @@
 #include "llvm/Object/Wasm.h"
 #include "llvm/Object/XCOFFObjectFile.h"
 
-using namespace llvm;
+namespace llvm {
+namespace objcopy {
+
 using namespace llvm::object;
 
 /// The function executeObjcopyOnBinary does the dispatch based on the format
 /// of the input binary (ELF, MachO or COFF).
-Error objcopy::executeObjcopyOnBinary(const MultiFormatConfig &Config,
-                                      object::Binary &In, raw_ostream &Out) {
+Error executeObjcopyOnBinary(const MultiFormatConfig &Config,
+                             object::Binary &In, raw_ostream &Out) {
   if (auto *ELFBinary = dyn_cast<object::ELFObjectFileBase>(&In)) {
     Expected<const ELFConfig &> ELFConfig = Config.getELFConfig();
     if (!ELFConfig)
@@ -81,15 +80,9 @@ Error objcopy::executeObjcopyOnBinary(const MultiFormatConfig &Config,
     return xcoff::executeObjcopyOnBinary(Config.getCommonConfig(), *XCOFFConfig,
                                          *XCOFFBinary, Out);
   }
-  if (auto *DXContainerBinary = dyn_cast<object::DXContainerObjectFile>(&In)) {
-    Expected<const DXContainerConfig &> DXContainerConfig =
-        Config.getDXContainerConfig();
-    if (!DXContainerConfig)
-      return DXContainerConfig.takeError();
-
-    return dxbc::executeObjcopyOnBinary(
-        Config.getCommonConfig(), *DXContainerConfig, *DXContainerBinary, Out);
-  }
   return createStringError(object_error::invalid_file_type,
                            "unsupported object file format");
 }
+
+} // end namespace objcopy
+} // end namespace llvm

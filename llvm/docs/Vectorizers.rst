@@ -200,19 +200,7 @@ reduction operations, such as addition, multiplication, XOR, AND and OR.
     return sum;
   }
 
-Fully vectorizing reductions requires reordering operations, which is
-problematic for floating-point arithmetic because it is not associative;
-therefore results may depend on the evaluation order.
-
-Changing floating-point results is implicitly prohibited by the C and C++
-standards, therefore LLVM supports vectorizing floating point reductions only
-when at least the `-fassociative-math -fno-signed-zeros -fno-trapping-math`
-subset of `-ffast-math` is used on most targets. On some targets, such as
-AArch64 and RISC-V, LLVM can generate ordered reductions that preserve the
-exact result, enabling limited, standards-compliant vectorization. However,
-ordered reductions are typically less efficient than traditionally vectorized
-reductions, therefore enabling floating-point reordering may still result in
-more performant reductions on these targets.
+We support floating point reduction operations when `-ffast-math` is used.
 
 Inductions
 ^^^^^^^^^^
@@ -358,10 +346,10 @@ instruction is available.
   }
 
 Many of these math functions are only vectorizable if the file has been built
-with a specified target vector library that provides a vector implementation
+with a specified target vector library that provides a vector implemention
 of that math function. Using clang, this is handled by the "-fveclib" command
 line option with one of the following vector libraries:
-"Accelerate,libmvec,MASSV,SVML,SLEEF,Darwin_libsystem_m,ArmPL,AMDLIBM"
+"accelerate,libmvec,massv,svml,sleef,darwin_libsystem_m,armpl,amdlibm"
 
 .. code-block:: console
 
@@ -416,21 +404,13 @@ Early Exit Vectorization
 
 When vectorizing a loop with a single early exit, the loop blocks following the
 early exit are predicated and the vector loop will always exit via the latch.
-The loop terminates with a single BranchOnTwoConds VPInstruction, which takes
-both the early and latch exiting conditions. If the early exiting condition is
-true, BranchOnTwoConds exits to an intermediate block (``vector.early.exit``
-below). This intermediate block is responsible for calculating any exit values
-of loop-defined variables that are used in the early exit block. If the latch
-exiting condition is true, BranchOnTwoConds exits to the ``middle.block`` which
-selects between the exit block and the scalar remainder loop. Otherwise
-BranchOnTwoConds continues executing the loop by jumping back to the region
-header.
+If the early exit has been taken, the vector loop's successor block
+(``middle.split`` below) branches to the early exit block. Otherwise
+``middle.block`` selects between the exit block from the latch or the scalar
+remainder loop.
 
 .. image:: vplan-early-exit.png
 
-BranchOnTwoConds is lowered to a chain of conditional branches after dissolving loop regions:
-
-.. image:: vplan-early-exit-lowered.png
 
 Performance
 -----------
@@ -497,12 +477,3 @@ through clang using the command line flag:
 .. code-block:: console
 
    $ clang -fno-slp-vectorize file.c
-
-The Sandbox Vectorizer
-======================
-.. toctree::
-   :hidden:
-
-   SandboxVectorizer
-
-The :doc:`Sandbox Vectorizer <SandboxVectorizer>` is an experimental framework for building modular vectorization pipelines on top of :doc:`Sandbox IR <SandboxIR>`, with a focus on ease of testing and ease of development.

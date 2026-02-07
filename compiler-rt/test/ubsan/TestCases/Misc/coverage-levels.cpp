@@ -1,6 +1,7 @@
 // Test various levels of coverage
 //
-// UNSUPPORTED: system-windows
+// FIXME: Port the environment variable logic below for the lit shell.
+// REQUIRES: shell
 //
 // RUN: rm -rf %t-dir && mkdir %t-dir
 // RUN: %clangxx -fsanitize=shift                        -DGOOD_SHIFT=1 -O1 -fsanitize-coverage=func,trace-pc-guard  %s -o %t
@@ -19,9 +20,8 @@
 // RUN: %clangxx -fsanitize=shift -O1 -fsanitize-coverage=edge,trace-pc-guard  %s -o %t
 // RUN: %env_ubsan_opts=coverage=1:verbosity=1:coverage_dir='"%t-dir"' %run %t 2>&1 | FileCheck %s --check-prefix=CHECK3 --check-prefix=CHECK_WARN
 
-// Coverage is not yet implemented in TSan or TySan.
+// Coverage is not yet implemented in TSan.
 // XFAIL: ubsan-tsan
-// XFAIL: ubsan-tysan
 // UNSUPPORTED: ubsan-standalone-static
 // No coverage support
 // UNSUPPORTED: target={{.*openbsd.*}}

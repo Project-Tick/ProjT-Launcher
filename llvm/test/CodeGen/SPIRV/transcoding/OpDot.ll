@@ -14,10 +14,9 @@
 ; CHECK-SPIRV-NOT:   %[[#]] = OpDot %[[#]] %[[#]] %[[#]]
 ; CHECK-SPIRV:       OpFunctionEnd
 
-define spir_kernel void @testScalar(float %f, ptr addrspace(1) %out) {
+define spir_kernel void @testScalar(float %f) {
 entry:
   %call = tail call spir_func float @_Z3dotff(float %f, float %f)
-  store float %call, ptr addrspace(1) %out
   ret void
 }
 
@@ -29,14 +28,11 @@ entry:
 ; CHECK-SPIRV:       %[[#]] = OpDot %[[#TyHalf]] %[[#]] %[[#]]
 ; CHECK-SPIRV:       OpFunctionEnd
 
-define spir_kernel void @testVector(<2 x float> %f, <2 x half> %h, ptr addrspace(1) %out, ptr addrspace(1) %outh) {
+define spir_kernel void @testVector(<2 x float> %f, <2 x half> %h) {
 entry:
   %call = tail call spir_func float @_Z3dotDv2_fS_(<2 x float> %f, <2 x float> %f)
-  store float %call, ptr addrspace(1) %out
   %call2 = tail call spir_func float @__spirv_Dot(<2 x float> %f, <2 x float> %f)
-  store float %call2, ptr addrspace(1) %out
   %call3 = tail call spir_func half @_Z11__spirv_DotDv2_DF16_S_(<2 x half> %h, <2 x half> %h)
-  store half %call3, ptr addrspace(1) %outh
   ret void
 }
 

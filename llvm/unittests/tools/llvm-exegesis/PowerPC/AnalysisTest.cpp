@@ -26,8 +26,7 @@ using testing::UnorderedElementsAre;
 class PPCAnalysisTest : public ::testing::Test {
 protected:
   PPCAnalysisTest() {
-    const StringRef TripleName = "powerpc64le-unknown-linux";
-    const Triple TT(TripleName);
+    const std::string TT = "powerpc64le-unknown-linux";
     std::string error;
     const Target *const TheTarget = TargetRegistry::lookupTarget(TT, error);
     if (!TheTarget) {

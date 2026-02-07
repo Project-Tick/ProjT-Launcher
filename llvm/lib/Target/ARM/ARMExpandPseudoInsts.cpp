@@ -27,8 +27,6 @@
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/Support/Debug.h"
 
-#include <atomic>
-
 using namespace llvm;
 
 #define DEBUG_TYPE "arm-pseudo"
@@ -53,7 +51,8 @@ namespace {
     bool runOnMachineFunction(MachineFunction &Fn) override;
 
     MachineFunctionProperties getRequiredProperties() const override {
-      return MachineFunctionProperties().setNoVRegs();
+      return MachineFunctionProperties().set(
+          MachineFunctionProperties::Property::NoVRegs);
     }
 
     StringRef getPassName() const override {
@@ -161,8 +160,8 @@ namespace {
     friend bool operator<(const NEONLdStTableEntry &TE, unsigned PseudoOpc) {
       return TE.PseudoOpc < PseudoOpc;
     }
-    [[maybe_unused]] friend bool operator<(unsigned PseudoOpc,
-                                           const NEONLdStTableEntry &TE) {
+    friend bool LLVM_ATTRIBUTE_UNUSED operator<(unsigned PseudoOpc,
+                                                const NEONLdStTableEntry &TE) {
       return PseudoOpc < TE.PseudoOpc;
     }
   };
@@ -932,7 +931,6 @@ static bool IsAnAddressOperand(const MachineOperand &MO) {
     return true;
   case MachineOperand::MO_RegisterMask:
   case MachineOperand::MO_RegisterLiveOut:
-  case MachineOperand::MO_LaneMask:
     return false;
   case MachineOperand::MO_Metadata:
   case MachineOperand::MO_MCSymbol:
@@ -2146,7 +2144,7 @@ static void CMSEPushCalleeSaves(const TargetInstrInfo &TII,
 
 static void CMSEPopCalleeSaves(const TargetInstrInfo &TII,
                                MachineBasicBlock &MBB,
-                               MachineBasicBlock::iterator MBBI,
+                               MachineBasicBlock::iterator MBBI, int JumpReg,
                                bool Thumb1Only) {
   const DebugLoc &DL = MBBI->getDebugLoc();
   if (Thumb1Only) {
@@ -2302,8 +2300,6 @@ bool ARMExpandPseudo::ExpandMI(MachineBasicBlock &MBB,
       for (unsigned i = 2, e = MBBI->getNumOperands(); i != e; ++i)
         NewMI->addOperand(MBBI->getOperand(i));
 
-      NewMI->setCFIType(*MBB.getParent(), MI.getCFIType());
-
       // Update call info and delete the pseudo instruction TCRETURN.
       if (MI.isCandidateForAdditionalCallInfo())
         MI.getMF()->moveAdditionalCallInfo(&MI, &*NewMI);
@@ -2422,7 +2418,7 @@ bool ARMExpandPseudo::ExpandMI(MachineBasicBlock &MBB,
 
       CMSERestoreFPRegs(MBB, MBBI, DL, OriginalClearRegs); // restore FP registers
 
-      CMSEPopCalleeSaves(*TII, MBB, MBBI, AFI->isThumb1OnlyFunction());
+      CMSEPopCalleeSaves(*TII, MBB, MBBI, JumpReg, AFI->isThumb1OnlyFunction());
 
       MI.eraseFromParent();
       return true;
@@ -2547,7 +2543,9 @@ bool ARMExpandPseudo::ExpandMI(MachineBasicBlock &MBB,
     }
     case ARM::Int_eh_sjlj_dispatchsetup: {
       MachineFunction &MF = *MI.getParent()->getParent();
-      const ARMBaseRegisterInfo &RI = TII->getRegisterInfo();
+      const ARMBaseInstrInfo *AII =
+        static_cast<const ARMBaseInstrInfo*>(TII);
+      const ARMBaseRegisterInfo &RI = AII->getRegisterInfo();
       // For functions using a base pointer, we rematerialize it (via the frame
       // pointer) here since eh.sjlj.setjmp and eh.sjlj.longjmp don't do it
       // for us. Otherwise, expand to nothing.

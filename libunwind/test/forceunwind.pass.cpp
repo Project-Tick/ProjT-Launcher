@@ -7,9 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: target={{.*-apple.*}}
-// UNSUPPORTED: target={{.*-aix.*}}
-// UNSUPPORTED: target={{.*-windows.*}}
+// REQUIRES: linux
 
 // TODO: Figure out why this fails with Memory Sanitizer.
 // XFAIL: msan
@@ -74,7 +72,7 @@ __attribute__((noinline)) void foo() {
   _Unwind_ForcedUnwind(e, stop, (void *)&foo);
 }
 
-__attribute__((section("main_func"))) int main(int, char **) {
+__attribute__((section("main_func"))) int main() {
   foo();
   return -2;
 }

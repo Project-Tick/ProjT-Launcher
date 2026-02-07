@@ -38,7 +38,7 @@ public:
                   llvm::MCInstPrinter &Printer, llvm::ArrayRef<llvm::MCInst> S)
       : STI(STI), MCIP(Printer), Source(S), InstrStream(InstructionString) {}
 
-  ~InstructionView() override;
+  virtual ~InstructionView();
 
   StringRef getNameAsString() const override { return "Instructions"; }
 

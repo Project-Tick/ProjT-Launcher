@@ -16,7 +16,6 @@
 #include "AArch64MachineFunctionInfo.h"
 #include "AArch64InstrInfo.h"
 #include "AArch64Subtarget.h"
-#include "llvm/ADT/StringSwitch.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Module.h"
@@ -24,28 +23,9 @@
 
 using namespace llvm;
 
-static std::optional<uint64_t>
-getSVEStackSize(const AArch64FunctionInfo &MFI,
-                uint64_t (AArch64FunctionInfo::*GetStackSize)() const) {
-  if (!MFI.hasCalculatedStackSizeSVE())
-    return std::nullopt;
-  return (MFI.*GetStackSize)();
-}
-
 yaml::AArch64FunctionInfo::AArch64FunctionInfo(
     const llvm::AArch64FunctionInfo &MFI)
-    : HasRedZone(MFI.hasRedZone()),
-      StackSizeZPR(
-          getSVEStackSize(MFI, &llvm::AArch64FunctionInfo::getStackSizeZPR)),
-      StackSizePPR(
-          getSVEStackSize(MFI, &llvm::AArch64FunctionInfo::getStackSizePPR)),
-      HasStackFrame(MFI.hasStackFrame()
-                        ? std::optional<bool>(MFI.hasStackFrame())
-                        : std::nullopt),
-      HasStreamingModeChanges(
-          MFI.hasStreamingModeChanges()
-              ? std::optional<bool>(MFI.hasStreamingModeChanges())
-              : std::nullopt) {}
+    : HasRedZone(MFI.hasRedZone()) {}
 
 void yaml::AArch64FunctionInfo::mappingImpl(yaml::IO &YamlIO) {
   MappingTraits<AArch64FunctionInfo>::mapping(YamlIO, *this);
@@ -55,30 +35,26 @@ void AArch64FunctionInfo::initializeBaseYamlFields(
     const yaml::AArch64FunctionInfo &YamlMFI) {
   if (YamlMFI.HasRedZone)
     HasRedZone = YamlMFI.HasRedZone;
-  if (YamlMFI.StackSizeZPR || YamlMFI.StackSizePPR)
-    setStackSizeSVE(YamlMFI.StackSizeZPR.value_or(0),
-                    YamlMFI.StackSizePPR.value_or(0));
-  if (YamlMFI.HasStackFrame)
-    setHasStackFrame(*YamlMFI.HasStackFrame);
-  if (YamlMFI.HasStreamingModeChanges)
-    setHasStreamingModeChanges(*YamlMFI.HasStreamingModeChanges);
 }
 
-static SignReturnAddress GetSignReturnAddress(const Function &F) {
+static std::pair<bool, bool> GetSignReturnAddress(const Function &F) {
   if (F.hasFnAttribute("ptrauth-returns"))
-    return SignReturnAddress::NonLeaf;
-
+    return {true, false}; // non-leaf
   // The function should be signed in the following situations:
   // - sign-return-address=all
   // - sign-return-address=non-leaf and the functions spills the LR
   if (!F.hasFnAttribute("sign-return-address"))
-    return SignReturnAddress::None;
+    return {false, false};
 
   StringRef Scope = F.getFnAttribute("sign-return-address").getValueAsString();
-  return StringSwitch<SignReturnAddress>(Scope)
-      .Case("none", SignReturnAddress::None)
-      .Case("non-leaf", SignReturnAddress::NonLeaf)
-      .Case("all", SignReturnAddress::All);
+  if (Scope == "none")
+    return {false, false};
+
+  if (Scope == "all")
+    return {true, true};
+
+  assert(Scope == "non-leaf");
+  return {true, false};
 }
 
 static bool ShouldSignWithBKey(const Function &F, const AArch64Subtarget &STI) {
@@ -98,7 +74,7 @@ static bool ShouldSignWithBKey(const Function &F, const AArch64Subtarget &STI) {
 
 static bool hasELFSignedGOTHelper(const Function &F,
                                   const AArch64Subtarget *STI) {
-  if (!STI->getTargetTriple().isOSBinFormatELF())
+  if (!Triple(STI->getTargetTriple()).isOSBinFormatELF())
     return false;
   const Module *M = F.getParent();
   const auto *Flag = mdconst::extract_or_null<ConstantInt>(
@@ -114,7 +90,7 @@ AArch64FunctionInfo::AArch64FunctionInfo(const Function &F,
   // HasRedZone here.
   if (F.hasFnAttribute(Attribute::NoRedZone))
     HasRedZone = false;
-  SignCondition = GetSignReturnAddress(F);
+  std::tie(SignReturnAddress, SignReturnAddressAll) = GetSignReturnAddress(F);
   SignWithBKey = ShouldSignWithBKey(F, *STI);
   HasELFSignedGOT = hasELFSignedGOTHelper(F, STI);
   // TODO: skip functions that have no instrumented allocas for optimization
@@ -123,9 +99,6 @@ AArch64FunctionInfo::AArch64FunctionInfo(const Function &F,
   // BTI/PAuthLR are set on the function attribute.
   BranchTargetEnforcement = F.hasFnAttribute("branch-target-enforcement");
   BranchProtectionPAuthLR = F.hasFnAttribute("branch-protection-pauth-lr");
-
-  // Parse the SME function attributes.
-  SMEFnAttrs = SMEAttrs(F);
 
   // The default stack probe size is 4096 if the function has no
   // stack-probe-size attribute. This is a safe default because it is the
@@ -167,28 +140,23 @@ MachineFunctionInfo *AArch64FunctionInfo::clone(
   return DestMF.cloneInfo<AArch64FunctionInfo>(*this);
 }
 
+bool AArch64FunctionInfo::shouldSignReturnAddress(bool SpillsLR) const {
+  if (!SignReturnAddress)
+    return false;
+  if (SignReturnAddressAll)
+    return true;
+  return SpillsLR;
+}
+
 static bool isLRSpilled(const MachineFunction &MF) {
   return llvm::any_of(
       MF.getFrameInfo().getCalleeSavedInfo(),
       [](const auto &Info) { return Info.getReg() == AArch64::LR; });
 }
 
-bool AArch64FunctionInfo::shouldSignReturnAddress(SignReturnAddress Condition,
-                                                  bool IsLRSpilled) {
-  switch (Condition) {
-  case SignReturnAddress::None:
-    return false;
-  case SignReturnAddress::NonLeaf:
-    return IsLRSpilled;
-  case SignReturnAddress::All:
-    return true;
-  }
-  llvm_unreachable("Unknown SignReturnAddress enum");
-}
-
 bool AArch64FunctionInfo::shouldSignReturnAddress(
     const MachineFunction &MF) const {
-  return shouldSignReturnAddress(SignCondition, isLRSpilled(MF));
+  return shouldSignReturnAddress(isLRSpilled(MF));
 }
 
 bool AArch64FunctionInfo::needsShadowCallStackPrologueEpilogue(

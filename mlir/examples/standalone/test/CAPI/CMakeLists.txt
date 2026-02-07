@@ -6,7 +6,9 @@ add_mlir_aggregate(StandaloneCAPITestLib
   SHARED
   EMBED_LIBS
   MLIRCAPIIR
-  MLIRCAPIArith
+  # TODO: Remove this in favor of showing fine grained dialect registration
+  # (once available).
+  MLIRCAPIRegisterEverything
   StandaloneCAPI
 )
 

@@ -17,6 +17,7 @@
 #include "DiffConsumer.h"
 #include "DiffLog.h"
 #include "llvm/ADT/StringRef.h"
+#include <utility>
 
 namespace llvm {
   class Function;
@@ -53,7 +54,7 @@ namespace llvm {
       virtual bool operator()(const Value *L, const Value *R) = 0;
 
     protected:
-      virtual ~Oracle() = default;
+      virtual ~Oracle() {}
     };
 
     DifferenceEngine(Consumer &consumer)

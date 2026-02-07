@@ -17,10 +17,6 @@ public:
   SIFoldOperandsPass() = default;
   PreservedAnalyses run(MachineFunction &MF,
                         MachineFunctionAnalysisManager &MFAM);
-
-  MachineFunctionProperties getRequiredProperties() const {
-    return MachineFunctionProperties().setIsSSA();
-  }
 };
 } // namespace llvm
 

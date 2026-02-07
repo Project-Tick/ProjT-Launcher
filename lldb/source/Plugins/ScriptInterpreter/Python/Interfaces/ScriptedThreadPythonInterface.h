@@ -51,11 +51,6 @@ public:
   std::optional<std::string> GetRegisterContext() override;
 
   StructuredData::ArraySP GetExtendedInfo() override;
-
-  std::optional<std::string> GetScriptedFramePluginName() override;
-
-protected:
-  lldb::ScriptedFrameInterfaceSP CreateScriptedFrameInterface() override;
 };
 } // namespace lldb_private
 

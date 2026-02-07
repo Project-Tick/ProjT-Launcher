@@ -71,9 +71,9 @@ Value nvgpu::getMemrefOperand(Operation *op) {
   if (auto storeOp = dyn_cast<memref::StoreOp>(op))
     return storeOp.getMemref();
   if (auto transferWrite = dyn_cast<vector::TransferWriteOp>(op))
-    return transferWrite.getBase();
+    return transferWrite.getSource();
   if (auto transferRead = dyn_cast<vector::TransferReadOp>(op))
-    return transferRead.getBase();
+    return transferRead.getSource();
   if (auto storeOp = dyn_cast<vector::StoreOp>(op))
     return storeOp.getBase();
   if (auto loadOp = dyn_cast<vector::LoadOp>(op))

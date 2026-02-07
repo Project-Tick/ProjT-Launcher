@@ -15,7 +15,6 @@
 #define LLVM_SUPPORT_FORMATTEDSTREAM_H
 
 #include "llvm/ADT/SmallString.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/raw_ostream.h"
 #include <utility>
 
@@ -28,7 +27,7 @@ namespace llvm {
 /// doesn't attempt to handle everything Unicode can do (combining characters,
 /// right-to-left markers, etc), but should cover the cases likely to appear in
 /// source code or diagnostic messages.
-class LLVM_ABI formatted_raw_ostream : public raw_ostream {
+class formatted_raw_ostream : public raw_ostream {
   /// TheStream - The real stream we output to. We set it to be
   /// unbuffered, since we're already doing our own buffering.
   ///
@@ -180,8 +179,7 @@ public:
     return *this;
   }
 
-  raw_ostream &changeColor(enum Colors Color, bool Bold = false,
-                           bool BG = false) override {
+  raw_ostream &changeColor(enum Colors Color, bool Bold, bool BG) override {
     if (colors_enabled()) {
       DisableScanScope S(this);
       raw_ostream::changeColor(Color, Bold, BG);
@@ -208,15 +206,15 @@ private:
 
 /// fouts() - This returns a reference to a formatted_raw_ostream for
 /// standard output.  Use it like: fouts() << "foo" << "bar";
-LLVM_ABI formatted_raw_ostream &fouts();
+formatted_raw_ostream &fouts();
 
 /// ferrs() - This returns a reference to a formatted_raw_ostream for
 /// standard error.  Use it like: ferrs() << "foo" << "bar";
-LLVM_ABI formatted_raw_ostream &ferrs();
+formatted_raw_ostream &ferrs();
 
 /// fdbgs() - This returns a reference to a formatted_raw_ostream for
 /// debug output.  Use it like: fdbgs() << "foo" << "bar";
-LLVM_ABI formatted_raw_ostream &fdbgs();
+formatted_raw_ostream &fdbgs();
 
 } // end llvm namespace
 

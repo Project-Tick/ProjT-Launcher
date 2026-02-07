@@ -8,6 +8,7 @@
 
 // UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: no-localization
+// UNSUPPORTED: availability-filesystem-missing
 
 // <filesystem>
 

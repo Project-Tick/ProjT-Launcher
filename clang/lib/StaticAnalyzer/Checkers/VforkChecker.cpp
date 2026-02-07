@@ -45,7 +45,7 @@ namespace {
 class VforkChecker : public Checker<check::PreCall, check::PostCall,
                                     check::Bind, check::PreStmt<ReturnStmt>> {
   const BugType BT{this, "Dangerous construct in a vforked process"};
-  mutable llvm::SmallPtrSet<const IdentifierInfo *, 10> VforkAllowlist;
+  mutable llvm::SmallSet<const IdentifierInfo *, 10> VforkAllowlist;
   mutable const IdentifierInfo *II_vfork = nullptr;
 
   static bool isChildProcess(const ProgramStateRef State);
@@ -62,8 +62,7 @@ public:
 
   void checkPreCall(const CallEvent &Call, CheckerContext &C) const;
   void checkPostCall(const CallEvent &Call, CheckerContext &C) const;
-  void checkBind(SVal L, SVal V, const Stmt *S, bool AtDeclInit,
-                 CheckerContext &C) const;
+  void checkBind(SVal L, SVal V, const Stmt *S, CheckerContext &C) const;
   void checkPreStmt(const ReturnStmt *RS, CheckerContext &C) const;
 };
 
@@ -189,7 +188,7 @@ void VforkChecker::checkPreCall(const CallEvent &Call,
 }
 
 // Prohibit writes in child process (except for vfork's lhs).
-void VforkChecker::checkBind(SVal L, SVal V, const Stmt *S, bool AtDeclInit,
+void VforkChecker::checkBind(SVal L, SVal V, const Stmt *S,
                              CheckerContext &C) const {
   ProgramStateRef State = C.getState();
   if (!isChildProcess(State))

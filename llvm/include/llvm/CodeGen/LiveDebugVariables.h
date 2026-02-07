@@ -88,7 +88,8 @@ public:
   void getAnalysisUsage(AnalysisUsage &) const override;
 
   MachineFunctionProperties getSetProperties() const override {
-    return MachineFunctionProperties().setTracksDebugUserValues();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::TracksDebugUserValues);
   }
 };
 
@@ -101,7 +102,8 @@ public:
   using Result = LiveDebugVariables;
 
   MachineFunctionProperties getSetProperties() const {
-    return MachineFunctionProperties().setTracksDebugUserValues();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::TracksDebugUserValues);
   }
 
   Result run(MachineFunction &MF, MachineFunctionAnalysisManager &MFAM);

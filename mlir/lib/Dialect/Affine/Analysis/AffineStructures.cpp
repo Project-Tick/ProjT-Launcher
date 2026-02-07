@@ -12,12 +12,17 @@
 
 #include "mlir/Dialect/Affine/Analysis/AffineStructures.h"
 #include "mlir/Analysis/Presburger/IntegerRelation.h"
+#include "mlir/Analysis/Presburger/LinearTransform.h"
+#include "mlir/Analysis/Presburger/Simplex.h"
 #include "mlir/Analysis/Presburger/Utils.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Affine/IR/AffineValueMap.h"
 #include "mlir/Dialect/Utils/StaticValueUtils.h"
+#include "mlir/IR/AffineExprVisitor.h"
 #include "mlir/IR/IntegerSet.h"
 #include "mlir/Support/LLVM.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
@@ -29,37 +34,28 @@ using namespace mlir;
 using namespace affine;
 using namespace presburger;
 
-LogicalResult
-FlatAffineValueConstraints::addInductionVarOrTerminalSymbol(Value val) {
+
+void FlatAffineValueConstraints::addInductionVarOrTerminalSymbol(Value val) {
   if (containsVar(val))
-    return success();
+    return;
 
   // Caller is expected to fully compose map/operands if necessary.
-  if (val.getDefiningOp<affine::AffineApplyOp>() ||
-      (!isValidSymbol(val) && !isAffineInductionVar(val))) {
-    LLVM_DEBUG(llvm::dbgs()
-               << "only valid terminal symbols and affine IVs supported\n");
-    return failure();
-  }
+  assert((isTopLevelValue(val) || isAffineInductionVar(val)) &&
+         "non-terminal symbol / loop IV expected");
   // Outer loop IVs could be used in forOp's bounds.
   if (auto loop = getForInductionVarOwner(val)) {
     appendDimVar(val);
-    if (failed(this->addAffineForOpDomain(loop))) {
+    if (failed(this->addAffineForOpDomain(loop)))
       LLVM_DEBUG(
           loop.emitWarning("failed to add domain info to constraint system"));
-      return failure();
-    }
-    return success();
+    return;
   }
-
   if (auto parallel = getAffineParallelInductionVarOwner(val)) {
     appendDimVar(parallel.getIVs());
-    if (failed(this->addAffineParallelOpDomain(parallel))) {
+    if (failed(this->addAffineParallelOpDomain(parallel)))
       LLVM_DEBUG(parallel.emitWarning(
           "failed to add domain info to constraint system"));
-      return failure();
-    }
-    return success();
+    return;
   }
 
   // Add top level symbol.
@@ -67,7 +63,6 @@ FlatAffineValueConstraints::addInductionVarOrTerminalSymbol(Value val) {
   // Check if the symbol is a constant.
   if (std::optional<int64_t> constOp = getConstantIntValue(val))
     addBound(BoundType::EQ, val, constOp.value());
-  return success();
 }
 
 LogicalResult
@@ -93,13 +88,13 @@ FlatAffineValueConstraints::addAffineForOpDomain(AffineForOp forOp) {
       int64_t lb = forOp.getConstantLowerBound();
       dividend[pos] = 1;
       dividend.back() -= lb;
-      unsigned qPos = addLocalFloorDiv(dividend, step);
+      addLocalFloorDiv(dividend, step);
       // Second constraint: (iv - lb) - step * q = 0.
       SmallVector<int64_t, 8> eq(getNumCols(), 0);
       eq[pos] = 1;
       eq.back() -= lb;
       // For the local var just added above.
-      eq[qPos] = -step;
+      eq[getNumCols() - 2] = -step;
       addEquality(eq);
     }
   }
@@ -227,10 +222,8 @@ LogicalResult FlatAffineValueConstraints::addBound(BoundType type, unsigned pos,
   fullyComposeAffineMapAndOperands(&map, &operands);
   map = simplifyAffineMap(map);
   canonicalizeMapAndOperands(&map, &operands);
-  for (Value operand : operands) {
-    if (failed(addInductionVarOrTerminalSymbol(operand)))
-      return failure();
-  }
+  for (auto operand : operands)
+    addInductionVarOrTerminalSymbol(operand);
   return addBound(type, pos, computeAlignedMap(map, operands));
 }
 
@@ -342,7 +335,8 @@ void FlatAffineValueConstraints::getIneqAsAffineValueMap(
 
   if (inequality[pos] > 0)
     // Lower bound.
-    llvm::transform(bound, bound.begin(), std::negate<int64_t>());
+    std::transform(bound.begin(), bound.end(), bound.begin(),
+                   std::negate<int64_t>());
   else
     // Upper bound (which is exclusive).
     bound.back() += 1;
@@ -520,7 +514,7 @@ LogicalResult mlir::affine::getRelationFromMap(AffineMap &map,
   SmallVector<int64_t, 8> eq(localVarCst.getNumCols());
   for (unsigned i = 0, e = map.getNumResults(); i < e; ++i) {
     // Zero fill.
-    llvm::fill(eq, 0);
+    std::fill(eq.begin(), eq.end(), 0);
     // Fill equality.
     for (unsigned j = 0, f = oldDimNum; j < f; ++j)
       eq[j] = flatExprs[i][j];

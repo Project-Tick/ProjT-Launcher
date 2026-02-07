@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- UseTransparentFunctorsCheck.cpp - clang-tidy----------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "UseTransparentFunctorsCheck.h"
+#include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
 using namespace clang::ast_matchers;
@@ -37,13 +38,15 @@ void UseTransparentFunctorsCheck::registerMatchers(MatchFinder *Finder) {
 
   // Non-transparent functor mentioned as a template parameter. FIXIT.
   Finder->addMatcher(
-      loc(qualType(hasDeclaration(classTemplateSpecializationDecl(
-              unless(hasAnyTemplateArgument(templateArgument(refersToType(
-                  qualType(pointsTo(qualType(isAnyCharacter()))))))),
-              hasAnyTemplateArgument(
-                  templateArgument(refersToType(qualType(
-                                       hasDeclaration(TransparentFunctors))))
-                      .bind("Functor"))))))
+      loc(qualType(
+              unless(elaboratedType()),
+              hasDeclaration(classTemplateSpecializationDecl(
+                  unless(hasAnyTemplateArgument(templateArgument(refersToType(
+                      qualType(pointsTo(qualType(isAnyCharacter()))))))),
+                  hasAnyTemplateArgument(
+                      templateArgument(refersToType(qualType(hasDeclaration(
+                                           TransparentFunctors))))
+                          .bind("Functor"))))))
           .bind("FunctorParentLoc"),
       this);
 
@@ -59,7 +62,7 @@ void UseTransparentFunctorsCheck::registerMatchers(MatchFinder *Finder) {
                      this);
 }
 
-static constexpr StringRef Message = "prefer transparent functors '%0<>'";
+static const StringRef Message = "prefer transparent functors '%0<>'";
 
 template <typename T> static T getInnerTypeLocAs(TypeLoc Loc) {
   T Result;
@@ -96,7 +99,7 @@ void UseTransparentFunctorsCheck::check(
         FunctorParentType->template_arguments()[ArgNum];
     if (Arg.getKind() != TemplateArgument::Type)
       continue;
-    const QualType ParentArgType = Arg.getAsType();
+    QualType ParentArgType = Arg.getAsType();
     if (ParentArgType->isRecordType() &&
         ParentArgType->getAsCXXRecordDecl() ==
             Functor->getAsType()->getAsCXXRecordDecl())
@@ -105,13 +108,13 @@ void UseTransparentFunctorsCheck::check(
   // Functor is a default template argument.
   if (ArgNum == FunctorParentType->template_arguments().size())
     return;
-  const TemplateArgumentLoc FunctorLoc = FunctorParentLoc.getArgLoc(ArgNum);
+  TemplateArgumentLoc FunctorLoc = FunctorParentLoc.getArgLoc(ArgNum);
   auto FunctorTypeLoc = getInnerTypeLocAs<TemplateSpecializationTypeLoc>(
       FunctorLoc.getTypeSourceInfo()->getTypeLoc());
   if (FunctorTypeLoc.isNull())
     return;
 
-  const SourceLocation ReportLoc = FunctorLoc.getLocation();
+  SourceLocation ReportLoc = FunctorLoc.getLocation();
   if (ReportLoc.isInvalid())
     return;
   diag(ReportLoc, Message) << FuncClass->getName()

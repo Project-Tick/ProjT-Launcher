@@ -50,7 +50,10 @@ public:
                           const HexagonSubtarget &ST)
     : Resources(ST.createDFAPacketizer(II)), TII(HII) { }
 
-  ~HexagonHazardRecognizer() override { delete Resources; }
+  ~HexagonHazardRecognizer() override {
+    if (Resources)
+      delete Resources;
+  }
 
   /// This callback is invoked when a new block of instructions is about to be
   /// scheduled. The hazard state is set to an initialized state.

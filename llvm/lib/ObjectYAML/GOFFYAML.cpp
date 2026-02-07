@@ -15,7 +15,7 @@
 namespace llvm {
 namespace GOFFYAML {
 
-Object::Object() = default;
+Object::Object() {}
 
 } // namespace GOFFYAML
 

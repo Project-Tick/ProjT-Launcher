@@ -62,11 +62,10 @@ entry:
 define i32 @simplify_demanded_bits_drop_flag(i1 zeroext %x, i1 zeroext %y) nounwind {
 ; CHECK-LABEL: simplify_demanded_bits_drop_flag:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    # kill: def $esi killed $esi def $rsi
+; CHECK-NEXT:    negl %edi
 ; CHECK-NEXT:    shll $2, %esi
-; CHECK-NEXT:    movl %edi, %eax
-; CHECK-NEXT:    negq %rax
-; CHECK-NEXT:    xorq %rsi, %rax
+; CHECK-NEXT:    xorl %edi, %esi
+; CHECK-NEXT:    movslq %esi, %rax
 ; CHECK-NEXT:    imulq $-1634202141, %rax, %rax # imm = 0x9E980DE3
 ; CHECK-NEXT:    movq %rax, %rcx
 ; CHECK-NEXT:    shrq $63, %rcx

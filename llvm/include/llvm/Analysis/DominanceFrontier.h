@@ -24,6 +24,7 @@
 #include "llvm/Pass.h"
 #include "llvm/Support/GenericDomTree.h"
 #include <cassert>
+#include <utility>
 
 namespace llvm {
 

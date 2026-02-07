@@ -8,17 +8,20 @@
 
 #include "clang/Frontend/LogDiagnosticPrinter.h"
 #include "clang/Basic/DiagnosticOptions.h"
+#include "clang/Basic/FileManager.h"
 #include "clang/Basic/PlistSupport.h"
 #include "clang/Basic/SourceManager.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 using namespace clang;
 using namespace markup;
 
 LogDiagnosticPrinter::LogDiagnosticPrinter(
-    raw_ostream &os, DiagnosticOptions &,
+    raw_ostream &os, DiagnosticOptions *diags,
     std::unique_ptr<raw_ostream> StreamOwner)
-    : OS(os), StreamOwner(std::move(StreamOwner)), LangOpts(nullptr) {}
+    : OS(os), StreamOwner(std::move(StreamOwner)), LangOpts(nullptr),
+      DiagOpts(diags) {}
 
 static StringRef getLevelName(DiagnosticsEngine::Level Level) {
   switch (Level) {

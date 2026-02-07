@@ -77,7 +77,8 @@ static void getRelevantOperands(Instruction *I, SmallVectorImpl<Value *> &Ops) {
     Ops.push_back(I->getOperand(2));
     break;
   case Instruction::PHI:
-    llvm::append_range(Ops, cast<PHINode>(I)->incoming_values());
+    for (Value *V : cast<PHINode>(I)->incoming_values())
+      Ops.push_back(V);
     break;
   default:
     llvm_unreachable("Unreachable!");
@@ -110,7 +111,7 @@ bool TruncInstCombine::buildTruncExpressionGraph() {
       Worklist.pop_back();
       Stack.pop_back();
       // Insert I to the Info map.
-      InstInfoMap.try_emplace(I);
+      InstInfoMap.insert(std::make_pair(I, Info()));
       continue;
     }
 
@@ -459,7 +460,7 @@ void TruncInstCombine::ReduceExpressionGraph(Type *SclTy) {
       Value *Op0 = I->getOperand(0);
       Value *LHS = getReducedOperand(I->getOperand(1), SclTy);
       Value *RHS = getReducedOperand(I->getOperand(2), SclTy);
-      Res = Builder.CreateSelect(Op0, LHS, RHS, "", I);
+      Res = Builder.CreateSelect(Op0, LHS, RHS);
       break;
     }
     case Instruction::PHI: {

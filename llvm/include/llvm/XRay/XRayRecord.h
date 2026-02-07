@@ -18,7 +18,8 @@
 #include <vector>
 #include <string>
 
-namespace llvm::xray {
+namespace llvm {
+namespace xray {
 
 /// XRay traces all have a header providing some top-matter information useful
 /// to help tools determine how to interpret the information available in the
@@ -97,6 +98,7 @@ struct XRayRecord {
   std::string Data;
 };
 
-} // namespace llvm::xray
+} // namespace xray
+} // namespace llvm
 
 #endif // LLVM_XRAY_XRAYRECORD_H

@@ -9,9 +9,7 @@
 #ifndef LLVM_CODEGEN_MACHINEMODULESLOTTRACKER_H
 #define LLVM_CODEGEN_MACHINEMODULESLOTTRACKER_H
 
-#include "llvm/ADT/STLFunctionalExtras.h"
 #include "llvm/IR/ModuleSlotTracker.h"
-#include "llvm/Support/Compiler.h"
 
 namespace llvm {
 
@@ -21,11 +19,9 @@ class MachineModuleInfo;
 class MachineFunction;
 class Module;
 
-using MFGetterFnT = function_ref<MachineFunction *(const Function &)>;
-
-class LLVM_ABI MachineModuleSlotTracker : public ModuleSlotTracker {
+class MachineModuleSlotTracker : public ModuleSlotTracker {
   const Function &TheFunction;
-  const MachineFunction *TheMF;
+  const MachineModuleInfo &TheMMI;
   unsigned MDNStartSlot = 0, MDNEndSlot = 0;
 
   void processMachineFunctionMetadata(AbstractSlotTrackerStorage *AST,
@@ -37,9 +33,10 @@ class LLVM_ABI MachineModuleSlotTracker : public ModuleSlotTracker {
                               bool ShouldInitializeAllMetadata);
 
 public:
-  MachineModuleSlotTracker(MFGetterFnT Fn, const MachineFunction *MF,
+  MachineModuleSlotTracker(const MachineModuleInfo &MMI,
+                           const MachineFunction *MF,
                            bool ShouldInitializeAllMetadata = true);
-  ~MachineModuleSlotTracker() override;
+  ~MachineModuleSlotTracker();
 
   void collectMachineMDNodes(MachineMDNodeListType &L) const;
 };

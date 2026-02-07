@@ -26,6 +26,4 @@
 
 // REQUIRES: aarch64-registered-target || arm-registered-target
 
-#include "system_reserved_names.h"
-
 #include <arm_neon.h>

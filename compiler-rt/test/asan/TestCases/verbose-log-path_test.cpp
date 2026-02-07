@@ -1,7 +1,8 @@
-// UNSUPPORTED: system-windows
-
 // RUN: rm -rf %t-dir && mkdir -p %t-dir
 // RUN: %clangxx_asan %s -o %t-dir/verbose-log-path_test-binary
+
+// The glob below requires bash.
+// REQUIRES: shell
 
 // Good log_path.
 // RUN: rm -f %t-dir/asan.log.*
@@ -9,8 +10,8 @@
 // RUN: FileCheck %s --check-prefix=CHECK-ERROR < %t-dir/asan.log.verbose-log-path_test-binary.*
 
 // FIXME: only FreeBSD, NetBSD and Linux have verbose log paths now.
-// XFAIL: target={{.*windows-msvc.*}}
-// UNSUPPORTED: ios, android
+// XFAIL: target={{.*windows-msvc.*}},android
+// UNSUPPORTED: ios
 
 #include <stdlib.h>
 #include <string.h>

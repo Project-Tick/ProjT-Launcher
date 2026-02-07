@@ -1,6 +1,6 @@
-// RUN: mlir-opt %s | FileCheck %s
+// RUN: mlir-opt -verify-diagnostics %s | FileCheck %s
 // check parser
-// RUN: mlir-opt %s | mlir-opt | FileCheck %s
+// RUN: mlir-opt -verify-diagnostics %s | mlir-opt -verify-diagnostics | FileCheck %s
 
 // CHECK-LABEL: func @opaque_attrs() {
 func.func @opaque_attrs() {

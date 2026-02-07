@@ -206,7 +206,11 @@ bool PlatformRemoteGDBServer::SetRemoteWorkingDirectory(
 }
 
 bool PlatformRemoteGDBServer::IsConnected() const {
-  return m_gdb_client_up && m_gdb_client_up->IsConnected();
+  if (m_gdb_client_up) {
+    assert(m_gdb_client_up->IsConnected());
+    return true;
+  }
+  return false;
 }
 
 Status PlatformRemoteGDBServer::ConnectRemote(Args &args) {
@@ -416,17 +420,10 @@ PlatformRemoteGDBServer::DebugProcess(ProcessLaunchInfo &launch_info,
         error = Status::FromErrorStringWithFormat(
             "unable to launch a GDB server on '%s'", GetHostname());
       } else {
-        // By default, we always use the GDB remote debugger plug-in.
-        // Even when debugging locally, we are debugging remotely.
-        llvm::StringRef process_plugin = GetDefaultProcessPluginName();
-
-        // However, if a process plugin is specified by the attach info, we
-        // should honor it.
-        if (!launch_info.GetProcessPluginName().empty())
-          process_plugin = launch_info.GetProcessPluginName();
-
+        // The darwin always currently uses the GDB remote debugger plug-in
+        // so even when debugging locally we are debugging remotely!
         process_sp = target.CreateProcess(launch_info.GetListener(),
-                                          process_plugin, nullptr, true);
+                                          "gdb-remote", nullptr, true);
 
         if (process_sp) {
           process_sp->HijackProcessEvents(launch_info.GetHijackListener());
@@ -512,18 +509,11 @@ lldb::ProcessSP PlatformRemoteGDBServer::Attach(
           error.Clear();
 
         if (target && error.Success()) {
-          // By default, we always use the GDB remote debugger plug-in.
-          // Even when debugging locally, we are debugging remotely.
-          llvm::StringRef process_plugin = GetDefaultProcessPluginName();
-
-          // However, if a process plugin is specified by the attach info, we
-          // should honor it.
-          if (!attach_info.GetProcessPluginName().empty())
-            process_plugin = attach_info.GetProcessPluginName();
-
+          // The darwin always currently uses the GDB remote debugger plug-in
+          // so even when debugging locally we are debugging remotely!
           process_sp =
               target->CreateProcess(attach_info.GetListenerForProcess(debugger),
-                                    process_plugin, nullptr, true);
+                                    "gdb-remote", nullptr, true);
           if (process_sp) {
             error = process_sp->ConnectRemote(connect_url.c_str());
             if (error.Success()) {
@@ -814,10 +804,7 @@ std::string PlatformRemoteGDBServer::MakeUrl(const char *scheme,
                                              const char *hostname,
                                              uint16_t port, const char *path) {
   StreamString result;
-  result.Printf("%s://", scheme);
-  if (strlen(hostname) > 0)
-    result.Printf("[%s]", hostname);
-
+  result.Printf("%s://[%s]", scheme, hostname);
   if (port != 0)
     result.Printf(":%u", port);
   if (path)
@@ -831,8 +818,7 @@ size_t PlatformRemoteGDBServer::ConnectToWaitingProcesses(Debugger &debugger,
   GetPendingGdbServerList(connection_urls);
 
   for (size_t i = 0; i < connection_urls.size(); ++i) {
-    ConnectProcess(connection_urls[i].c_str(), GetDefaultProcessPluginName(),
-                   debugger, nullptr, error);
+    ConnectProcess(connection_urls[i].c_str(), "gdb-remote", debugger, nullptr, error);
     if (error.Fail())
       return i; // We already connected to i process successfully
   }

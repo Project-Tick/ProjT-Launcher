@@ -106,7 +106,7 @@ public:
     assert(ResultIndex >= 0 && "Cannot find DecisionName in inlining model");
   }
 
-  ~ReleaseModeModelRunner() override = default;
+  virtual ~ReleaseModeModelRunner() = default;
 
   static bool classof(const MLModelRunner *R) {
     return R->getKind() == MLModelRunner::Kind::Release;

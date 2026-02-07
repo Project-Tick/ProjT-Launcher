@@ -8,18 +8,6 @@
 
 include "llvm/Target/Target.td"
 
-let Namespace = "R600" in {
-
-foreach Index = 0-15 in {
-  def sub#Index : SubRegIndex<32, !shl(Index, 5)>;
-}
-
-include "R600RegisterInfo.td"
-
-}
-
-defm : RemapAllTargetPseudoPointerOperands<R600_Addr>;
-
 def R600InstrInfo : InstrInfo {
   let guessInstructionProperties = 1;
 }
@@ -29,6 +17,15 @@ def R600 : Target {
   let AllowRegisterRenaming = 1;
 }
 
+let Namespace = "R600" in {
+
+foreach Index = 0-15 in {
+  def sub#Index : SubRegIndex<32, !shl(Index, 5)>;
+}
+
+include "R600RegisterInfo.td"
+
+}
 
 def NullALU : InstrItinClass;
 def ALU_NULL : FuncUnit;

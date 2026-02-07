@@ -111,14 +111,17 @@ public:
   explicit TypedTrackingMDRef(T *MD) : Ref(static_cast<Metadata *>(MD)) {}
 
   TypedTrackingMDRef(TypedTrackingMDRef &&X) : Ref(std::move(X.Ref)) {}
-  TypedTrackingMDRef(const TypedTrackingMDRef &X) = default;
+  TypedTrackingMDRef(const TypedTrackingMDRef &X) : Ref(X.Ref) {}
 
   TypedTrackingMDRef &operator=(TypedTrackingMDRef &&X) {
     Ref = std::move(X.Ref);
     return *this;
   }
 
-  TypedTrackingMDRef &operator=(const TypedTrackingMDRef &X) = default;
+  TypedTrackingMDRef &operator=(const TypedTrackingMDRef &X) {
+    Ref = X.Ref;
+    return *this;
+  }
 
   T *get() const { return (T *)Ref.get(); }
   operator T *() const { return get(); }

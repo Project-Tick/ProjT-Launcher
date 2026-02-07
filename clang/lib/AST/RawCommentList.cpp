@@ -224,8 +224,8 @@ comments::FullComment *RawComment::parse(const ASTContext &Context,
 static bool onlyWhitespaceBetween(SourceManager &SM,
                                   SourceLocation Loc1, SourceLocation Loc2,
                                   unsigned MaxNewlinesAllowed) {
-  FileIDAndOffset Loc1Info = SM.getDecomposedLoc(Loc1);
-  FileIDAndOffset Loc2Info = SM.getDecomposedLoc(Loc2);
+  std::pair<FileID, unsigned> Loc1Info = SM.getDecomposedLoc(Loc1);
+  std::pair<FileID, unsigned> Loc2Info = SM.getDecomposedLoc(Loc2);
 
   // Question does not make sense if locations are in different files.
   if (Loc1Info.first != Loc2Info.first)
@@ -279,20 +279,21 @@ void RawCommentList::addComment(const RawComment &RC,
   if (RC.isOrdinary() && !CommentOpts.ParseAllComments)
     return;
 
-  FileIDAndOffset Loc = SourceMgr.getDecomposedLoc(RC.getBeginLoc());
+  std::pair<FileID, unsigned> Loc =
+      SourceMgr.getDecomposedLoc(RC.getBeginLoc());
 
   const FileID CommentFile = Loc.first;
   const unsigned CommentOffset = Loc.second;
 
   // If this is the first Doxygen comment, save it (because there isn't
   // anything to merge it with).
-  auto &OC = OrderedComments[CommentFile];
-  if (OC.empty()) {
-    OC[CommentOffset] = new (Allocator) RawComment(RC);
+  if (OrderedComments[CommentFile].empty()) {
+    OrderedComments[CommentFile][CommentOffset] =
+        new (Allocator) RawComment(RC);
     return;
   }
 
-  const RawComment &C1 = *OC.rbegin()->second;
+  const RawComment &C1 = *OrderedComments[CommentFile].rbegin()->second;
   const RawComment &C2 = RC;
 
   // Merge comments only if there is only whitespace between them.

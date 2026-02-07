@@ -100,9 +100,9 @@ computeReferencedDecls(const clang::Expr *Expr) {
         TraverseLambdaCapture(LExpr, &Capture, Initializer);
       }
 
-      if (const clang::Expr *RequiresClause =
-              LExpr->getTrailingRequiresClause().ConstraintExpr) {
-        TraverseStmt(const_cast<clang::Expr *>(RequiresClause));
+      if (clang::Expr *const RequiresClause =
+              LExpr->getTrailingRequiresClause()) {
+        TraverseStmt(RequiresClause);
       }
 
       for (auto *const TemplateParam : LExpr->getExplicitTemplateParameters())
@@ -359,9 +359,9 @@ struct ParsedBinaryOperator {
 //    +   c <- End
 //   / \
 //  a   b <- Start
-SourceRange getBinaryOperatorRange(const SelectionTree::Node &N,
-                                   const SourceManager &SM,
-                                   const LangOptions &LangOpts) {
+const SourceRange getBinaryOperatorRange(const SelectionTree::Node &N,
+                                         const SourceManager &SM,
+                                         const LangOptions &LangOpts) {
   // If N is not a suitable binary operator, bail out.
   ParsedBinaryOperator Op;
   if (!Op.parse(N.ignoreImplicit()) || !Op.associative() ||

@@ -10,9 +10,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: zextload_s32_from_s16
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDRHHui:%[0-9]+]]:gpr32 = LDRHHui [[COPY]], 0 :: (load (s16))
     ; CHECK-NEXT: $w0 = COPY [[LDRHHui]]
     %0:gpr(p0) = COPY $x0
@@ -28,9 +26,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: zextload_s32_from_s16_not_combined
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDRHHui:%[0-9]+]]:gpr32 = LDRHHui [[COPY]], 0 :: (load (s16))
     ; CHECK-NEXT: [[COPY1:%[0-9]+]]:gpr32all = COPY [[LDRHHui]]
     ; CHECK-NEXT: $w0 = COPY [[COPY1]]
@@ -48,9 +44,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: i32_to_i64
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDRWui:%[0-9]+]]:gpr32 = LDRWui [[COPY]], 0 :: (load (s32))
     ; CHECK-NEXT: [[SUBREG_TO_REG:%[0-9]+]]:gpr64all = SUBREG_TO_REG 0, [[LDRWui]], %subreg.sub_32
     ; CHECK-NEXT: $x0 = COPY [[SUBREG_TO_REG]]
@@ -70,9 +64,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: i16_to_i64
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDRHHui:%[0-9]+]]:gpr32 = LDRHHui [[COPY]], 0 :: (load (s16))
     ; CHECK-NEXT: [[SUBREG_TO_REG:%[0-9]+]]:gpr64all = SUBREG_TO_REG 0, [[LDRHHui]], %subreg.sub_32
     ; CHECK-NEXT: $x0 = COPY [[SUBREG_TO_REG]]
@@ -92,9 +84,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: i8_to_i64
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDRBBui:%[0-9]+]]:gpr32 = LDRBBui [[COPY]], 0 :: (load (s8))
     ; CHECK-NEXT: [[SUBREG_TO_REG:%[0-9]+]]:gpr64all = SUBREG_TO_REG 0, [[LDRBBui]], %subreg.sub_32
     ; CHECK-NEXT: $x0 = COPY [[SUBREG_TO_REG]]
@@ -114,9 +104,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: i8_to_i32
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDRBBui:%[0-9]+]]:gpr32 = LDRBBui [[COPY]], 0 :: (load (s8))
     ; CHECK-NEXT: $w0 = COPY [[LDRBBui]]
     ; CHECK-NEXT: RET_ReallyLR implicit $w0
@@ -135,9 +123,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: i16_to_i32
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDRHHui:%[0-9]+]]:gpr32 = LDRHHui [[COPY]], 0 :: (load (s16))
     ; CHECK-NEXT: $w0 = COPY [[LDRHHui]]
     ; CHECK-NEXT: RET_ReallyLR implicit $w0
@@ -157,9 +143,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: zextload_s32_from_s8_atomic_unordered
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDRBBui:%[0-9]+]]:gpr32 = LDRBBui [[COPY]], 0 :: (load unordered (s8))
     ; CHECK-NEXT: $w0 = COPY [[LDRBBui]]
     ; CHECK-NEXT: RET_ReallyLR implicit $w0
@@ -179,9 +163,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: zextload_s32_from_s8_atomic_monotonic
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDRBBui:%[0-9]+]]:gpr32 = LDRBBui [[COPY]], 0 :: (load monotonic (s8))
     ; CHECK-NEXT: $w0 = COPY [[LDRBBui]]
     ; CHECK-NEXT: RET_ReallyLR implicit $w0
@@ -201,9 +183,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: zextload_s32_from_s8_atomic_acquire
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDARB:%[0-9]+]]:gpr32 = LDARB [[COPY]] :: (load acquire (s8))
     ; CHECK-NEXT: $w0 = COPY [[LDARB]]
     ; CHECK-NEXT: RET_ReallyLR implicit $w0
@@ -223,9 +203,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: zextload_s32_from_s8_atomic_seq_cst
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDARB:%[0-9]+]]:gpr32 = LDARB [[COPY]] :: (load seq_cst (s8))
     ; CHECK-NEXT: $w0 = COPY [[LDARB]]
     ; CHECK-NEXT: RET_ReallyLR implicit $w0
@@ -245,9 +223,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: zextload_s32_from_s16_atomic_unordered
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDRHHui:%[0-9]+]]:gpr32 = LDRHHui [[COPY]], 0 :: (load unordered (s16))
     ; CHECK-NEXT: $w0 = COPY [[LDRHHui]]
     ; CHECK-NEXT: RET_ReallyLR implicit $w0
@@ -267,9 +243,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: zextload_s32_from_s16_atomic_monotonic
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDRHHui:%[0-9]+]]:gpr32 = LDRHHui [[COPY]], 0 :: (load monotonic (s16))
     ; CHECK-NEXT: $w0 = COPY [[LDRHHui]]
     ; CHECK-NEXT: RET_ReallyLR implicit $w0
@@ -289,9 +263,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: zextload_s32_from_s16_atomic_acquire
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDARH:%[0-9]+]]:gpr32 = LDARH [[COPY]] :: (load acquire (s16))
     ; CHECK-NEXT: $w0 = COPY [[LDARH]]
     ; CHECK-NEXT: RET_ReallyLR implicit $w0
@@ -311,9 +283,7 @@ body:             |
     liveins: $x0
 
     ; CHECK-LABEL: name: zextload_s32_from_s16_atomic_seq_cst
-    ; CHECK: liveins: $x0
-    ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
+    ; CHECK: [[COPY:%[0-9]+]]:gpr64sp = COPY $x0
     ; CHECK-NEXT: [[LDARH:%[0-9]+]]:gpr32 = LDARH [[COPY]] :: (load seq_cst (s16))
     ; CHECK-NEXT: $w0 = COPY [[LDARH]]
     ; CHECK-NEXT: RET_ReallyLR implicit $w0

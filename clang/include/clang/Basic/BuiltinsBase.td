@@ -1,4 +1,4 @@
-//===--- BuiltinsBase.td - common structured used by builtins -------------===//
+//===--- BuiltinsBase.td - common structured used by builtins ---*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -32,17 +32,7 @@ def Const : Attribute<"c">;
 def NoThrow : Attribute<"n">;
 def Pure : Attribute<"U">;
 def ReturnsTwice : Attribute<"j">;
-
-class NonNullOptMode<int mode> {
-  int value = mode;
-}
-
-def NonOptimizing : NonNullOptMode<0>;
-def Optimizing    : NonNullOptMode<1>;
-
-class NonNull<NonNullOptMode Mode, list<int> Is> : MultiIndexAttribute<"N:" # Mode.value # ":", Is> {
-  int optMode = Mode.value;
-}
+//  FIXME: gcc has nonnull
 
 // builtin-specific attributes
 // ---------------------------
@@ -96,13 +86,6 @@ def Consteval : Attribute<"EG">;
 // indicated by the remaining indices.
 class Callback<list<int> ArgIndices> : MultiIndexAttribute<"C", ArgIndices>;
 
-// Prefixes
-// ========
-
-class NamePrefix<string spelling> {
-  string Spelling = spelling;
-}
-
 // Builtin kinds
 // =============
 
@@ -116,9 +99,6 @@ class Builtin {
   bit RequiresUndef = 0;
   // Enables builtins to generate `long long` outside of OpenCL and `long` inside.
   bit EnableOpenCLLong = 0;
-  // Requires a common prefix to be prepended. Each generated set of builtins
-  // can optionally extract one common prefix that is handled separately.
-  NamePrefix RequiredNamePrefix;
 }
 
 class AtomicBuiltin : Builtin;

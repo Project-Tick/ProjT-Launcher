@@ -18,7 +18,6 @@
 #ifndef LLVM_SANDBOXIR_PASSMANAGER_H
 #define LLVM_SANDBOXIR_PASSMANAGER_H
 
-#include "llvm/Support/Compiler.h"
 #include <memory>
 
 #include "llvm/ADT/DenseMap.h"
@@ -49,7 +48,7 @@ protected:
   }
   PassManager(const PassManager &) = delete;
   PassManager(PassManager &&) = default;
-  ~PassManager() override = default;
+  virtual ~PassManager() = default;
   PassManager &operator=(const PassManager &) = delete;
 
 public:
@@ -58,11 +57,6 @@ public:
     // TODO: Check that Pass's class type works with this PassManager type.
     Passes.push_back(std::move(Pass));
   }
-
-  static constexpr char EndToken = '\0';
-  static constexpr char BeginArgsToken = '<';
-  static constexpr char EndArgsToken = '>';
-  static constexpr char PassDelimToken = ',';
 
   /// Parses \p Pipeline as a comma-separated sequence of pass names and sets
   /// the pass pipeline, using \p CreatePass to instantiate passes by name.
@@ -80,6 +74,11 @@ public:
   /// An empty args string is treated the same as no args, so "pass" and
   /// "pass<>" are equivalent.
   void setPassPipeline(StringRef Pipeline, CreatePassFunc CreatePass) {
+    static constexpr const char EndToken = '\0';
+    static constexpr const char BeginArgsToken = '<';
+    static constexpr const char EndArgsToken = '>';
+    static constexpr const char PassDelimToken = ',';
+
     assert(Passes.empty() &&
            "setPassPipeline called on a non-empty sandboxir::PassManager");
 
@@ -184,10 +183,10 @@ public:
 #ifndef NDEBUG
   void print(raw_ostream &OS) const override {
     OS << this->getName();
-    OS << BeginArgsToken;
-    std::string Delim(1, PassDelimToken);
-    interleave(Passes, OS, [&OS](auto &Pass) { Pass->print(OS); }, Delim);
-    OS << EndArgsToken;
+    OS << "(";
+    // TODO: This should call Pass->print(OS) because Pass may be a PM.
+    interleave(Passes, OS, [&OS](auto &Pass) { OS << Pass->getName(); }, ",");
+    OS << ")";
   }
   LLVM_DUMP_METHOD void dump() const override {
     print(dbgs());
@@ -202,7 +201,7 @@ public:
   }
 };
 
-class LLVM_ABI FunctionPassManager final
+class FunctionPassManager final
     : public PassManager<FunctionPass, FunctionPass> {
 public:
   FunctionPassManager(StringRef Name) : PassManager(Name) {}
@@ -212,8 +211,7 @@ public:
   bool runOnFunction(Function &F, const Analyses &A) final;
 };
 
-class LLVM_ABI RegionPassManager final
-    : public PassManager<RegionPass, RegionPass> {
+class RegionPassManager final : public PassManager<RegionPass, RegionPass> {
 public:
   RegionPassManager(StringRef Name) : PassManager(Name) {}
   RegionPassManager(StringRef Name, StringRef Pipeline,

@@ -17,8 +17,7 @@
 
 #include "ConstantsContext.h"
 
-using namespace llvm;
-
+namespace llvm {
 bool Operator::hasPoisonGeneratingFlags() const {
   switch (getOpcode()) {
   case Instruction::Add:
@@ -289,3 +288,4 @@ void FastMathFlags::print(raw_ostream &O) const {
       O << " afn";
   }
 }
+} // namespace llvm

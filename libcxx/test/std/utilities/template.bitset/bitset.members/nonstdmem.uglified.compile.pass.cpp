@@ -11,8 +11,10 @@
 // This test ensures that we don't use a non-uglified name 'base', 'iterator',
 // 'const_iterator', and `const_reference` in the implementation of bitset.
 //
-// See https://llvm.org/PR111125.
-// See https://llvm.org/PR121618.
+// See https://github.com/llvm/llvm-project/issues/111125.
+// See https://github.com/llvm/llvm-project/issues/121618.
+
+// XFAIL: FROZEN-CXX03-HEADERS-FIXME
 
 #include <cstddef>
 #include <bitset>

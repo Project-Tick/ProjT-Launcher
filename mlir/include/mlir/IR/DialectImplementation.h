@@ -103,11 +103,10 @@ struct FieldParser<
 
 /// Parse any integer.
 template <typename IntT>
-struct FieldParser<IntT, std::enable_if_t<(std::is_integral<IntT>::value ||
-                                           std::is_same_v<IntT, llvm::APInt>),
-                                          IntT>> {
+struct FieldParser<IntT,
+                   std::enable_if_t<std::is_integral<IntT>::value, IntT>> {
   static FailureOr<IntT> parse(AsmParser &parser) {
-    IntT value{};
+    IntT value = 0;
     if (parser.parseInteger(value))
       return failure();
     return value;

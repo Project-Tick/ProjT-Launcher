@@ -1,4 +1,4 @@
-// RUN: %clangxx --target=x86_64-apple-macosx -c -gdwarf -o %t %s
+// RUN: %clang --target=x86_64-apple-macosx -c -gdwarf -o %t %s
 // RUN: %lldb %t \
 // RUN:   -o "target var global" \
 // RUN:   -o "target var global2" \

@@ -31,8 +31,6 @@ struct TestTypeInterfaces
           testInterface.printTypeA(op->getLoc());
           testInterface.printTypeB(op->getLoc());
           testInterface.printTypeC(op->getLoc());
-          testInterface.printTypeC(op->getLoc(), 42);
-          testInterface.printTypeC(op->getLoc(), 3.14f);
           testInterface.printTypeD(op->getLoc());
           // Just check that we can assign the result to a variable of interface
           // type.

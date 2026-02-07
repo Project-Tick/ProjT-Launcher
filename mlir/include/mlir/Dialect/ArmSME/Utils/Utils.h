@@ -32,9 +32,6 @@ namespace mlir::arm_sme {
 
 constexpr unsigned MinStreamingVectorLengthInBits = 128;
 
-/// Return the size represented by arm_sme::TypeSize in bytes.
-unsigned getSizeInBytes(TypeSize type);
-
 /// Return minimum number of elements for the given element `type` in
 /// a vector of SVL bits.
 unsigned getSMETileSliceMinNumElts(Type type);

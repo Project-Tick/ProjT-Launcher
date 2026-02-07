@@ -19,7 +19,6 @@
 #include "clang/Basic/TemplateKinds.h"
 #include "clang/Sema/DeclSpec.h"
 #include "clang/Sema/Ownership.h"
-#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include <cassert>
 #include <cstdlib>
@@ -48,8 +47,8 @@ namespace clang {
     ///
     /// \param Arg the template type argument or non-type template argument.
     /// \param Loc the location of the type.
-    ParsedTemplateArgument(KindType Kind, void *Arg, SourceLocation NameLoc)
-        : Kind(Kind), Arg(Arg), NameLoc(NameLoc) {}
+    ParsedTemplateArgument(KindType Kind, void *Arg, SourceLocation Loc)
+      : Kind(Kind), Arg(Arg), Loc(Loc) { }
 
     /// Create a template template argument.
     ///
@@ -60,11 +59,11 @@ namespace clang {
     /// argument refers.
     ///
     /// \param TemplateLoc the location of the template name.
-    ParsedTemplateArgument(SourceLocation TemplateKwLoc, const CXXScopeSpec &SS,
-                           ParsedTemplateTy Template, SourceLocation NameLoc)
-        : Kind(ParsedTemplateArgument::Template),
-          Arg(Template.getAsOpaquePtr()), SS(SS), TemplateKwLoc(TemplateKwLoc),
-          NameLoc(NameLoc) {}
+    ParsedTemplateArgument(const CXXScopeSpec &SS,
+                           ParsedTemplateTy Template,
+                           SourceLocation TemplateLoc)
+      : Kind(ParsedTemplateArgument::Template),
+        Arg(Template.getAsOpaquePtr()), SS(SS), Loc(TemplateLoc) {}
 
     /// Determine whether the given template argument is invalid.
     bool isInvalid() const { return Arg == nullptr; }
@@ -91,10 +90,7 @@ namespace clang {
     }
 
     /// Retrieve the location of the template argument.
-    SourceLocation getTemplateKwLoc() const { return TemplateKwLoc; }
-
-    /// Retrieve the location of the template argument.
-    SourceLocation getNameLoc() const { return NameLoc; }
+    SourceLocation getLocation() const { return Loc; }
 
     /// Retrieve the nested-name-specifier that precedes the template
     /// name in a template template argument.
@@ -131,11 +127,8 @@ namespace clang {
     /// argument.
     CXXScopeSpec SS;
 
-    /// the location of the template keyword.
-    SourceLocation TemplateKwLoc;
-
-    /// the location of the template name.
-    SourceLocation NameLoc;
+    /// the location of the template argument.
+    SourceLocation Loc;
 
     /// The ellipsis location that can accompany a template template
     /// argument (turning it into a template template argument expansion).
@@ -196,7 +189,9 @@ namespace clang {
     bool ArgsInvalid;
 
     /// Retrieves a pointer to the template arguments
-    ParsedTemplateArgument *getTemplateArgs() { return getTrailingObjects(); }
+    ParsedTemplateArgument *getTemplateArgs() {
+      return getTrailingObjects<ParsedTemplateArgument>();
+    }
 
     /// Creates a new TemplateIdAnnotation with NumArgs arguments and
     /// appends it to List.
@@ -254,7 +249,8 @@ namespace clang {
           Kind(TemplateKind), LAngleLoc(LAngleLoc), RAngleLoc(RAngleLoc),
           NumArgs(TemplateArgs.size()), ArgsInvalid(ArgsInvalid) {
 
-      llvm::uninitialized_copy(TemplateArgs, getTemplateArgs());
+      std::uninitialized_copy(TemplateArgs.begin(), TemplateArgs.end(),
+                              getTemplateArgs());
     }
     ~TemplateIdAnnotation() = default;
   };

@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- MathMissingParenthesesCheck.cpp - clang-tidy ---------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -16,15 +16,13 @@ using namespace clang::ast_matchers;
 namespace clang::tidy::readability {
 
 void MathMissingParenthesesCheck::registerMatchers(MatchFinder *Finder) {
-  Finder->addMatcher(
-      binaryOperator(
-          unless(hasParent(binaryOperator(unless(isAssignmentOperator()),
-                                          unless(isComparisonOperator())))),
-          unless(isAssignmentOperator()), unless(isComparisonOperator()),
-          unless(hasAnyOperatorName("&&", "||")),
-          hasDescendant(binaryOperator()))
-          .bind("binOp"),
-      this);
+  Finder->addMatcher(binaryOperator(unless(hasParent(binaryOperator())),
+                                    unless(isAssignmentOperator()),
+                                    unless(isComparisonOperator()),
+                                    unless(hasAnyOperatorName("&&", "||")),
+                                    hasDescendant(binaryOperator()))
+                         .bind("binOp"),
+                     this);
 }
 
 static int getPrecedence(const BinaryOperator *BinOp) {
@@ -48,22 +46,16 @@ static int getPrecedence(const BinaryOperator *BinOp) {
     return 0;
   }
 }
-static void addParentheses(const Expr *E, const BinaryOperator *ParentBinOp,
+static void addParantheses(const BinaryOperator *BinOp,
+                           const BinaryOperator *ParentBinOp,
                            ClangTidyCheck *Check,
                            const clang::SourceManager &SM,
                            const clang::LangOptions &LangOpts) {
-  if (const auto *Paren = dyn_cast<ParenExpr>(E)) {
-    addParentheses(Paren->getSubExpr()->IgnoreImpCasts(), nullptr, Check, SM,
-                   LangOpts);
-    return;
-  }
-
-  const auto *BinOp = dyn_cast<BinaryOperator>(E);
   if (!BinOp)
     return;
 
-  const int Precedence1 = getPrecedence(BinOp);
-  const int Precedence2 = getPrecedence(ParentBinOp);
+  int Precedence1 = getPrecedence(BinOp);
+  int Precedence2 = getPrecedence(ParentBinOp);
 
   if (ParentBinOp != nullptr && Precedence1 != Precedence2 && Precedence1 > 0 &&
       Precedence2 > 0) {
@@ -87,16 +79,22 @@ static void addParentheses(const Expr *E, const BinaryOperator *ParentBinOp,
     }
   }
 
-  addParentheses(BinOp->getLHS()->IgnoreImpCasts(), BinOp, Check, SM, LangOpts);
-  addParentheses(BinOp->getRHS()->IgnoreImpCasts(), BinOp, Check, SM, LangOpts);
+  addParantheses(dyn_cast<BinaryOperator>(BinOp->getLHS()->IgnoreImpCasts()),
+                 BinOp, Check, SM, LangOpts);
+  addParantheses(dyn_cast<BinaryOperator>(BinOp->getRHS()->IgnoreImpCasts()),
+                 BinOp, Check, SM, LangOpts);
 }
 
 void MathMissingParenthesesCheck::check(
     const MatchFinder::MatchResult &Result) {
   const auto *BinOp = Result.Nodes.getNodeAs<BinaryOperator>("binOp");
+  std::vector<
+      std::pair<clang::SourceRange, std::pair<const clang::BinaryOperator *,
+                                              const clang::BinaryOperator *>>>
+      Insertions;
   const SourceManager &SM = *Result.SourceManager;
   const clang::LangOptions &LO = Result.Context->getLangOpts();
-  addParentheses(BinOp, nullptr, this, SM, LO);
+  addParantheses(BinOp, nullptr, this, SM, LO);
 }
 
 } // namespace clang::tidy::readability

@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- RvalueReferenceParamNotMovedCheck.cpp - clang-tidy ---------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -29,8 +29,9 @@ AST_MATCHER_P(LambdaExpr, valueCapturesVar, DeclarationMatcher, VarMatcher) {
 }
 AST_MATCHER_P2(Stmt, argumentOf, bool, AllowPartialMove, StatementMatcher,
                Ref) {
-  if (AllowPartialMove)
+  if (AllowPartialMove) {
     return stmt(anyOf(Ref, hasDescendant(Ref))).matches(Node, Finder, Builder);
+  }
   return Ref.matches(Node, Finder, Builder);
 }
 } // namespace
@@ -38,12 +39,12 @@ AST_MATCHER_P2(Stmt, argumentOf, bool, AllowPartialMove, StatementMatcher,
 void RvalueReferenceParamNotMovedCheck::registerMatchers(MatchFinder *Finder) {
   auto ToParam = hasAnyParameter(parmVarDecl(equalsBoundNode("param")));
 
-  const StatementMatcher MoveCallMatcher =
+  StatementMatcher MoveCallMatcher =
       callExpr(
           argumentCountIs(1),
-          anyOf(callee(functionDecl(hasName(MoveFunction))),
+          anyOf(callee(functionDecl(hasName("::std::move"))),
                 callee(unresolvedLookupExpr(hasAnyDeclaration(
-                    namedDecl(hasUnderlyingDecl(hasName(MoveFunction))))))),
+                    namedDecl(hasUnderlyingDecl(hasName("::std::move"))))))),
           hasArgument(
               0, argumentOf(
                      AllowPartialMove,
@@ -121,8 +122,7 @@ RvalueReferenceParamNotMovedCheck::RvalueReferenceParamNotMovedCheck(
       AllowPartialMove(Options.get("AllowPartialMove", false)),
       IgnoreUnnamedParams(Options.get("IgnoreUnnamedParams", false)),
       IgnoreNonDeducedTemplateTypes(
-          Options.get("IgnoreNonDeducedTemplateTypes", false)),
-      MoveFunction(Options.get("MoveFunction", "::std::move")) {}
+          Options.get("IgnoreNonDeducedTemplateTypes", false)) {}
 
 void RvalueReferenceParamNotMovedCheck::storeOptions(
     ClangTidyOptions::OptionMap &Opts) {
@@ -130,7 +130,6 @@ void RvalueReferenceParamNotMovedCheck::storeOptions(
   Options.store(Opts, "IgnoreUnnamedParams", IgnoreUnnamedParams);
   Options.store(Opts, "IgnoreNonDeducedTemplateTypes",
                 IgnoreNonDeducedTemplateTypes);
-  Options.store(Opts, "MoveFunction", MoveFunction);
 }
 
 } // namespace clang::tidy::cppcoreguidelines

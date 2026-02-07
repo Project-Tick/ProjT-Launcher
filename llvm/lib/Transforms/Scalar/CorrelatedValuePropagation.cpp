@@ -426,14 +426,13 @@ static bool processSwitch(SwitchInst *I, LazyValueInfo *LVI,
     }
 
     // The default dest is unreachable if all cases are covered.
-    if (!SI->defaultDestUnreachable() &&
+    if (!SI->defaultDestUndefined() &&
         !CR.isSizeLargerThan(ReachableCaseCount)) {
       BasicBlock *DefaultDest = SI->getDefaultDest();
       BasicBlock *NewUnreachableBB =
           BasicBlock::Create(BB->getContext(), "default.unreachable",
                              BB->getParent(), DefaultDest);
-      auto *UI = new UnreachableInst(BB->getContext(), NewUnreachableBB);
-      UI->setDebugLoc(DebugLoc::getTemporary());
+      new UnreachableInst(BB->getContext(), NewUnreachableBB);
 
       DefaultDest->removePredecessor(BB);
       SI->setDefaultDest(NewUnreachableBB);
@@ -1224,34 +1223,6 @@ static bool processAnd(BinaryOperator *BinOp, LazyValueInfo *LVI) {
   return true;
 }
 
-static bool processTrunc(TruncInst *TI, LazyValueInfo *LVI) {
-  if (TI->hasNoSignedWrap() && TI->hasNoUnsignedWrap())
-    return false;
-
-  ConstantRange Range =
-      LVI->getConstantRangeAtUse(TI->getOperandUse(0), /*UndefAllowed=*/false);
-  uint64_t DestWidth = TI->getDestTy()->getScalarSizeInBits();
-  bool Changed = false;
-
-  if (!TI->hasNoUnsignedWrap()) {
-    if (Range.getActiveBits() <= DestWidth) {
-      TI->setHasNoUnsignedWrap(true);
-      ++NumNUW;
-      Changed = true;
-    }
-  }
-
-  if (!TI->hasNoSignedWrap()) {
-    if (Range.getMinSignedBits() <= DestWidth) {
-      TI->setHasNoSignedWrap(true);
-      ++NumNSW;
-      Changed = true;
-    }
-  }
-
-  return Changed;
-}
-
 static bool runImpl(Function &F, LazyValueInfo *LVI, DominatorTree *DT,
                     const SimplifyQuery &SQ) {
   bool FnChanged = false;
@@ -1314,9 +1285,6 @@ static bool runImpl(Function &F, LazyValueInfo *LVI, DominatorTree *DT,
         break;
       case Instruction::And:
         BBChanged |= processAnd(cast<BinaryOperator>(&II), LVI);
-        break;
-      case Instruction::Trunc:
-        BBChanged |= processTrunc(cast<TruncInst>(&II), LVI);
         break;
       }
     }

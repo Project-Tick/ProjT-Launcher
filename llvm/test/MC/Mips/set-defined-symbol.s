@@ -16,7 +16,3 @@ b:
 # CHECK-NOT: b:
 # CHECK-NOT: foo:
 # CHECK: <bar>:
-
-# CHECK: <dot>:
-.set dot, .
-  nop

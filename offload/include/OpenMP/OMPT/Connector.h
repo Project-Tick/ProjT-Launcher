@@ -27,8 +27,6 @@
 
 #include "Shared/Debug.h"
 
-using namespace llvm::omp::target::debug;
-
 #pragma push_macro("DEBUG_PREFIX")
 #undef DEBUG_PREFIX
 #define DEBUG_PREFIX "OMPT"
@@ -78,7 +76,7 @@ private:
     std::string LibName = LibIdent;
     LibName += ".so";
 
-    ODBG(ODT_Tool) << "OMPT: Trying to load library " << LibName;
+    DP("OMPT: Trying to load library %s\n", LibName.c_str());
     auto DynLibHandle = std::make_unique<llvm::sys::DynamicLibrary>(
         llvm::sys::DynamicLibrary::getPermanentLibrary(LibName.c_str(),
                                                        &ErrMsg));
@@ -87,13 +85,12 @@ private:
       LibConnHandle = nullptr;
     } else {
       auto LibConnRtn = "ompt_" + LibIdent + "_connect";
-      ODBG(ODT_Tool) << "OMPT: Trying to get address of connection routine "
-                     << LibConnRtn;
+      DP("OMPT: Trying to get address of connection routine %s\n",
+         LibConnRtn.c_str());
       LibConnHandle = reinterpret_cast<OmptConnectRtnTy>(
           DynLibHandle->getAddressOfSymbol(LibConnRtn.c_str()));
     }
-    ODBG(ODT_Tool) << "OMPT: Library connection handle = "
-                   << reinterpret_cast<void *>(LibConnHandle);
+    DP("OMPT: Library connection handle = %p\n", LibConnHandle);
     IsInitialized = true;
   }
 

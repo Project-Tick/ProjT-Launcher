@@ -1,4 +1,4 @@
-! RUN: bbc -emit-hlfir %s -o - | FileCheck %s --check-prefixes=CHECK%if target=x86_64{{.*}} %{,CHECK-KIND10%}%if flang-supports-f128-math %{,CHECK-KIND16%}
+! RUN: bbc -emit-hlfir %s -o - | FileCheck %s
 
 module reduce_mod
 
@@ -16,10 +16,6 @@ end type
       integer(1) :: red_int1_interface_value
     end function
   end interface
-
-  integer, parameter :: kind10 = merge(10, 4, selected_real_kind(p=18).eq.10)
-  integer, parameter :: kind16 = merge(16, 4, selected_real_kind(p=33).eq.16)
-
 
 contains
 
@@ -46,11 +42,11 @@ subroutine integer1(a, id, d1, d2)
   res = reduce(a, red_int1)
 
   res = reduce(a, red_int1, identity=id)
-
+  
   res = reduce(a, red_int1, identity=id, ordered = .true.)
 
   res = reduce(a, red_int1, [.true., .true., .false.])
-
+  
   res = reduce(a, red_int1_value)
 
   fptr => red_int1
@@ -84,11 +80,11 @@ end subroutine
 ! CHECK: %[[BOX_ADDR:.*]] = fir.box_addr %[[BOX_PROC]] : (!fir.boxproc<() -> ()>) -> ((!fir.ref<i8>, !fir.ref<i8>) -> !fir.ref<i8>)
 ! CHECK: %[[A_NONE:.*]] = fir.convert %[[A]]#1 : (!fir.box<!fir.array<?xi8>>) -> !fir.box<none>
 ! CHECK: %[[MASK_NONE:.*]] = fir.convert %[[MASK]] : (!fir.box<i1>) -> !fir.box<none>
-! CHECK: %{{.*}} = fir.call @_FortranAReduceInteger1Ref(%[[A_NONE]], %[[BOX_ADDR]], %{{.*}}, %{{.*}}, %c1{{.*}}, %[[MASK_NONE]], %[[ID]]#0, %false{{.*}}) fastmath<contract> : (!fir.box<none>, (!fir.ref<i8>, !fir.ref<i8>) -> !fir.ref<i8>, !fir.ref<i8>, i32, i32, !fir.box<none>, !fir.ref<i8>, i1) -> i8
-! CHECK: fir.call @_FortranAReduceInteger1Ref(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}#0, %true)
+! CHECK: %{{.*}} = fir.call @_FortranAReduceInteger1Ref(%[[A_NONE]], %[[BOX_ADDR]], %{{.*}}, %{{.*}}, %c1{{.*}}, %[[MASK_NONE]], %[[ID]]#1, %false{{.*}}) fastmath<contract> : (!fir.box<none>, (!fir.ref<i8>, !fir.ref<i8>) -> !fir.ref<i8>, !fir.ref<i8>, i32, i32, !fir.box<none>, !fir.ref<i8>, i1) -> i8
+! CHECK: fir.call @_FortranAReduceInteger1Ref(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}#1, %true)
 ! CHECK: %[[MASK:.*]]:2 = hlfir.declare %{{.*}}(%{{.*}}) {fortran_attrs = #fir.var_attrs<parameter>, uniq_name = "_QQro.3xl4.0"} : (!fir.ref<!fir.array<3x!fir.logical<4>>>, !fir.shape<1>) -> (!fir.ref<!fir.array<3x!fir.logical<4>>>, !fir.ref<!fir.array<3x!fir.logical<4>>>)
 ! CHECK: %[[SHAPE_C3:.*]] = fir.shape %c3{{.*}} : (index) -> !fir.shape<1>
-! CHECK: %[[BOXED_MASK:.*]] = fir.embox %[[MASK]]#0(%[[SHAPE_C3]]) : (!fir.ref<!fir.array<3x!fir.logical<4>>>, !fir.shape<1>) -> !fir.box<!fir.array<3x!fir.logical<4>>>
+! CHECK: %[[BOXED_MASK:.*]] = fir.embox %[[MASK]]#1(%[[SHAPE_C3]]) : (!fir.ref<!fir.array<3x!fir.logical<4>>>, !fir.shape<1>) -> !fir.box<!fir.array<3x!fir.logical<4>>>
 ! CHECK: %[[CONV_MASK:.*]] = fir.convert %[[BOXED_MASK]] : (!fir.box<!fir.array<3x!fir.logical<4>>>) -> !fir.box<none>
 ! CHECK: fir.call @_FortranAReduceInteger1Ref(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %[[CONV_MASK]], %{{.*}}, %false{{.*}})
 ! CHECK: fir.call @_FortranAReduceInteger1Value
@@ -274,48 +270,48 @@ end subroutine
 ! CHECK: fir.call @_FortranAReduceReal8Value
 
 pure function red_real10(a,b)
-  real(kind10), intent(in) :: a, b
-  real(kind10) :: red_real10
+  real(10), intent(in) :: a, b
+  real(10) :: red_real10
   red_real10 = a + b
 end function
 
 pure function red_real10_value(a,b)
-  real(kind10), value, intent(in) :: a, b
-  real(kind10) :: red_real10_value
+  real(10), value, intent(in) :: a, b
+  real(10) :: red_real10_value
   red_real10_value = a + b
 end function
 
 subroutine real10(a)
-  real(kind10), intent(in) :: a(:)
-  real(kind10) :: res
+  real(10), intent(in) :: a(:)
+  real(10) :: res
   res = reduce(a, red_real10)
   res = reduce(a, red_real10_value)
 end subroutine
 
-! CHECK-KIND10: fir.call @_FortranAReduceReal10Ref
-! CHECK-KIND10: fir.call @_FortranAReduceReal10Value
+! CHECK: fir.call @_FortranAReduceReal10Ref
+! CHECK: fir.call @_FortranAReduceReal10Value
 
 pure function red_real16(a,b)
-  real(kind16), intent(in) :: a, b
-  real(kind16) :: red_real16
+  real(16), intent(in) :: a, b
+  real(16) :: red_real16
   red_real16 = a + b
 end function
 
 pure function red_real16_value(a,b)
-  real(kind16), value, intent(in) :: a, b
-  real(kind16) :: red_real16_value
+  real(16), value, intent(in) :: a, b
+  real(16) :: red_real16_value
   red_real16_value = a + b
 end function
 
 subroutine real16(a)
-  real(kind16), intent(in) :: a(:)
-  real(kind16) :: res
+  real(16), intent(in) :: a(:)
+  real(16) :: res
   res = reduce(a, red_real16)
   res = reduce(a, red_real16_value)
 end subroutine
 
-! CHECK-KIND16: fir.call @_FortranAReduceReal16Ref
-! CHECK-KIND16: fir.call @_FortranAReduceReal16Value
+! CHECK: fir.call @_FortranAReduceReal16Ref
+! CHECK: fir.call @_FortranAReduceReal16Value
 
 pure function red_complex2(a,b)
   complex(2), intent(in) :: a, b
@@ -406,48 +402,48 @@ end subroutine
 ! CHECK: fir.call @_FortranACppReduceComplex8Value
 
 pure function red_complex10(a,b)
-  complex(kind10), intent(in) :: a, b
-  complex(kind10) :: red_complex10
+  complex(10), intent(in) :: a, b
+  complex(10) :: red_complex10
   red_complex10 = a + b
 end function
 
 pure function red_complex10_value(a,b)
-  complex(kind10), value, intent(in) :: a, b
-  complex(kind10) :: red_complex10_value
+  complex(10), value, intent(in) :: a, b
+  complex(10) :: red_complex10_value
   red_complex10_value = a + b
 end function
 
 subroutine complex10(a)
-  complex(kind10), intent(in) :: a(:)
-  complex(kind10) :: res
+  complex(10), intent(in) :: a(:)
+  complex(10) :: res
   res = reduce(a, red_complex10)
   res = reduce(a, red_complex10_value)
 end subroutine
 
-! CHECK-KIND10: fir.call @_FortranACppReduceComplex10Ref
-! CHECK-KIND10: fir.call @_FortranACppReduceComplex10Value
+! CHECK: fir.call @_FortranACppReduceComplex10Ref
+! CHECK: fir.call @_FortranACppReduceComplex10Value
 
 pure function red_complex16(a,b)
-  complex(kind16), intent(in) :: a, b
-  complex(kind16) :: red_complex16
+  complex(16), intent(in) :: a, b
+  complex(16) :: red_complex16
   red_complex16 = a + b
 end function
 
 pure function red_complex16_value(a,b)
-  complex(kind16), value, intent(in) :: a, b
-  complex(kind16) :: red_complex16_value
+  complex(16), value, intent(in) :: a, b
+  complex(16) :: red_complex16_value
   red_complex16_value = a + b
 end function
 
 subroutine complex16(a)
-  complex(kind16), intent(in) :: a(:)
-  complex(kind16) :: res
+  complex(16), intent(in) :: a(:)
+  complex(16) :: res
   res = reduce(a, red_complex16)
   res = reduce(a, red_complex16_value)
 end subroutine
 
-! CHECK-KIND16: fir.call @_FortranACppReduceComplex16Ref
-! CHECK-KIND16: fir.call @_FortranACppReduceComplex16Value
+! CHECK: fir.call @_FortranACppReduceComplex16Ref
+! CHECK: fir.call @_FortranACppReduceComplex16Value
 
 pure function red_log1(a,b)
   logical(1), intent(in) :: a, b
@@ -697,26 +693,26 @@ end subroutine
 ! CHECK: fir.call @_FortranAReduceReal8DimValue
 
 subroutine real10dim(a, id)
-  real(kind10), intent(in) :: a(:,:)
-  real(kind10), allocatable :: res(:)
+  real(10), intent(in) :: a(:,:)
+  real(10), allocatable :: res(:)
 
   res = reduce(a, red_real10, 2)
   res = reduce(a, red_real10_value, 2)
 end subroutine
 
-! CHECK-KIND10: fir.call @_FortranAReduceReal10DimRef
-! CHECK-KIND10: fir.call @_FortranAReduceReal10DimValue
+! CHECK: fir.call @_FortranAReduceReal10DimRef
+! CHECK: fir.call @_FortranAReduceReal10DimValue
 
 subroutine real16dim(a, id)
-  real(kind16), intent(in) :: a(:,:)
-  real(kind16), allocatable :: res(:)
+  real(16), intent(in) :: a(:,:)
+  real(16), allocatable :: res(:)
 
   res = reduce(a, red_real16, 2)
   res = reduce(a, red_real16_value, 2)
 end subroutine
 
-! CHECK-KIND16: fir.call @_FortranAReduceReal16DimRef
-! CHECK-KIND16: fir.call @_FortranAReduceReal16DimValue
+! CHECK: fir.call @_FortranAReduceReal16DimRef
+! CHECK: fir.call @_FortranAReduceReal16DimValue
 
 subroutine complex2dim(a, id)
   complex(2), intent(in) :: a(:,:)
@@ -763,26 +759,26 @@ end subroutine
 ! CHECK: fir.call @_FortranACppReduceComplex8DimValue
 
 subroutine complex10dim(a, id)
-  complex(kind10), intent(in) :: a(:,:)
-  complex(kind10), allocatable :: res(:)
+  complex(10), intent(in) :: a(:,:)
+  complex(10), allocatable :: res(:)
 
   res = reduce(a, red_complex10, 2)
   res = reduce(a, red_complex10_value, 2)
 end subroutine
 
-! CHECK-KIND10: fir.call @_FortranACppReduceComplex10DimRef
-! CHECK-KIND10: fir.call @_FortranACppReduceComplex10DimValue
+! CHECK: fir.call @_FortranACppReduceComplex10DimRef
+! CHECK: fir.call @_FortranACppReduceComplex10DimValue
 
 subroutine complex16dim(a, id)
-  complex(kind16), intent(in) :: a(:,:)
-  complex(kind16), allocatable :: res(:)
+  complex(16), intent(in) :: a(:,:)
+  complex(16), allocatable :: res(:)
 
   res = reduce(a, red_complex16, 2)
   res = reduce(a, red_complex16_value, 2)
 end subroutine
 
-! CHECK-KIND16: fir.call @_FortranACppReduceComplex16DimRef
-! CHECK-KIND16: fir.call @_FortranACppReduceComplex16DimValue
+! CHECK: fir.call @_FortranACppReduceComplex16DimRef
+! CHECK: fir.call @_FortranACppReduceComplex16DimValue
 
 subroutine logical1dim(a, id)
   logical(1), intent(in) :: a(:,:)

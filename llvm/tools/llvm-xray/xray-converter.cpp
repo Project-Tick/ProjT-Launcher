@@ -176,14 +176,13 @@ struct StackIdData {
   // unique ID.
   SmallVector<TrieNode<StackIdData> *, 4> siblings;
 };
-} // namespace
 
 using StackTrieNode = TrieNode<StackIdData>;
 
 // A helper function to find the sibling nodes for an encountered function in a
 // thread of execution. Relies on the invariant that each time a new node is
 // traversed in a thread, sibling bidirectional pointers are maintained.
-static SmallVector<StackTrieNode *, 4>
+SmallVector<StackTrieNode *, 4>
 findSiblings(StackTrieNode *parent, int32_t FnId, uint32_t TId,
              const DenseMap<uint32_t, SmallVector<StackTrieNode *, 4>>
                  &StackRootsByThreadId) {
@@ -214,7 +213,7 @@ findSiblings(StackTrieNode *parent, int32_t FnId, uint32_t TId,
 // StackTrie representing the function call stack. If no node exists, creates
 // the node. Assigns unique IDs to stacks newly encountered among all threads
 // and keeps sibling links up to when creating new nodes.
-static StackTrieNode *findOrCreateStackNode(
+StackTrieNode *findOrCreateStackNode(
     StackTrieNode *Parent, int32_t FuncId, uint32_t TId,
     DenseMap<uint32_t, SmallVector<StackTrieNode *, 4>> &StackRootsByThreadId,
     DenseMap<unsigned, StackTrieNode *> &StacksByStackId, unsigned *id_counter,
@@ -245,13 +244,12 @@ static StackTrieNode *findOrCreateStackNode(
   return CurrentStack;
 }
 
-static void writeTraceViewerRecord(uint16_t Version, raw_ostream &OS,
-                                   int32_t FuncId, uint32_t TId, uint32_t PId,
-                                   bool Symbolize,
-                                   const FuncIdConversionHelper &FuncIdHelper,
-                                   double EventTimestampUs,
-                                   const StackTrieNode &StackCursor,
-                                   StringRef FunctionPhenotype) {
+void writeTraceViewerRecord(uint16_t Version, raw_ostream &OS, int32_t FuncId,
+                            uint32_t TId, uint32_t PId, bool Symbolize,
+                            const FuncIdConversionHelper &FuncIdHelper,
+                            double EventTimestampUs,
+                            const StackTrieNode &StackCursor,
+                            StringRef FunctionPhenotype) {
   OS << "    ";
   if (Version >= 3) {
     OS << llvm::formatv(
@@ -270,6 +268,8 @@ static void writeTraceViewerRecord(uint16_t Version, raw_ostream &OS,
         FunctionPhenotype, TId, EventTimestampUs, StackCursor.ExtraData.id);
   }
 }
+
+} // namespace
 
 void TraceConverter::exportAsChromeTraceEventFormat(const Trace &Records,
                                                     raw_ostream &OS) {
@@ -364,6 +364,9 @@ void TraceConverter::exportAsChromeTraceEventFormat(const Trace &Records,
   OS << "}\n";     // Close the JSON entry.
 }
 
+namespace llvm {
+namespace xray {
+
 static CommandRegistration Unused(&Convert, []() -> Error {
   // FIXME: Support conversion to BINARY when upgrading XRay trace versions.
   InstrumentationMap Map;
@@ -383,9 +386,9 @@ static CommandRegistration Unused(&Convert, []() -> Error {
   if (Demangle.getPosition() < NoDemangle.getPosition())
     SymbolizerOpts.Demangle = false;
   symbolize::LLVMSymbolizer Symbolizer(SymbolizerOpts);
-  FuncIdConversionHelper FuncIdHelper(ConvertInstrMap, Symbolizer,
-                                      FunctionAddresses);
-  TraceConverter TC(FuncIdHelper, ConvertSymbolize);
+  llvm::xray::FuncIdConversionHelper FuncIdHelper(ConvertInstrMap, Symbolizer,
+                                                  FunctionAddresses);
+  llvm::xray::TraceConverter TC(FuncIdHelper, ConvertSymbolize);
   std::error_code EC;
   raw_fd_ostream OS(ConvertOutput, EC,
                     ConvertOutputFormat == ConvertFormats::BINARY
@@ -417,3 +420,6 @@ static CommandRegistration Unused(&Convert, []() -> Error {
   }
   return Error::success();
 });
+
+} // namespace xray
+} // namespace llvm

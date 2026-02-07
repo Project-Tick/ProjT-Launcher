@@ -23,18 +23,16 @@ namespace llvm {
   class ARMBaseInstrInfo;
 
 struct ThumbRegisterInfo : public ARMBaseRegisterInfo {
-private:
-  const bool IsThumb1Only;
-
 public:
-  explicit ThumbRegisterInfo(const ARMSubtarget &STI);
+  ThumbRegisterInfo();
 
   const TargetRegisterClass *
   getLargestLegalSuperClass(const TargetRegisterClass *RC,
                             const MachineFunction &MF) const override;
 
   const TargetRegisterClass *
-  getPointerRegClass(unsigned Kind = 0) const override;
+  getPointerRegClass(const MachineFunction &MF,
+                     unsigned Kind = 0) const override;
 
   /// emitLoadConstPool - Emits a load from constpool to materialize the
   /// specified immediate.

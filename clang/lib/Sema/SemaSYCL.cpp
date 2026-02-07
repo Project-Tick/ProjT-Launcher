@@ -135,7 +135,7 @@ void SemaSYCL::deepTypeCheckForDevice(SourceLocation UsedAt,
       // When nullptr is discovered, this means we've gone back up a level, so
       // the history should be cleaned.
       StackForRecursion.push_back(nullptr);
-      llvm::append_range(StackForRecursion, RecDecl->fields());
+      llvm::copy(RecDecl->fields(), std::back_inserter(StackForRecursion));
     }
   } while (!StackForRecursion.empty());
 }
@@ -222,7 +222,7 @@ static SourceLocation SourceLocationForUserDeclaredType(QualType QT) {
   const Type *T = QT->getUnqualifiedDesugaredType();
   if (const TagType *TT = dyn_cast<TagType>(T))
     Loc = TT->getDecl()->getLocation();
-  else if (const auto *ObjCIT = dyn_cast<ObjCInterfaceType>(T))
+  else if (const ObjCInterfaceType *ObjCIT = dyn_cast<ObjCInterfaceType>(T))
     Loc = ObjCIT->getDecl()->getLocation();
   return Loc;
 }
@@ -250,23 +250,6 @@ static bool CheckSYCLKernelName(Sema &S, SourceLocation Loc,
   return false;
 }
 
-void SemaSYCL::CheckSYCLExternalFunctionDecl(FunctionDecl *FD) {
-  const auto *SEAttr = FD->getAttr<SYCLExternalAttr>();
-  assert(SEAttr && "Missing sycl_external attribute");
-  if (!FD->isInvalidDecl() && !FD->isTemplated()) {
-    if (!FD->isExternallyVisible())
-      if (!FD->isFunctionTemplateSpecialization() ||
-          FD->getTemplateSpecializationInfo()->isExplicitSpecialization())
-        Diag(SEAttr->getLocation(), diag::err_sycl_external_invalid_linkage)
-            << SEAttr;
-  }
-  if (FD->isDeletedAsWritten()) {
-    Diag(SEAttr->getLocation(),
-         diag::err_sycl_external_invalid_deleted_function)
-        << SEAttr;
-  }
-}
-
 void SemaSYCL::CheckSYCLEntryPointFunctionDecl(FunctionDecl *FD) {
   // Ensure that all attributes present on the declaration are consistent
   // and warn about any redundant ones.
@@ -279,13 +262,12 @@ void SemaSYCL::CheckSYCLEntryPointFunctionDecl(FunctionDecl *FD) {
     if (!getASTContext().hasSameType(SAI->getKernelName(),
                                      SKEPAttr->getKernelName())) {
       Diag(SAI->getLocation(), diag::err_sycl_entry_point_invalid_redeclaration)
-          << SKEPAttr << SAI->getKernelName() << SKEPAttr->getKernelName();
+          << SAI->getKernelName() << SKEPAttr->getKernelName();
       Diag(SKEPAttr->getLocation(), diag::note_previous_attribute);
       SAI->setInvalidAttr();
     } else {
       Diag(SAI->getLocation(),
-           diag::warn_sycl_entry_point_redundant_declaration)
-          << SAI;
+           diag::warn_sycl_entry_point_redundant_declaration);
       Diag(SKEPAttr->getLocation(), diag::note_previous_attribute);
     }
   }
@@ -307,8 +289,7 @@ void SemaSYCL::CheckSYCLEntryPointFunctionDecl(FunctionDecl *FD) {
                                        PrevSKEPAttr->getKernelName())) {
         Diag(SKEPAttr->getLocation(),
              diag::err_sycl_entry_point_invalid_redeclaration)
-            << SKEPAttr << SKEPAttr->getKernelName()
-            << PrevSKEPAttr->getKernelName();
+            << SKEPAttr->getKernelName() << PrevSKEPAttr->getKernelName();
         Diag(PrevSKEPAttr->getLocation(), diag::note_previous_decl) << PrevFD;
         SKEPAttr->setInvalidAttr();
       }
@@ -318,52 +299,50 @@ void SemaSYCL::CheckSYCLEntryPointFunctionDecl(FunctionDecl *FD) {
   if (const auto *MD = dyn_cast<CXXMethodDecl>(FD)) {
     if (!MD->isStatic()) {
       Diag(SKEPAttr->getLocation(), diag::err_sycl_entry_point_invalid)
-          << SKEPAttr << diag::InvalidSKEPReason::NonStaticMemberFn;
+          << /*non-static member function*/ 0;
       SKEPAttr->setInvalidAttr();
     }
   }
 
   if (FD->isVariadic()) {
     Diag(SKEPAttr->getLocation(), diag::err_sycl_entry_point_invalid)
-        << SKEPAttr << diag::InvalidSKEPReason::VariadicFn;
+        << /*variadic function*/ 1;
     SKEPAttr->setInvalidAttr();
   }
 
   if (FD->isDefaulted()) {
     Diag(SKEPAttr->getLocation(), diag::err_sycl_entry_point_invalid)
-        << SKEPAttr << diag::InvalidSKEPReason::DefaultedFn;
+        << /*defaulted function*/ 3;
     SKEPAttr->setInvalidAttr();
   } else if (FD->isDeleted()) {
     Diag(SKEPAttr->getLocation(), diag::err_sycl_entry_point_invalid)
-        << SKEPAttr << diag::InvalidSKEPReason::DeletedFn;
+        << /*deleted function*/ 2;
     SKEPAttr->setInvalidAttr();
   }
 
   if (FD->isConsteval()) {
     Diag(SKEPAttr->getLocation(), diag::err_sycl_entry_point_invalid)
-        << SKEPAttr << diag::InvalidSKEPReason::ConstevalFn;
+        << /*consteval function*/ 5;
     SKEPAttr->setInvalidAttr();
   } else if (FD->isConstexpr()) {
     Diag(SKEPAttr->getLocation(), diag::err_sycl_entry_point_invalid)
-        << SKEPAttr << diag::InvalidSKEPReason::ConstexprFn;
+        << /*constexpr function*/ 4;
     SKEPAttr->setInvalidAttr();
   }
 
   if (FD->isNoReturn()) {
     Diag(SKEPAttr->getLocation(), diag::err_sycl_entry_point_invalid)
-        << SKEPAttr << diag::InvalidSKEPReason::NoreturnFn;
+        << /*function declared with the 'noreturn' attribute*/ 6;
     SKEPAttr->setInvalidAttr();
   }
 
   if (FD->getReturnType()->isUndeducedType()) {
     Diag(SKEPAttr->getLocation(),
-         diag::err_sycl_entry_point_deduced_return_type)
-        << SKEPAttr;
+         diag::err_sycl_entry_point_deduced_return_type);
     SKEPAttr->setInvalidAttr();
   } else if (!FD->getReturnType()->isDependentType() &&
              !FD->getReturnType()->isVoidType()) {
-    Diag(SKEPAttr->getLocation(), diag::err_sycl_entry_point_return_type)
-        << SKEPAttr;
+    Diag(SKEPAttr->getLocation(), diag::err_sycl_entry_point_return_type);
     SKEPAttr->setInvalidAttr();
   }
 
@@ -375,8 +354,7 @@ void SemaSYCL::CheckSYCLEntryPointFunctionDecl(FunctionDecl *FD) {
       if (!declaresSameEntity(FD, SKI->getKernelEntryPointDecl())) {
         // FIXME: This diagnostic should include the origin of the kernel
         // FIXME: names; not just the locations of the conflicting declarations.
-        Diag(FD->getLocation(), diag::err_sycl_kernel_name_conflict)
-            << SKEPAttr;
+        Diag(FD->getLocation(), diag::err_sycl_kernel_name_conflict);
         Diag(SKI->getKernelEntryPointDecl()->getLocation(),
              diag::note_previous_declaration);
         SKEPAttr->setInvalidAttr();

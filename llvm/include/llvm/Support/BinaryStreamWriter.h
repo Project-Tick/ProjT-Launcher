@@ -10,12 +10,10 @@
 #define LLVM_SUPPORT_BINARYSTREAMWRITER_H
 
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/STLForwardCompat.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/BinaryStreamArray.h"
 #include "llvm/Support/BinaryStreamError.h"
 #include "llvm/Support/BinaryStreamRef.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/Error.h"
 #include <cstdint>
@@ -32,10 +30,10 @@ namespace llvm {
 class BinaryStreamWriter {
 public:
   BinaryStreamWriter() = default;
-  LLVM_ABI explicit BinaryStreamWriter(WritableBinaryStreamRef Ref);
-  LLVM_ABI explicit BinaryStreamWriter(WritableBinaryStream &Stream);
-  LLVM_ABI explicit BinaryStreamWriter(MutableArrayRef<uint8_t> Data,
-                                       llvm::endianness Endian);
+  explicit BinaryStreamWriter(WritableBinaryStreamRef Ref);
+  explicit BinaryStreamWriter(WritableBinaryStream &Stream);
+  explicit BinaryStreamWriter(MutableArrayRef<uint8_t> Data,
+                              llvm::endianness Endian);
 
   BinaryStreamWriter(const BinaryStreamWriter &Other) = default;
 
@@ -49,7 +47,7 @@ public:
   ///
   /// \returns a success error code if the data was successfully written,
   /// otherwise returns an appropriate error code.
-  LLVM_ABI Error writeBytes(ArrayRef<uint8_t> Buffer);
+  Error writeBytes(ArrayRef<uint8_t> Buffer);
 
   /// Write the integer \p Value to the underlying stream in the
   /// specified endianness.  On success, updates the offset so that
@@ -70,7 +68,8 @@ public:
     static_assert(std::is_enum<T>::value,
                   "Cannot call writeEnum with non-Enum type");
 
-    return writeInteger(llvm::to_underlying(Num));
+    using U = std::underlying_type_t<T>;
+    return writeInteger<U>(static_cast<U>(Num));
   }
 
   /// Write the unsigned integer Value to the underlying stream using ULEB128
@@ -78,14 +77,14 @@ public:
   ///
   /// \returns a success error code if the data was successfully written,
   /// otherwise returns an appropriate error code.
-  LLVM_ABI Error writeULEB128(uint64_t Value);
+  Error writeULEB128(uint64_t Value);
 
   /// Write the unsigned integer Value to the underlying stream using ULEB128
   /// encoding.
   ///
   /// \returns a success error code if the data was successfully written,
   /// otherwise returns an appropriate error code.
-  LLVM_ABI Error writeSLEB128(int64_t Value);
+  Error writeSLEB128(int64_t Value);
 
   /// Write the string \p Str to the underlying stream followed by a null
   /// terminator.  On success, updates the offset so that subsequent writes
@@ -94,7 +93,7 @@ public:
   ///
   /// \returns a success error code if the data was successfully written,
   /// otherwise returns an appropriate error code.
-  LLVM_ABI Error writeCString(StringRef Str);
+  Error writeCString(StringRef Str);
 
   /// Write the string \p Str to the underlying stream without a null
   /// terminator.  On success, updates the offset so that subsequent writes
@@ -102,7 +101,7 @@ public:
   ///
   /// \returns a success error code if the data was successfully written,
   /// otherwise returns an appropriate error code.
-  LLVM_ABI Error writeFixedString(StringRef Str);
+  Error writeFixedString(StringRef Str);
 
   /// Efficiently reads all data from \p Ref, and writes it to this stream.
   /// This operation will not invoke any copies of the source data, regardless
@@ -110,7 +109,7 @@ public:
   ///
   /// \returns a success error code if the data was successfully written,
   /// otherwise returns an appropriate error code.
-  LLVM_ABI Error writeStreamRef(BinaryStreamRef Ref);
+  Error writeStreamRef(BinaryStreamRef Ref);
 
   /// Efficiently reads \p Size bytes from \p Ref, and writes it to this stream.
   /// This operation will not invoke any copies of the source data, regardless
@@ -118,7 +117,7 @@ public:
   ///
   /// \returns a success error code if the data was successfully written,
   /// otherwise returns an appropriate error code.
-  LLVM_ABI Error writeStreamRef(BinaryStreamRef Ref, uint64_t Size);
+  Error writeStreamRef(BinaryStreamRef Ref, uint64_t Size);
 
   /// Writes the object \p Obj to the underlying stream, as if by using memcpy.
   /// It is up to the caller to ensure that type of \p Obj can be safely copied
@@ -172,14 +171,13 @@ public:
   }
 
   /// Splits the Writer into two Writers at a given offset.
-  LLVM_ABI std::pair<BinaryStreamWriter, BinaryStreamWriter>
-  split(uint64_t Off) const;
+  std::pair<BinaryStreamWriter, BinaryStreamWriter> split(uint64_t Off) const;
 
   void setOffset(uint64_t Off) { Offset = Off; }
   uint64_t getOffset() const { return Offset; }
   uint64_t getLength() const { return Stream.getLength(); }
   uint64_t bytesRemaining() const { return getLength() - getOffset(); }
-  LLVM_ABI Error padToAlignment(uint32_t Align);
+  Error padToAlignment(uint32_t Align);
 
 protected:
   WritableBinaryStreamRef Stream;

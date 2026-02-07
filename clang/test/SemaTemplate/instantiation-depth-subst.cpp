@@ -3,8 +3,7 @@
 // PR9793
 template<typename T> auto f(T t) -> decltype(f(t)); // \
 // expected-error {{recursive template instantiation exceeded maximum depth of 2}} \
-// expected-note 2 {{while substituting}} \
-// expected-note {{use -ftemplate-depth=N to increase recursive template instantiation depth}}
+// expected-note 2 {{while substituting}}
 
 struct S {};
 int k = f(S{}); // expected-note {{while substituting}}

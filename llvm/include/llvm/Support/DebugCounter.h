@@ -17,7 +17,7 @@
 /// debug.  That is where debug counting steps in.  You can instrument the pass
 /// with a debug counter before it does a certain thing, and depending on the
 /// counts, it will either execute that thing or not.  The debug counter itself
-/// consists of a list of chunks (inclusive numeric intervals). `shouldExecute`
+/// consists of a list of chunks (inclusive numeric ranges). `shouldExecute`
 /// returns true iff the list is empty or the current count is in one of the
 /// chunks.
 ///
@@ -44,11 +44,9 @@
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/MapVector.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Support/Compiler.h"
+#include "llvm/ADT/UniqueVector.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Support/IntegerInclusiveInterval.h"
 #include <string>
 
 namespace llvm {
@@ -57,63 +55,47 @@ class raw_ostream;
 
 class DebugCounter {
 public:
-  /// Struct to store counter info.
-  class CounterInfo {
-    friend class DebugCounter;
-
-    /// Whether counting should be enabled, either due to -debug-counter or
-    /// -print-debug-counter.
-    bool Active = false;
-    /// Whether chunks for the counter are set (differs from Active in that
-    /// -print-debug-counter uses Active=true, IsSet=false).
-    bool IsSet = false;
-
-    int64_t Count = 0;
-    uint64_t CurrChunkIdx = 0;
-    StringRef Name;
-    StringRef Desc;
-    IntegerInclusiveIntervalUtils::IntervalList Chunks;
-
-  public:
-    CounterInfo(StringRef Name, StringRef Desc) : Name(Name), Desc(Desc) {
-      DebugCounter::registerCounter(this);
-    }
+  struct Chunk {
+    int64_t Begin;
+    int64_t End;
+    void print(llvm::raw_ostream &OS);
+    bool contains(int64_t Idx) { return Idx >= Begin && Idx <= End; }
   };
 
-  LLVM_ABI static void
-  printChunks(raw_ostream &OS, ArrayRef<IntegerInclusiveInterval> Intervals);
+  static void printChunks(raw_ostream &OS, ArrayRef<Chunk>);
 
   /// Return true on parsing error and print the error message on the
   /// llvm::errs()
-  LLVM_ABI static bool
-  parseChunks(StringRef Str, IntegerInclusiveIntervalUtils::IntervalList &Res);
+  static bool parseChunks(StringRef Str, SmallVector<Chunk> &Res);
 
   /// Returns a reference to the singleton instance.
-  LLVM_ABI static DebugCounter &instance();
+  static DebugCounter &instance();
 
   // Used by the command line option parser to push a new value it parsed.
-  LLVM_ABI void push_back(const std::string &);
+  void push_back(const std::string &);
 
-  // Register a counter with the specified counter information.
+  // Register a counter with the specified name.
   //
   // FIXME: Currently, counter registration is required to happen before command
   // line option parsing. The main reason to register counters is to produce a
   // nice list of them on the command line, but i'm not sure this is worth it.
-  static void registerCounter(CounterInfo *Info) {
-    instance().addCounter(Info);
+  static unsigned registerCounter(StringRef Name, StringRef Desc) {
+    return instance().addCounter(std::string(Name), std::string(Desc));
   }
-  LLVM_ABI static bool shouldExecuteImpl(CounterInfo &Counter);
+  static bool shouldExecuteImpl(unsigned CounterName);
 
-  inline static bool shouldExecute(CounterInfo &Counter) {
-    if (!Counter.Active)
+  inline static bool shouldExecute(unsigned CounterName) {
+    if (!isCountingEnabled())
       return true;
-    return shouldExecuteImpl(Counter);
+    return shouldExecuteImpl(CounterName);
   }
 
   // Return true if a given counter had values set (either programatically or on
   // the command line).  This will return true even if those values are
   // currently in a state where the counter will always execute.
-  static bool isCounterSet(CounterInfo &Info) { return Info.IsSet; }
+  static bool isCounterSet(unsigned ID) {
+    return instance().Counters[ID].IsSet;
+  }
 
   struct CounterState {
     int64_t Count;
@@ -121,65 +103,93 @@ public:
   };
 
   // Return the state of a counter. This only works for set counters.
-  static CounterState getCounterState(CounterInfo &Info) {
-    return {Info.Count, Info.CurrChunkIdx};
+  static CounterState getCounterState(unsigned ID) {
+    auto &Us = instance();
+    auto Result = Us.Counters.find(ID);
+    assert(Result != Us.Counters.end() && "Asking about a non-set counter");
+    return {Result->second.Count, Result->second.CurrChunkIdx};
   }
 
   // Set a registered counter to a given state.
-  static void setCounterState(CounterInfo &Info, CounterState State) {
-    Info.Count = State.Count;
-    Info.CurrChunkIdx = State.ChunkIdx;
+  static void setCounterState(unsigned ID, CounterState State) {
+    auto &Us = instance();
+    auto &Counter = Us.Counters[ID];
+    Counter.Count = State.Count;
+    Counter.CurrChunkIdx = State.ChunkIdx;
   }
 
-#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
   // Dump or print the current counter set into llvm::dbgs().
   LLVM_DUMP_METHOD void dump() const;
-#endif
 
-  LLVM_ABI void print(raw_ostream &OS) const;
+  void print(raw_ostream &OS) const;
 
-  // Get the counter info for a given named counter,
-  // or return null if none is found.
-  CounterInfo *getCounterInfo(StringRef Name) const {
-    return Counters.lookup(Name);
+  // Get the counter ID for a given named counter, or return 0 if none is found.
+  unsigned getCounterId(const std::string &Name) const {
+    return RegisteredCounters.idFor(Name);
   }
 
   // Return the number of registered counters.
-  unsigned int getNumCounters() const { return Counters.size(); }
+  unsigned int getNumCounters() const { return RegisteredCounters.size(); }
 
-  // Return the name and description of the counter with the given info.
-  std::pair<StringRef, StringRef> getCounterDesc(CounterInfo *Info) const {
-    return {Info->Name, Info->Desc};
+  // Return the name and description of the counter with the given ID.
+  std::pair<std::string, std::string> getCounterInfo(unsigned ID) const {
+    return std::make_pair(RegisteredCounters[ID], Counters.lookup(ID).Desc);
   }
 
   // Iterate through the registered counters
-  MapVector<StringRef, CounterInfo *>::const_iterator begin() const {
-    return Counters.begin();
+  typedef UniqueVector<std::string> CounterVector;
+  CounterVector::const_iterator begin() const {
+    return RegisteredCounters.begin();
   }
-  MapVector<StringRef, CounterInfo *>::const_iterator end() const {
-    return Counters.end();
-  }
+  CounterVector::const_iterator end() const { return RegisteredCounters.end(); }
 
-  void activateAllCounters() {
-    for (auto &[_, Counter] : Counters)
-      Counter->Active = true;
+  // Force-enables counting all DebugCounters.
+  //
+  // Since DebugCounters are incompatible with threading (not only do they not
+  // make sense, but we'll also see data races), this should only be used in
+  // contexts where we're certain we won't spawn threads.
+  static void enableAllCounters() { instance().Enabled = true; }
+
+  static bool isCountingEnabled() {
+// Compile to nothing when debugging is off
+#ifdef NDEBUG
+    return false;
+#else
+    return instance().Enabled || instance().ShouldPrintCounter;
+#endif
   }
 
 protected:
-  void addCounter(CounterInfo *Info) { Counters[Info->Name] = Info; }
-  bool handleCounterIncrement(CounterInfo &Info);
+  unsigned addCounter(const std::string &Name, const std::string &Desc) {
+    unsigned Result = RegisteredCounters.insert(Name);
+    Counters[Result] = {};
+    Counters[Result].Desc = Desc;
+    return Result;
+  }
+  // Struct to store counter info.
+  struct CounterInfo {
+    int64_t Count = 0;
+    uint64_t CurrChunkIdx = 0;
+    bool IsSet = false;
+    std::string Desc;
+    SmallVector<Chunk> Chunks;
+  };
 
-  MapVector<StringRef, CounterInfo *> Counters;
+  DenseMap<unsigned, CounterInfo> Counters;
+  CounterVector RegisteredCounters;
+
+  // Whether we should do DebugCounting at all. DebugCounters aren't
+  // thread-safe, so this should always be false in multithreaded scenarios.
+  bool Enabled = false;
 
   bool ShouldPrintCounter = false;
-
-  bool ShouldPrintCounterQueries = false;
 
   bool BreakOnLast = false;
 };
 
 #define DEBUG_COUNTER(VARNAME, COUNTERNAME, DESC)                              \
-  static DebugCounter::CounterInfo VARNAME(COUNTERNAME, DESC)
+  static const unsigned VARNAME =                                              \
+      DebugCounter::registerCounter(COUNTERNAME, DESC)
 
 } // namespace llvm
 #endif

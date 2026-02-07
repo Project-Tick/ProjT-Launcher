@@ -487,7 +487,7 @@ MachOPlatform::MachOPlatform(
     if ((Err = ES.getBootstrapMapValue<bool, bool>("darwin-use-ehframes-only",
                                                    ForceEHFrames)))
       return;
-    this->ForceEHFrames = ForceEHFrames.value_or(false);
+    this->ForceEHFrames = ForceEHFrames.has_value() ? *ForceEHFrames : false;
   }
 
   BootstrapInfo BI;
@@ -570,7 +570,7 @@ MachOPlatform::MachOPlatform(
 
   // Step (3) Wait for any incidental linker work to complete.
   {
-    std::unique_lock<std::mutex> Lock(PlatformMutex);
+    std::unique_lock<std::mutex> Lock(BI.Mutex);
     BI.CV.wait(Lock, [&]() { return BI.ActiveGraphs == 0; });
     Bootstrap = nullptr;
   }
@@ -635,12 +635,11 @@ void MachOPlatform::pushInitializersLoop(
       Worklist.pop_back();
 
       // If we've already visited this JITDylib on this iteration then continue.
-      auto [It, Inserted] = JDDepMap.try_emplace(DepJD);
-      if (!Inserted)
+      if (JDDepMap.count(DepJD))
         continue;
 
       // Add dep info.
-      auto &DM = It->second;
+      auto &DM = JDDepMap[DepJD];
       DepJD->withLinkOrderDo([&](const JITDylibSearchOrder &O) {
         for (auto &KV : O) {
           if (KV.first == DepJD)
@@ -955,7 +954,7 @@ Error MachOPlatform::MachOPlatformPlugin::
 
 Error MachOPlatform::MachOPlatformPlugin::bootstrapPipelineEnd(
     jitlink::LinkGraph &G) {
-  std::lock_guard<std::mutex> Lock(MP.PlatformMutex);
+  std::lock_guard<std::mutex> Lock(MP.Bootstrap->Mutex);
 
   --MP.Bootstrap->ActiveGraphs;
   // Notify Bootstrap->CV while holding the mutex because the mutex is
@@ -1441,7 +1440,7 @@ Error MachOPlatform::MachOPlatformPlugin::registerObjectPlatformSections(
     if (LLVM_LIKELY(!InBootstrapPhase))
       G.allocActions().push_back(std::move(AllocActions));
     else {
-      std::lock_guard<std::mutex> Lock(MP.PlatformMutex);
+      std::lock_guard<std::mutex> Lock(MP.Bootstrap->Mutex);
       MP.Bootstrap->DeferredAAs.push_back(std::move(AllocActions));
     }
   }
@@ -1676,8 +1675,10 @@ Error MachOPlatform::MachOPlatformPlugin::prepareSymbolTableRegistration(
   // those names.
   {
     SmallVector<jitlink::Symbol *> SymsToProcess;
-    llvm::append_range(SymsToProcess, G.defined_symbols());
-    llvm::append_range(SymsToProcess, G.absolute_symbols());
+    for (auto *Sym : G.defined_symbols())
+      SymsToProcess.push_back(Sym);
+    for (auto *Sym : G.absolute_symbols())
+      SymsToProcess.push_back(Sym);
 
     for (auto *Sym : SymsToProcess) {
       if (!Sym->hasName())
@@ -1716,7 +1717,7 @@ Error MachOPlatform::MachOPlatformPlugin::addSymbolTableRegistration(
     // If we're in the bootstrap phase then just record these symbols in the
     // bootstrap object and then bail out -- registration will be attached to
     // the bootstrap graph.
-    std::lock_guard<std::mutex> Lock(MP.PlatformMutex);
+    std::lock_guard<std::mutex> Lock(MP.Bootstrap->Mutex);
     auto &SymTab = MP.Bootstrap->SymTab;
     for (auto &[OriginalSymbol, NameSym] : JITSymTabInfo)
       SymTab.push_back({NameSym->getAddress(), OriginalSymbol->getAddress(),
@@ -1761,22 +1762,9 @@ jitlink::Block &createHeaderBlock(MachOPlatform &MOP,
   for (auto &BV : Opts.BuildVersions)
     B.template addLoadCommand<MachO::LC_BUILD_VERSION>(
         BV.Platform, BV.MinOS, BV.SDK, static_cast<uint32_t>(0));
-
-  using LoadKind = MachOPlatform::HeaderOptions::LoadDylibCmd::LoadKind;
-  for (auto &LD : Opts.LoadDylibs) {
-    switch (LD.K) {
-    case LoadKind::Default:
-      B.template addLoadCommand<MachO::LC_LOAD_DYLIB>(
-          LD.D.Name, LD.D.Timestamp, LD.D.CurrentVersion,
-          LD.D.CompatibilityVersion);
-      break;
-    case LoadKind::Weak:
-      B.template addLoadCommand<MachO::LC_LOAD_WEAK_DYLIB>(
-          LD.D.Name, LD.D.Timestamp, LD.D.CurrentVersion,
-          LD.D.CompatibilityVersion);
-      break;
-    }
-  }
+  for (auto &D : Opts.LoadDylibs)
+    B.template addLoadCommand<MachO::LC_LOAD_DYLIB>(
+        D.Name, D.Timestamp, D.CurrentVersion, D.CompatibilityVersion);
   for (auto &P : Opts.RPaths)
     B.template addLoadCommand<MachO::LC_RPATH>(P);
 

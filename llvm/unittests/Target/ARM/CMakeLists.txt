@@ -4,11 +4,9 @@ include_directories(
   )
 
 set(LLVM_LINK_COMPONENTS
-  Analysis
   ARMCodeGen
   ARMDesc
   ARMInfo
-  AsmParser
   CodeGen
   CodeGenTypes
   Core
@@ -24,5 +22,4 @@ set(LLVM_LINK_COMPONENTS
 add_llvm_target_unittest(ARMTests
   MachineInstrTest.cpp
   InstSizes.cpp
-  ARMSelectionDAGTest.cpp
   )

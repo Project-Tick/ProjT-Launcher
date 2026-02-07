@@ -512,14 +512,6 @@ void IRPromoter::PromoteTree() {
         I->setOperand(i, ConstantInt::get(ExtTy, 0));
     }
 
-    // For switch, also mutate case values, which are not operands.
-    if (auto *SI = dyn_cast<SwitchInst>(I)) {
-      for (auto Case : SI->cases()) {
-        APInt NewConst = Case.getCaseValue()->getValue().zext(PromotedWidth);
-        Case.setValue(ConstantInt::get(SI->getContext(), NewConst));
-      }
-    }
-
     // Mutate the result type, unless this is an icmp or switch.
     if (!isa<ICmpInst>(I) && !isa<SwitchInst>(I)) {
       I->mutateType(ExtTy);
@@ -814,10 +806,10 @@ bool TypePromotionImpl::TryToPromote(Value *V, unsigned PromotedWidth,
     if (CurrentVisited.count(V))
       return true;
 
-    // Skip promoting GEPs as their indices should have already been
-    // canonicalized to pointer width.
+    // Ignore GEPs because they don't need promoting and the constant indices
+    // will prevent the transformation.
     if (isa<GetElementPtrInst>(V))
-      return false;
+      return true;
 
     if (!isSupportedValue(V) || (shouldPromote(V) && !isLegalToPromote(V))) {
       LLVM_DEBUG(dbgs() << "IR Promotion: Can't handle: " << *V << "\n");

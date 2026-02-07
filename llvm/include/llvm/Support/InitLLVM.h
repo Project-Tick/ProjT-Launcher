@@ -11,7 +11,6 @@
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Allocator.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/PrettyStackTrace.h"
 #include <optional>
 
@@ -35,13 +34,13 @@
 namespace llvm {
 class InitLLVM {
 public:
-  LLVM_ABI InitLLVM(int &Argc, const char **&Argv,
-                    bool InstallPipeSignalExitHandler = true);
+  InitLLVM(int &Argc, const char **&Argv,
+           bool InstallPipeSignalExitHandler = true);
   InitLLVM(int &Argc, char **&Argv, bool InstallPipeSignalExitHandler = true)
       : InitLLVM(Argc, const_cast<const char **&>(Argv),
                  InstallPipeSignalExitHandler) {}
 
-  LLVM_ABI ~InitLLVM();
+  ~InitLLVM();
 
 private:
   BumpPtrAllocator Alloc;

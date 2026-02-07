@@ -1,9 +1,7 @@
-// clang-format off
 // RUN: %libomp-compile-and-run | %sort-threads | FileCheck %s
 // REQUIRES: ompt
 // XFAIL: gcc
 // GCC doesn't call runtime for static schedule
-// clang-format on
 
 #include "callback.h"
 
@@ -18,8 +16,7 @@ int main() {
     int wait_id = 0;
     int team_size = omp_get_num_threads();
 #pragma omp for schedule(static, WORK_SIZE / 4)
-    for (i = 0; i < WORK_SIZE; i++) {
-    }
+    for (i = 0; i < WORK_SIZE; i++) {}
 
 #pragma omp for schedule(dynamic)
     for (i = 0; i < WORK_SIZE; i++) {
@@ -45,7 +42,6 @@ int main() {
   return 0;
 }
 
-// clang-format off
 // CHECK-NOT: {{^}}0: Could not register callback 'ompt_callback_parallel_begin'
 // CHECK-NOT: {{^}}0: Could not register callback 'ompt_callback_implicit_task'
 // CHECK-NOT: {{^}}0: Could not register callback 'ompt_callback_work'
@@ -53,7 +49,7 @@ int main() {
 
 // CHECK: 0: NULL_POINTER=[[NULL:.*$]]
 // CHECK: {{^}}[[THREAD_ID0:[0-9]+]]: ompt_event_parallel_begin:
-// CHECK-SAME: parallel_id=[[PARALLEL_ID:[0-f]+]]
+// CHECK-SAME: parallel_id=[[PARALLEL_ID:[0-9]+]]
 
 // Each thread should have at least one ws-loop-chunk-begin event for each
 // for loop.
@@ -129,4 +125,3 @@ int main() {
 // CHECK: {{^}}[[THREAD_ID3]]: ompt_event_ws_loop_chunk_begin:
 // CHECK-SAME: parallel_id=[[PARALLEL_ID]], task_id=[[TASK_ID3]]
 // CHECK-SAME: chunk_start={{[0-9]+}}, chunk_iterations={{[1-9][0-9]*}}
-// clang-format on

@@ -13,8 +13,6 @@
 #ifndef LLVM_IR_FMF_H
 #define LLVM_IR_FMF_H
 
-#include "llvm/Support/Compiler.h"
-
 namespace llvm {
 class raw_ostream;
 
@@ -25,7 +23,13 @@ private:
 
   unsigned Flags = 0;
 
-  FastMathFlags(unsigned F) : Flags(F) {}
+  FastMathFlags(unsigned F) {
+    // If all 7 bits are set, turn this into -1. If the number of bits grows,
+    // this must be updated. This is intended to provide some forward binary
+    // compatibility insurance for the meaning of 'fast' in case bits are added.
+    if (F == 0x7F) Flags = ~0U;
+    else Flags = F;
+  }
 
 public:
   // This is how the bits are used in Value::SubclassOptionalData so they
@@ -39,11 +43,8 @@ public:
     NoSignedZeros   = (1 << 3),
     AllowReciprocal = (1 << 4),
     AllowContract   = (1 << 5),
-    ApproxFunc      = (1 << 6),
-    FlagEnd         = (1 << 7)
+    ApproxFunc      = (1 << 6)
   };
-
-  constexpr static unsigned AllFlagsMask = FlagEnd - 1;
 
   FastMathFlags() = default;
 
@@ -55,10 +56,10 @@ public:
 
   bool any() const { return Flags != 0; }
   bool none() const { return Flags == 0; }
-  bool all() const { return Flags == AllFlagsMask; }
+  bool all() const { return Flags == ~0U; }
 
   void clear() { Flags = 0; }
-  void set() { Flags = AllFlagsMask; }
+  void set()   { Flags = ~0U; }
 
   /// Flag queries
   bool allowReassoc() const    { return 0 != (Flags & AllowReassoc); }
@@ -106,7 +107,7 @@ public:
   }
 
   /// Print fast-math flags to \p O.
-  LLVM_ABI void print(raw_ostream &O) const;
+  void print(raw_ostream &O) const;
 
   /// Intersect rewrite-based flags
   static inline FastMathFlags intersectRewrite(FastMathFlags LHS,

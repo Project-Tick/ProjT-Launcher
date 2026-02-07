@@ -4,8 +4,6 @@
 
 """BUILD extensions for MLIR linalg generation."""
 
-load("@rules_cc//cc:defs.bzl", "cc_library")
-
 def genlinalg(name, linalggen, src, linalg_outs):
     """genlinalg() generates code from a tc spec file.
 
@@ -33,12 +31,11 @@ def genlinalg(name, linalggen, src, linalg_outs):
             srcs = [src],
             outs = [out],
             tools = [linalggen],
-            output_to_bindir = 1,
             cmd = (" ".join(base_args)),
         )
 
     hdrs = [f for (opts, f) in linalg_outs]
-    cc_library(
+    native.cc_library(
         name = name,
         hdrs = hdrs,
         textual_hdrs = hdrs,

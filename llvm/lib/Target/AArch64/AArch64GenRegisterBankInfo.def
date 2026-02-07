@@ -155,7 +155,12 @@ bool AArch64GenRegisterBankInfo::checkPartialMappingIdx(
     return false;
 
   PartialMappingIdx Previous = Order.front();
-  for (const auto &Current : Order.drop_front()) {
+  bool First = true;
+  for (const auto &Current : Order) {
+    if (First) {
+      First = false;
+      continue;
+    }
     if (Previous + 1 != Current)
       return false;
     Previous = Current;

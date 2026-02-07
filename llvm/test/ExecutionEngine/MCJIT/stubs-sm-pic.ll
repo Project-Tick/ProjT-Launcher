@@ -1,7 +1,5 @@
 ; RUN: %lli -jit-kind=mcjit -disable-lazy-compilation=false -relocation-model=pic -code-model=small %s
-; XFAIL: target={{(mips|mipsel)-.*}}, target={{(i686|i386).*}}, target={{(aarch64|arm).*}}, target={{.*-(cygwin|windows-cygnus)}}
-; This test segfaults on cygwin, but succeeds with cygwin-elf.  Unfortunately,
-; cygwin-elf breaks the remote tests due to lack of __register_frame.
+; XFAIL: target={{(mips|mipsel)-.*}}, target={{(i686|i386).*}}, target={{(aarch64|arm).*}}
 
 define i32 @main() nounwind {
 entry:

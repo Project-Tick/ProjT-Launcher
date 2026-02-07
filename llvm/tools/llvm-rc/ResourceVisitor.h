@@ -55,7 +55,7 @@ public:
   virtual Error visitVersionStmt(const VersionStmt *) = 0;
   virtual Error visitMenuStmt(const MenuStmt *) = 0;
 
-  virtual ~Visitor() = default;
+  virtual ~Visitor() {}
 };
 
 } // namespace rc

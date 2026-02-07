@@ -13,5 +13,4 @@ add_mlir_conversion_library(MLIRVectorToXeGPU
   MLIRTransforms
   MLIRVectorDialect
   MLIRXeGPUDialect
-  MLIRXeGPUUtils
   )

@@ -16,6 +16,7 @@
 #define LLVM_PROFILEDATA_HASHKEYMAP_H
 
 #include "llvm/ADT/Hashing.h"
+#include <iterator>
 #include <utility>
 
 namespace llvm {

@@ -16,11 +16,10 @@
 
 #include "llvm/DebugInfo/BTF/BTFParser.h"
 #include "llvm/DebugInfo/DIContext.h"
-#include "llvm/Support/Compiler.h"
 
 namespace llvm {
 
-class LLVM_ABI BTFContext final : public DIContext {
+class BTFContext final : public DIContext {
   BTFParser BTF;
 
 public:
@@ -31,11 +30,11 @@ public:
     // BTF is no DWARF, so ignore this operation for now.
   }
 
-  std::optional<DILineInfo> getLineInfoForAddress(
+  DILineInfo getLineInfoForAddress(
       object::SectionedAddress Address,
       DILineInfoSpecifier Specifier = DILineInfoSpecifier()) override;
 
-  std::optional<DILineInfo>
+  DILineInfo
   getLineInfoForDataAddress(object::SectionedAddress Address) override;
 
   DILineInfoTable getLineInfoForAddressRange(

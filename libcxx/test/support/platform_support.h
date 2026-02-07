@@ -48,7 +48,7 @@
 # include <string.h> // strverscmp
 #endif
 
-#if _LIBCPP_LIBC_NEWLIB && defined(__STRICT_ANSI__)
+#if defined(_NEWLIB_VERSION) && defined(__STRICT_ANSI__)
 // Newlib provides this, but in the header it's under __STRICT_ANSI__
 extern "C" {
   int mkstemp(char*);

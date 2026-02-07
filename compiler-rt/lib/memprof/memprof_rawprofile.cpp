@@ -7,7 +7,10 @@
 #include "sanitizer_common/sanitizer_allocator_internal.h"
 #include "sanitizer_common/sanitizer_array_ref.h"
 #include "sanitizer_common/sanitizer_common.h"
+#include "sanitizer_common/sanitizer_linux.h"
+#include "sanitizer_common/sanitizer_procmaps.h"
 #include "sanitizer_common/sanitizer_stackdepot.h"
+#include "sanitizer_common/sanitizer_stackdepotbase.h"
 #include "sanitizer_common/sanitizer_stacktrace.h"
 #include "sanitizer_common/sanitizer_vector.h"
 
@@ -16,20 +19,10 @@ using ::__sanitizer::Vector;
 using ::llvm::memprof::MemInfoBlock;
 using SegmentEntry = ::llvm::memprof::SegmentEntry;
 using Header = ::llvm::memprof::Header;
-using ::llvm::memprof::encodeHistogramCount;
 
 namespace {
 template <class T> char *WriteBytes(const T &Pod, char *Buffer) {
-  static_assert(is_trivially_copyable<T>::value, "T must be POD");
-  const uint8_t *Src = reinterpret_cast<const uint8_t *>(&Pod);
-
-  for (size_t I = 0; I < sizeof(T); ++I)
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    // Reverse byte order since reader is little-endian.
-    Buffer[I] = Src[sizeof(T) - 1 - I];
-#else
-    Buffer[I] = Src[I];
-#endif
+  *(T *)Buffer = Pod;
   return Buffer + sizeof(T);
 }
 
@@ -39,6 +32,7 @@ void RecordStackId(const uptr Key, UNUSED LockedMemInfoBlock *const &MIB,
   auto *StackIds = reinterpret_cast<Vector<u64> *>(Arg);
   StackIds->PushBack(Key);
 }
+} // namespace
 
 u64 SegmentSizeBytes(ArrayRef<LoadedModule> Modules) {
   u64 NumSegmentsToRecord = 0;
@@ -175,21 +169,18 @@ void SerializeMIBInfoToBuffer(MIBMapTy &MIBMap, const Vector<u64> &StackIds,
     // FIXME: We unnecessarily serialize the AccessHistogram pointer. Adding a
     // serialization schema will fix this issue. See also FIXME in
     // deserialization.
-    auto &MIB = (*h)->mib;
-    Ptr = WriteBytes(MIB, Ptr);
-    for (u64 j = 0; j < MIB.AccessHistogramSize; ++j) {
-      u16 HistogramEntry =
-          encodeHistogramCount(((u64 *)(MIB.AccessHistogram))[j]);
+    Ptr = WriteBytes((*h)->mib, Ptr);
+    for (u64 j = 0; j < (*h)->mib.AccessHistogramSize; ++j) {
+      u64 HistogramEntry = ((u64 *)((*h)->mib.AccessHistogram))[j];
       Ptr = WriteBytes(HistogramEntry, Ptr);
     }
-    if (MIB.AccessHistogramSize > 0) {
-      InternalFree((void *)MIB.AccessHistogram);
+    if ((*h)->mib.AccessHistogramSize > 0) {
+      InternalFree((void *)((*h)->mib.AccessHistogram));
     }
   }
   CHECK(ExpectedNumBytes >= static_cast<u64>(Ptr - Buffer) &&
         "Expected num bytes != actual bytes written");
 }
-} // namespace
 
 // Format
 // ---------- Header
@@ -258,7 +249,7 @@ u64 SerializeToRawProfile(MIBMapTy &MIBMap, ArrayRef<LoadedModule> Modules,
       },
       reinterpret_cast<void *>(&TotalAccessHistogramEntries));
   const u64 NumHistogramBytes =
-      RoundUpTo(TotalAccessHistogramEntries * sizeof(uint16_t), 8);
+      RoundUpTo(TotalAccessHistogramEntries * sizeof(uint64_t), 8);
 
   const u64 NumStackBytes = RoundUpTo(StackSizeBytes(StackIds), 8);
 
@@ -294,4 +285,5 @@ u64 SerializeToRawProfile(MIBMapTy &MIBMap, ArrayRef<LoadedModule> Modules,
 
   return TotalSizeBytes;
 }
+
 } // namespace __memprof

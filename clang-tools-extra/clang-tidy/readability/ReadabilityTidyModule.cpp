@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- ReadabilityTidyModule.cpp - clang-tidy ---------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -8,8 +8,8 @@
 
 #include "../ClangTidy.h"
 #include "../ClangTidyModule.h"
-#include "AmbiguousSmartptrResetCallCheck.h"
-#include "AvoidConstParamsInDeclsCheck.h"
+#include "../ClangTidyModuleRegistry.h"
+#include "AvoidConstParamsInDecls.h"
 #include "AvoidNestedConditionalOperatorCheck.h"
 #include "AvoidReturnWithVoidValueCheck.h"
 #include "AvoidUnconditionalPreprocessorIfCheck.h"
@@ -18,7 +18,7 @@
 #include "ContainerContainsCheck.h"
 #include "ContainerDataPointerCheck.h"
 #include "ContainerSizeEmptyCheck.h"
-#include "ConvertMemberFunctionsToStaticCheck.h"
+#include "ConvertMemberFunctionsToStatic.h"
 #include "DeleteNullPointerCheck.h"
 #include "DuplicateIncludeCheck.h"
 #include "ElseAfterReturnCheck.h"
@@ -29,7 +29,6 @@
 #include "IdentifierNamingCheck.h"
 #include "ImplicitBoolConversionCheck.h"
 #include "InconsistentDeclarationParameterNameCheck.h"
-#include "InconsistentIfElseBracesCheck.h"
 #include "IsolateDeclarationCheck.h"
 #include "MagicNumbersCheck.h"
 #include "MakeMemberFunctionConstCheck.h"
@@ -47,12 +46,10 @@
 #include "RedundantFunctionPtrDereferenceCheck.h"
 #include "RedundantInlineSpecifierCheck.h"
 #include "RedundantMemberInitCheck.h"
-#include "RedundantParenthesesCheck.h"
 #include "RedundantPreprocessorCheck.h"
 #include "RedundantSmartptrGetCheck.h"
 #include "RedundantStringCStrCheck.h"
 #include "RedundantStringInitCheck.h"
-#include "RedundantTypenameCheck.h"
 #include "ReferenceToConstructedTemporaryCheck.h"
 #include "SimplifyBooleanExprCheck.h"
 #include "SimplifySubscriptExprCheck.h"
@@ -63,19 +60,15 @@
 #include "UniqueptrDeleteReleaseCheck.h"
 #include "UppercaseLiteralSuffixCheck.h"
 #include "UseAnyOfAllOfCheck.h"
-#include "UseConcisePreprocessorDirectivesCheck.h"
 #include "UseStdMinMaxCheck.h"
 
 namespace clang::tidy {
 namespace readability {
-namespace {
 
 class ReadabilityModule : public ClangTidyModule {
 public:
   void addCheckFactories(ClangTidyCheckFactories &CheckFactories) override {
-    CheckFactories.registerCheck<AmbiguousSmartptrResetCallCheck>(
-        "readability-ambiguous-smartptr-reset-call");
-    CheckFactories.registerCheck<AvoidConstParamsInDeclsCheck>(
+    CheckFactories.registerCheck<AvoidConstParamsInDecls>(
         "readability-avoid-const-params-in-decls");
     CheckFactories.registerCheck<AvoidNestedConditionalOperatorCheck>(
         "readability-avoid-nested-conditional-operator");
@@ -93,7 +86,7 @@ public:
         "readability-container-data-pointer");
     CheckFactories.registerCheck<ContainerSizeEmptyCheck>(
         "readability-container-size-empty");
-    CheckFactories.registerCheck<ConvertMemberFunctionsToStaticCheck>(
+    CheckFactories.registerCheck<ConvertMemberFunctionsToStatic>(
         "readability-convert-member-functions-to-static");
     CheckFactories.registerCheck<DeleteNullPointerCheck>(
         "readability-delete-null-pointer");
@@ -113,8 +106,6 @@ public:
         "readability-identifier-naming");
     CheckFactories.registerCheck<ImplicitBoolConversionCheck>(
         "readability-implicit-bool-conversion");
-    CheckFactories.registerCheck<InconsistentIfElseBracesCheck>(
-        "readability-inconsistent-ifelse-braces");
     CheckFactories.registerCheck<MathMissingParenthesesCheck>(
         "readability-math-missing-parentheses");
     CheckFactories.registerCheck<RedundantInlineSpecifierCheck>(
@@ -143,12 +134,8 @@ public:
         "readability-redundant-function-ptr-dereference");
     CheckFactories.registerCheck<RedundantMemberInitCheck>(
         "readability-redundant-member-init");
-    CheckFactories.registerCheck<RedundantParenthesesCheck>(
-        "readability-redundant-parentheses");
     CheckFactories.registerCheck<RedundantPreprocessorCheck>(
         "readability-redundant-preprocessor");
-    CheckFactories.registerCheck<RedundantTypenameCheck>(
-        "readability-redundant-typename");
     CheckFactories.registerCheck<ReferenceToConstructedTemporaryCheck>(
         "readability-reference-to-constructed-temporary");
     CheckFactories.registerCheck<SimplifySubscriptExprCheck>(
@@ -183,14 +170,10 @@ public:
         "readability-uppercase-literal-suffix");
     CheckFactories.registerCheck<UseAnyOfAllOfCheck>(
         "readability-use-anyofallof");
-    CheckFactories.registerCheck<UseConcisePreprocessorDirectivesCheck>(
-        "readability-use-concise-preprocessor-directives");
     CheckFactories.registerCheck<UseStdMinMaxCheck>(
         "readability-use-std-min-max");
   }
 };
-
-} // namespace
 
 // Register the ReadabilityModule using this statically initialized variable.
 static ClangTidyModuleRegistry::Add<ReadabilityModule>
@@ -200,7 +183,6 @@ static ClangTidyModuleRegistry::Add<ReadabilityModule>
 
 // This anchor is used to force the linker to link in the generated object file
 // and thus register the ReadabilityModule.
-// NOLINTNEXTLINE(misc-use-internal-linkage)
 volatile int ReadabilityModuleAnchorSource = 0;
 
 } // namespace clang::tidy

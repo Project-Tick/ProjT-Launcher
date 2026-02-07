@@ -19,6 +19,7 @@
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/Support/ErrorHandling.h"
+#include <utility>
 
 namespace llvm {
 
@@ -88,7 +89,6 @@ class ARMFunctionInfo : public MachineFunctionInfo {
   unsigned FRSaveSize = 0;
   unsigned GPRCS1Size = 0;
   unsigned GPRCS2Size = 0;
-  unsigned FPStatusSize = 0;
   unsigned DPRCSAlignGapSize = 0;
   unsigned DPRCS1Size = 0;
   unsigned GPRCS3Size = 0;
@@ -205,7 +205,6 @@ public:
   unsigned getFrameRecordSavedAreaSize() const { return FRSaveSize; }
   unsigned getGPRCalleeSavedArea1Size() const { return GPRCS1Size; }
   unsigned getGPRCalleeSavedArea2Size() const { return GPRCS2Size; }
-  unsigned getFPStatusSavesSize() const       { return FPStatusSize; }
   unsigned getDPRCalleeSavedGapSize() const   { return DPRCSAlignGapSize; }
   unsigned getDPRCalleeSavedArea1Size() const { return DPRCS1Size; }
   unsigned getGPRCalleeSavedArea3Size() const { return GPRCS3Size; }
@@ -214,7 +213,6 @@ public:
   void setFrameRecordSavedAreaSize(unsigned s) { FRSaveSize = s; }
   void setGPRCalleeSavedArea1Size(unsigned s) { GPRCS1Size = s; }
   void setGPRCalleeSavedArea2Size(unsigned s) { GPRCS2Size = s; }
-  void setFPStatusSavesSize(unsigned s)       { FPStatusSize = s; }
   void setDPRCalleeSavedGapSize(unsigned s)   { DPRCSAlignGapSize = s; }
   void setDPRCalleeSavedArea1Size(unsigned s) { DPRCS1Size = s; }
   void setGPRCalleeSavedArea3Size(unsigned s) { GPRCS3Size = s; }
@@ -311,7 +309,7 @@ struct ARMFunctionInfo final : public yaml::MachineFunctionInfo {
   ARMFunctionInfo(const llvm::ARMFunctionInfo &MFI);
 
   void mappingImpl(yaml::IO &YamlIO) override;
-  ~ARMFunctionInfo() override = default;
+  ~ARMFunctionInfo() = default;
 };
 
 template <> struct MappingTraits<ARMFunctionInfo> {

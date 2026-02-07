@@ -27,11 +27,6 @@ void constructAssembleCommand(Compilation &C, const Tool &T,
                               const InputInfo &Input,
                               const llvm::opt::ArgStringList &Args);
 
-void constructLLVMLinkCommand(Compilation &C, const Tool &T,
-                              const JobAction &JA, const InputInfo &Output,
-                              const InputInfoList &Inputs,
-                              const llvm::opt::ArgList &Args);
-
 class LLVM_LIBRARY_VISIBILITY Translator : public Tool {
 public:
   Translator(const ToolChain &TC)
@@ -74,6 +69,7 @@ public:
 namespace toolchains {
 
 class LLVM_LIBRARY_VISIBILITY SPIRVToolChain : public ToolChain {
+  mutable std::unique_ptr<Tool> Translator;
   mutable std::unique_ptr<Tool> Assembler;
 
 public:
@@ -82,7 +78,7 @@ public:
 
   bool useIntegratedAs() const override { return true; }
 
-  bool IsIntegratedBackendDefault() const override { return true; }
+  bool IsIntegratedBackendDefault() const override { return false; }
   bool IsNonIntegratedBackendSupported() const override { return true; }
   bool IsMathErrnoDefault() const override { return false; }
   bool isCrossCompiling() const override { return true; }
@@ -101,6 +97,7 @@ protected:
   Tool *buildLinker() const override;
 
 private:
+  clang::driver::Tool *getTranslator() const;
   clang::driver::Tool *getAssembler() const;
 
   bool NativeLLVMSupport;

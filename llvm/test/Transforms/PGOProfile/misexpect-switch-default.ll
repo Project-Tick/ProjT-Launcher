@@ -25,6 +25,7 @@
 ; CORRECT-NOT: warning: {{.*}}
 ; CORRECT-NOT: remark: {{.*}}
 
+
 ; ModuleID = 'misexpect-switch.c'
 source_filename = "misexpect-switch.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
@@ -36,10 +37,10 @@ target triple = "x86_64-unknown-linux-gnu"
 @arry = dso_local global [25 x i32] zeroinitializer, align 16
 
 ; Function Attrs: nounwind uwtable
-define dso_local void @init_arry() {
+define dso_local void @init_arry() #0 {
 entry:
   %i = alloca i32, align 4
-  call void @llvm.lifetime.start.p0(ptr %i)
+  call void @llvm.lifetime.start.p0(i64 4, ptr %i) #6
   store i32 0, ptr %i, align 4, !tbaa !4
   br label %for.cond
 
@@ -49,7 +50,7 @@ for.cond:                                         ; preds = %for.inc, %entry
   br i1 %cmp, label %for.body, label %for.end
 
 for.body:                                         ; preds = %for.cond
-  %call = call i32 @rand()
+  %call = call i32 @rand() #6
   %rem = srem i32 %call, 10
   %1 = load i32, ptr %i, align 4, !tbaa !4
   %idxprom = sext i32 %1 to i64
@@ -64,24 +65,24 @@ for.inc:                                          ; preds = %for.body
   br label %for.cond
 
 for.end:                                          ; preds = %for.cond
-  call void @llvm.lifetime.end.p0(ptr %i)
+  call void @llvm.lifetime.end.p0(i64 4, ptr %i) #6
   ret void
 }
 
 ; Function Attrs: argmemonly nounwind willreturn
-declare void @llvm.lifetime.start.p0(ptr nocapture)
+declare void @llvm.lifetime.start.p0(i64 immarg, ptr nocapture) #1
 
 ; Function Attrs: nounwind readnone speculatable willreturn
-declare void @llvm.dbg.declare(metadata, metadata, metadata)
+declare void @llvm.dbg.declare(metadata, metadata, metadata) #2
 
 ; Function Attrs: nounwind
-declare dso_local i32 @rand()
+declare dso_local i32 @rand() #3
 
 ; Function Attrs: argmemonly nounwind willreturn
-declare void @llvm.lifetime.end.p0(ptr nocapture)
+declare void @llvm.lifetime.end.p0(i64 immarg, ptr nocapture) #1
 
 ; Function Attrs: nounwind uwtable
-define dso_local i32 @main() {
+define dso_local i32 @main() #0 {
 entry:
   %retval = alloca i32, align 4
   %val = alloca i32, align 4
@@ -89,9 +90,9 @@ entry:
   %condition = alloca i32, align 4
   store i32 0, ptr %retval, align 4
   call void @init_arry()
-  call void @llvm.lifetime.start.p0(ptr %val)
+  call void @llvm.lifetime.start.p0(i64 4, ptr %val) #6
   store i32 0, ptr %val, align 4, !tbaa !4
-  call void @llvm.lifetime.start.p0(ptr %j)
+  call void @llvm.lifetime.start.p0(i64 4, ptr %j) #6
   store i32 0, ptr %j, align 4, !tbaa !4
   br label %for.cond
 
@@ -101,8 +102,8 @@ for.cond:                                         ; preds = %for.inc, %entry
   br i1 %cmp, label %for.body, label %for.end
 
 for.body:                                         ; preds = %for.cond
-  call void @llvm.lifetime.start.p0(ptr %condition)
-  %call = call i32 @rand()
+  call void @llvm.lifetime.start.p0(i64 4, ptr %condition) #6
+  %call = call i32 @rand() #6
   %rem = srem i32 %call, 5
   store i32 %rem, ptr %condition, align 4, !tbaa !4
   %1 = load i32, ptr %condition, align 4, !tbaa !4
@@ -137,7 +138,7 @@ sw.default:                                       ; preds = %for.body
   unreachable
 
 sw.epilog:                                        ; preds = %sw.bb3, %sw.bb2, %sw.bb
-  call void @llvm.lifetime.end.p0(ptr %condition)
+  call void @llvm.lifetime.end.p0(i64 4, ptr %condition) #6
   br label %for.inc
 
 for.inc:                                          ; preds = %sw.epilog
@@ -147,17 +148,25 @@ for.inc:                                          ; preds = %sw.epilog
   br label %for.cond
 
 for.end:                                          ; preds = %for.cond
-  call void @llvm.lifetime.end.p0(ptr %j)
-  call void @llvm.lifetime.end.p0(ptr %val)
+  call void @llvm.lifetime.end.p0(i64 4, ptr %j) #6
+  call void @llvm.lifetime.end.p0(i64 4, ptr %val) #6
   ret i32 0
 }
 
 ; Function Attrs: nounwind readnone willreturn
-declare i64 @llvm.expect.i64(i64, i64)
+declare i64 @llvm.expect.i64(i64, i64) #4
 
-declare dso_local i32 @sum(ptr, i32)
+declare dso_local i32 @sum(ptr, i32) #5
 
-declare dso_local i32 @random_sample(ptr, i32)
+declare dso_local i32 @random_sample(ptr, i32) #5
+
+attributes #0 = { nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="none" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind willreturn }
+attributes #2 = { nounwind readnone speculatable willreturn }
+attributes #3 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="none" "less-precise-fpmad"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind readnone willreturn }
+attributes #5 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="none" "less-precise-fpmad"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { nounwind }
 
 !llvm.module.flags = !{!0, !1, !2}
 !llvm.ident = !{!3}

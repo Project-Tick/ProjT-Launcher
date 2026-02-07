@@ -15,8 +15,6 @@ unittest("OrcJITTests") {
     "//llvm/lib/Testing/Support",
   ]
   sources = [
-    "CallSPSViaEPCTest.cpp",
-    "CallableTraitsHelperTest.cpp",
     "CoreAPIsTest.cpp",
     "EPCGenericJITLinkMemoryManagerTest.cpp",
     "EPCGenericMemoryAccessTest.cpp",
@@ -26,7 +24,6 @@ unittest("OrcJITTests") {
     "JITLinkRedirectionManagerTest.cpp",
     "JITTargetMachineBuilderTest.cpp",
     "LazyCallThroughAndReexportsTest.cpp",
-    "LibraryResolverTest.cpp",
     "LookupAndRecordAddrsTest.cpp",
     "MachOPlatformTest.cpp",
     "MapperJITLinkMemoryManagerTest.cpp",
@@ -45,7 +42,6 @@ unittest("OrcJITTests") {
     "SymbolStringPoolTest.cpp",
     "TaskDispatchTest.cpp",
     "ThreadSafeModuleTest.cpp",
-    "WaitingOnGraphTest.cpp",
     "WrapperFunctionUtilsTest.cpp",
   ]
 

@@ -15,12 +15,15 @@
 //===----------------------------------------------------------------------===//
 
 #include "clang/AST/Attr.h"
+#include "clang/Basic/TargetInfo.h"
 #include "clang/StaticAnalyzer/Checkers/BuiltinCheckerRegistration.h"
 #include "clang/StaticAnalyzer/Core/BugReporter/BugType.h"
 #include "clang/StaticAnalyzer/Core/BugReporter/CommonBugCategories.h"
 #include "clang/StaticAnalyzer/Core/Checker.h"
 #include "clang/StaticAnalyzer/Core/CheckerManager.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/ProgramStateTrait.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -73,8 +76,9 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
     return;
 
   // Global variables are fine.
-  const MemSpaceRegion *Space = R->getMemorySpace(C.getState());
-  if (isa<GlobalsSpaceRegion>(Space))
+  const MemRegion *RB = R->getBaseRegion();
+  const MemSpaceRegion *RS = RB->getMemorySpace();
+  if (isa<GlobalsSpaceRegion>(RS))
     return;
 
   // Handle _dispatch_once.  In some versions of the OS X SDK we have the case
@@ -91,7 +95,7 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
   llvm::raw_svector_ostream os(S);
   bool SuggestStatic = false;
   os << "Call to '" << FName << "' uses";
-  if (const VarRegion *VR = dyn_cast<VarRegion>(R->getBaseRegion())) {
+  if (const VarRegion *VR = dyn_cast<VarRegion>(RB)) {
     const VarDecl *VD = VR->getDecl();
     // FIXME: These should have correct memory space and thus should be filtered
     // out earlier. This branch only fires when we're looking from a block,
@@ -113,9 +117,9 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
     if (IVR != R)
       os << " memory within";
     os << " the instance variable '" << IVR->getDecl()->getName() << '\'';
-  } else if (isa<HeapSpaceRegion>(Space)) {
+  } else if (isa<HeapSpaceRegion>(RS)) {
     os << " heap-allocated memory";
-  } else if (isa<UnknownSpaceRegion>(Space)) {
+  } else if (isa<UnknownSpaceRegion>(RS)) {
     // Presence of an IVar superregion has priority over this branch, because
     // ObjC objects are on the heap even if the core doesn't realize this.
     // Presence of a block variable base region has priority over this branch,
@@ -151,10 +155,12 @@ void MacOSXAPIChecker::checkPreStmt(const CallExpr *CE,
     return;
 
   SubChecker SC =
-      llvm::StringSwitch<SubChecker>(Name)
-          .Cases({"dispatch_once", "_dispatch_once", "dispatch_once_f"},
-                 &MacOSXAPIChecker::CheckDispatchOnce)
-          .Default(nullptr);
+    llvm::StringSwitch<SubChecker>(Name)
+      .Cases("dispatch_once",
+             "_dispatch_once",
+             "dispatch_once_f",
+             &MacOSXAPIChecker::CheckDispatchOnce)
+      .Default(nullptr);
 
   if (SC)
     (this->*SC)(C, CE, Name);

@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- VirtualInheritanceCheck.h - clang-tidy------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_FUCHSIA_VIRTUALINHERITANCECHECK_H
-#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_FUCHSIA_VIRTUALINHERITANCECHECK_H
+#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_FUCHSIA_VIRTUAL_INHERITANCE_H
+#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_FUCHSIA_VIRTUAL_INHERITANCE_H
 
 #include "../ClangTidyCheck.h"
 
@@ -16,18 +16,15 @@ namespace clang::tidy::fuchsia {
 /// Defining classes with virtual inheritance is disallowed.
 ///
 /// For the user-facing documentation see:
-/// https://clang.llvm.org/extra/clang-tidy/checks/fuchsia/virtual-inheritance.html
+/// http://clang.llvm.org/extra/clang-tidy/checks/fuchsia/virtual-inheritance.html
 class VirtualInheritanceCheck : public ClangTidyCheck {
-public:
+ public:
   VirtualInheritanceCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
-  bool isLanguageVersionSupported(const LangOptions &LangOpts) const override {
-    return LangOpts.CPlusPlus;
-  }
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
 };
 
 } // namespace clang::tidy::fuchsia
 
-#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_FUCHSIA_VIRTUALINHERITANCECHECK_H
+#endif  // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_FUCHSIA_VIRTUAL_INHERITANCE_H

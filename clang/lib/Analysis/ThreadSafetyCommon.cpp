@@ -26,9 +26,9 @@
 #include "clang/Basic/LLVM.h"
 #include "clang/Basic/OperatorKinds.h"
 #include "clang/Basic/Specifiers.h"
-#include "llvm/ADT/ScopeExit.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/Casting.h"
 #include <algorithm>
 #include <cassert>
 #include <string>
@@ -67,38 +67,6 @@ static bool isIncompletePhi(const til::SExpr *E) {
   return false;
 }
 
-static constexpr std::pair<StringRef, bool> ClassifyCapabilityFallback{
-    /*Kind=*/StringRef("mutex"),
-    /*Reentrant=*/false};
-
-// Returns pair (Kind, Reentrant).
-static std::pair<StringRef, bool> classifyCapability(const TypeDecl &TD) {
-  if (const auto *CA = TD.getAttr<CapabilityAttr>())
-    return {CA->getName(), TD.hasAttr<ReentrantCapabilityAttr>()};
-
-  return ClassifyCapabilityFallback;
-}
-
-// Returns pair (Kind, Reentrant).
-static std::pair<StringRef, bool> classifyCapability(QualType QT) {
-  // We need to look at the declaration of the type of the value to determine
-  // which it is. The type should either be a record or a typedef, or a pointer
-  // or reference thereof.
-  if (const auto *RD = QT->getAsRecordDecl())
-    return classifyCapability(*RD);
-  if (const auto *TT = QT->getAs<TypedefType>())
-    return classifyCapability(*TT->getDecl());
-  if (QT->isPointerOrReferenceType())
-    return classifyCapability(QT->getPointeeType());
-
-  return ClassifyCapabilityFallback;
-}
-
-CapabilityExpr::CapabilityExpr(const til::SExpr *E, QualType QT, bool Neg) {
-  const auto &[Kind, Reentrant] = classifyCapability(QT);
-  *this = CapabilityExpr(E, Kind, Neg, Reentrant);
-}
-
 using CallingContext = SExprBuilder::CallingContext;
 
 til::SExpr *SExprBuilder::lookupStmt(const Stmt *S) { return SMap.lookup(S); }
@@ -111,6 +79,28 @@ til::SCFG *SExprBuilder::buildCFG(CFGWalker &Walker) {
 static bool isCalleeArrow(const Expr *E) {
   const auto *ME = dyn_cast<MemberExpr>(E->IgnoreParenCasts());
   return ME ? ME->isArrow() : false;
+}
+
+static StringRef ClassifyDiagnostic(const CapabilityAttr *A) {
+  return A->getName();
+}
+
+static StringRef ClassifyDiagnostic(QualType VDT) {
+  // We need to look at the declaration of the type of the value to determine
+  // which it is. The type should either be a record or a typedef, or a pointer
+  // or reference thereof.
+  if (const auto *RT = VDT->getAs<RecordType>()) {
+    if (const auto *RD = RT->getDecl())
+      if (const auto *CA = RD->getAttr<CapabilityAttr>())
+        return ClassifyDiagnostic(CA);
+  } else if (const auto *TT = VDT->getAs<TypedefType>()) {
+    if (const auto *TD = TT->getDecl())
+      if (const auto *CA = TD->getAttr<CapabilityAttr>())
+        return ClassifyDiagnostic(CA);
+  } else if (VDT->isPointerOrReferenceType())
+    return ClassifyDiagnostic(VDT->getPointeeType());
+
+  return "mutex";
 }
 
 /// Translate a clang expression in an attribute to a til::SExpr.
@@ -180,7 +170,9 @@ CapabilityExpr SExprBuilder::translateAttrExpr(const Expr *AttrExp,
     // If the attribute has no arguments, then assume the argument is "this".
     if (!AttrExp)
       return CapabilityExpr(
-          Self, cast<CXXMethodDecl>(D)->getFunctionObjectParameterType(),
+          Self,
+          ClassifyDiagnostic(
+              cast<CXXMethodDecl>(D)->getFunctionObjectParameterType()),
           false);
     else  // For most attributes.
       return translateAttrExpr(AttrExp, &Ctx);
@@ -205,7 +197,7 @@ CapabilityExpr SExprBuilder::translateAttrExpr(const Expr *AttrExp,
       // The "*" expr is a universal lock, which essentially turns off
       // checks until it is removed from the lockset.
       return CapabilityExpr(new (Arena) til::Wildcard(), StringRef("wildcard"),
-                            /*Neg=*/false, /*Reentrant=*/false);
+                            false);
     else
       // Ignore other string literals for now.
       return CapabilityExpr();
@@ -225,60 +217,31 @@ CapabilityExpr SExprBuilder::translateAttrExpr(const Expr *AttrExp,
     }
   }
 
-  const til::SExpr *E = translate(AttrExp, Ctx);
+  til::SExpr *E = translate(AttrExp, Ctx);
 
   // Trap mutex expressions like nullptr, or 0.
   // Any literal value is nonsense.
   if (!E || isa<til::Literal>(E))
     return CapabilityExpr();
 
+  StringRef Kind = ClassifyDiagnostic(AttrExp->getType());
+
   // Hack to deal with smart pointers -- strip off top-level pointer casts.
   if (const auto *CE = dyn_cast<til::Cast>(E)) {
     if (CE->castOpcode() == til::CAST_objToPtr)
-      E = CE->expr();
+      return CapabilityExpr(CE->expr(), Kind, Neg);
   }
-  return CapabilityExpr(E, AttrExp->getType(), Neg);
+  return CapabilityExpr(E, Kind, Neg);
 }
 
-til::SExpr *SExprBuilder::translateVariable(const VarDecl *VD,
-                                            CallingContext *Ctx) {
-  assert(VD);
-
-  // General recursion guard for x = f(x). If we are already in the process of
-  // defining VD, use its pre-assignment value to break the cycle.
-  if (VarsBeingTranslated.contains(VD->getCanonicalDecl()))
-    return new (Arena) til::LiteralPtr(VD);
-
-  // The closure captures state that is updated to correctly translate chains of
-  // aliases. Restore it when we are done with recursive translation.
-  llvm::scope_exit Cleanup([&, RestoreClosure = VarsBeingTranslated.empty()
-                                                    ? LookupLocalVarExpr
-                                                    : nullptr] {
-    VarsBeingTranslated.erase(VD->getCanonicalDecl());
-    if (VarsBeingTranslated.empty())
-      LookupLocalVarExpr = RestoreClosure;
-  });
-  VarsBeingTranslated.insert(VD->getCanonicalDecl());
-
-  QualType Ty = VD->getType();
-  if (!VD->isStaticLocal() && Ty->isPointerType()) {
-    // Substitute local variable aliases with a canonical definition.
-    if (LookupLocalVarExpr) {
-      // Attempt to resolve an alias through the more complex local variable map
-      // lookup. This will fail with complex control-flow graphs (where we
-      // revert to no alias resolution to retain stable variable names).
-      if (const Expr *E = LookupLocalVarExpr(VD)) {
-        til::SExpr *Result = translate(E, Ctx);
-        // Unsupported expression (such as heap allocations) will be undefined;
-        // rather than failing here, we simply revert to the pointer being the
-        // canonical variable.
-        if (Result && !isa<til::Undefined>(Result))
-          return Result;
-      }
-    }
-  }
-
+til::LiteralPtr *SExprBuilder::createVariable(const VarDecl *VD) {
   return new (Arena) til::LiteralPtr(VD);
+}
+
+std::pair<til::LiteralPtr *, StringRef>
+SExprBuilder::createThisPlaceholder(const Expr *Exp) {
+  return {new (Arena) til::LiteralPtr(nullptr),
+          ClassifyDiagnostic(Exp->getType())};
 }
 
 // Translate a clang statement or expression to a TIL expression.
@@ -349,8 +312,6 @@ til::SExpr *SExprBuilder::translate(const Stmt *S, CallingContext *Ctx) {
 
   case Stmt::DeclStmtClass:
     return translateDeclStmt(cast<DeclStmt>(S), Ctx);
-  case Stmt::StmtExprClass:
-    return translateStmtExpr(cast<StmtExpr>(S), Ctx);
   default:
     break;
   }
@@ -390,9 +351,6 @@ til::SExpr *SExprBuilder::translateDeclRefExpr(const DeclRefExpr *DRE,
              ? cast<FunctionDecl>(D)->getCanonicalDecl()->getParamDecl(I)
              : cast<ObjCMethodDecl>(D)->getCanonicalDecl()->getParamDecl(I);
   }
-
-  if (const auto *VarD = dyn_cast<VarDecl>(VD))
-    return translateVariable(VarD, Ctx);
 
   // For non-local variables, treat it as a reference to a named object.
   return new (Arena) til::LiteralPtr(VD);
@@ -730,15 +688,6 @@ SExprBuilder::translateDeclStmt(const DeclStmt *S, CallingContext *Ctx) {
     }
   }
   return nullptr;
-}
-
-til::SExpr *SExprBuilder::translateStmtExpr(const StmtExpr *SE,
-                                            CallingContext *Ctx) {
-  // The value of a statement expression is the value of the last statement,
-  // which must be an expression.
-  const CompoundStmt *CS = SE->getSubStmt();
-  return CS->body_empty() ? new (Arena) til::Undefined(SE)
-                          : translate(CS->body_back(), Ctx);
 }
 
 // If (E) is non-trivial, then add it to the current basic block, and

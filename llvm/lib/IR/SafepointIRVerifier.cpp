@@ -157,6 +157,7 @@ public:
 protected:
   void addDeadBlock(const BasicBlock *BB) {
     SmallVector<const BasicBlock *, 4> NewDead;
+    SmallSetVector<const BasicBlock *, 4> DF;
 
     NewDead.push_back(BB);
     while (!NewDead.empty()) {
@@ -170,7 +171,7 @@ protected:
       // Do not need to mark all in and out edges dead
       // because BB is marked dead and this is enough
       // to run further.
-      DeadBlocks.insert_range(Dom);
+      DeadBlocks.insert(Dom.begin(), Dom.end());
 
       // Figure out the dominance-frontier(D).
       for (BasicBlock *B : Dom)
@@ -196,6 +197,7 @@ protected:
 static void Verify(const Function &F, const DominatorTree &DT,
                    const CFGDeadness &CD);
 
+namespace llvm {
 PreservedAnalyses SafepointIRVerifierPass::run(Function &F,
                                                FunctionAnalysisManager &AM) {
   const auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
@@ -204,6 +206,7 @@ PreservedAnalyses SafepointIRVerifierPass::run(Function &F,
   Verify(F, DT, CD);
   return PreservedAnalyses::all();
 }
+} // namespace llvm
 
 namespace {
 
@@ -609,10 +612,11 @@ void GCPtrTracker::verifyFunction(GCPtrTracker &&Tracker,
 }
 
 void GCPtrTracker::recalculateBBsStates() {
+  SetVector<const BasicBlock *> Worklist;
   // TODO: This order is suboptimal, it's better to replace it with priority
   // queue where priority is RPO number of BB.
-  SetVector<const BasicBlock *> Worklist(llvm::from_range,
-                                         llvm::make_first_range(BlockMap));
+  for (auto &BBI : BlockMap)
+    Worklist.insert(BBI.first);
 
   // This loop iterates the AvailableIn/Out sets until it converges.
   // The AvailableIn and AvailableOut sets decrease as we iterate.
@@ -642,7 +646,7 @@ void GCPtrTracker::recalculateBBsStates() {
     transferBlock(BB, *BBS, ContributionChanged);
     if (OldOutCount != BBS->AvailableOut.size()) {
       assert(OldOutCount > BBS->AvailableOut.size() && "invariant!");
-      Worklist.insert_range(successors(BB));
+      Worklist.insert(succ_begin(BB), succ_end(BB));
     }
   }
 }
@@ -746,7 +750,7 @@ void GCPtrTracker::gatherDominatingDefs(const BasicBlock *BB,
     auto BBS = getBasicBlockState(DTN->getBlock());
     assert(BBS && "immediate dominator cannot be dead for a live block");
     const auto &Defs = BBS->Contribution;
-    Result.insert_range(Defs);
+    Result.insert(Defs.begin(), Defs.end());
     // If this block is 'Cleared', then nothing LiveIn to this block can be
     // available after this block completes.  Note: This turns out to be
     // really important for reducing memory consuption of the initial available

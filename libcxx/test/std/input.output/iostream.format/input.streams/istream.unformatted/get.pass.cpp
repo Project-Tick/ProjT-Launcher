@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// Requires 396145d in the built library.
+// XFAIL: using-built-library-before-llvm-9
+
 // <istream>
 
 // int_type get();

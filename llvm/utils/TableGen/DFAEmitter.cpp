@@ -32,6 +32,7 @@
 #include <cassert>
 #include <cstdint>
 #include <deque>
+#include <map>
 #include <set>
 #include <string>
 #include <variant>
@@ -117,6 +118,7 @@ void DfaEmitter::emit(StringRef Name, raw_ostream &OS) {
   OS << "// to by index in " << Name << "Transitions[].\n";
 
   SequenceToOffsetTable<DfaTransitionInfo> Table;
+  std::map<DfaTransitionInfo, unsigned> EmittedIndices;
   for (auto &T : DfaTransitions)
     Table.add(T.second.second);
   Table.layout();
@@ -256,7 +258,7 @@ void Automaton::emit(raw_ostream &OS) {
 
   StringRef Name = R->getName();
 
-  CustomDfaEmitter Emitter(Actions, Name.str() + "Action");
+  CustomDfaEmitter Emitter(Actions, std::string(Name) + "Action");
   // Starting from the initial state, build up a list of possible states and
   // transitions.
   std::deque<uint64_t> Worklist(1, 0);
@@ -302,9 +304,16 @@ StringRef Automaton::getActionSymbolType(StringRef A) {
 
 Transition::Transition(const Record *R, Automaton *Parent) {
   const BitsInit *NewStateInit = R->getValueAsBitsInit("NewState");
+  NewState = 0;
   assert(NewStateInit->getNumBits() <= sizeof(uint64_t) * 8 &&
          "State cannot be represented in 64 bits!");
-  NewState = NewStateInit->convertKnownBitsToInt();
+  for (unsigned I = 0; I < NewStateInit->getNumBits(); ++I) {
+    if (auto *Bit = dyn_cast<BitInit>(NewStateInit->getBit(I))) {
+      if (Bit->getValue())
+        NewState |= 1ULL << I;
+    }
+  }
+
   for (StringRef A : Parent->getActionSymbolFields()) {
     const RecordVal *SymbolV = R->getValue(A);
     if (const auto *Ty = dyn_cast<RecordRecTy>(SymbolV->getType())) {
@@ -314,7 +323,7 @@ Transition::Transition(const Record *R, Automaton *Parent) {
       Actions.emplace_back(static_cast<unsigned>(R->getValueAsInt(A)));
       Types.emplace_back("unsigned");
     } else if (isa<StringRecTy>(SymbolV->getType())) {
-      Actions.emplace_back(R->getValueAsString(A).str());
+      Actions.emplace_back(std::string(R->getValueAsString(A)));
       Types.emplace_back("std::string");
     } else {
       report_fatal_error("Unhandled symbol type!");
@@ -322,7 +331,7 @@ Transition::Transition(const Record *R, Automaton *Parent) {
 
     StringRef TypeOverride = Parent->getActionSymbolType(A);
     if (!TypeOverride.empty())
-      Types.back() = TypeOverride.str();
+      Types.back() = std::string(TypeOverride);
   }
 }
 

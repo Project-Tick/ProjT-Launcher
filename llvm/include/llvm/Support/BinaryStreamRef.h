@@ -12,7 +12,6 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/Support/BinaryStream.h"
 #include "llvm/Support/BinaryStreamError.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Error.h"
 #include <cstdint>
 #include <memory>
@@ -161,12 +160,11 @@ class BinaryStreamRef
 
 public:
   BinaryStreamRef() = default;
-  LLVM_ABI BinaryStreamRef(BinaryStream &Stream);
-  LLVM_ABI BinaryStreamRef(BinaryStream &Stream, uint64_t Offset,
-                           std::optional<uint64_t> Length);
-  LLVM_ABI explicit BinaryStreamRef(ArrayRef<uint8_t> Data,
-                                    llvm::endianness Endian);
-  LLVM_ABI explicit BinaryStreamRef(StringRef Data, llvm::endianness Endian);
+  BinaryStreamRef(BinaryStream &Stream);
+  BinaryStreamRef(BinaryStream &Stream, uint64_t Offset,
+                  std::optional<uint64_t> Length);
+  explicit BinaryStreamRef(ArrayRef<uint8_t> Data, llvm::endianness Endian);
+  explicit BinaryStreamRef(StringRef Data, llvm::endianness Endian);
 
   BinaryStreamRef(const BinaryStreamRef &Other) = default;
   BinaryStreamRef &operator=(const BinaryStreamRef &Other) = default;
@@ -183,16 +181,16 @@ public:
   /// \returns a success error code if the entire range of data is within the
   /// bounds of this BinaryStreamRef's view and the implementation could read
   /// the data, and an appropriate error code otherwise.
-  LLVM_ABI Error readBytes(uint64_t Offset, uint64_t Size,
-                           ArrayRef<uint8_t> &Buffer) const;
+  Error readBytes(uint64_t Offset, uint64_t Size,
+                  ArrayRef<uint8_t> &Buffer) const;
 
   /// Given an Offset into this BinaryStreamRef, return a reference to the
   /// largest buffer the stream could support without necessitating a copy.
   ///
   /// \returns a success error code if implementation could read the data,
   /// and an appropriate error code otherwise.
-  LLVM_ABI Error readLongestContiguousChunk(uint64_t Offset,
-                                            ArrayRef<uint8_t> &Buffer) const;
+  Error readLongestContiguousChunk(uint64_t Offset,
+                                   ArrayRef<uint8_t> &Buffer) const;
 };
 
 struct BinarySubstreamRef {
@@ -209,7 +207,7 @@ struct BinarySubstreamRef {
   BinarySubstreamRef keep_front(uint64_t N) const { return slice(0, N); }
 
   std::pair<BinarySubstreamRef, BinarySubstreamRef> split(uint64_t Off) const {
-    return {keep_front(Off), drop_front(Off)};
+    return std::make_pair(keep_front(Off), drop_front(Off));
   }
 
   uint64_t size() const { return StreamData.getLength(); }
@@ -235,12 +233,11 @@ class WritableBinaryStreamRef
 
 public:
   WritableBinaryStreamRef() = default;
-  LLVM_ABI WritableBinaryStreamRef(WritableBinaryStream &Stream);
-  LLVM_ABI WritableBinaryStreamRef(WritableBinaryStream &Stream,
-                                   uint64_t Offset,
-                                   std::optional<uint64_t> Length);
-  LLVM_ABI explicit WritableBinaryStreamRef(MutableArrayRef<uint8_t> Data,
-                                            llvm::endianness Endian);
+  WritableBinaryStreamRef(WritableBinaryStream &Stream);
+  WritableBinaryStreamRef(WritableBinaryStream &Stream, uint64_t Offset,
+                          std::optional<uint64_t> Length);
+  explicit WritableBinaryStreamRef(MutableArrayRef<uint8_t> Data,
+                                   llvm::endianness Endian);
   WritableBinaryStreamRef(const WritableBinaryStreamRef &Other) = default;
   WritableBinaryStreamRef &
   operator=(const WritableBinaryStreamRef &Other) = default;
@@ -258,13 +255,13 @@ public:
   /// \returns a success error code if the data could fit within the underlying
   /// stream at the specified location and the implementation could write the
   /// data, and an appropriate error code otherwise.
-  LLVM_ABI Error writeBytes(uint64_t Offset, ArrayRef<uint8_t> Data) const;
+  Error writeBytes(uint64_t Offset, ArrayRef<uint8_t> Data) const;
 
   /// Conver this WritableBinaryStreamRef to a read-only BinaryStreamRef.
-  LLVM_ABI operator BinaryStreamRef() const;
+  operator BinaryStreamRef() const;
 
   /// For buffered streams, commits changes to the backing store.
-  LLVM_ABI Error commit();
+  Error commit();
 };
 
 } // end namespace llvm

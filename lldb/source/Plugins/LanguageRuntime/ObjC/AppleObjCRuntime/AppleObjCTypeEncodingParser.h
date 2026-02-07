@@ -16,6 +16,7 @@
 #include "clang/AST/ASTContext.h"
 
 namespace lldb_private {
+class StringLexer;
 class AppleObjCTypeEncodingParser : public ObjCLanguageRuntime::EncodingToType {
 public:
   AppleObjCTypeEncodingParser(ObjCLanguageRuntime &runtime);
@@ -34,35 +35,35 @@ private:
     ~StructElement() = default;
   };
 
-  clang::QualType BuildType(TypeSystemClang &clang_ast_ctx,
-                            llvm::StringRef &type, bool for_expression,
+  clang::QualType BuildType(TypeSystemClang &clang_ast_ctx, StringLexer &type,
+                            bool for_expression,
                             uint32_t *bitfield_bit_size = nullptr);
 
-  clang::QualType BuildStruct(TypeSystemClang &ast_ctx, llvm::StringRef &type,
+  clang::QualType BuildStruct(TypeSystemClang &ast_ctx, StringLexer &type,
                               bool for_expression);
 
   clang::QualType BuildAggregate(TypeSystemClang &clang_ast_ctx,
-                                 llvm::StringRef &type, bool for_expression,
+                                 StringLexer &type, bool for_expression,
                                  char opener, char closer, uint32_t kind);
 
-  clang::QualType BuildUnion(TypeSystemClang &ast_ctx, llvm::StringRef &type,
+  clang::QualType BuildUnion(TypeSystemClang &ast_ctx, StringLexer &type,
                              bool for_expression);
 
-  clang::QualType BuildArray(TypeSystemClang &ast_ctx, llvm::StringRef &type,
+  clang::QualType BuildArray(TypeSystemClang &ast_ctx, StringLexer &type,
                              bool for_expression);
 
-  std::string ReadStructName(llvm::StringRef &type);
+  std::string ReadStructName(StringLexer &type);
 
-  StructElement ReadStructElement(TypeSystemClang &ast_ctx,
-                                  llvm::StringRef &type, bool for_expression);
+  StructElement ReadStructElement(TypeSystemClang &ast_ctx, StringLexer &type,
+                                  bool for_expression);
 
   clang::QualType BuildObjCObjectPointerType(TypeSystemClang &clang_ast_ctx,
-                                             llvm::StringRef &type,
+                                             StringLexer &type,
                                              bool for_expression);
 
-  uint32_t ReadNumber(llvm::StringRef &type);
+  uint32_t ReadNumber(StringLexer &type);
 
-  std::optional<std::string> ReadQuotedString(llvm::StringRef &type);
+  std::string ReadQuotedString(StringLexer &type);
 
   ObjCLanguageRuntime &m_runtime;
 };

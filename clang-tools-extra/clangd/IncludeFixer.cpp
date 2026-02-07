@@ -84,6 +84,7 @@ std::vector<Fix> IncludeFixer::fix(DiagnosticsEngine::Level DiagLevel,
   case diag::err_array_incomplete_or_sizeless_type:
   case diag::err_array_size_incomplete_type:
   case diag::err_asm_incomplete_type:
+  case diag::err_assoc_type_incomplete:
   case diag::err_bad_cast_incomplete:
   case diag::err_call_function_incomplete_return:
   case diag::err_call_incomplete_argument:
@@ -400,12 +401,10 @@ std::optional<CheapUnresolvedName> extractUnresolvedNameCheaply(
   CheapUnresolvedName Result;
   Result.Name = Unresolved.getAsString();
   if (SS && SS->isNotEmpty()) { // "::" or "ns::"
-    NestedNameSpecifier Nested = SS->getScopeRep();
-    if (Nested.getKind() == NestedNameSpecifier::Kind::Global) {
-      Result.ResolvedScope = "";
-    } else if (Nested.getKind() == NestedNameSpecifier::Kind::Namespace) {
-      const NamespaceBaseDecl *NSB = Nested.getAsNamespaceAndPrefix().Namespace;
-      if (const auto *NS = dyn_cast<NamespaceDecl>(NSB)) {
+    if (auto *Nested = SS->getScopeRep()) {
+      if (Nested->getKind() == NestedNameSpecifier::Global) {
+        Result.ResolvedScope = "";
+      } else if (const auto *NS = Nested->getAsNamespace()) {
         std::string SpecifiedNS = printNamespaceScope(*NS);
         std::optional<std::string> Spelling = getSpelledSpecifier(*SS, SM);
 
@@ -422,13 +421,13 @@ std::optional<CheapUnresolvedName> extractUnresolvedNameCheaply(
         } else {
           Result.UnresolvedScope = std::move(*Spelling);
         }
+      } else if (const auto *ANS = Nested->getAsNamespaceAlias()) {
+        Result.ResolvedScope = printNamespaceScope(*ANS->getNamespace());
       } else {
-        Result.ResolvedScope = printNamespaceScope(*cast<NamespaceAliasDecl>(NSB)->getNamespace());
+        // We don't fix symbols in scopes that are not top-level e.g. class
+        // members, as we don't collect includes for them.
+        return std::nullopt;
       }
-    } else {
-      // We don't fix symbols in scopes that are not top-level e.g. class
-      // members, as we don't collect includes for them.
-      return std::nullopt;
     }
   }
 
@@ -486,7 +485,7 @@ collectAccessibleScopes(Sema &Sem, const DeclarationNameInfo &Typo, Scope *S,
                          /*IncludeGlobalScope=*/false,
                          /*LoadExternal=*/false);
   llvm::sort(Scopes);
-  Scopes.erase(llvm::unique(Scopes), Scopes.end());
+  Scopes.erase(std::unique(Scopes.begin(), Scopes.end()), Scopes.end());
   return Scopes;
 }
 

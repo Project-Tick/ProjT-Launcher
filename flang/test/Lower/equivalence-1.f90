@@ -45,7 +45,8 @@ SUBROUTINE s3
   ! CHECK: %[[coor:.*]] = fir.coordinate_of %[[group]], %c0 : (!fir.ref<!fir.array<40xi8>>, index) -> !fir.ref<i8>
   ! CHECK: %[[rloc:.*]] = fir.convert %[[coor]] : (!fir.ref<i8>) -> !fir.ptr<!fir.array<10xf32>>
   ! CHECK: %[[xloc:.*]] = fir.convert %[[coor]] : (!fir.ref<i8>) -> !fir.ptr<!fir.type<_QFs3Tt{r:!fir.array<10xf32>}>>
-  ! CHECK: %[[xrloc:.*]] = fir.coordinate_of %[[xloc]], r
+  ! CHECK: %[[fidx:.*]] = fir.field_index r, !fir.type<_QFs3Tt{r:!fir.array<10xf32>}>
+  ! CHECK: %[[xrloc:.*]] = fir.coordinate_of %[[xloc]], %[[fidx]] :
   ! CHECK: %[[v1loc:.*]] = fir.coordinate_of %[[xrloc]], %c8_i64 : (!fir.ref<!fir.array<10xf32>>, i64) -> !fir.ref<f32>
   ! CHECK: fir.store %{{.*}} to %[[v1loc]] : !fir.ref<f32>
   x%r(9) = 9.0
@@ -53,7 +54,7 @@ SUBROUTINE s3
   ! CHECK: %{{.*}} = fir.load %[[v2loc]] : !fir.ref<f32>
   PRINT *, r(9)
 END SUBROUTINE s3
-
+  
 ! test that equivalence in main program containing arrays are placed in global memory.
 ! CHECK: fir.global internal @_QFEa : !fir.array<400000000xi8>
   integer :: a, b(100000000)

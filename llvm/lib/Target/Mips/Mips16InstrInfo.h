@@ -30,7 +30,7 @@ class Mips16InstrInfo : public MipsInstrInfo {
 public:
   explicit Mips16InstrInfo(const MipsSubtarget &STI);
 
-  const Mips16RegisterInfo &getRegisterInfo() const { return RI; }
+  const MipsRegisterInfo &getRegisterInfo() const override;
 
   /// isLoadFromStackSlot - If the specified machine instruction is a direct
   /// load from a stack slot, return the virtual or physical register number of
@@ -49,21 +49,20 @@ public:
                               int &FrameIndex) const override;
 
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
-                   const DebugLoc &DL, Register DestReg, Register SrcReg,
+                   const DebugLoc &DL, MCRegister DestReg, MCRegister SrcReg,
                    bool KillSrc, bool RenamableDest = false,
                    bool RenamableSrc = false) const override;
 
   void storeRegToStack(
       MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI, Register SrcReg,
       bool isKill, int FrameIndex, const TargetRegisterClass *RC,
-      int64_t Offset,
+      const TargetRegisterInfo *TRI, int64_t Offset,
       MachineInstr::MIFlag Flags = MachineInstr::NoFlags) const override;
 
   void loadRegFromStack(
       MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
       Register DestReg, int FrameIndex, const TargetRegisterClass *RC,
-
-      int64_t Offset,
+      const TargetRegisterInfo *TRI, int64_t Offset,
       MachineInstr::MIFlag Flags = MachineInstr::NoFlags) const override;
 
   bool expandPostRAPseudo(MachineInstr &MI) const override;

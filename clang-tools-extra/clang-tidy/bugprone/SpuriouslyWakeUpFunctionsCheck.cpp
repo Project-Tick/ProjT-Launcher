@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- SpuriouslyWakeUpFunctionsCheck.cpp - clang-tidy ------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -15,6 +15,7 @@ using namespace clang::ast_matchers;
 namespace clang::tidy::bugprone {
 
 void SpuriouslyWakeUpFunctionsCheck::registerMatchers(MatchFinder *Finder) {
+
   auto HasUniqueLock = hasDescendant(declRefExpr(
       hasDeclaration(varDecl(hasType(recordDecl(classTemplateSpecializationDecl(
           hasName("::std::unique_lock"),
@@ -44,7 +45,9 @@ void SpuriouslyWakeUpFunctionsCheck::registerMatchers(MatchFinder *Finder) {
                       onImplicitObjectArgument(
                           declRefExpr(to(varDecl(hasType(references(recordDecl(
                               hasName("::std::condition_variable")))))))),
-                      HasUniqueLock)))
+                      HasUniqueLock)
+
+                    ))
           .bind("wait"));
 
   auto HasWaitDescendantC = hasDescendant(
@@ -74,7 +77,7 @@ void SpuriouslyWakeUpFunctionsCheck::registerMatchers(MatchFinder *Finder) {
 void SpuriouslyWakeUpFunctionsCheck::check(
     const MatchFinder::MatchResult &Result) {
   const auto *MatchedWait = Result.Nodes.getNodeAs<CallExpr>("wait");
-  const StringRef WaitName = MatchedWait->getDirectCallee()->getName();
+  StringRef WaitName = MatchedWait->getDirectCallee()->getName();
   diag(MatchedWait->getExprLoc(),
        "'%0' should be placed inside a while statement %select{|or used with a "
        "conditional parameter}1")

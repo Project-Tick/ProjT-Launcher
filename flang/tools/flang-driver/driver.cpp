@@ -16,7 +16,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "clang/Driver/Driver.h"
-#include "flang/Config/config.h"
 #include "flang/Frontend/CompilerInvocation.h"
 #include "flang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Basic/Diagnostic.h"
@@ -44,17 +43,17 @@ std::string getExecutablePath(const char *argv0) {
 
 // This lets us create the DiagnosticsEngine with a properly-filled-out
 // DiagnosticOptions instance
-static std::unique_ptr<clang::DiagnosticOptions>
+static clang::DiagnosticOptions *
 createAndPopulateDiagOpts(llvm::ArrayRef<const char *> argv) {
-  auto diagOpts = std::make_unique<clang::DiagnosticOptions>();
+  auto *diagOpts = new clang::DiagnosticOptions;
 
   // Ignore missingArgCount and the return value of ParseDiagnosticArgs.
   // Any errors that would be diagnosed here will also be diagnosed later,
   // when the DiagnosticsEngine actually exists.
   unsigned missingArgIndex, missingArgCount;
-  llvm::opt::InputArgList args = clang::getDriverOptTable().ParseArgs(
+  llvm::opt::InputArgList args = clang::driver::getDriverOptTable().ParseArgs(
       argv.slice(1), missingArgIndex, missingArgCount,
-      llvm::opt::Visibility(clang::options::FlangOption));
+      llvm::opt::Visibility(clang::driver::options::FlangOption));
 
   (void)Fortran::frontend::parseDiagnosticArgs(*diagOpts, args);
 
@@ -112,33 +111,26 @@ int main(int argc, const char **argv) {
     }
   }
 
-  llvm::StringSet<> savedStrings;
-  // Handle FCC_OVERRIDE_OPTIONS, used for editing a command line behind the
-  // scenes.
-  if (const char *overrideStr = ::getenv("FCC_OVERRIDE_OPTIONS"))
-    clang::driver::applyOverrideOptions(args, overrideStr, savedStrings,
-                                        "FCC_OVERRIDE_OPTIONS", &llvm::errs());
-
   // Not in the frontend mode - continue in the compiler driver mode.
 
   // Create DiagnosticsEngine for the compiler driver
-  std::unique_ptr<clang::DiagnosticOptions> diagOpts =
+  llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> diagOpts =
       createAndPopulateDiagOpts(args);
+  llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> diagID(
+      new clang::DiagnosticIDs());
   Fortran::frontend::TextDiagnosticPrinter *diagClient =
-      new Fortran::frontend::TextDiagnosticPrinter(llvm::errs(), *diagOpts);
+      new Fortran::frontend::TextDiagnosticPrinter(llvm::errs(), &*diagOpts);
 
   diagClient->setPrefix(
       std::string(llvm::sys::path::stem(getExecutablePath(args[0]))));
 
-  clang::DiagnosticsEngine diags(clang::DiagnosticIDs::create(), *diagOpts,
-                                 diagClient);
+  clang::DiagnosticsEngine diags(diagID, &*diagOpts, diagClient);
 
   // Prepare the driver
   clang::driver::Driver theDriver(driverPath,
                                   llvm::sys::getDefaultTargetTriple(), diags,
                                   "flang LLVM compiler");
   theDriver.setTargetAndMode(targetandMode);
-  theDriver.setPreferredLinker(FLANG_DEFAULT_LINKER);
 #ifdef FLANG_RUNTIME_F128_MATH_LIB
   theDriver.setFlangF128MathLibrary(FLANG_RUNTIME_F128_MATH_LIB);
 #endif

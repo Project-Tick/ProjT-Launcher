@@ -23,6 +23,24 @@ namespace clang {
 namespace targets {
 
 class LLVM_LIBRARY_VISIBILITY MipsTargetInfo : public TargetInfo {
+  void setDataLayout() {
+    StringRef Layout;
+
+    if (ABI == "o32")
+      Layout = "m:m-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S64";
+    else if (ABI == "n32")
+      Layout = "m:e-p:32:32-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128";
+    else if (ABI == "n64")
+      Layout = "m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128";
+    else
+      llvm_unreachable("Invalid ABI");
+
+    if (BigEndian)
+      resetDataLayout(("E-" + Layout).str());
+    else
+      resetDataLayout(("e-" + Layout).str());
+  }
+
   std::string CPU;
   bool IsMips16;
   bool IsMicromips;
@@ -65,8 +83,7 @@ public:
   }
 
   bool isIEEE754_2008Default() const {
-    return CPU == "mips32r6" || CPU == "mips64r6" || CPU == "i6400" ||
-           CPU == "i6500";
+    return CPU == "mips32r6" || CPU == "mips64r6";
   }
 
   enum FPModeEnum getDefaultFPMode() const {
@@ -112,7 +129,7 @@ public:
     LongWidth = LongAlign = 32;
     MaxAtomicPromoteWidth = MaxAtomicInlineWidth = 32;
     PointerWidth = PointerAlign = 32;
-    PtrDiffType = IntPtrType = SignedInt;
+    PtrDiffType = SignedInt;
     SizeType = UnsignedInt;
     SuitableAlign = 64;
   }
@@ -138,7 +155,7 @@ public:
     IntMaxType = Int64Type;
     LongWidth = LongAlign = 64;
     PointerWidth = PointerAlign = 64;
-    PtrDiffType = IntPtrType = SignedLong;
+    PtrDiffType = SignedLong;
     SizeType = UnsignedLong;
   }
 
@@ -148,7 +165,7 @@ public:
     IntMaxType = Int64Type;
     LongWidth = LongAlign = 32;
     PointerWidth = PointerAlign = 32;
-    PtrDiffType = IntPtrType = SignedInt;
+    PtrDiffType = SignedInt;
     SizeType = UnsignedInt;
   }
 
@@ -181,7 +198,7 @@ public:
   void getTargetDefines(const LangOptions &Opts,
                         MacroBuilder &Builder) const override;
 
-  llvm::SmallVector<Builtin::InfosShard> getTargetBuiltins() const override;
+  ArrayRef<Builtin::Info> getTargetBuiltins() const override;
 
   bool hasFeature(StringRef Feature) const override;
 
@@ -374,7 +391,7 @@ public:
       Features.push_back("+fp64");
     }
 
-    resetDataLayout();
+    setDataLayout();
 
     return true;
   }

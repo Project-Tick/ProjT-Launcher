@@ -14,7 +14,6 @@
 
 ; PRE-NOT: internalize
 ; PRE-NOT: amdgpu-attributor
-; PRE-NOT: printfToRuntime
 
 define amdgpu_kernel void @kernel() {
 entry:

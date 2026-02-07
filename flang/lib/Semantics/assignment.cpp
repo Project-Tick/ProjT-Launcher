@@ -41,7 +41,7 @@ public:
   void PopWhereContext();
   void Analyze(const parser::AssignmentStmt &);
   void Analyze(const parser::PointerAssignmentStmt &);
-  SemanticsContext &context() { return context_; }
+  void Analyze(const parser::ConcurrentControl &);
 
 private:
   bool CheckForPureContext(const SomeExpr &rhs, parser::CharBlock rhsSource);
@@ -71,16 +71,6 @@ void AssignmentContext::Analyze(const parser::AssignmentStmt &stmt) {
         std::holds_alternative<evaluate::ProcedureRef>(assignment->u)};
     if (isDefinedAssignment) {
       flags.set(DefinabilityFlag::AllowEventLockOrNotifyType);
-    } else if (const Symbol *
-        whole{evaluate::UnwrapWholeSymbolOrComponentDataRef(lhs)}) {
-      if (IsAllocatable(whole->GetUltimate())) {
-        flags.set(DefinabilityFlag::PotentialDeallocation);
-        if (IsPolymorphic(*whole) && whereDepth_ > 0) {
-          Say(lhsLoc,
-              "Assignment to whole polymorphic allocatable '%s' may not be nested in a WHERE statement or construct"_err_en_US,
-              whole->name());
-        }
-      }
     }
     if (auto whyNot{WhyNotDefinable(lhsLoc, scope, flags, lhs)}) {
       if (whyNot->IsFatal()) {
@@ -128,16 +118,10 @@ static std::optional<std::string> GetPointerComponentDesignatorName(
 // Checks C1594(5,6); false if check fails
 bool CheckCopyabilityInPureScope(parser::ContextualMessages &messages,
     const SomeExpr &expr, const Scope &scope) {
-  if (auto pointer{GetPointerComponentDesignatorName(expr)}) {
-    if (const Symbol * base{GetFirstSymbol(expr)}) {
-      const char *why{WhyBaseObjectIsSuspicious(base->GetUltimate(), scope)};
-      if (!why) {
-        if (auto coarray{evaluate::ExtractCoarrayRef(expr)}) {
-          base = &coarray->GetLastSymbol();
-          why = "coindexed";
-        }
-      }
-      if (why) {
+  if (const Symbol * base{GetFirstSymbol(expr)}) {
+    if (const char *why{
+            WhyBaseObjectIsSuspicious(base->GetUltimate(), scope)}) {
+      if (auto pointer{GetPointerComponentDesignatorName(expr)}) {
         evaluate::SayWithDeclaration(messages, *base,
             "A pure subprogram may not copy the value of '%s' because it is %s"
             " and has the POINTER potential subobject component '%s'"_err_en_US,
@@ -194,8 +178,7 @@ void AssignmentContext::CheckShape(parser::CharBlock at, const SomeExpr *expr) {
 
 template <typename A> void AssignmentContext::PushWhereContext(const A &x) {
   const auto &expr{std::get<parser::LogicalExpr>(x.t)};
-  CheckShape(
-      parser::UnwrapRef<parser::Expr>(expr).source, GetExpr(context_, expr));
+  CheckShape(expr.thing.value().source, GetExpr(context_, expr));
   ++whereDepth_;
 }
 
@@ -208,17 +191,8 @@ void AssignmentContext::PopWhereContext() {
 
 AssignmentChecker::~AssignmentChecker() {}
 
-SemanticsContext &AssignmentChecker::context() {
-  return context_.value().context();
-}
-
 AssignmentChecker::AssignmentChecker(SemanticsContext &context)
     : context_{new AssignmentContext{context}} {}
-
-void AssignmentChecker::Enter(
-    const parser::OpenMPDeclareReductionConstruct &x) {
-  context().set_location(x.source);
-}
 void AssignmentChecker::Enter(const parser::AssignmentStmt &x) {
   context_.value().Analyze(x);
 }

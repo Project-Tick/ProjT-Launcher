@@ -49,6 +49,7 @@ TEST(ProjectAware, Test) {
   C.Index.External.Location = "test";
   WithContextValue With(Config::Key, std::move(C));
   EXPECT_THAT(match(*Idx, Req), ElementsAre("1"));
+  return;
 }
 
 TEST(ProjectAware, CreatedOnce) {
@@ -79,6 +80,7 @@ TEST(ProjectAware, CreatedOnce) {
   match(*Idx, Req);
   // It is cached afterwards.
   EXPECT_EQ(InvocationCount, 1U);
+  return;
 }
 } // namespace clangd
 } // namespace clang

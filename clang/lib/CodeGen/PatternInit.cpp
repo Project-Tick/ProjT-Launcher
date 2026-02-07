@@ -37,8 +37,7 @@ llvm::Constant *clang::CodeGen::initializationPatternFor(CodeGenModule &CGM,
     unsigned BitWidth =
         cast<llvm::IntegerType>(Ty->getScalarType())->getBitWidth();
     if (BitWidth <= 64)
-      return llvm::ConstantInt::get(Ty, IntValue, /*IsSigned=*/false,
-                                    /*ImplicitTrunc=*/true);
+      return llvm::ConstantInt::get(Ty, IntValue);
     return llvm::ConstantInt::get(
         Ty, llvm::APInt::getSplat(BitWidth, llvm::APInt(64, IntValue)));
   }
@@ -49,8 +48,7 @@ llvm::Constant *clang::CodeGen::initializationPatternFor(CodeGenModule &CGM,
     if (PtrWidth > 64)
       llvm_unreachable("pattern initialization of unsupported pointer width");
     llvm::Type *IntTy = llvm::IntegerType::get(CGM.getLLVMContext(), PtrWidth);
-    auto *Int = llvm::ConstantInt::get(IntTy, IntValue, /*IsSigned=*/false,
-                                       /*ImplicitTrunc=*/true);
+    auto *Int = llvm::ConstantInt::get(IntTy, IntValue);
     return llvm::ConstantExpr::getIntToPtr(Int, PtrTy);
   }
   if (Ty->isFPOrFPVectorTy()) {

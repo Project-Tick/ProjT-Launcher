@@ -10,6 +10,9 @@ add_llvm_tool(llvm-profdata
 
   DEPENDS
   intrinsics_gen
+  GENERATE_DRIVER
   )
 
-target_link_libraries(llvm-profdata PRIVATE LLVMDebuginfod)
+if(NOT LLVM_TOOL_LLVM_DRIVER_BUILD)
+  target_link_libraries(llvm-profdata PRIVATE LLVMDebuginfod)
+endif()

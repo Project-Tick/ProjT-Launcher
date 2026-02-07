@@ -55,7 +55,7 @@ public:
   LogicalResult appendStandardLibs();
 
   /// Loads the bitcode files in `librariesToLink`.
-  std::optional<SmallVector<std::unique_ptr<llvm::Module>>>
+  virtual std::optional<SmallVector<std::unique_ptr<llvm::Module>>>
   loadBitcodeFiles(llvm::Module &module) override;
 
 protected:

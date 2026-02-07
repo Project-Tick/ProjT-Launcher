@@ -16,11 +16,10 @@
 #include "llvm/Object/Archive.h"
 #include "llvm/Object/Decompressor.h"
 #include "llvm/Object/ObjectFile.h"
-#include "llvm/Object/OffloadBinary.h"
-#include "llvm/Object/OffloadBundle.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/ScopedPrinter.h"
+#include "llvm/Support/SystemZ/zOSSupport.h"
 #include "llvm/Support/raw_ostream.h"
 #include <map>
 
@@ -40,7 +39,7 @@ ObjDumper::ObjDumper(ScopedPrinter &Writer, StringRef ObjName) : W(Writer) {
   };
 }
 
-ObjDumper::~ObjDumper() = default;
+ObjDumper::~ObjDumper() {}
 
 void ObjDumper::reportUniqueWarning(Error Err) const {
   reportUniqueWarning(toString(std::move(Err)));
@@ -103,9 +102,9 @@ void ObjDumper::printFileSummary(StringRef FileStr, object::ObjectFile &Obj,
   this->printLoadName();
 }
 
-std::vector<object::SectionRef>
-ObjDumper::getSectionRefsByNameOrIndex(const object::ObjectFile &Obj,
-                                       ArrayRef<std::string> Sections) {
+static std::vector<object::SectionRef>
+getSectionRefsByNameOrIndex(const object::ObjectFile &Obj,
+                            ArrayRef<std::string> Sections) {
   std::vector<object::SectionRef> Ret;
   std::map<std::string, bool, std::less<>> SecNames;
   std::map<unsigned, bool> SecIndices;
@@ -204,7 +203,7 @@ void ObjDumper::printSectionsAsHex(const object::ObjectFile &Obj,
       W.getOStream() << ' ';
       for (i = 0; TmpSecPtr < SecEnd && i < 4; ++i) {
         for (k = 0; TmpSecPtr < SecEnd && k < 4; k++, TmpSecPtr++) {
-          uint8_t Val = *TmpSecPtr;
+          uint8_t Val = *(reinterpret_cast<const uint8_t *>(TmpSecPtr));
           W.getOStream() << format_hex_no_prefix(Val, 2);
         }
         W.getOStream() << ' ';
@@ -229,16 +228,6 @@ void ObjDumper::printSectionsAsHex(const object::ObjectFile &Obj,
       W.getOStream() << '\n';
     }
   }
-}
-
-void ObjDumper::printOffloading(const object::ObjectFile &Obj) {
-  SmallVector<llvm::object::OffloadBundleFatBin> Bundles;
-  if (Error Err = object::extractOffloadBundleFatBinary(Obj, Bundles))
-    reportWarning(std::move(Err), Obj.getFileName());
-
-  // Print out all the FatBin Bundles that are contained in this buffer.
-  for (const auto &[Index, Bundle] : llvm::enumerate(Bundles))
-    Bundle.printEntriesAsURI();
 }
 
 } // namespace llvm

@@ -24,6 +24,7 @@
 #include <iomanip>
 #include <mutex>
 #include <sstream>
+#include <type_traits>
 
 namespace llvm {
 
@@ -176,7 +177,7 @@ public:
 
 #if LLVM_ENABLE_THREADS
     // Lock bucket.
-    std::scoped_lock<std::mutex> Lock(CurBucket.Guard);
+    CurBucket.Guard.lock();
 #endif
 
     HashesPtr BucketHashes = CurBucket.Hashes;
@@ -194,6 +195,11 @@ public:
 
         CurBucket.NumberOfEntries++;
         RehashBucket(CurBucket);
+
+#if LLVM_ENABLE_THREADS
+        CurBucket.Guard.unlock();
+#endif
+
         return {NewData, true};
       }
 
@@ -202,6 +208,10 @@ public:
         KeyDataTy *EntryData = BucketEntries[CurEntryIdx];
         if (Info::isEqual(Info::getKey(*EntryData), NewValue)) {
           // Already existed entry matched with inserted data is found.
+#if LLVM_ENABLE_THREADS
+          CurBucket.Guard.unlock();
+#endif
+
           return {EntryData, false};
         }
       }
@@ -243,8 +253,9 @@ public:
 
     OS << "\nOverall number of entries = " << OverallNumberOfEntries;
     OS << "\nOverall number of non empty buckets = " << NumberOfNonEmptyBuckets;
-    for (auto [Size, Count] : BucketSizesMap)
-      OS << "\n Number of buckets with size " << Size << ": " << Count;
+    for (auto &BucketSize : BucketSizesMap)
+      OS << "\n Number of buckets with size " << BucketSize.first << ": "
+         << BucketSize.second;
 
     std::stringstream stream;
     stream << std::fixed << std::setprecision(2)
@@ -342,8 +353,10 @@ protected:
     CurBucket.Size = NewBucketSize;
 
     // Delete old bucket entries.
-    delete[] SrcHashes;
-    delete[] SrcEntries;
+    if (SrcHashes != nullptr)
+      delete[] SrcHashes;
+    if (SrcEntries != nullptr)
+      delete[] SrcEntries;
   }
 
   uint32_t getBucketIdx(hash_code Hash) { return Hash & HashMask; }

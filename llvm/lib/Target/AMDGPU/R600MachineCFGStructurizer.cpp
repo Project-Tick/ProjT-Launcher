@@ -41,6 +41,12 @@ STATISTIC(numIfPatternMatch,        "CFGStructurizer number of if pattern "
 STATISTIC(numClonedBlock,           "CFGStructurizer cloned blocks");
 STATISTIC(numClonedInstr,           "CFGStructurizer cloned instructions");
 
+namespace llvm {
+
+void initializeR600MachineCFGStructurizerPass(PassRegistry &);
+
+} // end namespace llvm
+
 namespace {
 
 //===----------------------------------------------------------------------===//
@@ -98,7 +104,9 @@ public:
 
   static char ID;
 
-  R600MachineCFGStructurizer() : MachineFunctionPass(ID) {}
+  R600MachineCFGStructurizer() : MachineFunctionPass(ID) {
+    initializeR600MachineCFGStructurizerPass(*PassRegistry::getPassRegistry());
+  }
 
   StringRef getPassName() const override {
     return "AMDGPU Control Flow Graph structurizer Pass";
@@ -121,7 +129,8 @@ public:
 
   bool runOnMachineFunction(MachineFunction &MF) override {
     // FIXME: This pass causes verification failures.
-    MF.getProperties().setFailsVerification();
+    MF.getProperties().set(
+        MachineFunctionProperties::Property::FailsVerification);
 
     TII = MF.getSubtarget<R600Subtarget>().getInstrInfo();
     TRI = &TII->getRegisterInfo();
@@ -1004,7 +1013,9 @@ int R600MachineCFGStructurizer::mergeLoop(MachineLoop *LoopRep) {
   // We assume a single ExitBlk
   MBBVector ExitBlks;
   LoopRep->getExitBlocks(ExitBlks);
-  SmallPtrSet<MachineBasicBlock *, 2> ExitBlkSet(llvm::from_range, ExitBlks);
+  SmallPtrSet<MachineBasicBlock *, 2> ExitBlkSet;
+  for (MachineBasicBlock *MBB : ExitBlks)
+    ExitBlkSet.insert(MBB);
   assert(ExitBlkSet.size() == 1);
   MachineBasicBlock *ExitBlk = *ExitBlks.begin();
   assert(ExitBlk && "Loop has several exit block");
@@ -1401,7 +1412,7 @@ void R600MachineCFGStructurizer::mergeLoopbreakBlock(MachineBasicBlock *ExitingM
                     << LandMBB->getNumber() << "\n";);
   MachineInstr *BranchMI = getLoopendBlockBranchInstr(ExitingMBB);
   assert(BranchMI && isCondBranch(BranchMI));
-  const DebugLoc &DL = BranchMI->getDebugLoc();
+  DebugLoc DL = BranchMI->getDebugLoc();
   MachineBasicBlock *TrueBranch = getTrueBranch(BranchMI);
   MachineBasicBlock::iterator I = BranchMI;
   if (TrueBranch != LandMBB)
@@ -1427,7 +1438,7 @@ void R600MachineCFGStructurizer::settleLoopcontBlock(MachineBasicBlock *ContingM
     MachineBasicBlock::iterator I = MI;
     MachineBasicBlock *TrueBranch = getTrueBranch(MI);
     int OldOpcode = MI->getOpcode();
-    const DebugLoc &DL = MI->getDebugLoc();
+    DebugLoc DL = MI->getDebugLoc();
 
     bool UseContinueLogical = ((&*ContingMBB->rbegin()) == MI);
 

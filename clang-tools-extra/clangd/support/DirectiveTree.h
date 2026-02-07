@@ -124,10 +124,6 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &,
 /// The choices are stored in Conditional::Taken nodes.
 void chooseConditionalBranches(DirectiveTree &, const TokenStream &Code);
 
-/// Pairs preprocessor conditional directives and computes their token ranges.
-std::vector<Token::Range> pairDirectiveRanges(const DirectiveTree &Tree,
-                                              const TokenStream &Code);
-
 } // namespace clangd
 } // namespace clang
 

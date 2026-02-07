@@ -12,6 +12,12 @@
 using namespace mlir;
 using namespace mlir::sparse_tensor;
 
+/// Assert that the given value range contains a single value and return it.
+static Value getSingleValue(ValueRange values) {
+  assert(values.size() == 1 && "expected single value");
+  return values.front();
+}
+
 static void convertLevelType(SparseTensorEncodingAttr enc, Level lvl,
                              SmallVectorImpl<Type> &fields) {
   // Position and coordinate buffer in the sparse structure.
@@ -67,12 +73,12 @@ genCoIterateBranchNest(PatternRewriter &rewriter, Location loc, CoIterateOp op,
       op.getRegionDefinedSpace(newBlock->getParent()->getRegionNumber());
   for (unsigned i : caseBits.bits()) {
     SparseIterator *it = iters[i].get();
-    Value pred = arith::CmpIOp::create(rewriter, loc, arith::CmpIPredicate::eq,
-                                       it->getCrd(), loopCrd);
-    casePred = arith::AndIOp::create(rewriter, loc, casePred, pred);
+    Value pred = rewriter.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq,
+                                                it->getCrd(), loopCrd);
+    casePred = rewriter.create<arith::AndIOp>(loc, casePred, pred);
   }
-  scf::IfOp ifOp = scf::IfOp::create(
-      rewriter, loc, ValueRange(userReduc).getTypes(), casePred, /*else=*/true);
+  scf::IfOp ifOp = rewriter.create<scf::IfOp>(
+      loc, ValueRange(userReduc).getTypes(), casePred, /*else=*/true);
   rewriter.setInsertionPointToStart(&ifOp.getThenRegion().front());
 
   // Erase the empty block.
@@ -103,7 +109,7 @@ genCoIterateBranchNest(PatternRewriter &rewriter, Location loc, CoIterateOp op,
   ValueRange yields = spY.getResults();
   rewriter.eraseOp(spY);
   rewriter.setInsertionPointToEnd(&ifOp.getThenRegion().front());
-  scf::YieldOp::create(rewriter, loc, yields);
+  rewriter.create<scf::YieldOp>(loc, yields);
 
   // Generates remaining case recursively.
   rewriter.setInsertionPointToStart(&ifOp.getElseRegion().front());
@@ -111,7 +117,7 @@ genCoIterateBranchNest(PatternRewriter &rewriter, Location loc, CoIterateOp op,
                                           newBlocks.drop_front(),
                                           oldBlocks.drop_front(), userReduc);
   if (!res.empty())
-    scf::YieldOp::create(rewriter, loc, res);
+    rewriter.create<scf::YieldOp>(loc, res);
 
   rewriter.setInsertionPointAfter(ifOp);
   return ifOp.getResults();
@@ -127,8 +133,8 @@ static ValueRange genLoopWithIterator(
   if (it->iteratableByFor()) {
     auto [lo, hi] = it->genForCond(rewriter, loc);
     Value step = constantIndex(rewriter, loc, 1);
-    scf::ForOp forOp = scf::ForOp::create(
-        rewriter, loc, lo, hi, step, reduc,
+    scf::ForOp forOp = rewriter.create<scf::ForOp>(
+        loc, lo, hi, step, reduc,
         [&](OpBuilder &b, Location loc, Value iv, ValueRange iterArgs) {
           // Empty builder function to ensure that no terminator is created.
         });
@@ -140,7 +146,7 @@ static ValueRange genLoopWithIterator(
                                            it, forOp.getRegionIterArgs());
 
       rewriter.setInsertionPointToEnd(forOp.getBody());
-      scf::YieldOp::create(rewriter, loc, ret);
+      rewriter.create<scf::YieldOp>(loc, ret);
     }
     return forOp.getResults();
   }
@@ -149,7 +155,7 @@ static ValueRange genLoopWithIterator(
   llvm::append_range(ivs, it->getCursor());
 
   TypeRange types = ValueRange(ivs).getTypes();
-  auto whileOp = scf::WhileOp::create(rewriter, loc, types, ivs);
+  auto whileOp = rewriter.create<scf::WhileOp>(loc, types, ivs);
   {
     OpBuilder::InsertionGuard guard(rewriter);
     // Generates loop conditions.
@@ -158,7 +164,7 @@ static ValueRange genLoopWithIterator(
     rewriter.setInsertionPointToStart(before);
     ValueRange bArgs = before->getArguments();
     auto [whileCond, remArgs] = it->genWhileCond(rewriter, loc, bArgs);
-    scf::ConditionOp::create(rewriter, loc, whileCond, before->getArguments());
+    rewriter.create<scf::ConditionOp>(loc, whileCond, before->getArguments());
 
     // Delegates loop body generation.
     Region &dstRegion = whileOp.getAfter();
@@ -175,7 +181,7 @@ static ValueRange genLoopWithIterator(
     SmallVector<Value> yields;
     llvm::append_range(yields, ret);
     llvm::append_range(yields, it->forward(rewriter, loc));
-    scf::YieldOp::create(rewriter, loc, yields);
+    rewriter.create<scf::YieldOp>(loc, yields);
   }
   return whileOp.getResults().drop_front(it->getCursor().size());
 }
@@ -194,7 +200,7 @@ public:
 
     // Construct the iteration space.
     SparseIterationSpace space(loc, rewriter,
-                               llvm::getSingleElement(adaptor.getTensor()), 0,
+                               getSingleValue(adaptor.getTensor()), 0,
                                op.getLvlRange(), adaptor.getParentIter());
 
     SmallVector<Value> result = space.toValues();
@@ -212,8 +218,8 @@ public:
                   ConversionPatternRewriter &rewriter) const override {
     Location loc = op.getLoc();
     Value pos = adaptor.getIterator().back();
-    Value valBuf = ToValuesOp::create(
-        rewriter, loc, llvm::getSingleElement(adaptor.getTensor()));
+    Value valBuf =
+        rewriter.create<ToValuesOp>(loc, getSingleValue(adaptor.getTensor()));
     rewriter.replaceOpWithNewOp<memref::LoadOp>(op, valBuf, pos);
     return success();
   }
@@ -265,7 +271,7 @@ public:
                                      blockArgs);
           auto yield = llvm::cast<sparse_tensor::YieldOp>(dstBlock->back());
           // We can not use ValueRange as the operation holding the values will
-          // be destroyed.
+          // be destoryed.
           SmallVector<Value> result(yield.getResults());
           rewriter.eraseOp(yield);
           return result;
@@ -385,12 +391,12 @@ class SparseCoIterateOpConverter : public OpConversionPattern<CoIterateOp> {
         SmallVector<Value> nextIterYields(res);
         // 2nd. foward the loop.
         for (SparseIterator *it : validIters) {
-          Value cmp = arith::CmpIOp::create(
-              rewriter, loc, arith::CmpIPredicate::eq, it->getCrd(), loopCrd);
+          Value cmp = rewriter.create<arith::CmpIOp>(
+              loc, arith::CmpIPredicate::eq, it->getCrd(), loopCrd);
           it->forwardIf(rewriter, loc, cmp);
           llvm::append_range(nextIterYields, it->getCursor());
         }
-        scf::YieldOp::create(rewriter, loc, nextIterYields);
+        rewriter.create<scf::YieldOp>(loc, nextIterYields);
 
         // Exit the loop, relink the iterator SSA value.
         rewriter.setInsertionPointAfter(loop);
@@ -443,8 +449,8 @@ mlir::SparseIterationTypeConverter::SparseIterationTypeConverter() {
 
   addSourceMaterialization([](OpBuilder &builder, IterSpaceType spTp,
                               ValueRange inputs, Location loc) -> Value {
-    return UnrealizedConversionCastOp::create(builder, loc, TypeRange(spTp),
-                                              inputs)
+    return builder
+        .create<UnrealizedConversionCastOp>(loc, TypeRange(spTp), inputs)
         .getResult(0);
   });
 }

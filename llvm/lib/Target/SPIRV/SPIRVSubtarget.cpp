@@ -17,6 +17,7 @@
 #include "SPIRVLegalizerInfo.h"
 #include "SPIRVRegisterBankInfo.h"
 #include "SPIRVTargetMachine.h"
+#include "llvm/MC/TargetRegistry.h"
 #include "llvm/TargetParser/Host.h"
 
 using namespace llvm;
@@ -53,9 +54,9 @@ SPIRVSubtarget::SPIRVSubtarget(const Triple &TT, const std::string &CPU,
                                const std::string &FS,
                                const SPIRVTargetMachine &TM)
     : SPIRVGenSubtargetInfo(TT, CPU, /*TuneCPU=*/CPU, FS),
-      PointerSize(TM.getPointerSizeInBits(/* AS= */ 0)),
-      InstrInfo(initSubtargetDependencies(CPU, FS)), FrameLowering(*this),
-      TLInfo(TM, *this), TargetTriple(TT) {
+      PointerSize(TM.getPointerSizeInBits(/* AS= */ 0)), InstrInfo(),
+      FrameLowering(initSubtargetDependencies(CPU, FS)), TLInfo(TM, *this),
+      TargetTriple(TT) {
   switch (TT.getSubArch()) {
   case Triple::SPIRVSubArch_v10:
     SPIRVVersion = VersionTuple(1, 0);
@@ -70,6 +71,7 @@ SPIRVSubtarget::SPIRVSubtarget(const Triple &TT, const std::string &CPU,
     SPIRVVersion = VersionTuple(1, 3);
     break;
   case Triple::SPIRVSubArch_v14:
+  default:
     SPIRVVersion = VersionTuple(1, 4);
     break;
   case Triple::SPIRVSubArch_v15:
@@ -78,28 +80,8 @@ SPIRVSubtarget::SPIRVSubtarget(const Triple &TT, const std::string &CPU,
   case Triple::SPIRVSubArch_v16:
     SPIRVVersion = VersionTuple(1, 6);
     break;
-  default:
-    if (TT.getVendor() == Triple::AMD)
-      SPIRVVersion = VersionTuple(1, 6);
-    else
-      SPIRVVersion = VersionTuple(1, 4);
   }
   OpenCLVersion = VersionTuple(2, 2);
-
-  // Set the environment based on the target triple.
-  if (TargetTriple.getOS() == Triple::Vulkan)
-    Env = Shader;
-  else if (TargetTriple.getEnvironment() == Triple::OpenCL ||
-           TargetTriple.getVendor() == Triple::AMD)
-    Env = Kernel;
-  else
-    Env = Unknown;
-
-  // Set the default extensions based on the target triple.
-  if (TargetTriple.getVendor() == Triple::Intel)
-    Extensions.insert(SPIRV::Extension::SPV_INTEL_function_pointers);
-  if (TargetTriple.getVendor() == Triple::AMD)
-    Extensions = SPIRVExtensionsParser::getValidExtensions(TargetTriple);
 
   // The order of initialization is important.
   initAvailableExtensions(Extensions);
@@ -110,7 +92,8 @@ SPIRVSubtarget::SPIRVSubtarget(const Triple &TT, const std::string &CPU,
   InlineAsmInfo = std::make_unique<SPIRVInlineAsmLowering>(TLInfo);
   Legalizer = std::make_unique<SPIRVLegalizerInfo>(*this);
   RegBankInfo = std::make_unique<SPIRVRegisterBankInfo>();
-  InstSelector.reset(createSPIRVInstructionSelector(TM, *this, *RegBankInfo));
+  InstSelector.reset(
+      createSPIRVInstructionSelector(TM, *this, *RegBankInfo.get()));
 }
 
 SPIRVSubtarget &SPIRVSubtarget::initSubtargetDependencies(StringRef CPU,
@@ -130,10 +113,10 @@ bool SPIRVSubtarget::canUseExtInstSet(
 
 SPIRV::InstructionSet::InstructionSet
 SPIRVSubtarget::getPreferredInstructionSet() const {
-  if (isShader())
-    return SPIRV::InstructionSet::GLSL_std_450;
-  else
+  if (isOpenCLEnv())
     return SPIRV::InstructionSet::OpenCL_std;
+  else
+    return SPIRV::InstructionSet::GLSL_std_450;
 }
 
 bool SPIRVSubtarget::isAtLeastSPIRVVer(VersionTuple VerToCompareTo) const {
@@ -141,7 +124,7 @@ bool SPIRVSubtarget::isAtLeastSPIRVVer(VersionTuple VerToCompareTo) const {
 }
 
 bool SPIRVSubtarget::isAtLeastOpenCLVer(VersionTuple VerToCompareTo) const {
-  if (isShader())
+  if (!isOpenCLEnv())
     return false;
   return isAtLeastVer(OpenCLVersion, VerToCompareTo);
 }
@@ -164,7 +147,7 @@ void SPIRVSubtarget::accountForAMDShaderTrinaryMinmax() {
 // Must have called initAvailableExtensions first.
 void SPIRVSubtarget::initAvailableExtInstSets() {
   AvailableExtInstSets.clear();
-  if (isShader())
+  if (!isOpenCLEnv())
     AvailableExtInstSets.insert(SPIRV::InstructionSet::GLSL_std_450);
   else
     AvailableExtInstSets.insert(SPIRV::InstructionSet::OpenCL_std);
@@ -177,13 +160,7 @@ void SPIRVSubtarget::initAvailableExtInstSets() {
 void SPIRVSubtarget::initAvailableExtensions(
     const std::set<SPIRV::Extension::Extension> &AllowedExtIds) {
   AvailableExtensions.clear();
-  const std::set<SPIRV::Extension::Extension> &ValidExtensions =
-      SPIRVExtensionsParser::getValidExtensions(TargetTriple);
-
-  for (const auto &Ext : AllowedExtIds) {
-    if (ValidExtensions.count(Ext))
-      AvailableExtensions.insert(Ext);
-  }
+  AvailableExtensions.insert(AllowedExtIds.begin(), AllowedExtIds.end());
 
   accountForAMDShaderTrinaryMinmax();
 }

@@ -19,4 +19,4 @@ c@process
 !CHECK: Character in fixed-form label field must be a digit
 @precoss 
 
-      end
+!CHECK: at-process.f:14:1: error: parser FAIL (final position)

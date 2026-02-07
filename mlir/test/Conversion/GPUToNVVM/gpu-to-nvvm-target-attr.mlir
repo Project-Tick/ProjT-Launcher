@@ -1,5 +1,4 @@
 // RUN: mlir-opt %s --pass-pipeline="builtin.module(gpu.module(convert-to-llvm{dynamic=true}))" | FileCheck %s
-// RUN: mlir-opt %s --pass-pipeline="builtin.module(gpu.module(convert-to-llvm{dynamic=true allow-pattern-rollback=0}))" | FileCheck %s
 
 // CHECK-LABEL: gpu.module @nvvm_module
 gpu.module @nvvm_module [#nvvm.target] {

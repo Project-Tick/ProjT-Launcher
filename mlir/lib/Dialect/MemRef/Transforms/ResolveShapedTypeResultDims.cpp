@@ -25,8 +25,8 @@
 
 namespace mlir {
 namespace memref {
-#define GEN_PASS_DEF_RESOLVERANKEDSHAPETYPERESULTDIMSPASS
-#define GEN_PASS_DEF_RESOLVESHAPEDTYPERESULTDIMSPASS
+#define GEN_PASS_DEF_RESOLVERANKEDSHAPETYPERESULTDIMS
+#define GEN_PASS_DEF_RESOLVESHAPEDTYPERESULTDIMS
 #include "mlir/Dialect/MemRef/Transforms/Passes.h.inc"
 } // namespace memref
 } // namespace mlir
@@ -69,7 +69,7 @@ struct DimOfShapedTypeOpInterface : public OpRewritePattern<OpTy> {
     Location loc = dimOp->getLoc();
     rewriter.replaceOpWithNewOp<tensor::ExtractOp>(
         dimOp, resultShape,
-        arith::ConstantIndexOp::create(rewriter, loc, *dimIndex).getResult());
+        rewriter.create<arith::ConstantIndexOp>(loc, *dimIndex).getResult());
     return success();
   }
 };
@@ -90,16 +90,17 @@ struct DimOfReifyRankedShapedTypeOpInterface : public OpRewritePattern<OpTy> {
     if (!dimIndex)
       return failure();
 
-    FailureOr<OpFoldResult> replacement = reifyDimOfResult(
-        rewriter, dimValue.getOwner(), dimValue.getResultNumber(), *dimIndex);
-    if (failed(replacement))
+    ReifiedRankedShapedTypeDims reifiedResultShapes;
+    if (failed(reifyResultShapes(rewriter, dimValue.getOwner(),
+                                 reifiedResultShapes)))
       return failure();
-    // Check if the OpFoldResult is empty (unreifiable dimension).
-    if (!replacement.value())
-      return failure();
-    Value replacementVal = getValueOrCreateConstantIndexOp(
-        rewriter, dimOp.getLoc(), replacement.value());
-    rewriter.replaceOp(dimOp, replacementVal);
+    unsigned resultNumber = dimValue.getResultNumber();
+    // Do not apply pattern if the IR is invalid (dim out of bounds).
+    if ((size_t)(*dimIndex) >= reifiedResultShapes[resultNumber].size())
+      return rewriter.notifyMatchFailure(dimOp, "dimension is out of bounds");
+    Value replacement = getValueOrCreateConstantIndexOp(
+        rewriter, dimOp.getLoc(), reifiedResultShapes[resultNumber][*dimIndex]);
+    rewriter.replaceOp(dimOp, replacement);
     return success();
   }
 };
@@ -163,16 +164,14 @@ struct IterArgsToInitArgs : public OpRewritePattern<tensor::DimOp> {
 
 namespace {
 struct ResolveRankedShapeTypeResultDimsPass final
-    : public memref::impl::ResolveRankedShapeTypeResultDimsPassBase<
+    : public memref::impl::ResolveRankedShapeTypeResultDimsBase<
           ResolveRankedShapeTypeResultDimsPass> {
-  using Base::Base;
   void runOnOperation() override;
 };
 
 struct ResolveShapedTypeResultDimsPass final
-    : public memref::impl::ResolveShapedTypeResultDimsPassBase<
+    : public memref::impl::ResolveShapedTypeResultDimsBase<
           ResolveShapedTypeResultDimsPass> {
-  using Base::Base;
   void runOnOperation() override;
 };
 
@@ -196,22 +195,22 @@ void memref::populateResolveShapedTypeResultDimsPatterns(
 void ResolveRankedShapeTypeResultDimsPass::runOnOperation() {
   RewritePatternSet patterns(&getContext());
   memref::populateResolveRankedShapedTypeResultDimsPatterns(patterns);
-  auto result = applyPatternsGreedily(getOperation(), std::move(patterns));
-  if (errorOnPatternIterationLimit && failed(result)) {
-    getOperation()->emitOpError(
-        "dim operation resolution hit pattern iteration limit");
+  if (failed(applyPatternsGreedily(getOperation(), std::move(patterns))))
     return signalPassFailure();
-  }
 }
 
 void ResolveShapedTypeResultDimsPass::runOnOperation() {
   RewritePatternSet patterns(&getContext());
   memref::populateResolveRankedShapedTypeResultDimsPatterns(patterns);
   memref::populateResolveShapedTypeResultDimsPatterns(patterns);
-  auto result = applyPatternsGreedily(getOperation(), std::move(patterns));
-  if (errorOnPatternIterationLimit && failed(result)) {
-    getOperation()->emitOpError(
-        "dim operation resolution hit pattern iteration limit");
+  if (failed(applyPatternsGreedily(getOperation(), std::move(patterns))))
     return signalPassFailure();
-  }
+}
+
+std::unique_ptr<Pass> memref::createResolveShapedTypeResultDimsPass() {
+  return std::make_unique<ResolveShapedTypeResultDimsPass>();
+}
+
+std::unique_ptr<Pass> memref::createResolveRankedShapeTypeResultDimsPass() {
+  return std::make_unique<ResolveRankedShapeTypeResultDimsPass>();
 }

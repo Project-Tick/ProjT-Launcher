@@ -5,7 +5,8 @@
 ; Expect the entry point.
 ; CHECK-LABEL: tailcaller:
 
-; Expect 1 rep;movs because of tail call stack argument lowering.
+; Expect 2 rep;movs because of tail call byval lowering.
+; CHECK: rep;
 ; CHECK: rep;
 
 ; A sequence of copyto/copyfrom virtual registers is used to deal with byval

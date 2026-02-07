@@ -11,7 +11,6 @@
 //
 //===----------------------------------------------------------------------===//
 #include "clang/Basic/SanitizerSpecialCaseList.h"
-#include "llvm/ADT/STLExtras.h"
 
 using namespace clang;
 
@@ -38,11 +37,12 @@ SanitizerSpecialCaseList::createOrDie(const std::vector<std::string> &Paths,
 }
 
 void SanitizerSpecialCaseList::createSanitizerSections() {
-  for (const auto &S : sections()) {
+  for (auto &It : Sections) {
+    auto &S = It.second;
     SanitizerMask Mask;
 
 #define SANITIZER(NAME, ID)                                                    \
-  if (S.matchName(NAME))                                                       \
+  if (S.SectionMatcher->match(NAME))                                           \
     Mask |= SanitizerKind::ID;
 #define SANITIZER_GROUP(NAME, ID, ALIAS) SANITIZER(NAME, ID)
 
@@ -50,26 +50,17 @@ void SanitizerSpecialCaseList::createSanitizerSections() {
 #undef SANITIZER
 #undef SANITIZER_GROUP
 
-    SanitizerSections.emplace_back(Mask, S);
+    SanitizerSections.emplace_back(Mask, S.Entries);
   }
 }
 
 bool SanitizerSpecialCaseList::inSection(SanitizerMask Mask, StringRef Prefix,
                                          StringRef Query,
                                          StringRef Category) const {
-  return inSectionBlame(Mask, Prefix, Query, Category) != NotFound;
-}
+  for (auto &S : SanitizerSections)
+    if ((S.Mask & Mask) &&
+        SpecialCaseList::inSectionBlame(S.Entries, Prefix, Query, Category))
+      return true;
 
-std::pair<unsigned, unsigned>
-SanitizerSpecialCaseList::inSectionBlame(SanitizerMask Mask, StringRef Prefix,
-                                         StringRef Query,
-                                         StringRef Category) const {
-  for (const auto &S : llvm::reverse(SanitizerSections)) {
-    if (S.Mask & Mask) {
-      unsigned LineNum = S.S.getLastMatch(Prefix, Query, Category);
-      if (LineNum > 0)
-        return {S.S.fileIndex(), LineNum};
-    }
-  }
-  return NotFound;
+  return false;
 }

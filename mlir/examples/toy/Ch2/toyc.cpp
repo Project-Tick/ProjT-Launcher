@@ -58,8 +58,7 @@ static cl::opt<enum Action> emitAction(
     cl::values(clEnumValN(DumpMLIR, "mlir", "output the MLIR dump")));
 
 /// Returns a Toy AST resulting from parsing the file or a nullptr on error.
-static std::unique_ptr<toy::ModuleAST>
-parseInputFile(llvm::StringRef filename) {
+std::unique_ptr<toy::ModuleAST> parseInputFile(llvm::StringRef filename) {
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> fileOrErr =
       llvm::MemoryBuffer::getFileOrSTDIN(filename);
   if (std::error_code ec = fileOrErr.getError()) {
@@ -72,7 +71,7 @@ parseInputFile(llvm::StringRef filename) {
   return parser.parseModule();
 }
 
-static int dumpMLIR() {
+int dumpMLIR() {
   mlir::MLIRContext context;
   // Load our Dialect in this MLIR Context.
   context.getOrLoadDialect<mlir::toy::ToyDialect>();
@@ -113,7 +112,7 @@ static int dumpMLIR() {
   return 0;
 }
 
-static int dumpAST() {
+int dumpAST() {
   if (inputType == InputType::MLIR) {
     llvm::errs() << "Can't dump a Toy AST when the input is MLIR\n";
     return 5;

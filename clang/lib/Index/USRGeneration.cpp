@@ -13,6 +13,7 @@
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/ODRHash.h"
+#include "clang/Basic/FileManager.h"
 #include "clang/Lex/PreprocessingRecord.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
@@ -31,7 +32,7 @@ static bool printLoc(llvm::raw_ostream &OS, SourceLocation Loc,
     return true;
   }
   Loc = SM.getExpansionLoc(Loc);
-  const FileIDAndOffset &Decomposed = SM.getDecomposedLoc(Loc);
+  const std::pair<FileID, unsigned> &Decomposed = SM.getDecomposedLoc(Loc);
   OptionalFileEntryRef FE = SM.getFileEntryRefForID(Decomposed.first);
   if (FE) {
     OS << llvm::sys::path::filename(FE->getName());
@@ -653,14 +654,14 @@ bool USRGenerator::GenLoc(const Decl *D, bool IncludeOffset) {
 }
 
 static void printQualifier(llvm::raw_ostream &Out, const LangOptions &LangOpts,
-                           NestedNameSpecifier NNS) {
+                           NestedNameSpecifier *NNS) {
   // FIXME: Encode the qualifier, don't just print it.
   PrintingPolicy PO(LangOpts);
   PO.SuppressTagKeyword = true;
   PO.SuppressUnwrittenScope = true;
   PO.ConstantArraySizeAsWritten = false;
   PO.AnonymousTagLocations = false;
-  NNS.print(Out, PO);
+  NNS->print(Out, PO);
 }
 
 void USRGenerator::VisitType(QualType T) {
@@ -762,11 +763,10 @@ void USRGenerator::VisitType(QualType T) {
           Out << "@BT@OCLReserveID"; break;
         case BuiltinType::OCLSampler:
           Out << "@BT@OCLSampler"; break;
-#define SVE_TYPE(Name, Id, SingletonId)                                        \
-  case BuiltinType::Id:                                                        \
-    Out << "@BT@" << #Name;                                                    \
-    break;
-#include "clang/Basic/AArch64ACLETypes.def"
+#define SVE_TYPE(Name, Id, SingletonId) \
+        case BuiltinType::Id: \
+          Out << "@BT@" << Name; break;
+#include "clang/Basic/AArch64SVEACLETypes.def"
 #define PPC_VECTOR_TYPE(Name, Id, Size) \
         case BuiltinType::Id: \
           Out << "@BT@" << #Name; break;
@@ -858,12 +858,16 @@ void USRGenerator::VisitType(QualType T) {
     }
 
     // If we have already seen this (non-built-in) type, use a substitution
-    // encoding.  Otherwise, record this as a substitution.
-    auto [Substitution, Inserted] =
-        TypeSubstitutions.try_emplace(T.getTypePtr(), TypeSubstitutions.size());
-    if (!Inserted) {
+    // encoding.
+    llvm::DenseMap<const Type *, unsigned>::iterator Substitution
+      = TypeSubstitutions.find(T.getTypePtr());
+    if (Substitution != TypeSubstitutions.end()) {
       Out << 'S' << Substitution->second << '_';
       return;
+    } else {
+      // Record this as a substitution.
+      unsigned Number = TypeSubstitutions.size();
+      TypeSubstitutions[T.getTypePtr()] = Number;
     }
 
     if (const PointerType *PT = T->getAs<PointerType>()) {
@@ -910,13 +914,9 @@ void USRGenerator::VisitType(QualType T) {
       continue;
     }
     if (const TagType *TT = T->getAs<TagType>()) {
-      if (const auto *ICNT = dyn_cast<InjectedClassNameType>(TT)) {
-        T = ICNT->getDecl()->getCanonicalTemplateSpecializationType(Ctx);
-      } else {
-        Out << '$';
-        VisitTagDecl(TT->getDecl());
-        return;
-      }
+      Out << '$';
+      VisitTagDecl(TT->getDecl());
+      return;
     }
     if (const ObjCInterfaceType *OIT = T->getAs<ObjCInterfaceType>()) {
       Out << '$';
@@ -930,8 +930,7 @@ void USRGenerator::VisitType(QualType T) {
         VisitObjCProtocolDecl(Prot);
       return;
     }
-    if (const TemplateTypeParmType *TTP =
-            T->getAsCanonical<TemplateTypeParmType>()) {
+    if (const TemplateTypeParmType *TTP = T->getAs<TemplateTypeParmType>()) {
       Out << 't' << TTP->getDepth() << '.' << TTP->getIndex();
       return;
     }
@@ -949,6 +948,10 @@ void USRGenerator::VisitType(QualType T) {
       printQualifier(Out, LangOpts, DNT->getQualifier());
       Out << ':' << DNT->getIdentifier()->getName();
       return;
+    }
+    if (const InjectedClassNameType *InjT = T->getAs<InjectedClassNameType>()) {
+      T = InjT->getInjectedSpecializationType();
+      continue;
     }
     if (const auto *VT = T->getAs<VectorType>()) {
       Out << (T->isExtVectorType() ? ']' : '[');

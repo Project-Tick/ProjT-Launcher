@@ -27,7 +27,7 @@ using namespace ento;
 //===----------------------------------------------------------------------===//
 
 static bool IsLLVMStringRef(QualType T) {
-  const RecordType *RT = T->getAsCanonical<RecordType>();
+  const RecordType *RT = T->getAs<RecordType>();
   if (!RT)
     return false;
 
@@ -47,6 +47,9 @@ static bool InNamespace(const Decl *D, StringRef NS) {
 }
 
 static bool IsStdString(QualType T) {
+  if (const ElaboratedType *QT = T->getAs<ElaboratedType>())
+    T = QT->getNamedType();
+
   const TypedefType *TT = T->getAs<TypedefType>();
   if (!TT)
     return false;
@@ -195,10 +198,14 @@ static bool IsPartOfAST(const CXXRecordDecl *R) {
   if (IsClangStmt(R) || IsClangType(R) || IsClangDecl(R) || IsClangAttr(R))
     return true;
 
-  for (const auto &BS : R->bases())
-    if (const auto *baseD = BS.getType()->getAsCXXRecordDecl();
-        baseD && IsPartOfAST(baseD))
-      return true;
+  for (const auto &BS : R->bases()) {
+    QualType T = BS.getType();
+    if (const RecordType *baseT = T->getAs<RecordType>()) {
+      CXXRecordDecl *baseD = cast<CXXRecordDecl>(baseT->getDecl());
+      if (IsPartOfAST(baseD))
+        return true;
+    }
+  }
 
   return false;
 }
@@ -239,9 +246,11 @@ void ASTFieldVisitor::Visit(FieldDecl *D) {
   if (AllocatesMemory(T))
     ReportError(T);
 
-  if (const auto *RD = T->getAsRecordDecl())
+  if (const RecordType *RT = T->getAs<RecordType>()) {
+    const RecordDecl *RD = RT->getDecl()->getDefinition();
     for (auto *I : RD->fields())
       Visit(I);
+  }
 
   FieldChain.pop_back();
 }

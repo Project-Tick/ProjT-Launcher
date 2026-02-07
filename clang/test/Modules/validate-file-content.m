@@ -1,3 +1,5 @@
+// REQUIRES: shell
+//
 // Check driver works
 // RUN: %clang -fmodules -fsyntax-only -fmodules-validate-input-files-content %s -### 2>&1 | FileCheck --check-prefix=CHECK-CC1 %s
 // CHECK-CC1: -fvalidate-ast-input-files-content
@@ -27,5 +29,5 @@
 // CHECK: file '[[M_H:.*[/\\]m\.h]]' has been modified since the precompiled header '[[A_PCH:.*/a\.pch]]' was built: content changed
 // CHECK: '[[M_H]]' required by '[[M_PCM:.*[/\\]m.*\.pcm]]'
 // CHECK: '[[M_PCM]]' required by '[[A_PCH]]'
-// CHECK: please rebuild precompiled file '[[A_PCH]]'
+// CHECK: please rebuild precompiled header '[[A_PCH]]'
 // expected-no-diagnostics

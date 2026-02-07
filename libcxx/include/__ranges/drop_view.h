@@ -80,14 +80,14 @@ public:
     _LIBCPP_ASSERT_UNCATEGORIZED(__count_ >= 0, "count must be greater than or equal to zero.");
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr _View base() const&
+  _LIBCPP_HIDE_FROM_ABI constexpr _View base() const&
     requires copy_constructible<_View>
   {
     return __base_;
   }
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr _View base() && { return std::move(__base_); }
+  _LIBCPP_HIDE_FROM_ABI constexpr _View base() && { return std::move(__base_); }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto begin()
+  _LIBCPP_HIDE_FROM_ABI constexpr auto begin()
     requires(!(__simple_view<_View> && random_access_range<const _View> && sized_range<const _View>))
   {
     if constexpr (random_access_range<_View> && sized_range<_View>) {
@@ -104,20 +104,20 @@ public:
     return __tmp;
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto begin() const
+  _LIBCPP_HIDE_FROM_ABI constexpr auto begin() const
     requires random_access_range<const _View> && sized_range<const _View>
   {
     const auto __dist = std::min(ranges::distance(__base_), __count_);
     return ranges::begin(__base_) + __dist;
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto end()
+  _LIBCPP_HIDE_FROM_ABI constexpr auto end()
     requires(!__simple_view<_View>)
   {
     return ranges::end(__base_);
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto end() const
+  _LIBCPP_HIDE_FROM_ABI constexpr auto end() const
     requires range<const _View>
   {
     return ranges::end(__base_);
@@ -129,13 +129,13 @@ public:
     return __s < __c ? 0 : __s - __c;
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto size()
+  _LIBCPP_HIDE_FROM_ABI constexpr auto size()
     requires sized_range<_View>
   {
     return __size(*this);
   }
 
-  [[nodiscard]] _LIBCPP_HIDE_FROM_ABI constexpr auto size() const
+  _LIBCPP_HIDE_FROM_ABI constexpr auto size() const
     requires sized_range<const _View>
   {
     return __size(*this);
@@ -185,22 +185,22 @@ struct __passthrough_type;
 
 template <class _Tp, size_t _Extent>
 struct __passthrough_type<span<_Tp, _Extent>> {
-  using type _LIBCPP_NODEBUG = span<_Tp>;
+  using type = span<_Tp>;
 };
 
 template <class _CharT, class _Traits>
 struct __passthrough_type<basic_string_view<_CharT, _Traits>> {
-  using type _LIBCPP_NODEBUG = basic_string_view<_CharT, _Traits>;
+  using type = basic_string_view<_CharT, _Traits>;
 };
 
 template <class _Np, class _Bound>
 struct __passthrough_type<iota_view<_Np, _Bound>> {
-  using type _LIBCPP_NODEBUG = iota_view<_Np, _Bound>;
+  using type = iota_view<_Np, _Bound>;
 };
 
 template <class _Iter, class _Sent, subrange_kind _Kind>
 struct __passthrough_type<subrange<_Iter, _Sent, _Kind>> {
-  using type _LIBCPP_NODEBUG = subrange<_Iter, _Sent, _Kind>;
+  using type = subrange<_Iter, _Sent, _Kind>;
 };
 
 template <class _Tp>

@@ -17,7 +17,11 @@ from optparse import OptionParser
 import os
 import signal
 import sys
-import queue
+
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 import debuggerdriver
 import cui

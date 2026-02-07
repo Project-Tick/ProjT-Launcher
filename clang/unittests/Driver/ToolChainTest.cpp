@@ -17,12 +17,10 @@
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/TargetOptions.h"
 #include "clang/Driver/Compilation.h"
-#include "clang/Driver/CreateInvocationFromArgs.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringExtras.h"
-#include "llvm/Frontend/Debug/Options.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/VirtualFileSystem.h"
@@ -39,12 +37,12 @@ using namespace clang::driver;
 namespace {
 
 TEST(ToolChainTest, VFSGCCInstallation) {
-  DiagnosticOptions DiagOpts;
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
 
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   struct TestDiagnosticConsumer : public DiagnosticConsumer {};
-  auto InMemoryFileSystem =
-      llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
+      new llvm::vfs::InMemoryFileSystem);
 
   const char *EmptyFiles[] = {
       "foo.cpp",
@@ -85,7 +83,7 @@ TEST(ToolChainTest, VFSGCCInstallation) {
                                 llvm::MemoryBuffer::getMemBuffer("\n"));
 
   {
-    DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
+    DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
     Driver TheDriver("/bin/clang", "arm-linux-gnueabihf", Diags,
                      "clang LLVM compiler", InMemoryFileSystem);
     std::unique_ptr<Compilation> C(TheDriver.BuildCompilation(
@@ -97,7 +95,7 @@ TEST(ToolChainTest, VFSGCCInstallation) {
       C->getDefaultToolChain().printVerboseInfo(OS);
     }
     if (is_style_windows(llvm::sys::path::Style::native))
-      llvm::replace(S, '\\', '/');
+      std::replace(S.begin(), S.end(), '\\', '/');
     EXPECT_EQ(
         "Found candidate GCC installation: "
         "/usr/lib/gcc/arm-linux-gnueabihf/4.6.3\n"
@@ -108,8 +106,7 @@ TEST(ToolChainTest, VFSGCCInstallation) {
   }
 
   {
-    DiagnosticOptions DiagOpts;
-    DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
+    DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
     Driver TheDriver("/bin/clang", "arm-linux-gnueabihf", Diags,
                      "clang LLVM compiler", InMemoryFileSystem);
     std::unique_ptr<Compilation> C(TheDriver.BuildCompilation(
@@ -122,7 +119,7 @@ TEST(ToolChainTest, VFSGCCInstallation) {
       C->getDefaultToolChain().printVerboseInfo(OS);
     }
     if (is_style_windows(llvm::sys::path::Style::native))
-      llvm::replace(S, '\\', '/');
+      std::replace(S.begin(), S.end(), '\\', '/');
     // Test that 4.5.3 from --sysroot is not overridden by 4.6.3 (larger
     // version) from /usr.
     EXPECT_EQ("Found candidate GCC installation: "
@@ -136,13 +133,13 @@ TEST(ToolChainTest, VFSGCCInstallation) {
 }
 
 TEST(ToolChainTest, VFSGCCInstallationRelativeDir) {
-  DiagnosticOptions DiagOpts;
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
 
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   struct TestDiagnosticConsumer : public DiagnosticConsumer {};
-  DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
-  auto InMemoryFileSystem =
-      llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
+  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
+      new llvm::vfs::InMemoryFileSystem);
   Driver TheDriver("/home/test/bin/clang", "arm-linux-gnueabi", Diags,
                    "clang LLVM compiler", InMemoryFileSystem);
 
@@ -164,7 +161,7 @@ TEST(ToolChainTest, VFSGCCInstallationRelativeDir) {
     C->getDefaultToolChain().printVerboseInfo(OS);
   }
   if (is_style_windows(llvm::sys::path::Style::native))
-    llvm::replace(S, '\\', '/');
+    std::replace(S.begin(), S.end(), '\\', '/');
   EXPECT_EQ("Found candidate GCC installation: "
             "/home/test/bin/../lib/gcc/arm-linux-gnueabi/4.6.1\n"
             "Selected GCC installation: "
@@ -175,12 +172,12 @@ TEST(ToolChainTest, VFSGCCInstallationRelativeDir) {
 }
 
 TEST(ToolChainTest, VFSSolarisMultiGCCInstallation) {
-  DiagnosticOptions DiagOpts;
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
 
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   struct TestDiagnosticConsumer : public DiagnosticConsumer {};
-  auto InMemoryFileSystem =
-      llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
+      new llvm::vfs::InMemoryFileSystem);
 
   const char *EmptyFiles[] = {
       // Sort entries so the latest version doesn't come first.
@@ -203,7 +200,7 @@ TEST(ToolChainTest, VFSSolarisMultiGCCInstallation) {
                                 llvm::MemoryBuffer::getMemBuffer("\n"));
 
   {
-    DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
+    DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
     Driver TheDriver("/bin/clang", "i386-pc-solaris2.11", Diags,
                      "clang LLVM compiler", InMemoryFileSystem);
     std::unique_ptr<Compilation> C(
@@ -215,7 +212,7 @@ TEST(ToolChainTest, VFSSolarisMultiGCCInstallation) {
       C->getDefaultToolChain().printVerboseInfo(OS);
     }
     if (is_style_windows(llvm::sys::path::Style::native))
-      llvm::replace(S, '\\', '/');
+      std::replace(S.begin(), S.end(), '\\', '/');
     EXPECT_EQ("Found candidate GCC installation: "
               "/usr/gcc/11/lib/gcc/x86_64-pc-solaris2.11/11.4.0\n"
               "Selected GCC installation: "
@@ -227,7 +224,7 @@ TEST(ToolChainTest, VFSSolarisMultiGCCInstallation) {
   }
 
   {
-    DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
+    DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
     Driver TheDriver("/bin/clang", "amd64-pc-solaris2.11", Diags,
                      "clang LLVM compiler", InMemoryFileSystem);
     std::unique_ptr<Compilation> C(
@@ -239,7 +236,7 @@ TEST(ToolChainTest, VFSSolarisMultiGCCInstallation) {
       C->getDefaultToolChain().printVerboseInfo(OS);
     }
     if (is_style_windows(llvm::sys::path::Style::native))
-      llvm::replace(S, '\\', '/');
+      std::replace(S.begin(), S.end(), '\\', '/');
     EXPECT_EQ("Found candidate GCC installation: "
               "/usr/gcc/11/lib/gcc/x86_64-pc-solaris2.11/11.4.0\n"
               "Selected GCC installation: "
@@ -251,7 +248,7 @@ TEST(ToolChainTest, VFSSolarisMultiGCCInstallation) {
   }
 
   {
-    DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
+    DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
     Driver TheDriver("/bin/clang", "x86_64-pc-solaris2.11", Diags,
                      "clang LLVM compiler", InMemoryFileSystem);
     std::unique_ptr<Compilation> C(
@@ -263,7 +260,7 @@ TEST(ToolChainTest, VFSSolarisMultiGCCInstallation) {
       C->getDefaultToolChain().printVerboseInfo(OS);
     }
     if (is_style_windows(llvm::sys::path::Style::native))
-      llvm::replace(S, '\\', '/');
+      std::replace(S.begin(), S.end(), '\\', '/');
     EXPECT_EQ("Found candidate GCC installation: "
               "/usr/gcc/11/lib/gcc/x86_64-pc-solaris2.11/11.4.0\n"
               "Selected GCC installation: "
@@ -275,7 +272,7 @@ TEST(ToolChainTest, VFSSolarisMultiGCCInstallation) {
   }
 
   {
-    DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
+    DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
     Driver TheDriver("/bin/clang", "sparc-sun-solaris2.11", Diags,
                      "clang LLVM compiler", InMemoryFileSystem);
     std::unique_ptr<Compilation> C(
@@ -287,7 +284,7 @@ TEST(ToolChainTest, VFSSolarisMultiGCCInstallation) {
       C->getDefaultToolChain().printVerboseInfo(OS);
     }
     if (is_style_windows(llvm::sys::path::Style::native))
-      llvm::replace(S, '\\', '/');
+      std::replace(S.begin(), S.end(), '\\', '/');
     EXPECT_EQ("Found candidate GCC installation: "
               "/usr/gcc/11/lib/gcc/sparcv9-sun-solaris2.11/11.4.0\n"
               "Selected GCC installation: "
@@ -298,7 +295,7 @@ TEST(ToolChainTest, VFSSolarisMultiGCCInstallation) {
               S);
   }
   {
-    DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
+    DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
     Driver TheDriver("/bin/clang", "sparcv9-sun-solaris2.11", Diags,
                      "clang LLVM compiler", InMemoryFileSystem);
     std::unique_ptr<Compilation> C(
@@ -310,7 +307,7 @@ TEST(ToolChainTest, VFSSolarisMultiGCCInstallation) {
       C->getDefaultToolChain().printVerboseInfo(OS);
     }
     if (is_style_windows(llvm::sys::path::Style::native))
-      llvm::replace(S, '\\', '/');
+      std::replace(S.begin(), S.end(), '\\', '/');
     EXPECT_EQ("Found candidate GCC installation: "
               "/usr/gcc/11/lib/gcc/sparcv9-sun-solaris2.11/11.4.0\n"
               "Selected GCC installation: "
@@ -331,7 +328,7 @@ MATCHER_P(jobHasArgs, Substr, "") {
     Args += Arg;
   }
   if (is_style_windows(llvm::sys::path::Style::native))
-    llvm::replace(Args, '\\', '/');
+    std::replace(Args.begin(), Args.end(), '\\', '/');
   if (llvm::StringRef(Args).contains(Substr))
     return true;
   *result_listener << "whose args are '" << Args << "'";
@@ -339,12 +336,12 @@ MATCHER_P(jobHasArgs, Substr, "") {
 }
 
 TEST(ToolChainTest, VFSGnuLibcxxPathNoSysroot) {
-  DiagnosticOptions DiagOpts;
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
 
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   struct TestDiagnosticConsumer : public DiagnosticConsumer {};
-  auto InMemoryFileSystem =
-      llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
+      new llvm::vfs::InMemoryFileSystem);
 
   const char *EmptyFiles[] = {
       "foo.cpp",
@@ -357,7 +354,7 @@ TEST(ToolChainTest, VFSGnuLibcxxPathNoSysroot) {
                                 llvm::MemoryBuffer::getMemBuffer("\n"));
 
   {
-    DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
+    DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
     Driver TheDriver("/bin/clang", "x86_64-unknown-linux-gnu", Diags,
                      "clang LLVM compiler", InMemoryFileSystem);
     std::unique_ptr<Compilation> C(TheDriver.BuildCompilation(
@@ -370,13 +367,13 @@ TEST(ToolChainTest, VFSGnuLibcxxPathNoSysroot) {
 }
 
 TEST(ToolChainTest, DefaultDriverMode) {
-  DiagnosticOptions DiagOpts;
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
 
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   struct TestDiagnosticConsumer : public DiagnosticConsumer {};
-  DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
-  auto InMemoryFileSystem =
-      llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
+  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
+      new llvm::vfs::InMemoryFileSystem);
 
   Driver CCDriver("/home/test/bin/clang", "arm-linux-gnueabi", Diags,
                   "clang LLVM compiler", InMemoryFileSystem);
@@ -403,10 +400,10 @@ TEST(ToolChainTest, DefaultDriverMode) {
   EXPECT_TRUE(CLDriver.IsCLMode());
 }
 TEST(ToolChainTest, InvalidArgument) {
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   struct TestDiagnosticConsumer : public DiagnosticConsumer {};
-  DiagnosticOptions DiagOpts;
-  DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+  DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
   Driver TheDriver("/bin/clang", "arm-linux-gnueabihf", Diags);
   std::unique_ptr<Compilation> C(TheDriver.BuildCompilation(
       {"-fsyntax-only", "-fan-unknown-option", "foo.cpp"}));
@@ -443,7 +440,7 @@ TEST(ToolChainTest, ParsedClangName) {
 TEST(ToolChainTest, GetTargetAndMode) {
   llvm::InitializeAllTargets();
   std::string IgnoredError;
-  if (!llvm::TargetRegistry::lookupTarget(llvm::Triple("x86_64"), IgnoredError))
+  if (!llvm::TargetRegistry::lookupTarget("x86_64", IgnoredError))
     GTEST_SKIP();
 
   ParsedClangName Res = ToolChain::getTargetAndModeFromProgramName("clang");
@@ -516,13 +513,13 @@ TEST(ToolChainTest, GetTargetAndMode) {
 }
 
 TEST(ToolChainTest, CommandOutput) {
-  DiagnosticOptions DiagOpts;
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
 
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   struct TestDiagnosticConsumer : public DiagnosticConsumer {};
-  DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
-  auto InMemoryFileSystem =
-      llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
+  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
+      new llvm::vfs::InMemoryFileSystem);
 
   Driver CCDriver("/home/test/bin/clang", "arm-linux-gnueabi", Diags,
                   "clang LLVM compiler", InMemoryFileSystem);
@@ -545,12 +542,12 @@ TEST(ToolChainTest, CommandOutput) {
 }
 
 TEST(ToolChainTest, PostCallback) {
-  DiagnosticOptions DiagOpts;
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   struct TestDiagnosticConsumer : public DiagnosticConsumer {};
-  DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
-  auto InMemoryFileSystem =
-      llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
+  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
+      new llvm::vfs::InMemoryFileSystem);
 
   // The executable path must not exist.
   Driver CCDriver("/home/test/bin/clang", "arm-linux-gnueabi", Diags,
@@ -580,8 +577,7 @@ TEST(CompilerInvocation, SplitSwarfSingleCrash) {
 
 TEST(ToolChainTest, UEFICallingConventionTest) {
   clang::CompilerInstance compiler;
-  compiler.setVirtualFileSystem(llvm::vfs::getRealFileSystem());
-  compiler.createDiagnostics();
+  compiler.createDiagnostics(*llvm::vfs::getRealFileSystem());
 
   std::string TrStr = "x86_64-unknown-uefi";
   llvm::Triple Tr(TrStr);
@@ -592,26 +588,11 @@ TEST(ToolChainTest, UEFICallingConventionTest) {
 
   compiler.getTargetOpts().Triple = Tr.getTriple();
   compiler.setTarget(clang::TargetInfo::CreateTargetInfo(
-      compiler.getDiagnostics(), compiler.getTargetOpts()));
+      compiler.getDiagnostics(),
+      std::make_shared<clang::TargetOptions>(compiler.getTargetOpts())));
 
   EXPECT_EQ(compiler.getTarget().getCallingConvKind(true),
             TargetInfo::CallingConvKind::CCK_MicrosoftWin64);
-}
-
-TEST(ToolChainTest, UEFIDefaultDebugFormatTest) {
-  DiagnosticOptions DiagOpts;
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
-  struct TestDiagnosticConsumer : public DiagnosticConsumer {};
-  DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
-  auto InMemoryFileSystem =
-      llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
-  Driver CCDriver("/home/test/bin/clang", "x86_64-unknown-uefi", Diags,
-                  "clang LLVM compiler", InMemoryFileSystem);
-  CCDriver.setCheckInputsExist(false);
-  std::unique_ptr<Compilation> CC(
-      CCDriver.BuildCompilation({"/home/test/bin/clang", "foo.cpp"}));
-  EXPECT_EQ(CC->getDefaultToolChain().getDefaultDebugFormat(),
-            llvm::codegenoptions::DIF_CodeView);
 }
 
 TEST(GetDriverMode, PrefersLastDriverMode) {
@@ -641,11 +622,12 @@ struct SimpleDiagnosticConsumer : public DiagnosticConsumer {
 };
 
 TEST(ToolChainTest, ConfigFileSearch) {
-  DiagnosticOptions DiagOpts;
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   struct TestDiagnosticConsumer : public DiagnosticConsumer {};
-  DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
-  auto FS = llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
+  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> FS(
+      new llvm::vfs::InMemoryFileSystem);
 
 #ifdef _WIN32
   const char *TestRoot = "C:\\";
@@ -717,12 +699,12 @@ struct FileSystemWithError : public llvm::vfs::FileSystem {
 };
 
 TEST(ToolChainTest, ConfigFileError) {
-  DiagnosticOptions DiagOpts;
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   std::unique_ptr<SimpleDiagnosticConsumer> DiagConsumer(
       new SimpleDiagnosticConsumer());
-  DiagnosticsEngine Diags(DiagID, DiagOpts, DiagConsumer.get(), false);
-  auto FS = llvm::makeIntrusiveRefCnt<FileSystemWithError>();
+  DiagnosticsEngine Diags(DiagID, &*DiagOpts, DiagConsumer.get(), false);
+  IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS(new FileSystemWithError);
 
   Driver TheDriver("/home/test/bin/clang", "arm-linux-gnueabi", Diags,
                    "clang LLVM compiler", FS);
@@ -738,12 +720,13 @@ TEST(ToolChainTest, ConfigFileError) {
 }
 
 TEST(ToolChainTest, BadConfigFile) {
-  DiagnosticOptions DiagOpts;
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   std::unique_ptr<SimpleDiagnosticConsumer> DiagConsumer(
       new SimpleDiagnosticConsumer());
-  DiagnosticsEngine Diags(DiagID, DiagOpts, DiagConsumer.get(), false);
-  auto FS = llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  DiagnosticsEngine Diags(DiagID, &*DiagOpts, DiagConsumer.get(), false);
+  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> FS(
+      new llvm::vfs::InMemoryFileSystem);
 
 #ifdef _WIN32
   const char *TestRoot = "C:\\";
@@ -811,12 +794,13 @@ TEST(ToolChainTest, BadConfigFile) {
 }
 
 TEST(ToolChainTest, ConfigInexistentInclude) {
-  DiagnosticOptions DiagOpts;
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   std::unique_ptr<SimpleDiagnosticConsumer> DiagConsumer(
       new SimpleDiagnosticConsumer());
-  DiagnosticsEngine Diags(DiagID, DiagOpts, DiagConsumer.get(), false);
-  auto FS = llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  DiagnosticsEngine Diags(DiagID, &*DiagOpts, DiagConsumer.get(), false);
+  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> FS(
+      new llvm::vfs::InMemoryFileSystem);
 
 #ifdef _WIN32
   const char *TestRoot = "C:\\";
@@ -851,12 +835,13 @@ TEST(ToolChainTest, ConfigInexistentInclude) {
 }
 
 TEST(ToolChainTest, ConfigRecursiveInclude) {
-  DiagnosticOptions DiagOpts;
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   std::unique_ptr<SimpleDiagnosticConsumer> DiagConsumer(
       new SimpleDiagnosticConsumer());
-  DiagnosticsEngine Diags(DiagID, DiagOpts, DiagConsumer.get(), false);
-  auto FS = llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  DiagnosticsEngine Diags(DiagID, &*DiagOpts, DiagConsumer.get(), false);
+  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> FS(
+      new llvm::vfs::InMemoryFileSystem);
 
 #ifdef _WIN32
   const char *TestRoot = "C:\\";
@@ -896,11 +881,12 @@ TEST(ToolChainTest, ConfigRecursiveInclude) {
 }
 
 TEST(ToolChainTest, NestedConfigFile) {
-  DiagnosticOptions DiagOpts;
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID = DiagnosticIDs::create();
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   struct TestDiagnosticConsumer : public DiagnosticConsumer {};
-  DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
-  auto FS = llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>();
+  DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
+  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> FS(
+      new llvm::vfs::InMemoryFileSystem);
 
 #ifdef _WIN32
   const char *TestRoot = "C:\\";

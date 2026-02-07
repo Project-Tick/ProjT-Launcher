@@ -21,7 +21,6 @@ namespace clang {
   class Decl;
   class DeclGroupRef;
   class ImportDecl;
-  class HeuristicResolver;
   class TagDecl;
   class TypeSourceInfo;
   class NamedDecl;
@@ -40,21 +39,15 @@ class IndexingContext {
   IndexingOptions IndexOpts;
   IndexDataConsumer &DataConsumer;
   ASTContext *Ctx = nullptr;
-  std::unique_ptr<HeuristicResolver> Resolver;
 
 public:
-  IndexingContext(IndexingOptions IndexOpts, IndexDataConsumer &DataConsumer);
-  // Defaulted, but defined out of line to avoid a dependency on
-  // HeuristicResolver.h (unique_ptr requires a complete type at
-  // the point where its destructor is called).
-  ~IndexingContext();
+  IndexingContext(IndexingOptions IndexOpts, IndexDataConsumer &DataConsumer)
+    : IndexOpts(IndexOpts), DataConsumer(DataConsumer) {}
 
   const IndexingOptions &getIndexOpts() const { return IndexOpts; }
   IndexDataConsumer &getDataConsumer() { return DataConsumer; }
 
-  void setASTContext(ASTContext &ctx);
-
-  HeuristicResolver *getResolver() const { return Resolver.get(); }
+  void setASTContext(ASTContext &ctx) { Ctx = &ctx; }
 
   bool shouldIndex(const Decl *D);
 

@@ -16,7 +16,7 @@ namespace clang {
 namespace clangd {
 
 // Force the unittest URI scheme to be linked,
-[[maybe_unused]] static int UnittestSchemeAnchorDest =
+static int LLVM_ATTRIBUTE_UNUSED UnittestSchemeAnchorDest =
     UnittestSchemeAnchorSource;
 
 namespace {

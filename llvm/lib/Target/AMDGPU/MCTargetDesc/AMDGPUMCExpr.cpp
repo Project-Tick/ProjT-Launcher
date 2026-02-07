@@ -7,7 +7,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "AMDGPUMCExpr.h"
+#include "GCNSubtarget.h"
 #include "Utils/AMDGPUBaseInfo.h"
+#include "llvm/IR/Function.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCAssembler.h"
 #include "llvm/MC/MCContext.h"
@@ -34,7 +36,7 @@ AMDGPUMCExpr::AMDGPUMCExpr(VariantKind Kind, ArrayRef<const MCExpr *> Args,
   // allocation (e.g., through SmallVector's grow).
   RawArgs = static_cast<const MCExpr **>(
       Ctx.allocate(sizeof(const MCExpr *) * Args.size()));
-  llvm::uninitialized_copy(Args, RawArgs);
+  std::uninitialized_copy(Args.begin(), Args.end(), RawArgs);
   this->Args = ArrayRef<const MCExpr *>(RawArgs, Args.size());
 }
 
@@ -73,15 +75,9 @@ void AMDGPUMCExpr::printImpl(raw_ostream &OS, const MCAsmInfo *MAI) const {
   case AGVK_Occupancy:
     OS << "occupancy(";
     break;
-  case AGVK_Lit:
-    OS << "lit(";
-    break;
-  case AGVK_Lit64:
-    OS << "lit64(";
-    break;
   }
   for (const auto *It = Args.begin(); It != Args.end(); ++It) {
-    MAI->printExpr(OS, **It);
+    (*It)->print(OS, MAI, /*InParens=*/false);
     if ((It + 1) != Args.end())
       OS << ", ";
   }
@@ -99,11 +95,11 @@ static int64_t op(AMDGPUMCExpr::VariantKind Kind, int64_t Arg1, int64_t Arg2) {
   }
 }
 
-bool AMDGPUMCExpr::evaluateExtraSGPRs(MCValue &Res,
-                                      const MCAssembler *Asm) const {
+bool AMDGPUMCExpr::evaluateExtraSGPRs(MCValue &Res, const MCAssembler *Asm,
+                                      const MCFixup *Fixup) const {
   auto TryGetMCExprValue = [&](const MCExpr *Arg, uint64_t &ConstantValue) {
     MCValue MCVal;
-    if (!Arg->evaluateAsRelocatable(MCVal, Asm) || !MCVal.isAbsolute())
+    if (!Arg->evaluateAsRelocatable(MCVal, Asm, Fixup) || !MCVal.isAbsolute())
       return false;
 
     ConstantValue = MCVal.getConstant();
@@ -128,11 +124,11 @@ bool AMDGPUMCExpr::evaluateExtraSGPRs(MCValue &Res,
   return true;
 }
 
-bool AMDGPUMCExpr::evaluateTotalNumVGPR(MCValue &Res,
-                                        const MCAssembler *Asm) const {
+bool AMDGPUMCExpr::evaluateTotalNumVGPR(MCValue &Res, const MCAssembler *Asm,
+                                        const MCFixup *Fixup) const {
   auto TryGetMCExprValue = [&](const MCExpr *Arg, uint64_t &ConstantValue) {
     MCValue MCVal;
-    if (!Arg->evaluateAsRelocatable(MCVal, Asm) || !MCVal.isAbsolute())
+    if (!Arg->evaluateAsRelocatable(MCVal, Asm, Fixup) || !MCVal.isAbsolute())
       return false;
 
     ConstantValue = MCVal.getConstant();
@@ -155,10 +151,11 @@ bool AMDGPUMCExpr::evaluateTotalNumVGPR(MCValue &Res,
   return true;
 }
 
-bool AMDGPUMCExpr::evaluateAlignTo(MCValue &Res, const MCAssembler *Asm) const {
+bool AMDGPUMCExpr::evaluateAlignTo(MCValue &Res, const MCAssembler *Asm,
+                                   const MCFixup *Fixup) const {
   auto TryGetMCExprValue = [&](const MCExpr *Arg, uint64_t &ConstantValue) {
     MCValue MCVal;
-    if (!Arg->evaluateAsRelocatable(MCVal, Asm) || !MCVal.isAbsolute())
+    if (!Arg->evaluateAsRelocatable(MCVal, Asm, Fixup) || !MCVal.isAbsolute())
       return false;
 
     ConstantValue = MCVal.getConstant();
@@ -175,11 +172,11 @@ bool AMDGPUMCExpr::evaluateAlignTo(MCValue &Res, const MCAssembler *Asm) const {
   return true;
 }
 
-bool AMDGPUMCExpr::evaluateOccupancy(MCValue &Res,
-                                     const MCAssembler *Asm) const {
+bool AMDGPUMCExpr::evaluateOccupancy(MCValue &Res, const MCAssembler *Asm,
+                                     const MCFixup *Fixup) const {
   auto TryGetMCExprValue = [&](const MCExpr *Arg, uint64_t &ConstantValue) {
     MCValue MCVal;
-    if (!Arg->evaluateAsRelocatable(MCVal, Asm) || !MCVal.isAbsolute())
+    if (!Arg->evaluateAsRelocatable(MCVal, Asm, Fixup) || !MCVal.isAbsolute())
       return false;
 
     ConstantValue = MCVal.getConstant();
@@ -218,59 +215,26 @@ bool AMDGPUMCExpr::evaluateOccupancy(MCValue &Res,
   return true;
 }
 
-bool AMDGPUMCExpr::isSymbolUsedInExpression(const MCSymbol *Sym,
-                                            const MCExpr *E) {
-  switch (E->getKind()) {
-  case MCExpr::Constant:
-    return false;
-  case MCExpr::Unary:
-    return isSymbolUsedInExpression(
-        Sym, static_cast<const MCUnaryExpr *>(E)->getSubExpr());
-  case MCExpr::Binary: {
-    const MCBinaryExpr *BE = static_cast<const MCBinaryExpr *>(E);
-    return isSymbolUsedInExpression(Sym, BE->getLHS()) ||
-           isSymbolUsedInExpression(Sym, BE->getRHS());
-  }
-  case MCExpr::SymbolRef: {
-    const MCSymbol &S = static_cast<const MCSymbolRefExpr *>(E)->getSymbol();
-    if (S.isVariable())
-      return isSymbolUsedInExpression(Sym, S.getVariableValue());
-    return &S == Sym;
-  }
-  case MCExpr::Specifier:
-  case MCExpr::Target: {
-    auto *TE = static_cast<const AMDGPUMCExpr *>(E);
-    for (const MCExpr *E : TE->getArgs())
-      if (isSymbolUsedInExpression(Sym, E))
-        return true;
-    return false;
-  }
-  }
-  llvm_unreachable("Unknown expr kind!");
-}
-
 bool AMDGPUMCExpr::evaluateAsRelocatableImpl(MCValue &Res,
-                                             const MCAssembler *Asm) const {
+                                             const MCAssembler *Asm,
+                                             const MCFixup *Fixup) const {
   std::optional<int64_t> Total;
   switch (Kind) {
   default:
     break;
   case AGVK_ExtraSGPRs:
-    return evaluateExtraSGPRs(Res, Asm);
+    return evaluateExtraSGPRs(Res, Asm, Fixup);
   case AGVK_AlignTo:
-    return evaluateAlignTo(Res, Asm);
+    return evaluateAlignTo(Res, Asm, Fixup);
   case AGVK_TotalNumVGPRs:
-    return evaluateTotalNumVGPR(Res, Asm);
+    return evaluateTotalNumVGPR(Res, Asm, Fixup);
   case AGVK_Occupancy:
-    return evaluateOccupancy(Res, Asm);
-  case AGVK_Lit:
-  case AGVK_Lit64:
-    return Args[0]->evaluateAsRelocatable(Res, Asm);
+    return evaluateOccupancy(Res, Asm, Fixup);
   }
 
   for (const MCExpr *Arg : Args) {
     MCValue ArgRes;
-    if (!Arg->evaluateAsRelocatable(ArgRes, Asm) || !ArgRes.isAbsolute())
+    if (!Arg->evaluateAsRelocatable(ArgRes, Asm, Fixup) || !ArgRes.isAbsolute())
       return false;
 
     if (!Total.has_value())
@@ -315,12 +279,38 @@ const AMDGPUMCExpr *AMDGPUMCExpr::createTotalNumVGPR(const MCExpr *NumAGPR,
   return create(AGVK_TotalNumVGPRs, {NumAGPR, NumVGPR}, Ctx);
 }
 
-const AMDGPUMCExpr *AMDGPUMCExpr::createLit(LitModifier Lit, int64_t Value,
-                                            MCContext &Ctx) {
-  assert(Lit == LitModifier::Lit || Lit == LitModifier::Lit64);
-  return create(Lit == LitModifier::Lit ? VariantKind::AGVK_Lit
-                                        : VariantKind::AGVK_Lit64,
-                {MCConstantExpr::create(Value, Ctx, /*PrintInHex=*/true)}, Ctx);
+/// Mimics GCNSubtarget::computeOccupancy for MCExpr.
+///
+/// Remove dependency on GCNSubtarget and depend only only the necessary values
+/// for said occupancy computation. Should match computeOccupancy implementation
+/// without passing \p STM on.
+const AMDGPUMCExpr *AMDGPUMCExpr::createOccupancy(unsigned InitOcc,
+                                                  const MCExpr *NumSGPRs,
+                                                  const MCExpr *NumVGPRs,
+                                                  const GCNSubtarget &STM,
+                                                  MCContext &Ctx) {
+  unsigned MaxWaves = IsaInfo::getMaxWavesPerEU(&STM);
+  unsigned Granule = IsaInfo::getVGPRAllocGranule(&STM);
+  unsigned TargetTotalNumVGPRs = IsaInfo::getTotalNumVGPRs(&STM);
+  unsigned Generation = STM.getGeneration();
+
+  auto CreateExpr = [&Ctx](unsigned Value) {
+    return MCConstantExpr::create(Value, Ctx);
+  };
+
+  return create(AGVK_Occupancy,
+                {CreateExpr(MaxWaves), CreateExpr(Granule),
+                 CreateExpr(TargetTotalNumVGPRs), CreateExpr(Generation),
+                 CreateExpr(InitOcc), NumSGPRs, NumVGPRs},
+                Ctx);
+}
+
+bool AMDGPUMCExpr::isSymbolUsedInExpression(const MCSymbol *Sym) const {
+  for (const MCExpr *E : getArgs()) {
+    if (E->isSymbolUsedInExpression(Sym))
+      return true;
+  }
+  return false;
 }
 
 static KnownBits fromOptionalToKnownBits(std::optional<bool> CompareResult) {
@@ -504,9 +494,7 @@ static void targetOpKnownBitsMapHelper(const MCExpr *Expr, KnownBitsMap &KBM,
   case AMDGPUMCExpr::VariantKind::AGVK_ExtraSGPRs:
   case AMDGPUMCExpr::VariantKind::AGVK_TotalNumVGPRs:
   case AMDGPUMCExpr::VariantKind::AGVK_AlignTo:
-  case AMDGPUMCExpr::VariantKind::AGVK_Occupancy:
-  case AMDGPUMCExpr::VariantKind::AGVK_Lit:
-  case AMDGPUMCExpr::VariantKind::AGVK_Lit64: {
+  case AMDGPUMCExpr::VariantKind::AGVK_Occupancy: {
     int64_t Val;
     if (AGVK->evaluateAsAbsolute(Val)) {
       APInt APValue(BitWidth, Val);
@@ -556,7 +544,7 @@ static void knownBitsMapHelper(const MCExpr *Expr, KnownBitsMap &KBM,
 
     // Variable value retrieval is not for actual use but only for knownbits
     // analysis.
-    const MCExpr *SymVal = Sym.getVariableValue();
+    const MCExpr *SymVal = Sym.getVariableValue(/*setUsed=*/false);
     knownBitsMapHelper(SymVal, KBM, Depth + 1);
 
     // Explicitly copy-construct so that there exists a local KnownBits in case
@@ -571,8 +559,6 @@ static void knownBitsMapHelper(const MCExpr *Expr, KnownBitsMap &KBM,
   case MCExpr::ExprKind::Target: {
     targetOpKnownBitsMapHelper(Expr, KBM, Depth);
     return;
-  case MCExpr::Specifier:
-    llvm_unreachable("unused by this backend");
   }
   }
 }
@@ -700,17 +686,5 @@ void llvm::AMDGPU::printAMDGPUMCExpr(const MCExpr *Expr, raw_ostream &OS,
     return;
   }
 
-  MAI->printExpr(OS, *Expr);
-}
-
-bool AMDGPU::isLitExpr(const MCExpr *Expr) {
-  const auto *E = dyn_cast<AMDGPUMCExpr>(Expr);
-  return E && (E->getKind() == AMDGPUMCExpr::AGVK_Lit ||
-               E->getKind() == AMDGPUMCExpr::AGVK_Lit64);
-}
-
-int64_t AMDGPU::getLitValue(const MCExpr *Expr) {
-  assert(isLitExpr(Expr));
-  return cast<MCConstantExpr>(cast<AMDGPUMCExpr>(Expr)->getArgs()[0])
-      ->getValue();
+  Expr->print(OS, MAI);
 }

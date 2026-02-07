@@ -53,7 +53,7 @@ public:
   /// value is not an instance of `T`.
   template <typename T,
             typename ResultT = std::conditional_t<
-                std::is_constructible_v<bool, T>, T, std::optional<T>>>
+                std::is_convertible<T, bool>::value, T, std::optional<T>>>
   ResultT dyn_cast() const {
     return isa<T>() ? castImpl<T>() : ResultT();
   }
@@ -152,7 +152,9 @@ public:
   void push_back(TypeRange value) {
     // The lifetime of a TypeRange can't be guaranteed, so we'll need to
     // allocate a storage for it.
-    allocatedTypeRanges.emplace_back(value.begin(), value.end());
+    llvm::OwningArrayRef<Type> storage(value.size());
+    llvm::copy(value, storage.begin());
+    allocatedTypeRanges.emplace_back(std::move(storage));
     typeRanges.push_back(allocatedTypeRanges.back());
     results.push_back(&typeRanges.back());
   }
@@ -172,7 +174,9 @@ public:
   void push_back(ValueRange value) {
     // The lifetime of a ValueRange can't be guaranteed, so we'll need to
     // allocate a storage for it.
-    allocatedValueRanges.emplace_back(value.begin(), value.end());
+    llvm::OwningArrayRef<Value> storage(value.size());
+    llvm::copy(value, storage.begin());
+    allocatedValueRanges.emplace_back(std::move(storage));
     valueRanges.push_back(allocatedValueRanges.back());
     results.push_back(&valueRanges.back());
   }
@@ -202,8 +206,8 @@ protected:
   SmallVector<ValueRange> valueRanges;
   /// Memory allocated to store ranges in the result list whose lifetime was
   /// generated in the native function.
-  SmallVector<std::vector<Type>> allocatedTypeRanges;
-  SmallVector<std::vector<Value>> allocatedValueRanges;
+  SmallVector<llvm::OwningArrayRef<Type>> allocatedTypeRanges;
+  SmallVector<llvm::OwningArrayRef<Value>> allocatedValueRanges;
 };
 
 //===----------------------------------------------------------------------===//

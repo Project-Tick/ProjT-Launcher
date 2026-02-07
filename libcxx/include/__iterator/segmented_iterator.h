@@ -42,7 +42,6 @@
 
 #include <__config>
 #include <__cstddef/size_t.h>
-#include <__iterator/iterator_traits.h>
 #include <__type_traits/integral_constant.h>
 
 #if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
@@ -67,13 +66,13 @@ struct __segmented_iterator_traits;
 */
 
 template <class _Tp, size_t = 0>
-inline const bool __has_specialization_v = false;
+struct __has_specialization : false_type {};
 
 template <class _Tp>
-inline const bool __has_specialization_v<_Tp, sizeof(_Tp) * 0> = true;
+struct __has_specialization<_Tp, sizeof(_Tp) * 0> : true_type {};
 
 template <class _Iterator>
-inline const bool __is_segmented_iterator_v = __has_specialization_v<__segmented_iterator_traits<_Iterator> >;
+using __is_segmented_iterator _LIBCPP_NODEBUG = __has_specialization<__segmented_iterator_traits<_Iterator> >;
 
 _LIBCPP_END_NAMESPACE_STD
 

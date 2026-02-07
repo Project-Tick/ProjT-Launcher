@@ -48,7 +48,7 @@ QuasiPolynomial QuasiPolynomial::operator+(const QuasiPolynomial &x) const {
   SmallVector<Fraction> sumCoeffs = coefficients;
   sumCoeffs.append(x.coefficients);
   std::vector<std::vector<SmallVector<Fraction>>> sumAff = affine;
-  llvm::append_range(sumAff, x.affine);
+  sumAff.insert(sumAff.end(), x.affine.begin(), x.affine.end());
   return QuasiPolynomial(getNumInputs(), sumCoeffs, sumAff);
 }
 
@@ -79,8 +79,8 @@ QuasiPolynomial QuasiPolynomial::operator*(const QuasiPolynomial &x) const {
   for (const std::vector<SmallVector<Fraction>> &term : affine) {
     for (const std::vector<SmallVector<Fraction>> &xterm : x.affine) {
       product.clear();
-      llvm::append_range(product, term);
-      llvm::append_range(product, xterm);
+      product.insert(product.end(), term.begin(), term.end());
+      product.insert(product.end(), xterm.begin(), xterm.end());
       aff.emplace_back(product);
     }
   }
@@ -112,14 +112,14 @@ QuasiPolynomial QuasiPolynomial::simplify() {
     // A term is zero if its coefficient is zero, or
     if (coefficients[i] == Fraction(0, 1))
       continue;
-    bool productIsZero =
+    bool product_is_zero =
         // if any of the affine functions in the product
-        llvm::any_of(affine[i], [](const SmallVector<Fraction> &affineIj) {
+        llvm::any_of(affine[i], [](const SmallVector<Fraction> &affine_ij) {
           // has all its coefficients as zero.
-          return llvm::all_of(affineIj,
+          return llvm::all_of(affine_ij,
                               [](const Fraction &f) { return f == 0; });
         });
-    if (productIsZero)
+    if (product_is_zero)
       continue;
 
     // Now, we know the term is nonzero.

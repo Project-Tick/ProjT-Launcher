@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- UseIntegerSignComparisonCheck.cpp - clang-tidy -------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -34,12 +34,13 @@ AST_MATCHER(clang::QualType, isActualChar) {
 } // namespace
 
 static BindableMatcher<clang::Stmt>
-intCastExpression(bool IsSigned, StringRef CastBindName = {}) {
+intCastExpression(bool IsSigned,
+                  const std::string &CastBindName = std::string()) {
   // std::cmp_{} functions trigger a compile-time error if either LHS or RHS
   // is a non-integer type, char, enum or bool
   // (unsigned char/ signed char are Ok and can be used).
   auto IntTypeExpr = expr(hasType(hasCanonicalType(qualType(
-      IsSigned ? isSignedInteger() : isUnsignedInteger(),
+      isInteger(), IsSigned ? isSignedInteger() : isUnsignedInteger(),
       unless(isActualChar()), unless(booleanType()), unless(enumType())))));
 
   const auto ImplicitCastExpr =
@@ -70,7 +71,7 @@ static StringRef parseOpCode(BinaryOperator::Opcode Code) {
   case BO_NE:
     return "cmp_not_equal";
   default:
-    llvm_unreachable("invalid opcode");
+    return "";
   }
 }
 
@@ -118,52 +119,58 @@ void UseIntegerSignComparisonCheck::check(
   Expr::EvalResult EVResult;
   if (!SignedCastExpression->isValueDependent() &&
       SignedCastExpression->getSubExpr()->EvaluateAsInt(EVResult,
-                                                        *Result.Context) &&
-      EVResult.Val.getInt().isNonNegative())
-    return;
+                                                        *Result.Context)) {
+    const llvm::APSInt SValue = EVResult.Val.getInt();
+    if (SValue.isNonNegative())
+      return;
+  }
 
   const auto *BinaryOp =
       Result.Nodes.getNodeAs<BinaryOperator>("intComparison");
-  assert(BinaryOp);
+  if (BinaryOp == nullptr)
+    return;
+
+  const BinaryOperator::Opcode OpCode = BinaryOp->getOpcode();
 
   const Expr *LHS = BinaryOp->getLHS()->IgnoreImpCasts();
   const Expr *RHS = BinaryOp->getRHS()->IgnoreImpCasts();
+  if (LHS == nullptr || RHS == nullptr)
+    return;
   const Expr *SubExprLHS = nullptr;
   const Expr *SubExprRHS = nullptr;
-  SourceRange R1(LHS->getBeginLoc());
-  SourceRange R2(BinaryOp->getOperatorLoc());
-  SourceRange R3(Lexer::getLocForEndOfToken(
+  SourceRange R1 = SourceRange(LHS->getBeginLoc());
+  SourceRange R2 = SourceRange(BinaryOp->getOperatorLoc());
+  SourceRange R3 = SourceRange(Lexer::getLocForEndOfToken(
       RHS->getEndLoc(), 0, *Result.SourceManager, getLangOpts()));
   if (const auto *LHSCast = llvm::dyn_cast<ExplicitCastExpr>(LHS)) {
     SubExprLHS = LHSCast->getSubExpr();
-    R1.setEnd(SubExprLHS->getBeginLoc().getLocWithOffset(-1));
+    R1 = SourceRange(LHS->getBeginLoc(),
+                     SubExprLHS->getBeginLoc().getLocWithOffset(-1));
     R2.setBegin(Lexer::getLocForEndOfToken(
         SubExprLHS->getEndLoc(), 0, *Result.SourceManager, getLangOpts()));
   }
   if (const auto *RHSCast = llvm::dyn_cast<ExplicitCastExpr>(RHS)) {
     SubExprRHS = RHSCast->getSubExpr();
     R2.setEnd(SubExprRHS->getBeginLoc().getLocWithOffset(-1));
-    R3.setBegin(Lexer::getLocForEndOfToken(
-        SubExprRHS->getEndLoc(), 0, *Result.SourceManager, getLangOpts()));
   }
-  const DiagnosticBuilder Diag =
+  DiagnosticBuilder Diag =
       diag(BinaryOp->getBeginLoc(),
            "comparison between 'signed' and 'unsigned' integers");
-  StringRef CmpNamespace;
-  StringRef CmpHeader;
+  std::string CmpNamespace;
+  llvm::StringRef CmpHeader;
 
   if (getLangOpts().CPlusPlus20) {
     CmpHeader = "<utility>";
-    CmpNamespace = "std::";
+    CmpNamespace = llvm::Twine("std::" + parseOpCode(OpCode)).str();
   } else if (getLangOpts().CPlusPlus17 && EnableQtSupport) {
     CmpHeader = "<QtCore/q20utility.h>";
-    CmpNamespace = "q20::";
+    CmpNamespace = llvm::Twine("q20::" + parseOpCode(OpCode)).str();
   }
 
   // Prefer modernize-use-integer-sign-comparison when C++20 is available!
   Diag << FixItHint::CreateReplacement(
       CharSourceRange(R1, SubExprLHS != nullptr),
-      Twine(CmpNamespace + parseOpCode(BinaryOp->getOpcode()) + "(").str());
+      llvm::Twine(CmpNamespace + "(").str());
   Diag << FixItHint::CreateReplacement(R2, ",");
   Diag << FixItHint::CreateReplacement(CharSourceRange::getCharRange(R3), ")");
 

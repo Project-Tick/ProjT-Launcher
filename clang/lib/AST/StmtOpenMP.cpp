@@ -31,7 +31,7 @@ void OMPChildren::setClauses(ArrayRef<OMPClause *> Clauses) {
 }
 
 MutableArrayRef<Stmt *> OMPChildren::getChildren() {
-  return getTrailingObjects<Stmt *>(NumChildren);
+  return llvm::MutableArrayRef(getTrailingObjects<Stmt *>(), NumChildren);
 }
 
 OMPChildren *OMPChildren::Create(void *Mem, ArrayRef<OMPClause *> Clauses) {
@@ -138,14 +138,13 @@ bool OMPLoopBasedDirective::doForAllLoops(
 
       Stmt *TransformedStmt = Dir->getTransformedStmt();
       if (!TransformedStmt) {
-        unsigned NumGeneratedTopLevelLoops =
-            Dir->getNumGeneratedTopLevelLoops();
-        if (NumGeneratedTopLevelLoops == 0) {
+        unsigned NumGeneratedLoops = Dir->getNumGeneratedLoops();
+        if (NumGeneratedLoops == 0) {
           // May happen if the loop transformation does not result in a
           // generated loop (such as full unrolling).
           break;
         }
-        if (NumGeneratedTopLevelLoops > 0) {
+        if (NumGeneratedLoops > 0) {
           // The loop transformation construct has generated loops, but these
           // may not have been generated yet due to being in a dependent
           // context.
@@ -371,71 +370,28 @@ OMPForDirective *OMPForDirective::Create(
 }
 
 Stmt *OMPLoopTransformationDirective::getTransformedStmt() const {
-  if (auto *D = dyn_cast<OMPCanonicalLoopNestTransformationDirective>(S))
-    return D->getTransformedStmt();
-  if (auto *D = dyn_cast<OMPCanonicalLoopSequenceTransformationDirective>(S))
-    return D->getTransformedStmt();
-  llvm_unreachable("unexpected object type");
+  switch (getStmtClass()) {
+#define STMT(CLASS, PARENT)
+#define ABSTRACT_STMT(CLASS)
+#define OMPLOOPTRANSFORMATIONDIRECTIVE(CLASS, PARENT)                          \
+  case Stmt::CLASS##Class:                                                     \
+    return static_cast<const CLASS *>(this)->getTransformedStmt();
+#include "clang/AST/StmtNodes.inc"
+  default:
+    llvm_unreachable("Not a loop transformation");
+  }
 }
 
 Stmt *OMPLoopTransformationDirective::getPreInits() const {
-  if (auto *D = dyn_cast<OMPCanonicalLoopNestTransformationDirective>(S))
-    return D->getPreInits();
-  if (auto *D = dyn_cast<OMPCanonicalLoopSequenceTransformationDirective>(S))
-    return D->getPreInits();
-  llvm_unreachable("unexpected object type");
-}
-
-Stmt *OMPCanonicalLoopNestTransformationDirective::getTransformedStmt() const {
   switch (getStmtClass()) {
 #define STMT(CLASS, PARENT)
 #define ABSTRACT_STMT(CLASS)
-#define OMPCANONICALLOOPNESTTRANSFORMATIONDIRECTIVE(CLASS, PARENT)             \
-  case Stmt::CLASS##Class:                                                     \
-    return static_cast<const CLASS *>(this)->getTransformedStmt();
-#include "clang/AST/StmtNodes.inc"
-  default:
-    llvm_unreachable("Not a loop transformation for canonical loop nests");
-  }
-}
-
-Stmt *OMPCanonicalLoopNestTransformationDirective::getPreInits() const {
-  switch (getStmtClass()) {
-#define STMT(CLASS, PARENT)
-#define ABSTRACT_STMT(CLASS)
-#define OMPCANONICALLOOPNESTTRANSFORMATIONDIRECTIVE(CLASS, PARENT)             \
+#define OMPLOOPTRANSFORMATIONDIRECTIVE(CLASS, PARENT)                          \
   case Stmt::CLASS##Class:                                                     \
     return static_cast<const CLASS *>(this)->getPreInits();
 #include "clang/AST/StmtNodes.inc"
   default:
-    llvm_unreachable("Not a loop transformation for canonical loop nests");
-  }
-}
-
-Stmt *
-OMPCanonicalLoopSequenceTransformationDirective::getTransformedStmt() const {
-  switch (getStmtClass()) {
-#define STMT(CLASS, PARENT)
-#define ABSTRACT_STMT(CLASS)
-#define OMPCANONICALLOOPSEQUENCETRANSFORMATIONDIRECTIVE(CLASS, PARENT)         \
-  case Stmt::CLASS##Class:                                                     \
-    return static_cast<const CLASS *>(this)->getTransformedStmt();
-#include "clang/AST/StmtNodes.inc"
-  default:
-    llvm_unreachable("Not a loop transformation for canonical loop sequences");
-  }
-}
-
-Stmt *OMPCanonicalLoopSequenceTransformationDirective::getPreInits() const {
-  switch (getStmtClass()) {
-#define STMT(CLASS, PARENT)
-#define ABSTRACT_STMT(CLASS)
-#define OMPCANONICALLOOPSEQUENCETRANSFORMATIONDIRECTIVE(CLASS, PARENT)         \
-  case Stmt::CLASS##Class:                                                     \
-    return static_cast<const CLASS *>(this)->getPreInits();
-#include "clang/AST/StmtNodes.inc"
-  default:
-    llvm_unreachable("Not a loop transformation for canonical loop sequences");
+    llvm_unreachable("Not a loop transformation");
   }
 }
 
@@ -469,37 +425,16 @@ OMPTileDirective *OMPTileDirective::CreateEmpty(const ASTContext &C,
       SourceLocation(), SourceLocation(), NumLoops);
 }
 
-OMPStripeDirective *
-OMPStripeDirective::Create(const ASTContext &C, SourceLocation StartLoc,
+OMPUnrollDirective *
+OMPUnrollDirective::Create(const ASTContext &C, SourceLocation StartLoc,
                            SourceLocation EndLoc, ArrayRef<OMPClause *> Clauses,
-                           unsigned NumLoops, Stmt *AssociatedStmt,
+                           Stmt *AssociatedStmt, unsigned NumGeneratedLoops,
                            Stmt *TransformedStmt, Stmt *PreInits) {
-  OMPStripeDirective *Dir = createDirective<OMPStripeDirective>(
-      C, Clauses, AssociatedStmt, TransformedStmtOffset + 1, StartLoc, EndLoc,
-      NumLoops);
-  Dir->setTransformedStmt(TransformedStmt);
-  Dir->setPreInits(PreInits);
-  return Dir;
-}
-
-OMPStripeDirective *OMPStripeDirective::CreateEmpty(const ASTContext &C,
-                                                    unsigned NumClauses,
-                                                    unsigned NumLoops) {
-  return createEmptyDirective<OMPStripeDirective>(
-      C, NumClauses, /*HasAssociatedStmt=*/true, TransformedStmtOffset + 1,
-      SourceLocation(), SourceLocation(), NumLoops);
-}
-
-OMPUnrollDirective *OMPUnrollDirective::Create(
-    const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
-    ArrayRef<OMPClause *> Clauses, Stmt *AssociatedStmt,
-    unsigned NumGeneratedTopLevelLoops, Stmt *TransformedStmt, Stmt *PreInits) {
-  assert(NumGeneratedTopLevelLoops <= 1 &&
-         "Unrolling generates at most one loop");
+  assert(NumGeneratedLoops <= 1 && "Unrolling generates at most one loop");
 
   auto *Dir = createDirective<OMPUnrollDirective>(
       C, Clauses, AssociatedStmt, TransformedStmtOffset + 1, StartLoc, EndLoc);
-  Dir->setNumGeneratedTopLevelLoops(NumGeneratedTopLevelLoops);
+  Dir->setNumGeneratedLoops(NumGeneratedLoops);
   Dir->setTransformedStmt(TransformedStmt);
   Dir->setPreInits(PreInits);
   return Dir;
@@ -515,21 +450,18 @@ OMPUnrollDirective *OMPUnrollDirective::CreateEmpty(const ASTContext &C,
 OMPReverseDirective *
 OMPReverseDirective::Create(const ASTContext &C, SourceLocation StartLoc,
                             SourceLocation EndLoc, Stmt *AssociatedStmt,
-                            unsigned NumLoops, Stmt *TransformedStmt,
-                            Stmt *PreInits) {
+                            Stmt *TransformedStmt, Stmt *PreInits) {
   OMPReverseDirective *Dir = createDirective<OMPReverseDirective>(
-      C, {}, AssociatedStmt, TransformedStmtOffset + 1, StartLoc, EndLoc,
-      NumLoops);
+      C, {}, AssociatedStmt, TransformedStmtOffset + 1, StartLoc, EndLoc);
   Dir->setTransformedStmt(TransformedStmt);
   Dir->setPreInits(PreInits);
   return Dir;
 }
 
-OMPReverseDirective *OMPReverseDirective::CreateEmpty(const ASTContext &C,
-                                                      unsigned NumLoops) {
+OMPReverseDirective *OMPReverseDirective::CreateEmpty(const ASTContext &C) {
   return createEmptyDirective<OMPReverseDirective>(
       C, /*NumClauses=*/0, /*HasAssociatedStmt=*/true,
-      TransformedStmtOffset + 1, SourceLocation(), SourceLocation(), NumLoops);
+      TransformedStmtOffset + 1, SourceLocation(), SourceLocation());
 }
 
 OMPInterchangeDirective *OMPInterchangeDirective::Create(
@@ -550,27 +482,6 @@ OMPInterchangeDirective::CreateEmpty(const ASTContext &C, unsigned NumClauses,
   return createEmptyDirective<OMPInterchangeDirective>(
       C, NumClauses, /*HasAssociatedStmt=*/true, TransformedStmtOffset + 1,
       SourceLocation(), SourceLocation(), NumLoops);
-}
-
-OMPFuseDirective *OMPFuseDirective::Create(
-    const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
-    ArrayRef<OMPClause *> Clauses, unsigned NumGeneratedTopLevelLoops,
-    Stmt *AssociatedStmt, Stmt *TransformedStmt, Stmt *PreInits) {
-
-  OMPFuseDirective *Dir = createDirective<OMPFuseDirective>(
-      C, Clauses, AssociatedStmt, TransformedStmtOffset + 1, StartLoc, EndLoc);
-  Dir->setTransformedStmt(TransformedStmt);
-  Dir->setPreInits(PreInits);
-  Dir->setNumGeneratedTopLevelLoops(NumGeneratedTopLevelLoops);
-  return Dir;
-}
-
-OMPFuseDirective *OMPFuseDirective::CreateEmpty(const ASTContext &C,
-                                                unsigned NumClauses) {
-  OMPFuseDirective *Dir = createEmptyDirective<OMPFuseDirective>(
-      C, NumClauses, /*HasAssociatedStmt=*/true, TransformedStmtOffset + 1,
-      SourceLocation(), SourceLocation());
-  return Dir;
 }
 
 OMPForSimdDirective *

@@ -46,7 +46,7 @@ AttrOrTypeDef::AttrOrTypeDef(const Record *def) : def(def) {
   const auto *builderList =
       dyn_cast_or_null<ListInit>(def->getValueInit("builders"));
   if (builderList && !builderList->empty()) {
-    for (const Init *init : builderList->getElements()) {
+    for (const Init *init : builderList->getValues()) {
       AttrOrTypeBuilder builder(cast<DefInit>(init)->getDef(), def->getLoc());
 
       // Ensure that all parameters have names.
@@ -205,10 +205,6 @@ std::optional<StringRef> AttrOrTypeDef::getExtraDefs() const {
   return value.empty() ? std::optional<StringRef>() : value;
 }
 
-bool AttrOrTypeDef::genMnemonicAlias() const {
-  return def->getValueAsBit("genMnemonicAlias");
-}
-
 ArrayRef<SMLoc> AttrOrTypeDef::getLoc() const { return def->getLoc(); }
 
 bool AttrOrTypeDef::skipDefaultBuilders() const {
@@ -282,10 +278,6 @@ std::optional<StringRef> AttrOrTypeParameter::getAllocator() const {
   return getDefValue<StringInit>("allocator");
 }
 
-bool AttrOrTypeParameter::hasCustomComparator() const {
-  return getDefValue<StringInit>("comparator").has_value();
-}
-
 StringRef AttrOrTypeParameter::getComparator() const {
   return getDefValue<StringInit>("comparator").value_or("$_lhs == $_rhs");
 }
@@ -301,9 +293,10 @@ StringRef AttrOrTypeParameter::getCppType() const {
         init->getDef()->getLoc(),
         Twine("Missing `cppType` field in Attribute/Type parameter: ") +
             init->getAsString());
-  llvm::reportFatalUsageError(
+  llvm::report_fatal_error(
       Twine("Missing `cppType` field in Attribute/Type parameter: ") +
-      getDef()->getAsString());
+          getDef()->getAsString(),
+      /*gen_crash_diag=*/false);
 }
 
 StringRef AttrOrTypeParameter::getCppAccessorType() const {

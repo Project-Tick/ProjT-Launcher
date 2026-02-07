@@ -24,8 +24,6 @@ include "XCoreRegisterInfo.td"
 include "XCoreInstrInfo.td"
 include "XCoreCallingConv.td"
 
-defm : RemapAllTargetPseudoPointerOperands<GRRegs>;
-
 def XCoreInstrInfo : InstrInfo;
 
 //===----------------------------------------------------------------------===//

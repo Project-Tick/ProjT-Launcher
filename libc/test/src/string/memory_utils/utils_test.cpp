@@ -47,14 +47,14 @@ TEST(LlvmLibcUtilsTest, DistanceToAlignDown) {
 TEST(LlvmLibcUtilsTest, Adjust2) {
   char a, b;
   const size_t base_size = 10;
-  for (uintptr_t i = 0; i < 4; ++i) {
+  for (ptrdiff_t I = -2; I < 2; ++I) {
     auto *p1 = &a;
     auto *p2 = &b;
     size_t size = base_size;
-    adjust(static_cast<ptrdiff_t>(i), p1, p2, size);
-    EXPECT_EQ(intptr_t(p1), intptr_t(&a + i));
-    EXPECT_EQ(intptr_t(p2), intptr_t(&b + i));
-    EXPECT_EQ(size, base_size - i);
+    adjust(I, p1, p2, size);
+    EXPECT_EQ(intptr_t(p1), intptr_t(&a + I));
+    EXPECT_EQ(intptr_t(p2), intptr_t(&b + I));
+    EXPECT_EQ(size, base_size - I);
   }
 }
 

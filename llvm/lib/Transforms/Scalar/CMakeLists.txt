@@ -11,7 +11,6 @@ add_llvm_component_library(LLVMScalarOpts
   DeadStoreElimination.cpp
   DFAJumpThreading.cpp
   DivRemPairs.cpp
-  DropUnnecessaryAssumes.cpp
   EarlyCSE.cpp
   FlattenCFGPass.cpp
   Float2Int.cpp
@@ -96,7 +95,6 @@ add_llvm_component_library(LLVMScalarOpts
   Analysis
   Core
   InstCombine
-  ProfileData
   Support
   TransformUtils
   )

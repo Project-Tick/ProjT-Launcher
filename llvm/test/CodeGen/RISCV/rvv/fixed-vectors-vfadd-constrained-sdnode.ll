@@ -4,6 +4,7 @@
 ; RUN: llc -mtriple=riscv64 -mattr=+d,+zvfh,+v -target-abi=lp64d \
 ; RUN:     -verify-machineinstrs < %s | FileCheck %s
 
+declare <2 x half> @llvm.experimental.constrained.fadd.v2f16(<2 x half>, <2 x half>, metadata, metadata)
 define <2 x half> @vfadd_vv_v2f16(<2 x half> %va, <2 x half> %vb) strictfp {
 ; CHECK-LABEL: vfadd_vv_v2f16:
 ; CHECK:       # %bb.0: # %entry
@@ -27,6 +28,7 @@ define <2 x half> @vfadd_vf_v2f16(<2 x half> %va, half %b) strictfp {
   ret <2 x half> %vc
 }
 
+declare <4 x half> @llvm.experimental.constrained.fadd.v4f16(<4 x half>, <4 x half>, metadata, metadata)
 define <4 x half> @vfadd_vv_v4f16(<4 x half> %va, <4 x half> %vb) strictfp {
 ; CHECK-LABEL: vfadd_vv_v4f16:
 ; CHECK:       # %bb.0: # %entry
@@ -50,6 +52,7 @@ define <4 x half> @vfadd_vf_v4f16(<4 x half> %va, half %b) strictfp {
   ret <4 x half> %vc
 }
 
+declare <8 x half> @llvm.experimental.constrained.fadd.v8f16(<8 x half>, <8 x half>, metadata, metadata)
 define <8 x half> @vfadd_vv_v8f16(<8 x half> %va, <8 x half> %vb) strictfp {
 ; CHECK-LABEL: vfadd_vv_v8f16:
 ; CHECK:       # %bb.0: # %entry
@@ -73,6 +76,7 @@ define <8 x half> @vfadd_vf_v8f16(<8 x half> %va, half %b) strictfp {
   ret <8 x half> %vc
 }
 
+declare <16 x half> @llvm.experimental.constrained.fadd.v16f16(<16 x half>, <16 x half>, metadata, metadata)
 define <16 x half> @vfadd_vv_v16f16(<16 x half> %va, <16 x half> %vb) strictfp {
 ; CHECK-LABEL: vfadd_vv_v16f16:
 ; CHECK:       # %bb.0: # %entry
@@ -96,6 +100,7 @@ define <16 x half> @vfadd_vf_v16f16(<16 x half> %va, half %b) strictfp {
   ret <16 x half> %vc
 }
 
+declare <32 x half> @llvm.experimental.constrained.fadd.v32f16(<32 x half>, <32 x half>, metadata, metadata)
 define <32 x half> @vfadd_vv_v32f16(<32 x half> %va, <32 x half> %vb) strictfp {
 ; CHECK-LABEL: vfadd_vv_v32f16:
 ; CHECK:       # %bb.0: # %entry
@@ -121,6 +126,7 @@ define <32 x half> @vfadd_vf_v32f16(<32 x half> %va, half %b) strictfp {
   ret <32 x half> %vc
 }
 
+declare <2 x float> @llvm.experimental.constrained.fadd.v2f32(<2 x float>, <2 x float>, metadata, metadata)
 define <2 x float> @vfadd_vv_v2f32(<2 x float> %va, <2 x float> %vb) strictfp {
 ; CHECK-LABEL: vfadd_vv_v2f32:
 ; CHECK:       # %bb.0: # %entry
@@ -144,6 +150,7 @@ define <2 x float> @vfadd_vf_v2f32(<2 x float> %va, float %b) strictfp {
   ret <2 x float> %vc
 }
 
+declare <4 x float> @llvm.experimental.constrained.fadd.v4f32(<4 x float>, <4 x float>, metadata, metadata)
 define <4 x float> @vfadd_vv_v4f32(<4 x float> %va, <4 x float> %vb) strictfp {
 ; CHECK-LABEL: vfadd_vv_v4f32:
 ; CHECK:       # %bb.0: # %entry
@@ -167,6 +174,7 @@ define <4 x float> @vfadd_vf_v4f32(<4 x float> %va, float %b) strictfp {
   ret <4 x float> %vc
 }
 
+declare <8 x float> @llvm.experimental.constrained.fadd.v8f32(<8 x float>, <8 x float>, metadata, metadata)
 define <8 x float> @vfadd_vv_v8f32(<8 x float> %va, <8 x float> %vb) strictfp {
 ; CHECK-LABEL: vfadd_vv_v8f32:
 ; CHECK:       # %bb.0: # %entry
@@ -190,6 +198,7 @@ define <8 x float> @vfadd_vf_v8f32(<8 x float> %va, float %b) strictfp {
   ret <8 x float> %vc
 }
 
+declare <16 x float> @llvm.experimental.constrained.fadd.v16f32(<16 x float>, <16 x float>, metadata, metadata)
 define <16 x float> @vfadd_vv_v16f32(<16 x float> %va, <16 x float> %vb) strictfp {
 ; CHECK-LABEL: vfadd_vv_v16f32:
 ; CHECK:       # %bb.0: # %entry
@@ -213,6 +222,7 @@ define <16 x float> @vfadd_vf_v16f32(<16 x float> %va, float %b) strictfp {
   ret <16 x float> %vc
 }
 
+declare <2 x double> @llvm.experimental.constrained.fadd.v2f64(<2 x double>, <2 x double>, metadata, metadata)
 define <2 x double> @vfadd_vv_v2f64(<2 x double> %va, <2 x double> %vb) strictfp {
 ; CHECK-LABEL: vfadd_vv_v2f64:
 ; CHECK:       # %bb.0: # %entry
@@ -236,6 +246,7 @@ define <2 x double> @vfadd_vf_v2f64(<2 x double> %va, double %b) strictfp {
   ret <2 x double> %vc
 }
 
+declare <4 x double> @llvm.experimental.constrained.fadd.v4f64(<4 x double>, <4 x double>, metadata, metadata)
 define <4 x double> @vfadd_vv_v4f64(<4 x double> %va, <4 x double> %vb) strictfp {
 ; CHECK-LABEL: vfadd_vv_v4f64:
 ; CHECK:       # %bb.0: # %entry
@@ -259,6 +270,7 @@ define <4 x double> @vfadd_vf_v4f64(<4 x double> %va, double %b) strictfp {
   ret <4 x double> %vc
 }
 
+declare <8 x double> @llvm.experimental.constrained.fadd.v8f64(<8 x double>, <8 x double>, metadata, metadata)
 define <8 x double> @vfadd_vv_v8f64(<8 x double> %va, <8 x double> %vb) strictfp {
 ; CHECK-LABEL: vfadd_vv_v8f64:
 ; CHECK:       # %bb.0: # %entry

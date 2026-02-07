@@ -9,13 +9,12 @@
 #ifndef LLVM_LIBC_SRC___SUPPORT_ARG_LIST_H
 #define LLVM_LIBC_SRC___SUPPORT_ARG_LIST_H
 
-#include "hdr/stdint_proxy.h"
 #include "src/__support/common.h"
 #include "src/__support/macros/config.h"
-#include "src/string/memory_utils/inline_memcpy.h"
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 
 namespace LIBC_NAMESPACE_DECL {
 namespace internal {
@@ -127,7 +126,7 @@ public:
 
     // Memcpy because pointer alignment may be illegal given a packed struct.
     T val;
-    inline_memcpy(&val, ptr, sizeof(T));
+    __builtin_memcpy(&val, ptr, sizeof(T));
 
     ptr =
         reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(ptr) + sizeof(T));

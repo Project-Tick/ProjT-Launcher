@@ -2,12 +2,7 @@
 
 void f()
 {
-  (void)typeid(int);
-#if __cplusplus >= 202002L
-   // expected-error@-2 {{you need to include <typeinfo> or import std before using the 'typeid' operator}}
-#else
-   // expected-error@-4 {{you need to include <typeinfo> before using the 'typeid' operator}}
-#endif
+  (void)typeid(int); // expected-error {{you need to include <typeinfo> before using the 'typeid' operator}}
 }
 
 namespace std {

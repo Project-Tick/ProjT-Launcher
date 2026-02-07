@@ -390,6 +390,7 @@ APValue &APValue::operator=(const APValue &RHS) {
   if (this != &RHS)
     *this = APValue(RHS);
 
+  AllowConstexprUnknown = RHS.AllowConstexprUnknown;
   return *this;
 }
 
@@ -784,7 +785,7 @@ void APValue::printPretty(raw_ostream &Out, const PrintingPolicy &Policy,
       if (!O.isZero()) {
         if (IsReference)
           Out << "*(";
-        if (S.isZero() || !O.isMultipleOf(S)) {
+        if (S.isZero() || O % S) {
           Out << "(char*)";
           S = CharUnits::One();
         }
@@ -821,7 +822,7 @@ void APValue::printPretty(raw_ostream &Out, const PrintingPolicy &Policy,
     else if (isLValueOnePastTheEnd())
       Out << "*(&";
 
-    QualType ElemTy = Base.getType().getNonReferenceType();
+    QualType ElemTy = Base.getType();
     if (const ValueDecl *VD = Base.dyn_cast<const ValueDecl*>()) {
       Out << *VD;
     } else if (TypeInfoLValue TI = Base.dyn_cast<TypeInfoLValue>()) {
@@ -902,8 +903,8 @@ void APValue::printPretty(raw_ostream &Out, const PrintingPolicy &Policy,
   }
   case APValue::Struct: {
     Out << '{';
+    const RecordDecl *RD = Ty->castAs<RecordType>()->getDecl();
     bool First = true;
-    const auto *RD = Ty->castAsRecordDecl();
     if (unsigned N = getStructNumBases()) {
       const CXXRecordDecl *CD = cast<CXXRecordDecl>(RD);
       CXXRecordDecl::base_class_const_iterator BI = CD->bases_begin();
@@ -1003,7 +1004,7 @@ bool APValue::hasLValuePath() const {
 ArrayRef<APValue::LValuePathEntry> APValue::getLValuePath() const {
   assert(isLValue() && hasLValuePath() && "Invalid accessor");
   const LV &LVal = *((const LV *)(const char *)&Data);
-  return {LVal.getPath(), LVal.PathLength};
+  return llvm::ArrayRef(LVal.getPath(), LVal.PathLength);
 }
 
 unsigned APValue::getLValueCallIndex() const {
@@ -1081,7 +1082,7 @@ ArrayRef<const CXXRecordDecl*> APValue::getMemberPointerPath() const {
   assert(isMemberPointer() && "Invalid accessor");
   const MemberPointerData &MPD =
       *((const MemberPointerData *)(const char *)&Data);
-  return {MPD.getPath(), MPD.PathLength};
+  return llvm::ArrayRef(MPD.getPath(), MPD.PathLength);
 }
 
 void APValue::MakeLValue() {

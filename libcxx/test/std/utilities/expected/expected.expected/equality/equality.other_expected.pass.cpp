@@ -17,27 +17,21 @@
 #include <type_traits>
 #include <utility>
 
-#include "test_comparisons.h"
 #include "test_macros.h"
 
 // Test constraint
-static_assert(!HasOperatorEqual<NonComparable, NonComparable>);
+template <class T1, class T2>
+concept CanCompare = requires(T1 t1, T2 t2) { t1 == t2; };
 
-static_assert(HasOperatorEqual<std::expected<int, int>, std::expected<int, int>>);
-static_assert(HasOperatorEqual<std::expected<int, int>, std::expected<short, short>>);
+struct Foo{};
+static_assert(!CanCompare<Foo, Foo>);
 
-#if TEST_STD_VER >= 26
-// https://wg21.link/P3379R0
-static_assert(!HasOperatorEqual<std::expected<int, int>, std::expected<void, int>>);
-static_assert(HasOperatorEqual<std::expected<int, int>, std::expected<int, int>>);
-static_assert(!HasOperatorEqual<std::expected<NonComparable, int>, std::expected<NonComparable, int>>);
-static_assert(!HasOperatorEqual<std::expected<int, NonComparable>, std::expected<int, NonComparable>>);
-static_assert(!HasOperatorEqual<std::expected<NonComparable, int>, std::expected<int, NonComparable>>);
-static_assert(!HasOperatorEqual<std::expected<int, NonComparable>, std::expected<NonComparable, int>>);
-#else
-// Note this is true because other overloads in expected<non-void> are unconstrained
-static_assert(HasOperatorEqual<std::expected<void, int>, std::expected<int, int>>);
-#endif
+static_assert(CanCompare<std::expected<int, int>, std::expected<int, int>>);
+static_assert(CanCompare<std::expected<int, int>, std::expected<short, short>>);
+
+// Note this is true because other overloads are unconstrained
+static_assert(CanCompare<std::expected<int, int>, std::expected<void, int>>);
+
 constexpr bool test() {
   // x.has_value() && y.has_value()
   {

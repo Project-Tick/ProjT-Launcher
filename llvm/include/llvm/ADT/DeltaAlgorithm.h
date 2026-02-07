@@ -8,7 +8,6 @@
 #ifndef LLVM_ADT_DELTAALGORITHM_H
 #define LLVM_ADT_DELTAALGORITHM_H
 
-#include "llvm/Support/Compiler.h"
 #include <set>
 #include <vector>
 
@@ -33,7 +32,7 @@ namespace llvm {
 /// requirements, and the algorithm will generally produce reasonable
 /// results. However, it may run substantially more tests than with a good
 /// predicate.
-class LLVM_ABI DeltaAlgorithm {
+class DeltaAlgorithm {
 public:
   using change_ty = unsigned;
   // FIXME: Use a decent data structure.

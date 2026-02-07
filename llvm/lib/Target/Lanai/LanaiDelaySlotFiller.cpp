@@ -57,7 +57,8 @@ struct Filler : public MachineFunctionPass {
   }
 
   MachineFunctionProperties getRequiredProperties() const override {
-    return MachineFunctionProperties().setNoVRegs();
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::NoVRegs);
   }
 
   void insertDefsUses(MachineBasicBlock::instr_iterator MI,

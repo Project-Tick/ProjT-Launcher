@@ -56,13 +56,7 @@ namespace {
     int AnonymousMember;
     // And a nested class within an anonymous namespace
     struct D {
-      static constexpr int StaticMember = 1;
       int AnonymousDMember;
-    };
-
-    union U {
-      static constexpr int StaticMember = 2;
-      int AnonymousUMember;
     };
   };
 }
@@ -91,7 +85,6 @@ A::D::E ADE;
 Anonymous<int> AnonInt;
 Anonymous<A::B::C<void>> AnonABCVoid;
 Anonymous<A::B::C<void>>::D AnonABCVoidD;
-Anonymous<A::B::C<void>>::U AnonABCVoidU;
 
 // The following tests that MSInheritanceAttr are set for record decls.
 class  SI { int si; };
@@ -138,7 +131,6 @@ int SI::*mp9 = nullptr;
 // CHECK: (Anonymous<int>) AnonInt = (AnonymousMember = 0)
 // CHECK: (Anonymous<A::B::C<void>>) AnonABCVoid = (AnonymousMember = 0)
 // CHECK: (Anonymous<A::B::C<void>>::D) AnonABCVoidD = (AnonymousDMember = 0)
-// CHECK: (Anonymous<A::B::C<void>>::U) AnonABCVoidU = (AnonymousUMember = 0)
 // CHECK: (void (SI::*)()) mp1 = 0x0000000000000000
 // CHECK: (void (MI::*)()) mp2 = 0x0000000000000000
 // CHECK: (void (MI2::*)()) mp3 = 0x0000000000000000
@@ -183,22 +175,14 @@ int SI::*mp9 = nullptr;
 // CHECK: | |-CXXRecordDecl {{.*}} struct Anonymous<int> definition
 // CHECK: | | `-FieldDecl {{.*}} AnonymousMember 'int'
 // CHECK: | `-CXXRecordDecl {{.*}} struct Anonymous<A::B::C<void>> definition
-// CHECK: |   |-CXXRecordDecl {{.*}} struct D definition
-// CHECK: |   | |-VarDecl {{.*}} StaticMember 'const int' static cinit
-// CHECK: |   | | `-IntegerLiteral {{.*}} 'int' 1
-// CHECK: |   | `-FieldDecl {{.*}} AnonymousDMember 'int'
-// CHECK: |   |-CXXRecordDecl {{.*}} union U definition
-// CHECK: |   | |-VarDecl {{.*}} StaticMember 'const int' static
-// CHECK: |   | | `-IntegerLiteral {{.*}} 'int' 2
-// CHECK: |   | `-FieldDecl {{.*}} AnonymousUMember 'int'
-// CHECK: |   `-FieldDecl {{.*}} AnonymousMember 'int'
-
+// CHECK: |   |-FieldDecl {{.*}} AnonymousMember 'int'
+// CHECK: |   `-CXXRecordDecl {{.*}} struct D definition
+// CHECK: |     `-FieldDecl {{.*}} AnonymousDMember 'int'
 
 int main(int argc, char **argv) {
   AnonInt.AnonymousMember = 1;
   AnonABCVoid.AnonymousMember = 2;
   AnonABCVoidD.AnonymousDMember = 3;
-  AnonABCVoidU.AnonymousUMember = 4;
 
-  return AnonABCVoidD.StaticMember + AnonABCVoidU.StaticMember;
+  return 0;
 }

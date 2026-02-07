@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Hexagon.h"
 #include "HexagonInstrInfo.h"
 #include "HexagonSubtarget.h"
 #include "MCTargetDesc/HexagonBaseInfo.h"
@@ -34,9 +33,17 @@
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
 #include <limits>
+#include <utility>
 
 using namespace llvm;
 using namespace rdf;
+
+namespace llvm {
+
+  void initializeHexagonRDFOptPass(PassRegistry&);
+  FunctionPass *createHexagonRDFOpt();
+
+} // end namespace llvm
 
 static unsigned RDFCount = 0;
 
@@ -69,7 +76,8 @@ namespace {
     bool runOnMachineFunction(MachineFunction &MF) override;
 
     MachineFunctionProperties getRequiredProperties() const override {
-      return MachineFunctionProperties().setNoVRegs();
+      return MachineFunctionProperties().set(
+          MachineFunctionProperties::Property::NoVRegs);
     }
 
     static char ID;

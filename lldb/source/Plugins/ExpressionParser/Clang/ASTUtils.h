@@ -33,9 +33,8 @@ class ExternalASTSourceWrapper : public clang::ExternalSemaSource {
   llvm::IntrusiveRefCntPtr<ExternalASTSource> m_Source;
 
 public:
-  explicit ExternalASTSourceWrapper(
-      llvm::IntrusiveRefCntPtr<ExternalASTSource> Source)
-      : m_Source(std::move(Source)) {
+  explicit ExternalASTSourceWrapper(ExternalASTSource *Source)
+      : m_Source(Source) {
     assert(m_Source && "Can't wrap nullptr ExternalASTSource");
   }
 
@@ -285,8 +284,7 @@ class SemaSourceWithPriorities : public clang::ExternalSemaSource {
 
 private:
   /// The sources ordered in decreasing priority.
-  llvm::SmallVector<llvm::IntrusiveRefCntPtr<clang::ExternalSemaSource>, 2>
-      Sources;
+  llvm::SmallVector<clang::ExternalSemaSource *, 2> Sources;
 
 public:
   /// Construct a SemaSourceWithPriorities with a 'high quality' source that
@@ -294,14 +292,16 @@ public:
   /// as a fallback.
   ///
   /// This class assumes shared ownership of the sources provided to it.
-  SemaSourceWithPriorities(
-      llvm::IntrusiveRefCntPtr<clang::ExternalSemaSource> high_quality_source,
-      llvm::IntrusiveRefCntPtr<clang::ExternalSemaSource> low_quality_source) {
+  SemaSourceWithPriorities(clang::ExternalSemaSource *high_quality_source,
+                           clang::ExternalSemaSource *low_quality_source) {
     assert(high_quality_source);
     assert(low_quality_source);
 
-    Sources.push_back(std::move(high_quality_source));
-    Sources.push_back(std::move(low_quality_source));
+    high_quality_source->Retain();
+    low_quality_source->Retain();
+
+    Sources.push_back(high_quality_source);
+    Sources.push_back(low_quality_source);
   }
 
   ~SemaSourceWithPriorities() override;
@@ -374,7 +374,7 @@ public:
 
   clang::CXXCtorInitializer **
   GetExternalCXXCtorInitializers(uint64_t Offset) override {
-    for (const auto &S : Sources)
+    for (auto *S : Sources)
       if (auto *R = S->GetExternalCXXCtorInitializers(Offset))
         return R;
     return nullptr;
@@ -422,7 +422,7 @@ public:
   }
 
   void CompleteType(clang::TagDecl *Tag) override {
-    for (const auto &S : Sources) {
+    for (clang::ExternalSemaSource *S : Sources) {
       S->CompleteType(Tag);
       // Stop after the first source completed the type.
       if (Tag->isCompleteDefinition())

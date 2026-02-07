@@ -22,6 +22,4 @@ MLIR_DECLARE_CAPI_DIALECT_REGISTRATION(MLProgram, ml_program);
 }
 #endif
 
-#include "mlir/Dialect/MLProgram/Transforms/Passes.capi.h.inc"
-
 #endif // MLIR_C_DIALECT_MLPROGRAM_H

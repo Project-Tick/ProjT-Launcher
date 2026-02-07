@@ -20,6 +20,36 @@
 
 using namespace clang;
 
+ParentMapContext::ParentMapContext(ASTContext &Ctx) : ASTCtx(Ctx) {}
+
+ParentMapContext::~ParentMapContext() = default;
+
+void ParentMapContext::clear() { Parents.reset(); }
+
+const Expr *ParentMapContext::traverseIgnored(const Expr *E) const {
+  return traverseIgnored(const_cast<Expr *>(E));
+}
+
+Expr *ParentMapContext::traverseIgnored(Expr *E) const {
+  if (!E)
+    return nullptr;
+
+  switch (Traversal) {
+  case TK_AsIs:
+    return E;
+  case TK_IgnoreUnlessSpelledInSource:
+    return E->IgnoreUnlessSpelledInSource();
+  }
+  llvm_unreachable("Invalid Traversal type!");
+}
+
+DynTypedNode ParentMapContext::traverseIgnored(const DynTypedNode &N) const {
+  if (const auto *E = N.get<Expr>()) {
+    return DynTypedNode::create(*traverseIgnored(E));
+  }
+  return N;
+}
+
 template <typename T, typename... U>
 static std::tuple<bool, DynTypedNodeList, const T *, const U *...>
 matchParents(const DynTypedNodeList &NodeList,
@@ -51,8 +81,7 @@ class ParentMapContext::ParentMap {
         Items.push_back(Value);
       }
     }
-    ArrayRef<DynTypedNode> view() const { return Items; }
-
+    llvm::ArrayRef<DynTypedNode> view() const { return Items; }
   private:
     llvm::SmallVector<DynTypedNode, 1> Items;
     llvm::SmallPtrSet<const void *, 2> Dedup;
@@ -91,9 +120,9 @@ class ParentMapContext::ParentMap {
                                                         const MapTy &Map) {
     auto I = Map.find(Node);
     if (I == Map.end()) {
-      return ArrayRef<DynTypedNode>();
+      return llvm::ArrayRef<DynTypedNode>();
     }
-    if (const auto *V = dyn_cast<ParentVector *>(I->second)) {
+    if (const auto *V = I->second.template dyn_cast<ParentVector *>()) {
       return V->view();
     }
     return getSingleDynTypedNodeFromParentMap(I->second);
@@ -244,9 +273,9 @@ public:
       auto It = PointerParents.find(E);
       if (It == PointerParents.end())
         break;
-      const auto *S = dyn_cast<const Stmt *>(It->second);
+      const auto *S = It->second.dyn_cast<const Stmt *>();
       if (!S) {
-        if (auto *Vec = dyn_cast<ParentVector *>(It->second))
+        if (auto *Vec = It->second.dyn_cast<ParentVector *>())
           return Vec->view();
         return getSingleDynTypedNodeFromParentMap(It->second);
       }
@@ -302,36 +331,6 @@ std::tuple<bool, DynTypedNodeList, const T *, const U *...>
 matchParents(const DynTypedNodeList &NodeList,
              ParentMapContext::ParentMap *ParentMap) {
   return MatchParents<T, U...>::match(NodeList, ParentMap);
-}
-
-ParentMapContext::ParentMapContext(ASTContext &Ctx) : ASTCtx(Ctx) {}
-
-ParentMapContext::~ParentMapContext() = default;
-
-void ParentMapContext::clear() { Parents.reset(); }
-
-const Expr *ParentMapContext::traverseIgnored(const Expr *E) const {
-  return traverseIgnored(const_cast<Expr *>(E));
-}
-
-Expr *ParentMapContext::traverseIgnored(Expr *E) const {
-  if (!E)
-    return nullptr;
-
-  switch (Traversal) {
-  case TK_AsIs:
-    return E;
-  case TK_IgnoreUnlessSpelledInSource:
-    return E->IgnoreUnlessSpelledInSource();
-  }
-  llvm_unreachable("Invalid Traversal type!");
-}
-
-DynTypedNode ParentMapContext::traverseIgnored(const DynTypedNode &N) const {
-  if (const auto *E = N.get<Expr>()) {
-    return DynTypedNode::create(*traverseIgnored(E));
-  }
-  return N;
 }
 
 /// Template specializations to abstract away from pointers and TypeLocs.
@@ -401,7 +400,7 @@ private:
       if (!isa<ParentVector *>(NodeOrVector)) {
         auto *Vector = new ParentVector(
             1, getSingleDynTypedNodeFromParentMap(NodeOrVector));
-        delete dyn_cast<DynTypedNode *>(NodeOrVector);
+        delete NodeOrVector.template dyn_cast<DynTypedNode *>();
         NodeOrVector = Vector;
       }
 
@@ -438,12 +437,10 @@ private:
         DeclNode, DeclNode, [&] { return VisitorBase::TraverseDecl(DeclNode); },
         &Map.PointerParents);
   }
-  bool TraverseTypeLoc(TypeLoc TypeLocNode, bool TraverseQualifier = true) {
+  bool TraverseTypeLoc(TypeLoc TypeLocNode) {
     return TraverseNode(
         TypeLocNode, DynTypedNode::create(TypeLocNode),
-        [&] {
-          return VisitorBase::TraverseTypeLoc(TypeLocNode, TraverseQualifier);
-        },
+        [&] { return VisitorBase::TraverseTypeLoc(TypeLocNode); },
         &Map.OtherParents);
   }
   bool TraverseNestedNameSpecifierLoc(NestedNameSpecifierLoc NNSLocNode) {

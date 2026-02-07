@@ -14,7 +14,7 @@
 #if SCUDO_TRUSTY
 
 namespace scudo {
-// MapPlatformData is unused on Trusty, define it as a minimally sized
+// MapPlatformData is unused on Trusty, define it as a minimially sized
 // structure.
 struct MapPlatformData {};
 } // namespace scudo

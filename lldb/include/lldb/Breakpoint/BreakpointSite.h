@@ -99,8 +99,7 @@ public:
   ///
   /// \return
   ///    \b true if we should stop, \b false otherwise.
-  bool ShouldStop(StoppointCallbackContext *context,
-                  BreakpointLocationCollection &stopping_bp_loc) override;
+  bool ShouldStop(StoppointCallbackContext *context) override;
 
   /// Standard Dump method
   void Dump(Stream *s) const override;
@@ -155,10 +154,6 @@ public:
   ///     \b true if the collection contains at least one location that
   ///     would be valid for this thread, false otherwise.
   bool ValidForThisThread(Thread &thread);
-
-  /// Returns true if at least one constituent is both public and valid for
-  /// `thread`.
-  bool ContainsUserBreakpointForThread(Thread &thread);
 
   /// Print a description of this breakpoint site to the stream \a s.
   /// GetDescription tells you about the breakpoint site's constituents. Use

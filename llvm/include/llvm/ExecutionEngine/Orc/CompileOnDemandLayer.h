@@ -37,19 +37,22 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Support/Casting.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 #include <algorithm>
 #include <cassert>
 #include <functional>
+#include <iterator>
+#include <list>
 #include <memory>
+#include <optional>
+#include <set>
 #include <utility>
 
 namespace llvm {
 namespace orc {
 
-class LLVM_ABI CompileOnDemandLayer : public IRLayer {
+class CompileOnDemandLayer : public IRLayer {
 public:
   /// Builder for IndirectStubsManagers.
   using IndirectStubsManagerBuilder =

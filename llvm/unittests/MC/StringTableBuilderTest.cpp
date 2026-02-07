@@ -58,8 +58,8 @@ TEST(StringTableBuilderTest, BasicWinCOFF) {
 
   std::string Expected;
 
-  ExpectedSize = support::endian::byte_swap<uint32_t>(ExpectedSize,
-                                                      llvm::endianness::little);
+  ExpectedSize = support::endian::byte_swap<uint32_t, llvm::endianness::little>(
+      ExpectedSize);
   Expected.append((const char*)&ExpectedSize, 4);
   Expected += "pygmy hippopotamus";
   Expected += '\x00';

@@ -10,6 +10,11 @@
 
 // basic_filebuf<charT,traits>* close();
 
+// This test closes an fd that belongs to a std::filebuf, and Bionic's fdsan
+// detects this and aborts the process, starting in Android R (API 30).
+// See D137129.
+// XFAIL: LIBCXX-ANDROID-FIXME && !android-device-api={{2[1-9]}}
+
 #include <fstream>
 #include <cassert>
 #if defined(__unix__)
@@ -32,10 +37,7 @@ int main(int, char**)
         assert(f.close() == nullptr);
         assert(!f.is_open());
     }
-    // Starting with Android API 30+, Bionic's fdsan aborts a process that calls
-    // close() on a file descriptor tagged as belonging to something else (such
-    // as a FILE*).
-#if defined(__unix__) && !defined(__BIONIC__)
+#if defined(__unix__)
     {
         std::filebuf f;
         assert(!f.is_open());

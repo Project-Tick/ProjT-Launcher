@@ -179,6 +179,7 @@ private:
   Tool *getLinkerWrapper() const;
 
   mutable bool SanitizerArgsChecked = false;
+  mutable std::unique_ptr<XRayArgs> XRayArguments;
 
   /// The effective clang triple for the current Job.
   mutable llvm::Triple EffectiveTriple;
@@ -202,6 +203,10 @@ protected:
   ToolChain(const Driver &D, const llvm::Triple &T,
             const llvm::opt::ArgList &Args);
 
+  /// Executes the given \p Executable and returns the stdout.
+  llvm::Expected<std::unique_ptr<llvm::MemoryBuffer>>
+  executeToolChainProgram(StringRef Executable) const;
+
   void setTripleEnvironment(llvm::Triple::EnvironmentType Env);
 
   virtual Tool *buildAssembler() const;
@@ -211,8 +216,8 @@ protected:
 
   virtual std::string buildCompilerRTBasename(const llvm::opt::ArgList &Args,
                                               StringRef Component,
-                                              FileType Type, bool AddArch,
-                                              bool IsFortran = false) const;
+                                              FileType Type,
+                                              bool AddArch) const;
 
   /// Find the target-specific subdirectory for the current target triple under
   /// \p BaseDir, doing fallback triple searches as necessary.
@@ -221,9 +226,9 @@ protected:
 
   /// \name Utilities for implementing subclasses.
   ///@{
-  static void addSystemFrameworkInclude(const llvm::opt::ArgList &DriverArgs,
-                                        llvm::opt::ArgStringList &CC1Args,
-                                        const Twine &Path);
+  static void addSystemInclude(const llvm::opt::ArgList &DriverArgs,
+                               llvm::opt::ArgStringList &CC1Args,
+                               const Twine &Path);
   static void addExternCSystemInclude(const llvm::opt::ArgList &DriverArgs,
                                       llvm::opt::ArgStringList &CC1Args,
                                       const Twine &Path);
@@ -231,9 +236,6 @@ protected:
       addExternCSystemIncludeIfExists(const llvm::opt::ArgList &DriverArgs,
                                       llvm::opt::ArgStringList &CC1Args,
                                       const Twine &Path);
-  static void addSystemFrameworkIncludes(const llvm::opt::ArgList &DriverArgs,
-                                         llvm::opt::ArgStringList &CC1Args,
-                                         ArrayRef<StringRef> Paths);
   static void addSystemIncludes(const llvm::opt::ArgList &DriverArgs,
                                 llvm::opt::ArgStringList &CC1Args,
                                 ArrayRef<StringRef> Paths);
@@ -243,9 +245,6 @@ protected:
   ///@}
 
 public:
-  static void addSystemInclude(const llvm::opt::ArgList &DriverArgs,
-                               llvm::opt::ArgStringList &CC1Args,
-                               const Twine &Path);
   virtual ~ToolChain();
 
   // Accessors
@@ -318,7 +317,7 @@ public:
 
   SanitizerArgs getSanitizerArgs(const llvm::opt::ArgList &JobArgs) const;
 
-  const XRayArgs getXRayArgs(const llvm::opt::ArgList &) const;
+  const XRayArgs& getXRayArgs() const;
 
   // Returns the Arg * that explicitly turned on/off rtti, or nullptr.
   const llvm::opt::Arg *getRTTIArg() const { return CachedRTTIArg; }
@@ -510,33 +509,15 @@ public:
 
   virtual std::string getCompilerRT(const llvm::opt::ArgList &Args,
                                     StringRef Component,
-                                    FileType Type = ToolChain::FT_Static,
-                                    bool IsFortran = false) const;
+                                    FileType Type = ToolChain::FT_Static) const;
 
-  /// Adds Fortran runtime libraries to \p CmdArgs.
-  virtual void addFortranRuntimeLibs(const llvm::opt::ArgList &Args,
-                                     llvm::opt::ArgStringList &CmdArgs) const;
-
-  /// Adds the path for the Fortran runtime libraries to \p CmdArgs.
-  virtual void
-  addFortranRuntimeLibraryPath(const llvm::opt::ArgList &Args,
-                               llvm::opt::ArgStringList &CmdArgs) const;
-
-  /// Add the path for libflang_rt.runtime.a
-  void addFlangRTLibPath(const llvm::opt::ArgList &Args,
-                         llvm::opt::ArgStringList &CmdArgs) const;
-
-  const char *getCompilerRTArgString(const llvm::opt::ArgList &Args,
-                                     StringRef Component,
-                                     FileType Type = ToolChain::FT_Static,
-                                     bool IsFortran = false) const;
+  const char *
+  getCompilerRTArgString(const llvm::opt::ArgList &Args, StringRef Component,
+                         FileType Type = ToolChain::FT_Static) const;
 
   std::string getCompilerRTBasename(const llvm::opt::ArgList &Args,
                                     StringRef Component,
                                     FileType Type = ToolChain::FT_Static) const;
-
-  // Returns Triple without the OSs version.
-  llvm::Triple getTripleWithoutOSVersion() const;
 
   // Returns the target specific runtime path if it exists.
   std::optional<std::string> getRuntimePath() const;
@@ -802,8 +783,7 @@ public:
 
   /// Get paths for device libraries.
   virtual llvm::SmallVector<BitCodeLibraryInfo, 12>
-  getDeviceLibs(const llvm::opt::ArgList &Args,
-                const Action::OffloadKind DeviceOffloadingKind) const;
+  getDeviceLibs(const llvm::opt::ArgList &Args) const;
 
   /// Add the system specific linker arguments to use
   /// for the given HIP runtime library type.
@@ -841,7 +821,7 @@ public:
         return llvm::Triple("nvptx-nvidia-cuda");
       if (TT.getArch() == llvm::Triple::nvptx64)
         return llvm::Triple("nvptx64-nvidia-cuda");
-      if (TT.isAMDGCN())
+      if (TT.getArch() == llvm::Triple::amdgcn)
         return llvm::Triple("amdgcn-amd-amdhsa");
     }
     return TT;

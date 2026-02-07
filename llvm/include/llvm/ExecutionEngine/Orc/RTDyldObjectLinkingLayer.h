@@ -21,11 +21,11 @@
 #include "llvm/ExecutionEngine/Orc/Layer.h"
 #include "llvm/ExecutionEngine/RuntimeDyld.h"
 #include "llvm/Object/ObjectFile.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Error.h"
 #include <algorithm>
 #include <cassert>
 #include <functional>
+#include <list>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -33,7 +33,7 @@
 namespace llvm {
 namespace orc {
 
-class LLVM_ABI RTDyldObjectLinkingLayer
+class RTDyldObjectLinkingLayer
     : public RTTIExtends<RTDyldObjectLinkingLayer, ObjectLayer>,
       private ResourceManager {
 public:
@@ -49,15 +49,14 @@ public:
       MaterializationResponsibility &R, std::unique_ptr<MemoryBuffer>)>;
 
   using GetMemoryManagerFunction =
-      unique_function<std::unique_ptr<RuntimeDyld::MemoryManager>(
-          const MemoryBuffer &)>;
+      unique_function<std::unique_ptr<RuntimeDyld::MemoryManager>()>;
 
   /// Construct an ObjectLinkingLayer with the given NotifyLoaded,
   ///        and NotifyEmitted functors.
   RTDyldObjectLinkingLayer(ExecutionSession &ES,
                            GetMemoryManagerFunction GetMemoryManager);
 
-  ~RTDyldObjectLinkingLayer() override;
+  ~RTDyldObjectLinkingLayer();
 
   /// Emit the object.
   void emit(std::unique_ptr<MaterializationResponsibility> R,

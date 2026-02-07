@@ -1,7 +1,6 @@
 #include <cinttypes>
 #include <cstdint>
 #include <cstdio>
-#include <functional>
 #include <mutex>
 #include <thread>
 

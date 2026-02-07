@@ -43,9 +43,7 @@ STATISTIC(
 STATISTIC(
     NumSimplifiedSRem,
     "Number of IV signed remainder operations converted to unsigned remainder");
-STATISTIC(NumElimCmp, "Number of IV comparisons eliminated");
-STATISTIC(NumInvariantCmp, "Number of IV comparisons made loop invariant");
-STATISTIC(NumSameSign, "Number of IV comparisons with new samesign flags");
+STATISTIC(NumElimCmp     , "Number of IV comparisons eliminated");
 
 namespace {
   /// This is a utility for simplifying induction variables
@@ -207,12 +205,12 @@ bool SimplifyIndvar::makeIVComparisonInvariant(ICmpInst *ICmp,
   if (!Preheader)
     return false;
   unsigned IVOperIdx = 0;
-  CmpPredicate Pred = ICmp->getCmpPredicate();
+  ICmpInst::Predicate Pred = ICmp->getPredicate();
   if (IVOperand != ICmp->getOperand(0)) {
     // Swapped
     assert(IVOperand == ICmp->getOperand(1) && "Can't find IVOperand");
     IVOperIdx = 1;
-    Pred = ICmpInst::getSwappedCmpPredicate(Pred);
+    Pred = ICmpInst::getSwappedPredicate(Pred);
   }
 
   // Get the SCEVs for the ICmp operands (in the specific context of the
@@ -251,13 +249,13 @@ bool SimplifyIndvar::makeIVComparisonInvariant(ICmpInst *ICmp,
 void SimplifyIndvar::eliminateIVComparison(ICmpInst *ICmp,
                                            Instruction *IVOperand) {
   unsigned IVOperIdx = 0;
-  CmpPredicate Pred = ICmp->getCmpPredicate();
+  ICmpInst::Predicate Pred = ICmp->getPredicate();
   ICmpInst::Predicate OriginalPred = Pred;
   if (IVOperand != ICmp->getOperand(0)) {
     // Swapped
     assert(IVOperand == ICmp->getOperand(1) && "Can't find IVOperand");
     IVOperIdx = 1;
-    Pred = ICmpInst::getSwappedCmpPredicate(Pred);
+    Pred = ICmpInst::getSwappedPredicate(Pred);
   }
 
   // Get the SCEVs for the ICmp operands (in the specific context of the
@@ -277,33 +275,24 @@ void SimplifyIndvar::eliminateIVComparison(ICmpInst *ICmp,
     ICmp->replaceAllUsesWith(ConstantInt::getBool(ICmp->getContext(), *Ev));
     DeadInsts.emplace_back(ICmp);
     LLVM_DEBUG(dbgs() << "INDVARS: Eliminated comparison: " << *ICmp << '\n');
-    ++NumElimCmp;
-    Changed = true;
-    return;
-  }
-
-  if (makeIVComparisonInvariant(ICmp, IVOperand)) {
-    ++NumInvariantCmp;
-    Changed = true;
-    return;
-  }
-
-  if ((ICmpInst::isSigned(OriginalPred) ||
-       (ICmpInst::isUnsigned(OriginalPred) && !ICmp->hasSameSign())) &&
-      SE->haveSameSign(S, X)) {
-    // Set the samesign flag on the compare if legal, and canonicalize to
-    // the unsigned variant (for signed compares) hoping that it will open
-    // the doors for other optimizations.  Note that we cannot rely on Pred
-    // here unless we check if we have swapped it.
+  } else if (makeIVComparisonInvariant(ICmp, IVOperand)) {
+    // fallthrough to end of function
+  } else if (ICmpInst::isSigned(OriginalPred) &&
+             SE->isKnownNonNegative(S) && SE->isKnownNonNegative(X)) {
+    // If we were unable to make anything above, all we can is to canonicalize
+    // the comparison hoping that it will open the doors for other
+    // optimizations. If we find out that we compare two non-negative values,
+    // we turn the instruction's predicate to its unsigned version. Note that
+    // we cannot rely on Pred here unless we check if we have swapped it.
     assert(ICmp->getPredicate() == OriginalPred && "Predicate changed?");
-    LLVM_DEBUG(dbgs() << "INDVARS: Marking comparison samesign: " << *ICmp
+    LLVM_DEBUG(dbgs() << "INDVARS: Turn to unsigned comparison: " << *ICmp
                       << '\n');
     ICmp->setPredicate(ICmpInst::getUnsignedPredicate(OriginalPred));
-    ICmp->setSameSign();
-    NumSameSign++;
-    Changed = true;
+  } else
     return;
-  }
+
+  ++NumElimCmp;
+  Changed = true;
 }
 
 bool SimplifyIndvar::eliminateSDiv(BinaryOperator *SDiv) {
@@ -361,7 +350,6 @@ void SimplifyIndvar::replaceRemWithNumeratorOrZero(BinaryOperator *Rem) {
   auto *T = Rem->getType();
   auto *N = Rem->getOperand(0), *D = Rem->getOperand(1);
   ICmpInst *ICmp = new ICmpInst(Rem->getIterator(), ICmpInst::ICMP_EQ, N, D);
-  ICmp->setDebugLoc(Rem->getDebugLoc());
   SelectInst *Sel =
       SelectInst::Create(ICmp, ConstantInt::get(T, 0), N, "iv.rem", Rem->getIterator());
   Rem->replaceAllUsesWith(Sel);
@@ -1035,7 +1023,7 @@ std::pair<bool, bool> simplifyUsersOfIV(PHINode *CurrIV, ScalarEvolution *SE,
 bool simplifyLoopIVs(Loop *L, ScalarEvolution *SE, DominatorTree *DT,
                      LoopInfo *LI, const TargetTransformInfo *TTI,
                      SmallVectorImpl<WeakTrackingVH> &Dead) {
-  SCEVExpander Rewriter(*SE, "indvars");
+  SCEVExpander Rewriter(*SE, SE->getDataLayout(), "indvars");
 #if LLVM_ENABLE_ABI_BREAKING_CHECKS
   Rewriter.setDebugType(DEBUG_TYPE);
 #endif
@@ -1615,19 +1603,18 @@ bool WidenIV::widenLoopCompare(WidenIV::NarrowIVDefUse DU) {
   //
   //  - The signedness of the IV extension and comparison match
   //
-  //  - The narrow IV is always non-negative (and thus its sign extension is
-  //    equal to its zero extension).  For instance, let's say we're zero
-  //    extending %narrow for the following use
+  //  - The narrow IV is always positive (and thus its sign extension is equal
+  //    to its zero extension).  For instance, let's say we're zero extending
+  //    %narrow for the following use
   //
   //      icmp slt i32 %narrow, %val   ... (A)
   //
-  //    and %narrow is always non-negative.  Then
+  //    and %narrow is always positive.  Then
   //
   //      (A) == icmp slt i32 sext(%narrow), sext(%val)
   //          == icmp slt i32 zext(%narrow), sext(%val)
   bool IsSigned = getExtendKind(DU.NarrowDef) == ExtendKind::Sign;
-  bool CmpPreferredSign = Cmp->hasSameSign() ? IsSigned : Cmp->isSigned();
-  if (!DU.NeverNegative && IsSigned != CmpPreferredSign)
+  if (!(DU.NeverNegative || IsSigned == Cmp->isSigned()))
     return false;
 
   Value *Op = Cmp->getOperand(Cmp->getOperand(0) == DU.NarrowDef ? 1 : 0);
@@ -1640,13 +1627,7 @@ bool WidenIV::widenLoopCompare(WidenIV::NarrowIVDefUse DU) {
 
   // Widen the other operand of the compare, if necessary.
   if (CastWidth < IVWidth) {
-    // If the narrow IV is always non-negative and the other operand is sext,
-    // widen using sext so we can combine them. This works for all non-signed
-    // comparison predicates.
-    if (DU.NeverNegative && isa<SExtInst>(Op) && !Cmp->isSigned())
-      CmpPreferredSign = true;
-
-    Value *ExtOp = createExtendInst(Op, WideType, CmpPreferredSign, Cmp);
+    Value *ExtOp = createExtendInst(Op, WideType, Cmp->isSigned(), Cmp);
     DU.NarrowUse->replaceUsesOfWith(Op, ExtOp);
   }
   return true;
@@ -2102,7 +2083,7 @@ PHINode *WidenIV::createWideIV(SCEVExpander &Rewriter) {
     // if the cast node is an inserted instruction without any user, we should
     // remove it to make sure the pass don't touch the function as we can not
     // wide the phi.
-    if (ExpandInst->use_empty() &&
+    if (ExpandInst->hasNUses(0) &&
         Rewriter.isInsertedInstruction(cast<Instruction>(ExpandInst)))
       DeadInsts.emplace_back(ExpandInst);
     return nullptr;

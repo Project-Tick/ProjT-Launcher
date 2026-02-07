@@ -20,7 +20,7 @@ namespace xcoff {
 
 class XCOFFWriter {
 public:
-  virtual ~XCOFFWriter() = default;
+  virtual ~XCOFFWriter() {}
   XCOFFWriter(Object &Obj, raw_ostream &Out) : Obj(Obj), Out(Out) {}
   Error write();
 

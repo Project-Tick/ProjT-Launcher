@@ -91,22 +91,22 @@ static void registerJITLoaderVTuneUnregisterImpl(
   }
 }
 
-extern "C" llvm::orc::shared::CWrapperFunctionBuffer
-llvm_orc_registerVTuneImpl(const char *ArgData, size_t ArgSize) {
+extern "C" llvm::orc::shared::CWrapperFunctionResult
+llvm_orc_registerVTuneImpl(const char *Data, uint64_t Size) {
   using namespace orc::shared;
   if (!JITEventWrapper::Wrapper)
     JITEventWrapper::Wrapper.reset(new IntelJITEventsWrapper);
 
   return WrapperFunction<SPSError(SPSVTuneMethodBatch)>::handle(
-             ArgData, ArgSize, registerJITLoaderVTuneRegisterImpl)
+             Data, Size, registerJITLoaderVTuneRegisterImpl)
       .release();
 }
 
-extern "C" llvm::orc::shared::CWrapperFunctionBuffer
-llvm_orc_unregisterVTuneImpl(const char *ArgData, size_t ArgSize) {
+extern "C" llvm::orc::shared::CWrapperFunctionResult
+llvm_orc_unregisterVTuneImpl(const char *Data, uint64_t Size) {
   using namespace orc::shared;
   return WrapperFunction<void(SPSVTuneUnloadedMethodIDs)>::handle(
-             ArgData, ArgSize, registerJITLoaderVTuneUnregisterImpl)
+             Data, Size, registerJITLoaderVTuneUnregisterImpl)
       .release();
 }
 
@@ -173,13 +173,13 @@ static unsigned int GetNewMethodID(void) {
   return ++id;
 }
 
-extern "C" llvm::orc::shared::CWrapperFunctionBuffer
-llvm_orc_test_registerVTuneImpl(const char *ArgData, size_t ArgSize) {
+extern "C" llvm::orc::shared::CWrapperFunctionResult
+llvm_orc_test_registerVTuneImpl(const char *Data, uint64_t Size) {
   using namespace orc::shared;
   JITEventWrapper::Wrapper.reset(new IntelJITEventsWrapper(
       NotifyEvent, NULL, NULL, IsProfilingActive, 0, 0, GetNewMethodID));
   return WrapperFunction<SPSError(SPSVTuneMethodBatch)>::handle(
-             ArgData, ArgSize, registerJITLoaderVTuneRegisterImpl)
+             Data, Size, registerJITLoaderVTuneRegisterImpl)
       .release();
 }
 
@@ -197,27 +197,27 @@ static void unsuppported(const std::vector<std::pair<uint64_t, uint64_t>> &UM) {
 
 }
 
-extern "C" llvm::orc::shared::CWrapperFunctionBuffer
-llvm_orc_registerVTuneImpl(const char *ArgData, size_t ArgSize) {
+extern "C" llvm::orc::shared::CWrapperFunctionResult
+llvm_orc_registerVTuneImpl(const char *Data, uint64_t Size) {
   using namespace orc::shared;
   return WrapperFunction<SPSError(SPSVTuneMethodBatch)>::handle(
-             ArgData, ArgSize, unsupportedBatch)
+             Data, Size, unsupportedBatch)
       .release();
 }
 
-extern "C" llvm::orc::shared::CWrapperFunctionBuffer
-llvm_orc_unregisterVTuneImpl(const char *ArgData, size_t ArgSize) {
+extern "C" llvm::orc::shared::CWrapperFunctionResult
+llvm_orc_unregisterVTuneImpl(const char *Data, uint64_t Size) {
   using namespace orc::shared;
-  return WrapperFunction<void(SPSVTuneUnloadedMethodIDs)>::handle(
-             ArgData, ArgSize, unsuppported)
+  return WrapperFunction<void(SPSVTuneUnloadedMethodIDs)>::handle(Data, Size,
+                                                                  unsuppported)
       .release();
 }
 
-extern "C" llvm::orc::shared::CWrapperFunctionBuffer
-llvm_orc_test_registerVTuneImpl(const char *ArgData, size_t ArgSize) {
+extern "C" llvm::orc::shared::CWrapperFunctionResult
+llvm_orc_test_registerVTuneImpl(const char *Data, uint64_t Size) {
   using namespace orc::shared;
   return WrapperFunction<SPSError(SPSVTuneMethodBatch)>::handle(
-             ArgData, ArgSize, unsupportedBatch)
+             Data, Size, unsupportedBatch)
       .release();
 }
 

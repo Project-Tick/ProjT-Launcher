@@ -34,24 +34,16 @@ static std::string MakeComment(StringRef in) {
     }
     out += std::string("/// ") +
            in.substr(LineStart, LineBreak - LineStart).str() + "\n";
-    if (LineBreak != std::string::npos)
-      LineStart = LineBreak + 1;
+    LineStart = LineBreak + 1;
   }
 
   return out;
 }
 
 static void ProcessHandle(const HandleRec &H, raw_ostream &OS) {
-  if (!H.getName().ends_with("_handle_t")) {
-    errs() << "Handle type name (" << H.getName()
-           << ") must end with '_handle_t'!\n";
-    exit(1);
-  }
-
-  auto ImplName = getHandleImplName(H);
   OS << CommentsHeader;
   OS << formatv("/// @brief {0}\n", H.getDesc());
-  OS << formatv("typedef struct {0} *{1};\n", ImplName, H.getName());
+  OS << formatv("typedef struct {0}_ *{0};\n", H.getName());
 }
 
 static void ProcessTypedef(const TypedefRec &T, raw_ostream &OS) {
@@ -131,8 +123,7 @@ static void ProcessEnum(const EnumRec &Enum, raw_ostream &OS) {
   OS << formatv("/// @brief {0}\n", Enum.getDesc());
   OS << formatv("typedef enum {0} {{\n", Enum.getName());
 
-  // Bitfields start from 1, other enums from 0
-  uint32_t EtorVal = Enum.isBitField();
+  uint32_t EtorVal = 0;
   for (const auto &EnumVal : Enum.getValues()) {
     if (Enum.isTyped()) {
       OS << MakeComment(
@@ -142,19 +133,14 @@ static void ProcessEnum(const EnumRec &Enum, raw_ostream &OS) {
       OS << MakeComment(EnumVal.getDesc());
     }
     OS << formatv(TAB_1 "{0}_{1} = {2},\n", Enum.getEnumValNamePrefix(),
-                  EnumVal.getName(), EtorVal);
-    if (Enum.isBitField()) {
-      EtorVal <<= 1u;
-    } else {
-      ++EtorVal;
-    }
+                  EnumVal.getName(), EtorVal++);
   }
 
-  // Add last_element/force uint32 val
-  OS << formatv(TAB_1 "/// @cond\n" TAB_1 "{0}_LAST = {1},\n" TAB_1
+  // Add force uint32 val
+  OS << formatv(TAB_1 "/// @cond\n" TAB_1
                       "{0}_FORCE_UINT32 = 0x7fffffff\n" TAB_1
                       "/// @endcond\n\n",
-                Enum.getEnumValNamePrefix(), EtorVal);
+                Enum.getEnumValNamePrefix());
 
   OS << formatv("} {0};\n", Enum.getName());
 }
@@ -170,19 +156,6 @@ static void ProcessStruct(const StructRec &Struct, raw_ostream &OS) {
   }
 
   OS << formatv("} {0};\n\n", Struct.getName());
-}
-
-static void ProcessFptrTypedef(const FptrTypedefRec &F, raw_ostream &OS) {
-  OS << CommentsHeader;
-  OS << formatv("/// @brief {0}\n", F.getDesc());
-  OS << formatv("typedef {0} (*{1})(", F.getReturn(), F.getName());
-  for (const auto &Param : F.getParams()) {
-    OS << formatv("\n  // {0}\n  {1} {2}", Param.getDesc(), Param.getType(),
-                  Param.getName());
-    if (Param != F.getParams().back())
-      OS << ",";
-  }
-  OS << ");\n";
 }
 
 static void ProcessFuncParamStruct(const FunctionRec &Func, raw_ostream &OS) {
@@ -226,23 +199,29 @@ OL_APIEXPORT ol_result_t OL_APICALL {0}WithCodeLoc(
 void EmitOffloadAPI(const RecordKeeper &Records, raw_ostream &OS) {
   OS << GenericHeader;
   OS << FileHeader;
-
   // Generate main API definitions
-  for (auto *R : Records.getAllDerivedDefinitions("Macro"))
-    ProcessMacro(MacroRec{R}, OS);
-  for (auto *R : Records.getAllDerivedDefinitions("Handle"))
-    ProcessHandle(HandleRec{R}, OS);
-  for (auto *R : Records.getAllDerivedDefinitions("Enum"))
-    ProcessEnum(EnumRec{R}, OS);
-  for (auto *R : Records.getAllDerivedDefinitions("Typedef"))
-    ProcessTypedef(TypedefRec{R}, OS);
-  for (auto *R : Records.getAllDerivedDefinitions("FptrTypedef"))
-    ProcessFptrTypedef(FptrTypedefRec{R}, OS);
-  for (auto *R : Records.getAllDerivedDefinitions("Struct"))
-    ProcessStruct(StructRec{R}, OS);
+  for (auto *R : Records.getAllDerivedDefinitions("APIObject")) {
+    if (R->isSubClassOf("Macro")) {
+      ProcessMacro(MacroRec{R}, OS);
+    } else if (R->isSubClassOf("Typedef")) {
+      ProcessTypedef(TypedefRec{R}, OS);
+    } else if (R->isSubClassOf("Handle")) {
+      ProcessHandle(HandleRec{R}, OS);
+    } else if (R->isSubClassOf("Function")) {
+      ProcessFunction(FunctionRec{R}, OS);
+    } else if (R->isSubClassOf("Enum")) {
+      ProcessEnum(EnumRec{R}, OS);
+    } else if (R->isSubClassOf("Struct")) {
+      ProcessStruct(StructRec{R}, OS);
+    }
+  }
+
+  // Generate auxiliary definitions (func param structs etc)
   for (auto *R : Records.getAllDerivedDefinitions("Function")) {
     ProcessFuncParamStruct(FunctionRec{R}, OS);
-    ProcessFunction(FunctionRec{R}, OS);
+  }
+
+  for (auto *R : Records.getAllDerivedDefinitions("Function")) {
     ProcessFuncWithCodeLocVariant(FunctionRec{R}, OS);
   }
 

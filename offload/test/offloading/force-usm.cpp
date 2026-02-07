@@ -10,7 +10,6 @@
 //
 // UNSUPPORTED: nvptx64-nvidia-cuda
 // UNSUPPORTED: nvptx64-nvidia-cuda-LTO
-// XFAIL: intelgpu
 // clang-format on
 
 #include <cassert>
@@ -49,7 +48,7 @@ int main(void) {
 
 // clang-format off
 // NO-USM: omptarget device 0 info: Copying data from host to device, HstPtr={{.*}}, TgtPtr={{.*}}, Size=4
-// NO-USM: omptarget device 0 info: Copying data from host to device, HstPtr={{.*}}, TgtPtr={{.*}}, Size=12
+// NO-USM-NEXT: omptarget device 0 info: Copying data from host to device, HstPtr={{.*}}, TgtPtr={{.*}}, Size=12
 // NO-USM-NEXT: omptarget device 0 info: Copying data from host to device, HstPtr={{.*}}, TgtPtr={{.*}}, Size=4
 // NO-USM-NEXT: omptarget device 0 info: Copying data from host to device, HstPtr={{.*}}, TgtPtr={{.*}}, Size=8, Name=pGI
 // NO-USM-NEXT: omptarget device 0 info: Copying data from device to host, TgtPtr={{.*}}, HstPtr={{.*}}, Size=4

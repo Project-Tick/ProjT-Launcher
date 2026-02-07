@@ -38,14 +38,7 @@ subroutine C937(var)
 
   type B
     type(A) y
-    !ERROR: Allocatable or array component 'forward' may not have a coarray ultimate component '%y%x'
-    type(B), allocatable :: forward
-    real :: u
-  end type
-
-  type B2
-    type(A) y
-    !ERROR: Pointer 'forward' may not have a coarray potential component '%y%x'
+    !ERROR: A component with a POINTER or ALLOCATABLE attribute may not be of a type with a coarray ultimate component (named 'y%x')
     type(B), pointer :: forward
     real :: u
   end type
@@ -55,14 +48,11 @@ subroutine C937(var)
   end type
 
   type D
-    !ERROR: Allocatable or array component 'potential' may not have a coarray ultimate component '%x'
-    type(A), allocatable :: potential
-  end type
-
-  type D2
-    !ERROR: Pointer 'potential' may not have a coarray potential component '%x'
+    !ERROR: A component with a POINTER or ALLOCATABLE attribute may not be of a type with a coarray ultimate component (named 'x')
     type(A), pointer :: potential
   end type
+
+
 
   class(*), allocatable :: var
   ! unlimited polymorphic is the ONLY way to get an allocatable/pointer 'var' that can be
@@ -163,7 +153,6 @@ subroutine C938_C947(var2, ptr, ptr2, fptr, my_team, srca)
   allocate(var2(2)[5:*], MOLD=my_team)
   !ERROR: SOURCE or MOLD expression type must not be C_PTR or C_FUNPTR from ISO_C_BINDING when an allocatable object is a coarray
   allocate(var2(2)[5:*], MOLD=ptr)
-  !ERROR: Allocation has extent 2 on dimension 1, but SOURCE= has extent 9
   !ERROR: SOURCE or MOLD expression type must not be C_PTR or C_FUNPTR from ISO_C_BINDING when an allocatable object is a coarray
   allocate(var2(2)[5:*], SOURCE=ptr2)
   !ERROR: SOURCE or MOLD expression type must not be C_PTR or C_FUNPTR from ISO_C_BINDING when an allocatable object is a coarray

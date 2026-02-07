@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- MultiLevelImplicitPointerConversionCheck.cpp - clang-tidy --------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -57,17 +57,6 @@ AST_MATCHER(QualType, isPointerType) {
 
 } // namespace
 
-MultiLevelImplicitPointerConversionCheck::
-    MultiLevelImplicitPointerConversionCheck(StringRef Name,
-                                             ClangTidyContext *Context)
-    : ClangTidyCheck(Name, Context), EnableInC(Options.get("EnableInC", true)) {
-}
-
-void MultiLevelImplicitPointerConversionCheck::storeOptions(
-    ClangTidyOptions::OptionMap &Opts) {
-  Options.store(Opts, "EnableInC", EnableInC);
-}
-
 void MultiLevelImplicitPointerConversionCheck::registerMatchers(
     MatchFinder *Finder) {
   Finder->addMatcher(
@@ -86,9 +75,8 @@ MultiLevelImplicitPointerConversionCheck::getCheckTraversalKind() const {
 void MultiLevelImplicitPointerConversionCheck::check(
     const MatchFinder::MatchResult &Result) {
   const auto *MatchedExpr = Result.Nodes.getNodeAs<ImplicitCastExpr>("expr");
-  const QualType Target =
-      MatchedExpr->getType().getDesugaredType(*Result.Context);
-  const QualType Source =
+  QualType Target = MatchedExpr->getType().getDesugaredType(*Result.Context);
+  QualType Source =
       MatchedExpr->getSubExpr()->getType().getDesugaredType(*Result.Context);
 
   diag(MatchedExpr->getExprLoc(), "multilevel pointer conversion from %0 to "

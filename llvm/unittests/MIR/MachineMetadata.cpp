@@ -33,7 +33,7 @@ using namespace llvm;
 
 class MachineMetadataTest : public testing::Test {
 public:
-  MachineMetadataTest() = default;
+  MachineMetadataTest() {}
 
 protected:
   LLVMContext Context;
@@ -67,8 +67,7 @@ protected:
   }
 
   std::unique_ptr<TargetMachine>
-  createTargetMachine(std::string TargetStr, StringRef CPU, StringRef FS) {
-    Triple TT(TargetStr);
+  createTargetMachine(std::string TT, StringRef CPU, StringRef FS) {
     std::string Error;
     const Target *T = TargetRegistry::lookupTarget(TT, Error);
     if (!T)
@@ -132,7 +131,8 @@ TEST_F(MachineMetadataTest, TrivialHook) {
               MO.print(OS, MST, LLT{}, /*OpIdx*/ ~0U, /*PrintDef=*/false,
                        /*IsStandalone=*/false,
                        /*ShouldPrintRegisterTies=*/false, /*TiedOperandIdx=*/0,
-                       /*TRI=*/nullptr);
+                       /*TRI=*/nullptr,
+                       /*IntrinsicInfo=*/nullptr);
             }));
   // Print the definition of that metadata node.
   EXPECT_EQ("!0 = !{!\"foo\"}",
@@ -169,7 +169,8 @@ TEST_F(MachineMetadataTest, BasicHook) {
               MO.print(OS, MST, LLT{}, /*OpIdx*/ ~0U, /*PrintDef=*/false,
                        /*IsStandalone=*/false,
                        /*ShouldPrintRegisterTies=*/false, /*TiedOperandIdx=*/0,
-                       /*TRI=*/nullptr);
+                       /*TRI=*/nullptr,
+                       /*IntrinsicInfo=*/nullptr);
             }));
   // Print the definition of these unnamed metadata nodes.
   EXPECT_EQ("!0 = !{!\"bar\"}",
@@ -205,8 +206,8 @@ TEST_F(MachineMetadataTest, MMSlotTrackerAArch64) {
 
   StringRef MIRString = R"MIR(
 --- |
-  define i32 @test0(ptr %p) {
-    %r = load i32, ptr %p, align 4
+  define i32 @test0(i32* %p) {
+    %r = load i32, i32* %p, align 4
     ret i32 %r
   }
 ...
@@ -250,8 +251,7 @@ body:             |
   auto *NewMMO = MF->getMachineMemOperand(OldMMO, AAInfo);
   MI.setMemRefs(*MF, NewMMO);
 
-  MachineModuleSlotTracker MST(
-      [&](const Function &F) { return MMI.getMachineFunction(F); }, MF);
+  MachineModuleSlotTracker MST(MMI, MF);
   // Print that MI with new machine metadata, which slot numbers should be
   // assigned.
   EXPECT_EQ("%1:gpr32 = LDRWui %0, 0 :: (load (s32) from %ir.p, "
@@ -355,8 +355,8 @@ TEST_F(MachineMetadataTest, MMSlotTrackerX64) {
 
   StringRef MIRString = R"MIR(
 --- |
-  define i32 @test0(ptr %p) {
-    %r = load i32, ptr %p, align 4
+  define i32 @test0(i32* %p) {
+    %r = load i32, i32* %p, align 4
     ret i32 %r
   }
 ...
@@ -401,8 +401,7 @@ body:             |
   auto *NewMMO = MF->getMachineMemOperand(OldMMO, AAInfo);
   MI.setMemRefs(*MF, NewMMO);
 
-  MachineModuleSlotTracker MST(
-      [&](const Function &F) { return MMI.getMachineFunction(F); }, MF);
+  MachineModuleSlotTracker MST(MMI, MF);
   // Print that MI with new machine metadata, which slot numbers should be
   // assigned.
   EXPECT_EQ("%1:gr32 = MOV32rm %0, 1, $noreg, 0, $noreg :: (load (s32) from %ir.p, "
@@ -448,8 +447,8 @@ TEST_F(MachineMetadataTest, MMSlotTrackerAMDGPU) {
 
   StringRef MIRString = R"MIR(
 --- |
-  define i32 @test0(ptr %p) {
-    %r = load i32, ptr %p, align 4
+  define i32 @test0(i32* %p) {
+    %r = load i32, i32* %p, align 4
     ret i32 %r
   }
 ...
@@ -500,8 +499,7 @@ body:             |
   auto *NewMMO = MF->getMachineMemOperand(OldMMO, AAInfo);
   MI.setMemRefs(*MF, NewMMO);
 
-  MachineModuleSlotTracker MST(
-      [&](const Function &F) { return MMI.getMachineFunction(F); }, MF);
+  MachineModuleSlotTracker MST(MMI, MF);
   // Print that MI with new machine metadata, which slot numbers should be
   // assigned.
   EXPECT_EQ(
@@ -567,7 +565,8 @@ body:             |
   ASSERT_TRUE(M);
   auto *MF = MMI.getMachineFunction(*M->getFunction("foo"));
   MachineFunctionProperties &Properties = MF->getProperties();
-  ASSERT_TRUE(Properties.hasTiedOpsRewritten());
+  ASSERT_TRUE(Properties.hasProperty(
+      MachineFunctionProperties::Property::TiedOpsRewritten));
 }
 
 TEST_F(MachineMetadataTest, NoTiedOpsRewritten) {
@@ -597,5 +596,6 @@ body:             |
   ASSERT_TRUE(M);
   auto *MF = MMI.getMachineFunction(*M->getFunction("foo"));
   MachineFunctionProperties &Properties = MF->getProperties();
-  ASSERT_FALSE(Properties.hasTiedOpsRewritten());
+  ASSERT_FALSE(Properties.hasProperty(
+      MachineFunctionProperties::Property::TiedOpsRewritten));
 }

@@ -9,7 +9,6 @@
 // UNSUPPORTED: c++03, c++11, c++14, c++17
 // REQUIRES: stdlib=libc++
 
-// [alg.func.obj]
 // [algorithms.requirements]/2
 // [range.iter.ops.general]/2
 
@@ -25,22 +24,19 @@
 
 #include "test_macros.h"
 
-// Before P3136R1, niebloids were pedantically not CPOs, and they were *not* required to be semiregular or
-// even to have a declared type at all; they were specified as "magic" overload sets
-// whose names are not found by argument-dependent lookup and
-// which inhibit argument-dependent lookup if they are found via a `using`-declaration.
+// Niebloids, unlike CPOs, are *not* required to be semiregular or even to have
+// a declared type at all; they are specified as "magic" overload sets whose
+// names are not found by argument-dependent lookup and which inhibit
+// argument-dependent lookup if they are found via a `using`-declaration.
 //
-// As of P3136R1, niebloids (formally known as algorithm function objects) are required to be CPOs.
-//
-// libc++ implements niebloids in the same way as CPOs since LLVM 14;
+// libc++ implements them using the same function-object technique we use for CPOs;
 // therefore this file should stay in sync with ./cpo.compile.pass.cpp.
 
 template <class CPO, class... Args>
 constexpr bool test(CPO& o, Args&&...) {
   static_assert(std::is_const_v<CPO>);
   static_assert(std::is_class_v<CPO>);
-  static_assert(std::is_trivially_copyable_v<CPO>);
-  static_assert(std::is_trivially_default_constructible_v<CPO>);
+  static_assert(std::is_trivial_v<CPO>);
 
   auto p = o;
   using T = decltype(p);

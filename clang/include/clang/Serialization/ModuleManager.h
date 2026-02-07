@@ -18,6 +18,7 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Serialization/ModuleFile.h"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
@@ -36,7 +37,7 @@ class FileEntry;
 class FileManager;
 class GlobalModuleIndex;
 class HeaderSearch;
-class ModuleCache;
+class InMemoryModuleCache;
 class PCHContainerReader;
 
 namespace serialization {
@@ -64,7 +65,7 @@ class ModuleManager {
   FileManager &FileMgr;
 
   /// Cache of PCM files.
-  ModuleCache &ModCache;
+  IntrusiveRefCntPtr<InMemoryModuleCache> ModuleCache;
 
   /// Knows how to unwrap module containers.
   const PCHContainerReader &PCHContainerRdr;
@@ -132,9 +133,9 @@ public:
       SmallVectorImpl<std::unique_ptr<ModuleFile>>::reverse_iterator>;
   using ModuleOffset = std::pair<uint32_t, StringRef>;
 
-  ModuleManager(FileManager &FileMgr, ModuleCache &ModCache,
-                const PCHContainerReader &PCHContainerRdr,
-                const HeaderSearch &HeaderSearchInfo);
+  explicit ModuleManager(FileManager &FileMgr, InMemoryModuleCache &ModuleCache,
+                         const PCHContainerReader &PCHContainerRdr,
+                         const HeaderSearch &HeaderSearchInfo);
 
   /// Forward iterator to traverse all loaded modules.
   ModuleIterator begin() { return Chain.begin(); }
@@ -305,7 +306,7 @@ public:
   /// View the graphviz representation of the module graph.
   void viewGraph();
 
-  ModuleCache &getModuleCache() const { return ModCache; }
+  InMemoryModuleCache &getModuleCache() const { return *ModuleCache; }
 };
 
 } // namespace serialization

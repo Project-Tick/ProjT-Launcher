@@ -52,8 +52,10 @@
 #include "mlir/Dialect/ArmSME/Transforms/Transforms.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Transforms/RegionUtils.h"
 #include "llvm/ADT/IntervalMap.h"
 #include "llvm/ADT/TypeSwitch.h"
+#include <algorithm>
 
 namespace mlir::arm_sme {
 #define GEN_PASS_DEF_TESTTILEALLOCATION
@@ -210,14 +212,14 @@ void splitCondBranches(IRRewriter &rewriter, FunctionOpInterface function) {
 
   auto insertJump = [&](Location loc, Block *source, Block *dest, auto args) {
     rewriter.setInsertionPointToEnd(source);
-    cf::BranchOp::create(rewriter, loc, dest, args);
+    rewriter.create<cf::BranchOp>(loc, dest, args);
   };
 
   for (auto condBranch : worklist) {
     auto loc = condBranch.getLoc();
     Block *block = condBranch->getBlock();
-    auto *newTrueBranch = rewriter.splitBlock(block, block->end());
-    auto *newFalseBranch = rewriter.splitBlock(block, block->end());
+    auto newTrueBranch = rewriter.splitBlock(block, block->end());
+    auto newFalseBranch = rewriter.splitBlock(block, block->end());
     insertJump(loc, newTrueBranch, condBranch.getTrueDest(),
                condBranch.getTrueDestOperands());
     insertJump(loc, newFalseBranch, condBranch.getFalseDest(),
@@ -253,7 +255,7 @@ void insertCopiesAtBranches(IRRewriter &rewriter,
     for (OpOperand &operand : terminator->getOpOperands()) {
       if (isValidSMETileVectorType(operand.get().getType())) {
         auto copy =
-            CopyTileOp::create(rewriter, terminator->getLoc(), operand.get());
+            rewriter.create<CopyTileOp>(terminator->getLoc(), operand.get());
         rewriter.modifyOpInPlace(terminator, [&] { operand.assign(copy); });
       }
     }
@@ -382,7 +384,7 @@ gatherTileLiveRanges(DenseMap<Operation *, unsigned> const &operationToIndexMap,
     // Find or create a live range for `value`.
     auto [it, _] = liveRanges.try_emplace(value, liveRangeAllocator);
     LiveRange &valueLiveRange = it->second;
-    auto *lastUseInBlock = livenessInfo.getEndOperation(value, firstUseOrDef);
+    auto lastUseInBlock = livenessInfo.getEndOperation(value, firstUseOrDef);
     // Add the interval [firstUseOrDef, lastUseInBlock) to the live range.
     unsigned startOpIdx =
         operationToIndexMap.at(firstUseOrDef) + (liveAtBlockEntry ? -1 : 0);
@@ -495,8 +497,8 @@ coalesceTileLiveRanges(DenseMap<Value, LiveRange> &initialLiveRanges) {
 
   // Sort the new live ranges by starting point (ready for tile allocation).
   auto coalescedLiveRanges = uniqueLiveRanges.takeVector();
-  llvm::sort(coalescedLiveRanges,
-             [](LiveRange *a, LiveRange *b) { return *a < *b; });
+  std::sort(coalescedLiveRanges.begin(), coalescedLiveRanges.end(),
+            [](LiveRange *a, LiveRange *b) { return *a < *b; });
   return std::move(coalescedLiveRanges);
 }
 
@@ -526,7 +528,8 @@ chooseSpillUsingHeuristics(OverlappingRangesIterator overlappingRanges,
            a.end() < b.end();
   };
   LiveRange &latestEndingLiveRange =
-      *llvm::max_element(overlappingRanges, isSmallerTileTypeOrEndsEarlier);
+      *std::max_element(overlappingRanges.begin(), overlappingRanges.end(),
+                        isSmallerTileTypeOrEndsEarlier);
   if (!isSmallerTileTypeOrEndsEarlier(latestEndingLiveRange, *newRange))
     return &latestEndingLiveRange;
   return newRange;
@@ -821,8 +824,8 @@ LogicalResult mlir::arm_sme::allocateSMETiles(FunctionOpInterface function,
         [&](LiveRange const &liveRange) { return !liveRange.empty(); });
     auto initialRanges = llvm::to_vector(llvm::map_range(
         nonEmpty, [](LiveRange const &liveRange) { return &liveRange; }));
-    llvm::sort(initialRanges,
-               [](LiveRange const *a, LiveRange const *b) { return *a < *b; });
+    std::sort(initialRanges.begin(), initialRanges.end(),
+              [](LiveRange const *a, LiveRange const *b) { return *a < *b; });
     llvm::errs() << "\n========== Initial Live Ranges:\n";
     dumpLiveRanges(operationToIndexMap, initialRanges, function);
   }

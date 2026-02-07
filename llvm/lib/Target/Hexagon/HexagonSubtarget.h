@@ -54,6 +54,7 @@ class HexagonSubtarget : public HexagonGenSubtargetInfo {
   bool UseNewValueJumps = false;
   bool UseNewValueStores = false;
   bool UseSmallData = false;
+  bool UseUnsafeMath = false;
   bool UseZRegOps = false;
   bool UseHVXIEEEFPOps = false;
   bool UseHVXQFloatOps = false;
@@ -100,6 +101,7 @@ private:
   // The following objects can use the TargetTriple, so they must be
   // declared after it.
   HexagonInstrInfo InstrInfo;
+  HexagonRegisterInfo RegInfo;
   HexagonTargetLowering TLInfo;
   HexagonSelectionDAGInfo TSInfo;
   HexagonFrameLowering FrameLowering;
@@ -121,7 +123,7 @@ public:
   }
   const HexagonInstrInfo *getInstrInfo() const override { return &InstrInfo; }
   const HexagonRegisterInfo *getRegisterInfo() const override {
-    return &InstrInfo.getRegisterInfo();
+    return &RegInfo;
   }
   const HexagonTargetLowering *getTargetLowering() const override {
     return &TLInfo;
@@ -223,15 +225,6 @@ public:
   bool useHVXV79Ops() const {
     return HexagonHVXVersion >= Hexagon::ArchEnum::V79;
   }
-  bool hasV81Ops() const {
-    return getHexagonArchVersion() >= Hexagon::ArchEnum::V81;
-  }
-  bool hasV81OpsOnly() const {
-    return getHexagonArchVersion() == Hexagon::ArchEnum::V81;
-  }
-  bool useHVXV81Ops() const {
-    return HexagonHVXVersion >= Hexagon::ArchEnum::V81;
-  }
 
   bool useAudioOps() const { return UseAudioOps; }
   bool useCompound() const { return UseCompound; }
@@ -241,6 +234,7 @@ public:
   bool useNewValueJumps() const { return UseNewValueJumps; }
   bool useNewValueStores() const { return UseNewValueStores; }
   bool useSmallData() const { return UseSmallData; }
+  bool useUnsafeMath() const { return UseUnsafeMath; }
   bool useZRegOps() const { return UseZRegOps; }
   bool useCabac() const { return UseCabac; }
 
@@ -344,11 +338,7 @@ public:
   ArrayRef<MVT> getHVXElementTypes() const {
     static MVT Types[] = {MVT::i8, MVT::i16, MVT::i32};
     static MVT TypesV68[] = {MVT::i8, MVT::i16, MVT::i32, MVT::f16, MVT::f32};
-    static MVT TypesV81[] = {MVT::i8,  MVT::i16,  MVT::i32,
-                             MVT::f16, MVT::bf16, MVT::f32};
 
-    if (useHVXV81Ops() && useHVXFloatingPoint())
-      return ArrayRef(TypesV81);
     if (useHVXV68Ops() && useHVXFloatingPoint())
       return ArrayRef(TypesV68);
     return ArrayRef(Types);
@@ -376,8 +366,7 @@ private:
   void restoreLatency(SUnit *Src, SUnit *Dst) const;
   void changeLatency(SUnit *Src, SUnit *Dst, unsigned Lat) const;
   bool isBestZeroLatency(SUnit *Src, SUnit *Dst, const HexagonInstrInfo *TII,
-                         SmallPtrSet<SUnit *, 4> &ExclSrc,
-                         SmallPtrSet<SUnit *, 4> &ExclDst) const;
+      SmallSet<SUnit*, 4> &ExclSrc, SmallSet<SUnit*, 4> &ExclDst) const;
 };
 
 } // end namespace llvm

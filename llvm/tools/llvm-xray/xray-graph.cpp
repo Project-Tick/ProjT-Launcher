@@ -153,9 +153,7 @@ static cl::opt<GraphRenderer::StatType> GraphVertexColorType(
 static cl::alias GraphVertexColorType2("b", cl::aliasopt(GraphVertexColorType),
                                        cl::desc("Alias for -edge-label"));
 
-template <class T> static T diff(T L, T R) {
-  return std::max(L, R) - std::min(L, R);
-}
+template <class T> T diff(T L, T R) { return std::max(L, R) - std::min(L, R); }
 
 // Updates the statistics for a GraphRenderer::TimeStat
 static void updateStat(GraphRenderer::TimeStat &S, int64_t L) {
@@ -461,9 +459,10 @@ Expected<GraphRenderer> GraphRenderer::Factory::getGraphRenderer() {
   symbolize::LLVMSymbolizer Symbolizer;
   const auto &Header = Trace.getFileHeader();
 
-  FuncIdConversionHelper FuncIdHelper(InstrMap, Symbolizer, FunctionAddresses);
+  llvm::xray::FuncIdConversionHelper FuncIdHelper(InstrMap, Symbolizer,
+                                                  FunctionAddresses);
 
-  GraphRenderer GR(FuncIdHelper, DeduceSiblingCalls);
+  xray::GraphRenderer GR(FuncIdHelper, DeduceSiblingCalls);
   for (const auto &Record : Trace) {
     auto E = GR.accountRecord(Record);
     if (!E)

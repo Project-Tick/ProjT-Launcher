@@ -169,12 +169,15 @@ bool AVRRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 
     // Copy the frame pointer.
     if (STI.hasMOVW()) {
-      BuildMI(MBB, MI, dl, TII.get(AVR::MOVWRdRr), DstReg).addReg(AVR::R29R28);
+      BuildMI(MBB, MI, dl, TII.get(AVR::MOVWRdRr), DstReg)
+          .addReg(AVR::R29R28);
     } else {
       Register DstLoReg, DstHiReg;
       splitReg(DstReg, DstLoReg, DstHiReg);
-      BuildMI(MBB, MI, dl, TII.get(AVR::MOVRdRr), DstLoReg).addReg(AVR::R28);
-      BuildMI(MBB, MI, dl, TII.get(AVR::MOVRdRr), DstHiReg).addReg(AVR::R29);
+      BuildMI(MBB, MI, dl, TII.get(AVR::MOVRdRr), DstLoReg)
+          .addReg(AVR::R28);
+      BuildMI(MBB, MI, dl, TII.get(AVR::MOVRdRr), DstHiReg)
+          .addReg(AVR::R29);
     }
 
     assert(Offset > 0 && "Invalid offset");
@@ -289,7 +292,8 @@ Register AVRRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
 }
 
 const TargetRegisterClass *
-AVRRegisterInfo::getPointerRegClass(unsigned Kind) const {
+AVRRegisterInfo::getPointerRegClass(const MachineFunction &MF,
+                                    unsigned Kind) const {
   // FIXME: Currently we're using avr-gcc as reference, so we restrict
   // ptrs to Y and Z regs. Though avr-gcc has buggy implementation
   // of memory constraint, so we can fix it and bit avr-gcc here ;-)

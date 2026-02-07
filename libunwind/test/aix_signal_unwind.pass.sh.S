@@ -126,11 +126,10 @@ extern "C" __attribute__((noinline)) void foo() {
   bar();
 }
 
-int main(int, char**) {
+int main() {
   // Set signal handler for SIGSEGV.
   signal(SIGSEGV, handler);
   foo();
-  return 0;
 }
 
 #else // Assembly code for abc().
@@ -169,7 +168,7 @@ L..abc0:
         .vbyte  4, 0x00000000           # Traceback table begin
         .byte   0x00                    # Version = 0
         .byte   0x09                    # Language = CPlusPlus
-        .byte   0x20                    # -IsGlobalLinkage, -IsOutOfLineEpilogOrPrologue
+        .byte   0x20                    # -IsGlobaLinkage, -IsOutOfLineEpilogOrPrologue
                                         # +HasTraceBackTableOffset, -IsInternalProcedure
                                         # -HasControlledStorage, -IsTOCless
                                         # -IsFloatingPointPresent
@@ -219,7 +218,7 @@ L..abc0:
         .vbyte  4, 0x00000000           # Traceback table begin
         .byte   0x00                    # Version = 0
         .byte   0x09                    # Language = CPlusPlus
-        .byte   0x20                    # -IsGlobalLinkage, -IsOutOfLineEpilogOrPrologue
+        .byte   0x20                    # -IsGlobaLinkage, -IsOutOfLineEpilogOrPrologue
                                         # +HasTraceBackTableOffset, -IsInternalProcedure
                                         # -HasControlledStorage, -IsTOCless
                                         # -IsFloatingPointPresent

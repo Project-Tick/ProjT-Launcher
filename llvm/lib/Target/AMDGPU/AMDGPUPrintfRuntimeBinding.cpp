@@ -42,7 +42,7 @@ class AMDGPUPrintfRuntimeBinding final : public ModulePass {
 public:
   static char ID;
 
-  explicit AMDGPUPrintfRuntimeBinding() : ModulePass(ID) {}
+  explicit AMDGPUPrintfRuntimeBinding();
 
 private:
   bool runOnModule(Module &M) override;
@@ -76,8 +76,14 @@ INITIALIZE_PASS_END(AMDGPUPrintfRuntimeBinding, "amdgpu-printf-runtime-binding",
 
 char &llvm::AMDGPUPrintfRuntimeBindingID = AMDGPUPrintfRuntimeBinding::ID;
 
-ModulePass *llvm::createAMDGPUPrintfRuntimeBinding() {
+namespace llvm {
+ModulePass *createAMDGPUPrintfRuntimeBinding() {
   return new AMDGPUPrintfRuntimeBinding();
+}
+} // namespace llvm
+
+AMDGPUPrintfRuntimeBinding::AMDGPUPrintfRuntimeBinding() : ModulePass(ID) {
+  initializeAMDGPUPrintfRuntimeBindingPass(*PassRegistry::getPassRegistry());
 }
 
 void AMDGPUPrintfRuntimeBindingImpl::getConversionSpecifiers(
@@ -88,7 +94,7 @@ void AMDGPUPrintfRuntimeBindingImpl::getConversionSpecifiers(
   // are %p and %s, which use to know if we
   // are either storing a literal string or a
   // pointer to the printf buffer.
-  static const char ConvSpecifiers[] = "cdieEfFgGaAosuxXp";
+  static const char ConvSpecifiers[] = "cdieEfgGaosuxXp";
   size_t CurFmtSpecifierIdx = 0;
   size_t PrevFmtSpecifierIdx = 0;
 
@@ -128,11 +134,12 @@ static StringRef getAsConstantStr(Value *V) {
 }
 
 static void diagnoseInvalidFormatString(const CallBase *CI) {
-  CI->getContext().diagnose(DiagnosticInfoUnsupported(
-      *CI->getFunction(),
+  DiagnosticInfoUnsupported UnsupportedFormatStr(
+      *CI->getParent()->getParent(),
       "printf format string must be a trivially resolved constant string "
       "global variable",
-      CI->getDebugLoc()));
+      CI->getDebugLoc());
+  CI->getContext().diagnose(UnsupportedFormatStr);
 }
 
 bool AMDGPUPrintfRuntimeBindingImpl::lowerPrintfForGpu(Module &M) {

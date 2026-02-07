@@ -28,17 +28,25 @@ static cl::opt<unsigned> MaxLoopRange(
     "hexagon-loop-range", cl::Hidden, cl::init(200),
     cl::desc("Restrict range of loopN instructions (testing only)"));
 
+namespace llvm {
+  FunctionPass *createHexagonFixupHwLoops();
+  void initializeHexagonFixupHwLoopsPass(PassRegistry&);
+}
+
 namespace {
   struct HexagonFixupHwLoops : public MachineFunctionPass {
   public:
     static char ID;
 
-    HexagonFixupHwLoops() : MachineFunctionPass(ID) {}
+    HexagonFixupHwLoops() : MachineFunctionPass(ID) {
+      initializeHexagonFixupHwLoopsPass(*PassRegistry::getPassRegistry());
+    }
 
     bool runOnMachineFunction(MachineFunction &MF) override;
 
     MachineFunctionProperties getRequiredProperties() const override {
-      return MachineFunctionProperties().setNoVRegs();
+      return MachineFunctionProperties().set(
+          MachineFunctionProperties::Property::NoVRegs);
     }
 
     StringRef getPassName() const override {

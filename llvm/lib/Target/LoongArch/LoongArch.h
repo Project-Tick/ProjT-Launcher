@@ -41,7 +41,6 @@ FunctionPass *createLoongArchMergeBaseOffsetOptPass();
 FunctionPass *createLoongArchOptWInstrsPass();
 FunctionPass *createLoongArchPreRAExpandPseudoPass();
 FunctionPass *createLoongArchExpandPseudoPass();
-void initializeLoongArchAsmPrinterPass(PassRegistry &);
 void initializeLoongArchDAGToDAGISelLegacyPass(PassRegistry &);
 void initializeLoongArchDeadRegisterDefinitionsPass(PassRegistry &);
 void initializeLoongArchExpandAtomicPseudoPass(PassRegistry &);

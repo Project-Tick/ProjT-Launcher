@@ -153,7 +153,7 @@ llvm::Type* MipsABIInfo::HandleAggregates(QualType Ty, uint64_t TySize) const {
   if (Ty->isComplexType())
     return CGT.ConvertType(Ty);
 
-  const RecordType *RT = Ty->getAsCanonical<RecordType>();
+  const RecordType *RT = Ty->getAs<RecordType>();
 
   // Unions/vectors are passed in integer registers.
   if (!RT || !RT->isStructureOrClassType()) {
@@ -161,7 +161,7 @@ llvm::Type* MipsABIInfo::HandleAggregates(QualType Ty, uint64_t TySize) const {
     return llvm::StructType::get(getVMContext(), ArgList);
   }
 
-  const RecordDecl *RD = RT->getDecl()->getDefinitionOrSelf();
+  const RecordDecl *RD = RT->getDecl();
   const ASTRecordLayout &Layout = getContext().getASTRecordLayout(RD);
   assert(!(TySize % 8) && "Size of structure must be multiple of 8.");
 
@@ -226,8 +226,7 @@ MipsABIInfo::classifyArgumentType(QualType Ty, uint64_t &Offset) const {
 
     if (CGCXXABI::RecordArgABI RAA = getRecordArgABI(Ty, getCXXABI())) {
       Offset = OrigOffset + MinABIStackAlignInBytes;
-      return getNaturalAlignIndirect(Ty, getDataLayout().getAllocaAddrSpace(),
-                                     RAA == CGCXXABI::RAA_DirectInMemory);
+      return getNaturalAlignIndirect(Ty, RAA == CGCXXABI::RAA_DirectInMemory);
     }
 
     // If we have reached here, aggregates are passed directly by coercing to
@@ -241,15 +240,15 @@ MipsABIInfo::classifyArgumentType(QualType Ty, uint64_t &Offset) const {
   }
 
   // Treat an enum type as its underlying type.
-  if (const auto *ED = Ty->getAsEnumDecl())
-    Ty = ED->getIntegerType();
+  if (const EnumType *EnumTy = Ty->getAs<EnumType>())
+    Ty = EnumTy->getDecl()->getIntegerType();
 
   // Make sure we pass indirectly things that are too large.
   if (const auto *EIT = Ty->getAs<BitIntType>())
     if (EIT->getNumBits() > 128 ||
         (EIT->getNumBits() > 64 &&
          !getContext().getTargetInfo().hasInt128Type()))
-      return getNaturalAlignIndirect(Ty, getDataLayout().getAllocaAddrSpace());
+      return getNaturalAlignIndirect(Ty);
 
   // All integral types are promoted to the GPR width.
   if (Ty->isIntegralOrEnumerationType())
@@ -261,11 +260,11 @@ MipsABIInfo::classifyArgumentType(QualType Ty, uint64_t &Offset) const {
 
 llvm::Type*
 MipsABIInfo::returnAggregateInRegs(QualType RetTy, uint64_t Size) const {
-  const RecordType *RT = RetTy->getAsCanonical<RecordType>();
+  const RecordType *RT = RetTy->getAs<RecordType>();
   SmallVector<llvm::Type*, 8> RTList;
 
   if (RT && RT->isStructureOrClassType()) {
-    const RecordDecl *RD = RT->getDecl()->getDefinitionOrSelf();
+    const RecordDecl *RD = RT->getDecl();
     const ASTRecordLayout &Layout = getContext().getASTRecordLayout(RD);
     unsigned FieldCnt = Layout.getFieldCount();
 
@@ -328,20 +327,19 @@ ABIArgInfo MipsABIInfo::classifyReturnType(QualType RetTy) const {
       }
     }
 
-    return getNaturalAlignIndirect(RetTy, getDataLayout().getAllocaAddrSpace());
+    return getNaturalAlignIndirect(RetTy);
   }
 
   // Treat an enum type as its underlying type.
-  if (const auto *ED = RetTy->getAsEnumDecl())
-    RetTy = ED->getIntegerType();
+  if (const EnumType *EnumTy = RetTy->getAs<EnumType>())
+    RetTy = EnumTy->getDecl()->getIntegerType();
 
   // Make sure we pass indirectly things that are too large.
   if (const auto *EIT = RetTy->getAs<BitIntType>())
     if (EIT->getNumBits() > 128 ||
         (EIT->getNumBits() > 64 &&
          !getContext().getTargetInfo().hasInt128Type()))
-      return getNaturalAlignIndirect(RetTy,
-                                     getDataLayout().getAllocaAddrSpace());
+      return getNaturalAlignIndirect(RetTy);
 
   if (isPromotableIntegerTypeForABI(RetTy))
     return ABIArgInfo::getExtend(RetTy);

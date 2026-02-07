@@ -12,6 +12,7 @@
 #include <__config>
 #include <__memory/addressof.h>
 #include <__memory/allocator_traits.h>
+#include <__type_traits/aligned_storage.h>
 #include <__utility/forward.h>
 
 #if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
@@ -25,7 +26,7 @@ struct __temp_value {
   typedef allocator_traits<_Alloc> _Traits;
 
 #ifdef _LIBCPP_CXX03_LANG
-  _ALIGNAS_TYPE(_Tp) char __v[sizeof(_Tp)];
+  typename aligned_storage<sizeof(_Tp), _LIBCPP_ALIGNOF(_Tp)>::type __v;
 #else
   union {
     _Tp __v;

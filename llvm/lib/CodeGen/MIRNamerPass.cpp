@@ -23,6 +23,10 @@
 
 using namespace llvm;
 
+namespace llvm {
+extern char &MIRNamerID;
+} // namespace llvm
+
 #define DEBUG_TYPE "mir-namer"
 
 namespace {
@@ -49,9 +53,10 @@ public:
 
     VRegRenamer Renamer(MF.getRegInfo());
 
+    unsigned BBIndex = 0;
     ReversePostOrderTraversal<MachineBasicBlock *> RPOT(&*MF.begin());
-    for (const auto &[BBIndex, MBB] : enumerate(RPOT))
-      Changed |= Renamer.renameVRegs(MBB, BBIndex);
+    for (auto &MBB : RPOT)
+      Changed |= Renamer.renameVRegs(MBB, BBIndex++);
 
     return Changed;
   }
@@ -61,4 +66,10 @@ public:
 
 char MIRNamer::ID;
 
-INITIALIZE_PASS(MIRNamer, "mir-namer", "Rename Register Operands", false, false)
+char &llvm::MIRNamerID = MIRNamer::ID;
+
+INITIALIZE_PASS_BEGIN(MIRNamer, "mir-namer", "Rename Register Operands", false,
+                      false)
+
+INITIALIZE_PASS_END(MIRNamer, "mir-namer", "Rename Register Operands", false,
+                    false)

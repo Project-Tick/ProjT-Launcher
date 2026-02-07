@@ -1,18 +1,39 @@
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from __future__ import print_function
+
+try:
+    from http.server import HTTPServer, SimpleHTTPRequestHandler
+except ImportError:
+    from BaseHTTPServer import HTTPServer
+    from SimpleHTTPServer import SimpleHTTPRequestHandler
 import os
 import sys
-from urllib.parse import urlparse, unquote
+
+try:
+    from urlparse import urlparse
+    from urllib import unquote
+except ImportError:
+    from urllib.parse import urlparse, unquote
+
 import posixpath
-from io import StringIO, BytesIO
+
+if sys.version_info.major >= 3:
+    from io import StringIO, BytesIO
+else:
+    from io import BytesIO, BytesIO as StringIO
+
 import re
 import shutil
 import threading
 import time
 import socket
 import itertools
-import configparser
 
 import Reporter
+
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 
 ###
 # Various patterns matched or replaced by server.

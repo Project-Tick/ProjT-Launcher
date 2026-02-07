@@ -29,9 +29,11 @@ using namespace llvm;
 using namespace llvm::xray;
 using llvm::yaml::Input;
 
-static Error loadNaiveFormatLog(StringRef Data, bool IsLittleEndian,
-                                XRayFileHeader &FileHeader,
-                                std::vector<XRayRecord> &Records) {
+namespace {
+
+Error loadNaiveFormatLog(StringRef Data, bool IsLittleEndian,
+                         XRayFileHeader &FileHeader,
+                         std::vector<XRayRecord> &Records) {
   if (Data.size() < 32)
     return make_error<StringError>(
         "Not enough bytes for an XRay log.",
@@ -263,9 +265,8 @@ static Error loadNaiveFormatLog(StringRef Data, bool IsLittleEndian,
 /// what FunctionRecord instances use, and we no longer need to include the CPU
 /// id in the CustomEventRecord.
 ///
-static Error loadFDRLog(StringRef Data, bool IsLittleEndian,
-                        XRayFileHeader &FileHeader,
-                        std::vector<XRayRecord> &Records) {
+Error loadFDRLog(StringRef Data, bool IsLittleEndian,
+                 XRayFileHeader &FileHeader, std::vector<XRayRecord> &Records) {
 
   if (Data.size() < 32)
     return createStringError(std::make_error_code(std::errc::invalid_argument),
@@ -347,8 +348,8 @@ static Error loadFDRLog(StringRef Data, bool IsLittleEndian,
   return Error::success();
 }
 
-static Error loadYAMLLog(StringRef Data, XRayFileHeader &FileHeader,
-                         std::vector<XRayRecord> &Records) {
+Error loadYAMLLog(StringRef Data, XRayFileHeader &FileHeader,
+                  std::vector<XRayRecord> &Records) {
   YAMLXRayTrace Trace;
   Input In(Data);
   In >> Trace;
@@ -375,6 +376,7 @@ static Error loadYAMLLog(StringRef Data, XRayFileHeader &FileHeader,
                  });
   return Error::success();
 }
+} // namespace
 
 Expected<Trace> llvm::xray::loadTraceFile(StringRef Filename, bool Sort) {
   Expected<sys::fs::file_t> FdOrErr = sys::fs::openNativeFileForRead(Filename);

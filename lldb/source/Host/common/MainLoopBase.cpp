@@ -12,9 +12,8 @@
 using namespace lldb;
 using namespace lldb_private;
 
-bool MainLoopBase::AddCallback(const Callback &callback, TimePoint point) {
+void MainLoopBase::AddCallback(const Callback &callback, TimePoint point) {
   bool interrupt_needed;
-  bool interrupt_succeeded = true;
   {
     std::lock_guard<std::mutex> lock{m_callback_mutex};
     // We need to interrupt the main thread if this callback is scheduled to
@@ -23,8 +22,7 @@ bool MainLoopBase::AddCallback(const Callback &callback, TimePoint point) {
     m_callbacks.emplace(point, callback);
   }
   if (interrupt_needed)
-    interrupt_succeeded = Interrupt();
-  return interrupt_succeeded;
+    Interrupt();
 }
 
 void MainLoopBase::ProcessCallbacks() {

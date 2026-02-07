@@ -4,6 +4,8 @@
 ; RUN: llc -mtriple=riscv64 -mattr=+v -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s --check-prefixes=CHECK,RV64
 
+declare <2 x i8> @llvm.uadd.sat.v2i8(<2 x i8>, <2 x i8>)
+
 define <2 x i8> @uadd_v2i8_vv(<2 x i8> %va, <2 x i8> %b) {
 ; CHECK-LABEL: uadd_v2i8_vv:
 ; CHECK:       # %bb.0:
@@ -35,6 +37,8 @@ define <2 x i8> @uadd_v2i8_vi(<2 x i8> %va) {
   %v = call <2 x i8> @llvm.uadd.sat.v2i8(<2 x i8> %va, <2 x i8> splat (i8 8))
   ret <2 x i8> %v
 }
+
+declare <4 x i8> @llvm.uadd.sat.v4i8(<4 x i8>, <4 x i8>)
 
 define <4 x i8> @uadd_v4i8_vv(<4 x i8> %va, <4 x i8> %b) {
 ; CHECK-LABEL: uadd_v4i8_vv:
@@ -68,6 +72,8 @@ define <4 x i8> @uadd_v4i8_vi(<4 x i8> %va) {
   ret <4 x i8> %v
 }
 
+declare <8 x i8> @llvm.uadd.sat.v8i8(<8 x i8>, <8 x i8>)
+
 define <8 x i8> @uadd_v8i8_vv(<8 x i8> %va, <8 x i8> %b) {
 ; CHECK-LABEL: uadd_v8i8_vv:
 ; CHECK:       # %bb.0:
@@ -99,6 +105,8 @@ define <8 x i8> @uadd_v8i8_vi(<8 x i8> %va) {
   %v = call <8 x i8> @llvm.uadd.sat.v8i8(<8 x i8> %va, <8 x i8> splat (i8 8))
   ret <8 x i8> %v
 }
+
+declare <16 x i8> @llvm.uadd.sat.v16i8(<16 x i8>, <16 x i8>)
 
 define <16 x i8> @uadd_v16i8_vv(<16 x i8> %va, <16 x i8> %b) {
 ; CHECK-LABEL: uadd_v16i8_vv:
@@ -132,6 +140,8 @@ define <16 x i8> @uadd_v16i8_vi(<16 x i8> %va) {
   ret <16 x i8> %v
 }
 
+declare <2 x i16> @llvm.uadd.sat.v2i16(<2 x i16>, <2 x i16>)
+
 define <2 x i16> @uadd_v2i16_vv(<2 x i16> %va, <2 x i16> %b) {
 ; CHECK-LABEL: uadd_v2i16_vv:
 ; CHECK:       # %bb.0:
@@ -163,6 +173,8 @@ define <2 x i16> @uadd_v2i16_vi(<2 x i16> %va) {
   %v = call <2 x i16> @llvm.uadd.sat.v2i16(<2 x i16> %va, <2 x i16> splat (i16 8))
   ret <2 x i16> %v
 }
+
+declare <4 x i16> @llvm.uadd.sat.v4i16(<4 x i16>, <4 x i16>)
 
 define <4 x i16> @uadd_v4i16_vv(<4 x i16> %va, <4 x i16> %b) {
 ; CHECK-LABEL: uadd_v4i16_vv:
@@ -196,6 +208,8 @@ define <4 x i16> @uadd_v4i16_vi(<4 x i16> %va) {
   ret <4 x i16> %v
 }
 
+declare <8 x i16> @llvm.uadd.sat.v8i16(<8 x i16>, <8 x i16>)
+
 define <8 x i16> @uadd_v8i16_vv(<8 x i16> %va, <8 x i16> %b) {
 ; CHECK-LABEL: uadd_v8i16_vv:
 ; CHECK:       # %bb.0:
@@ -228,6 +242,8 @@ define <8 x i16> @uadd_v8i16_vi(<8 x i16> %va) {
   ret <8 x i16> %v
 }
 
+declare <16 x i16> @llvm.uadd.sat.v16i16(<16 x i16>, <16 x i16>)
+
 define <16 x i16> @uadd_v16i16_vv(<16 x i16> %va, <16 x i16> %b) {
 ; CHECK-LABEL: uadd_v16i16_vv:
 ; CHECK:       # %bb.0:
@@ -259,6 +275,8 @@ define <16 x i16> @uadd_v16i16_vi(<16 x i16> %va) {
   %v = call <16 x i16> @llvm.uadd.sat.v16i16(<16 x i16> %va, <16 x i16> splat (i16 8))
   ret <16 x i16> %v
 }
+
+declare <2 x i32> @llvm.uadd.sat.v2i32(<2 x i32>, <2 x i32>)
 
 define <2 x i32> @uadd_v2i32_vv(<2 x i32> %va, <2 x i32> %b) {
 ; CHECK-LABEL: uadd_v2i32_vv:
@@ -304,6 +322,8 @@ define <2 x i32> @uadd_v2i32_vi(<2 x i32> %va) {
   ret <2 x i32> %v
 }
 
+declare <4 x i32> @llvm.uadd.sat.v4i32(<4 x i32>, <4 x i32>)
+
 define <4 x i32> @uadd_v4i32_vv(<4 x i32> %va, <4 x i32> %b) {
 ; CHECK-LABEL: uadd_v4i32_vv:
 ; CHECK:       # %bb.0:
@@ -335,6 +355,8 @@ define <4 x i32> @uadd_v4i32_vi(<4 x i32> %va) {
   %v = call <4 x i32> @llvm.uadd.sat.v4i32(<4 x i32> %va, <4 x i32> splat (i32 8))
   ret <4 x i32> %v
 }
+
+declare <8 x i32> @llvm.uadd.sat.v8i32(<8 x i32>, <8 x i32>)
 
 define <8 x i32> @uadd_v8i32_vv(<8 x i32> %va, <8 x i32> %b) {
 ; CHECK-LABEL: uadd_v8i32_vv:
@@ -368,6 +390,8 @@ define <8 x i32> @uadd_v8i32_vi(<8 x i32> %va) {
   ret <8 x i32> %v
 }
 
+declare <16 x i32> @llvm.uadd.sat.v16i32(<16 x i32>, <16 x i32>)
+
 define <16 x i32> @uadd_v16i32_vv(<16 x i32> %va, <16 x i32> %b) {
 ; CHECK-LABEL: uadd_v16i32_vv:
 ; CHECK:       # %bb.0:
@@ -399,6 +423,8 @@ define <16 x i32> @uadd_v16i32_vi(<16 x i32> %va) {
   %v = call <16 x i32> @llvm.uadd.sat.v16i32(<16 x i32> %va, <16 x i32> splat (i32 8))
   ret <16 x i32> %v
 }
+
+declare <2 x i64> @llvm.uadd.sat.v2i64(<2 x i64>, <2 x i64>)
 
 define <2 x i64> @uadd_v2i64_vv(<2 x i64> %va, <2 x i64> %b) {
 ; CHECK-LABEL: uadd_v2i64_vv:
@@ -446,6 +472,8 @@ define <2 x i64> @uadd_v2i64_vi(<2 x i64> %va) {
   ret <2 x i64> %v
 }
 
+declare <4 x i64> @llvm.uadd.sat.v4i64(<4 x i64>, <4 x i64>)
+
 define <4 x i64> @uadd_v4i64_vv(<4 x i64> %va, <4 x i64> %b) {
 ; CHECK-LABEL: uadd_v4i64_vv:
 ; CHECK:       # %bb.0:
@@ -492,6 +520,8 @@ define <4 x i64> @uadd_v4i64_vi(<4 x i64> %va) {
   ret <4 x i64> %v
 }
 
+declare <8 x i64> @llvm.uadd.sat.v8i64(<8 x i64>, <8 x i64>)
+
 define <8 x i64> @uadd_v8i64_vv(<8 x i64> %va, <8 x i64> %b) {
 ; CHECK-LABEL: uadd_v8i64_vv:
 ; CHECK:       # %bb.0:
@@ -537,6 +567,8 @@ define <8 x i64> @uadd_v8i64_vi(<8 x i64> %va) {
   %v = call <8 x i64> @llvm.uadd.sat.v8i64(<8 x i64> %va, <8 x i64> splat (i64 8))
   ret <8 x i64> %v
 }
+
+declare <16 x i64> @llvm.uadd.sat.v16i64(<16 x i64>, <16 x i64>)
 
 define <16 x i64> @uadd_v16i64_vv(<16 x i64> %va, <16 x i64> %b) {
 ; CHECK-LABEL: uadd_v16i64_vv:

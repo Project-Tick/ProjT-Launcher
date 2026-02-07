@@ -10,14 +10,11 @@
 #define LLVM_ANALYSIS_TARGETLIBRARYINFO_H
 
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/StringTable.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PassManager.h"
-#include "llvm/IR/SystemLibraries.h"
 #include "llvm/Pass.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/TargetParser/Triple.h"
 #include <bitset>
 #include <optional>
@@ -48,31 +45,33 @@ class VecDesc {
   ElementCount VectorizationFactor;
   bool Masked;
   StringRef VABIPrefix;
-  std::optional<CallingConv::ID> CC;
 
 public:
   VecDesc() = delete;
   VecDesc(StringRef ScalarFnName, StringRef VectorFnName,
-          ElementCount VectorizationFactor, bool Masked, StringRef VABIPrefix,
-          std::optional<CallingConv::ID> Conv)
+          ElementCount VectorizationFactor, bool Masked, StringRef VABIPrefix)
       : ScalarFnName(ScalarFnName), VectorFnName(VectorFnName),
         VectorizationFactor(VectorizationFactor), Masked(Masked),
-        VABIPrefix(VABIPrefix), CC(Conv) {}
+        VABIPrefix(VABIPrefix) {}
 
   StringRef getScalarFnName() const { return ScalarFnName; }
   StringRef getVectorFnName() const { return VectorFnName; }
   ElementCount getVectorizationFactor() const { return VectorizationFactor; }
   bool isMasked() const { return Masked; }
   StringRef getVABIPrefix() const { return VABIPrefix; }
-  std::optional<CallingConv::ID> getCallingConv() const { return CC; }
 
   /// Returns a vector function ABI variant string on the form:
   ///    _ZGV<isa><mask><vlen><vparams>_<scalarname>(<vectorname>)
-  LLVM_ABI std::string getVectorFunctionABIVariantString() const;
+  std::string getVectorFunctionABIVariantString() const;
 };
 
-#define GET_TARGET_LIBRARY_INFO_ENUM
-#include "llvm/Analysis/TargetLibraryInfo.inc"
+  enum LibFunc : unsigned {
+#define TLI_DEFINE_ENUM
+#include "llvm/Analysis/TargetLibraryInfo.def"
+
+    NumLibFuncs,
+    NotLibFunc
+  };
 
 /// Implementation of the target library information.
 ///
@@ -85,8 +84,7 @@ class TargetLibraryInfoImpl {
 
   unsigned char AvailableArray[(NumLibFuncs+3)/4];
   DenseMap<unsigned, std::string> CustomNames;
-#define GET_TARGET_LIBRARY_INFO_IMPL_DECL
-#include "llvm/Analysis/TargetLibraryInfo.inc"
+  static StringLiteral const StandardNames[NumLibFuncs];
   bool ShouldExtI32Param, ShouldExtI32Return, ShouldSignExtI32Param, ShouldSignExtI32Return;
   unsigned SizeOfInt;
 
@@ -111,25 +109,43 @@ class TargetLibraryInfoImpl {
 
   /// Return true if the function type FTy is valid for the library function
   /// F, regardless of whether the function is available.
-  LLVM_ABI bool isValidProtoForLibFunc(const FunctionType &FTy, LibFunc F,
-                                       const Module &M) const;
+  bool isValidProtoForLibFunc(const FunctionType &FTy, LibFunc F,
+                              const Module &M) const;
 
 public:
-  TargetLibraryInfoImpl() = delete;
-  LLVM_ABI explicit TargetLibraryInfoImpl(
-      const Triple &T, VectorLibrary VecLib = VectorLibrary::NoLibrary);
+  /// List of known vector-functions libraries.
+  ///
+  /// The vector-functions library defines, which functions are vectorizable
+  /// and with which factor. The library can be specified by either frontend,
+  /// or a commandline option, and then used by
+  /// addVectorizableFunctionsFromVecLib for filling up the tables of
+  /// vectorizable functions.
+  enum VectorLibrary {
+    NoLibrary,        // Don't use any vector library.
+    Accelerate,       // Use Accelerate framework.
+    DarwinLibSystemM, // Use Darwin's libsystem_m.
+    LIBMVEC_X86,      // GLIBC Vector Math library.
+    MASSV,            // IBM MASS vector library.
+    SVML,             // Intel short vector math library.
+    SLEEFGNUABI, // SLEEF - SIMD Library for Evaluating Elementary Functions.
+    ArmPL,       // Arm Performance Libraries.
+    AMDLIBM      // AMD Math Vector library.
+  };
+
+  TargetLibraryInfoImpl();
+  explicit TargetLibraryInfoImpl(const Triple &T);
 
   // Provide value semantics.
-  LLVM_ABI TargetLibraryInfoImpl(const TargetLibraryInfoImpl &TLI);
-  LLVM_ABI TargetLibraryInfoImpl(TargetLibraryInfoImpl &&TLI);
-  LLVM_ABI TargetLibraryInfoImpl &operator=(const TargetLibraryInfoImpl &TLI);
-  LLVM_ABI TargetLibraryInfoImpl &operator=(TargetLibraryInfoImpl &&TLI);
+  TargetLibraryInfoImpl(const TargetLibraryInfoImpl &TLI);
+  TargetLibraryInfoImpl(TargetLibraryInfoImpl &&TLI);
+  TargetLibraryInfoImpl &operator=(const TargetLibraryInfoImpl &TLI);
+  TargetLibraryInfoImpl &operator=(TargetLibraryInfoImpl &&TLI);
 
   /// Searches for a particular function name.
   ///
   /// If it is one of the known library functions, return true and set F to the
   /// corresponding value.
-  LLVM_ABI bool getLibFunc(StringRef funcName, LibFunc &F) const;
+  bool getLibFunc(StringRef funcName, LibFunc &F) const;
 
   /// Searches for a particular function name, also checking that its type is
   /// valid for the library function matching that name.
@@ -138,11 +154,11 @@ public:
   /// corresponding value.
   ///
   /// FDecl is assumed to have a parent Module when using this function.
-  LLVM_ABI bool getLibFunc(const Function &FDecl, LibFunc &F) const;
+  bool getLibFunc(const Function &FDecl, LibFunc &F) const;
 
   /// Searches for a function name using an Instruction \p Opcode.
   /// Currently, only the frem instruction is supported.
-  LLVM_ABI bool getLibFunc(unsigned int Opcode, Type *Ty, LibFunc &F) const;
+  bool getLibFunc(unsigned int Opcode, Type *Ty, LibFunc &F) const;
 
   /// Forces a function to be marked as unavailable.
   void setUnavailable(LibFunc F) {
@@ -157,8 +173,7 @@ public:
   /// Forces a function to be marked as available and provide an alternate name
   /// that must be used.
   void setAvailableWithName(LibFunc F, StringRef Name) {
-    if (StringRef(StandardNamesStrTable.getCString(StandardNamesOffsets[F]),
-                  StandardNamesSizeTable[F]) != Name) {
+    if (StandardNames[F] != Name) {
       setState(F, CustomName);
       CustomNames[F] = std::string(Name);
       assert(CustomNames.contains(F));
@@ -170,17 +185,16 @@ public:
   /// Disables all builtins.
   ///
   /// This can be used for options like -fno-builtin.
-  LLVM_ABI void disableAllFunctions();
+  void disableAllFunctions();
 
   /// Add a set of scalar -> vector mappings, queryable via
   /// getVectorizedFunction and getScalarizedFunction.
-  LLVM_ABI void addVectorizableFunctions(ArrayRef<VecDesc> Fns);
+  void addVectorizableFunctions(ArrayRef<VecDesc> Fns);
 
   /// Calls addVectorizableFunctions with a known preset of functions for the
   /// given vector library.
-  LLVM_ABI void
-  addVectorizableFunctionsFromVecLib(enum VectorLibrary VecLib,
-                                     const llvm::Triple &TargetTriple);
+  void addVectorizableFunctionsFromVecLib(enum VectorLibrary VecLib,
+                                          const llvm::Triple &TargetTriple);
 
   /// Return true if the function F has a vector equivalent with vectorization
   /// factor VF.
@@ -191,18 +205,18 @@ public:
 
   /// Return true if the function F has a vector equivalent with any
   /// vectorization factor.
-  LLVM_ABI bool isFunctionVectorizable(StringRef F) const;
+  bool isFunctionVectorizable(StringRef F) const;
 
   /// Return the name of the equivalent of F, vectorized with factor VF. If no
   /// such mapping exists, return the empty string.
-  LLVM_ABI StringRef getVectorizedFunction(StringRef F, const ElementCount &VF,
-                                           bool Masked) const;
+  StringRef getVectorizedFunction(StringRef F, const ElementCount &VF,
+                                  bool Masked) const;
 
   /// Return a pointer to a VecDesc object holding all info for scalar to vector
   /// mappings in TLI for the equivalent of F, vectorized with factor VF.
   /// If no such mapping exists, return nullpointer.
-  LLVM_ABI const VecDesc *
-  getVectorMappingInfo(StringRef F, const ElementCount &VF, bool Masked) const;
+  const VecDesc *getVectorMappingInfo(StringRef F, const ElementCount &VF,
+                                      bool Masked) const;
 
   /// Set to true iff i32 parameters to library functions should have signext
   /// or zeroext attributes if they correspond to C-level int or unsigned int,
@@ -232,10 +246,10 @@ public:
 
   /// Returns the size of the wchar_t type in bytes or 0 if the size is unknown.
   /// This queries the 'wchar_size' metadata.
-  LLVM_ABI unsigned getWCharSize(const Module &M) const;
+  unsigned getWCharSize(const Module &M) const;
 
   /// Returns the size of the size_t type in bits.
-  LLVM_ABI unsigned getSizeTSize(const Module &M) const;
+  unsigned getSizeTSize(const Module &M) const;
 
   /// Get size of a C-level int or unsigned int, in bits.
   unsigned getIntSize() const {
@@ -249,13 +263,13 @@ public:
 
   /// Returns the largest vectorization factor used in the list of
   /// vector functions.
-  LLVM_ABI void getWidestVF(StringRef ScalarF, ElementCount &FixedVF,
-                            ElementCount &Scalable) const;
+  void getWidestVF(StringRef ScalarF, ElementCount &FixedVF,
+                   ElementCount &Scalable) const;
 
   /// Returns true if call site / callee has cdecl-compatible calling
   /// conventions.
-  LLVM_ABI static bool isCallingConvCCompatible(CallBase *CI);
-  LLVM_ABI static bool isCallingConvCCompatible(Function *Callee);
+  static bool isCallingConvCCompatible(CallBase *CI);
+  static bool isCallingConvCCompatible(Function *Callee);
 };
 
 /// Provides information about what library functions are available for
@@ -275,8 +289,6 @@ class TargetLibraryInfo {
   std::bitset<NumLibFuncs> OverrideAsUnavailable;
 
 public:
-  TargetLibraryInfo() = delete;
-
   explicit TargetLibraryInfo(const TargetLibraryInfoImpl &Impl,
                              std::optional<const Function *> F = std::nullopt)
       : Impl(&Impl) {
@@ -354,10 +366,12 @@ public:
   /// Disables all builtins.
   ///
   /// This can be used for options like -fno-builtin.
-  [[maybe_unused]] void disableAllFunctions() { OverrideAsUnavailable.set(); }
+  void disableAllFunctions() LLVM_ATTRIBUTE_UNUSED {
+    OverrideAsUnavailable.set();
+  }
 
   /// Forces a function to be marked as unavailable.
-  [[maybe_unused]] void setUnavailable(LibFunc F) {
+  void setUnavailable(LibFunc F) LLVM_ATTRIBUTE_UNUSED {
     assert(F < OverrideAsUnavailable.size() && "out-of-bounds LibFunc");
     OverrideAsUnavailable.set(F);
   }
@@ -433,22 +447,12 @@ public:
     return false;
   }
 
-  /// Return the canonical name for a LibFunc. This should not be used for
-  /// semantic purposes, use getName instead.
-  static StringRef getStandardName(LibFunc F) {
-    return StringRef(TargetLibraryInfoImpl::StandardNamesStrTable.getCString(
-                         TargetLibraryInfoImpl::StandardNamesOffsets[F]),
-                     TargetLibraryInfoImpl::StandardNamesSizeTable[F]);
-  }
-
   StringRef getName(LibFunc F) const {
     auto State = getState(F);
     if (State == TargetLibraryInfoImpl::Unavailable)
       return StringRef();
     if (State == TargetLibraryInfoImpl::StandardName)
-      return StringRef(
-          Impl->StandardNamesStrTable.getCString(Impl->StandardNamesOffsets[F]),
-          Impl->StandardNamesSizeTable[F]);
+      return Impl->StandardNames[F];
     assert(State == TargetLibraryInfoImpl::CustomName);
     return Impl->CustomNames.find(F)->second;
   }
@@ -623,16 +627,16 @@ public:
   TargetLibraryAnalysis(TargetLibraryInfoImpl BaselineInfoImpl)
       : BaselineInfoImpl(std::move(BaselineInfoImpl)) {}
 
-  LLVM_ABI TargetLibraryInfo run(const Function &F, FunctionAnalysisManager &);
+  TargetLibraryInfo run(const Function &F, FunctionAnalysisManager &);
 
 private:
   friend AnalysisInfoMixin<TargetLibraryAnalysis>;
-  LLVM_ABI static AnalysisKey Key;
+  static AnalysisKey Key;
 
   std::optional<TargetLibraryInfoImpl> BaselineInfoImpl;
 };
 
-class LLVM_ABI TargetLibraryInfoWrapperPass : public ImmutablePass {
+class TargetLibraryInfoWrapperPass : public ImmutablePass {
   TargetLibraryAnalysis TLA;
   std::optional<TargetLibraryInfo> TLI;
 
@@ -640,11 +644,7 @@ class LLVM_ABI TargetLibraryInfoWrapperPass : public ImmutablePass {
 
 public:
   static char ID;
-
-  /// The default constructor should not be used and is only for pass manager
-  /// initialization purposes.
   TargetLibraryInfoWrapperPass();
-
   explicit TargetLibraryInfoWrapperPass(const Triple &T);
   explicit TargetLibraryInfoWrapperPass(const TargetLibraryInfoImpl &TLI);
 

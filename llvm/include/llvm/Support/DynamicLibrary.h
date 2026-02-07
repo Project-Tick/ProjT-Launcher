@@ -13,7 +13,6 @@
 #ifndef LLVM_SUPPORT_DYNAMICLIBRARY_H
 #define LLVM_SUPPORT_DYNAMICLIBRARY_H
 
-#include "llvm/Support/Compiler.h"
 #include <string>
 
 namespace llvm {
@@ -35,7 +34,7 @@ class DynamicLibrary {
   // Placeholder whose address represents an invalid library.
   // We use this instead of NULL or a pointer-int pair because the OS library
   // might define 0 or 1 to be "special" handles, such as "search all".
-  LLVM_ABI static char Invalid;
+  static char Invalid;
 
   // Opaque data used to interface with OS-specific dynamic library handling.
   void *Data;
@@ -55,7 +54,7 @@ public:
   /// Use isValid() to distinguish these cases if it is important.
   /// Note that this will \e not search symbols explicitly registered by
   /// AddSymbol().
-  LLVM_ABI void *getAddressOfSymbol(const char *symbolName);
+  void *getAddressOfSymbol(const char *symbolName);
 
   /// This function permanently loads the dynamic library at the given path
   /// using the library load operation from the host operating system. The
@@ -68,16 +67,16 @@ public:
   ///
   /// It is safe to call this function multiple times for the same library.
   /// Open a dynamic library permanently.
-  LLVM_ABI static DynamicLibrary
-  getPermanentLibrary(const char *filename, std::string *errMsg = nullptr);
+  static DynamicLibrary getPermanentLibrary(const char *filename,
+                                            std::string *errMsg = nullptr);
 
   /// Registers an externally loaded library. The library will be unloaded
   /// when the program terminates.
   ///
   /// It is safe to call this function multiple times for the same library,
   /// though ownership is only taken if there was no error.
-  LLVM_ABI static DynamicLibrary
-  addPermanentLibrary(void *handle, std::string *errMsg = nullptr);
+  static DynamicLibrary addPermanentLibrary(void *handle,
+                                            std::string *errMsg = nullptr);
 
   /// This function permanently loads the dynamic library at the given path.
   /// Use this instead of getPermanentLibrary() when you won't need to get
@@ -99,8 +98,8 @@ public:
   /// library fails to load.
   ///
   /// It is safe to call this function multiple times for the same library.
-  LLVM_ABI static DynamicLibrary getLibrary(const char *FileName,
-                                            std::string *Err = nullptr);
+  static DynamicLibrary getLibrary(const char *FileName,
+                                   std::string *Err = nullptr);
 
   /// This function closes the dynamic library at the given path, using the
   /// library close operation of the host operating system, and there is no
@@ -108,7 +107,7 @@ public:
   ///
   /// This function should be called only if the library was loaded using the
   /// getLibrary() function.
-  LLVM_ABI static void closeLibrary(DynamicLibrary &Lib);
+  static void closeLibrary(DynamicLibrary &Lib);
 
   enum SearchOrdering {
     /// SO_Linker - Search as a call to dlsym(dlopen(NULL)) would when
@@ -124,7 +123,7 @@ public:
     /// The default bahaviour is to search loaded libraries in reverse.
     SO_LoadOrder = 4
   };
-  LLVM_ABI static SearchOrdering SearchOrder; // = SO_Linker
+  static SearchOrdering SearchOrder; // = SO_Linker
 
   /// This function will search through all previously loaded dynamic
   /// libraries for the symbol \p symbolName. If it is found, the address of
@@ -133,7 +132,7 @@ public:
   /// as explicitly registered symbols (AddSymbol()).
   /// @throws std::string on error.
   /// Search through libraries for address of a symbol
-  LLVM_ABI static void *SearchForAddressOfSymbol(const char *symbolName);
+  static void *SearchForAddressOfSymbol(const char *symbolName);
 
   /// Convenience function for C++ophiles.
   static void *SearchForAddressOfSymbol(const std::string &symbolName) {
@@ -144,7 +143,7 @@ public:
   /// value \p symbolValue.  These symbols are searched before any
   /// libraries.
   /// Add searchable symbol/value pair.
-  LLVM_ABI static void AddSymbol(StringRef symbolName, void *symbolValue);
+  static void AddSymbol(StringRef symbolName, void *symbolValue);
 
   class HandleSet;
 };

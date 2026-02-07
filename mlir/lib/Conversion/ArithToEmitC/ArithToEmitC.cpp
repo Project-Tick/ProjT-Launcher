@@ -13,7 +13,6 @@
 
 #include "mlir/Conversion/ArithToEmitC/ArithToEmitC.h"
 
-#include "mlir/Conversion/ConvertToEmitC/ToEmitCInterface.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/EmitC/IR/EmitC.h"
 #include "mlir/Dialect/EmitC/Transforms/TypeConversions.h"
@@ -23,27 +22,6 @@
 
 using namespace mlir;
 
-namespace {
-/// Implement the interface to convert Arith to EmitC.
-struct ArithToEmitCDialectInterface : public ConvertToEmitCPatternInterface {
-  using ConvertToEmitCPatternInterface::ConvertToEmitCPatternInterface;
-
-  /// Hook for derived dialect interface to provide conversion patterns
-  /// and mark dialect legal for the conversion target.
-  void populateConvertToEmitCConversionPatterns(
-      ConversionTarget &target, TypeConverter &typeConverter,
-      RewritePatternSet &patterns) const final {
-    populateArithToEmitCPatterns(typeConverter, patterns);
-  }
-};
-} // namespace
-
-void mlir::registerConvertArithToEmitCInterface(DialectRegistry &registry) {
-  registry.addExtension(+[](MLIRContext *ctx, arith::ArithDialect *dialect) {
-    dialect->addInterfaces<ArithToEmitCDialectInterface>();
-  });
-}
-
 //===----------------------------------------------------------------------===//
 // Conversion Patterns
 //===----------------------------------------------------------------------===//
@@ -52,7 +30,7 @@ namespace {
 class ArithConstantOpConversionPattern
     : public OpConversionPattern<arith::ConstantOp> {
 public:
-  using Base::Base;
+  using OpConversionPattern::OpConversionPattern;
 
   LogicalResult
   matchAndRewrite(arith::ConstantOp arithConst,
@@ -94,7 +72,7 @@ Value adaptValueType(Value val, ConversionPatternRewriter &rewriter, Type ty) {
 
 class CmpFOpConversion : public OpConversionPattern<arith::CmpFOp> {
 public:
-  using Base::Base;
+  using OpConversionPattern::OpConversionPattern;
 
   LogicalResult
   matchAndRewrite(arith::CmpFOp op, OpAdaptor adaptor,
@@ -110,9 +88,9 @@ public:
     emitc::CmpPredicate predicate;
     switch (op.getPredicate()) {
     case arith::CmpFPredicate::AlwaysFalse: {
-      auto constant =
-          emitc::ConstantOp::create(rewriter, op.getLoc(), rewriter.getI1Type(),
-                                    rewriter.getBoolAttr(/*value=*/false));
+      auto constant = rewriter.create<emitc::ConstantOp>(
+          op.getLoc(), rewriter.getI1Type(),
+          rewriter.getBoolAttr(/*value=*/false));
       rewriter.replaceOp(op, constant);
       return success();
     }
@@ -179,9 +157,9 @@ public:
       return success();
     }
     case arith::CmpFPredicate::AlwaysTrue: {
-      auto constant =
-          emitc::ConstantOp::create(rewriter, op.getLoc(), rewriter.getI1Type(),
-                                    rewriter.getBoolAttr(/*value=*/true));
+      auto constant = rewriter.create<emitc::ConstantOp>(
+          op.getLoc(), rewriter.getI1Type(),
+          rewriter.getBoolAttr(/*value=*/true));
       rewriter.replaceOp(op, constant);
       return success();
     }
@@ -189,8 +167,8 @@ public:
 
     // Compare the values naively
     auto cmpResult =
-        emitc::CmpOp::create(rewriter, op.getLoc(), op.getType(), predicate,
-                             adaptor.getLhs(), adaptor.getRhs());
+        rewriter.create<emitc::CmpOp>(op.getLoc(), op.getType(), predicate,
+                                      adaptor.getLhs(), adaptor.getRhs());
 
     // Adjust the results for unordered/ordered semantics
     if (unordered) {
@@ -213,16 +191,16 @@ private:
   Value isNaN(ConversionPatternRewriter &rewriter, Location loc,
               Value operand) const {
     // A value is NaN exactly when it compares unequal to itself.
-    return emitc::CmpOp::create(rewriter, loc, rewriter.getI1Type(),
-                                emitc::CmpPredicate::ne, operand, operand);
+    return rewriter.create<emitc::CmpOp>(
+        loc, rewriter.getI1Type(), emitc::CmpPredicate::ne, operand, operand);
   }
 
   /// Return a value that is true if \p operand is not NaN.
   Value isNotNaN(ConversionPatternRewriter &rewriter, Location loc,
                  Value operand) const {
     // A value is not NaN exactly when it compares equal to itself.
-    return emitc::CmpOp::create(rewriter, loc, rewriter.getI1Type(),
-                                emitc::CmpPredicate::eq, operand, operand);
+    return rewriter.create<emitc::CmpOp>(
+        loc, rewriter.getI1Type(), emitc::CmpPredicate::eq, operand, operand);
   }
 
   /// Return a value that is true if the operands \p first and \p second are
@@ -231,8 +209,8 @@ private:
                                Location loc, Value first, Value second) const {
     auto firstIsNaN = isNaN(rewriter, loc, first);
     auto secondIsNaN = isNaN(rewriter, loc, second);
-    return emitc::LogicalOrOp::create(rewriter, loc, rewriter.getI1Type(),
-                                      firstIsNaN, secondIsNaN);
+    return rewriter.create<emitc::LogicalOrOp>(loc, rewriter.getI1Type(),
+                                               firstIsNaN, secondIsNaN);
   }
 
   /// Return a value that is true if the operands \p first and \p second are
@@ -241,14 +219,14 @@ private:
                              Value first, Value second) const {
     auto firstIsNotNaN = isNotNaN(rewriter, loc, first);
     auto secondIsNotNaN = isNotNaN(rewriter, loc, second);
-    return emitc::LogicalAndOp::create(rewriter, loc, rewriter.getI1Type(),
-                                       firstIsNotNaN, secondIsNotNaN);
+    return rewriter.create<emitc::LogicalAndOp>(loc, rewriter.getI1Type(),
+                                                firstIsNotNaN, secondIsNotNaN);
   }
 };
 
 class CmpIOpConversion : public OpConversionPattern<arith::CmpIOp> {
 public:
-  using Base::Base;
+  using OpConversionPattern::OpConversionPattern;
 
   bool needsUnsignedCmp(arith::CmpIPredicate pred) const {
     switch (pred) {
@@ -314,7 +292,7 @@ public:
 
 class NegFOpConversion : public OpConversionPattern<arith::NegFOp> {
 public:
-  using Base::Base;
+  using OpConversionPattern::OpConversionPattern;
 
   LogicalResult
   matchAndRewrite(arith::NegFOp op, OpAdaptor adaptor,
@@ -378,10 +356,10 @@ public:
       Type attrType = (emitc::isPointerWideType(operandType))
                           ? rewriter.getIndexType()
                           : operandType;
-      auto constOne = emitc::ConstantOp::create(
-          rewriter, op.getLoc(), operandType, rewriter.getOneAttr(attrType));
-      auto oneAndOperand = emitc::BitwiseAndOp::create(
-          rewriter, op.getLoc(), operandType, adaptor.getIn(), constOne);
+      auto constOne = rewriter.create<emitc::ConstantOp>(
+          op.getLoc(), operandType, rewriter.getOneAttr(attrType));
+      auto oneAndOperand = rewriter.create<emitc::BitwiseAndOp>(
+          op.getLoc(), operandType, adaptor.getIn(), constOne);
       rewriter.replaceOpWithNewOp<emitc::CastOp>(op, opReturnType,
                                                  oneAndOperand);
       return success();
@@ -402,8 +380,8 @@ public:
     Value actualOp = adaptValueType(adaptor.getIn(), rewriter, castSrcType);
 
     // Actual cast (may change bitwidth)
-    auto cast =
-        emitc::CastOp::create(rewriter, op.getLoc(), castDestType, actualOp);
+    auto cast = rewriter.template create<emitc::CastOp>(op.getLoc(),
+                                                        castDestType, actualOp);
 
     // Cast to the expected output type
     auto result = adaptValueType(cast, rewriter, opReturnType);
@@ -466,8 +444,9 @@ public:
     Value lhsAdapted = adaptValueType(uiBinOp.getLhs(), rewriter, unsignedType);
     Value rhsAdapted = adaptValueType(uiBinOp.getRhs(), rewriter, unsignedType);
 
-    auto newDivOp = EmitCOp::create(rewriter, uiBinOp.getLoc(), unsignedType,
-                                    ArrayRef<Value>{lhsAdapted, rhsAdapted});
+    auto newDivOp =
+        rewriter.create<EmitCOp>(uiBinOp.getLoc(), unsignedType,
+                                 ArrayRef<Value>{lhsAdapted, rhsAdapted});
     Value resultAdapted = adaptValueType(newDivOp, rewriter, newRetTy);
     rewriter.replaceOp(uiBinOp, resultAdapted);
     return success();
@@ -507,8 +486,8 @@ public:
     Value lhs = adaptValueType(adaptor.getLhs(), rewriter, arithmeticType);
     Value rhs = adaptValueType(adaptor.getRhs(), rewriter, arithmeticType);
 
-    Value arithmeticResult =
-        EmitCOp::create(rewriter, op.getLoc(), arithmeticType, lhs, rhs);
+    Value arithmeticResult = rewriter.template create<EmitCOp>(
+        op.getLoc(), arithmeticType, lhs, rhs);
 
     Value result = adaptValueType(arithmeticResult, rewriter, type);
 
@@ -547,8 +526,8 @@ public:
     Value lhs = adaptValueType(adaptor.getLhs(), rewriter, arithmeticType);
     Value rhs = adaptValueType(adaptor.getRhs(), rewriter, arithmeticType);
 
-    Value arithmeticResult =
-        EmitCOp::create(rewriter, op.getLoc(), arithmeticType, lhs, rhs);
+    Value arithmeticResult = rewriter.template create<EmitCOp>(
+        op.getLoc(), arithmeticType, lhs, rhs);
 
     Value result = adaptValueType(arithmeticResult, rewriter, type);
 
@@ -587,43 +566,38 @@ public:
     // Add a runtime check for overflow
     Value width;
     if (emitc::isPointerWideType(type)) {
-      Value eight = emitc::ConstantOp::create(rewriter, op.getLoc(), rhsType,
-                                              rewriter.getIndexAttr(8));
-      emitc::CallOpaqueOp sizeOfCall = emitc::CallOpaqueOp::create(
-          rewriter, op.getLoc(), rhsType, "sizeof", ArrayRef<Value>{eight});
-      width = emitc::MulOp::create(rewriter, op.getLoc(), rhsType, eight,
-                                   sizeOfCall.getResult(0));
+      Value eight = rewriter.create<emitc::ConstantOp>(
+          op.getLoc(), rhsType, rewriter.getIndexAttr(8));
+      emitc::CallOpaqueOp sizeOfCall = rewriter.create<emitc::CallOpaqueOp>(
+          op.getLoc(), rhsType, "sizeof", ArrayRef<Value>{eight});
+      width = rewriter.create<emitc::MulOp>(op.getLoc(), rhsType, eight,
+                                            sizeOfCall.getResult(0));
     } else {
-      width = emitc::ConstantOp::create(
-          rewriter, op.getLoc(), rhsType,
+      width = rewriter.create<emitc::ConstantOp>(
+          op.getLoc(), rhsType,
           rewriter.getIntegerAttr(rhsType, type.getIntOrFloatBitWidth()));
     }
 
-    Value excessCheck =
-        emitc::CmpOp::create(rewriter, op.getLoc(), rewriter.getI1Type(),
-                             emitc::CmpPredicate::lt, rhs, width);
+    Value excessCheck = rewriter.create<emitc::CmpOp>(
+        op.getLoc(), rewriter.getI1Type(), emitc::CmpPredicate::lt, rhs, width);
 
     // Any concrete value is a valid refinement of poison.
-    Value poison = emitc::ConstantOp::create(
-        rewriter, op.getLoc(), arithmeticType,
+    Value poison = rewriter.create<emitc::ConstantOp>(
+        op.getLoc(), arithmeticType,
         (isa<IntegerType>(arithmeticType)
              ? rewriter.getIntegerAttr(arithmeticType, 0)
              : rewriter.getIndexAttr(0)));
 
-    emitc::ExpressionOp ternary =
-        emitc::ExpressionOp::create(rewriter, op.getLoc(), arithmeticType,
-                                    ValueRange({lhs, rhs, excessCheck, poison}),
-                                    /*do_not_inline=*/false);
-    Block &bodyBlock = ternary.createBody();
+    emitc::ExpressionOp ternary = rewriter.create<emitc::ExpressionOp>(
+        op.getLoc(), arithmeticType, /*do_not_inline=*/false);
+    Block &bodyBlock = ternary.getBodyRegion().emplaceBlock();
     auto currentPoint = rewriter.getInsertionPoint();
     rewriter.setInsertionPointToStart(&bodyBlock);
     Value arithmeticResult =
-        EmitCOp::create(rewriter, op.getLoc(), arithmeticType,
-                        bodyBlock.getArgument(0), bodyBlock.getArgument(1));
-    Value resultOrPoison = emitc::ConditionalOp::create(
-        rewriter, op.getLoc(), arithmeticType, bodyBlock.getArgument(2),
-        arithmeticResult, bodyBlock.getArgument(3));
-    emitc::YieldOp::create(rewriter, op.getLoc(), resultOrPoison);
+        rewriter.create<EmitCOp>(op.getLoc(), arithmeticType, lhs, rhs);
+    Value resultOrPoison = rewriter.create<emitc::ConditionalOp>(
+        op.getLoc(), arithmeticType, excessCheck, arithmeticResult, poison);
+    rewriter.create<emitc::YieldOp>(op.getLoc(), resultOrPoison);
     rewriter.setInsertionPoint(op->getBlock(), currentPoint);
 
     Value result = adaptValueType(ternary, rewriter, type);
@@ -647,7 +621,7 @@ class UnsignedShiftOpConversion final
 
 class SelectOpConversion : public OpConversionPattern<arith::SelectOp> {
 public:
-  using Base::Base;
+  using OpConversionPattern<arith::SelectOp>::OpConversionPattern;
 
   LogicalResult
   matchAndRewrite(arith::SelectOp selectOp, OpAdaptor adaptor,
@@ -704,12 +678,11 @@ public:
                                   /*isSigned=*/false);
     }
 
-    Value result = emitc::CastOp::create(
-        rewriter, castOp.getLoc(), actualResultType, adaptor.getOperands());
+    Value result = rewriter.create<emitc::CastOp>(
+        castOp.getLoc(), actualResultType, adaptor.getOperands());
 
     if (isa<arith::FPToUIOp>(castOp)) {
-      result =
-          emitc::CastOp::create(rewriter, castOp.getLoc(), dstType, result);
+      result = rewriter.create<emitc::CastOp>(castOp.getLoc(), dstType, result);
     }
     rewriter.replaceOp(castOp, result);
 
@@ -751,8 +724,8 @@ public:
     }
     Value fpCastOperand = adaptor.getIn();
     if (actualOperandType != operandType) {
-      fpCastOperand = emitc::CastOp::create(rewriter, castOp.getLoc(),
-                                            actualOperandType, fpCastOperand);
+      fpCastOperand = rewriter.template create<emitc::CastOp>(
+          castOp.getLoc(), actualOperandType, fpCastOperand);
     }
     rewriter.replaceOpWithNewOp<emitc::CastOp>(castOp, dstType, fpCastOperand);
 

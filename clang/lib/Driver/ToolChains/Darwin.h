@@ -9,12 +9,12 @@
 #ifndef LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_DARWIN_H
 #define LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_DARWIN_H
 
+#include "Cuda.h"
+#include "LazyDetector.h"
+#include "ROCm.h"
+#include "SYCL.h"
 #include "clang/Basic/DarwinSDKInfo.h"
 #include "clang/Basic/LangOptions.h"
-#include "clang/Driver/CudaInstallationDetector.h"
-#include "clang/Driver/LazyDetector.h"
-#include "clang/Driver/RocmInstallationDetector.h"
-#include "clang/Driver/SyclInstallationDetector.h"
 #include "clang/Driver/Tool.h"
 #include "clang/Driver/ToolChain.h"
 #include "clang/Driver/XRayArgs.h"
@@ -145,11 +145,6 @@ protected:
   Tool *buildStaticLibTool() const override;
   Tool *getTool(Action::ActionClass AC) const override;
 
-  void
-  addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
-                        llvm::opt::ArgStringList &CC1Args,
-                        Action::OffloadKind DeviceOffloadKind) const override;
-
 private:
   mutable std::unique_ptr<tools::darwin::Lipo> Lipo;
   mutable std::unique_ptr<tools::darwin::Dsymutil> Dsymutil;
@@ -197,11 +192,6 @@ public:
                                       llvm::opt::ArgStringList &CmdArgs) const {
   }
 
-  virtual bool HasPlatformPrefix(const llvm::Triple &T) const { return false; }
-
-  virtual void AppendPlatformPrefix(SmallString<128> &Path,
-                                    const llvm::Triple &T) const {}
-
   /// On some iOS platforms, kernel and kernel modules were built statically. Is
   /// this such a target?
   virtual bool isKernelStatic() const { return false; }
@@ -237,9 +227,9 @@ public:
   // Return the full path of the compiler-rt library on a non-Darwin MachO
   // system. Those are under
   // <resourcedir>/lib/darwin/macho_embedded/<...>(.dylib|.a).
-  std::string getCompilerRT(const llvm::opt::ArgList &Args, StringRef Component,
-                            FileType Type = ToolChain::FT_Static,
-                            bool IsFortran = false) const override;
+  std::string
+  getCompilerRT(const llvm::opt::ArgList &Args, StringRef Component,
+                FileType Type = ToolChain::FT_Static) const override;
 
   /// }
   /// @name ToolChain Implementation
@@ -417,9 +407,9 @@ public:
 
   // Return the full path of the compiler-rt library on a Darwin MachO system.
   // Those are under <resourcedir>/lib/darwin/<...>(.dylib|.a).
-  std::string getCompilerRT(const llvm::opt::ArgList &Args, StringRef Component,
-                            FileType Type = ToolChain::FT_Static,
-                            bool IsFortran = false) const override;
+  std::string
+  getCompilerRT(const llvm::opt::ArgList &Args, StringRef Component,
+                FileType Type = ToolChain::FT_Static) const override;
 
 protected:
   /// }
@@ -652,10 +642,6 @@ public:
   /// @name Apple ToolChain Implementation
   /// {
 
-  void
-  AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
-                            llvm::opt::ArgStringList &CC1Args) const override;
-
   RuntimeLibType GetRuntimeLibType(const llvm::opt::ArgList &Args) const override;
 
   void AddLinkRuntimeLibArgs(const llvm::opt::ArgList &Args,
@@ -667,18 +653,8 @@ public:
 
   void addClangWarningOptions(llvm::opt::ArgStringList &CC1Args) const override;
 
-  void
-  addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
-                        llvm::opt::ArgStringList &CC1Args,
-                        Action::OffloadKind DeviceOffloadKind) const override;
-
   void AddLinkARCArgs(const llvm::opt::ArgList &Args,
                       llvm::opt::ArgStringList &CmdArgs) const override;
-
-  bool HasPlatformPrefix(const llvm::Triple &T) const override;
-
-  void AppendPlatformPrefix(SmallString<128> &Path,
-                            const llvm::Triple &T) const override;
 
   unsigned GetDefaultDwarfVersion() const override;
   // Until dtrace (via CTF) and LLDB can deal with distributed debug info,

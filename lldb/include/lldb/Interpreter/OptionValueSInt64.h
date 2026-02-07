@@ -35,7 +35,7 @@ public:
   void DumpValue(const ExecutionContext *exe_ctx, Stream &strm,
                  uint32_t dump_mask) override;
 
-  llvm::json::Value ToJSON(const ExecutionContext *exe_ctx) const override {
+  llvm::json::Value ToJSON(const ExecutionContext *exe_ctx) override {
     return m_current_value;
   }
 
@@ -68,10 +68,11 @@ public:
   }
 
   bool SetDefaultValue(int64_t value) {
-    assert(value >= m_min_value && value <= m_max_value &&
-           "disallowed default value");
-    m_default_value = value;
-    return true;
+    if (value >= m_min_value && value <= m_max_value) {
+      m_default_value = value;
+      return true;
+    }
+    return false;
   }
 
   void SetMinimumValue(int64_t v) { m_min_value = v; }

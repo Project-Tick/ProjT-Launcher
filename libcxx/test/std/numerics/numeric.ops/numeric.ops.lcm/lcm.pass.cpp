@@ -149,7 +149,7 @@ int main(int argc, char**)
     assert(res1 == 1324997410816LL);
     }
 
-    // https://llvm.org/PR96196
+    // https://github.com/llvm/llvm-project/issues/96196
     {
         assert(test_limits<unsigned int>());
         assert(test_limits<std::uint32_t>());

@@ -28,7 +28,8 @@ class RISCVELFStreamer : public MCELFStreamer {
 public:
   RISCVELFStreamer(MCContext &C, std::unique_ptr<MCAsmBackend> MAB,
                    std::unique_ptr<MCObjectWriter> MOW,
-                   std::unique_ptr<MCCodeEmitter> MCE);
+                   std::unique_ptr<MCCodeEmitter> MCE)
+      : MCELFStreamer(C, std::move(MAB), std::move(MOW), std::move(MCE)) {}
 
   void changeSection(MCSection *Section, uint32_t Subsection) override;
   void emitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI) override;
@@ -55,26 +56,23 @@ public:
   RISCVELFStreamer &getStreamer();
   RISCVTargetELFStreamer(MCStreamer &S, const MCSubtargetInfo &STI);
 
-  void emitDirectiveOptionExact() override;
-  void emitDirectiveOptionNoExact() override;
+  void emitDirectiveOptionPush() override;
+  void emitDirectiveOptionPop() override;
   void emitDirectiveOptionPIC() override;
   void emitDirectiveOptionNoPIC() override;
-  void emitDirectiveOptionPop() override;
-  void emitDirectiveOptionPush() override;
-  void emitDirectiveOptionRelax() override;
-  void emitDirectiveOptionNoRelax() override;
   void emitDirectiveOptionRVC() override;
   void emitDirectiveOptionNoRVC() override;
+  void emitDirectiveOptionRelax() override;
+  void emitDirectiveOptionNoRelax() override;
   void emitDirectiveVariantCC(MCSymbol &Symbol) override;
 
-  void emitNoteGnuPropertySection(const uint32_t Feature1And);
   void finish() override;
 };
 
-MCStreamer *createRISCVELFStreamer(const Triple &, MCContext &C,
-                                   std::unique_ptr<MCAsmBackend> &&MAB,
-                                   std::unique_ptr<MCObjectWriter> &&MOW,
-                                   std::unique_ptr<MCCodeEmitter> &&MCE);
+MCELFStreamer *createRISCVELFStreamer(MCContext &C,
+                                      std::unique_ptr<MCAsmBackend> MAB,
+                                      std::unique_ptr<MCObjectWriter> MOW,
+                                      std::unique_ptr<MCCodeEmitter> MCE);
 } // namespace llvm
 
 #endif // LLVM_LIB_TARGET_RISCV_MCTARGETDESC_RISCVELFSTREAMER_H

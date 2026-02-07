@@ -162,11 +162,11 @@ void LVCodeViewReader::cacheRelocations() {
   for (const SectionRef &Section : getObj().sections()) {
     const coff_section *CoffSection = getObj().getCOFFSection(Section);
 
-    auto &RM = RelocMap[CoffSection];
-    llvm::append_range(RM, Section.relocations());
+    for (const RelocationRef &Relocacion : Section.relocations())
+      RelocMap[CoffSection].push_back(Relocacion);
 
     // Sort relocations by address.
-    llvm::sort(RM, [](RelocationRef L, RelocationRef R) {
+    llvm::sort(RelocMap[CoffSection], [](RelocationRef L, RelocationRef R) {
       return L.getOffset() < R.getOffset();
     });
   }
@@ -720,11 +720,12 @@ Error LVCodeViewReader::traverseSymbolSection(StringRef SectionName,
                                    getFileName());
 
         LLVM_DEBUG({ W.printString("Symbol Name", SymbolName); });
-        if (!FunctionLineTables.try_emplace(SymbolName, Contents).second) {
+        if (FunctionLineTables.count(SymbolName) != 0) {
           // Saw debug info for this function already?
           return createStringError(object_error::parse_failed, getFileName());
         }
 
+        FunctionLineTables[SymbolName] = Contents;
         SymbolNames.push_back(SymbolName);
       }
       break;
@@ -1190,12 +1191,7 @@ Error LVCodeViewReader::loadTargetInfo(const ObjectFile &Obj) {
     FeaturesValue = SubtargetFeatures();
   }
   FeaturesValue = *Features;
-
-  StringRef CPU;
-  if (auto OptCPU = Obj.tryGetCPUName())
-    CPU = *OptCPU;
-
-  return loadGenericTargetInfo(TT.str(), FeaturesValue.getString(), CPU);
+  return loadGenericTargetInfo(TT.str(), FeaturesValue.getString());
 }
 
 Error LVCodeViewReader::loadTargetInfo(const PDBFile &Pdb) {
@@ -1205,9 +1201,8 @@ Error LVCodeViewReader::loadTargetInfo(const PDBFile &Pdb) {
   TT.setOS(Triple::Win32);
 
   StringRef TheFeature = "";
-  StringRef TheCPU = "";
 
-  return loadGenericTargetInfo(TT.str(), TheFeature, TheCPU);
+  return loadGenericTargetInfo(TT.str(), TheFeature);
 }
 
 std::string LVCodeViewReader::getRegisterName(LVSmall Opcode,

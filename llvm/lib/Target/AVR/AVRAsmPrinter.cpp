@@ -16,7 +16,7 @@
 #include "AVRSubtarget.h"
 #include "AVRTargetMachine.h"
 #include "MCTargetDesc/AVRInstPrinter.h"
-#include "MCTargetDesc/AVRMCAsmInfo.h"
+#include "MCTargetDesc/AVRMCExpr.h"
 #include "TargetInfo/AVRTargetInfo.h"
 
 #include "llvm/CodeGen/AsmPrinter.h"
@@ -33,22 +33,19 @@
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/MC/TargetRegistry.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
 
 #define DEBUG_TYPE "avr-asm-printer"
 
-using namespace llvm;
-
-namespace {
+namespace llvm {
 
 /// An AVR assembly code printer.
 class AVRAsmPrinter : public AsmPrinter {
 public:
   AVRAsmPrinter(TargetMachine &TM, std::unique_ptr<MCStreamer> Streamer)
-      : AsmPrinter(TM, std::move(Streamer), ID), MRI(*TM.getMCRegisterInfo()) {}
+      : AsmPrinter(TM, std::move(Streamer)), MRI(*TM.getMCRegisterInfo()) {}
 
   StringRef getPassName() const override { return "AVR Assembly Printer"; }
 
@@ -62,8 +59,7 @@ public:
 
   void emitInstruction(const MachineInstr *MI) override;
 
-  const MCExpr *lowerConstant(const Constant *CV, const Constant *BaseCV,
-                              uint64_t Offset) override;
+  const MCExpr *lowerConstant(const Constant *CV) override;
 
   void emitXXStructor(const DataLayout &DL, const Constant *CV) override;
 
@@ -71,14 +67,10 @@ public:
 
   void emitStartOfAsmFile(Module &M) override;
 
-  static char ID;
-
 private:
   const MCRegisterInfo &MRI;
   bool EmittedStructorSymbolAttrs = false;
 };
-
-} // namespace
 
 void AVRAsmPrinter::printOperand(const MachineInstr *MI, unsigned OpNo,
                                  raw_ostream &O) {
@@ -207,20 +199,18 @@ void AVRAsmPrinter::emitInstruction(const MachineInstr *MI) {
   EmitToStreamer(*OutStreamer, I);
 }
 
-const MCExpr *AVRAsmPrinter::lowerConstant(const Constant *CV,
-                                           const Constant *BaseCV,
-                                           uint64_t Offset) {
+const MCExpr *AVRAsmPrinter::lowerConstant(const Constant *CV) {
   MCContext &Ctx = OutContext;
 
   if (const GlobalValue *GV = dyn_cast<GlobalValue>(CV)) {
     bool IsProgMem = GV->getAddressSpace() == AVR::ProgramMemory;
     if (IsProgMem) {
       const MCExpr *Expr = MCSymbolRefExpr::create(getSymbol(GV), Ctx);
-      return AVRMCExpr::create(AVR::S_PM, Expr, false, Ctx);
+      return AVRMCExpr::create(AVRMCExpr::VK_AVR_PM, Expr, false, Ctx);
     }
   }
 
-  return AsmPrinter::lowerConstant(CV, BaseCV, Offset);
+  return AsmPrinter::lowerConstant(CV);
 }
 
 void AVRAsmPrinter::emitXXStructor(const DataLayout &DL, const Constant *CV) {
@@ -245,7 +235,7 @@ void AVRAsmPrinter::emitXXStructor(const DataLayout &DL, const Constant *CV) {
 bool AVRAsmPrinter::doFinalization(Module &M) {
   const TargetLoweringObjectFile &TLOF = getObjFileLowering();
   const AVRTargetMachine &TM = (const AVRTargetMachine &)MMI->getTarget();
-  const AVRSubtarget *SubTM = TM.getSubtargetImpl();
+  const AVRSubtarget *SubTM = (const AVRSubtarget *)TM.getSubtargetImpl();
 
   bool NeedsCopyData = false;
   bool NeedsClearBSS = false;
@@ -260,7 +250,7 @@ bool AVRAsmPrinter::doFinalization(Module &M) {
       continue;
     }
 
-    auto *Section = static_cast<MCSectionELF *>(TLOF.SectionForGlobal(&GO, TM));
+    auto *Section = cast<MCSectionELF>(TLOF.SectionForGlobal(&GO, TM));
     if (Section->getName().starts_with(".data"))
       NeedsCopyData = true;
     else if (Section->getName().starts_with(".rodata") && SubTM->hasLPM())
@@ -294,7 +284,7 @@ bool AVRAsmPrinter::doFinalization(Module &M) {
 
 void AVRAsmPrinter::emitStartOfAsmFile(Module &M) {
   const AVRTargetMachine &TM = (const AVRTargetMachine &)MMI->getTarget();
-  const AVRSubtarget *SubTM = TM.getSubtargetImpl();
+  const AVRSubtarget *SubTM = (const AVRSubtarget *)TM.getSubtargetImpl();
   if (!SubTM)
     return;
 
@@ -331,12 +321,8 @@ void AVRAsmPrinter::emitStartOfAsmFile(Module &M) {
         MCConstantExpr::create(SubTM->getIORegRAMPZ(), MMI->getContext()));
 }
 
-char AVRAsmPrinter::ID = 0;
+} // end of namespace llvm
 
-INITIALIZE_PASS(AVRAsmPrinter, "avr-asm-printer", "AVR Assembly Printer", false,
-                false)
-
-extern "C" LLVM_ABI LLVM_EXTERNAL_VISIBILITY void
-LLVMInitializeAVRAsmPrinter() {
-  llvm::RegisterAsmPrinter<AVRAsmPrinter> X(getTheAVRTarget());
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeAVRAsmPrinter() {
+  llvm::RegisterAsmPrinter<llvm::AVRAsmPrinter> X(llvm::getTheAVRTarget());
 }

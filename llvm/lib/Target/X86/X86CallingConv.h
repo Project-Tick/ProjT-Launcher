@@ -22,10 +22,10 @@ namespace llvm {
 
 bool RetCC_X86(unsigned ValNo, MVT ValVT, MVT LocVT,
                CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
-               Type *OrigTy, CCState &State);
+               CCState &State);
 
 bool CC_X86(unsigned ValNo, MVT ValVT, MVT LocVT, CCValAssign::LocInfo LocInfo,
-            ISD::ArgFlagsTy ArgFlags, Type *OrigTy, CCState &State);
+            ISD::ArgFlagsTy ArgFlags, CCState &State);
 
 } // End llvm namespace
 

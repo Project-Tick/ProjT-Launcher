@@ -36,11 +36,11 @@ using namespace mlir;
 using tblgen::NamedTypeConstraint;
 
 static llvm::cl::OptionCategory dialectGenCat("Options for -gen-irdl-dialect");
-static llvm::cl::opt<std::string>
+llvm::cl::opt<std::string>
     selectedDialect("dialect", llvm::cl::desc("The dialect to gen for"),
                     llvm::cl::cat(dialectGenCat), llvm::cl::Required);
 
-static Value createPredicate(OpBuilder &builder, tblgen::Pred pred) {
+Value createPredicate(OpBuilder &builder, tblgen::Pred pred) {
   MLIRContext *ctx = builder.getContext();
 
   if (pred.isCombined()) {
@@ -52,38 +52,37 @@ static Value createPredicate(OpBuilder &builder, tblgen::Pred pred) {
       }
       if (combiner == "PredCombinerAnd") {
         auto op =
-            irdl::AllOfOp::create(builder, UnknownLoc::get(ctx), constraints);
+            builder.create<irdl::AllOfOp>(UnknownLoc::get(ctx), constraints);
         return op.getOutput();
       }
       auto op =
-          irdl::AnyOfOp::create(builder, UnknownLoc::get(ctx), constraints);
+          builder.create<irdl::AnyOfOp>(UnknownLoc::get(ctx), constraints);
       return op.getOutput();
     }
   }
 
   std::string condition = pred.getCondition();
   // Build a CPredOp to match the C constraint built.
-  irdl::CPredOp op = irdl::CPredOp::create(builder, UnknownLoc::get(ctx),
-                                           StringAttr::get(ctx, condition));
+  irdl::CPredOp op = builder.create<irdl::CPredOp>(
+      UnknownLoc::get(ctx), StringAttr::get(ctx, condition));
   return op;
 }
 
-static Value typeToConstraint(OpBuilder &builder, Type type) {
+Value typeToConstraint(OpBuilder &builder, Type type) {
   MLIRContext *ctx = builder.getContext();
   auto op =
-      irdl::IsOp::create(builder, UnknownLoc::get(ctx), TypeAttr::get(type));
+      builder.create<irdl::IsOp>(UnknownLoc::get(ctx), TypeAttr::get(type));
   return op.getOutput();
 }
 
-static Value baseToConstraint(OpBuilder &builder, StringRef baseClass) {
+Value baseToConstraint(OpBuilder &builder, StringRef baseClass) {
   MLIRContext *ctx = builder.getContext();
-  auto op = irdl::BaseOp::create(builder, UnknownLoc::get(ctx),
-                                 StringAttr::get(ctx, baseClass));
+  auto op = builder.create<irdl::BaseOp>(UnknownLoc::get(ctx),
+                                         StringAttr::get(ctx, baseClass));
   return op.getOutput();
 }
 
-static std::optional<Type> recordToType(MLIRContext *ctx,
-                                        const Record &predRec) {
+std::optional<Type> recordToType(MLIRContext *ctx, const Record &predRec) {
   if (predRec.isSubClassOf("I")) {
     auto width = predRec.getValueAsInt("bitwidth");
     return IntegerType::get(ctx, width, IntegerType::Signless);
@@ -122,7 +121,7 @@ static std::optional<Type> recordToType(MLIRContext *ctx,
   }
 
   if (predRec.getName() == "NoneType") {
-    return mlir::NoneType::get(ctx);
+    return NoneType::get(ctx);
   }
 
   if (predRec.getName() == "BF16") {
@@ -172,8 +171,7 @@ static std::optional<Type> recordToType(MLIRContext *ctx,
   return std::nullopt;
 }
 
-static Value createTypeConstraint(OpBuilder &builder,
-                                  tblgen::Constraint constraint) {
+Value createTypeConstraint(OpBuilder &builder, tblgen::Constraint constraint) {
   MLIRContext *ctx = builder.getContext();
   const Record &predRec = constraint.getDef();
 
@@ -181,7 +179,7 @@ static Value createTypeConstraint(OpBuilder &builder,
     return createTypeConstraint(builder, predRec.getValueAsDef("baseType"));
 
   if (predRec.getName() == "AnyType") {
-    auto op = irdl::AnyOp::create(builder, UnknownLoc::get(ctx));
+    auto op = builder.create<irdl::AnyOp>(UnknownLoc::get(ctx));
     return op.getOutput();
   }
 
@@ -192,12 +190,12 @@ static Value createTypeConstraint(OpBuilder &builder,
       SmallVector<FlatSymbolRefAttr> nested = {
           SymbolRefAttr::get(ctx, combined)};
       auto typeSymbol = SymbolRefAttr::get(ctx, dialect, nested);
-      auto op = irdl::BaseOp::create(builder, UnknownLoc::get(ctx), typeSymbol);
+      auto op = builder.create<irdl::BaseOp>(UnknownLoc::get(ctx), typeSymbol);
       return op.getOutput();
     }
     std::string typeName = ("!" + predRec.getValueAsString("typeName")).str();
-    auto op = irdl::BaseOp::create(builder, UnknownLoc::get(ctx),
-                                   StringAttr::get(ctx, typeName));
+    auto op = builder.create<irdl::BaseOp>(UnknownLoc::get(ctx),
+                                           StringAttr::get(ctx, typeName));
     return op.getOutput();
   }
 
@@ -207,7 +205,7 @@ static Value createTypeConstraint(OpBuilder &builder,
       constraints.push_back(
           createTypeConstraint(builder, tblgen::Constraint(child)));
     }
-    auto op = irdl::AnyOfOp::create(builder, UnknownLoc::get(ctx), constraints);
+    auto op = builder.create<irdl::AnyOfOp>(UnknownLoc::get(ctx), constraints);
     return op.getOutput();
   }
 
@@ -217,14 +215,14 @@ static Value createTypeConstraint(OpBuilder &builder,
       constraints.push_back(
           createTypeConstraint(builder, tblgen::Constraint(child)));
     }
-    auto op = irdl::AllOfOp::create(builder, UnknownLoc::get(ctx), constraints);
+    auto op = builder.create<irdl::AllOfOp>(UnknownLoc::get(ctx), constraints);
     return op.getOutput();
   }
 
   // Integer types
   if (predRec.getName() == "AnyInteger") {
-    auto op = irdl::BaseOp::create(builder, UnknownLoc::get(ctx),
-                                   StringAttr::get(ctx, "!builtin.integer"));
+    auto op = builder.create<irdl::BaseOp>(
+        UnknownLoc::get(ctx), StringAttr::get(ctx, "!builtin.integer"));
     return op.getOutput();
   }
 
@@ -237,7 +235,7 @@ static Value createTypeConstraint(OpBuilder &builder,
                          IntegerType::get(ctx, width, IntegerType::Signed)),
         typeToConstraint(builder,
                          IntegerType::get(ctx, width, IntegerType::Unsigned))};
-    auto op = irdl::AnyOfOp::create(builder, UnknownLoc::get(ctx), types);
+    auto op = builder.create<irdl::AnyOfOp>(UnknownLoc::get(ctx), types);
     return op.getOutput();
   }
 
@@ -255,15 +253,14 @@ static Value createTypeConstraint(OpBuilder &builder,
     for (const Record *child : predRec.getValueAsListOfDefs("predicateList")) {
       constraints.push_back(createPredicate(builder, tblgen::Pred(child)));
     }
-    auto op = irdl::AllOfOp::create(builder, UnknownLoc::get(ctx), constraints);
+    auto op = builder.create<irdl::AllOfOp>(UnknownLoc::get(ctx), constraints);
     return op.getOutput();
   }
 
   return createPredicate(builder, constraint.getPredicate());
 }
 
-static Value createAttrConstraint(OpBuilder &builder,
-                                  tblgen::Constraint constraint) {
+Value createAttrConstraint(OpBuilder &builder, tblgen::Constraint constraint) {
   MLIRContext *ctx = builder.getContext();
   const Record &predRec = constraint.getDef();
 
@@ -282,7 +279,7 @@ static Value createAttrConstraint(OpBuilder &builder,
       constraints.push_back(createPredicate(
           builder, tblgen::Pred(child->getValueAsDef("predicate"))));
     }
-    auto op = irdl::AllOfOp::create(builder, UnknownLoc::get(ctx), constraints);
+    auto op = builder.create<irdl::AllOfOp>(UnknownLoc::get(ctx), constraints);
     return op.getOutput();
   }
 
@@ -293,12 +290,12 @@ static Value createAttrConstraint(OpBuilder &builder,
       constraints.push_back(
           createAttrConstraint(builder, tblgen::Constraint(child)));
     }
-    auto op = irdl::AnyOfOp::create(builder, UnknownLoc::get(ctx), constraints);
+    auto op = builder.create<irdl::AnyOfOp>(UnknownLoc::get(ctx), constraints);
     return op.getOutput();
   }
 
   if (predRec.getName() == "AnyAttr") {
-    auto op = irdl::AnyOp::create(builder, UnknownLoc::get(ctx));
+    auto op = builder.create<irdl::AnyOp>(UnknownLoc::get(ctx));
     return op.getOutput();
   }
 
@@ -320,7 +317,7 @@ static Value createAttrConstraint(OpBuilder &builder,
 
   if (predRec.getName() == "UnitAttr") {
     auto op =
-        irdl::IsOp::create(builder, UnknownLoc::get(ctx), UnitAttr::get(ctx));
+        builder.create<irdl::IsOp>(UnknownLoc::get(ctx), UnitAttr::get(ctx));
     return op.getOutput();
   }
 
@@ -332,35 +329,34 @@ static Value createAttrConstraint(OpBuilder &builder,
 
       };
       auto typeSymbol = SymbolRefAttr::get(ctx, dialect, nested);
-      auto op = irdl::BaseOp::create(builder, UnknownLoc::get(ctx), typeSymbol);
+      auto op = builder.create<irdl::BaseOp>(UnknownLoc::get(ctx), typeSymbol);
       return op.getOutput();
     }
     std::string typeName = ("#" + predRec.getValueAsString("attrName")).str();
-    auto op = irdl::BaseOp::create(builder, UnknownLoc::get(ctx),
-                                   StringAttr::get(ctx, typeName));
+    auto op = builder.create<irdl::BaseOp>(UnknownLoc::get(ctx),
+                                           StringAttr::get(ctx, typeName));
     return op.getOutput();
   }
 
   return createPredicate(builder, constraint.getPredicate());
 }
 
-static Value createRegionConstraint(OpBuilder &builder,
-                                    tblgen::Region constraint) {
+Value createRegionConstraint(OpBuilder &builder, tblgen::Region constraint) {
   MLIRContext *ctx = builder.getContext();
   const Record &predRec = constraint.getDef();
 
   if (predRec.getName() == "AnyRegion") {
     ValueRange entryBlockArgs = {};
     auto op =
-        irdl::RegionOp::create(builder, UnknownLoc::get(ctx), entryBlockArgs);
+        builder.create<irdl::RegionOp>(UnknownLoc::get(ctx), entryBlockArgs);
     return op.getResult();
   }
 
   if (predRec.isSubClassOf("SizedRegion")) {
     ValueRange entryBlockArgs = {};
     auto ty = IntegerType::get(ctx, 32);
-    auto op = irdl::RegionOp::create(
-        builder, UnknownLoc::get(ctx), entryBlockArgs,
+    auto op = builder.create<irdl::RegionOp>(
+        UnknownLoc::get(ctx), entryBlockArgs,
         IntegerAttr::get(ty, predRec.getValueAsInt("blocks")));
     return op.getResult();
   }
@@ -387,13 +383,13 @@ static StringRef getAttrName(tblgen::AttrDef &tblgenType) {
 }
 
 /// Extract an operation to IRDL.
-static irdl::OperationOp createIRDLOperation(OpBuilder &builder,
-                                             tblgen::Operator &tblgenOp) {
+irdl::OperationOp createIRDLOperation(OpBuilder &builder,
+                                      tblgen::Operator &tblgenOp) {
   MLIRContext *ctx = builder.getContext();
   StringRef opName = getOperatorName(tblgenOp);
 
-  irdl::OperationOp op = irdl::OperationOp::create(
-      builder, UnknownLoc::get(ctx), StringAttr::get(ctx, opName));
+  irdl::OperationOp op = builder.create<irdl::OperationOp>(
+      UnknownLoc::get(ctx), StringAttr::get(ctx, opName));
 
   // Add the block in the region.
   Block &opBlock = op.getBody().emplaceBlock();
@@ -475,45 +471,44 @@ static irdl::OperationOp createIRDLOperation(OpBuilder &builder,
 
   // Create the operands and results operations.
   if (!operands.empty())
-    irdl::OperandsOp::create(consBuilder, UnknownLoc::get(ctx), operands,
-                             ArrayAttr::get(ctx, operandNames),
-                             operandVariadicity);
+    consBuilder.create<irdl::OperandsOp>(UnknownLoc::get(ctx), operands,
+                                         ArrayAttr::get(ctx, operandNames),
+                                         operandVariadicity);
   if (!results.empty())
-    irdl::ResultsOp::create(consBuilder, UnknownLoc::get(ctx), results,
-                            ArrayAttr::get(ctx, resultNames),
-                            resultVariadicity);
+    consBuilder.create<irdl::ResultsOp>(UnknownLoc::get(ctx), results,
+                                        ArrayAttr::get(ctx, resultNames),
+                                        resultVariadicity);
   if (!attributes.empty())
-    irdl::AttributesOp::create(consBuilder, UnknownLoc::get(ctx), attributes,
-                               ArrayAttr::get(ctx, attrNames));
+    consBuilder.create<irdl::AttributesOp>(UnknownLoc::get(ctx), attributes,
+                                           ArrayAttr::get(ctx, attrNames));
   if (!regions.empty())
-    irdl::RegionsOp::create(consBuilder, UnknownLoc::get(ctx), regions,
-                            ArrayAttr::get(ctx, regionNames));
+    consBuilder.create<irdl::RegionsOp>(UnknownLoc::get(ctx), regions,
+                                        ArrayAttr::get(ctx, regionNames));
 
   return op;
 }
 
-static irdl::TypeOp createIRDLType(OpBuilder &builder,
-                                   tblgen::TypeDef &tblgenType) {
+irdl::TypeOp createIRDLType(OpBuilder &builder, tblgen::TypeDef &tblgenType) {
   MLIRContext *ctx = builder.getContext();
   StringRef typeName = getTypeName(tblgenType);
   std::string combined = ("!" + typeName).str();
 
-  irdl::TypeOp op = irdl::TypeOp::create(builder, UnknownLoc::get(ctx),
-                                         StringAttr::get(ctx, combined));
+  irdl::TypeOp op = builder.create<irdl::TypeOp>(
+      UnknownLoc::get(ctx), StringAttr::get(ctx, combined));
 
   op.getBody().emplaceBlock();
 
   return op;
 }
 
-static irdl::AttributeOp createIRDLAttr(OpBuilder &builder,
-                                        tblgen::AttrDef &tblgenAttr) {
+irdl::AttributeOp createIRDLAttr(OpBuilder &builder,
+                                 tblgen::AttrDef &tblgenAttr) {
   MLIRContext *ctx = builder.getContext();
   StringRef attrName = getAttrName(tblgenAttr);
   std::string combined = ("#" + attrName).str();
 
-  irdl::AttributeOp op = irdl::AttributeOp::create(
-      builder, UnknownLoc::get(ctx), StringAttr::get(ctx, combined));
+  irdl::AttributeOp op = builder.create<irdl::AttributeOp>(
+      UnknownLoc::get(ctx), StringAttr::get(ctx, combined));
 
   op.getBody().emplaceBlock();
 
@@ -522,8 +517,8 @@ static irdl::AttributeOp createIRDLAttr(OpBuilder &builder,
 
 static irdl::DialectOp createIRDLDialect(OpBuilder &builder) {
   MLIRContext *ctx = builder.getContext();
-  return irdl::DialectOp::create(builder, UnknownLoc::get(ctx),
-                                 StringAttr::get(ctx, selectedDialect));
+  return builder.create<irdl::DialectOp>(UnknownLoc::get(ctx),
+                                         StringAttr::get(ctx, selectedDialect));
 }
 
 static bool emitDialectIRDLDefs(const RecordKeeper &records, raw_ostream &os) {
@@ -534,7 +529,7 @@ static bool emitDialectIRDLDefs(const RecordKeeper &records, raw_ostream &os) {
 
   // Create a module op and set it as the insertion point.
   OwningOpRef<ModuleOp> module =
-      ModuleOp::create(builder, UnknownLoc::get(&ctx));
+      builder.create<ModuleOp>(UnknownLoc::get(&ctx));
   builder = builder.atBlockBegin(module->getBody());
   // Create the dialect and insert it.
   irdl::DialectOp dialect = createIRDLDialect(builder);

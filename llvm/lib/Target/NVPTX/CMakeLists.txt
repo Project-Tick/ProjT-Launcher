@@ -6,7 +6,6 @@ tablegen(LLVM NVPTXGenAsmWriter.inc -gen-asm-writer)
 tablegen(LLVM NVPTXGenDAGISel.inc -gen-dag-isel)
 tablegen(LLVM NVPTXGenInstrInfo.inc -gen-instr-info)
 tablegen(LLVM NVPTXGenRegisterInfo.inc -gen-register-info)
-tablegen(LLVM NVPTXGenSDNodeInfo.inc -gen-sd-node-info)
 tablegen(LLVM NVPTXGenSubtargetInfo.inc -gen-subtarget)
 
 add_public_tablegen_target(NVPTXCommonTableGen)
@@ -14,36 +13,33 @@ add_public_tablegen_target(NVPTXCommonTableGen)
 set(NVPTXCodeGen_sources
   NVPTXAliasAnalysis.cpp
   NVPTXAllocaHoisting.cpp
+  NVPTXAtomicLower.cpp
   NVPTXAsmPrinter.cpp
   NVPTXAssignValidGlobalNames.cpp
-  NVPTXAtomicLower.cpp
-  NVPTXCtorDtorLowering.cpp
-  NVPTXIRPeephole.cpp
-  NVPTXForwardParams.cpp
   NVPTXFrameLowering.cpp
   NVPTXGenericToNVVM.cpp
-  NVPTXImageOptimizer.cpp
-  NVPTXInstrInfo.cpp
   NVPTXISelDAGToDAG.cpp
   NVPTXISelLowering.cpp
+  NVPTXImageOptimizer.cpp
+  NVPTXInstrInfo.cpp
   NVPTXLowerAggrCopies.cpp
-  NVPTXLowerAlloca.cpp
   NVPTXLowerArgs.cpp
+  NVPTXLowerAlloca.cpp
   NVPTXLowerUnreachable.cpp
-  NVPTXMCExpr.cpp
   NVPTXPeephole.cpp
+  NVPTXMCExpr.cpp
   NVPTXPrologEpilogPass.cpp
-  NVPTXProxyRegErasure.cpp
   NVPTXRegisterInfo.cpp
   NVPTXReplaceImageHandles.cpp
   NVPTXSelectionDAGInfo.cpp
   NVPTXSubtarget.cpp
-  NVPTXTagInvariantLoads.cpp
   NVPTXTargetMachine.cpp
   NVPTXTargetTransformInfo.cpp
   NVPTXUtilities.cpp
   NVVMIntrRange.cpp
   NVVMReflect.cpp
+  NVPTXProxyRegErasure.cpp
+  NVPTXCtorDtorLowering.cpp
   )
 
 add_llvm_target(NVPTXCodeGen

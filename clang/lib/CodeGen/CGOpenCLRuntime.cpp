@@ -130,11 +130,10 @@ void CGOpenCLRuntime::recordBlockInfo(const BlockExpr *E,
   assert(!EnqueuedBlockMap.contains(E) && "Block expression emitted twice");
   assert(isa<llvm::Function>(InvokeF) && "Invalid invoke function");
   assert(Block->getType()->isPointerTy() && "Invalid block literal type");
-  EnqueuedBlockInfo &BlockInfo = EnqueuedBlockMap[E];
-  BlockInfo.InvokeFunc = InvokeF;
-  BlockInfo.BlockArg = Block;
-  BlockInfo.BlockTy = BlockTy;
-  BlockInfo.KernelHandle = nullptr;
+  EnqueuedBlockMap[E].InvokeFunc = InvokeF;
+  EnqueuedBlockMap[E].BlockArg = Block;
+  EnqueuedBlockMap[E].BlockTy = BlockTy;
+  EnqueuedBlockMap[E].KernelHandle = nullptr;
 }
 
 llvm::Function *CGOpenCLRuntime::getInvokeFunction(const Expr *E) {
@@ -149,19 +148,17 @@ CGOpenCLRuntime::emitOpenCLEnqueuedBlock(CodeGenFunction &CGF, const Expr *E) {
   // to get the block literal.
   const BlockExpr *Block = getBlockExpr(E);
 
-  auto It = EnqueuedBlockMap.find(Block);
-  assert(It != EnqueuedBlockMap.end() && "Block expression not emitted");
-  EnqueuedBlockInfo &BlockInfo = It->second;
+  assert(EnqueuedBlockMap.contains(Block) && "Block expression not emitted");
 
   // Do not emit the block wrapper again if it has been emitted.
-  if (BlockInfo.KernelHandle) {
-    return BlockInfo;
+  if (EnqueuedBlockMap[Block].KernelHandle) {
+    return EnqueuedBlockMap[Block];
   }
 
   auto *F = CGF.getTargetHooks().createEnqueuedBlockKernel(
-      CGF, BlockInfo.InvokeFunc, BlockInfo.BlockTy);
+      CGF, EnqueuedBlockMap[Block].InvokeFunc, EnqueuedBlockMap[Block].BlockTy);
 
   // The common part of the post-processing of the kernel goes here.
-  BlockInfo.KernelHandle = F;
-  return BlockInfo;
+  EnqueuedBlockMap[Block].KernelHandle = F;
+  return EnqueuedBlockMap[Block];
 }

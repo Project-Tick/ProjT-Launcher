@@ -35,7 +35,6 @@ public:
   }
 
   bool isReservedReg(const MachineFunction &MF, MCRegister Reg) const;
-  bool isUserReservedReg(const MachineFunction &MF, MCRegister Reg) const;
   bool isStrictlyReservedReg(const MachineFunction &MF, MCRegister Reg) const;
   bool isAnyArgRegReserved(const MachineFunction &MF) const;
   void emitReservedArgRegCallError(const MachineFunction &MF) const;
@@ -46,6 +45,7 @@ public:
 
   /// Code Generation virtual methods...
   const MCPhysReg *getCalleeSavedRegs(const MachineFunction *MF) const override;
+  const MCPhysReg *getDarwinCalleeSavedRegs(const MachineFunction *MF) const;
   const MCPhysReg *
   getCalleeSavedRegsViaCopy(const MachineFunction *MF) const;
   const uint32_t *getCallPreservedMask(const MachineFunction &MF,
@@ -93,7 +93,6 @@ public:
   const uint32_t *getWindowsStackProbePreservedMask() const;
 
   BitVector getStrictlyReservedRegs(const MachineFunction &MF) const;
-  BitVector getUserReservedRegs(const MachineFunction &MF) const;
   BitVector getReservedRegs(const MachineFunction &MF) const override;
   std::optional<std::string>
   explainReservedReg(const MachineFunction &MF,
@@ -101,7 +100,8 @@ public:
   bool isAsmClobberable(const MachineFunction &MF,
                        MCRegister PhysReg) const override;
   const TargetRegisterClass *
-  getPointerRegClass(unsigned Kind = 0) const override;
+  getPointerRegClass(const MachineFunction &MF,
+                     unsigned Kind = 0) const override;
   const TargetRegisterClass *
   getCrossCopyRegClass(const TargetRegisterClass *RC) const override;
 
@@ -123,7 +123,7 @@ public:
 
   bool requiresVirtualBaseRegisters(const MachineFunction &MF) const override;
   bool hasBasePointer(const MachineFunction &MF) const;
-  MCRegister getBaseRegister() const;
+  unsigned getBaseRegister() const;
 
   bool isArgumentRegister(const MachineFunction &MF,
                           MCRegister Reg) const override;
@@ -140,7 +140,7 @@ public:
                              const LiveRegMatrix *Matrix) const override;
 
   unsigned getLocalAddressRegister(const MachineFunction &MF) const;
-  bool regNeedsCFI(MCRegister Reg, MCRegister &RegToUseForCFI) const;
+  bool regNeedsCFI(unsigned Reg, unsigned &RegToUseForCFI) const;
 
   /// SrcRC and DstRC will be morphed into NewRC if this returns true
   bool shouldCoalesce(MachineInstr *MI, const TargetRegisterClass *SrcRC,
@@ -152,8 +152,6 @@ public:
                         SmallVectorImpl<uint64_t> &Ops) const override;
 
   bool shouldAnalyzePhysregInMachineLoopInfo(MCRegister R) const override;
-
-  bool isIgnoredCVReg(MCRegister LLVMReg) const override;
 };
 
 } // end namespace llvm

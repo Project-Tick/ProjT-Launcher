@@ -380,11 +380,11 @@ bool OptionValue::SetLanguageValue(lldb::LanguageType new_language) {
   return false;
 }
 
-FormatEntity::Entry OptionValue::GetFormatEntityValue() const {
+const FormatEntity::Entry *OptionValue::GetFormatEntity() const {
   std::lock_guard<std::mutex> lock(m_mutex);
   if (const OptionValueFormatEntity *option_value = GetAsFormatEntity())
-    return option_value->GetCurrentValue();
-  return {};
+    return &option_value->GetCurrentValue();
+  return nullptr;
 }
 
 const RegularExpression *OptionValue::GetRegexValue() const {
@@ -469,15 +469,6 @@ bool OptionValue::SetArchSpecValue(ArchSpec arch_spec) {
     std::lock_guard<std::mutex> lock(m_mutex);
   if (OptionValueArch *option_value = GetAsArch()) {
     option_value->SetCurrentValue(arch_spec, false);
-    return true;
-  }
-  return false;
-}
-
-bool OptionValue::SetFormatEntityValue(const FormatEntity::Entry &entry) {
-  std::lock_guard<std::mutex> lock(m_mutex);
-  if (OptionValueFormatEntity *option_value = GetAsFormatEntity()) {
-    option_value->SetCurrentValue(entry);
     return true;
   }
   return false;

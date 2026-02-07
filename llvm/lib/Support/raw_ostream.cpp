@@ -20,7 +20,6 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Format.h"
 #include "llvm/Support/FormatVariadic.h"
-#include "llvm/Support/IOSandbox.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/NativeFormatting.h"
 #include "llvm/Support/Process.h"
@@ -61,6 +60,17 @@
 #endif
 
 using namespace llvm;
+
+constexpr raw_ostream::Colors raw_ostream::BLACK;
+constexpr raw_ostream::Colors raw_ostream::RED;
+constexpr raw_ostream::Colors raw_ostream::GREEN;
+constexpr raw_ostream::Colors raw_ostream::YELLOW;
+constexpr raw_ostream::Colors raw_ostream::BLUE;
+constexpr raw_ostream::Colors raw_ostream::MAGENTA;
+constexpr raw_ostream::Colors raw_ostream::CYAN;
+constexpr raw_ostream::Colors raw_ostream::WHITE;
+constexpr raw_ostream::Colors raw_ostream::SAVEDCOLOR;
+constexpr raw_ostream::Colors raw_ostream::RESET;
 
 raw_ostream::~raw_ostream() {
   // raw_ostream's subclasses should take care to flush the buffer
@@ -555,9 +565,6 @@ void format_object_base::home() {
 static int getFD(StringRef Filename, std::error_code &EC,
                  sys::fs::CreationDisposition Disp, sys::fs::FileAccess Access,
                  sys::fs::OpenFlags Flags) {
-  // FIXME(sandboxing): Remove this by adopting `llvm::vfs::OutputBackend`.
-  auto BypassSandbox = sys::sandbox::scopedDisable();
-
   assert((Access & sys::fs::FA_Write) &&
          "Cannot make a raw_ostream from a read-only descriptor!");
 
@@ -610,9 +617,6 @@ raw_fd_ostream::raw_fd_ostream(StringRef Filename, std::error_code &EC,
 raw_fd_ostream::raw_fd_ostream(int fd, bool shouldClose, bool unbuffered,
                                OStreamKind K)
     : raw_pwrite_stream(unbuffered, K), FD(fd), ShouldClose(shouldClose) {
-  // FIXME(sandboxing): Remove this by adopting `llvm::vfs::OutputBackend`.
-  auto BypassSandbox = sys::sandbox::scopedDisable();
-
   if (FD < 0 ) {
     ShouldClose = false;
     return;
@@ -674,8 +678,9 @@ raw_fd_ostream::~raw_fd_ostream() {
   // has_error() and clear the error flag with clear_error() before
   // destructing raw_ostream objects which may have errors.
   if (has_error())
-    reportFatalUsageError(Twine("IO failure on output stream: ") +
-                          error().message());
+    report_fatal_error(Twine("IO failure on output stream: ") +
+                           error().message(),
+                       /*gen_crash_diag=*/false);
 }
 
 #if defined(_WIN32)
@@ -890,24 +895,21 @@ void raw_fd_ostream::anchor() {}
 raw_fd_ostream &llvm::outs() {
   // Set buffer settings to model stdout behavior.
   std::error_code EC;
-
-  // On z/OS we need to enable auto conversion
-  static std::error_code EC1 = enableAutoConversion(STDOUT_FILENO);
-  assert(!EC1);
-  (void)EC1;
-
+#ifdef __MVS__
+  EC = enablezOSAutoConversion(STDOUT_FILENO);
+  assert(!EC);
+#endif
   static raw_fd_ostream S("-", EC, sys::fs::OF_None);
   assert(!EC);
   return S;
 }
 
 raw_fd_ostream &llvm::errs() {
-  // On z/OS we need to enable auto conversion
-  static std::error_code EC = enableAutoConversion(STDERR_FILENO);
-  assert(!EC);
-  (void)EC;
-
   // Set standard error to be unbuffered.
+#ifdef __MVS__
+  std::error_code EC = enablezOSAutoConversion(STDERR_FILENO);
+  assert(!EC);
+#endif
   static raw_fd_ostream S(STDERR_FILENO, false, true);
   return S;
 }

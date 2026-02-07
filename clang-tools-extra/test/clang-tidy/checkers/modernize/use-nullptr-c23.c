@@ -1,4 +1,4 @@
-// RUN: %check_clang_tidy -std=c23-or-later %s modernize-use-nullptr %t
+// RUN: %check_clang_tidy %s modernize-use-nullptr %t -- -- -std=c23
 
 #define NULL 0
 

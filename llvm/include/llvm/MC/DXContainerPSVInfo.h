@@ -17,6 +17,7 @@
 #include "llvm/TargetParser/Triple.h"
 
 #include <array>
+#include <numeric>
 #include <stdint.h>
 
 namespace llvm {

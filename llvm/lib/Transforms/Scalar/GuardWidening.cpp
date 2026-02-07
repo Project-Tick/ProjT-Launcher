@@ -75,6 +75,8 @@ static cl::opt<bool>
                                "expressed as branches by widenable conditions"),
                       cl::init(true));
 
+namespace {
+
 // Get the condition of \p I. It can either be a guard or a conditional branch.
 static Value *getCondition(Instruction *I) {
   if (IntrinsicInst *GI = dyn_cast<IntrinsicInst>(I)) {
@@ -127,8 +129,6 @@ findInsertionPointForWideCondition(Instruction *WCOrGuard) {
     return cast<Instruction>(WC)->getIterator();
   return std::nullopt;
 }
-
-namespace {
 
 class GuardWideningImpl {
   DominatorTree &DT;
@@ -328,7 +328,7 @@ public:
   /// The entry point for this pass.
   bool run();
 };
-} // namespace
+}
 
 static bool isSupportedGuardInstruction(const Instruction *Insn) {
   if (isGuard(Insn))
@@ -642,9 +642,9 @@ Value *GuardWideningImpl::freezeAndPush(Value *Orig,
     return FI;
   }
 
-  SmallPtrSet<Value *, 16> Visited;
+  SmallSet<Value *, 16> Visited;
   SmallVector<Value *, 16> Worklist;
-  SmallPtrSet<Instruction *, 16> DropPoisonFlags;
+  SmallSet<Instruction *, 16> DropPoisonFlags;
   SmallVector<Value *, 16> NeedFreeze;
   DenseMap<Value *, FreezeInst *> CacheOfFreezes;
 
@@ -665,8 +665,8 @@ Value *GuardWideningImpl::freezeAndPush(Value *Orig,
       CacheOfFreezes[Def] = FI;
     }
 
-    if (auto It = CacheOfFreezes.find(Def); It != CacheOfFreezes.end())
-      U.set(It->second);
+    if (CacheOfFreezes.count(Def))
+      U.set(CacheOfFreezes[Def]);
     return true;
   };
 

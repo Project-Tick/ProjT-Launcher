@@ -11,7 +11,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "VE.h"
-#include "VESelectionDAGInfo.h"
 #include "VETargetMachine.h"
 #include "llvm/CodeGen/SelectionDAGISel.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -250,6 +249,7 @@ bool VEDAGToDAGISel::matchADDRri(SDValue Addr, SDValue &Base, SDValue &Offset) {
 }
 
 void VEDAGToDAGISel::Select(SDNode *N) {
+  SDLoc dl(N);
   if (N->isMachineOpcode()) {
     N->setNodeId(-1);
     return; // Already selected.

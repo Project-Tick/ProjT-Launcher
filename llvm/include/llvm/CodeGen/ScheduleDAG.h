@@ -17,12 +17,10 @@
 
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/PointerIntPair.h"
-#include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/iterator.h"
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/TargetLowering.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
 #include <cassert>
 #include <cstddef>
@@ -103,18 +101,20 @@ class TargetRegisterInfo;
     SDep() : Dep(nullptr, Data) {}
 
     /// Constructs an SDep with the specified values.
-    SDep(SUnit *S, Kind kind, Register Reg) : Dep(S, kind), Contents() {
+    SDep(SUnit *S, Kind kind, unsigned Reg)
+      : Dep(S, kind), Contents() {
       switch (kind) {
       default:
         llvm_unreachable("Reg given for non-register dependence!");
       case Anti:
       case Output:
-        assert(Reg && "SDep::Anti and SDep::Output must use a non-zero Reg!");
-        Contents.Reg = Reg.id();
+        assert(Reg != 0 &&
+               "SDep::Anti and SDep::Output must use a non-zero Reg!");
+        Contents.Reg = Reg;
         Latency = 0;
         break;
       case Data:
-        Contents.Reg = Reg.id();
+        Contents.Reg = Reg;
         Latency = 1;
         break;
       }
@@ -208,12 +208,14 @@ class TargetRegisterInfo;
     }
 
     /// Tests if this is a Data dependence that is associated with a register.
-    bool isAssignedRegDep() const { return getKind() == Data && Contents.Reg; }
+    bool isAssignedRegDep() const {
+      return getKind() == Data && Contents.Reg != 0;
+    }
 
     /// Returns the register associated with this edge. This is only valid on
     /// Data, Anti, and Output edges. On Data edges, this value may be zero,
     /// meaning there is no associated register.
-    Register getReg() const {
+    unsigned getReg() const {
       assert((getKind() == Data || getKind() == Anti || getKind() == Output) &&
              "getReg called on non-register dependence edge!");
       return Contents.Reg;
@@ -223,27 +225,18 @@ class TargetRegisterInfo;
     /// Data, Anti, and Output edges. On Anti and Output edges, this value must
     /// not be zero. On Data edges, the value may be zero, which would mean that
     /// no specific register is associated with this edge.
-    void setReg(Register Reg) {
+    void setReg(unsigned Reg) {
       assert((getKind() == Data || getKind() == Anti || getKind() == Output) &&
              "setReg called on non-register dependence edge!");
-      assert((getKind() != Anti || Reg) &&
+      assert((getKind() != Anti || Reg != 0) &&
              "SDep::Anti edge cannot use the zero register!");
-      assert((getKind() != Output || Reg) &&
+      assert((getKind() != Output || Reg != 0) &&
              "SDep::Output edge cannot use the zero register!");
-      Contents.Reg = Reg.id();
+      Contents.Reg = Reg;
     }
 
-    LLVM_ABI void dump(const TargetRegisterInfo *TRI = nullptr) const;
+    void dump(const TargetRegisterInfo *TRI = nullptr) const;
   };
-
-  /// Keep record of which SUnit are in the same cluster group.
-  typedef SmallPtrSet<SUnit *, 8> ClusterInfo;
-  constexpr unsigned InvalidClusterId = ~0u;
-
-  /// Return whether the input cluster ID's are the same and valid.
-  inline bool isTheSameCluster(unsigned A, unsigned B) {
-    return A != InvalidClusterId && A == B;
-  }
 
   /// Scheduling unit. This is a node in the scheduling DAG.
   class SUnit {
@@ -284,8 +277,6 @@ class TargetRegisterInfo;
     unsigned WeakSuccsLeft = 0;        ///< # of weak succs not scheduled.
     unsigned TopReadyCycle = 0; ///< Cycle relative to start when node is ready.
     unsigned BotReadyCycle = 0; ///< Cycle relative to end when node is ready.
-
-    unsigned ParentClusterIdx = InvalidClusterId; ///< The parent cluster id.
 
   private:
     unsigned Depth = 0;  ///< Node depth.
@@ -404,7 +395,7 @@ class TargetRegisterInfo;
 
     /// Adds the specified edge as a pred of the current node if not already.
     /// It also adds the current node as a successor of the specified node.
-    LLVM_ABI bool addPred(const SDep &D, bool Required = true);
+    bool addPred(const SDep &D, bool Required = true);
 
     /// Adds a barrier edge to SU by calling addPred(), with latency 0
     /// generally or latency 1 for a store followed by a load.
@@ -418,7 +409,7 @@ class TargetRegisterInfo;
 
     /// Removes the specified edge as a pred of the current node if it exists.
     /// It also removes the current node as a successor of the specified node.
-    LLVM_ABI void removePred(const SDep &D);
+    void removePred(const SDep &D);
 
     /// Returns the depth of this node, which is the length of the maximum path
     /// up to any node which has no predecessors.
@@ -439,20 +430,20 @@ class TargetRegisterInfo;
     /// If NewDepth is greater than this node's depth value, sets it to
     /// be the new depth value. This also recursively marks successor nodes
     /// dirty.
-    LLVM_ABI void setDepthToAtLeast(unsigned NewDepth);
+    void setDepthToAtLeast(unsigned NewDepth);
 
     /// If NewHeight is greater than this node's height value, set it to be
     /// the new height value. This also recursively marks predecessor nodes
     /// dirty.
-    LLVM_ABI void setHeightToAtLeast(unsigned NewHeight);
+    void setHeightToAtLeast(unsigned NewHeight);
 
     /// Sets a flag in this node to indicate that its stored Depth value
     /// will require recomputation the next time getDepth() is called.
-    LLVM_ABI void setDepthDirty();
+    void setDepthDirty();
 
     /// Sets a flag in this node to indicate that its stored Height value
     /// will require recomputation the next time getHeight() is called.
-    LLVM_ABI void setHeightDirty();
+    void setHeightDirty();
 
     /// Tests if node N is a predecessor of this node.
     bool isPred(const SUnit *N) const {
@@ -479,13 +470,13 @@ class TargetRegisterInfo;
 
     /// Orders this node's predecessor edges such that the critical path
     /// edge occurs first.
-    LLVM_ABI void biasCriticalPath();
+    void biasCriticalPath();
 
-    LLVM_ABI void dumpAttributes() const;
+    void dumpAttributes() const;
 
   private:
-    LLVM_ABI void ComputeDepth();
-    LLVM_ABI void ComputeHeight();
+    void ComputeDepth();
+    void ComputeHeight();
   };
 
   /// Returns true if the specified SDep is equivalent except for latency.
@@ -520,7 +511,7 @@ class TargetRegisterInfo;
   /// returned in priority order.  The computation of the priority and the
   /// representation of the queue are totally up to the implementation to
   /// decide.
-  class LLVM_ABI SchedulingPriorityQueue {
+  class SchedulingPriorityQueue {
     virtual void anchor();
 
     unsigned CurCycle = 0;
@@ -578,7 +569,7 @@ class TargetRegisterInfo;
     }
   };
 
-  class LLVM_ABI ScheduleDAG {
+  class ScheduleDAG {
   public:
     const TargetMachine &TM;            ///< Target processor
     const TargetInstrInfo *TII;         ///< Target instruction information
@@ -762,42 +753,41 @@ class TargetRegisterInfo;
     void FixOrder();
 
   public:
-    LLVM_ABI ScheduleDAGTopologicalSort(std::vector<SUnit> &SUnits,
-                                        SUnit *ExitSU);
+    ScheduleDAGTopologicalSort(std::vector<SUnit> &SUnits, SUnit *ExitSU);
 
     /// Add a SUnit without predecessors to the end of the topological order. It
     /// also must be the first new node added to the DAG.
-    LLVM_ABI void AddSUnitWithoutPredecessors(const SUnit *SU);
+    void AddSUnitWithoutPredecessors(const SUnit *SU);
 
     /// Creates the initial topological ordering from the DAG to be scheduled.
-    LLVM_ABI void InitDAGTopologicalSorting();
+    void InitDAGTopologicalSorting();
 
     /// Returns an array of SUs that are both in the successor
     /// subtree of StartSU and in the predecessor subtree of TargetSU.
     /// StartSU and TargetSU are not in the array.
     /// Success is false if TargetSU is not in the successor subtree of
     /// StartSU, else it is true.
-    LLVM_ABI std::vector<int> GetSubGraph(const SUnit &StartSU,
-                                          const SUnit &TargetSU, bool &Success);
+    std::vector<int> GetSubGraph(const SUnit &StartSU, const SUnit &TargetSU,
+                                 bool &Success);
 
     /// Checks if \p SU is reachable from \p TargetSU.
-    LLVM_ABI bool IsReachable(const SUnit *SU, const SUnit *TargetSU);
+    bool IsReachable(const SUnit *SU, const SUnit *TargetSU);
 
     /// Returns true if addPred(TargetSU, SU) creates a cycle.
-    LLVM_ABI bool WillCreateCycle(SUnit *TargetSU, SUnit *SU);
+    bool WillCreateCycle(SUnit *TargetSU, SUnit *SU);
 
     /// Updates the topological ordering to accommodate an edge to be
     /// added from SUnit \p X to SUnit \p Y.
-    LLVM_ABI void AddPred(SUnit *Y, SUnit *X);
+    void AddPred(SUnit *Y, SUnit *X);
 
     /// Queues an update to the topological ordering to accommodate an edge to
     /// be added from SUnit \p X to SUnit \p Y.
-    LLVM_ABI void AddPredQueued(SUnit *Y, SUnit *X);
+    void AddPredQueued(SUnit *Y, SUnit *X);
 
     /// Updates the topological ordering to accommodate an edge to be
     /// removed from the specified node \p N from the predecessors of the
     /// current node \p M.
-    LLVM_ABI void RemovePred(SUnit *M, SUnit *N);
+    void RemovePred(SUnit *M, SUnit *N);
 
     /// Mark the ordering as temporarily broken, after a new node has been
     /// added.

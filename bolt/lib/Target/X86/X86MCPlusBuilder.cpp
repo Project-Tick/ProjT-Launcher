@@ -18,6 +18,7 @@
 #include "bolt/Core/MCPlusBuilder.h"
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCFixupKindInfo.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCInstBuilder.h"
 #include "llvm/MC/MCInstrInfo.h"
@@ -71,9 +72,9 @@ static InstructionListType createIncMemory(const MCSymbol *Target,
   Insts.back().addOperand(MCOperand::createImm(1));               // ScaleAmt
   Insts.back().addOperand(MCOperand::createReg(X86::NoRegister)); // IndexReg
 
-  Insts.back().addOperand(
-      MCOperand::createExpr(MCSymbolRefExpr::create(Target,
-                                                    *Ctx))); // Displacement
+  Insts.back().addOperand(MCOperand::createExpr(
+      MCSymbolRefExpr::create(Target, MCSymbolRefExpr::VK_None,
+                              *Ctx))); // Displacement
   Insts.back().addOperand(
       MCOperand::createReg(X86::NoRegister)); // AddrSegmentReg
   return Insts;
@@ -219,18 +220,8 @@ public:
     return getPopSize(Inst) == 0 ? false : true;
   }
 
-  bool isEpilogue(const BinaryBasicBlock &BB) const override {
-    return ::llvm::any_of(BB, [&](const MCInst &Instr) {
-      return isLeave(Instr) || isPop(Instr);
-    });
-  }
-
   bool isTerminateBranch(const MCInst &Inst) const override {
     return Inst.getOpcode() == X86::ENDBR32 || Inst.getOpcode() == X86::ENDBR64;
-  }
-
-  bool isX86HLT(const MCInst &Inst) const override {
-    return Inst.getOpcode() == X86::HLT;
   }
 
   int getPopSize(const MCInst &Inst) const override {
@@ -396,7 +387,7 @@ public:
     return (Desc.TSFlags & X86II::OpPrefixMask) == X86II::PD;
   }
 
-  bool shouldRecordCodeRelocation(uint32_t RelType) const override {
+  bool shouldRecordCodeRelocation(uint64_t RelType) const override {
     switch (RelType) {
     case ELF::R_X86_64_8:
     case ELF::R_X86_64_16:
@@ -1634,8 +1625,9 @@ public:
     Inst.insert(Inst.begin(),
                 MCOperand::createReg(X86::NoRegister)); // AddrSegmentReg
     Inst.insert(Inst.begin(),
-                MCOperand::createExpr( // Displacement
-                    MCSymbolRefExpr::create(TargetLocation, *Ctx)));
+                MCOperand::createExpr(                  // Displacement
+                    MCSymbolRefExpr::create(TargetLocation,
+                                            MCSymbolRefExpr::VK_None, *Ctx)));
     Inst.insert(Inst.begin(),
                 MCOperand::createReg(X86::NoRegister)); // IndexReg
     Inst.insert(Inst.begin(),
@@ -1804,7 +1796,17 @@ public:
     if (!Op.isExpr())
       return nullptr;
 
-    return MCPlusBuilder::getTargetSymbol(Op.getExpr());
+    auto *SymExpr = dyn_cast<MCSymbolRefExpr>(Op.getExpr());
+    if (!SymExpr || SymExpr->getKind() != MCSymbolRefExpr::VK_None)
+      return nullptr;
+
+    return &SymExpr->getSymbol();
+  }
+
+  // This is the same as the base class, but since we are overriding one of
+  // getTargetSymbol's signatures above, we need to override all of them.
+  const MCSymbol *getTargetSymbol(const MCExpr *Expr) const override {
+    return &cast<const MCSymbolRefExpr>(Expr)->getSymbol();
   }
 
   bool analyzeBranch(InstructionIterator Begin, InstructionIterator End,
@@ -2428,33 +2430,22 @@ public:
                           .addReg(RegNo)
                           .addImm(Imm));
     Code.emplace_back(MCInstBuilder(X86::JCC_1)
-                          .addExpr(MCSymbolRefExpr::create(Target, *Ctx))
+                          .addExpr(MCSymbolRefExpr::create(
+                              Target, MCSymbolRefExpr::VK_None, *Ctx))
                           .addImm(X86::COND_E));
-    return Code;
-  }
-
-  InstructionListType createCmpJNE(MCPhysReg RegNo, int64_t Imm,
-                                   const MCSymbol *Target,
-                                   MCContext *Ctx) const override {
-    InstructionListType Code;
-    Code.emplace_back(MCInstBuilder(X86::CMP64ri8).addReg(RegNo).addImm(Imm));
-    Code.emplace_back(MCInstBuilder(X86::JCC_1)
-                          .addExpr(MCSymbolRefExpr::create(Target, *Ctx))
-                          .addImm(X86::COND_NE));
     return Code;
   }
 
   std::optional<Relocation>
   createRelocation(const MCFixup &Fixup,
                    const MCAsmBackend &MAB) const override {
-    MCFixupKindInfo FKI = MAB.getFixupKindInfo(Fixup.getKind());
+    const MCFixupKindInfo &FKI = MAB.getFixupKindInfo(Fixup.getKind());
 
     assert(FKI.TargetOffset == 0 && "0-bit relocation offset expected");
     const uint64_t RelOffset = Fixup.getOffset();
-    auto [RelSymbol, RelAddend] = extractFixupExpr(Fixup);
 
-    uint32_t RelType;
-    if (Fixup.isPCRel()) {
+    uint64_t RelType;
+    if (FKI.Flags & MCFixupKindInfo::FKF_IsPCRel) {
       switch (FKI.TargetSize) {
       default:
         return std::nullopt;
@@ -2463,9 +2454,6 @@ public:
       case 32: RelType = ELF::R_X86_64_PC32; break;
       case 64: RelType = ELF::R_X86_64_PC64; break;
       }
-      // Adjust PC-relative fixup offsets, which are calculated from the start
-      // of the next instruction.
-      RelAddend -= FKI.TargetSize / 8;
     } else {
       switch (FKI.TargetSize) {
       default:
@@ -2477,12 +2465,14 @@ public:
       }
     }
 
+    auto [RelSymbol, RelAddend] = extractFixupExpr(Fixup);
+
     return Relocation({RelOffset, RelSymbol, RelType, RelAddend, 0});
   }
 
   bool replaceImmWithSymbolRef(MCInst &Inst, const MCSymbol *Symbol,
                                int64_t Addend, MCContext *Ctx, int64_t &Value,
-                               uint32_t RelType) const override {
+                               uint64_t RelType) const override {
     unsigned ImmOpNo = -1U;
 
     for (unsigned Index = 0; Index < MCPlus::getNumPrimeOperands(Inst);
@@ -2721,7 +2711,7 @@ public:
 
     bool FoundOne = false;
 
-    // Iterate only through src operands that aren't also dest operands
+    // Iterate only through src operands that arent also dest operands
     for (unsigned Index = InstDesc.getNumDefs() + (HasLHS ? 1 : 0),
                   E = InstDesc.getNumOperands();
          Index != E; ++Index) {
@@ -2746,23 +2736,24 @@ public:
     Inst.clear();
     Inst.setOpcode(X86::JMP_1);
     Inst.clear();
-    Inst.addOperand(MCOperand::createExpr(MCSymbolRefExpr::create(TBB, *Ctx)));
+    Inst.addOperand(MCOperand::createExpr(
+        MCSymbolRefExpr::create(TBB, MCSymbolRefExpr::VK_None, *Ctx)));
   }
 
   void createLongUncondBranch(MCInst &Inst, const MCSymbol *Target,
                               MCContext *Ctx) const override {
     Inst.setOpcode(X86::JMP_4);
     Inst.clear();
-    Inst.addOperand(
-        MCOperand::createExpr(MCSymbolRefExpr::create(Target, *Ctx)));
+    Inst.addOperand(MCOperand::createExpr(
+        MCSymbolRefExpr::create(Target, MCSymbolRefExpr::VK_None, *Ctx)));
   }
 
   void createCall(MCInst &Inst, const MCSymbol *Target,
                   MCContext *Ctx) override {
     Inst.setOpcode(X86::CALL64pcrel32);
     Inst.clear();
-    Inst.addOperand(
-        MCOperand::createExpr(MCSymbolRefExpr::create(Target, *Ctx)));
+    Inst.addOperand(MCOperand::createExpr(
+        MCSymbolRefExpr::create(Target, MCSymbolRefExpr::VK_None, *Ctx)));
   }
 
   void createTailCall(MCInst &Inst, const MCSymbol *Target,
@@ -2786,8 +2777,8 @@ public:
                         MCContext *Ctx) const override {
     Inst.setOpcode(X86::JCC_1);
     Inst.clear();
-    Inst.addOperand(
-        MCOperand::createExpr(MCSymbolRefExpr::create(Target, *Ctx)));
+    Inst.addOperand(MCOperand::createExpr(
+        MCSymbolRefExpr::create(Target, MCSymbolRefExpr::VK_None, *Ctx)));
     Inst.addOperand(MCOperand::createImm(CC));
   }
 
@@ -2795,8 +2786,8 @@ public:
                             MCContext *Ctx) const override {
     Inst.setOpcode(X86::JCC_4);
     Inst.clear();
-    Inst.addOperand(
-        MCOperand::createExpr(MCSymbolRefExpr::create(Target, *Ctx)));
+    Inst.addOperand(MCOperand::createExpr(
+        MCSymbolRefExpr::create(Target, MCSymbolRefExpr::VK_None, *Ctx)));
     Inst.addOperand(MCOperand::createImm(CC));
   }
 
@@ -2805,8 +2796,8 @@ public:
     unsigned InvCC = getInvertedCondCode(getCondCode(Inst));
     assert(InvCC != X86::COND_INVALID && "invalid branch instruction");
     Inst.getOperand(Info->get(Inst.getOpcode()).NumOperands - 1).setImm(InvCC);
-    Inst.getOperand(0) =
-        MCOperand::createExpr(MCSymbolRefExpr::create(TBB, *Ctx));
+    Inst.getOperand(0) = MCOperand::createExpr(
+        MCSymbolRefExpr::create(TBB, MCSymbolRefExpr::VK_None, *Ctx));
   }
 
   bool replaceBranchCondition(MCInst &Inst, const MCSymbol *TBB, MCContext *Ctx,
@@ -2814,8 +2805,8 @@ public:
     if (CC == X86::COND_INVALID)
       return false;
     Inst.getOperand(Info->get(Inst.getOpcode()).NumOperands - 1).setImm(CC);
-    Inst.getOperand(0) =
-        MCOperand::createExpr(MCSymbolRefExpr::create(TBB, *Ctx));
+    Inst.getOperand(0) = MCOperand::createExpr(
+        MCSymbolRefExpr::create(TBB, MCSymbolRefExpr::VK_None, *Ctx));
     return true;
   }
 
@@ -2853,8 +2844,8 @@ public:
                            MCContext *Ctx) const override {
     assert((isCall(Inst) || isBranch(Inst)) && !isIndirectBranch(Inst) &&
            "Invalid instruction");
-    Inst.getOperand(0) =
-        MCOperand::createExpr(MCSymbolRefExpr::create(TBB, *Ctx));
+    Inst.getOperand(0) = MCOperand::createExpr(
+        MCSymbolRefExpr::create(TBB, MCSymbolRefExpr::VK_None, *Ctx));
   }
 
   MCPhysReg getX86R11() const override { return X86::R11; }
@@ -2901,8 +2892,8 @@ public:
                         bool IsTailCall) override {
     Inst.clear();
     Inst.setOpcode(IsTailCall ? X86::JMP_4 : X86::CALL64pcrel32);
-    Inst.addOperand(
-        MCOperand::createExpr(MCSymbolRefExpr::create(Target, *Ctx)));
+    Inst.addOperand(MCOperand::createExpr(
+        MCSymbolRefExpr::create(Target, MCSymbolRefExpr::VK_None, *Ctx)));
     if (IsTailCall)
       setTailCall(Inst);
   }
@@ -2912,8 +2903,8 @@ public:
     Seq.clear();
     MCInst Inst;
     Inst.setOpcode(X86::JMP_1);
-    Inst.addOperand(
-        MCOperand::createExpr(MCSymbolRefExpr::create(Target, *Ctx)));
+    Inst.addOperand(MCOperand::createExpr(
+        MCSymbolRefExpr::create(Target, MCSymbolRefExpr::VK_None, *Ctx)));
     if (IsTailCall)
       setTailCall(Inst);
     Seq.emplace_back(Inst);
@@ -3059,9 +3050,9 @@ public:
     Inst.clear();
   }
 
-  InstructionListType createInstrIncMemory(const MCSymbol *Target,
-                                           MCContext *Ctx, bool IsLeaf,
-                                           unsigned CodePointerSize) override {
+  InstructionListType
+  createInstrIncMemory(const MCSymbol *Target, MCContext *Ctx, bool IsLeaf,
+                       unsigned CodePointerSize) const override {
     InstructionListType Instrs(IsLeaf ? 13 : 11);
     unsigned int I = 0;
 
@@ -3339,8 +3330,8 @@ public:
         Target.addOperand(MCOperand::createReg(FuncAddrReg));
         if (Targets[i].first) {
           // Is this OK?
-          Target.addOperand(MCOperand::createExpr(
-              MCSymbolRefExpr::create(Targets[i].first, *Ctx)));
+          Target.addOperand(MCOperand::createExpr(MCSymbolRefExpr::create(
+              Targets[i].first, MCSymbolRefExpr::VK_None, *Ctx)));
         } else {
           const uint64_t Addr = Targets[i].second;
           // Immediate address is out of sign extended 32 bit range.
@@ -3416,8 +3407,8 @@ public:
         Je.clear();
         Je.setOpcode(X86::JCC_1);
         if (Targets[i].first)
-          Je.addOperand(MCOperand::createExpr(
-              MCSymbolRefExpr::create(Targets[i].first, *Ctx)));
+          Je.addOperand(MCOperand::createExpr(MCSymbolRefExpr::create(
+              Targets[i].first, MCSymbolRefExpr::VK_None, *Ctx)));
         else
           Je.addOperand(MCOperand::createImm(Targets[i].second));
 
@@ -3429,8 +3420,8 @@ public:
         // Jump to next compare if target addresses don't match.
         Jne.clear();
         Jne.setOpcode(X86::JCC_1);
-        Jne.addOperand(
-            MCOperand::createExpr(MCSymbolRefExpr::create(NextTarget, *Ctx)));
+        Jne.addOperand(MCOperand::createExpr(MCSymbolRefExpr::create(
+            NextTarget, MCSymbolRefExpr::VK_None, *Ctx)));
         Jne.addOperand(MCOperand::createImm(X86::COND_NE));
 
         // Call specific target directly.
@@ -3449,8 +3440,8 @@ public:
           CallOrJmp.setOpcode(IsTailCall ? X86::JMP_4 : X86::CALL64pcrel32);
 
           if (Targets[i].first)
-            CallOrJmp.addOperand(MCOperand::createExpr(
-                MCSymbolRefExpr::create(Targets[i].first, *Ctx)));
+            CallOrJmp.addOperand(MCOperand::createExpr(MCSymbolRefExpr::create(
+                Targets[i].first, MCSymbolRefExpr::VK_None, *Ctx)));
           else
             CallOrJmp.addOperand(MCOperand::createImm(Targets[i].second));
         }
@@ -3552,8 +3543,8 @@ public:
 
       // Jump to target if indices match
       JEInst.setOpcode(X86::JCC_1);
-      JEInst.addOperand(MCOperand::createExpr(
-          MCSymbolRefExpr::create(Targets[i].first, *Ctx)));
+      JEInst.addOperand(MCOperand::createExpr(MCSymbolRefExpr::create(
+          Targets[i].first, MCSymbolRefExpr::VK_None, *Ctx)));
       JEInst.addOperand(MCOperand::createImm(X86::COND_E));
     }
 
@@ -3578,9 +3569,9 @@ private:
     Inst.addOperand(MCOperand::createReg(X86::RIP));        // BaseReg
     Inst.addOperand(MCOperand::createImm(1));               // ScaleAmt
     Inst.addOperand(MCOperand::createReg(X86::NoRegister)); // IndexReg
-    Inst.addOperand(
-        MCOperand::createExpr(MCSymbolRefExpr::create(Src,
-                                                      *Ctx))); // Displacement
+    Inst.addOperand(MCOperand::createExpr(
+        MCSymbolRefExpr::create(Src, MCSymbolRefExpr::VK_None,
+                                *Ctx)));                    // Displacement
     Inst.addOperand(MCOperand::createReg(X86::NoRegister)); // AddrSegmentReg
   }
 
@@ -3592,9 +3583,9 @@ private:
     Inst.addOperand(MCOperand::createReg(X86::RIP));        // BaseReg
     Inst.addOperand(MCOperand::createImm(1));               // ScaleAmt
     Inst.addOperand(MCOperand::createReg(X86::NoRegister)); // IndexReg
-    Inst.addOperand(
-        MCOperand::createExpr(MCSymbolRefExpr::create(Src,
-                                                      *Ctx))); // Displacement
+    Inst.addOperand(MCOperand::createExpr(
+        MCSymbolRefExpr::create(Src, MCSymbolRefExpr::VK_None,
+                                *Ctx)));                    // Displacement
     Inst.addOperand(MCOperand::createReg(X86::NoRegister)); // AddrSegmentReg
   }
 };

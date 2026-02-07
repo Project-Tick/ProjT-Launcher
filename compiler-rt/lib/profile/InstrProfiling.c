@@ -10,6 +10,8 @@
 // with freestanding compilation. See `darwin_add_builtin_libraries`.
 
 #include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "InstrProfiling.h"

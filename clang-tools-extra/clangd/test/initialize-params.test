@@ -35,9 +35,7 @@
 # CHECK-NEXT:        "firstTriggerCharacter": "\n",
 # CHECK-NEXT:        "moreTriggerCharacter": []
 # CHECK-NEXT:      },
-# CHECK-NEXT:      "documentRangeFormattingProvider": {
-# CHECK-NEXT:        "rangesSupport": true
-# CHECK-NEXT:      },
+# CHECK-NEXT:      "documentRangeFormattingProvider": true,
 # CHECK-NEXT:      "documentSymbolProvider": true,
 # CHECK-NEXT:      "executeCommandProvider": {
 # CHECK-NEXT:        "commands": [

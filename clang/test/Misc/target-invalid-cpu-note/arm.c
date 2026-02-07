@@ -70,7 +70,6 @@
 // CHECK-SAME: {{^}}, cortex-m55
 // CHECK-SAME: {{^}}, cortex-m85
 // CHECK-SAME: {{^}}, cortex-m52
-// CHECK-SAME: {{^}}, star-mc3
 // CHECK-SAME: {{^}}, cortex-a32
 // CHECK-SAME: {{^}}, cortex-a35
 // CHECK-SAME: {{^}}, cortex-a53

@@ -24,10 +24,10 @@ class TargetMachine;
 struct ComplexDeinterleavingPass
     : public PassInfoMixin<ComplexDeinterleavingPass> {
 private:
-  const TargetMachine *TM;
+  TargetMachine *TM;
 
 public:
-  ComplexDeinterleavingPass(const TargetMachine &TM) : TM(&TM) {}
+  ComplexDeinterleavingPass(TargetMachine *TM) : TM(TM) {}
 
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
 };

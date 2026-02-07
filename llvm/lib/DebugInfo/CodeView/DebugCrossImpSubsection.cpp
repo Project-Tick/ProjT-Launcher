@@ -15,6 +15,7 @@
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/Error.h"
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 using namespace llvm;

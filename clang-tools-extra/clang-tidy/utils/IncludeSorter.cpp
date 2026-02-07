@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===---------- IncludeSorter.cpp - clang-tidy ----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -15,16 +15,18 @@
 namespace clang::tidy {
 namespace utils {
 
-static StringRef removeFirstSuffix(StringRef Str,
-                                   ArrayRef<const char *> Suffixes) {
-  for (const StringRef Suffix : Suffixes)
-    if (Str.consume_back(Suffix))
-      return Str;
+namespace {
+
+StringRef removeFirstSuffix(StringRef Str, ArrayRef<const char *> Suffixes) {
+  for (StringRef Suffix : Suffixes) {
+    if (Str.ends_with(Suffix)) {
+      return Str.substr(0, Str.size() - Suffix.size());
+    }
+  }
   return Str;
 }
 
-static StringRef makeCanonicalName(StringRef Str,
-                                   IncludeSorter::IncludeStyle Style) {
+StringRef makeCanonicalName(StringRef Str, IncludeSorter::IncludeStyle Style) {
   // The list of suffixes to remove from source file names to get the
   // "canonical" file names.
   // E.g. tools/sort_includes.cc and tools/sort_includes_test.cc
@@ -36,7 +38,7 @@ static StringRef makeCanonicalName(StringRef Str,
         removeFirstSuffix(Str, {".cc", ".cpp", ".c", ".h", ".hpp"}), {"Test"});
   }
   if (Style == IncludeSorter::IS_Google_ObjC) {
-    const StringRef Canonical =
+    StringRef Canonical =
         removeFirstSuffix(removeFirstSuffix(Str, {".cc", ".cpp", ".c", ".h",
                                                   ".hpp", ".mm", ".m"}),
                           {"_unittest", "_regtest", "_test", "Test"});
@@ -44,9 +46,11 @@ static StringRef makeCanonicalName(StringRef Str,
     // Objective-C categories have a `+suffix` format, but should be grouped
     // with the file they are a category of.
     size_t StartIndex = Canonical.find_last_of('/');
-    if (StartIndex == StringRef::npos)
+    if (StartIndex == StringRef::npos) {
       StartIndex = 0;
-    return Canonical.substr(0, Canonical.find_first_of('+', StartIndex));
+    }
+    return Canonical.substr(
+        0, Canonical.find_first_of('+', StartIndex));
   }
   return removeFirstSuffix(
       removeFirstSuffix(Str, {".cc", ".cpp", ".c", ".h", ".hpp"}),
@@ -54,12 +58,12 @@ static StringRef makeCanonicalName(StringRef Str,
 }
 
 // Scan to the end of the line and return the offset of the next line.
-static size_t findNextLine(const char *Text) {
-  const size_t EOLIndex = std::strcspn(Text, "\n");
+size_t findNextLine(const char *Text) {
+  size_t EOLIndex = std::strcspn(Text, "\n");
   return Text[EOLIndex] == '\0' ? EOLIndex : EOLIndex + 1;
 }
 
-static IncludeSorter::IncludeKinds
+IncludeSorter::IncludeKinds
 determineIncludeKind(StringRef CanonicalFile, StringRef IncludeFile,
                      bool IsAngled, IncludeSorter::IncludeStyle Style) {
   // Compute the two "canonical" forms of the include's filename sans extension.
@@ -72,21 +76,21 @@ determineIncludeKind(StringRef CanonicalFile, StringRef IncludeFile,
     return IncludeFile.ends_with(".h") ? IncludeSorter::IK_CSystemInclude
                                        : IncludeSorter::IK_CXXSystemInclude;
   }
-  const StringRef CanonicalInclude = makeCanonicalName(IncludeFile, Style);
+  StringRef CanonicalInclude = makeCanonicalName(IncludeFile, Style);
   if (CanonicalFile.ends_with(CanonicalInclude) ||
       CanonicalInclude.ends_with(CanonicalFile)) {
     return IncludeSorter::IK_MainTUInclude;
   }
   if ((Style == IncludeSorter::IS_Google) ||
       (Style == IncludeSorter::IS_Google_ObjC)) {
-    const std::pair<StringRef, StringRef> Parts =
-        CanonicalInclude.split("/public/");
+    std::pair<StringRef, StringRef> Parts = CanonicalInclude.split("/public/");
     StringRef FileCopy = CanonicalFile;
     if (FileCopy.consume_front(Parts.first) &&
         FileCopy.consume_back(Parts.second)) {
       // Determine the kind of this inclusion.
-      if (FileCopy == "/internal/" || FileCopy == "/proto/")
+      if (FileCopy == "/internal/" || FileCopy == "/proto/") {
         return IncludeSorter::IK_MainTUInclude;
+      }
     }
   }
   if (Style == IncludeSorter::IS_Google_ObjC) {
@@ -99,30 +103,35 @@ determineIncludeKind(StringRef CanonicalFile, StringRef IncludeFile,
   return IncludeSorter::IK_NonSystemInclude;
 }
 
-static int compareHeaders(StringRef LHS, StringRef RHS,
-                          IncludeSorter::IncludeStyle Style) {
+int compareHeaders(StringRef LHS, StringRef RHS,
+                   IncludeSorter::IncludeStyle Style) {
   if (Style == IncludeSorter::IncludeStyle::IS_Google_ObjC) {
     const std::pair<const char *, const char *> &Mismatch =
         std::mismatch(LHS.begin(), LHS.end(), RHS.begin(), RHS.end());
     if ((Mismatch.first != LHS.end()) && (Mismatch.second != RHS.end())) {
-      if ((*Mismatch.first == '.') && (*Mismatch.second == '+'))
+      if ((*Mismatch.first == '.') && (*Mismatch.second == '+')) {
         return -1;
-      if ((*Mismatch.first == '+') && (*Mismatch.second == '.'))
+      }
+      if ((*Mismatch.first == '+') && (*Mismatch.second == '.')) {
         return 1;
+      }
     }
   }
   return LHS.compare(RHS);
 }
 
-IncludeSorter::IncludeSorter(const SourceManager *SourceMgr, FileID FileID,
-                             StringRef FileName, IncludeStyle Style)
+} // namespace
+
+IncludeSorter::IncludeSorter(const SourceManager *SourceMgr,
+                             const FileID FileID, StringRef FileName,
+                             IncludeStyle Style)
     : SourceMgr(SourceMgr), Style(Style), CurrentFileID(FileID),
       CanonicalFile(makeCanonicalName(FileName, Style)) {}
 
 void IncludeSorter::addInclude(StringRef FileName, bool IsAngled,
                                SourceLocation HashLocation,
                                SourceLocation EndLocation) {
-  const int Offset = findNextLine(SourceMgr->getCharacterData(EndLocation));
+  int Offset = findNextLine(SourceMgr->getCharacterData(EndLocation));
 
   // Record the relevant location information for this inclusion directive.
   auto &IncludeLocation = IncludeLocations[FileName];
@@ -135,7 +144,7 @@ void IncludeSorter::addInclude(StringRef FileName, bool IsAngled,
     return;
 
   // Add the included file's name to the appropriate bucket.
-  const IncludeKinds Kind =
+  IncludeKinds Kind =
       determineIncludeKind(CanonicalFile, FileName, IsAngled, Style);
   if (Kind != IK_InvalidInclude)
     IncludeBucket[Kind].push_back(FileName.str());
@@ -170,14 +179,14 @@ IncludeSorter::createIncludeInsertion(StringRef FileName, bool IsAngled) {
         const auto &Location = IncludeLocations[IncludeEntry][0];
         return FixItHint::CreateInsertion(Location.getBegin(), IncludeStmt);
       }
-      if (FileName == IncludeEntry)
+      if (FileName == IncludeEntry) {
         return std::nullopt;
+      }
     }
     // FileName comes after all include entries in bucket, insert it after
     // last.
     const std::string &LastInclude = IncludeBucket[IncludeKind].back();
-    const SourceRange LastIncludeLocation =
-        IncludeLocations[LastInclude].back();
+    SourceRange LastIncludeLocation = IncludeLocations[LastInclude].back();
     return FixItHint::CreateInsertion(LastIncludeLocation.getEnd(),
                                       IncludeStmt);
   }
@@ -194,22 +203,21 @@ IncludeSorter::createIncludeInsertion(StringRef FileName, bool IsAngled) {
         break;
     }
   }
-  if (NonEmptyKind == IK_InvalidInclude)
+  if (NonEmptyKind == IK_InvalidInclude) {
     return std::nullopt;
+  }
 
   if (NonEmptyKind < IncludeKind) {
     // Create a block after.
     const std::string &LastInclude = IncludeBucket[NonEmptyKind].back();
-    const SourceRange LastIncludeLocation =
-        IncludeLocations[LastInclude].back();
+    SourceRange LastIncludeLocation = IncludeLocations[LastInclude].back();
     IncludeStmt = '\n' + IncludeStmt;
     return FixItHint::CreateInsertion(LastIncludeLocation.getEnd(),
                                       IncludeStmt);
   }
   // Create a block before.
   const std::string &FirstInclude = IncludeBucket[NonEmptyKind][0];
-  const SourceRange FirstIncludeLocation =
-      IncludeLocations[FirstInclude].back();
+  SourceRange FirstIncludeLocation = IncludeLocations[FirstInclude].back();
   IncludeStmt.append("\n");
   return FixItHint::CreateInsertion(FirstIncludeLocation.getBegin(),
                                     IncludeStmt);

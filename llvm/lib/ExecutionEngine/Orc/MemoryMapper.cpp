@@ -27,7 +27,7 @@
 namespace llvm {
 namespace orc {
 
-MemoryMapper::~MemoryMapper() = default;
+MemoryMapper::~MemoryMapper() {}
 
 InProcessMemoryMapper::InProcessMemoryMapper(size_t PageSize)
     : PageSize(PageSize) {}
@@ -58,8 +58,7 @@ void InProcessMemoryMapper::reserve(size_t NumBytes,
       ExecutorAddrRange(ExecutorAddr::fromPtr(MB.base()), MB.allocatedSize()));
 }
 
-char *InProcessMemoryMapper::prepare(jitlink::LinkGraph &G, ExecutorAddr Addr,
-                                     size_t ContentSize) {
+char *InProcessMemoryMapper::prepare(ExecutorAddr Addr, size_t ContentSize) {
   return Addr.toPtr<char *>();
 }
 
@@ -99,9 +98,9 @@ void InProcessMemoryMapper::initialize(MemoryMapper::AllocInfo &AI,
     std::lock_guard<std::mutex> Lock(Mutex);
 
     // This is the maximum range whose permission have been possibly modified
-    auto &Alloc = Allocations[MinAddr];
-    Alloc.Size = MaxAddr - MinAddr;
-    Alloc.DeinitializationActions = std::move(*DeinitializeActions);
+    Allocations[MinAddr].Size = MaxAddr - MinAddr;
+    Allocations[MinAddr].DeinitializationActions =
+        std::move(*DeinitializeActions);
     Reservations[AI.MappingBase.toPtr<void *>()].Allocations.push_back(MinAddr);
   }
 
@@ -221,11 +220,10 @@ void SharedMemoryMapper::reserve(size_t NumBytes,
                                  OnReservedFunction OnReserved) {
 #if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__)) || defined(_WIN32)
 
-  int SharedMemoryId = -1;
   EPC.callSPSWrapperAsync<
       rt::SPSExecutorSharedMemoryMapperServiceReserveSignature>(
       SAs.Reserve,
-      [this, NumBytes, OnReserved = std::move(OnReserved), SharedMemoryId](
+      [this, NumBytes, OnReserved = std::move(OnReserved)](
           Error SerializationErr,
           Expected<std::pair<ExecutorAddr, std::string>> Result) mutable {
         if (SerializationErr) {
@@ -250,7 +248,7 @@ void SharedMemoryMapper::reserve(size_t NumBytes,
             SharedMemoryName.size());
         auto HashedName = BLAKE3::hash<sizeof(key_t)>(Data);
         key_t Key = *reinterpret_cast<key_t *>(HashedName.data());
-        SharedMemoryId =
+        int SharedMemoryId =
             shmget(Key, NumBytes, IPC_CREAT | __IPC_SHAREAS | 0700);
         if (SharedMemoryId < 0) {
           return OnReserved(errorCodeToError(
@@ -300,8 +298,7 @@ void SharedMemoryMapper::reserve(size_t NumBytes,
 #endif
         {
           std::lock_guard<std::mutex> Lock(Mutex);
-          Reservations.insert(
-              {RemoteAddr, {LocalAddr, NumBytes, SharedMemoryId}});
+          Reservations.insert({RemoteAddr, {LocalAddr, NumBytes}});
         }
 
         OnReserved(ExecutorAddrRange(RemoteAddr, NumBytes));
@@ -315,8 +312,7 @@ void SharedMemoryMapper::reserve(size_t NumBytes,
 #endif
 }
 
-char *SharedMemoryMapper::prepare(jitlink::LinkGraph &G, ExecutorAddr Addr,
-                                  size_t ContentSize) {
+char *SharedMemoryMapper::prepare(ExecutorAddr Addr, size_t ContentSize) {
   auto R = Reservations.upper_bound(Addr);
   assert(R != Reservations.begin() && "Attempt to prepare unreserved range");
   R--;
@@ -400,8 +396,7 @@ void SharedMemoryMapper::release(ArrayRef<ExecutorAddr> Bases,
 #if defined(LLVM_ON_UNIX)
 
 #if defined(__MVS__)
-      if (shmdt(Reservations[Base].LocalAddr) < 0 ||
-          shmctl(Reservations[Base].SharedMemoryId, IPC_RMID, NULL) < 0)
+      if (shmdt(Reservations[Base].LocalAddr) < 0)
         Err = joinErrors(std::move(Err), errorCodeToError(errnoAsErrorCode()));
 #else
       if (munmap(Reservations[Base].LocalAddr, Reservations[Base].Size) != 0)

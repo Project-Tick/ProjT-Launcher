@@ -15,15 +15,10 @@
 
 #include "llvm/CodeGen/SelectionDAGTargetInfo.h"
 
-#define GET_SDNODE_ENUM
-#include "XCoreGenSDNodeInfo.inc"
-
 namespace llvm {
 
-class XCoreSelectionDAGInfo : public SelectionDAGGenTargetInfo {
+class XCoreSelectionDAGInfo : public SelectionDAGTargetInfo {
 public:
-  XCoreSelectionDAGInfo();
-
   SDValue EmitTargetCodeForMemcpy(SelectionDAG &DAG, const SDLoc &dl,
                                   SDValue Chain, SDValue Op1, SDValue Op2,
                                   SDValue Op3, Align Alignment, bool isVolatile,
@@ -32,6 +27,6 @@ public:
                                   MachinePointerInfo SrcPtrInfo) const override;
 };
 
-} // namespace llvm
+}
 
 #endif

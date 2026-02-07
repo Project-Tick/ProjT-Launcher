@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+//===--- SuspiciousStringCompareCheck.cpp - clang-tidy---------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "SuspiciousStringCompareCheck.h"
+#include "../utils/Matchers.h"
 #include "../utils/OptionsUtils.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
@@ -88,7 +89,7 @@ void SuspiciousStringCompareCheck::registerMatchers(MatchFinder *Finder) {
 
   // Add the list of known string compare-like functions and add user-defined
   // functions.
-  const std::vector<StringRef> FunctionNames = utils::options::parseListPair(
+  std::vector<StringRef> FunctionNames = utils::options::parseListPair(
       KnownStringCompareFunctions, StringCompareLikeFunctions);
 
   // Match a call to a string compare functions.
@@ -163,7 +164,7 @@ void SuspiciousStringCompareCheck::check(
   assert(Decl != nullptr && Call != nullptr);
 
   if (Result.Nodes.getNodeAs<Stmt>("missing-comparison")) {
-    const SourceLocation EndLoc = Lexer::getLocForEndOfToken(
+    SourceLocation EndLoc = Lexer::getLocForEndOfToken(
         Call->getRParenLoc(), 0, Result.Context->getSourceManager(),
         getLangOpts());
 
@@ -173,10 +174,10 @@ void SuspiciousStringCompareCheck::check(
   }
 
   if (const auto *E = Result.Nodes.getNodeAs<Expr>("logical-not-comparison")) {
-    const SourceLocation EndLoc = Lexer::getLocForEndOfToken(
+    SourceLocation EndLoc = Lexer::getLocForEndOfToken(
         Call->getRParenLoc(), 0, Result.Context->getSourceManager(),
         getLangOpts());
-    const SourceLocation NotLoc = E->getBeginLoc();
+    SourceLocation NotLoc = E->getBeginLoc();
 
     diag(Call->getBeginLoc(),
          "function %0 is compared using logical not operator")

@@ -43,7 +43,6 @@ FunctionPass *createMSP430ISelDag(MSP430TargetMachine &TM,
 
 FunctionPass *createMSP430BranchSelectionPass();
 
-void initializeMSP430AsmPrinterPass(PassRegistry &);
 void initializeMSP430DAGToDAGISelLegacyPass(PassRegistry &);
 
 } // namespace llvm

@@ -24,8 +24,7 @@
 // RUN: diff %t.imports-sorted %t.exports-sorted
 
 // Ensure that there is no dynamic dylib linked.
-// RUN: otool -L %t > %t.libs
-// RUN: not grep -q "dynamic.dylib" < %t.libs
+// RUN: otool -L %t | (! grep -q "dynamic.dylib")
 
 // UNSUPPORTED: ios
 

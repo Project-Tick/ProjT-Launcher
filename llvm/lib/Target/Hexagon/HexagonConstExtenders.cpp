@@ -37,6 +37,11 @@ static cl::opt<unsigned>
     ReplaceLimit("hexagon-cext-limit", cl::init(0), cl::Hidden,
                  cl::desc("Maximum number of replacements"));
 
+namespace llvm {
+  void initializeHexagonConstExtendersPass(PassRegistry&);
+  FunctionPass *createHexagonConstExtenders();
+}
+
 static int32_t adjustUp(int32_t V, uint8_t A, uint8_t O) {
   assert(isPowerOf2_32(A));
   int32_t U = (V & -A) + O;
@@ -107,7 +112,11 @@ namespace {
       return !operator==(R);
     }
     bool operator<(const OffsetRange &R) const {
-      return std::tie(Min, Max, Align) < std::tie(R.Min, R.Max, R.Align);
+      if (Min != R.Min)
+        return Min < R.Min;
+      if (Max != R.Max)
+        return Max < R.Max;
+      return Align < R.Align;
     }
     static OffsetRange zero() { return {0, 0, 1}; }
   };
@@ -244,7 +253,7 @@ namespace {
                           /*Kill*/false, /*Dead*/false, /*Undef*/false,
                           /*EarlyClobber*/false, Sub);
         if (Reg.isStack()) {
-          int FI = Reg.stackSlotIndex();
+          int FI = llvm::Register::stackSlot2Index(Reg);
           return MachineOperand::CreateFI(FI);
         }
         llvm_unreachable("Cannot create MachineOperand");
@@ -253,7 +262,7 @@ namespace {
       bool operator!=(Register R) const { return !operator==(R); }
       bool operator<(Register R) const {
         // For std::map.
-        return std::tie(Reg, Sub) < std::tie(R.Reg, R.Sub);
+        return Reg < R.Reg || (Reg == R.Reg && Sub < R.Sub);
       }
       llvm::Register Reg;
       unsigned Sub = 0;
@@ -298,7 +307,11 @@ namespace {
         return !operator==(Ex);
       }
       bool operator<(const ExtExpr &Ex) const {
-        return std::tie(Rs, S, Neg) < std::tie(Ex.Rs, Ex.S, Ex.Neg);
+        if (Rs != Ex.Rs)
+          return Rs < Ex.Rs;
+        if (S != Ex.S)
+          return S < Ex.S;
+        return !Neg && Ex.Neg;
       }
     };
 
@@ -419,8 +432,8 @@ namespace {
 
   using HCE = HexagonConstExtenders;
 
-  [[maybe_unused]]
-  raw_ostream &operator<<(raw_ostream &OS, const OffsetRange &OR) {
+  LLVM_ATTRIBUTE_UNUSED
+  raw_ostream &operator<< (raw_ostream &OS, const OffsetRange &OR) {
     if (OR.Min > OR.Max)
       OS << '!';
     OS << '[' << OR.Min << ',' << OR.Max << "]a" << unsigned(OR.Align)
@@ -435,8 +448,8 @@ namespace {
     const HexagonRegisterInfo &HRI;
   };
 
-  [[maybe_unused]]
-  raw_ostream &operator<<(raw_ostream &OS, const PrintRegister &P) {
+  LLVM_ATTRIBUTE_UNUSED
+  raw_ostream &operator<< (raw_ostream &OS, const PrintRegister &P) {
     if (P.Rs.Reg != 0)
       OS << printReg(P.Rs.Reg, &P.HRI, P.Rs.Sub);
     else
@@ -451,8 +464,8 @@ namespace {
     const HexagonRegisterInfo &HRI;
   };
 
-  [[maybe_unused]]
-  raw_ostream &operator<<(raw_ostream &OS, const PrintExpr &P) {
+  LLVM_ATTRIBUTE_UNUSED
+  raw_ostream &operator<< (raw_ostream &OS, const PrintExpr &P) {
     OS << "## " << (P.Ex.Neg ? "- " : "+ ");
     if (P.Ex.Rs.Reg != 0)
       OS << printReg(P.Ex.Rs.Reg, &P.HRI, P.Ex.Rs.Sub);
@@ -469,15 +482,15 @@ namespace {
     const HexagonRegisterInfo &HRI;
   };
 
-  [[maybe_unused]]
-  raw_ostream &operator<<(raw_ostream &OS, const PrintInit &P) {
+  LLVM_ATTRIBUTE_UNUSED
+  raw_ostream &operator<< (raw_ostream &OS, const PrintInit &P) {
     OS << '[' << P.ExtI.first << ", "
        << PrintExpr(P.ExtI.second, P.HRI) << ']';
     return OS;
   }
 
-  [[maybe_unused]]
-  raw_ostream &operator<<(raw_ostream &OS, const HCE::ExtDesc &ED) {
+  LLVM_ATTRIBUTE_UNUSED
+  raw_ostream &operator<< (raw_ostream &OS, const HCE::ExtDesc &ED) {
     assert(ED.OpNum != -1u);
     const MachineBasicBlock &MBB = *ED.getOp().getParent()->getParent();
     const MachineFunction &MF = *MBB.getParent();
@@ -493,8 +506,8 @@ namespace {
     return OS;
   }
 
-  [[maybe_unused]]
-  raw_ostream &operator<<(raw_ostream &OS, const HCE::ExtRoot &ER) {
+  LLVM_ATTRIBUTE_UNUSED
+  raw_ostream &operator<< (raw_ostream &OS, const HCE::ExtRoot &ER) {
     switch (ER.Kind) {
       case MachineOperand::MO_Immediate:
         OS << "imm:" << ER.V.ImmVal;
@@ -527,8 +540,8 @@ namespace {
     return OS;
   }
 
-  [[maybe_unused]]
-  raw_ostream &operator<<(raw_ostream &OS, const HCE::ExtValue &EV) {
+  LLVM_ATTRIBUTE_UNUSED
+  raw_ostream &operator<< (raw_ostream &OS, const HCE::ExtValue &EV) {
     OS << HCE::ExtRoot(EV) << "  off:" << EV.Offset;
     return OS;
   }
@@ -540,8 +553,8 @@ namespace {
     const HexagonRegisterInfo &HRI;
   };
 
-  [[maybe_unused]]
-  raw_ostream &operator<<(raw_ostream &OS, const PrintIMap &P) {
+  LLVM_ATTRIBUTE_UNUSED
+  raw_ostream &operator<< (raw_ostream &OS, const PrintIMap &P) {
     OS << "{\n";
     for (const std::pair<const HCE::ExtenderInit, HCE::IndexList> &Q : P.IMap) {
       OS << "  " << PrintInit(Q.first, P.HRI) << " -> {";
@@ -1027,7 +1040,7 @@ unsigned HCE::getDirectRegReplacement(unsigned ExtOpc) const {
 // extender. It may be possible for MI to be tweaked to work for a register
 // defined with a slightly different value. For example
 //   ... = L2_loadrub_io Rb, 1
-// can be modified to be
+// can be modifed to be
 //   ... = L2_loadrub_io Rb', 0
 // if Rb' = Rb+1.
 // The range for Rb would be [Min+1, Max+1], where [Min, Max] is a range
@@ -1135,8 +1148,8 @@ void HCE::recordExtender(MachineInstr &MI, unsigned OpNum) {
   bool IsStore = MI.mayStore();
 
   // Fixed stack slots have negative indexes, and they cannot be used
-  // with Register::stackSlotIndex and Register::index2StackSlot. This is
-  // somewhat unfortunate, but should not be a frequent thing.
+  // with TRI::stackSlot2Index and TRI::index2StackSlot. This is somewhat
+  // unfortunate, but should not be a frequent thing.
   for (MachineOperand &Op : MI.operands())
     if (Op.isFI() && Op.getIndex() < 0)
       return;
@@ -1315,6 +1328,12 @@ void HCE::assignInits(const ExtRoot &ER, unsigned Begin, unsigned End,
   // Select the definition points, and generate the assignment between
   // these points and the uses.
 
+  // For each candidate offset, keep a pair CandData consisting of
+  // the total number of ranges containing that candidate, and the
+  // vector of corresponding RangeTree nodes.
+  using CandData = std::pair<unsigned, SmallVector<RangeTree::Node*,8>>;
+  std::map<int32_t, CandData> CandMap;
+
   RangeTree Tree;
   for (const OffsetRange &R : Ranges)
     Tree.add(R);
@@ -1451,7 +1470,7 @@ void HCE::assignInits(const ExtRoot &ER, unsigned Begin, unsigned End,
              ExtValue(ED).Offset == EV.Offset;
     };
     if (all_of(P.second, SameValue)) {
-      F->second.insert_range(P.second);
+      F->second.insert(P.second.begin(), P.second.end());
       P.second.clear();
     }
   }

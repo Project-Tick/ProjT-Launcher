@@ -11,7 +11,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "ARC.h"
-#include "ARCSelectionDAGInfo.h"
 #include "ARCTargetMachine.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"

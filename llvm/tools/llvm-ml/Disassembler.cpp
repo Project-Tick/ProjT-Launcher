@@ -33,7 +33,7 @@ typedef std::pair<std::vector<unsigned char>, std::vector<const char *>>
 static bool PrintInsts(const MCDisassembler &DisAsm, const ByteArrayTy &Bytes,
                        SourceMgr &SM, raw_ostream &Out, MCStreamer &Streamer,
                        bool InAtomicBlock, const MCSubtargetInfo &STI) {
-  ArrayRef<uint8_t> Data(Bytes.first);
+  ArrayRef<uint8_t> Data(Bytes.first.data(), Bytes.first.size());
 
   // Disassemble it to strings.
   uint64_t Size;
@@ -127,8 +127,7 @@ int Disassembler::disassemble(const Target &T, const std::string &TripleName,
                               MCSubtargetInfo &STI, MCStreamer &Streamer,
                               MemoryBuffer &Buffer, SourceMgr &SM,
                               raw_ostream &Out) {
-  Triple TheTriple(TripleName);
-  std::unique_ptr<const MCRegisterInfo> MRI(T.createMCRegInfo(TheTriple));
+  std::unique_ptr<const MCRegisterInfo> MRI(T.createMCRegInfo(TripleName));
   if (!MRI) {
     errs() << "error: no register info for target " << TripleName << "\n";
     return -1;
@@ -136,7 +135,7 @@ int Disassembler::disassemble(const Target &T, const std::string &TripleName,
 
   MCTargetOptions MCOptions;
   std::unique_ptr<const MCAsmInfo> MAI(
-      T.createMCAsmInfo(*MRI, TheTriple, MCOptions));
+      T.createMCAsmInfo(*MRI, TripleName, MCOptions));
   if (!MAI) {
     errs() << "error: no assembly info for target " << TripleName << "\n";
     return -1;

@@ -12,6 +12,7 @@
 //  template<class R>
 //    constexpr explicit(Extent != dynamic_extent) span(R&& r);
 
+
 #include <span>
 #include <cassert>
 #include <ranges>
@@ -55,16 +56,10 @@ static_assert(std::is_constructible_v<std::span<const int, 3>, std::vector<int>>
 static_assert(!std::is_constructible_v<std::span<int>, std::vector<int>&&>);              // non-borrowed rvalue
 static_assert(!std::is_constructible_v<std::span<int, 3>, std::vector<int>&&>);           // non-borrowed rvalue
 
-static_assert(std::is_constructible_v<std::span<int>,
-                                      std::ranges::subrange<contiguous_iterator<int*>>>); // contiguous borrowed rvalue
-static_assert(std::is_constructible_v<std::span<int, 3>,
-                                      std::ranges::subrange<contiguous_iterator<int*>>>); // contiguous borrowed rvalue
-static_assert(
-    !std::is_constructible_v<std::span<int>,
-                             std::ranges::subrange<random_access_iterator<int*>>>); // non-contiguous borrowed rvalue
-static_assert(
-    !std::is_constructible_v<std::span<int, 3>,
-                             std::ranges::subrange<random_access_iterator<int*>>>); // non-contiguous borrowed rvalue
+static_assert(std::is_constructible_v<std::span<int>, std::ranges::subrange<contiguous_iterator<int*>>>);         // contiguous borrowed rvalue
+static_assert(std::is_constructible_v<std::span<int, 3>, std::ranges::subrange<contiguous_iterator<int*>>>);      // contiguous borrowed rvalue
+static_assert(!std::is_constructible_v<std::span<int>, std::ranges::subrange<random_access_iterator<int*>>>);     // non-contiguous borrowed rvalue
+static_assert(!std::is_constructible_v<std::span<int, 3>, std::ranges::subrange<random_access_iterator<int*>>>);  // non-contiguous borrowed rvalue
 
 using BorrowedContiguousSizedRange = std::string_view;
 static_assert(std::is_constructible_v<std::span<const char>, BorrowedContiguousSizedRange>);

@@ -149,8 +149,7 @@ namespace PR12031 {
   void f(int i, X x);
   void g() {
     const int v = 10;
-    f(v, [](){}); // cxx03-warning {{template argument uses local type}} \
-                         // cxx03-note {{while substituting}}
+    f(v, [](){});
   }
 }
 
@@ -194,11 +193,6 @@ namespace ModifyingCapture {
     int n = 0;
     [=] {
       n = 1; // expected-error {{cannot assign to a variable captured by copy in a non-mutable lambda}}
-    };
-    const int cn = 0;
-    // cxx03-cxx11-warning@+1 {{initialized lambda captures are a C++14 extension}}
-    [&cnr = cn]{ // expected-note {{variable 'cnr' declared const here}}
-      cnr = 1; // expected-error {{cannot assign to variable 'cnr' with const-qualified type 'const int &'}}
     };
   }
 }
@@ -458,7 +452,6 @@ void g(F f) {
 void f() {
   g([] {}); // cxx03-warning {{template argument uses local type}}
   // expected-note-re@-1 {{in instantiation of function template specialization 'PR20731::g<(lambda at {{.*}}>' requested here}}
-  // cxx03-note@-2 {{while substituting deduced template arguments}}
 }
 
 template <class _Rp> struct function {
@@ -510,7 +503,6 @@ namespace PR21857 {
   };
   template<typename Fn> fun<Fn> wrap(Fn fn); // cxx03-warning {{template argument uses unnamed type}}
   auto x = wrap([](){}); // cxx03-warning {{template argument uses unnamed type}} cxx03-note 2 {{unnamed type used in template argument was declared here}}
-                         // cxx03-note@-1 {{while substituting deduced template arguments into function template}}
 }
 
 namespace PR13987 {
@@ -573,37 +565,26 @@ namespace PR27994 {
 struct A { template <class T> A(T); };
 
 template <class T>
-struct B { // #PR27994_B
+struct B {
   int x;
-  A a = [&] { int y = x; }; // cxx03-warning {{template argument uses unnamed type}} \
-                            //   cxx03-note {{while substituting}} cxx03-note {{unnamed type used}}
-  A b = [&] { [&] { [&] { int y = x; }; }; }; // cxx03-warning {{template argument uses unnamed type}} \
-                                              //   cxx03-note {{while substituting}} cxx03-note {{unnamed type used}}
-  A d = [&](auto param) { int y = x; }; // cxx03-cxx11-error {{'auto' not allowed in lambda parameter}} \
-                                        // cxx03-warning {{template argument uses unnamed type}} \
-                                        //  cxx03-note {{while substituting}} cxx03-note {{unnamed type used}}
-  A e = [&](auto param) { [&] { [&](auto param2) { int y = x; }; }; }; // cxx03-cxx11-error 2 {{'auto' not allowed in lambda parameter}} \
-                                                                       // cxx03-warning {{template argument uses unnamed type}} \
-                                                                       //  cxx03-note {{while substituting}} cxx03-note {{unnamed type used}}
+  A a = [&] { int y = x; };
+  A b = [&] { [&] { [&] { int y = x; }; }; };
+  A d = [&](auto param) { int y = x; }; // cxx03-cxx11-error {{'auto' not allowed in lambda parameter}}
+  A e = [&](auto param) { [&] { [&](auto param2) { int y = x; }; }; }; // cxx03-cxx11-error 2 {{'auto' not allowed in lambda parameter}}
 };
 
 B<int> b;
-// cxx03-note@#PR27994_B 4{{in instantiation of default member initializer}}
-// cxx03-note@-2 4{{in evaluation of exception}}
 
 template <class T> struct C {
   struct D {
-    // cxx03-note@-1 {{in instantiation of default member initializer}}
     int x;
-    A f = [&] { int y = x; }; // cxx03-warning {{template argument uses unnamed type}} \
-                              // cxx03-note {{while substituting}} cxx03-note {{unnamed type used}}
+    A f = [&] { int y = x; };
   };
 };
 
 int func() {
   C<int> a;
   decltype(a)::D b;
-  // cxx03-note@-1 {{in evaluation of exception}}
 }
 }
 
@@ -618,12 +599,8 @@ struct S1 {
 
 void foo1() {
   auto s0 = S1([name=]() {}); // expected-error {{expected expression}}
-                                     // cxx03-warning@-1 {{template argument uses local type}} \
-                                     // cxx03-note@-1 {{while substituting deduced template arguments}}
   auto s1 = S1([name=name]() {}); // expected-error {{use of undeclared identifier 'name'; did you mean 'name1'?}}
                                   // cxx03-cxx11-warning@-1 {{initialized lambda captures are a C++14 extension}}
-                                  // cxx03-warning@-2 {{template argument uses local type}} \
-                                  // cxx03-note@-2 {{while substituting deduced template arguments}}
 }
 }
 

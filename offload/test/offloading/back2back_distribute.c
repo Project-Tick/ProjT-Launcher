@@ -1,7 +1,5 @@
-// clang-format off
 // RUN: %libomptarget-compile-generic -O3 && %libomptarget-run-generic | %fcheck-generic
-// XFAIL: intelgpu
-// clang-format on
+
 #include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>

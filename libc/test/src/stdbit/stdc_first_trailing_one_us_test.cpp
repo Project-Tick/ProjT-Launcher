@@ -11,12 +11,10 @@
 #include "test/UnitTest/Test.h"
 
 TEST(LlvmLibcStdcFirstTrailingOneUsTest, ALL) {
-  EXPECT_EQ(LIBC_NAMESPACE::stdc_first_trailing_one_us(USHRT_MAX), 1U);
+  EXPECT_EQ(LIBC_NAMESPACE::stdc_first_trailing_one_us(USHRT_MAX), 0U);
 }
 
 TEST(LlvmLibcStdcFirstTrailingOneUsTest, OneHot) {
   for (unsigned i = 0U; i != USHRT_WIDTH; ++i)
-    EXPECT_EQ(LIBC_NAMESPACE::stdc_first_trailing_one_us(
-                  static_cast<unsigned short>(1U << i)),
-              i + 1);
+    EXPECT_EQ(LIBC_NAMESPACE::stdc_first_trailing_one_us(1U << i), i + 1);
 }

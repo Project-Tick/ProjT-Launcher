@@ -107,37 +107,6 @@ TEST(ParseConfiguration, ChecksSeparatedByNewlines) {
   EXPECT_EQ("-*,misc-*\nllvm-*\n-clang-*,\ngoogle-*\n", *Options->Checks);
 }
 
-TEST(ParseConfiguration, WarningsAsErrorsSeparatedByNewlines) {
-  const auto MemoryBuffer = llvm::MemoryBufferRef("WarningsAsErrors: |\n"
-                                                  "  -*,misc-*\n"
-                                                  "  llvm-*\n"
-                                                  "  -clang-*,\n"
-                                                  "  google-*",
-                                                  "Options");
-
-  const auto Options = parseConfiguration(MemoryBuffer);
-
-  EXPECT_TRUE(!!Options);
-  EXPECT_EQ("-*,misc-*\nllvm-*\n-clang-*,\ngoogle-*\n",
-            *Options->WarningsAsErrors);
-}
-
-TEST(ParseConfiguration, WarningsAsErrorsAsList) {
-  const auto MemoryBuffer = llvm::MemoryBufferRef("WarningsAsErrors: [\n"
-                                                  "  '-*',\n"
-                                                  "  'misc-*',\n"
-                                                  "  'llvm-*',\n"
-                                                  "  '-clang-*',\n"
-                                                  "  'google-*'\n"
-                                                  "]",
-                                                  "Options");
-
-  const auto Options = parseConfiguration(MemoryBuffer);
-
-  EXPECT_TRUE(!!Options);
-  EXPECT_EQ("-*,misc-*,llvm-*,-clang-*,google-*", *Options->WarningsAsErrors);
-}
-
 TEST(ParseConfiguration, MergeConfigurations) {
   llvm::ErrorOr<ClangTidyOptions> Options1 =
       parseConfiguration(llvm::MemoryBufferRef(R"(
@@ -348,10 +317,9 @@ TEST(CheckOptionsValidation, MissingOptions) {
   ClangTidyContext Context(std::make_unique<DefaultOptionsProvider>(
       ClangTidyGlobalOptions(), Options));
   ClangTidyDiagnosticConsumer DiagConsumer(Context);
-  auto DiagOpts = std::make_unique<DiagnosticOptions>();
-  DiagnosticsEngine DE(DiagnosticIDs::create(), *DiagOpts, &DiagConsumer,
-                       false);
-  Context.setDiagnosticsEngine(std::move(DiagOpts), &DE);
+  DiagnosticsEngine DE(new DiagnosticIDs(), new DiagnosticOptions,
+                       &DiagConsumer, false);
+  Context.setDiagnosticsEngine(&DE);
   TestCheck TestCheck(&Context);
   EXPECT_FALSE(TestCheck.getLocal("Opt"));
   EXPECT_EQ(TestCheck.getLocal("Opt", "Unknown"), "Unknown");
@@ -379,10 +347,9 @@ TEST(CheckOptionsValidation, ValidIntOptions) {
   ClangTidyContext Context(std::make_unique<DefaultOptionsProvider>(
       ClangTidyGlobalOptions(), Options));
   ClangTidyDiagnosticConsumer DiagConsumer(Context);
-  auto DiagOpts = std::make_unique<DiagnosticOptions>();
-  DiagnosticsEngine DE(DiagnosticIDs::create(), *DiagOpts, &DiagConsumer,
-                       false);
-  Context.setDiagnosticsEngine(std::move(DiagOpts), &DE);
+  DiagnosticsEngine DE(new DiagnosticIDs(), new DiagnosticOptions,
+                       &DiagConsumer, false);
+  Context.setDiagnosticsEngine(&DE);
   TestCheck TestCheck(&Context);
 
   CHECK_VAL(TestCheck.getIntLocal("IntExpected"), 1);
@@ -442,10 +409,9 @@ TEST(ValidConfiguration, ValidEnumOptions) {
   ClangTidyContext Context(std::make_unique<DefaultOptionsProvider>(
       ClangTidyGlobalOptions(), Options));
   ClangTidyDiagnosticConsumer DiagConsumer(Context);
-  auto DiagOpts = std::make_unique<DiagnosticOptions>();
-  DiagnosticsEngine DE(DiagnosticIDs::create(), *DiagOpts, &DiagConsumer,
-                       false);
-  Context.setDiagnosticsEngine(std::move(DiagOpts), &DE);
+  DiagnosticsEngine DE(new DiagnosticIDs(), new DiagnosticOptions,
+                       &DiagConsumer, false);
+  Context.setDiagnosticsEngine(&DE);
   TestCheck TestCheck(&Context);
 
   CHECK_VAL(TestCheck.getIntLocal<Colours>("Valid"), Colours::Red);

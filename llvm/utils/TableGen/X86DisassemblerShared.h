@@ -14,8 +14,6 @@
 
 #include "llvm/Support/X86DisassemblerDecoderCommon.h"
 
-namespace llvm::X86Disassembler {
-
 struct InstructionSpecifier {
   llvm::X86Disassembler::OperandSpecifier
       operands[llvm::X86Disassembler::X86_MAX_OPERANDS];
@@ -53,7 +51,5 @@ struct ContextDecision {
 
   ContextDecision() { memset(opcodeDecisions, 0, sizeof(opcodeDecisions)); }
 };
-
-} // namespace llvm::X86Disassembler
 
 #endif

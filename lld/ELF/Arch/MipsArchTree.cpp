@@ -13,7 +13,9 @@
 #include "InputFiles.h"
 #include "SymbolTable.h"
 #include "Target.h"
+#include "Writer.h"
 
+#include "lld/Common/ErrorHandler.h"
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/Support/MipsABIFlags.h"
 

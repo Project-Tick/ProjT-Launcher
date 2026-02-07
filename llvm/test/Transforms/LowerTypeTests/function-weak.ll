@@ -32,10 +32,10 @@ target triple = "x86_64-unknown-linux-gnu"
 declare !type !0 extern_weak void @f()
 
 ; CHECK: define zeroext i1 @check_f()
-define zeroext i1 @check_f() !prof !{!"function_entry_count", i32 10} {
+define zeroext i1 @check_f() {
 entry:
 ; CHECK: [[CMP:%.*]] = icmp ne ptr @f, null
-; CHECK: [[SEL:%.*]] = select i1 [[CMP]], ptr @[[JT:.*]], ptr null, !prof ![[SELPROF:[0-9]+]]
+; CHECK: [[SEL:%.*]] = select i1 [[CMP]], ptr @[[JT:.*]], ptr null
 ; CHECK: [[PTI:%.*]] = ptrtoint ptr [[SEL]] to i1
 ; CHECK: ret i1 [[PTI]]
   ret i1 ptrtoint (ptr @f to i1)
@@ -165,4 +165,3 @@ define i1 @foo(ptr %p) {
 ; CHECK-NEXT: }
 
 !0 = !{i32 0, !"typeid1"}
-; CHECK: ![[SELPROF]] = !{!"unknown", !"lowertypetests"}

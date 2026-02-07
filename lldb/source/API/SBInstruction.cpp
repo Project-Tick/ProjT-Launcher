@@ -10,9 +10,10 @@
 #include "lldb/Utility/Instrumentation.h"
 
 #include "lldb/API/SBAddress.h"
-#include "lldb/API/SBFile.h"
 #include "lldb/API/SBFrame.h"
+#include "lldb/API/SBFile.h"
 
+#include "lldb/API/SBInstruction.h"
 #include "lldb/API/SBStream.h"
 #include "lldb/API/SBTarget.h"
 #include "lldb/Core/Disassembler.h"
@@ -268,8 +269,7 @@ bool SBInstruction::GetDescription(lldb::SBStream &s) {
 
 void SBInstruction::Print(FILE *outp) {
   LLDB_INSTRUMENT_VA(this, outp);
-  FileSP out = std::make_shared<NativeFile>(outp, File::eOpenOptionWriteOnly,
-                                            /*take_ownership=*/false);
+  FileSP out = std::make_shared<NativeFile>(outp, /*take_ownership=*/false);
   Print(out);
 }
 

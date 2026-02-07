@@ -588,8 +588,12 @@ void PipelineSolver::populateReadyList(
       ReadyList.push_back(std::pair(*I, -1));
   }
 
-  if (UseCostHeur)
-    std::sort(ReadyList.begin(), ReadyList.end(), llvm::less_second());
+  if (UseCostHeur) {
+    std::sort(ReadyList.begin(), ReadyList.end(),
+              [](std::pair<int, int> A, std::pair<int, int> B) {
+                return A.second < B.second;
+              });
+  }
 
   assert(ReadyList.size() == CurrSU.second.size());
 }
@@ -957,6 +961,8 @@ private:
       auto *DAG = SyncPipe[0].DAG;
 
       if (Cache->empty()) {
+        SmallVector<SUnit *, 8> Worklist;
+
         auto I = DAG->SUnits.begin();
         auto E = DAG->SUnits.end();
         for (; I != E; I++) {
@@ -1044,16 +1050,17 @@ private:
       if (!SyncPipe.size())
         return false;
 
-      unsigned SuccSize = llvm::count_if(SU->Succs, [](const SDep &Succ) {
-        return Succ.getKind() == SDep::Data;
-      });
+      auto SuccSize = std::count_if(
+          SU->Succs.begin(), SU->Succs.end(),
+          [](const SDep &Succ) { return Succ.getKind() == SDep::Data; });
       if (SuccSize >= Size)
         return false;
 
       if (HasIntermediary) {
         for (auto Succ : SU->Succs) {
-          unsigned SuccSize =
-              llvm::count_if(Succ.getSUnit()->Succs, [](const SDep &SuccSucc) {
+          auto SuccSize = std::count_if(
+              Succ.getSUnit()->Succs.begin(), Succ.getSUnit()->Succs.end(),
+              [](const SDep &SuccSucc) {
                 return SuccSucc.getKind() == SDep::Data;
               });
           if (SuccSize >= Size)
@@ -1084,16 +1091,17 @@ private:
       if (!SyncPipe.size())
         return false;
 
-      unsigned SuccSize = llvm::count_if(SU->Succs, [](const SDep &Succ) {
-        return Succ.getKind() == SDep::Data;
-      });
+      auto SuccSize = std::count_if(
+          SU->Succs.begin(), SU->Succs.end(),
+          [](const SDep &Succ) { return Succ.getKind() == SDep::Data; });
       if (SuccSize >= Size)
         return true;
 
       if (HasIntermediary) {
         for (auto Succ : SU->Succs) {
-          unsigned SuccSize =
-              llvm::count_if(Succ.getSUnit()->Succs, [](const SDep &SuccSucc) {
+          auto SuccSize = std::count_if(
+              Succ.getSUnit()->Succs.begin(), Succ.getSUnit()->Succs.end(),
+              [](const SDep &SuccSucc) {
                 return SuccSucc.getKind() == SDep::Data;
               });
           if (SuccSize >= Size)
@@ -1288,6 +1296,7 @@ private:
     bool apply(const SUnit *SU, const ArrayRef<SUnit *> Collection,
                SmallVectorImpl<SchedGroup> &SyncPipe) override {
 
+      SmallVector<SUnit *, 12> Worklist;
       auto *DAG = SyncPipe[0].DAG;
       if (Cache->empty()) {
         for (auto &SU : DAG->SUnits)
@@ -1469,22 +1478,25 @@ bool MFMAExpInterleaveOpt::analyzeDAG(const SIInstrInfo *TII) {
   MFMAChainLength = MFMAPipeCount / MFMAChains;
 
   // The number of bit pack operations that depend on a single V_EXP
-  unsigned PackSuccCount =
-      llvm::count_if(PackSUs, [this, &TempExp](SUnit *VPack) {
+  unsigned PackSuccCount = std::count_if(
+      PackSUs.begin(), PackSUs.end(), [this, &TempExp](SUnit *VPack) {
         return DAG->IsReachable(VPack, *TempExp);
       });
 
   // The number of bit pack operations an MFMA depends on
   unsigned PackPredCount =
-      llvm::count_if((*TempMFMA)->Preds, [&isBitPack](SDep &Pred) {
-        auto Opc = Pred.getSUnit()->getInstr()->getOpcode();
-        return isBitPack(Opc);
-      });
+      std::count_if((*TempMFMA)->Preds.begin(), (*TempMFMA)->Preds.end(),
+                    [&isBitPack](SDep &Pred) {
+                      auto Opc = Pred.getSUnit()->getInstr()->getOpcode();
+                      return isBitPack(Opc);
+                    });
 
-  auto *PackPred = llvm::find_if((*TempMFMA)->Preds, [&isBitPack](SDep &Pred) {
-    auto Opc = Pred.getSUnit()->getInstr()->getOpcode();
-    return isBitPack(Opc);
-  });
+  auto *PackPred =
+      std::find_if((*TempMFMA)->Preds.begin(), (*TempMFMA)->Preds.end(),
+                   [&isBitPack](SDep &Pred) {
+                     auto Opc = Pred.getSUnit()->getInstr()->getOpcode();
+                     return isBitPack(Opc);
+                   });
 
   if (PackPred == (*TempMFMA)->Preds.end())
     return false;
@@ -1493,18 +1505,20 @@ bool MFMAExpInterleaveOpt::analyzeDAG(const SIInstrInfo *TII) {
   ExpRequirement = 0;
   // How many MFMAs depend on a single bit pack operation
   MFMAEnablement =
-      llvm::count_if(PackPred->getSUnit()->Succs, [&TII](SDep &Succ) {
-        return TII->isMFMAorWMMA(*Succ.getSUnit()->getInstr());
-      });
+      std::count_if(PackPred->getSUnit()->Succs.begin(),
+                    PackPred->getSUnit()->Succs.end(), [&TII](SDep &Succ) {
+                      return TII->isMFMAorWMMA(*Succ.getSUnit()->getInstr());
+                    });
 
   // The number of MFMAs that depend on a single V_EXP
   MFMAEnablement *= PackSuccCount;
 
   // The number of V_EXPs required to resolve all dependencies for an MFMA
   ExpRequirement =
-      llvm::count_if(ExpPipeCands, [this, &PackPred](SUnit *ExpBase) {
-        return DAG->IsReachable(PackPred->getSUnit(), ExpBase);
-      });
+      std::count_if(ExpPipeCands.begin(), ExpPipeCands.end(),
+                    [this, &PackPred](SUnit *ExpBase) {
+                      return DAG->IsReachable(PackPred->getSUnit(), ExpBase);
+                    });
 
   ExpRequirement *= PackPredCount;
   return true;
@@ -1877,6 +1891,7 @@ private:
         }
       }
 
+      assert(Cache->size());
       auto *DAG = SyncPipe[0].DAG;
       for (auto &Elt : *Cache) {
         if (DAG->IsReachable(Elt, const_cast<SUnit *>(SU)))
@@ -1912,6 +1927,8 @@ private:
         }
         return FitsInGroup;
       }
+
+      assert(Cache->size());
 
       // Does the VALU have a DS_WRITE successor that is the same as other
       // VALU already in the group. The V_PERMs will all share 1 DS_W succ
@@ -1968,7 +1985,7 @@ private:
       int NumBits = 0;
 
       auto TRI = TII->getRegisterInfo();
-      auto &MRI = MI->getMF()->getRegInfo();
+      auto &MRI = MI->getParent()->getParent()->getRegInfo();
       for (auto &Elt : Collection) {
         auto Op = Elt->getInstr()->getOperand(0);
         auto Size =
@@ -2183,7 +2200,7 @@ bool MFMASmallGemmSingleWaveOpt::applyIGLPStrategy(
   SG->initSchedGroup(SyncedInstrs[SG->getSyncID()]);
 
   // Interleave MFMA with DS_READ prefetch
-  for (unsigned I = 4; I < DSRCount; ++I) {
+  for (unsigned I = 0; I < DSRCount - 4; ++I) {
     SG = &SyncedSchedGroups[PipelineSyncID].emplace_back(
         SchedGroupMask::DS_READ, 1, PipelineSyncID, DAG, TII);
     SG->initSchedGroup(SyncedInstrs[SG->getSyncID()]);
@@ -2196,7 +2213,7 @@ bool MFMASmallGemmSingleWaveOpt::applyIGLPStrategy(
   // Phase 2a: Loop carried dependency with V_PERM
   // Schedule VPerm & DS_WRITE as closely as possible to the VMEM_READ they
   // depend on. Interleave MFMA to keep XDL unit busy throughout.
-  for (unsigned I = DSWWithSharedVMEMCount; I < DSWWithPermCount; ++I) {
+  for (unsigned I = 0; I < DSWWithPermCount - DSWWithSharedVMEMCount; ++I) {
     SG = &SyncedSchedGroups[PipelineSyncID].emplace_back(
         SchedGroupMask::VALU, 4, PipelineSyncID, DAG, TII);
     SG->addRule(std::make_shared<IsPermForDSW>(TII, SG->getSGID(), true));
@@ -2233,7 +2250,7 @@ bool MFMASmallGemmSingleWaveOpt::applyIGLPStrategy(
   // Phase 2b: Loop carried dependency without V_PERM
   // Schedule DS_WRITE as closely as possible to the VMEM_READ they depend on.
   // Interleave MFMA to keep XDL unit busy throughout.
-  for (unsigned I = DSWWithPermCount; I < DSWCount; I++) {
+  for (unsigned I = 0; I < DSWCount - DSWWithPermCount; I++) {
     SG = &SyncedSchedGroups[PipelineSyncID].emplace_back(
         SchedGroupMask::DS_WRITE, 1, PipelineSyncID, DAG, TII);
     SG->initSchedGroup(SyncedInstrs[SG->getSyncID()]);
@@ -2394,34 +2411,32 @@ bool SchedGroup::canAddMI(const MachineInstr &MI) const {
   else if (((SGMask & SchedGroupMask::ALU) != SchedGroupMask::NONE) &&
            (TII->isVALU(MI) || TII->isMFMAorWMMA(MI) || TII->isSALU(MI) ||
             TII->isTRANS(MI)))
-    Result = !MI.mayLoadOrStore();
+    Result = true;
 
   else if (((SGMask & SchedGroupMask::VALU) != SchedGroupMask::NONE) &&
-           TII->isVALU(MI) && !TII->isMFMAorWMMA(MI) && !TII->isTRANS(MI)) {
-    // Some memory instructions may be marked as VALU (e.g. BUFFER_LOAD_*_LDS).
-    // For our purposes, these shall not be classified as VALU as this results
-    // in unexpected behavior.
-    Result = !MI.mayLoadOrStore();
-  }
+           TII->isVALU(MI) && !TII->isMFMAorWMMA(MI) && !TII->isTRANS(MI))
+    Result = true;
 
   else if (((SGMask & SchedGroupMask::SALU) != SchedGroupMask::NONE) &&
            TII->isSALU(MI))
-    Result = !MI.mayLoadOrStore();
+    Result = true;
 
   else if (((SGMask & SchedGroupMask::MFMA) != SchedGroupMask::NONE) &&
            TII->isMFMAorWMMA(MI))
     Result = true;
 
   else if (((SGMask & SchedGroupMask::VMEM) != SchedGroupMask::NONE) &&
-           TII->isVMEM(MI))
+           (TII->isVMEM(MI) || (TII->isFLAT(MI) && !TII->isDS(MI))))
     Result = true;
 
   else if (((SGMask & SchedGroupMask::VMEM_READ) != SchedGroupMask::NONE) &&
-           MI.mayLoad() && TII->isVMEM(MI))
+           MI.mayLoad() &&
+           (TII->isVMEM(MI) || (TII->isFLAT(MI) && !TII->isDS(MI))))
     Result = true;
 
   else if (((SGMask & SchedGroupMask::VMEM_WRITE) != SchedGroupMask::NONE) &&
-           MI.mayStore() && TII->isVMEM(MI))
+           MI.mayStore() &&
+           (TII->isVMEM(MI) || (TII->isFLAT(MI) && !TII->isDS(MI))))
     Result = true;
 
   else if (((SGMask & SchedGroupMask::DS) != SchedGroupMask::NONE) &&
@@ -2681,12 +2696,16 @@ bool IGroupLPDAGMutation::initIGLPOpt(SUnit &SU) {
 
 } // namespace
 
+namespace llvm {
+
 /// \p Phase specifes whether or not this is a reentry into the
 /// IGroupLPDAGMutation. Since there may be multiple scheduling passes on the
 /// same scheduling region (e.g. pre and post-RA scheduling / multiple
 /// scheduling "phases"), we can reenter this mutation framework more than once
 /// for a given region.
 std::unique_ptr<ScheduleDAGMutation>
-llvm::createIGroupLPDAGMutation(AMDGPU::SchedulingPhase Phase) {
+createIGroupLPDAGMutation(AMDGPU::SchedulingPhase Phase) {
   return std::make_unique<IGroupLPDAGMutation>(Phase);
 }
+
+} // end namespace llvm

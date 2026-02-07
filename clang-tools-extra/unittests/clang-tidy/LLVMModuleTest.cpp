@@ -40,7 +40,7 @@ runHeaderGuardCheck(StringRef Code, const Twine &Filename,
 static std::string
 runIncludeOrderCheck(StringRef Code, const Twine &Filename,
                      std::optional<StringRef> ExpectedWarning,
-                     llvm::ArrayRef<StringRef> Includes) {
+                     llvm::ArrayRef<llvm::StringLiteral> Includes) {
   std::map<StringRef, StringRef> PathsToContent;
   for (auto Include : Includes)
     PathsToContent.emplace(Include, "");

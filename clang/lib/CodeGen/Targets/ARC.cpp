@@ -69,19 +69,16 @@ public:
 
 
 ABIArgInfo ARCABIInfo::getIndirectByRef(QualType Ty, bool HasFreeRegs) const {
-  return HasFreeRegs ? getNaturalAlignIndirectInReg(Ty)
-                     : getNaturalAlignIndirect(
-                           Ty, getDataLayout().getAllocaAddrSpace(), false);
+  return HasFreeRegs ? getNaturalAlignIndirectInReg(Ty) :
+                       getNaturalAlignIndirect(Ty, false);
 }
 
 ABIArgInfo ARCABIInfo::getIndirectByValue(QualType Ty) const {
   // Compute the byval alignment.
   const unsigned MinABIStackAlignInBytes = 4;
   unsigned TypeAlign = getContext().getTypeAlign(Ty) / 8;
-  return ABIArgInfo::getIndirect(
-      CharUnits::fromQuantity(4),
-      /*AddrSpace=*/getDataLayout().getAllocaAddrSpace(),
-      /*ByVal=*/true, TypeAlign > MinABIStackAlignInBytes);
+  return ABIArgInfo::getIndirect(CharUnits::fromQuantity(4), /*ByVal=*/true,
+                                 TypeAlign > MinABIStackAlignInBytes);
 }
 
 RValue ARCABIInfo::EmitVAArg(CodeGenFunction &CGF, Address VAListAddr,
@@ -94,7 +91,7 @@ RValue ARCABIInfo::EmitVAArg(CodeGenFunction &CGF, Address VAListAddr,
 ABIArgInfo ARCABIInfo::classifyArgumentType(QualType Ty,
                                             uint8_t FreeRegs) const {
   // Handle the generic C++ ABI.
-  const RecordType *RT = Ty->getAsCanonical<RecordType>();
+  const RecordType *RT = Ty->getAs<RecordType>();
   if (RT) {
     CGCXXABI::RecordArgABI RAA = getRecordArgABI(RT, getCXXABI());
     if (RAA == CGCXXABI::RAA_Indirect)
@@ -105,14 +102,14 @@ ABIArgInfo ARCABIInfo::classifyArgumentType(QualType Ty,
   }
 
   // Treat an enum type as its underlying type.
-  if (const auto *ED = Ty->getAsEnumDecl())
-    Ty = ED->getIntegerType();
+  if (const EnumType *EnumTy = Ty->getAs<EnumType>())
+    Ty = EnumTy->getDecl()->getIntegerType();
 
   auto SizeInRegs = llvm::alignTo(getContext().getTypeSize(Ty), 32) / 32;
 
   if (isAggregateTypeForABI(Ty)) {
     // Structures with flexible arrays are always indirect.
-    if (RT && RT->getDecl()->getDefinitionOrSelf()->hasFlexibleArrayMember())
+    if (RT && RT->getDecl()->hasFlexibleArrayMember())
       return getIndirectByValue(Ty);
 
     // Ignore empty structs/unions.

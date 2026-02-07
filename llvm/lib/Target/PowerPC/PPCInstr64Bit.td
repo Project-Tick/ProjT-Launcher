@@ -14,6 +14,30 @@
 //===----------------------------------------------------------------------===//
 // 64-bit operands.
 //
+def s16imm64 : Operand<i64> {
+  let PrintMethod = "printS16ImmOperand";
+  let EncoderMethod = "getImm16Encoding";
+  let ParserMatchClass = PPCS16ImmAsmOperand;
+  let DecoderMethod = "decodeSImmOperand<16>";
+  let OperandType = "OPERAND_IMMEDIATE";
+}
+def u16imm64 : Operand<i64> {
+  let PrintMethod = "printU16ImmOperand";
+  let EncoderMethod = "getImm16Encoding";
+  let ParserMatchClass = PPCU16ImmAsmOperand;
+  let DecoderMethod = "decodeUImmOperand<16>";
+  let OperandType = "OPERAND_IMMEDIATE";
+}
+def s17imm64 : Operand<i64> {
+  // This operand type is used for addis/lis to allow the assembler parser
+  // to accept immediates in the range -65536..65535 for compatibility with
+  // the GNU assembler.  The operand is treated as 16-bit otherwise.
+  let PrintMethod = "printS16ImmOperand";
+  let EncoderMethod = "getImm16Encoding";
+  let ParserMatchClass = PPCS17ImmAsmOperand;
+  let DecoderMethod = "decodeSImmOperand<16>";
+  let OperandType = "OPERAND_IMMEDIATE";
+}
 def tocentry : Operand<iPTR> {
   let MIOperandInfo = (ops i64imm:$imm);
 }
@@ -52,23 +76,23 @@ let Interpretation64Bit = 1, isCodeGenOnly = 1 in {
 let isTerminator = 1, isBarrier = 1, PPC970_Unit = 7, hasSideEffects = 0 in {
   let isReturn = 1, isPredicable = 1, Uses = [LR8, RM] in
     def BLR8 : XLForm_2_ext<19, 16, 20, 0, 0, (outs), (ins), "blr", IIC_BrB,
-                            [(PPCretglue)]>, Requires<[IsPPC64]>;
+                            [(PPCretglue)]>, Requires<[In64BitMode]>;
   let isBranch = 1, isIndirectBranch = 1, Uses = [CTR8] in {
     let isPredicable = 1 in
       def BCTR8 : XLForm_2_ext<19, 528, 20, 0, 0, (outs), (ins), "bctr", IIC_BrB,
                                []>,
-          Requires<[IsPPC64]>;
+          Requires<[In64BitMode]>;
     def BCCCTR8 : XLForm_2_br<19, 528, 0, (outs), (ins (pred $BIBO, $CR):$cond),
                               "b${cond:cc}ctr${cond:pm} ${cond:reg}", IIC_BrB,
                               []>,
-        Requires<[IsPPC64]>;
+        Requires<[In64BitMode]>;
 
     def BCCTR8  : XLForm_2_br2<19, 528, 12, 0, (outs), (ins crbitrc:$BI),
                                "bcctr 12, $BI, 0", IIC_BrB, []>,
-        Requires<[IsPPC64]>;
+        Requires<[In64BitMode]>;
     def BCCTR8n : XLForm_2_br2<19, 528, 4, 0, (outs), (ins crbitrc:$BI),
                                "bcctr 4, $BI, 0", IIC_BrB, []>,
-        Requires<[IsPPC64]>;
+        Requires<[In64BitMode]>;
   }
 }
 
@@ -136,20 +160,20 @@ let isCall = 1, PPC970_Unit = 7, Defs = [LR8], hasSideEffects = 0 in {
     let isPredicable = 1 in
       def BCTRL8 : XLForm_2_ext<19, 528, 20, 0, 1, (outs), (ins),
                                 "bctrl", IIC_BrB, [(PPCbctrl)]>,
-                   Requires<[IsPPC64]>;
+                   Requires<[In64BitMode]>;
 
     let isCodeGenOnly = 1 in {
       def BCCCTRL8 : XLForm_2_br<19, 528, 1, (outs), (ins (pred $BIBO, $CR):$cond),
                                  "b${cond:cc}ctrl${cond:pm} ${cond:reg}", IIC_BrB,
                                  []>,
-          Requires<[IsPPC64]>;
+          Requires<[In64BitMode]>;
 
       def BCCTRL8  : XLForm_2_br2<19, 528, 12, 1, (outs), (ins crbitrc:$BI),
                                   "bcctrl 12, $BI, 0", IIC_BrB, []>,
-          Requires<[IsPPC64]>;
+          Requires<[In64BitMode]>;
       def BCCTRL8n : XLForm_2_br2<19, 528, 4, 1, (outs), (ins crbitrc:$BI),
                                   "bcctrl 4, $BI, 0", IIC_BrB, []>,
-          Requires<[IsPPC64]>;
+          Requires<[In64BitMode]>;
     }
   }
 }
@@ -183,7 +207,7 @@ let isCall = 1, PPC970_Unit = 7, Defs = [LR8, RM], hasSideEffects = 0,
     let isPredicable = 1 in
       def BCTRL8_RM : XLForm_2_ext<19, 528, 20, 0, 1, (outs), (ins),
                                    "bctrl", IIC_BrB, [(PPCbctrl_rm)]>,
-                   Requires<[IsPPC64]>;
+                   Requires<[In64BitMode]>;
   }
 }
 
@@ -194,7 +218,7 @@ let isCall = 1, PPC970_Unit = 7, isCodeGenOnly = 1,
                               (ins (memrix $D, $RA):$src),
                               "bctrl\n\tld 2, $src", IIC_BrB,
                               [(PPCbctrl_load_toc iaddrX4:$src)]>,
-    Requires<[IsPPC64]>;
+    Requires<[In64BitMode]>;
 }
 
 let isCall = 1, PPC970_Unit = 7, isCodeGenOnly = 1,
@@ -204,7 +228,7 @@ let isCall = 1, PPC970_Unit = 7, isCodeGenOnly = 1,
                               (ins (memrix $D, $RA):$src),
                               "bctrl\n\tld 2, $src", IIC_BrB,
                               [(PPCbctrl_load_toc_rm iaddrX4:$src)]>,
-    Requires<[IsPPC64]>;
+    Requires<[In64BitMode]>;
 }
 
 } // Interpretation64Bit
@@ -327,18 +351,11 @@ def LQARXL : XForm_1<31, 276, (outs g8prc:$RST), (ins (memrr $RA, $RB):$addr),
                      "lqarx $RST, $addr, 1", IIC_LdStLQARX, []>,
                      isPPC64, isRecordForm;
 
-let hasExtraDefRegAllocReq = 1, mayStore = 1 in
-def LDAT : X_RD5_RS5_IM5<31, 614, (outs g8prc:$RST), (ins g8prc:$RSTi, ptr_rc_nor0:$RA, u5imm:$RB),
+let hasExtraDefRegAllocReq = 1 in
+def LDAT : X_RD5_RS5_IM5<31, 614, (outs g8rc:$RST), (ins g8rc:$RA, u5imm:$RB),
                          "ldat $RST, $RA, $RB", IIC_LdStLoad>, isPPC64,
-           Requires<[IsISA3_0]>,
-           RegConstraint<"$RSTi = $RST">;
+           Requires<[IsISA3_0]>;
 }
-
-def LDAT_PSEUDO : PPCCustomInserterPseudo<
-    (outs g8rc:$dst),
-    (ins ptr_rc_nor0:$ptr, g8rc:$val, u5imm:$fc),
-    "#LDAT_PSEUDO",
-    [(set i64:$dst, (int_ppc_amo_ldat ptr_rc_nor0:$ptr, g8rc:$val, timm:$fc))]>;
 
 let Defs = [CR0], mayStore = 1, mayLoad = 0, hasSideEffects = 0 in {
 def STDCX : XForm_1_memOp<31, 214, (outs), (ins g8rc:$RST, (memrr $RA, $RB):$addr),
@@ -432,7 +449,7 @@ let isTerminator = 1, isBarrier = 1, PPC970_Unit = 7, isBranch = 1,
     isIndirectBranch = 1, isCall = 1, isReturn = 1, Uses = [CTR8, RM] in
 def TAILBCTR8 : XLForm_2_ext<19, 528, 20, 0, 0, (outs), (ins), "bctr", IIC_BrB,
                              []>,
-    Requires<[IsPPC64]>;
+    Requires<[In64BitMode]>;
 
 let isBranch = 1, isTerminator = 1, hasCtrlDep = 1, PPC970_Unit = 7,
     isBarrier = 1, isCall = 1, isReturn = 1, Uses = [RM] in
@@ -499,7 +516,7 @@ let hasSideEffects = 1 in {
   def EH_SjLj_SetJmp64  : PPCCustomInserterPseudo<(outs gprc:$dst), (ins memr:$buf),
                             "#EH_SJLJ_SETJMP64",
                             [(set i32:$dst, (PPCeh_sjlj_setjmp addr:$buf))]>,
-                          Requires<[IsPPC64]>;
+                          Requires<[In64BitMode]>;
 }
 
 let hasSideEffects = 1, isBarrier = 1 in {
@@ -507,7 +524,7 @@ let hasSideEffects = 1, isBarrier = 1 in {
   def EH_SjLj_LongJmp64 : PPCCustomInserterPseudo<(outs), (ins memr:$buf),
                             "#EH_SJLJ_LONGJMP64",
                             [(PPCeh_sjlj_longjmp addr:$buf)]>,
-                          Requires<[IsPPC64]>;
+                          Requires<[In64BitMode]>;
 }
 
 def MFSPR8 : XFXForm_1<31, 339, (outs g8rc:$RST), (ins i32imm:$SPR),
@@ -743,13 +760,13 @@ def STFDXTLS : XForm_8<31, 727, (outs), (ins f8rc:$RST, ptr_rc_nor0:$RA, tlsreg:
 let isCommutable = 1 in
 defm ADDC8 : XOForm_1rc<31, 10, 0, (outs g8rc:$RT), (ins g8rc:$RA, g8rc:$RB),
                         "addc", "$RT, $RA, $RB", IIC_IntGeneral,
-                        [(set i64:$RT, (PPCaddc i64:$RA, i64:$RB))]>,
+                        [(set i64:$RT, (addc i64:$RA, i64:$RB))]>,
                         PPC970_DGroup_Cracked;
 
 let Defs = [CARRY] in
 def ADDIC8 : DForm_2<12, (outs g8rc:$RST), (ins g8rc:$RA, s16imm64:$D),
                      "addic $RST, $RA, $D", IIC_IntGeneral,
-                     [(set i64:$RST, (PPCaddc i64:$RA, imm64SExt16:$D))]>;
+                     [(set i64:$RST, (addc i64:$RA, imm64SExt16:$D))]>;
 def ADDI8  : DForm_2<14, (outs g8rc:$RST), (ins g8rc_nox0:$RA, s16imm64:$D),
                      "addi $RST, $RA, $D", IIC_IntSimple,
                      [(set i64:$RST, (add i64:$RA, imm64SExt16:$D))]>;
@@ -765,11 +782,11 @@ def LA8     : DForm_2<14, (outs g8rc:$RST), (ins g8rc_nox0:$RA, s16imm64:$D),
 let Defs = [CARRY] in {
 def SUBFIC8: DForm_2< 8, (outs g8rc:$RST), (ins g8rc:$RA, s16imm64:$D),
                      "subfic $RST, $RA, $D", IIC_IntGeneral,
-                     [(set i64:$RST, (PPCsubc imm64SExt16:$D, i64:$RA))]>;
+                     [(set i64:$RST, (subc imm64SExt16:$D, i64:$RA))]>;
 }
 defm SUBFC8 : XOForm_1rc<31, 8, 0, (outs g8rc:$RT), (ins g8rc:$RA, g8rc:$RB),
                         "subfc", "$RT, $RA, $RB", IIC_IntGeneral,
-                        [(set i64:$RT, (PPCsubc i64:$RB, i64:$RA))]>,
+                        [(set i64:$RT, (subc i64:$RB, i64:$RA))]>,
                         PPC970_DGroup_Cracked;
 defm SUBF8 : XOForm_1rx<31, 40, (outs g8rc:$RT), (ins g8rc:$RA, g8rc:$RB),
                         "subf", "$RT, $RA, $RB", IIC_IntGeneral,
@@ -781,22 +798,22 @@ let Uses = [CARRY] in {
 let isCommutable = 1 in
 defm ADDE8   : XOForm_1rc<31, 138, 0, (outs g8rc:$RT), (ins g8rc:$RA, g8rc:$RB),
                           "adde", "$RT, $RA, $RB", IIC_IntGeneral,
-                          [(set i64:$RT, (PPCadde i64:$RA, i64:$RB, CARRY))]>;
+                          [(set i64:$RT, (adde i64:$RA, i64:$RB))]>;
 defm ADDME8  : XOForm_3rc<31, 234, 0, (outs g8rc:$RT), (ins g8rc:$RA),
                           "addme", "$RT, $RA", IIC_IntGeneral,
-                          [(set i64:$RT, (PPCadde i64:$RA, -1, CARRY))]>;
+                          [(set i64:$RT, (adde i64:$RA, -1))]>;
 defm ADDZE8  : XOForm_3rc<31, 202, 0, (outs g8rc:$RT), (ins g8rc:$RA),
                           "addze", "$RT, $RA", IIC_IntGeneral,
-                          [(set i64:$RT, (PPCadde i64:$RA, 0, CARRY))]>;
+                          [(set i64:$RT, (adde i64:$RA, 0))]>;
 defm SUBFE8  : XOForm_1rc<31, 136, 0, (outs g8rc:$RT), (ins g8rc:$RA, g8rc:$RB),
                           "subfe", "$RT, $RA, $RB", IIC_IntGeneral,
-                          [(set i64:$RT, (PPCsube i64:$RB, i64:$RA, CARRY))]>;
+                          [(set i64:$RT, (sube i64:$RB, i64:$RA))]>;
 defm SUBFME8 : XOForm_3rc<31, 232, 0, (outs g8rc:$RT), (ins g8rc:$RA),
                           "subfme", "$RT, $RA", IIC_IntGeneral,
-                          [(set i64:$RT, (PPCsube -1, i64:$RA, CARRY))]>;
+                          [(set i64:$RT, (sube -1, i64:$RA))]>;
 defm SUBFZE8 : XOForm_3rc<31, 200, 0, (outs g8rc:$RT), (ins g8rc:$RA),
                           "subfze", "$RT, $RA", IIC_IntGeneral,
-                          [(set i64:$RT, (PPCsube 0, i64:$RA, CARRY))]>;
+                          [(set i64:$RT, (sube 0, i64:$RA))]>;
 }
 } // isCodeGenOnly
 
@@ -1078,7 +1095,8 @@ let hasSideEffects = 0 in {
 defm RLDIMI : MDForm_1r<30, 3, (outs g8rc:$RA),
                         (ins g8rc:$RAi, g8rc:$RS, u6imm:$SH, u6imm:$MBE),
                         "rldimi", "$RA, $RS, $SH, $MBE", IIC_IntRotateDI,
-                        []>, isPPC64, RegConstraint<"$RAi = $RA">;
+                        []>, isPPC64, RegConstraint<"$RAi = $RA">,
+                        NoEncode<"$RAi">;
 
 // Rotate instructions.
 defm RLDCL  : MDSForm_1r<30, 8,
@@ -1138,7 +1156,7 @@ defm RLWIMI8 : MForm_2r<20, (outs g8rc:$RA),
                         (ins g8rc:$RAi, g8rc:$RS, u5imm:$SH, u5imm:$MB,
                         u5imm:$ME), "rlwimi", "$RA, $RS, $SH, $MB, $ME",
                         IIC_IntRotate, []>, PPC970_DGroup_Cracked,
-                        RegConstraint<"$RAi = $RA">;
+                        RegConstraint<"$RAi = $RA">, NoEncode<"$RAi">;
 
 let isSelect = 1 in
 def ISEL8   : AForm_4<31, 15,
@@ -1295,18 +1313,21 @@ let Interpretation64Bit = 1, isCodeGenOnly = 1 in
 def LHAU8 : DForm_1<43, (outs g8rc:$RST, ptr_rc_nor0:$ea_result),
                     (ins (memri $D, $RA):$addr),
                     "lhau $RST, $addr", IIC_LdStLHAU,
-                    []>, RegConstraint<"$addr.reg = $ea_result">;
+                    []>, RegConstraint<"$addr.reg = $ea_result">,
+                    NoEncode<"$ea_result">;
 // NO LWAU!
 
 let Interpretation64Bit = 1, isCodeGenOnly = 1 in
 def LHAUX8 : XForm_1_memOp<31, 375, (outs g8rc:$RST, ptr_rc_nor0:$ea_result),
                           (ins (memrr $RA, $RB):$addr),
                           "lhaux $RST, $addr", IIC_LdStLHAUX,
-                          []>, RegConstraint<"$addr.ptrreg = $ea_result">;
+                          []>, RegConstraint<"$addr.ptrreg = $ea_result">,
+                          NoEncode<"$ea_result">;
 def LWAUX : XForm_1_memOp<31, 373, (outs g8rc:$RST, ptr_rc_nor0:$ea_result),
                           (ins (memrr $RA, $RB):$addr),
                           "lwaux $RST, $addr", IIC_LdStLHAUX,
-                          []>, RegConstraint<"$addr.ptrreg = $ea_result">, isPPC64;
+                          []>, RegConstraint<"$addr.ptrreg = $ea_result">,
+                          NoEncode<"$ea_result">, isPPC64;
 }
 }
 
@@ -1345,28 +1366,34 @@ let mayLoad = 1, hasSideEffects = 0 in {
 def LBZU8 : DForm_1<35, (outs g8rc:$RST, ptr_rc_nor0:$ea_result),
                     (ins (memri $D, $RA):$addr),
                     "lbzu $RST, $addr", IIC_LdStLoadUpd,
-                    []>, RegConstraint<"$addr.reg = $ea_result">;
+                    []>, RegConstraint<"$addr.reg = $ea_result">,
+                    NoEncode<"$ea_result">;
 def LHZU8 : DForm_1<41, (outs g8rc:$RST, ptr_rc_nor0:$ea_result),
                     (ins (memri $D, $RA):$addr),
                     "lhzu $RST, $addr", IIC_LdStLoadUpd,
-                    []>, RegConstraint<"$addr.reg = $ea_result">;
+                    []>, RegConstraint<"$addr.reg = $ea_result">,
+                    NoEncode<"$ea_result">;
 def LWZU8 : DForm_1<33, (outs g8rc:$RST, ptr_rc_nor0:$ea_result),
                     (ins (memri $D, $RA):$addr),
                     "lwzu $RST, $addr", IIC_LdStLoadUpd,
-                    []>, RegConstraint<"$addr.reg = $ea_result">;
+                    []>, RegConstraint<"$addr.reg = $ea_result">,
+                    NoEncode<"$ea_result">;
 
 def LBZUX8 : XForm_1_memOp<31, 119, (outs g8rc:$RST, ptr_rc_nor0:$ea_result),
                           (ins (memrr $RA, $RB):$addr),
                           "lbzux $RST, $addr", IIC_LdStLoadUpdX,
-                          []>, RegConstraint<"$addr.ptrreg = $ea_result">;
+                          []>, RegConstraint<"$addr.ptrreg = $ea_result">,
+                          NoEncode<"$ea_result">;
 def LHZUX8 : XForm_1_memOp<31, 311, (outs g8rc:$RST, ptr_rc_nor0:$ea_result),
                           (ins (memrr $RA, $RB):$addr),
                           "lhzux $RST, $addr", IIC_LdStLoadUpdX,
-                          []>, RegConstraint<"$addr.ptrreg = $ea_result">;
+                          []>, RegConstraint<"$addr.ptrreg = $ea_result">,
+                          NoEncode<"$ea_result">;
 def LWZUX8 : XForm_1_memOp<31, 55, (outs g8rc:$RST, ptr_rc_nor0:$ea_result),
                           (ins (memrr $RA, $RB):$addr),
                           "lwzux $RST, $addr", IIC_LdStLoadUpdX,
-                          []>, RegConstraint<"$addr.ptrreg = $ea_result">;
+                          []>, RegConstraint<"$addr.ptrreg = $ea_result">,
+                          NoEncode<"$ea_result">;
 }
 }
 } // Interpretation64Bit
@@ -1418,12 +1445,14 @@ let mayLoad = 1, hasSideEffects = 0 in {
 def LDU  : DSForm_1<58, 1, (outs g8rc:$RST, ptr_rc_nor0:$ea_result),
                     (ins (memrix $D, $RA):$addr),
                     "ldu $RST, $addr", IIC_LdStLDU,
-                    []>, RegConstraint<"$addr.reg = $ea_result">, isPPC64;
+                    []>, RegConstraint<"$addr.reg = $ea_result">, isPPC64,
+                    NoEncode<"$ea_result">;
 
 def LDUX : XForm_1_memOp<31, 53, (outs g8rc:$RST, ptr_rc_nor0:$ea_result),
                         (ins (memrr $RA, $RB):$addr),
                         "ldux $RST, $addr", IIC_LdStLDUX,
-                        []>, RegConstraint<"$addr.ptrreg = $ea_result">, isPPC64;
+                        []>, RegConstraint<"$addr.ptrreg = $ea_result">,
+                        NoEncode<"$ea_result">, isPPC64;
 }
 
 let mayLoad = 1, hasNoSchedulingInfo = 1 in {
@@ -1521,12 +1550,12 @@ let hasExtraSrcRegAllocReq = 1, hasExtraDefRegAllocReq = 1 in {
 // correct because the branch select pass is relying on it.
 let Defs = [X0,X4,X5,X6,X7,X8,X9,X10,X11,X12,LR8,CTR8,CR0,CR1,CR5,CR6,CR7], Size = 8 in
 def GETtlsADDR : GETtlsADDRPseudo <"#GETtlsADDR">;
-let Defs = [X0,X2,X4,X5,X6,X7,X8,X9,X10,X11,X12,LR8,CTR8,CR0,CR1,CR5,CR6,CR7] in
+let Defs = [X0,X2,X4,X5,X6,X7,X8,X9,X10,X11,X12,LR8,CTR8,CR0,CR1,CR5,CR6,CR7], Size = 8 in
 def GETtlsADDRPCREL : GETtlsADDRPseudo <"#GETtlsADDRPCREL">;
 
 // LR8 is a true define, while the rest of the Defs are clobbers. X3 is
 // explicitly defined when this op is created, so not mentioned here.
-let Defs = [X0,X4,X5,X6,X7,X8,X9,X10,X11,X12,LR8,CTR8,CR0,CR1,CR5,CR6,CR7], Size = 8 in
+let Defs = [X0,X4,X5,X6,X7,X8,X9,X10,X11,X12,LR8,CTR8,CR0,CR1,CR5,CR6,CR7] in
 def GETtlsldADDR : GETtlsldADDRPseudo <"#GETtlsldADDR">;
 let Defs = [X0,X2,X4,X5,X6,X7,X8,X9,X10,X11,X12,LR8,CTR8,CR0,CR1,CR5,CR6,CR7] in
 def GETtlsldADDRPCREL : GETtlsldADDRPseudo <"#GETtlsldADDRPCREL">;
@@ -1689,41 +1718,45 @@ let PPC970_Unit = 2, mayStore = 1, mayLoad = 0 in {
 let Interpretation64Bit = 1, isCodeGenOnly = 1 in {
 def STBU8 : DForm_1<39, (outs ptr_rc_nor0:$ea_res), (ins g8rc:$RST, (memri $D, $RA):$addr),
                    "stbu $RST, $addr", IIC_LdStSTU, []>,
-                   RegConstraint<"$addr.reg = $ea_res">;
+                   RegConstraint<"$addr.reg = $ea_res">, NoEncode<"$ea_res">;
 def STHU8 : DForm_1<45, (outs ptr_rc_nor0:$ea_res), (ins g8rc:$RST, (memri $D, $RA):$addr),
                    "sthu $RST, $addr", IIC_LdStSTU, []>,
-                   RegConstraint<"$addr.reg = $ea_res">;
+                   RegConstraint<"$addr.reg = $ea_res">, NoEncode<"$ea_res">;
 def STWU8 : DForm_1<37, (outs ptr_rc_nor0:$ea_res), (ins g8rc:$RST, (memri $D, $RA):$addr),
                    "stwu $RST, $addr", IIC_LdStSTU, []>,
-                   RegConstraint<"$addr.reg = $ea_res">;
+                   RegConstraint<"$addr.reg = $ea_res">, NoEncode<"$ea_res">;
 
 def STBUX8: XForm_8_memOp<31, 247, (outs ptr_rc_nor0:$ea_res),
                           (ins g8rc:$RST, (memrr $RA, $RB):$addr),
                           "stbux $RST, $addr", IIC_LdStSTUX, []>,
                           RegConstraint<"$addr.ptrreg = $ea_res">,
+                          NoEncode<"$ea_res">,
                           PPC970_DGroup_Cracked;
 def STHUX8: XForm_8_memOp<31, 439, (outs ptr_rc_nor0:$ea_res),
                           (ins g8rc:$RST, (memrr $RA, $RB):$addr),
                           "sthux $RST, $addr", IIC_LdStSTUX, []>,
                           RegConstraint<"$addr.ptrreg = $ea_res">,
+                          NoEncode<"$ea_res">,
                           PPC970_DGroup_Cracked;
 def STWUX8: XForm_8_memOp<31, 183, (outs ptr_rc_nor0:$ea_res),
                           (ins g8rc:$RST, (memrr $RA, $RB):$addr),
                           "stwux $RST, $addr", IIC_LdStSTUX, []>,
                           RegConstraint<"$addr.ptrreg = $ea_res">,
+                          NoEncode<"$ea_res">,
                           PPC970_DGroup_Cracked;
 } // Interpretation64Bit
 
 def STDU : DSForm_1<62, 1, (outs ptr_rc_nor0:$ea_res),
                    (ins g8rc:$RST, (memrix $D, $RA):$addr),
                    "stdu $RST, $addr", IIC_LdStSTU, []>,
-                   RegConstraint<"$addr.reg = $ea_res">,
+                   RegConstraint<"$addr.reg = $ea_res">, NoEncode<"$ea_res">,
                    isPPC64;
 
 def STDUX : XForm_8_memOp<31, 181, (outs ptr_rc_nor0:$ea_res),
                           (ins g8rc:$RST, (memrr $RA, $RB):$addr),
                           "stdux $RST, $addr", IIC_LdStSTUX, []>,
                           RegConstraint<"$addr.ptrreg = $ea_res">,
+                          NoEncode<"$ea_res">,
                           PPC970_DGroup_Cracked, isPPC64;
 }
 
@@ -1925,13 +1958,13 @@ def : Pat<(PPCaddTls i64:$in, i64:$addr),
           (ADD8TLS $in, $addr)>;
 
 // 64-bits atomic loads and stores
-def : Pat<(atomic_load_nonext_64 DSForm:$src), (LD  memrix:$src)>;
-def : Pat<(atomic_load_nonext_64 XForm:$src),  (LDX memrr:$src)>;
+def : Pat<(atomic_load_64 DSForm:$src), (LD  memrix:$src)>;
+def : Pat<(atomic_load_64 XForm:$src),  (LDX memrr:$src)>;
 
 def : Pat<(atomic_store_64 i64:$val, DSForm:$ptr), (STD  g8rc:$val, memrix:$ptr)>;
 def : Pat<(atomic_store_64 i64:$val, XForm:$ptr), (STDX g8rc:$val, memrr:$ptr)>;
 
-let Predicates = [IsISA3_0, IsPPC64] in {
+let Predicates = [IsISA3_0, In64BitMode] in {
 def : Pat<(i64 (int_ppc_cmpeqb g8rc:$a, g8rc:$b)),
           (i64 (SETB8 (CMPEQB $a, $b)))>;
 def : Pat<(i64 (int_ppc_setb g8rc:$a, g8rc:$b)),
@@ -1944,7 +1977,7 @@ def : Pat<(i64 (int_ppc_maddld g8rc:$a, g8rc:$b, g8rc:$c)),
           (i64 (MADDLD8 $a, $b, $c))>;
 }
 
-let Predicates = [IsPPC64] in {
+let Predicates = [In64BitMode] in {
 def : Pat<(i64 (int_ppc_mulhd g8rc:$a, g8rc:$b)),
           (i64 (MULHD $a, $b))>;
 def : Pat<(i64 (int_ppc_mulhdu g8rc:$a, g8rc:$b)),
@@ -1967,7 +2000,7 @@ def : Pat<(int_ppc_darnraw), (DARN 2)>;
 
 class X_RA5_RB5<bits<6> opcode, bits<10> xo, string opc, RegisterOperand ty,
                    InstrItinClass itin, list<dag> pattern>
-  : X_L1_RS5_RS5<opcode, xo, (outs), (ins ty:$RA, ty:$RB),
+  : X_L1_RS5_RS5<opcode, xo, (outs), (ins ty:$RA, ty:$RB, u1imm:$L),
                  !strconcat(opc, " $RA, $RB"), itin, pattern>{
    let L = 1;
 }
@@ -1990,8 +2023,6 @@ def SLBSYNC : XForm_0<31, 338, (outs), (ins), "slbsync", IIC_SprSLBSYNC, []>;
 
 } // IsISA3_0
 
-def : Pat<(int_ppc_ldarx ForceXForm:$ptr),
-          (LDARX ForceXForm:$ptr)>;
 def : Pat<(int_ppc_stdcx ForceXForm:$dst, g8rc:$A),
           (RLWINM (STDCX g8rc:$A, ForceXForm:$dst), 31, 31, 31)>;
 def : Pat<(PPCStoreCond ForceXForm:$dst, g8rc:$A, 8),

@@ -25,7 +25,6 @@ set(LLVM_LINK_COMPONENTS
   ObjCARCOpts
   Object
   Passes
-  Plugins
   ProfileData
   ScalarOpts
   Support
@@ -82,7 +81,6 @@ add_clang_library(clangCodeGen
   CGExprScalar.cpp
   CGGPUBuiltin.cpp
   CGHLSLRuntime.cpp
-  CGHLSLBuiltins.cpp
   CGLoopInfo.cpp
   CGNonTrivialStruct.cpp
   CGObjC.cpp
@@ -103,13 +101,11 @@ add_clang_library(clangCodeGen
   CodeGenFunction.cpp
   CodeGenModule.cpp
   CodeGenPGO.cpp
-  CodeGenSYCL.cpp
   CodeGenTBAA.cpp
   CodeGenTypes.cpp
   ConstantInitBuilder.cpp
   CoverageMappingGen.cpp
   ItaniumCXXABI.cpp
-  HLSLBufferLayoutBuilder.cpp
   LinkInModulesPass.cpp
   MacroPPCallbacks.cpp
   MicrosoftCXXABI.cpp
@@ -118,17 +114,6 @@ add_clang_library(clangCodeGen
   PatternInit.cpp
   SanitizerMetadata.cpp
   SwiftCallingConv.cpp
-  TargetBuiltins/ARM.cpp
-  TargetBuiltins/AMDGPU.cpp
-  TargetBuiltins/DirectX.cpp
-  TargetBuiltins/Hexagon.cpp
-  TargetBuiltins/NVPTX.cpp
-  TargetBuiltins/PPC.cpp
-  TargetBuiltins/RISCV.cpp
-  TargetBuiltins/SPIR.cpp
-  TargetBuiltins/SystemZ.cpp
-  TargetBuiltins/WebAssembly.cpp
-  TargetBuiltins/X86.cpp
   TargetInfo.cpp
   Targets/AArch64.cpp
   Targets/AMDGPU.cpp
@@ -145,6 +130,7 @@ add_clang_library(clangCodeGen
   Targets/MSP430.cpp
   Targets/Mips.cpp
   Targets/NVPTX.cpp
+  Targets/PNaCl.cpp
   Targets/PPC.cpp
   Targets/RISCV.cpp
   Targets/SPIR.cpp
@@ -155,7 +141,6 @@ add_clang_library(clangCodeGen
   Targets/WebAssembly.cpp
   Targets/X86.cpp
   Targets/XCore.cpp
-  TrapReasonBuilder.cpp
   VarBypassDetector.cpp
 
   DEPENDS
@@ -163,7 +148,8 @@ add_clang_library(clangCodeGen
   intrinsics_gen
   ClangDriverOptions
   # These generated headers are included transitively.
-  target_parser_gen
+  ARMTargetParserTableGen
+  AArch64TargetParserTableGen
 
   LINK_LIBS
   clangAST

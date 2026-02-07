@@ -89,7 +89,7 @@ their semantics via a special [TableGen backend][TableGenBackend]:
     help of the following constructs.
 *   The `Dialect` class: Operations belonging to one logical group are placed in
     the same dialect. The `Dialect` class contains dialect-level information.
-*   The `Trait` class hierarchy: They are used to specify special properties
+*   The `OpTrait` class hierarchy: They are used to specify special properties
     and constraints of the operation, including whether the operation has side
     effect or whether its output has the same shape as the input.
 *   The `ins`/`outs` marker: These are two special markers builtin to the
@@ -104,8 +104,7 @@ their semantics via a special [TableGen backend][TableGenBackend]:
 *   The `Property` class hierarchy: They are used to specify non-attribute-backed
     properties that are inherent to operations. These properties can have
     constraints imposed on them using the `predicate` field or the
-    `ConfinedProp` class. The `PropConstraint` superclass of `Property` is used
-    to describe constraints on properties in rewrite patterns.
+    `ConfinedProp` class.
 
 An operation is defined by specializing the `Op` class with concrete contents
 for all the fields it requires. For example, `tf.AvgPool` is defined as
@@ -214,7 +213,7 @@ hierarchy. Similarly, `<attr-constraint>` is a TableGen `def` from the
 of `Property` (constraints can be imposed onto it using its `predicate` field
 or the `ConfinedProp` subclass).
 
-There are no requirements on the relative order of operands and attributes; they
+There is no requirements on the relative order of operands and attributes; they
 can mix freely. The relative order of operands themselves matters. From each
 named argument a named getter will be generated that returns the argument with
 the return type (in the case of attributes the return type will be constructed
@@ -249,7 +248,7 @@ To declare a variadic operand that has a variadic number of sub-ranges, wrap the
 `TypeConstraint` for the operand with `VariadicOfVariadic<...,
 "<segment-attribute-name>">`.
 
-The second field of the `VariadicOfVariadic` is the name of a `DenseI32ArrayAttr`
+The second field of the `VariadicOfVariadic` is the name of an `I32ElementsAttr`
 argument that contains the sizes of the variadic sub-ranges. This attribute will
 be used when determining the size of sub-ranges, or when updating the size of
 sub-ranges.
@@ -287,11 +286,6 @@ like `"0.5f"`, and an integer array default value should be specified as like
 The generated operation printing function will not print default-valued
 attributes when the attribute value is equal to the default.
 
-For enum attributes, you can use `DefaultValuedEnumAttr<EnumAttr, EnumCase>`
-instead of `DefaultValuedAttr`. This allows specifying the default value using a
-TableGen `EnumCase` variable instead of a raw string. For example 
-`DefaultValuedEnumAttr<SomeI64Enum, I64Case5>`.
-
 #### Confining attributes
 
 `ConfinedAttr` is provided as a general mechanism to help modelling further
@@ -311,8 +305,6 @@ Right now, the following primitive constraints are supported:
 *   `IntPositive`: Specifying an integer attribute whose value is positive
 *   `IntNonNegative`: Specifying an integer attribute whose value is
     non-negative
-*   `IntPowerOf2`: Specifying an integer attribute whose value is a power of
-    two > 0
 *   `ArrayMinCount<N>`: Specifying an array attribute to have at least `N`
     elements
 *   `ArrayMaxCount<N>`: Specifying an array attribute to have at most `N`
@@ -441,7 +433,7 @@ various traits in the `mlir::OpTrait` namespace.
 Both operation traits, [interfaces](../Interfaces.md/#utilizing-the-ods-framework),
 and constraints involving multiple operands/attributes/results are provided as
 the third template parameter to the `Op` class. They should be deriving from
-the `Trait` class. See [Constraints](#constraints) for more information.
+the `OpTrait` class. See [Constraints](#constraints) for more information.
 
 ### Builder methods
 
@@ -473,18 +465,7 @@ def MyOp : ... {
 The following builders are generated:
 
 ```c++
-// All result-types/operands/properties/discardable attributes have one
-// aggregate parameter. `Properties` is the properties structure of
-// `MyOp`.
-static void build(OpBuilder &odsBuilder, OperationState &odsState,
-                  TypeRange resultTypes,
-                  ValueRange operands,
-                  Properties properties,
-                  ArrayRef<NamedAttribute> discardableAttributes = {});
-
 // All result-types/operands/attributes have one aggregate parameter.
-// Inherent properties and discardable attributes are mixed together in the
-//  `attributes` dictionary.
 static void build(OpBuilder &odsBuilder, OperationState &odsState,
                   TypeRange resultTypes,
                   ValueRange operands,
@@ -518,27 +499,19 @@ static void build(OpBuilder &odsBuilder, OperationState &odsState,
 // All operands/attributes have aggregate parameters.
 // Generated if return type can be inferred.
 static void build(OpBuilder &odsBuilder, OperationState &odsState,
-                  ValueRange operands,
-                  Properties properties,
-                  ArrayRef<NamedAttribute> discardableAttributes);
-
-// All operands/attributes have aggregate parameters.
-// Generated if return type can be inferred. Uses the legacy merged attribute
-// dictionary.
-static void build(OpBuilder &odsBuilder, OperationState &odsState,
                   ValueRange operands, ArrayRef<NamedAttribute> attributes);
 
 // (And manually specified builders depending on the specific op.)
 ```
 
-The first two forms provide basic uniformity so that we can create ops using
-the same form regardless of the exact op. This is particularly useful for
+The first form provides basic uniformity so that we can create ops using the
+same form regardless of the exact op. This is particularly useful for
 implementing declarative pattern rewrites.
 
-The third and fourth forms are good for use in manually written code, given that
+The second and third forms are good for use in manually written code, given that
 they provide better guarantee via signatures.
 
-The fourth form will be generated if any of the op's attribute has different
+The third form will be generated if any of the op's attribute has different
 `Attr.returnType` from `Attr.storageType` and we know how to build an attribute
 from an unwrapped value (i.e., `Attr.constBuilderCall` is defined.)
 Additionally, for the third form, if an attribute appearing later in the
@@ -914,12 +887,11 @@ declarative parameter to `parse` method argument is detailed below:
     -   Variadic: `SmallVectorImpl<Type> &`
     -   VariadicOfVariadic: `SmallVectorImpl<SmallVector<Type>> &`
 *   `attr-dict` Directive: `NamedAttrList &`
-*   `prop-dict` Directive: `OperationState &`
 
 When a variable is optional, the value should only be specified if the variable
 is present. Otherwise, the value should remain `None` or null.
 
-The arguments to the `print<UserDirective>` method are firstly a reference to the
+The arguments to the `print<UserDirective>` method is firstly a reference to the
 `OpAsmPrinter`(`OpAsmPrinter &`), second the op (e.g. `FooOp op` which can be
 `Operation *op` alternatively), and finally a set of output parameters
 corresponding to the parameters specified in the format. The mapping of
@@ -949,7 +921,6 @@ declarative parameter to `print` method argument is detailed below:
     -   Variadic: `TypeRange`
     -   VariadicOfVariadic: `TypeRangeRange`
 *   `attr-dict` Directive: `DictionaryAttr`
-*   `prop-dict` Directive: `FooOp::Properties`
 
 When a variable is optional, the provided value may be null. When a variable is
 referenced in a custom directive parameter using `ref`, it is passed in by
@@ -1360,7 +1331,7 @@ results. These constraints should be specified as the `Op` class template
 parameter as described in
 [Operation traits and constraints](#operation-traits-and-constraints).
 
-Multi-entity constraints are modeled as `PredOpTrait` (a subclass of `Trait`)
+Multi-entity constraints are modeled as `PredOpTrait` (a subclass of `OpTrait`)
 in [`OpBase.td`][OpBase].A bunch of constraint primitives are provided to help
 specification. See [`OpBase.td`][OpBase] for the complete list.
 
@@ -1371,7 +1342,7 @@ commutative or not, whether is a terminator, etc. These constraints should be
 specified as the `Op` class template parameter as described in
 [Operation traits and constraints](#operation-traits-and-constraints).
 
-Traits are modeled as `NativeTrait` (a subclass of `Trait`) in
+Traits are modeled as `NativeOpTrait` (a subclass of `OpTrait`) in
 [`OpBase.td`][OpBase]. They are backed and will be translated into the
 corresponding C++ `mlir::OpTrait` classes.
 
@@ -1407,7 +1378,7 @@ is used. They serve as "hooks" to the enclosing environment. This includes
     information of the current operation.
 *   `$_self` will be replaced with the entity this predicate is attached to.
     E.g., `BoolAttr` is an attribute constraint that wraps a
-    `CPred<"isa<BoolAttr>($_self)">`. Then for `BoolAttr:$attr`,`$_self` will be
+    `CPred<"$_self.isa<BoolAttr>()">`. Then for `BoolAttr:$attr`,`$_self` will be
     replaced by `$attr`. For type constraints, it's a little bit special since
     we want the constraints on each type definition reads naturally and we want
     to attach type constraints directly to an operand/result, `$_self` will be
@@ -1419,8 +1390,8 @@ to allow referencing operand/result `$-name`s; such `$-name`s can start with
 underscore.
 
 For example, to write an attribute `attr` is an `IntegerAttr`, in C++ you can
-just call `isa<IntegerAttr>(attr)`. The code can be wrapped in a `CPred` as
-`isa<IntegerAttr>($_self)`, with `$_self` as the special placeholder to be
+just call `attr.isa<IntegerAttr>()`. The code can be wrapped in a `CPred` as
+`$_self.isa<IntegerAttr>()`, with `$_self` as the special placeholder to be
 replaced by the current attribute `attr` at expansion time.
 
 For more complicated predicates, you can wrap it in a single `CPred`, or you can
@@ -1429,10 +1400,10 @@ that an attribute `attr` is a 32-bit or 64-bit integer, you can write it as
 
 ```tablegen
 And<[
-  CPred<"$isa<IntegerAttr>(_self)()">,
+  CPred<"$_self.isa<IntegerAttr>()">,
   Or<[
-    CPred<"cast<IntegerAttr>($_self).getType().isInteger(32)">,
-    CPred<"cast<IntegerAttr>($_self).getType().isInteger(64)">
+    CPred<"$_self.cast<IntegerAttr>().getType().isInteger(32)">,
+    CPred<"$_self.cast<IntegerAttr>().getType().isInteger(64)">
   ]>
 ]>
 ```
@@ -1508,17 +1479,22 @@ optionality, default values, etc.:
 *   `AllAttrOf`: adapts an attribute with
     [multiple constraints](#combining-constraints).
 
-## Enum definition
+### Enum attributes
 
-MLIR is capabable of generating C++ enums, both those that represent a set
-of values drawn from a list or that can hold a combination of flags
-using the `IntEnum` and `BitEnum` classes, respectively.
+Some attributes can only take values from a predefined enum, e.g., the
+comparison kind of a comparison op. To define such attributes, ODS provides
+several mechanisms: `IntEnumAttr`, and `BitEnumAttr`.
 
-All these `IntEnum` and `BitEnum` classes require fully specifying all of the allowed
-cases via a `EnumCase` or `BitEnumCase` subclass, respectively. With this, ODS is able to
+*   `IntEnumAttr`: each enum case is an integer, the attribute is stored as a
+    [`IntegerAttr`][IntegerAttr] in the op.
+*   `BitEnumAttr`: each enum case is a either the empty case, a single bit,
+    or a group of single bits, and the attribute is stored as a
+    [`IntegerAttr`][IntegerAttr] in the op.
+
+All these `*EnumAttr` attributes require fully specifying all of the allowed
+cases via their corresponding `*EnumAttrCase`. With this, ODS is able to
 generate additional verification to only accept allowed cases. To facilitate the
-interaction between tablegen enums and the attributes or properties that wrap them and
-to make them easier to use in C++, the
+interaction between `*EnumAttr`s and their C++ consumers, the
 [`EnumsGen`][EnumsGen] TableGen backend can generate a few common utilities: a
 C++ enum class, `llvm::DenseMapInfo` for the enum class, conversion functions
 from/to strings. This is controlled via the `-gen-enum-decls` and
@@ -1527,10 +1503,10 @@ from/to strings. This is controlled via the `-gen-enum-decls` and
 For example, given the following `EnumAttr`:
 
 ```tablegen
-def Case15: I32EnumCase<"Case15", 15>;
-def Case20: I32EnumCase<"Case20", 20>;
+def Case15: I32EnumAttrCase<"Case15", 15>;
+def Case20: I32EnumAttrCase<"Case20", 20>;
 
-def MyIntEnum: I32Enum<"MyIntEnum", "An example int enum",
+def MyIntEnum: I32EnumAttr<"MyIntEnum", "An example int enum",
                            [Case15, Case20]> {
   let cppNamespace = "Outer::Inner";
   let stringToSymbolFnName = "ConvertToEnum";
@@ -1616,17 +1592,14 @@ std::optional<MyIntEnum> symbolizeMyIntEnum(uint32_t value) {
 Similarly for the following `BitEnumAttr` definition:
 
 ```tablegen
-def None: I32BitEnumCaseNone<"None">;
-def Bit0: I32BitEnumCaseBit<"Bit0", 0, "tagged">;
-def Bit1: I32BitEnumCaseBit<"Bit1", 1>;
-def Bit2: I32BitEnumCaseBit<"Bit2", 2>;
-def Bit3: I32BitEnumCaseBit<"Bit3", 3>;
+def None: I32BitEnumAttrCaseNone<"None">;
+def Bit0: I32BitEnumAttrCaseBit<"Bit0", 0, "tagged">;
+def Bit1: I32BitEnumAttrCaseBit<"Bit1", 1>;
+def Bit2: I32BitEnumAttrCaseBit<"Bit2", 2>;
+def Bit3: I32BitEnumAttrCaseBit<"Bit3", 3>;
 
-def MyBitEnum: I32BitEnum<"MyBitEnum", "An example bit enum",
-                           [None, Bit0, Bit1, Bit2, Bit3]> {
-  // Note: this is the default value, and is listed for illustrative purposes.
-  let separator = "|";
-}
+def MyBitEnum: BitEnumAttr<"MyBitEnum", "An example bit enum",
+                           [None, Bit0, Bit1, Bit2, Bit3]>;
 ```
 
 We can have:
@@ -1653,15 +1626,6 @@ inline constexpr MyBitEnum operator&(MyBitEnum a, MyBitEnum b) {
 }
 inline constexpr MyBitEnum operator^(MyBitEnum a, MyBitEnum b) {
   return static_cast<MyBitEnum>(static_cast<uint32_t>(a) ^ static_cast<uint32_t>(b));
-}
-inline constexpr MyBitEnum &operator|=(MyBitEnum &a, MyBitEnum b) {
-  return a = a | b;
-}
-inline constexpr MyBitEnum &operator&=(MyBitEnum &a, MyBitEnum b) {
-  return a = a & b;
-}
-inline constexpr MyBitEnum &operator^=(MyBitEnum &a, MyBitEnum b) {
-  return a = a ^ b;
 }
 inline constexpr MyBitEnum operator~(MyBitEnum bits) {
   // Ensure only bits that can be present in the enum are set
@@ -1754,43 +1718,6 @@ std::optional<MyBitEnum> symbolizeMyBitEnum(uint32_t value) {
   return static_cast<MyBitEnum>(value);
 }
 ```
-
-### Wrapping enums in attributes
-
-There are several mechanisms for creating an `Attribute` whose values are
-taken from a `*Enum`.
-
-The most common of these is to use the `EnumAttr` class, which takes
-an `EnumInfo` (either a `IntEnum` or `BitEnum`) as a parameter and constructs
-an attribute that holds one argument - value of the enum. This attribute
-is defined within a dialect and can have its assembly format customized to,
-for example, print angle brackets around the enum value or assign a mnemonic.
-
-An older form involves using the `*IntEnumAttr` and `*BitEnumATtr` classes
-and their corresponding `*EnumAttrCase` classes (which can be used
-anywhere a `*EnumCase` is needed). These classes store their values
-as a `SignlessIntegerAttr` of their bitwidth, imposing the constraint on it
-that it has a value within the valid range of the enum. If their
-`genSpecializedAttr` parameter is set, they will also generate a
-wrapper attribute instead of using a bare signless integer attribute
-for storage.
-
-### Enum properties
-
-Enums can be wrapped in properties so that they can be stored inline.
-This causes a value of the enum's C++ class to become a member of the operation's
-property struct and for the operation's verifier to check that the enum's value
-is a valid value for the enum.
-
-The basic wrapper is `EnumProp`, which simply takes an `EnumInfo`.
-
-A less ambiguous syntax, namely putting a mnemonic and `<>`s surrounding
-the enum is generated with `NamedEnumProp`, which takes a `*EnumInfo`
-and a mnemonic string, which becomes part of the property's syntax.
-
-Both of these `EnumProp` types have a `*EnumPropWithAttrForm`, which allows for
-transparently upgrading from `EnumAttr`s and optionally retaining those
-attributes in the generic form.
 
 ## Debugging Tips
 

@@ -618,17 +618,17 @@ struct TagRecord : APIRecord, RecordContext {
   static bool classofKind(RecordKind K) {
     switch (K) {
     case RK_Enum:
-      [[fallthrough]];
+      LLVM_FALLTHROUGH;
     case RK_Struct:
-      [[fallthrough]];
+      LLVM_FALLTHROUGH;
     case RK_Union:
-      [[fallthrough]];
+      LLVM_FALLTHROUGH;
     case RK_CXXClass:
-      [[fallthrough]];
+      LLVM_FALLTHROUGH;
     case RK_ClassTemplate:
-      [[fallthrough]];
+      LLVM_FALLTHROUGH;
     case RK_ClassTemplateSpecialization:
-      [[fallthrough]];
+      LLVM_FALLTHROUGH;
     case RK_ClassTemplatePartialSpecialization:
       return true;
     default:
@@ -704,15 +704,15 @@ struct RecordRecord : TagRecord {
   static bool classofKind(RecordKind K) {
     switch (K) {
     case RK_Struct:
-      [[fallthrough]];
+      LLVM_FALLTHROUGH;
     case RK_Union:
-      [[fallthrough]];
+      LLVM_FALLTHROUGH;
     case RK_CXXClass:
-      [[fallthrough]];
+      LLVM_FALLTHROUGH;
     case RK_ClassTemplate:
-      [[fallthrough]];
+      LLVM_FALLTHROUGH;
     case RK_ClassTemplateSpecialization:
-      [[fallthrough]];
+      LLVM_FALLTHROUGH;
     case RK_ClassTemplatePartialSpecialization:
       return true;
     default:
@@ -1499,7 +1499,7 @@ APISet::createRecord(StringRef USR, StringRef Name,
                      CtorArgsContTy &&...CtorArgs) {
   // Ensure USR refers to a String stored in the allocator.
   auto USRString = copyString(USR);
-  auto Result = USRBasedLookupTable.try_emplace(USRString);
+  auto Result = USRBasedLookupTable.insert({USRString, nullptr});
   RecordTy *Record;
 
   // Create the record if it does not already exist

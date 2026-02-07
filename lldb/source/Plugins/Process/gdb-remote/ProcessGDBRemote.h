@@ -41,6 +41,9 @@
 #include "llvm/ADT/StringMap.h"
 
 namespace lldb_private {
+namespace repro {
+class Loader;
+}
 namespace process_gdb_remote {
 
 class ThreadGDBRemote;
@@ -108,9 +111,7 @@ public:
   // Process Control
   Status WillResume() override;
 
-  bool SupportsReverseDirection() override;
-
-  Status DoResume(lldb::RunDirection direction) override;
+  Status DoResume() override;
 
   Status DoHalt(bool &caused_stop) override;
 
@@ -137,22 +138,6 @@ public:
   size_t DoReadMemory(lldb::addr_t addr, void *buf, size_t size,
                       Status &error) override;
 
-  /// Override of ReadMemoryRanges that uses MultiMemRead to optimize this
-  /// operation.
-  llvm::SmallVector<llvm::MutableArrayRef<uint8_t>>
-  ReadMemoryRanges(llvm::ArrayRef<Range<lldb::addr_t, size_t>> ranges,
-                   llvm::MutableArrayRef<uint8_t> buf) override;
-
-private:
-  llvm::Expected<StringExtractorGDBRemote>
-  SendMultiMemReadPacket(llvm::ArrayRef<Range<lldb::addr_t, size_t>> ranges);
-
-  llvm::Error ParseMultiMemReadPacket(
-      llvm::StringRef response_str, llvm::MutableArrayRef<uint8_t> buffer,
-      unsigned expected_num_ranges,
-      llvm::SmallVectorImpl<llvm::MutableArrayRef<uint8_t>> &memory_regions);
-
-public:
   Status
   WriteObjectFile(std::vector<ObjectFile::LoadableData> entries) override;
 
@@ -261,8 +246,6 @@ protected:
   friend class GDBRemoteRegisterContext;
 
   ProcessGDBRemote(lldb::TargetSP target_sp, lldb::ListenerSP listener_sp);
-
-  virtual std::shared_ptr<ThreadGDBRemote> CreateThread(lldb::tid_t tid);
 
   bool SupportsMemoryTagging() override;
 
@@ -416,7 +399,7 @@ protected:
   void AddRemoteRegisters(std::vector<DynamicRegisterInfo::Register> &registers,
                           const ArchSpec &arch_to_use);
   // Query remote GDBServer for register information
-  llvm::Error GetGDBServerRegisterInfo(ArchSpec &arch);
+  bool GetGDBServerRegisterInfo(ArchSpec &arch);
 
   lldb::ModuleSP LoadModuleAtAddress(const FileSpec &file,
                                      lldb::addr_t link_map,
@@ -450,9 +433,6 @@ private:
                                            StoppointCallbackContext *context,
                                            lldb::user_id_t break_id,
                                            lldb::user_id_t break_loc_id);
-
-  /// Remove the breakpoints associated with thread creation from the Target.
-  void RemoveNewThreadBreakpoints();
 
   // ContinueDelegate interface
   void HandleAsyncStdout(llvm::StringRef out) override;

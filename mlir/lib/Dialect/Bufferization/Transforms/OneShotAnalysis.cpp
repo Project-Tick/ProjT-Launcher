@@ -31,7 +31,7 @@
 // Ops that do not implement `BufferizableOpInterface` can be analyzed but are
 // treated conservatively. E.g., the analysis has to assume that their tensor
 // OpOperands bufferize to memory writes. While such ops can be analyzed, they
-// are not bufferized and remain in the IR. to_tensor and to_buffer ops are
+// are not bufferized and remain in the IR. to_tensor and to_memref ops are
 // inserted at the bufferization boundary.
 //
 // This analysis caters to high-performance codegen where buffer reuse is deemed
@@ -40,12 +40,14 @@
 
 #include "mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h"
 
+#include <optional>
 #include <random>
 
 #include "mlir/Dialect/Bufferization/IR/BufferizableOpInterface.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
 #include "mlir/Dialect/Bufferization/Transforms/Transforms.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Dominance.h"
@@ -56,7 +58,6 @@
 #include "mlir/Interfaces/SubsetOpInterface.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/SetVector.h"
-#include "llvm/Support/DebugLog.h"
 
 MLIR_DEFINE_EXPLICIT_TYPE_ID(mlir::bufferization::OneShotAnalysisState)
 
@@ -497,7 +498,7 @@ static bool matchesInsertDestination(const AnalysisState &state,
   // terminates. All of them must be equivalent subsets.
   SetVector<Value> backwardSlice =
       state.findValueInReverseUseDefChain(opOperand, matchingSubset);
-  return llvm::all_of(backwardSlice, matchingSubset);
+  return static_cast<bool>(llvm::all_of(backwardSlice, matchingSubset));
 }
 
 /// Return "true" if the given "read" and potentially conflicting "write" are
@@ -617,11 +618,13 @@ hasReadAfterWriteInterference(const DenseSet<OpOperand *> &usesRead,
         if (getParallelRegion(def.getParentRegion(), options) !=
             getParallelRegion(uConflictingWrite->getOwner()->getParentRegion(),
                               options)) {
-          LDBG() << "\n- bufferizes out-of-place due to parallel region:\n"
-                 << "  unConflictingWrite = operand "
-                 << uConflictingWrite->getOperandNumber() << " of "
-                 << OpWithFlags(uConflictingWrite->getOwner(),
-                                OpPrintingFlags().skipRegions());
+          LLVM_DEBUG(
+              llvm::dbgs()
+              << "\n- bufferizes out-of-place due to parallel region:\n");
+          LLVM_DEBUG(llvm::dbgs()
+                     << "  unConflictingWrite = operand "
+                     << uConflictingWrite->getOperandNumber() << " of "
+                     << *uConflictingWrite->getOwner() << "\n");
           return true;
         }
       }
@@ -630,9 +633,9 @@ hasReadAfterWriteInterference(const DenseSet<OpOperand *> &usesRead,
 
   for (OpOperand *uRead : usesRead) {
     Operation *readingOp = uRead->getOwner();
-    LDBG() << "\n- check conflict:\n"
-           << "  uRead = operand " << uRead->getOperandNumber() << " of "
-           << OpWithFlags(readingOp, OpPrintingFlags().skipRegions());
+    LLVM_DEBUG(llvm::dbgs() << "\n- check conflict:\n");
+    LLVM_DEBUG(llvm::dbgs() << "  uRead = operand " << uRead->getOperandNumber()
+                            << " of " << *readingOp << "\n");
 
     // Find the definition of uRead by following the SSA use-def chain.
     // E.g.:
@@ -647,23 +650,23 @@ hasReadAfterWriteInterference(const DenseSet<OpOperand *> &usesRead,
     const SetVector<Value> &definitions = state.findDefinitionsCached(uRead);
     if (definitions.empty()) {
       // Fast path: No conflict if there are no definitions.
-      LDBG() << "  no conflict: read value has no definitions";
+      LLVM_DEBUG(llvm::dbgs()
+                 << "  no conflict: read value has no definitions\n");
       continue;
     }
 
     // Look for conflicting memory writes. Potential conflicts are writes to an
     // alias that have been decided to bufferize inplace.
     for (OpOperand *uConflictingWrite : usesWrite) {
-      LDBG() << "  unConflictingWrite = operand "
-             << uConflictingWrite->getOperandNumber() << " of "
-             << OpWithFlags(uConflictingWrite->getOwner(),
-                            OpPrintingFlags().skipRegions());
+      LLVM_DEBUG(llvm::dbgs() << "  unConflictingWrite = operand "
+                              << uConflictingWrite->getOperandNumber() << " of "
+                              << *uConflictingWrite->getOwner() << "\n");
 
       // Check if op dominance can be used to rule out read-after-write
       // conflicts.
       bool useDominance =
           canUseOpDominance(uRead, uConflictingWrite, definitions, state);
-      LDBG() << "\n- useDominance = " << useDominance;
+      LLVM_DEBUG(llvm::dbgs() << "\n- useDominance = " << useDominance << "\n");
 
       // Throughout this loop, check for multiple requirements that have to be
       // met for uConflictingWrite to be an actual conflict.
@@ -679,7 +682,8 @@ hasReadAfterWriteInterference(const DenseSet<OpOperand *> &usesRead,
         //       inside a loop), there may be no meaningful `happensBefore`
         //       relationship.
         if (happensBefore(readingOp, conflictingWritingOp, domInfo)) {
-          LDBG() << "  no conflict: read happens before write";
+          LLVM_DEBUG(llvm::dbgs()
+                     << "  no conflict: read happens before write\n");
           continue;
         }
 
@@ -691,7 +695,8 @@ hasReadAfterWriteInterference(const DenseSet<OpOperand *> &usesRead,
         // Note: If the op is executed multiple times (e.g., because it is
         //       inside a loop), it may be conflicting with itself.
         if (uConflictingWrite == uRead) {
-          LDBG() << "  no conflict: read and write are same use";
+          LLVM_DEBUG(llvm::dbgs()
+                     << "  no conflict: read and write are same use\n");
           continue;
         }
 
@@ -700,10 +705,9 @@ hasReadAfterWriteInterference(const DenseSet<OpOperand *> &usesRead,
         // Note: If ops are executed multiple times (e.g., because they are
         //       inside a loop), mutually exclusive regions may be executed
         //       multiple times.
-        if (state.insideMutuallyExclusiveRegions(readingOp,
-                                                 conflictingWritingOp)) {
-          LDBG() << "  no conflict: read and write are in "
-                    "mutually exclusive regions";
+        if (insideMutuallyExclusiveRegions(readingOp, conflictingWritingOp)) {
+          LLVM_DEBUG(llvm::dbgs() << "  no conflict: read and write are in "
+                                     "mutually exclusive regions\n");
           continue;
         }
 
@@ -718,7 +722,9 @@ hasReadAfterWriteInterference(const DenseSet<OpOperand *> &usesRead,
                       state, uRead, uConflictingWrite->get()) ||
                   hasEquivalentValueInReverseUseDefChain(
                       state, uConflictingWrite, uRead->get())) {
-                LDBG() << "  no conflict: op bufferizes to element-wise access";
+                LLVM_DEBUG(
+                    llvm::dbgs()
+                    << "  no conflict: op bufferizes to element-wise access\n");
                 continue;
               }
             }
@@ -728,14 +734,15 @@ hasReadAfterWriteInterference(const DenseSet<OpOperand *> &usesRead,
 
       // No conflict if the operands are non-conflicting subsets.
       if (areNonConflictingSubsets(uRead, uConflictingWrite, state)) {
-        LDBG() << "  no conflict: non-conflicting subsets";
+        LLVM_DEBUG(llvm::dbgs() << "  no conflict: non-conflicting subsets\n");
         continue;
       }
 
       // No conflict if the op interface says so.
       if (auto bufferizableOp = options.dynCastBufferizableOp(readingOp)) {
         if (bufferizableOp.isNotConflicting(uRead, uConflictingWrite, state)) {
-          LDBG() << "  no conflict: op interace of reading op says 'no'";
+          LLVM_DEBUG(llvm::dbgs()
+                     << "  no conflict: op interace of reading op says 'no'\n");
           continue;
         }
       }
@@ -745,7 +752,9 @@ hasReadAfterWriteInterference(const DenseSet<OpOperand *> &usesRead,
                 options.dynCastBufferizableOp(conflictingWritingOp)) {
           if (bufferizableOp.isNotConflicting(uRead, uConflictingWrite,
                                               state)) {
-            LDBG() << "  no conflict: op interace of writing op says 'no'";
+            LLVM_DEBUG(
+                llvm::dbgs()
+                << "  no conflict: op interace of writing op says 'no'\n");
             continue;
           }
         }
@@ -753,26 +762,29 @@ hasReadAfterWriteInterference(const DenseSet<OpOperand *> &usesRead,
 
       // Check all possible definitions.
       for (Value definition : definitions) {
-        LDBG() << "  * definition = " << definition;
+        LLVM_DEBUG(llvm::dbgs() << "  * definition = " << definition << "\n");
 
         // No conflict if the conflicting write happens before the definition.
         if (Operation *defOp = definition.getDefiningOp()) {
           if (happensBefore(conflictingWritingOp, defOp, domInfo)) {
             // conflictingWritingOp happens before defOp. No conflict.
-            LDBG() << "    no conflict: write happens before definition";
+            LLVM_DEBUG(llvm::dbgs()
+                       << "    no conflict: write happens before definition\n");
             continue;
           }
           // No conflict if conflictingWritingOp is contained in defOp.
           if (defOp->isProperAncestor(conflictingWritingOp)) {
-            LDBG() << "    no conflict: write is contained in definition";
+            LLVM_DEBUG(
+                llvm::dbgs()
+                << "    no conflict: write is contained in definition\n");
             continue;
           }
         } else {
           auto bbArg = cast<BlockArgument>(definition);
           Block *block = bbArg.getOwner();
           if (!block->findAncestorOpInBlock(*conflictingWritingOp)) {
-            LDBG() << "    no conflict: definition is bbArg "
-                      "and write happens outside of block";
+            LLVM_DEBUG(llvm::dbgs() << "    no conflict: definition is bbArg "
+                                       "and write happens outside of block\n");
             // conflictingWritingOp happens outside of the block. No
             // conflict.
             continue;
@@ -784,7 +796,8 @@ hasReadAfterWriteInterference(const DenseSet<OpOperand *> &usesRead,
         AliasingValueList aliases = state.getAliasingValues(*uConflictingWrite);
         if (aliases.getNumAliases() == 1 &&
             aliases.getAliases()[0].value == definition) {
-          LDBG() << "    no conflict: definition and write are same";
+          LLVM_DEBUG(llvm::dbgs()
+                     << "    no conflict: definition and write are same\n");
           continue;
         }
 
@@ -792,7 +805,7 @@ hasReadAfterWriteInterference(const DenseSet<OpOperand *> &usesRead,
 
         if (options.printConflicts)
           annotateConflict(uRead, uConflictingWrite, definition);
-        LDBG() << "  => RaW CONFLICT FOUND";
+        LLVM_DEBUG(llvm::dbgs() << "  => RaW CONFLICT FOUND\n");
         return true;
       }
     }
@@ -946,7 +959,7 @@ wouldCreateWriteToNonWritableBuffer(OpOperand &operand,
   for (AliasingValue alias : state.getAliasingValues(operand))
     state.applyOnAliases(alias.value, checkReadOnly);
   if (foundReadOnly) {
-    LDBG() << "=> NOT WRITABLE";
+    LLVM_DEBUG(llvm::dbgs() << "=> NOT WRITABLE\n");
     return true;
   }
 
@@ -975,9 +988,10 @@ void OneShotAnalysisState::resetCache() {
 static LogicalResult
 bufferizableInPlaceAnalysisImpl(OpOperand &operand, OneShotAnalysisState &state,
                                 const DominanceInfo &domInfo) {
-  LDBG() << "//===-------------------------------------------===//\n"
-         << "Analyzing operand #" << operand.getOperandNumber() << " of "
-         << OpWithFlags(operand.getOwner(), OpPrintingFlags().skipRegions());
+  LLVM_DEBUG(
+      llvm::dbgs() << "//===-------------------------------------------===//\n"
+                   << "Analyzing operand #" << operand.getOperandNumber()
+                   << " of " << *operand.getOwner() << "\n");
 
   bool foundInterference =
       wouldCreateWriteToNonWritableBuffer(operand, state) ||
@@ -988,7 +1002,8 @@ bufferizableInPlaceAnalysisImpl(OpOperand &operand, OneShotAnalysisState &state,
   else
     state.bufferizeInPlace(operand);
 
-  LDBG() << "//===-------------------------------------------===//";
+  LLVM_DEBUG(llvm::dbgs()
+             << "//===-------------------------------------------===//\n");
   return success();
 }
 
@@ -1349,9 +1364,10 @@ LogicalResult bufferization::analyzeOp(Operation *op,
   return success(!failedAnalysis);
 }
 
-LogicalResult bufferization::runOneShotBufferize(
-    Operation *op, const OneShotBufferizationOptions &options,
-    BufferizationState &state, BufferizationStatistics *statistics) {
+LogicalResult
+bufferization::runOneShotBufferize(Operation *op,
+                                   const OneShotBufferizationOptions &options,
+                                   BufferizationStatistics *statistics) {
   // copy-before-write deactivates the analysis. It cannot be used together with
   // test-analysis-only.
   assert(!(options.copyBeforeWrite && options.testAnalysisOnly) &&
@@ -1363,7 +1379,7 @@ LogicalResult bufferization::runOneShotBufferize(
     // Run One-Shot Analysis and insert buffer copies (on the tensor level)
     // only where needed. This is the default and much more efficient than
     // copy-before-write.
-    if (failed(insertTensorCopies(op, options, state, statistics)))
+    if (failed(insertTensorCopies(op, options, statistics)))
       return failure();
 
     // If test-analysis-only is set, the IR was annotated with RaW conflict
@@ -1374,5 +1390,5 @@ LogicalResult bufferization::runOneShotBufferize(
 
   // Bufferize the op and its nested ops. If options.copyBeforeWrite is set,
   // a new buffer copy is allocated every time a buffer is written to.
-  return bufferizeOp(op, options, state, statistics);
+  return bufferizeOp(op, options, statistics);
 }

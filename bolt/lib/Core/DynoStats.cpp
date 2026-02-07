@@ -51,6 +51,8 @@ PrintDynoOpcodeStat("print-dyno-opcode-stats",
 namespace llvm {
 namespace bolt {
 
+constexpr const char *DynoStats::Desc[];
+
 bool DynoStats::operator<(const DynoStats &Other) const {
   return std::lexicographical_compare(
       &Stats[FIRST_DYNO_STAT], &Stats[LAST_DYNO_STAT],

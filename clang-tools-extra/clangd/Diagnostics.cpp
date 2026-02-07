@@ -800,7 +800,7 @@ void StoreDiags::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
           M << "'";
         }
         // Don't allow source code to inject newlines into diagnostics.
-        llvm::replace(Message, '\n', ' ');
+        std::replace(Message.begin(), Message.end(), '\n', ' ');
       }
     }
     if (Message.empty()) // either !SyntheticMessage, or we failed to make one.
@@ -880,7 +880,7 @@ void StoreDiags::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
 void StoreDiags::flushLastDiag() {
   if (!LastDiag)
     return;
-  llvm::scope_exit Finish([&, NDiags(Output.size())] {
+  auto Finish = llvm::make_scope_exit([&, NDiags(Output.size())] {
     if (Output.size() == NDiags) // No new diag emitted.
       vlog("Dropped diagnostic: {0}: {1}", LastDiag->File, LastDiag->Message);
     LastDiag.reset();

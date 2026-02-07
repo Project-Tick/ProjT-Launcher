@@ -10,9 +10,11 @@
 #include "mlir/Conversion/LLVMCommon/Pattern.h"
 #include "mlir/Dialect/ArmSVE/IR/ArmSVEDialect.h"
 #include "mlir/Dialect/ArmSVE/Transforms/Transforms.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Utils/IndexingUtils.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/PatternMatch.h"
 
 using namespace mlir;
@@ -22,9 +24,6 @@ using SdotOpLowering = OneToOneConvertToLLVMPattern<SdotOp, SdotIntrOp>;
 using SmmlaOpLowering = OneToOneConvertToLLVMPattern<SmmlaOp, SmmlaIntrOp>;
 using UdotOpLowering = OneToOneConvertToLLVMPattern<UdotOp, UdotIntrOp>;
 using UmmlaOpLowering = OneToOneConvertToLLVMPattern<UmmlaOp, UmmlaIntrOp>;
-using UsmmlaOpLowering = OneToOneConvertToLLVMPattern<UsmmlaOp, UsmmlaIntrOp>;
-using DupQLaneLowering =
-    OneToOneConvertToLLVMPattern<DupQLaneOp, DupQLaneIntrOp>;
 using ScalableMaskedAddIOpLowering =
     OneToOneConvertToLLVMPattern<ScalableMaskedAddIOp,
                                  ScalableMaskedAddIIntrOp>;
@@ -87,8 +86,8 @@ struct SvboolConversionOpLowering : public ConvertOpToLLVMPattern<Op> {
     VectorType sourceType = source.getType();
     VectorType resultType = convertOp.getResult().getType();
 
-    Value result = arith::ConstantOp::create(rewriter, loc, resultType,
-                                             rewriter.getZeroAttr(resultType));
+    Value result = rewriter.create<arith::ConstantOp>(
+        loc, resultType, rewriter.getZeroAttr(resultType));
 
     // We want to iterate over the input vector in steps of the trailing
     // dimension. So this creates tile shape where all leading dimensions are 1,
@@ -100,15 +99,15 @@ struct SvboolConversionOpLowering : public ConvertOpToLLVMPattern<Op> {
     for (SmallVector<int64_t> index :
          StaticTileOffsetRange(sourceType.getShape(), tileShape)) {
       auto extractOrInsertPosition = ArrayRef(index).drop_back();
-      auto sourceVector = vector::ExtractOp::create(rewriter, loc, source,
-                                                    extractOrInsertPosition);
+      auto sourceVector = rewriter.create<vector::ExtractOp>(
+          loc, source, extractOrInsertPosition);
       VectorType convertedType =
           VectorType::Builder(llvm::cast<VectorType>(sourceVector.getType()))
               .setDim(0, resultType.getShape().back());
       auto convertedVector =
-          IntrOp::create(rewriter, loc, TypeRange{convertedType}, sourceVector);
-      result = vector::InsertOp::create(rewriter, loc, convertedVector, result,
-                                        extractOrInsertPosition);
+          rewriter.create<IntrOp>(loc, TypeRange{convertedType}, sourceVector);
+      result = rewriter.create<vector::InsertOp>(loc, convertedVector, result,
+                                                 extractOrInsertPosition);
     }
 
     rewriter.replaceOp(convertOp, result);
@@ -135,12 +134,12 @@ struct PselOpLowering : public ConvertOpToLLVMPattern<PselOp> {
                   ConversionPatternRewriter &rewriter) const override {
     auto svboolType = VectorType::get(16, rewriter.getI1Type(), true);
     auto loc = pselOp.getLoc();
-    auto svboolP1 = ConvertToSvboolIntrOp::create(rewriter, loc, svboolType,
-                                                  adaptor.getP1());
-    auto indexI32 = arith::IndexCastOp::create(
-        rewriter, loc, rewriter.getI32Type(), pselOp.getIndex());
-    auto pselIntr = PselIntrOp::create(rewriter, loc, svboolType, svboolP1,
-                                       pselOp.getP2(), indexI32);
+    auto svboolP1 = rewriter.create<ConvertToSvboolIntrOp>(loc, svboolType,
+                                                           adaptor.getP1());
+    auto indexI32 = rewriter.create<arith::IndexCastOp>(
+        loc, rewriter.getI32Type(), pselOp.getIndex());
+    auto pselIntr = rewriter.create<PselIntrOp>(loc, svboolType, svboolP1,
+                                                pselOp.getP2(), indexI32);
     rewriter.replaceOpWithNewOp<ConvertFromSvboolIntrOp>(
         pselOp, adaptor.getP1().getType(), pselIntr);
     return success();
@@ -174,7 +173,7 @@ struct CreateMaskOpLowering
                                          "not SVE predicate-sized");
 
     auto loc = createMaskOp.getLoc();
-    auto zero = LLVM::ZeroOp::create(rewriter, loc, rewriter.getI64Type());
+    auto zero = rewriter.create<LLVM::ZeroOp>(loc, rewriter.getI64Type());
     rewriter.replaceOpWithNewOp<WhileLTIntrOp>(createMaskOp, maskType, zero,
                                                adaptor.getOperands()[0]);
     return success();
@@ -189,26 +188,24 @@ void mlir::populateArmSVELegalizeForLLVMExportPatterns(
   // Populate conversion patterns
 
   // clang-format off
-  patterns.add<ConvertFromSvboolOpLowering,
-               ConvertToSvboolOpLowering,
-               DupQLaneLowering,
-               PselOpLowering,
-               ScalableMaskedAddFOpLowering,
-               ScalableMaskedAddIOpLowering,
-               ScalableMaskedDivFOpLowering,
-               ScalableMaskedMulFOpLowering,
-               ScalableMaskedMulIOpLowering,
-               ScalableMaskedSDivIOpLowering,
-               ScalableMaskedSubFOpLowering,
-               ScalableMaskedSubIOpLowering,
-               ScalableMaskedUDivIOpLowering,
+  patterns.add<SdotOpLowering,
                SmmlaOpLowering,
                UdotOpLowering,
                UmmlaOpLowering,
-               UsmmlaOpLowering,
+               ScalableMaskedAddIOpLowering,
+               ScalableMaskedAddFOpLowering,
+               ScalableMaskedSubIOpLowering,
+               ScalableMaskedSubFOpLowering,
+               ScalableMaskedMulIOpLowering,
+               ScalableMaskedMulFOpLowering,
+               ScalableMaskedSDivIOpLowering,
+               ScalableMaskedUDivIOpLowering,
+               ScalableMaskedDivFOpLowering,
+               ConvertToSvboolOpLowering,
+               ConvertFromSvboolOpLowering,
                ZipX2OpLowering,
                ZipX4OpLowering,
-               SdotOpLowering>(converter);
+               PselOpLowering>(converter);
   // Add vector.create_mask conversion with a high benefit as it produces much
   // nicer code than the generic lowering.
   patterns.add<CreateMaskOpLowering>(converter, /*benefit=*/4096);
@@ -218,47 +215,41 @@ void mlir::populateArmSVELegalizeForLLVMExportPatterns(
 void mlir::configureArmSVELegalizeForExportTarget(
     LLVMConversionTarget &target) {
   // clang-format off
-  target.addLegalOp<BfmmlaOp,
-                    ConvertFromSvboolIntrOp,
-                    ConvertToSvboolIntrOp,
-                    DupQLaneIntrOp,
-                    PselIntrOp,
-                    ScalableMaskedAddFIntrOp,
-                    ScalableMaskedAddIIntrOp,
-                    ScalableMaskedDivFIntrOp,
-                    ScalableMaskedMulFIntrOp,
-                    ScalableMaskedMulIIntrOp,
-                    ScalableMaskedSDivIIntrOp,
-                    ScalableMaskedSubFIntrOp,
-                    ScalableMaskedSubIIntrOp,
-                    ScalableMaskedUDivIIntrOp,
+  target.addLegalOp<SdotIntrOp,
                     SmmlaIntrOp,
                     UdotIntrOp,
                     UmmlaIntrOp,
-                    UsmmlaIntrOp,
-                    WhileLTIntrOp,
+                    ScalableMaskedAddIIntrOp,
+                    ScalableMaskedAddFIntrOp,
+                    ScalableMaskedSubIIntrOp,
+                    ScalableMaskedSubFIntrOp,
+                    ScalableMaskedMulIIntrOp,
+                    ScalableMaskedMulFIntrOp,
+                    ScalableMaskedSDivIIntrOp,
+                    ScalableMaskedUDivIIntrOp,
+                    ScalableMaskedDivFIntrOp,
+                    ConvertToSvboolIntrOp,
+                    ConvertFromSvboolIntrOp,
                     ZipX2IntrOp,
                     ZipX4IntrOp,
-                    SdotIntrOp>();
-  target.addIllegalOp<ConvertFromSvboolOp,
-                      ConvertToSvboolOp,
-                      DupQLaneOp,
-                      PselOp,
-                      ScalableMaskedAddFOp,
-                      ScalableMaskedAddIOp,
-                      ScalableMaskedDivFOp,
-                      ScalableMaskedMulFOp,
-                      ScalableMaskedMulIOp,
-                      ScalableMaskedSDivIOp,
-                      ScalableMaskedSubFOp,
-                      ScalableMaskedSubIOp,
-                      ScalableMaskedUDivIOp,
+                    PselIntrOp,
+                    WhileLTIntrOp>();
+  target.addIllegalOp<SdotOp,
                       SmmlaOp,
                       UdotOp,
                       UmmlaOp,
-                      UsmmlaOp,
+                      ScalableMaskedAddIOp,
+                      ScalableMaskedAddFOp,
+                      ScalableMaskedSubIOp,
+                      ScalableMaskedSubFOp,
+                      ScalableMaskedMulIOp,
+                      ScalableMaskedMulFOp,
+                      ScalableMaskedSDivIOp,
+                      ScalableMaskedUDivIOp,
+                      ScalableMaskedDivFOp,
+                      ConvertToSvboolOp,
+                      ConvertFromSvboolOp,
                       ZipX2Op,
-                      ZipX4Op,
-                      SdotOp>();
+                      ZipX4Op>();
   // clang-format on
 }

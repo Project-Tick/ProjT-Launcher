@@ -52,7 +52,6 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/raw_ostream.h"
 #include <algorithm>
 #include <cassert>
@@ -1665,8 +1664,7 @@ private:
   unsigned BlockID : 31;
 
   // Bit to determine if a block has been visited during a traversal.
-  LLVM_PREFERRED_TYPE(bool)
-  unsigned Visited : 1;
+  bool Visited : 1;
 
   // Predecessor blocks in the CFG.
   BlockArray Predecessors;

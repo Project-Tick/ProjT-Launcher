@@ -98,16 +98,3 @@ namespace PR11856 {
     }
   }
 }
-
-namespace GH139226 {
-
-struct Foo {
-  template <class T> void LookupWithID(); // expected-note {{declared here}}
-};
-
-void test(Foo &f) {
-  f.LookupWithId<int>();
-  // expected-error@-1 {{did you mean 'LookupWithID'}}
-}
-
-}

@@ -16,9 +16,7 @@
 #ifndef LLVM_ADT_DYNAMICAPINT_H
 #define LLVM_ADT_DYNAMICAPINT_H
 
-#include "llvm/ADT/APInt.h"
 #include "llvm/ADT/SlowDynamicAPInt.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/MathExtras.h"
 #include <numeric>
 
@@ -117,14 +115,6 @@ public:
       : ValSmall(Val) {
     ValLarge.Val.BitWidth = 0;
   }
-  LLVM_ATTRIBUTE_ALWAYS_INLINE explicit DynamicAPInt(const APInt &Val) {
-    if (Val.getBitWidth() <= 64) {
-      ValSmall = Val.getSExtValue();
-      ValLarge.Val.BitWidth = 0;
-    } else {
-      new (&ValLarge) detail::SlowDynamicAPInt(Val);
-    }
-  }
   LLVM_ATTRIBUTE_ALWAYS_INLINE DynamicAPInt() : DynamicAPInt(0) {}
   LLVM_ATTRIBUTE_ALWAYS_INLINE ~DynamicAPInt() {
     if (LLVM_UNLIKELY(isLarge()))
@@ -221,15 +211,12 @@ public:
   friend DynamicAPInt operator/(int64_t A, const DynamicAPInt &B);
   friend DynamicAPInt operator%(int64_t A, const DynamicAPInt &B);
 
-  LLVM_ABI friend hash_code hash_value(const DynamicAPInt &x); // NOLINT
+  friend hash_code hash_value(const DynamicAPInt &x); // NOLINT
 
-  LLVM_ABI void static_assert_layout(); // NOLINT
+  void static_assert_layout(); // NOLINT
 
-  LLVM_ABI raw_ostream &print(raw_ostream &OS) const;
-
-#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
+  raw_ostream &print(raw_ostream &OS) const;
   LLVM_DUMP_METHOD void dump() const;
-#endif
 };
 
 inline raw_ostream &operator<<(raw_ostream &OS, const DynamicAPInt &X) {
@@ -239,7 +226,7 @@ inline raw_ostream &operator<<(raw_ostream &OS, const DynamicAPInt &X) {
 
 /// Redeclarations of friend declaration above to
 /// make it discoverable by lookups.
-LLVM_ABI hash_code hash_value(const DynamicAPInt &X); // NOLINT
+hash_code hash_value(const DynamicAPInt &X); // NOLINT
 
 /// This just calls through to the operator int64_t, but it's useful when a
 /// function pointer is required. (Although this is marked inline, it is still

@@ -33,19 +33,20 @@ namespace {
 class MacroExpansionContextTest : public ::testing::Test {
 protected:
   MacroExpansionContextTest()
-      : InMemoryFileSystem(
-            llvm::makeIntrusiveRefCnt<llvm::vfs::InMemoryFileSystem>()),
+      : InMemoryFileSystem(new llvm::vfs::InMemoryFileSystem),
         FileMgr(FileSystemOptions(), InMemoryFileSystem),
-        Diags(DiagnosticIDs::create(), DiagOpts, new IgnoringDiagConsumer()),
+        DiagID(new DiagnosticIDs()), DiagOpts(new DiagnosticOptions()),
+        Diags(DiagID, DiagOpts.get(), new IgnoringDiagConsumer()),
         SourceMgr(Diags, FileMgr), TargetOpts(new TargetOptions()) {
     TargetOpts->Triple = "x86_64-pc-linux-unknown";
-    Target = TargetInfo::CreateTargetInfo(Diags, *TargetOpts);
+    Target = TargetInfo::CreateTargetInfo(Diags, TargetOpts);
     LangOpts.CPlusPlus20 = 1; // For __VA_OPT__
   }
 
   IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem;
   FileManager FileMgr;
-  DiagnosticOptions DiagOpts;
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagID;
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts;
   DiagnosticsEngine Diags;
   SourceManager SourceMgr;
   LangOptions LangOpts;
@@ -57,12 +58,13 @@ protected:
     std::unique_ptr<llvm::MemoryBuffer> Buf =
         llvm::MemoryBuffer::getMemBuffer(SourceText);
     SourceMgr.setMainFileID(SourceMgr.createFileID(std::move(Buf)));
-    HeaderSearchOptions HSOpts;
     TrivialModuleLoader ModLoader;
-    PreprocessorOptions PPOpts;
-    HeaderSearch HeaderInfo(HSOpts, SourceMgr, Diags, LangOpts, Target.get());
-    Preprocessor PP(PPOpts, Diags, LangOpts, SourceMgr, HeaderInfo, ModLoader,
-                    /*IILookup=*/nullptr, /*OwnsHeaderSearch=*/false);
+    HeaderSearch HeaderInfo(std::make_shared<HeaderSearchOptions>(), SourceMgr,
+                            Diags, LangOpts, Target.get());
+    Preprocessor PP(std::make_shared<PreprocessorOptions>(), Diags, LangOpts,
+                    SourceMgr, HeaderInfo, ModLoader,
+                    /*IILookup =*/nullptr,
+                    /*OwnsHeaderSearch =*/false);
 
     PP.Initialize(*Target);
     auto Ctx = std::make_unique<MacroExpansionContext>(LangOpts);
@@ -403,43 +405,6 @@ TEST_F(MacroExpansionContextTest, UnbalacedParenthesis) {
 
   EXPECT_EQ("((1,fun (),1,fun (),1", *Ctx->getExpandedText(at(13, 12)));
   EXPECT_EQ("f(f(1))", *Ctx->getOriginalText(at(13, 12)));
-}
-
-TEST_F(MacroExpansionContextTest, FormattedExpandedTextNoneWhenNoExpansion) {
-  const auto Ctx = getMacroExpansionContextFor(R"code(
-  #define UNUSED 1
-  int value = 0;
-      )code");
-  EXPECT_FALSE(Ctx->getFormattedExpandedText(at(3, 3)).has_value());
-}
-
-TEST_F(MacroExpansionContextTest,
-       FormattedExpandedTextKeepsOriginalWhenStable) {
-  const auto Ctx = getMacroExpansionContextFor(R"code(
-  #define ANSWER 42
-  int life = ANSWER;
-      )code");
-
-  const auto Expanded = Ctx->getExpandedText(at(3, 14));
-  ASSERT_TRUE(Expanded.has_value());
-
-  EXPECT_EQ(*Expanded, *Ctx->getFormattedExpandedText(at(3, 14)));
-}
-
-TEST_F(MacroExpansionContextTest, FormattedExpandedTextChangesWhenFormatting) {
-  const auto Ctx = getMacroExpansionContextFor(R"code(
-  #define ADD(x, y) (x+y* x)
-  int result = ADD(1,2);
-      )code");
-
-  const auto Expanded = Ctx->getExpandedText(at(3, 16));
-  ASSERT_TRUE(Expanded.has_value());
-
-  const auto Formatted = Ctx->getFormattedExpandedText(at(3, 16));
-  ASSERT_TRUE(Formatted.has_value());
-
-  EXPECT_EQ(*Formatted, *Ctx->getFormattedExpandedText(at(3, 16)));
-  EXPECT_NE(*Expanded, *Formatted);
 }
 
 } // namespace
