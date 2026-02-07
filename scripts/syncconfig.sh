@@ -17,6 +17,10 @@
 
 set -e
 
+# Force C locale for consistent regex matching across all locales.
+# Turkish locale (tr_TR) breaks [A-Za-z] character ranges in grep.
+export LC_ALL=C
+
 BUILD_DIR="${1:-.}"
 CONFIG_FILE="${BUILD_DIR}/.config"
 AUTO_CONF_DIR="${BUILD_DIR}/include/config"

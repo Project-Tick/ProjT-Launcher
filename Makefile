@@ -286,8 +286,8 @@ else ifeq ($(TARGET_PLATFORM),macos)
     
 else
     # Linux / Unix (GCC or Clang)
-    CC      ?= $(CROSS_COMPILE)gcc
-    CXX     ?= $(CROSS_COMPILE)g++
+    CC      = $(CROSS_COMPILE)gcc
+    CXX     = $(CROSS_COMPILE)g++
     LD      = $(CROSS_COMPILE)g++
     AR      = $(CROSS_COMPILE)ar
     AS      = $(CROSS_COMPILE)as
@@ -407,8 +407,6 @@ MAKEFLAGS += -r -R
 CCACHE := $(shell command -v ccache 2>/dev/null)
 ifneq ($(CCACHE),)
   ifndef NO_CCACHE
-    CC := ccache $(CC)
-    CXX := ccache $(CXX)
     HOSTCC := ccache $(HOSTCC)
     HOSTCXX := ccache $(HOSTCXX)
   endif
@@ -417,12 +415,6 @@ endif
 # sccache support (alternative to ccache)
 ifndef CCACHE
   SCCACHE := $(shell command -v sccache 2>/dev/null)
-  ifneq ($(SCCACHE),)
-    ifndef NO_CCACHE
-      CC := sccache $(CC)
-      CXX := sccache $(CXX)
-    endif
-  endif
 endif
 
 # Use pipes instead of temp files (faster, GCC/Clang only)
@@ -468,6 +460,30 @@ HOSTCFLAGS_lexer.lex.o += -I$(obj)
 # ============================================================================
 
 -include $(KCONFIG_AUTOCONFIG)
+
+# Apply CONFIG_CC/CONFIG_CXX overrides from Kconfig (strips surrounding quotes)
+cfg-unquote = $(strip $(subst ",,$(1)))
+_CC_CFG := $(call cfg-unquote,$(CONFIG_CC))
+_CXX_CFG := $(call cfg-unquote,$(CONFIG_CXX))
+ifneq ($(_CC_CFG),)
+  CC := $(_CC_CFG)
+endif
+ifneq ($(_CXX_CFG),)
+  CXX := $(_CXX_CFG)
+endif
+
+# Re-apply ccache/sccache wrapper after CONFIG override
+ifneq ($(CCACHE),)
+  ifndef NO_CCACHE
+    CC := ccache $(CC)
+    CXX := ccache $(CXX)
+  endif
+else ifneq ($(SCCACHE),)
+  ifndef NO_CCACHE
+    CC := sccache $(CC)
+    CXX := sccache $(CXX)
+  endif
+endif
 
 # ============================================================================
 # Directory Targets
@@ -716,7 +732,7 @@ endif
 
 fuzz:
 ifeq ($(CONFIG_BUILD_FUZZERS),y)
-	$(Q)$(MAKE) -f $(srctree)/mk/fuzz.mk fuzz
+	$(Q)$(MAKE) -C $(srctree)/fuzz srctree=$(srctree) KBUILD_OUTPUT=$(KBUILD_OUTPUT) fuzz
 else
 	@echo "Fuzzers not enabled. Run 'make menuconfig' and enable BUILD_FUZZERS."
 endif

@@ -216,7 +216,7 @@ SED_SUBST = sed \
 BUILDCONFIG_IN := $(srctree)/buildconfig/BuildConfig.cpp.in
 BUILDCONFIG_OUT := $(GENERATED_DIR)/BuildConfig.cpp
 
-$(BUILDCONFIG_OUT): $(BUILDCONFIG_IN) $(srctree)/build/.config | $(GENERATED_DIR)
+$(BUILDCONFIG_OUT): $(BUILDCONFIG_IN) $(KBUILD_OUTPUT)/.config | $(GENERATED_DIR)
 	@echo "  GEN     $@"
 	$(Q)$(SED_SUBST) $< > $@
 
@@ -227,7 +227,7 @@ $(BUILDCONFIG_OUT): $(BUILDCONFIG_IN) $(srctree)/build/.config | $(GENERATED_DIR
 LAUNCHER_SCRIPT_IN := $(srctree)/launcher/Launcher.in
 LAUNCHER_SCRIPT_OUT := $(OBJDIR)/bin/LauncherScript
 
-$(LAUNCHER_SCRIPT_OUT): $(LAUNCHER_SCRIPT_IN) $(srctree)/build/.config
+$(LAUNCHER_SCRIPT_OUT): $(LAUNCHER_SCRIPT_IN) $(KBUILD_OUTPUT)/.config
 	@mkdir -p $(dir $@)
 	@echo "  GEN     $@"
 	$(Q)$(SED_SUBST) $< > $@

@@ -220,7 +220,11 @@ $(TEST_OUT)/%_test: $(SRCDIR)/tests/%_test.cpp $(TEST_OUT)/%_test.moc $(LAUNCHER
 # Build all tests
 # ============================================================================
 
-tests-build: $(ALL_TEST_BINS)
+# Build the shared zlib (libprojtZ.so) needed for test linking
+zlib-shared:
+	$(Q)$(MAKE) -f $(srctree)/mk/subtrees.mk srctree=$(srctree) KBUILD_OUTPUT=$(KBUILD_OUTPUT) zlib-shared
+
+tests-build: zlib-shared $(ALL_TEST_BINS)
 	@echo ""
 	@echo "  BUILD   $(words $(ALL_TEST_BINS)) tests built"
 
