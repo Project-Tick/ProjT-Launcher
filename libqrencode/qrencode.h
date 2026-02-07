@@ -1,7 +1,8 @@
 /**
  * qrencode - QR Code encoder
  *
- * Copyright (C) 2006-2017 Kentaro Fukuchi <kentaro@fukuchi.org>
+ * Copyright (C) 2006-2018, 2020 Kentaro Fukuchi <kentaro@fukuchi.org>
+ * Copyright (C) 2026 Project Tick
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,12 +61,33 @@
  * In such cases, the input data would be too large to be encoded in a
  * symbol of the specified version.
  *
+ * The following code snippet demonstrates how to use the obtained object:
+ *
+ * \code
+ * QRcode *qrcode;
+ *
+ * qrcode = QRcode_encodeString("TEST", 0, QR_ECLEVEL_M, QR_MODE_8, 1);
+ * if(qrcode == NULL) abort();
+ *
+ * for(int y = 0; y < qrcode->width; y++) {
+ *     for(int x = 0; x < qrcode->width; x++) {
+ *         if(qrcode->data[y * qrcode->width + x] & 1) {
+ *             draw_black_dot(x, y);
+ *         } else {
+ *             draw_white_dot(x, y);
+ *         }
+ *     }
+ * }
+ *
+ * QRcode_free(qrcode);
+ * \endcode
+ *
  * \section structured Structured append
- * Libqrencode can generate "Structured-appended" symbols that enables to split
- * a large data set into mulitple QR codes. A QR code reader concatenates
+ * Libqrencode can generate "Structured-appended" symbols that enable to split
+ * a large data set into multiple QR codes. A QR code reader concatenates
  * multiple QR code symbols into a string.
  * Just like QRcode_encodeString(), you can use QRcode_encodeStringStructured()
- * to generate structured-appended symbols. This functions returns an instance
+ * to generate structured-appended symbols. This function returns an instance
  * of ::QRcode_List. The returned list is a singly-linked list of QRcode: you
  * can retrieve each QR code in this way:
  *
@@ -191,7 +213,7 @@ extern QRinput *QRinput_newMQR(int version, QRecLevel level);
  * @param size size of data (byte).
  * @param data a pointer to the memory area of the input data.
  * @retval 0 success.
- * @retval -1 an error occurred and errno is set to indeicate the error.
+ * @retval -1 an error occurred and errno is set to indicate the error.
  *            See Execptions for the details.
  * @throw ENOMEM unable to allocate memory.
  * @throw EINVAL input data is invalid.
@@ -204,7 +226,7 @@ extern int QRinput_append(QRinput *input, QRencodeMode mode, int size, const uns
  * @param input input object.
  * @param ecinum ECI indicator number (0 - 999999)
  * @retval 0 success.
- * @retval -1 an error occurred and errno is set to indeicate the error.
+ * @retval -1 an error occurred and errno is set to indicate the error.
  *            See Execptions for the details.
  * @throw ENOMEM unable to allocate memory.
  * @throw EINVAL input data is invalid.
@@ -332,7 +354,7 @@ extern QRinput_Struct *QRinput_splitQRinputToStruct(QRinput *input);
  * a parity and set it if the parity is not set yet.
  * @param s input structure
  * @retval 0 success.
- * @retval -1 an error occurred and errno is set to indeicate the error.
+ * @retval -1 an error occurred and errno is set to indicate the error.
  *            See Execptions for the details.
  * @throw EINVAL invalid input object.
  * @throw ENOMEM unable to allocate memory.
@@ -371,6 +393,9 @@ extern int QRinput_setFNC1Second(QRinput *input, unsigned char appid);
        |`------- finder pattern and separator
        `-------- non-data modules (format, timing, etc.)
    @endverbatim
+ *
+ * See \ref result section for a sample code snippet that shows how to use the
+ * obtained QRcode object.
  */
 typedef struct {
 	int version;         ///< version of the symbol
@@ -411,7 +436,7 @@ extern QRcode *QRcode_encodeInput(QRinput *input);
  * @param hint tell the library how Japanese Kanji characters should be
  *             encoded. If QR_MODE_KANJI is given, the library assumes that the
  *             given string contains Shift-JIS characters and encodes them in
- *             Kanji-mode. If QR_MODE_8 is given, all of non-alphanumerical
+ *             Kanji-mode. If QR_MODE_8 is given, all non-alphanumerical
  *             characters will be encoded as is. If you want to embed UTF-8
  *             string, choose this. Other mode will cause EINVAL error.
  * @param casesensitive case-sensitive(1) or not(0).
@@ -538,10 +563,11 @@ extern void QRcode_List_free(QRcode_List *qrlist);
  *****************************************************************************/
 
 /**
- * Return a string that identifies the library version.
- * @param major_version major version number
- * @param minor_version minor version number
- * @param micro_version micro version number
+ * Return the major.minor.micro version numbers that identifies the
+ * library version.
+ * @param major_version a pointer where to store the major version number
+ * @param minor_version a pointer where to store the minor version number
+ * @param micro_version a pointer where to store the micro version number
  */
 extern void QRcode_APIVersion(int *major_version, int *minor_version, int *micro_version);
 

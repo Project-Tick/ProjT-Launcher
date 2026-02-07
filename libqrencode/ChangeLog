@@ -1,3 +1,21 @@
+2021.01.08 Kentaro Fukuchi <kentaro@fukuchi.org>
+	[develop]
+	* tests/test_qrinput.c:
+	  - A minor memory leak bug in a test case has been fixed.
+	* README.md:
+	  - 'libpng12-dev' has been corrected to 'libpng-dev'. (closes #170)
+	    (Thanks to @a6q)
+	* .github/workflows/cmake.yml:
+	  - Updated 'run-vcpkg' package to v6.
+	  - vcpkg's git commit ID has been updated to the latest master.
+
+2020.09.29 Kentaro Fukuchi <kentaro@fukuchi.org>
+	[develop]
+	* qrencode.c:
+	  - Removed unused code.
+	* qrencode.h:
+	  - Added a sample code snippet to the document.
+
 2020.09.28 Kentaro Fukuchi <kentaro@fukuchi.org>
 	[hotfix]
 	* qrinput.c, tests/test_estimatebit.c:
@@ -8,6 +26,81 @@
 	  - A test case to test the bugs above has been added.
 	  - Level check failure in QRinput_new2() on Windows has been fixed.
 	* Bumped version to 4.1.1.
+	[develop]
+	* tests/release_check.sh:
+	  - Release checker script has been added. Currently it checks only the
+	    version numbers among scripts.
+	* configure.ac:
+	  - '--enable-mudflap' option has been deleted. (mudflap is deprecated
+	    since GCC 4.9)
+	* qrencode.h:
+	  - Comments for QRcode_APIVersion() has been slightly improved.
+
+2020.09.27 Kentaro Fukuchi <kentaro@fukuchi.org>
+	[develop]
+	* NEWS:
+	  - All tab characters have been replaced with spaces.
+	* qrenc.c, qrencode.1.in:
+	  - The effects of '--type' option's 'ASCII' and 'ASCIIi' have been
+	    swapped. (closes #142)
+	* .github/workflows/{configure,cmake}.yml:
+	  - CI scripts have been improved to utilze multiple cores and cache.
+	* tests/{test_basic.sh, test_qrenc.sh}:
+	  - Code cleanups.
+	[code cleanups]
+	* various files:
+	  - Cleanup compiler warnings.
+	[develop]
+	* Merged 'code cleanups' branch.
+	* qrenc.c:
+	  - Text output bug of structured append has been fixed.
+
+2020.09.26 Kentaro Fukuchi <kentaro@fukuchi.org>
+	[develop]
+	* tests/test_qrencode.c:
+	  - Minor memory leak bug in a test case has been fixed.
+	* COPYING:
+	  - Updated to the latest revision.
+	* qrenc.c:
+	  - Some URLs' schemes have been updated to https from http.
+	* README.md, qrenc.c, qrencode.1.in, qrencode.[ch]:
+	  - Copyright year has been updated.
+	* .github/workflows/{configure,cmake,cmake-windows}.yml:
+	  - Workflow names have been improved.
+	* .travis.yml:
+	  - Migration to Github Actions has been completed.
+	* .github/workflows/{configure,cmake,cmake-windows}.yml:
+	  - CI scripts have been improved.
+	* README.md, makeREADME.sh:
+	  - Status badge has been changed to show the result from the Github Actions
+	    instead of Travis CI.
+
+2020.09.22 Kentaro Fukuchi <kentaro@fukuchi.org>
+	[develop]
+	* mask.c, qrencode.h:
+	  - Typos and grammer errors have been fixed.
+	* Merge branch 'optimization'.
+
+2020.09.21 Kentaro Fukuchi <kentaro@fukuchi.org>
+	[optimization]
+	* tests/prof_qrencode.c:
+	  - Test numbers are extended.
+	* mask.c:
+	  - Minor optimizations.
+
+2020.08.30 Kentaro Fukuchi <kentaro@fukuchi.org>
+	[develop]
+	* .github/workflows/configure.yml:
+	  - Added macOS CI script.
+	* qrencode.1.in, qrenc.c:
+	  - Detailed description of text output types has been added.
+	    (closes #142)
+	* qrenc.c:
+	  - Invalid XPM output has been fixed. (Thanks to @dlitz and @cbrt64)
+	    (closes #136)
+	[optimization]
+	* qrencode.c:
+	  - A tail recursion in FrameFiller_next() has been eliminated.
 
 2020.08.29 Kentaro Fukuchi <kentaro@fukuchi.org>
 	[release-4.1.0]
@@ -23,6 +116,9 @@
 	  - ECLEVEL check has been improved.
 	* .gitignore:
 	  - Added 'use/test-driver'.
+	[master]
+	* merged release-4.1.0.
+	* version 4.1.0 has been released.
 
 2020.08.28 Kentaro Fukuchi <kentaro@fukuchi.org>
 	[develop]
@@ -214,7 +310,7 @@
 	* qrencode.1.in, NEWS:
 	  - Release date has been updated.
 	  - Documentation updated.
-	* Version 4.0.0 has ben released.
+	* Version 4.0.0 has been released.
 
 2017.09.11 Kentaro Fukuchi <kentaro@fukuchi.org>
 	* qrenc.c:
@@ -570,7 +666,7 @@
 	  - ACKNOWLEDGMENTS updates.
 	[3.4]
 	  - Bumped version to 3.4.4.
-	* Version 3.4.4 has ben released.
+	* Version 3.4.4 has been released.
 
 2014.07.08 Kentaro FUKUCHI <kentaro@fukuchi.org>
 	* qrenc.c, qrinput.c, tests/test_qrinput.c:

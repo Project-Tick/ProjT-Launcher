@@ -3,6 +3,7 @@
  *
  * Input data chunk class
  * Copyright (C) 2006-2017 Kentaro Fukuchi <kentaro@fukuchi.org>
+ * Copyright (C) 2026 Project Tick
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -140,7 +141,7 @@ QRinput *QRinput_newMQR(int version, QRecLevel level)
 	QRinput *input;
 
 	if(version <= 0 || version > MQRSPEC_VERSION_MAX) goto INVALID;
-	if((MQRspec_getECCLength(version, level) == 0)) goto INVALID;
+	if(MQRspec_getECCLength(version, level) == 0) goto INVALID;
 
 	input = QRinput_new2(version, level);
 	if(input == NULL) return NULL;
@@ -192,7 +193,7 @@ int QRinput_setVersionAndErrorCorrectionLevel(QRinput *input, int version, QRecL
 {
 	if(input->mqr) {
 		if(version <= 0 || version > MQRSPEC_VERSION_MAX) goto INVALID;
-		if((MQRspec_getECCLength(version, level) == 0)) goto INVALID;
+		if(MQRspec_getECCLength(version, level) == 0) goto INVALID;
 	} else {
 		if(version < 0 || version > QRSPEC_VERSION_MAX) goto INVALID;
 		if(level > QR_ECLEVEL_H) goto INVALID;
@@ -241,11 +242,11 @@ int QRinput_append(QRinput *input, QRencodeMode mode, int size, const unsigned c
  * @param number index number of the symbol. (1 <= number <= size)
  * @param parity parity among input data. (NOTE: each symbol of a set of structured symbols has the same parity data)
  * @retval 0 success.
- * @retval -1 error occurred and errno is set to indeicate the error. See Execptions for the details.
+ * @retval -1 error occurred and errno is set to indicate the error. See Execptions for the details.
  * @throw EINVAL invalid parameter.
  * @throw ENOMEM unable to allocate memory.
  */
-STATIC_IN_RELEASE int QRinput_insertStructuredAppendHeader(QRinput *input, int size, int number, unsigned char parity)
+STATIC_IN_RELEASE int QRinput_insertStructuredAppendHeader(QRinput *input, int size, int number, int parity)
 {
 	QRinput_List *entry;
 	unsigned char buf[3];
@@ -261,7 +262,7 @@ STATIC_IN_RELEASE int QRinput_insertStructuredAppendHeader(QRinput *input, int s
 
 	buf[0] = (unsigned char)size;
 	buf[1] = (unsigned char)number;
-	buf[2] = parity;
+	buf[2] = (unsigned char)parity;
 	entry = QRinput_List_newEntry(QR_MODE_STRUCTURE, 3, buf);
 	if(entry == NULL) {
 		return -1;
@@ -357,8 +358,8 @@ QRinput *QRinput_dup(QRinput *input)
 
 /**
  * Check the input data.
- * @param size
- * @param data
+ * @param size size of the input data.
+ * @param data input data.
  * @return result
  */
 static int QRinput_checkModeNum(int size, const char *data)
@@ -375,7 +376,7 @@ static int QRinput_checkModeNum(int size, const char *data)
 
 /**
  * Estimate the length of the encoded bit stream of numeric data.
- * @param size
+ * @param size size of the input data.
  * @return number of bits
  */
 int QRinput_estimateBitsModeNum(int size)
@@ -401,10 +402,10 @@ int QRinput_estimateBitsModeNum(int size)
 
 /**
  * Convert the number data and append to a bit stream.
- * @param entry
- * @param mqr
+ * @param entry input data.
+ * @param mqr give 1 if generating Micro QR Code.
  * @retval 0 success
- * @retval -1 an error occurred and errno is set to indeicate the error.
+ * @retval -1 an error occurred and errno is set to indicate the error.
  *            See Execptions for the details.
  * @throw ENOMEM unable to allocate memory.
  */
@@ -469,8 +470,8 @@ const signed char QRinput_anTable[128] = {
 
 /**
  * Check the input data.
- * @param size
- * @param data
+ * @param size size of the input data.
+ * @param data input data.
  * @return result
  */
 static int QRinput_checkModeAn(int size, const char *data)
@@ -487,7 +488,7 @@ static int QRinput_checkModeAn(int size, const char *data)
 
 /**
  * Estimate the length of the encoded bit stream of alphabet-numeric data.
- * @param size
+ * @param size size of the input data.
  * @return number of bits
  */
 int QRinput_estimateBitsModeAn(int size)
@@ -506,10 +507,10 @@ int QRinput_estimateBitsModeAn(int size)
 
 /**
  * Convert the alphabet-numeric data and append to a bit stream.
- * @param entry
- * @param mqr
+ * @param entry input data.
+ * @param mqr give 1 if generating Micro QR Code.
  * @retval 0 success
- * @retval -1 an error occurred and errno is set to indeicate the error.
+ * @retval -1 an error occurred and errno is set to indicate the error.
  *            See Execptions for the details.
  * @throw ENOMEM unable to allocate memory.
  * @throw EINVAL invalid version.
@@ -560,7 +561,7 @@ static int QRinput_encodeModeAn(QRinput_List *entry, BitStream *bstream, int ver
 
 /**
  * Estimate the length of the encoded bit stream of 8 bit data.
- * @param size
+ * @param size size of the input data.
  * @return number of bits
  */
 int QRinput_estimateBitsMode8(int size)
@@ -570,10 +571,10 @@ int QRinput_estimateBitsMode8(int size)
 
 /**
  * Convert the 8bits data and append to a bit stream.
- * @param entry
- * @param mqr
+ * @param entry input data.
+ * @param mqr give 1 if generating Micro QR Code.
  * @retval 0 success
- * @retval -1 an error occurred and errno is set to indeicate the error.
+ * @retval -1 an error occurred and errno is set to indicate the error.
  *            See Execptions for the details.
  * @throw ENOMEM unable to allocate memory.
  */
@@ -610,7 +611,7 @@ static int QRinput_encodeMode8(QRinput_List *entry, BitStream *bstream, int vers
 
 /**
  * Estimate the length of the encoded bit stream of kanji data.
- * @param size
+ * @param size size of the input data.
  * @return number of bits
  */
 int QRinput_estimateBitsModeKanji(int size)
@@ -620,8 +621,8 @@ int QRinput_estimateBitsModeKanji(int size)
 
 /**
  * Check the input data.
- * @param size
- * @param data
+ * @param size size of the input data.
+ * @param data input data.
  * @return result
  */
 static int QRinput_checkModeKanji(int size, const unsigned char *data)
@@ -644,10 +645,10 @@ static int QRinput_checkModeKanji(int size, const unsigned char *data)
 
 /**
  * Convert the kanji data and append to a bit stream.
- * @param entry
- * @param mqr
+ * @param entry input data.
+ * @param mqr give 1 if generating Micro QR Code.
  * @retval 0 success
- * @retval -1 an error occurred and errno is set to indeicate the error.
+ * @retval -1 an error occurred and errno is set to indicate the error.
  *            See Execptions for the details.
  * @throw ENOMEM unable to allocate memory.
  * @throw EINVAL invalid version.
@@ -696,10 +697,10 @@ static int QRinput_encodeModeKanji(QRinput_List *entry, BitStream *bstream, int 
 
 /**
  * Convert a structure symbol code and append to a bit stream.
- * @param entry
- * @param mqr
+ * @param entry input data.
+ * @param mqr give 1 if generating Micro QR Code.
  * @retval 0 success
- * @retval -1 an error occurred and errno is set to indeicate the error.
+ * @retval -1 an error occurred and errno is set to indicate the error.
  *            See Execptions for the details.
  * @throw ENOMEM unable to allocate memory.
  * @throw EINVAL invalid entry.
@@ -774,7 +775,7 @@ static int QRinput_estimateBitsModeECI(unsigned char *data)
 
 	ecinum = QRinput_decodeECIfromByteArray(data);
 
-	/* See Table 4 of JISX 0510:2004 pp.17. */
+	/* See Table 4 of JISX 0510:2004 p.17. */
 	if(ecinum < 128) {
 		return MODE_INDICATOR_SIZE + 8;
 	} else if(ecinum < 16384) {
@@ -791,7 +792,7 @@ static int QRinput_encodeModeECI(QRinput_List *entry, BitStream *bstream)
 
 	ecinum = QRinput_decodeECIfromByteArray(entry->data);
 
-	/* See Table 4 of JISX 0510:2004 pp.17. */
+	/* See Table 4 of JISX 0510:2004 p.17. */
 	if(ecinum < 128) {
 		words = 1;
 		code = ecinum;
@@ -850,9 +851,9 @@ int QRinput_check(QRencodeMode mode, int size, const unsigned char *data)
 
 /**
  * Estimate the length of the encoded bit stream on the current version.
- * @param entry
+ * @param entry input data.
  * @param version version of the symbol
- * @param mqr
+ * @param mqr give 1 if generating Micro QR Code.
  * @return number of bits
  */
 static int QRinput_estimateBitStreamSizeOfEntry(QRinput_List *entry, int version, int mqr)
@@ -953,9 +954,9 @@ STATIC_IN_RELEASE int QRinput_estimateVersion(QRinput *input)
 
 /**
  * Return required length in bytes for specified mode, version and bits.
- * @param mode
- * @param version
- * @param bits
+ * @param mode encode mode.
+ * @param version version of the symbol.
+ * @param bits length of the input data in bits.
  * @return required length of code words in bytes.
  */
 STATIC_IN_RELEASE int QRinput_lengthOfCode(QRencodeMode mode, int version, int bits)
@@ -1006,8 +1007,8 @@ STATIC_IN_RELEASE int QRinput_lengthOfCode(QRencodeMode mode, int version, int b
 
 /**
  * Convert the input data in the data chunk and append to a bit stream.
- * @param entry
- * @param bstream
+ * @param entry input data.
+ * @param [out] bstream destination BitStream.
  * @return number of bits (>0) or -1 for failure.
  */
 static int QRinput_encodeBitStream(QRinput_List *entry, BitStream *bstream, int version, int mqr)
@@ -1077,7 +1078,7 @@ ABORT:
  * Convert the input data to a bit stream.
  * @param input input data.
  * @retval 0 success
- * @retval -1 an error occurred and errno is set to indeicate the error.
+ * @retval -1 an error occurred and errno is set to indicate the error.
  *            See Execptions for the details.
  * @throw ENOMEM unable to allocate memory.
  */
@@ -1102,9 +1103,9 @@ static int QRinput_createBitStream(QRinput *input, BitStream *bstream)
  * When the version number is given and that is not sufficient, it is increased
  * automatically.
  * @param input input data.
- * @param bstream where the converted data is stored.
+ * @param bstream Bitstream to be appended.
  * @retval 0 success
- * @retval -1 an error occurred and errno is set to indeicate the error.
+ * @retval -1 an error occurred and errno is set to indicate the error.
  *            See Execptions for the details.
  * @throw ENOMEM unable to allocate memory.
  * @throw ERANGE input data is too large.
@@ -1139,7 +1140,7 @@ static int QRinput_convertData(QRinput *input, BitStream *bstream)
  * @param bstream Bitstream to be appended.
  * @param input input data.
  * @retval 0 success
- * @retval -1 an error occurred and errno is set to indeicate the error.
+ * @retval -1 an error occurred and errno is set to indicate the error.
  *            See Execptions for the details.
  * @throw ERANGE input data is too large.
  * @throw ENOMEM unable to allocate memory.
@@ -1188,7 +1189,7 @@ static int QRinput_appendPaddingBit(BitStream *bstream, QRinput *input)
  * @param bstream Bitstream to be appended.
  * @param input input data.
  * @retval 0 success
- * @retval -1 an error occurred and errno is set to indeicate the error.
+ * @retval -1 an error occurred and errno is set to indicate the error.
  *            See Execptions for the details.
  * @throw ERANGE input data is too large.
  * @throw ENOMEM unable to allocate memory.

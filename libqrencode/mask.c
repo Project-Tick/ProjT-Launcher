@@ -3,6 +3,7 @@
  *
  * Masking.
  * Copyright (C) 2006-2017 Kentaro Fukuchi <kentaro@fukuchi.org>
+ * Copyright (C) 2026 Project Tick
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -75,8 +76,8 @@ STATIC_IN_RELEASE int Mask_writeFormatInformation(int width, unsigned char *fram
 }
 
 /**
- * Demerit coefficients.
- * See Section 8.8.2, pp.45, JIS X0510:2004.
+ * Penalty coefficients.
+ * See Section 8.8.2, p.45, JIS X0510:2004.
  */
 #define N1 (3)
 #define N2 (3)
@@ -188,15 +189,15 @@ unsigned char *Mask_makeMask(int width, unsigned char *frame, int mask, QRecLeve
 STATIC_IN_RELEASE int Mask_calcN1N3(int length, int *runLength)
 {
 	int i;
-	int demerit = 0;
+	int penalty = 0;
 	int fact;
 
 	for(i = 0; i < length; i++) {
 		if(runLength[i] >= 5) {
-			demerit += N1 + (runLength[i] - 5);
+			penalty += N1 + (runLength[i] - 5);
 			//n1 += N1 + (runLength[i] - 5);
 		}
-		if((i & 1)) {
+		if(i & 1) {
 			if(i >= 3 && i < length-2 && (runLength[i] % 3) == 0) {
 				fact = runLength[i] / 3;
 				if(runLength[i-2] == fact &&
@@ -204,10 +205,10 @@ STATIC_IN_RELEASE int Mask_calcN1N3(int length, int *runLength)
 				   runLength[i+1] == fact &&
 				   runLength[i+2] == fact) {
 					if(i == 3 || runLength[i-3] >= 4 * fact) {
-						demerit += N3;
+						penalty += N3;
 						//n3 += N3;
 					} else if(i+4 >= length || runLength[i+3] >= 4 * fact) {
-						demerit += N3;
+						penalty += N3;
 						//n3 += N3;
 					}
 				}
@@ -215,7 +216,7 @@ STATIC_IN_RELEASE int Mask_calcN1N3(int length, int *runLength)
 		}
 	}
 
-	return demerit;
+	return penalty;
 }
 
 STATIC_IN_RELEASE int Mask_calcN2(int width, unsigned char *frame)
@@ -223,22 +224,22 @@ STATIC_IN_RELEASE int Mask_calcN2(int width, unsigned char *frame)
 	int x, y;
 	unsigned char *p;
 	unsigned char b22, w22;
-	int demerit = 0;
+	int penalty = 0;
 
-	p = frame + width + 1;
+	p = frame;
 	for(y = 1; y < width; y++) {
 		for(x = 1; x < width; x++) {
-			b22 = p[0] & p[-1] & p[-width] & p [-width-1];
-			w22 = p[0] | p[-1] | p[-width] | p [-width-1];
-			if((b22 | (w22 ^ 1))&1) {
-				demerit += N2;
+			b22 = (p[0] & p[1] & p[width] & p[width+1]) & 1;
+			w22 = (p[0] | p[1] | p[width] | p[width+1]) & 1;
+			if(b22 != 0 || w22 == 0) {
+				penalty += N2;
 			}
 			p++;
 		}
 		p++;
 	}
 
-	return demerit;
+	return penalty;
 }
 
 STATIC_IN_RELEASE int Mask_calcRunLengthH(int width, unsigned char *frame, int *runLength)
@@ -247,14 +248,12 @@ STATIC_IN_RELEASE int Mask_calcRunLengthH(int width, unsigned char *frame, int *
 	int i;
 	unsigned char prev;
 
-	if(frame[0] & 1) {
+	prev = frame[0];
+	head = prev & 1;
+	if(head) {
 		runLength[0] = -1;
-		head = 1;
-	} else {
-		head = 0;
 	}
 	runLength[head] = 1;
-	prev = frame[0];
 
 	for(i = 1; i < width; i++) {
 		if((frame[i] ^ prev) & 1) {
@@ -275,23 +274,24 @@ STATIC_IN_RELEASE int Mask_calcRunLengthV(int width, unsigned char *frame, int *
 	int i;
 	unsigned char prev;
 
-	if(frame[0] & 1) {
+	prev = frame[0];
+	head = prev & 1;
+	if(head) {
 		runLength[0] = -1;
-		head = 1;
 	} else {
-		head = 0;
 	}
 	runLength[head] = 1;
-	prev = frame[0];
+	frame += width;
 
 	for(i = 1; i < width; i++) {
-		if((frame[i * width] ^ prev) & 1) {
+		if((*frame ^ prev) & 1) {
 			head++;
 			runLength[head] = 1;
-			prev = frame[i * width];
+			prev = *frame;
 		} else {
 			runLength[head]++;
 		}
+		frame += width;
 	}
 
 	return head + 1;
@@ -300,33 +300,33 @@ STATIC_IN_RELEASE int Mask_calcRunLengthV(int width, unsigned char *frame, int *
 STATIC_IN_RELEASE int Mask_evaluateSymbol(int width, unsigned char *frame)
 {
 	int x, y;
-	int demerit = 0;
+	int penalty = 0;
 	int runLength[QRSPEC_WIDTH_MAX + 1];
 	int length;
 
-	demerit += Mask_calcN2(width, frame);
+	penalty += Mask_calcN2(width, frame);
 
 	for(y = 0; y < width; y++) {
 		length = Mask_calcRunLengthH(width, frame + y * width, runLength);
-		demerit += Mask_calcN1N3(length, runLength);
+		penalty += Mask_calcN1N3(length, runLength);
 	}
 
 	for(x = 0; x < width; x++) {
 		length = Mask_calcRunLengthV(width, frame + x, runLength);
-		demerit += Mask_calcN1N3(length, runLength);
+		penalty += Mask_calcN1N3(length, runLength);
 	}
 
-	return demerit;
+	return penalty;
 }
 
 unsigned char *Mask_mask(int width, unsigned char *frame, QRecLevel level)
 {
 	int i;
 	unsigned char *mask, *bestMask;
-	int minDemerit = INT_MAX;
+	int minPenalty = INT_MAX;
 	int blacks;
 	int bratio;
-	int demerit;
+	int penalty;
 	int w2 = width * width;
 
 	mask = (unsigned char *)malloc((size_t)w2);
@@ -339,16 +339,16 @@ unsigned char *Mask_mask(int width, unsigned char *frame, QRecLevel level)
 
 	for(i = 0; i < maskNum; i++) {
 //		n1 = n2 = n3 = n4 = 0;
-		demerit = 0;
+		penalty = 0;
 		blacks = maskMakers[i](width, frame, mask);
 		blacks += Mask_writeFormatInformation(width, mask, i, level);
 		bratio = (200 * blacks + w2) / w2 / 2; /* (int)(100*blacks/w2+0.5) */
-		demerit = (abs(bratio - 50) / 5) * N4;
-//		n4 = demerit;
-		demerit += Mask_evaluateSymbol(width, mask);
-//		printf("(%d,%d,%d,%d)=%d\n", n1, n2, n3 ,n4, demerit);
-		if(demerit < minDemerit) {
-			minDemerit = demerit;
+		penalty = (abs(bratio - 50) / 5) * N4;
+//		n4 = penalty;
+		penalty += Mask_evaluateSymbol(width, mask);
+//		printf("(%d,%d,%d,%d)=%d\n", n1, n2, n3 ,n4, penalty);
+		if(penalty < minPenalty) {
+			minPenalty = penalty;
 			memcpy(bestMask, mask, (size_t)w2);
 		}
 	}

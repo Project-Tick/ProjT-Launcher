@@ -7,6 +7,7 @@
  *
  * Copyright (C) 2002, 2003, 2004, 2006 Phil Karn, KA9Q
  * Copyright (C) 2014-2017 Kentaro Fukuchi <kentaro@fukuchi.org>
+ * Copyright (C) 2026 Project Tick
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

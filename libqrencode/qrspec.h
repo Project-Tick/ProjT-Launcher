@@ -3,6 +3,7 @@
  *
  * QR Code specification in convenient format.
  * Copyright (C) 2006-2017 Kentaro Fukuchi <kentaro@fukuchi.org>
+ * Copyright (C) 2026 Project Tick
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -159,7 +160,7 @@ extern unsigned char *QRspec_newFrame(int version);
  *****************************************************************************/
 
 /**
- * Mode indicator. See Table 2 of JIS X0510:2004, pp.16.
+ * Mode indicator. See Table 2 of JIS X0510:2004, p.16.
  */
 #define QRSPEC_MODEID_ECI        7
 #define QRSPEC_MODEID_NUM        1

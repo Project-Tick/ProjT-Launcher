@@ -1,0 +1,138 @@
+# libqrencode Kconfig - QR Code generator
+# Included from main Kconfig
+
+menuconfig LIBQRENCODE
+	bool "libqrencode - QR Code generator"
+	default y
+	help
+	  QR Code encoding library for generating QR codes.
+	  Used for device linking and sharing features.
+
+if LIBQRENCODE
+
+config LIBQRENCODE_VERSION
+	string "libqrencode version"
+	default "4.1.1"
+
+menu "Features"
+
+config LIBQRENCODE_MICRO_QR
+	bool "Micro QR Code support"
+	default y
+	help
+	  Enable Micro QR Code encoding (smaller codes).
+
+config LIBQRENCODE_STRUCTURED_APPEND
+	bool "Structured append mode"
+	default y
+	help
+	  Enable structured append for splitting data across
+	  multiple QR codes.
+
+config LIBQRENCODE_ECI
+	bool "Extended Channel Interpretation (ECI)"
+	default y
+	help
+	  Enable ECI mode for character set specification.
+
+config LIBQRENCODE_8BIT
+	bool "8-bit data mode"
+	default y
+	help
+	  Enable 8-bit byte mode for arbitrary data.
+
+config LIBQRENCODE_KANJI
+	bool "Kanji mode"
+	default y
+	help
+	  Enable Kanji character encoding mode.
+
+endmenu
+
+menu "Error Correction"
+
+choice
+	prompt "Default error correction level"
+	default LIBQRENCODE_EC_M
+
+config LIBQRENCODE_EC_L
+	bool "Level L (~7% recovery)"
+
+config LIBQRENCODE_EC_M
+	bool "Level M (~15% recovery)"
+
+config LIBQRENCODE_EC_Q
+	bool "Level Q (~25% recovery)"
+
+config LIBQRENCODE_EC_H
+	bool "Level H (~30% recovery)"
+
+endchoice
+
+endmenu
+
+menu "Threading"
+
+config LIBQRENCODE_THREAD_SAFETY
+	bool "Thread-safe encoding"
+	default y
+	help
+	  Enable thread-safe QR code generation.
+	  Uses pthread for mutex locking.
+
+endmenu
+
+menu "Output Formats"
+
+config LIBQRENCODE_PNG
+	bool "PNG output support"
+	default y
+	depends on LIB_LIBPNG
+	help
+	  Enable PNG image output (requires libpng).
+
+config LIBQRENCODE_SVG
+	bool "SVG output support"
+	default y
+	help
+	  Enable SVG vector output.
+
+config LIBQRENCODE_EPS
+	bool "EPS output support"
+	default n
+	help
+	  Enable Encapsulated PostScript output.
+
+config LIBQRENCODE_XPM
+	bool "XPM output support"
+	default n
+	help
+	  Enable X PixMap output.
+
+config LIBQRENCODE_ANSI
+	bool "ANSI terminal output"
+	default y
+	help
+	  Enable ANSI terminal text output.
+
+config LIBQRENCODE_ASCII
+	bool "ASCII text output"
+	default y
+	help
+	  Enable plain ASCII text output.
+
+config LIBQRENCODE_UTF8
+	bool "UTF-8 text output"
+	default y
+	help
+	  Enable UTF-8 block character output.
+
+endmenu
+
+config LIBQRENCODE_TOOLS
+	bool "Build qrencode command-line tool"
+	default n
+	help
+	  Build the qrencode CLI tool.
+
+endif # LIBQRENCODE

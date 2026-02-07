@@ -7,6 +7,7 @@
  *
  * Copyright (C) 2002, 2003, 2004, 2006 Phil Karn, KA9Q
  * Copyright (C) 2014-2017 Kentaro Fukuchi <kentaro@fukuchi.org>
+ * Copyright (C) 2026 Project Tick
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,7 +43,7 @@ static int initialized = 0;
 
 #define SYMBOL_SIZE (8)
 #define symbols ((1U << SYMBOL_SIZE) - 1)
-static const unsigned int proot = 0x11d; /* stands for x^8+x^4+x^3+x^2+1 (see pp.37 of JIS X0510:2004) */
+static const unsigned int proot = 0x11d; /* stands for x^8+x^4+x^3+x^2+1 (see p.37 of JIS X0510:2004) */
 
 /* min/max codeword length of ECC, calculated from the specification. */
 #define min_length (2)
@@ -63,8 +64,8 @@ static void RSECC_initLookupTable(void)
 
 	b = 1;
 	for(i = 0; i < symbols; i++) {
-		alpha[i] = b;
-		aindex[b] = i;
+		alpha[i] = (unsigned char)b;
+		aindex[b] = (unsigned char)i;
 		b <<= 1;
 		if(b & (symbols + 1)) {
 			b ^= proot;

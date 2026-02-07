@@ -48,6 +48,10 @@ specify the DPI of the generated PNG. (default=72)
 .PD
 .B \-\-type={PNG,PNG32,EPS,SVG,XPM,ANSI,ANSI256,ASCII,ASCIIi,UTF8,UTF8i,ANSIUTF8,ANSIUTF8i,ANSI256UTF8}
 specify the type of the generated image. (default=PNG)
+.br
+If ASCII*, UTF8*, or ANSI* is specified, the image will be displayed in the terminal by using
+text characters instead of generating an image file. If the name of the type is followed by 'i',
+the light/dark character will be reversed.
 .TP
 .B \-S, \-\-structured
 make structured symbols. Version number must be specified with '-v'.
@@ -133,4 +137,4 @@ Main Web Site: https://fukuchi.org/works/qrencode/
 Source code repository: https://github.com/fukuchi/libqrencode/
 
 .SH COPYRIGHT
-Copyright (C) 2006-2018 Kentaro Fukuchi.
+Copyright (C) 2006-2018, 2020 Kentaro Fukuchi.

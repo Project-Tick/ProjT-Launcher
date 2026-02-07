@@ -3,6 +3,7 @@
  *
  * Input data chunk class
  * Copyright (C) 2006-2017 Kentaro Fukuchi <kentaro@fukuchi.org>
+ * Copyright (C) 2026 Project Tick
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -88,7 +89,7 @@ extern QRinput *QRinput_dup(QRinput *input);
 extern const signed char QRinput_anTable[128];
 
 /**
- * Look up the alphabet-numeric convesion table (see JIS X0510:2004, pp.19).
+ * Look up the alphabet-numeric convesion table (see JIS X0510:2004, p.19).
  * @param __c__ character
  * @return value
  */
@@ -118,7 +119,7 @@ extern int QRinput_estimateBitStreamSize(QRinput *input, int version);
 extern int QRinput_splitEntry(QRinput_List *entry, int bytes);
 extern int QRinput_estimateVersion(QRinput *input);
 extern int QRinput_lengthOfCode(QRencodeMode mode, int version, int bits);
-extern int QRinput_insertStructuredAppendHeader(QRinput *input, int size, int index, unsigned char parity);
+extern int QRinput_insertStructuredAppendHeader(QRinput *input, int size, int index, int parity);
 #endif
 
 #endif /* QRINPUT_H */

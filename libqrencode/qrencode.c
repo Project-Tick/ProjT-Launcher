@@ -1,7 +1,8 @@
 /*
  * qrencode - QR Code encoder
  *
- * Copyright (C) 2006-2017 Kentaro Fukuchi <kentaro@fukuchi.org>
+ * Copyright (C) 2006-2018, 2020 Kentaro Fukuchi <kentaro@fukuchi.org>
+ * Copyright (C) 2026 Project Tick
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -297,57 +298,54 @@ static void FrameFiller_set(FrameFiller *filler, int width, unsigned char *frame
 
 static unsigned char *FrameFiller_next(FrameFiller *filler)
 {
-	unsigned char *p;
 	int x, y, w;
-
-	if(filler->bit == -1) {
-		filler->bit = 0;
-		return filler->frame + filler->y * filler->width + filler->x;
-	}
 
 	x = filler->x;
 	y = filler->y;
-	p = filler->frame;
 	w = filler->width;
+	for(;;) {
+		if(filler->bit == -1) {
+			filler->bit = 0;
+			break;
+		}
 
-	if(filler->bit == 0) {
-		x--;
-		filler->bit++;
-	} else {
-		x++;
-		y += filler->dir;
-		filler->bit--;
-	}
+		if(filler->bit == 0) {
+			x--;
+			filler->bit++;
+		} else {
+			x++;
+			y += filler->dir;
+			filler->bit--;
+		}
 
-	if(filler->dir < 0) {
-		if(y < 0) {
-			y = 0;
+		if(filler->dir < 0) {
+			if(y < 0) {
+				y = 0;
+				x -= 2;
+				filler->dir = 1;
+				if(!filler->mqr && x == 6) {
+					x--;
+					y = 9;
+				}
+			}
+		} else if(y == w) {
+			y = w - 1;
 			x -= 2;
-			filler->dir = 1;
+			filler->dir = -1;
 			if(!filler->mqr && x == 6) {
 				x--;
-				y = 9;
+				y -= 8;
 			}
 		}
-	} else if(y == w) {
-		y = w - 1;
-		x -= 2;
-		filler->dir = -1;
-		if(!filler->mqr && x == 6) {
-			x--;
-			y -= 8;
+		if(x < 0 || y < 0) return NULL;
+
+		if(!(filler->frame[y * w + x] & 0x80)) {
+			break;
 		}
 	}
-	if(x < 0 || y < 0) return NULL;
-
 	filler->x = x;
 	filler->y = y;
-
-	if(p[y * w + x] & 0x80) {
-		// This tail recursion could be optimized.
-		return FrameFiller_next(filler);
-	}
-	return &p[y * w + x];
+	return &filler->frame[filler->y * w + filler->x];
 }
 
 #ifdef WITH_TESTS
@@ -706,7 +704,7 @@ QRcode *QRcode_encodeString8bit(const char *string, int version, QRecLevel level
 		errno = EINVAL;
 		return NULL;
 	}
-	return QRcode_encodeDataReal((unsigned char *)string, (int)strlen(string), version, level, 0);
+	return QRcode_encodeDataReal((const unsigned char *)string, (int)strlen(string), version, level, 0);
 }
 
 QRcode *QRcode_encodeDataMQR(int size, const unsigned char *data, int version, QRecLevel level)
@@ -736,7 +734,7 @@ QRcode *QRcode_encodeString8bitMQR(const char *string, int version, QRecLevel le
 		version = 1;
 	}
 	for(i = version; i <= MQRSPEC_VERSION_MAX; i++) {
-		QRcode *code = QRcode_encodeDataReal((unsigned char *)string, (int)strlen(string), i, level, 1);
+		QRcode *code = QRcode_encodeDataReal((const unsigned char *)string, (int)strlen(string), i, level, 1);
 		if(code != NULL) return code;
 	}
 
@@ -792,20 +790,6 @@ int QRcode_List_size(QRcode_List *qrlist)
 
 	return size;
 }
-
-#if 0
-static unsigned char QRcode_parity(const char *str, int size)
-{
-	unsigned char parity = 0;
-	int i;
-
-	for(i = 0; i < size; i++) {
-		parity ^= str[i];
-	}
-
-	return parity;
-}
-#endif
 
 QRcode_List *QRcode_encodeInputStructured(QRinput_Struct *s)
 {
@@ -877,7 +861,7 @@ static QRcode_List *QRcode_encodeDataStructuredReal(
 	if(eightbit) {
 		ret = QRinput_append(input, QR_MODE_8, size, data);
 	} else {
-		ret = Split_splitStringToQRinput((char *)data, input, hint, casesensitive);
+		ret = Split_splitStringToQRinput((const char *)data, input, hint, casesensitive);
 	}
 	if(ret < 0) {
 		QRinput_free(input);
@@ -898,7 +882,7 @@ QRcode_List *QRcode_encodeString8bitStructured(const char *string, int version, 
 		errno = EINVAL;
 		return NULL;
 	}
-	return QRcode_encodeDataStructured((int)strlen(string), (unsigned char *)string, version, level);
+	return QRcode_encodeDataStructured((int)strlen(string), (const unsigned char *)string, version, level);
 }
 
 QRcode_List *QRcode_encodeStringStructured(const char *string, int version, QRecLevel level, QRencodeMode hint, int casesensitive)
@@ -907,7 +891,7 @@ QRcode_List *QRcode_encodeStringStructured(const char *string, int version, QRec
 		errno = EINVAL;
 		return NULL;
 	}
-	return QRcode_encodeDataStructuredReal((int)strlen(string), (unsigned char *)string, version, level, 0, hint, casesensitive);
+	return QRcode_encodeDataStructuredReal((int)strlen(string), (const unsigned char *)string, version, level, 0, hint, casesensitive);
 }
 
 /******************************************************************************

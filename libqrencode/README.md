@@ -1,4 +1,5 @@
-# libqrencode - a fast and compact QR Code encoding library [![Build Status](https://travis-ci.org/fukuchi/libqrencode.png?branch=master)](https://travis-ci.org/fukuchi/libqrencode)
+# libqrencode - a fast and compact QR Code encoding library
+[![build](https://github.com/fukuchi/libqrencode/workflows/build/badge.svg)](https://github.com/fukuchi/libqrencode/actions)
 
 **Attention:** This repository contains the development version of libqrencode. See <https://fukuchi.org/works/qrencode/> for the official stable releases. At this moment, the latest stable release is version 4.1.1.
 
@@ -55,7 +56,7 @@ process. For example, in Ubuntu, the following packages are needed:
 - autotools-dev
 - libtool
 - pkg-config
-- libpng12-dev
+- libpng-dev
 
 You can skip this process if you have "configure" script already (typically
 when you downloaded the source tarball from fukuchi.org.)
@@ -128,7 +129,7 @@ application.
 
 LICENSING INFORMATION
 =====================
-Copyright (C) 2006-2018 Kentaro Fukuchi
+Copyright (C) 2006-2018, 2020 Kentaro Fukuchi
 
 This library is free software; you can redistribute it and/or modify it under
 the terms of the GNU Lesser General Public License as published by the Free
@@ -220,6 +221,8 @@ Copyright (C) 2002, 2003, 2004, 2006 Phil Karn, KA9Q
 * Rosen Penev (@neheb)  - CMake bug fix patch
 * Mika Lindqvist (@mtl1979)
                         - replacement for gettimeofday() for Windows.
+* Darsey Litzenberger (@dlitz) and Edward E. (@cbrt64)
+                        - fixed invalid XPM output
 * Shigeyuki Hirai, Paul Janssens, wangsai, Gavan Fantom, Matthew Baker,
   Rob Ryan, Fred Steinhaeuser, Terry Burton, @chisj, @vlad417, Petr,
   Hassan Hajji, Emmanuel Blot, ßlúèÇhîp, Heiko Becker, Gavin Andresen,
@@ -227,5 +230,6 @@ Copyright (C) 2002, 2003, 2004, 2006 Phil Karn, KA9Q
   Antenore Gatta, Yoshimichi Inoue, Sunil Maganally, Norman Gray,
   Danomi Manchego, @minus7, Ian Sweet, @qianchenglenger, Ronald Michaels,
   Yuji Ueno, Jakub Wilk, @KangLin, @c-273, @thebunnyrules, @NancyLi1013,
-  Frédéric Wang, Dan Jacobson, Jan Tojnar, @xiaoyur347, @charmander
+  Frédéric Wang, Dan Jacobson, Jan Tojnar, @xiaoyur347, @charmander,
+  Yannick Schinko, @a6q
                         - bug report / suggestion / typo fixes

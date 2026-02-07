@@ -3,6 +3,7 @@
  *
  * Micro QR Code specification in convenient format.
  * Copyright (C) 2006-2017 Kentaro Fukuchi <kentaro@fukuchi.org>
+ * Copyright (C) 2026 Project Tick
  *
  * The following data / specifications are taken from
  * "Two dimensional symbol -- QR-code -- Basic Specification" (JIS X0510:2004)
@@ -46,7 +47,7 @@ typedef struct {
 
 /**
  * Table of the capacity of symbols
- * See Table 1 (pp.106) and Table 8 (pp.113) of Appendix 1, JIS X0510:2004.
+ * See Table 1 (p.106) and Table 8 (p.113) of Appendix 1, JIS X0510:2004.
  */
 static const MQRspec_Capacity mqrspecCapacity[MQRSPEC_VERSION_MAX + 1] = {
 	{  0, {0,  0,  0, 0}},
@@ -87,7 +88,7 @@ int MQRspec_getWidth(int version)
  *****************************************************************************/
 
 /**
- * See Table 3 (pp.107) of Appendix 1, JIS X0510:2004.
+ * See Table 3 (p.107) of Appendix 1, JIS X0510:2004.
  */
 static const int lengthTableBits[4][4] = {
 	{ 3, 4, 5, 6},
@@ -127,7 +128,7 @@ static const unsigned int formatInfo[4][8] = {
 	{0x4b1c, 0x5af7, 0x68ca, 0x7921, 0x0987, 0x186c, 0x2a51, 0x3bba}
 };
 
-/* See Table 10 of Appendix 1. (pp.115) */
+/* See Table 10 of Appendix 1. (p.115) */
 static const int typeTable[MQRSPEC_VERSION_MAX + 1][3] = {
 	{-1, -1, -1},
 	{ 0, -1, -1},
@@ -155,8 +156,8 @@ unsigned int MQRspec_getFormatInfo(int mask, int version, QRecLevel level)
 
 /**
  * Put a finder pattern.
- * @param frame
- * @param width
+ * @param frame destination frame data
+ * @param width frame width
  * @param ox,oy upper-left coordinate of the pattern
  */
 static void putFinderPattern(unsigned char *frame, int width, int ox, int oy)

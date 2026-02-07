@@ -3,6 +3,7 @@
  *
  * QR Code specification in convenient format.
  * Copyright (C) 2006-2017 Kentaro Fukuchi <kentaro@fukuchi.org>
+ * Copyright (C) 2026 Project Tick
  *
  * The following data / specifications are taken from
  * "Two dimensional symbol -- QR-code -- Basic Specification" (JIS X0510:2004)
@@ -41,15 +42,15 @@
  *****************************************************************************/
 
 typedef struct {
-	int width; //< Edge length of the symbol
-	int words;  //< Data capacity (bytes)
-	int remainder; //< Remainder bit (bits)
-	int ec[4];  //< Number of ECC code (bytes)
+	int width;     ///< Edge length of the symbol
+	int words;     ///< Data capacity (bytes)
+	int remainder; ///< Remainder bit (bits)
+	int ec[4];     ///< Number of ECC code (bytes)
 } QRspec_Capacity;
 
 /**
  * Table of the capacity of symbols
- * See Table 1 (pp.13) and Table 12-16 (pp.30-36), JIS X0510:2004.
+ * See Table 1 (p.13) and Table 12-16 (pp.30-36), JIS X0510:2004.
  */
 static const QRspec_Capacity qrspecCapacity[QRSPEC_VERSION_MAX + 1] = {
 	{  0,    0, 0, {   0,    0,    0,    0}},
@@ -264,7 +265,7 @@ void QRspec_getEccSpec(int version, QRecLevel level, int spec[5])
  * This array includes only the second and the third position of the alignment
  * patterns. Rest of them can be calculated from the distance between them.
  *
- * See Table 1 in Appendix E (pp.71) of JIS X0510:2004.
+ * See Table 1 in Appendix E (p.71) of JIS X0510:2004.
  */
 static const int alignmentPattern[QRSPEC_VERSION_MAX+1][2] = {
 	{ 0,  0},
@@ -280,8 +281,8 @@ static const int alignmentPattern[QRSPEC_VERSION_MAX+1][2] = {
 
 /**
  * Put an alignment marker.
- * @param frame
- * @param width
+ * @param frame destination frame data
+ * @param width frame width
  * @param ox,oy center coordinate of the pattern
  */
 static void QRspec_putAlignmentMarker(unsigned char *frame, int width, int ox, int oy)
@@ -351,7 +352,7 @@ static void QRspec_putAlignmentPattern(int version, unsigned char *frame, int wi
 
 /**
  * Version information pattern (BCH coded).
- * See Table 1 in Appendix D (pp.68) of JIS X0510:2004.
+ * See Table 1 in Appendix D (p.68) of JIS X0510:2004.
  */
 static const unsigned int versionPattern[QRSPEC_VERSION_MAX - 6] = {
 	0x07c94, 0x085bc, 0x09a99, 0x0a4d3, 0x0bbf6, 0x0c762, 0x0d847, 0x0e60d,
@@ -393,8 +394,8 @@ unsigned int QRspec_getFormatInfo(int mask, QRecLevel level)
 
 /**
  * Put a finder pattern.
- * @param frame
- * @param width
+ * @param frame destination frame data
+ * @param width frame width
  * @param ox,oy upper-left coordinate of the pattern
  */
 static void putFinderPattern(unsigned char *frame, int width, int ox, int oy)
