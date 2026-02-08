@@ -8,10 +8,6 @@ ProjT Launcher is a structurally disciplined fork of Prism Launcher, diverging
 intentionally to prevent maintenance decay, dependency drift, and architectural
 erosion over time.
 
-IMPORTANT:
-Please use CMake.
-The GNU Make-based build system is not yet ready for general use.
-
 Why ProjT Launcher?
 -------------------
 
