@@ -123,6 +123,7 @@ endif
 # Target platform (can be overridden for cross-compilation)
 # Values: linux, windows, macos
 TARGET_PLATFORM ?= $(HOST_PLATFORM)
+TARGET_OS ?= $(TARGET_PLATFORM)
 
 # Target architecture detection
 HOST_ARCH := $(shell uname -m 2>/dev/null || echo x86_64)
@@ -143,7 +144,7 @@ endif
 TARGET_ARCH ?= $(HOST_ARCH)
 
 export HOST_OS HOST_PLATFORM HOST_ARCH
-export TARGET_PLATFORM TARGET_ARCH
+export TARGET_PLATFORM TARGET_ARCH TARGET_OS
 
 # ============================================================================
 # CROSS-COMPILATION SUPPORT

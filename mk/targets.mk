@@ -34,6 +34,21 @@ else
 Q := @
 endif
 
+# Ensure MSVC toolchain uses a MSVC-compatible compiler (cl.exe/clang-cl)
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+  ifeq ($(filter cl.exe clang-cl,$(lastword $(CC))),)
+    CC := cl.exe
+  endif
+  ifeq ($(filter cl.exe clang-cl,$(lastword $(CXX))),)
+    CXX := cl.exe
+  endif
+  ifeq ($(strip $(AR)),)
+    AR := lib.exe
+  endif
+  RANLIB :=
+endif
+
+export CC CXX AR RANLIB
 export srctree KBUILD_OUTPUT Q V
 
 # Include configure system

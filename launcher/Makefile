@@ -29,6 +29,9 @@ MOC_INCLUDES := \
 	-I$(srctree)/quazip/quazip \
 	-I$(srctree)/include
 
+# Local include paths (bundled libs)
+includes-y := libpng zlib
+
 # Object output directory
 obj := $(KBUILD_OUTPUT)/launcher
 

@@ -13,7 +13,7 @@ obj := $(KBUILD_OUTPUT)/console
 ifeq ($(CONFIG_TARGET_WINDOWS),y)
 CONSOLE_SRCS := WindowsConsole.cpp
 else
-CONSOLE_SRCS :=
+CONSOLE_SRCS := ConsoleStub.cpp
 endif
 
 # Objects
