@@ -218,6 +218,17 @@ ifeq ($(TARGET_PLATFORM),windows)
     OBJCOPY = $(CROSS_COMPILE)objcopy
     STRIP   = $(CROSS_COMPILE)strip
     WINDRES = $(CROSS_COMPILE)windres
+
+    # MSYS2 CLANG environments may not provide gcc/g++
+    ifeq ($(HOST_PLATFORM),windows)
+      ifeq ($(shell command -v $(CC) 2>/dev/null),)
+        ifneq ($(shell command -v clang 2>/dev/null),)
+          CC := clang
+          CXX := clang++
+          LD := clang++
+        endif
+      endif
+    endif
     
     # MinGW flags
     CFLAGS_BASE   = -Wall -Wextra
