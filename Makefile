@@ -466,11 +466,26 @@ HOSTCFLAGS_lexer.lex.o += -I$(obj)
 cfg-unquote = $(strip $(subst ",,$(1)))
 _CC_CFG := $(call cfg-unquote,$(CONFIG_CC))
 _CXX_CFG := $(call cfg-unquote,$(CONFIG_CXX))
-ifneq ($(_CC_CFG),)
-  CC := $(_CC_CFG)
-endif
-ifneq ($(_CXX_CFG),)
-  CXX := $(_CXX_CFG)
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+  # Avoid overriding MSVC toolchain with auto-detected clang/gcc from configure.
+  # Allow only MSVC-compatible drivers if explicitly set.
+  ifneq ($(_CC_CFG),)
+    ifneq ($(filter cl.exe clang-cl,$(_CC_CFG)),)
+      CC := $(_CC_CFG)
+    endif
+  endif
+  ifneq ($(_CXX_CFG),)
+    ifneq ($(filter cl.exe clang-cl,$(_CXX_CFG)),)
+      CXX := $(_CXX_CFG)
+    endif
+  endif
+else
+  ifneq ($(_CC_CFG),)
+    CC := $(_CC_CFG)
+  endif
+  ifneq ($(_CXX_CFG),)
+    CXX := $(_CXX_CFG)
+  endif
 endif
 
 # Re-apply ccache/sccache wrapper after CONFIG override

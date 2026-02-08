@@ -30,7 +30,25 @@ CXXFLAGS ?= $(CFLAGS) -std=c++17
 
 ZLIB_DIR := $(srctree)/zlib
 ZLIB_OBJDIR := $(OBJDIR)/zlib
+ZLIB_STATIC_LIB := $(LIBDIR)/libz$(LIB_EXT)
+
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+ZLIB_INCLUDES := /I$(ZLIB_DIR)
+ZLIB_DEFINES := /DHAVE_SYS_TYPES_H /DHAVE_STDINT_H /DHAVE_STDDEF_H /DZLIB_DLL
+ZLIB_COMPILE_C = $(CC) $(ZLIB_CFLAGS) $(ZLIB_INCLUDES) /c /Fo$@ $<
+ZLIB_AR = $(AR) /nologo /OUT:$@ $^
+else
 ZLIB_INCLUDES := -I$(ZLIB_DIR)
+ZLIB_DEFINES := -DHAVE_SYS_TYPES_H -DHAVE_STDINT_H -DHAVE_STDDEF_H
+ifeq ($(TARGET_OS),windows)
+    ZLIB_DEFINES += -DZLIB_DLL
+else
+    ZLIB_DEFINES += -DHAVE_UNISTD_H
+endif
+ZLIB_COMPILE_C = $(CC) $(ZLIB_CFLAGS) $(ZLIB_INCLUDES) -c -o $@ $<
+ZLIB_AR = $(AR) rcs $@ $^
+ZLIB_RANLIB = $(RANLIB) $@ 2>/dev/null || true
+endif
 
 ZLIB_SOURCES := \
     adler32.c \
@@ -49,26 +67,24 @@ ZLIB_SOURCES := \
     uncompr.c \
     zutil.c
 
-ZLIB_OBJS := $(addprefix $(ZLIB_OBJDIR)/,$(ZLIB_SOURCES:.c=.o))
+ZLIB_OBJS := $(addprefix $(ZLIB_OBJDIR)/,$(ZLIB_SOURCES:.c=$(OBJ_EXT)))
 
 # Zlib build flags (minimal, library doesn't need many flags)
-ZLIB_CFLAGS := $(CFLAGS) -DHAVE_SYS_TYPES_H -DHAVE_STDINT_H -DHAVE_STDDEF_H
-ifeq ($(TARGET_OS),windows)
-    ZLIB_CFLAGS += -DZLIB_DLL
-else
-    ZLIB_CFLAGS += -DHAVE_UNISTD_H
+ZLIB_CFLAGS := $(CFLAGS) $(ZLIB_DEFINES)
+
+$(ZLIB_OBJDIR)/%$(OBJ_EXT): $(ZLIB_DIR)/%.c | $(ZLIB_OBJDIR)
+	@mkdir -p $(@D)
+	$(Q)$(ZLIB_COMPILE_C)
+
+$(ZLIB_STATIC_LIB): $(ZLIB_OBJS)
+	@mkdir -p $(@D)
+	$(Q)$(ZLIB_AR)
+ifneq ($(WINDOWS_TOOLCHAIN),msvc)
+	$(Q)$(ZLIB_RANLIB)
 endif
 
-$(ZLIB_OBJDIR)/%.o: $(ZLIB_DIR)/%.c | $(ZLIB_OBJDIR)
-	@mkdir -p $(@D)
-	$(Q)$(CC) $(ZLIB_CFLAGS) $(ZLIB_INCLUDES) -c -o $@ $<
-
-$(LIBDIR)/libz.a: $(ZLIB_OBJS)
-	@mkdir -p $(@D)
-	$(Q)$(AR) rcs $@ $^
-	$(Q)$(RANLIB) $@ 2>/dev/null || true
-
 # Shared library version of zlib (for tests to avoid symbol conflicts with Qt)
+ifneq ($(WINDOWS_TOOLCHAIN),msvc)
 ZLIB_SHARED_OBJS := $(addprefix $(ZLIB_OBJDIR)/shared/,$(ZLIB_SOURCES:.c=.o))
 
 $(ZLIB_OBJDIR)/shared/%.o: $(ZLIB_DIR)/%.c
@@ -79,16 +95,22 @@ $(LIBDIR)/libprojtZ.so.1: $(ZLIB_SHARED_OBJS)
 	@mkdir -p $(@D)
 	$(Q)$(CC) -shared -Wl,-soname,libprojtZ.so.1 -o $@ $^
 	$(Q)ln -sf libprojtZ.so.1 $(LIBDIR)/libprojtZ.so
+endif
 
 $(ZLIB_OBJDIR):
 	@mkdir -p $@
 
-zlib: $(LIBDIR)/libz.a
+zlib: $(ZLIB_STATIC_LIB)
 
+ifneq ($(WINDOWS_TOOLCHAIN),msvc)
 zlib-shared: $(LIBDIR)/libprojtZ.so.1
+else
+zlib-shared:
+	@echo "  SKIP    zlib-shared (MSVC)"
+endif
 
 zlib-clean:
-	$(Q)rm -rf $(ZLIB_OBJDIR) $(LIBDIR)/libz.a $(LIBDIR)/libprojtZ.so*
+	$(Q)rm -rf $(ZLIB_OBJDIR) $(ZLIB_STATIC_LIB) $(LIBDIR)/libprojtZ.so*
 
 .PHONY: zlib zlib-shared zlib-clean
 
@@ -305,7 +327,7 @@ export QT_CFLAGS QT_LIBS QT_MOC QT_UIC QT_RCC
 SUBTREE_LIBS :=
 
 ifeq ($(call cfg-yes,$(CONFIG_LIB_ZLIB)),y)
-    SUBTREE_LIBS += $(LIBDIR)/libz.a
+    SUBTREE_LIBS += $(ZLIB_STATIC_LIB)
 endif
 
 subtrees: $(SUBTREE_LIBS) tomlplusplus json
