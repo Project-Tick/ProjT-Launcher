@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "meta"
-version = "0.0.1"
+version = "0.0.5-1"
 description = "ProjT Launcher meta generator"
 authors = ["Yong Do Hyun <froster12@naver.com>"]
 license = "MS-PL"
-readme = "README.md"
+readme = "README"
 repository = "https://github.com/Project-Tick/meta"
 documentation = "https://github.com/Project-Tick/meta"
 keywords = ["metadata", "projt", "launcher"]
