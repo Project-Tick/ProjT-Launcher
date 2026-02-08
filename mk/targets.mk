@@ -16,6 +16,15 @@
 #   4. libs       - Build local libraries
 #   5. launcher   - Build main application
 
+# Force bash for recipe execution (PIPESTATUS, pipefail etc.)
+# Use bash from PATH on Windows (MSYS2/Git Bash), /bin/bash on Unix
+ifeq ($(OS),Windows_NT)
+SHELL := bash
+else
+SHELL := /bin/bash
+endif
+.SHELLFLAGS := -c
+
 -include $(KBUILD_OUTPUT)/.config
 
 # Quiet/Verbose
