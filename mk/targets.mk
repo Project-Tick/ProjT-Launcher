@@ -35,6 +35,8 @@ Q := @
 endif
 
 # Ensure MSVC toolchain uses a MSVC-compatible compiler (cl.exe/clang-cl)
+# Keep a usable ranlib in non-MSVC builds; MSVC archives do not need ranlib.
+RANLIB ?= ranlib
 ifeq ($(WINDOWS_TOOLCHAIN),msvc)
   ifeq ($(filter cl.exe clang-cl,$(lastword $(CC))),)
     CC := cl.exe
@@ -50,6 +52,11 @@ endif
 
 export CC CXX AR RANLIB
 export srctree KBUILD_OUTPUT Q V
+
+JAVAC ?= javac
+JAR ?= jar
+JAVA_TOOLS_AVAILABLE := $(if $(shell command -v $(firstword $(JAVAC)) >/dev/null 2>&1 && command -v $(firstword $(JAR)) >/dev/null 2>&1 && $(JAVAC) -version >/dev/null 2>&1 && echo y),y,)
+export JAVAC JAR
 
 # Include configure system
 include $(srctree)/mk/configure.mk
@@ -85,6 +92,38 @@ LIBS_TIER3 := rainbow qdcss LocalPeer quazip
 # Platform-specific
 ifeq ($(CONFIG_TARGET_LINUX),y)
 LIBS_PLATFORM := gamemode
+endif
+
+LAUNCHER_CORE_LIBS := \
+	$(KBUILD_OUTPUT)/launcher/liblauncher.a \
+	$(KBUILD_OUTPUT)/ui/libui.a \
+	$(KBUILD_OUTPUT)/minecraft/libminecraft.a \
+	$(KBUILD_OUTPUT)/modplatform/libmodplatform.a \
+	$(KBUILD_OUTPUT)/net/libnet.a \
+	$(KBUILD_OUTPUT)/meta/libmeta.a \
+	$(KBUILD_OUTPUT)/java/libjava.a \
+	$(KBUILD_OUTPUT)/launch/liblaunch.a \
+	$(KBUILD_OUTPUT)/settings/libsettings.a \
+	$(KBUILD_OUTPUT)/tasks/libtasks.a \
+	$(KBUILD_OUTPUT)/tools/libtools.a \
+	$(KBUILD_OUTPUT)/translations/libtranslations.a \
+	$(KBUILD_OUTPUT)/logs/liblogs.a \
+	$(KBUILD_OUTPUT)/news/libnews.a \
+	$(KBUILD_OUTPUT)/screenshots/libscreenshots.a \
+	$(KBUILD_OUTPUT)/icons/libicons.a \
+	$(KBUILD_OUTPUT)/console/libconsole.a \
+	$(KBUILD_OUTPUT)/updater/libupdater.a
+
+ifeq ($(TARGET_PLATFORM),macos)
+LINK_CORE_LIBS := $(foreach lib,$(LAUNCHER_CORE_LIBS),-Wl,-force_load,$(lib))
+LINK_SYSTEM_LIBS := -lz -lpthread
+LINK_PLATFORM_LIBS := -framework Cocoa
+LINK_RPATH_FLAGS := -Wl,-rpath,@loader_path/../lib -Wl,-rpath,$(QT_PREFIX)/lib
+else
+LINK_CORE_LIBS := -Wl,--whole-archive $(LAUNCHER_CORE_LIBS) -Wl,--no-whole-archive
+LINK_SYSTEM_LIBS := -lz -lpthread -ldl
+LINK_PLATFORM_LIBS :=
+LINK_RPATH_FLAGS := -Wl,-rpath,'$$ORIGIN/../lib:$(QT_PREFIX)/lib'
 endif
 
 # Project modules
@@ -246,8 +285,20 @@ projt-modules: libs-tier0 libs-tier1 libs-tier2 libs-tier3
 
 java-modules: libs-all
 	@echo "=== Building Java Modules ==="
+ifeq ($(call cfg-yes,$(CONFIG_MOD_JAVACHECK)),y)
+ifeq ($(JAVA_TOOLS_AVAILABLE),y)
 	$(call build_local,javacheck)
+else
+	@echo "  SKIP    javacheck (missing javac/jar; install a JDK or disable CONFIG_MOD_JAVACHECK)"
+endif
+endif
+ifeq ($(call cfg-yes,$(CONFIG_MOD_LAUNCHERJAVA)),y)
+ifeq ($(JAVA_TOOLS_AVAILABLE),y)
 	$(call build_local,launcherjava)
+else
+	@echo "  SKIP    launcherjava (missing javac/jar; install a JDK or disable CONFIG_MOD_LAUNCHERJAVA)"
+endif
+endif
 
 # ============================================================================
 # PHASE 6: LAUNCHER TARGETS
@@ -291,30 +342,11 @@ launcher-link: launcher-main
 	$(Q)cp -a $(QT_PREFIX)/bin/Qt6*.dll $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
 	@# Copy cmark library (platform-aware)
 	$(Q)cp -a $(srctree)/cmark/build/src/libcmark.so* $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
-	$(Q)cp -a $(srctree)/cmark/build/src/libcmark.dylib $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
+	$(Q)cp -a $(srctree)/cmark/build/src/libcmark*.dylib $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
 	$(Q)cp -a $(srctree)/cmark/build/src/cmark.dll $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
 	$(Q)cp -a $(srctree)/cmark/build/src/libcmark.dll $(KBUILD_OUTPUT)/lib/ 2>/dev/null || true
 	$(Q)$(CXX) -o $(KBUILD_OUTPUT)/bin/projtlauncher \
-		-Wl,--whole-archive \
-		$(KBUILD_OUTPUT)/launcher/liblauncher.a \
-		$(KBUILD_OUTPUT)/ui/libui.a \
-		$(KBUILD_OUTPUT)/minecraft/libminecraft.a \
-		$(KBUILD_OUTPUT)/modplatform/libmodplatform.a \
-		$(KBUILD_OUTPUT)/net/libnet.a \
-		$(KBUILD_OUTPUT)/meta/libmeta.a \
-		$(KBUILD_OUTPUT)/java/libjava.a \
-		$(KBUILD_OUTPUT)/launch/liblaunch.a \
-		$(KBUILD_OUTPUT)/settings/libsettings.a \
-		$(KBUILD_OUTPUT)/tasks/libtasks.a \
-		$(KBUILD_OUTPUT)/tools/libtools.a \
-		$(KBUILD_OUTPUT)/translations/libtranslations.a \
-		$(KBUILD_OUTPUT)/logs/liblogs.a \
-		$(KBUILD_OUTPUT)/news/libnews.a \
-		$(KBUILD_OUTPUT)/screenshots/libscreenshots.a \
-		$(KBUILD_OUTPUT)/icons/libicons.a \
-		$(KBUILD_OUTPUT)/console/libconsole.a \
-		$(KBUILD_OUTPUT)/updater/libupdater.a \
-		-Wl,--no-whole-archive \
+		$(LINK_CORE_LIBS) \
 		$(KBUILD_OUTPUT)/lib/libbuildconfig.a \
 		$(KBUILD_OUTPUT)/lib/libsysteminfo.a \
 		$(KBUILD_OUTPUT)/lib/libquazip.a \
@@ -328,9 +360,9 @@ launcher-link: launcher-main
 		$(KBUILD_OUTPUT)/lib/libbz2.a \
 		-L$(KBUILD_OUTPUT)/lib -lcmark \
 		$(QT_LIBS) \
-		-L$(QT_PREFIX)/lib -lQt6OpenGLWidgets -lQt6OpenGL -lQt6NetworkAuth -lQt6Xml -lQt6DBus \
-		-lz -lpthread -ldl \
-		-Wl,-rpath,'$$ORIGIN/../lib:$(QT_PREFIX)/lib'
+		$(LINK_SYSTEM_LIBS) \
+		$(LINK_PLATFORM_LIBS) \
+		$(LINK_RPATH_FLAGS)
 	@echo "  LINK    $(KBUILD_OUTPUT)/bin/projtlauncher"
 
 # ============================================================================
@@ -398,9 +430,25 @@ program_info:
 
 # Java
 javacheck:
+ifeq ($(call cfg-yes,$(CONFIG_MOD_JAVACHECK)),y)
+ifeq ($(JAVA_TOOLS_AVAILABLE),y)
 	$(call build_local,javacheck)
+else
+	@echo "  SKIP    javacheck (missing javac/jar; install a JDK or disable CONFIG_MOD_JAVACHECK)"
+endif
+else
+	@echo "  SKIP    javacheck (CONFIG_MOD_JAVACHECK is disabled)"
+endif
 launcherjava:
+ifeq ($(call cfg-yes,$(CONFIG_MOD_LAUNCHERJAVA)),y)
+ifeq ($(JAVA_TOOLS_AVAILABLE),y)
 	$(call build_local,launcherjava)
+else
+	@echo "  SKIP    launcherjava (missing javac/jar; install a JDK or disable CONFIG_MOD_LAUNCHERJAVA)"
+endif
+else
+	@echo "  SKIP    launcherjava (CONFIG_MOD_LAUNCHERJAVA is disabled)"
+endif
 
 # ============================================================================
 # CLEAN TARGETS

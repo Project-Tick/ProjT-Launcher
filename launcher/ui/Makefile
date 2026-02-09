@@ -25,6 +25,9 @@ endif
 # Use Qt tools if not set
 MOC ?= $(QT_MOC)
 UIC ?= $(QT_UIC)
+ifeq ($(TARGET_PLATFORM),macos)
+QT_DEFINES += -DQ_OS_MACOS
+endif
 
 obj := $(KBUILD_OUTPUT)/ui
 
@@ -81,7 +84,9 @@ UI_TASKS_OBJS := $(patsubst $(srctree)/launcher/ui/%.cpp,$(obj)/%.o,$(UI_TASKS_S
 
 # Themes
 UI_THEMES_SRCS := $(wildcard $(srctree)/launcher/ui/themes/*.cpp)
-UI_THEMES_OBJS := $(patsubst $(srctree)/launcher/ui/%.cpp,$(obj)/%.o,$(UI_THEMES_SRCS))
+UI_THEMES_SRCS += $(wildcard $(srctree)/launcher/ui/themes/*.mm)
+UI_THEMES_OBJS := $(patsubst $(srctree)/launcher/ui/%.cpp,$(obj)/%.o,$(filter %.cpp,$(UI_THEMES_SRCS)))
+UI_THEMES_OBJS += $(patsubst $(srctree)/launcher/ui/%.mm,$(obj)/%.mm.o,$(filter %.mm,$(UI_THEMES_SRCS)))
 
 # Widgets
 UI_WIDGETS_SRCS := $(wildcard $(srctree)/launcher/ui/widgets/*.cpp)
@@ -167,6 +172,11 @@ $(obj)/%.o: $(srctree)/launcher/ui/%.cpp | $(UIC_HEADERS)
 	@mkdir -p $(dir $@)
 	@echo "  CXX     $<"
 	$(Q)$(CXX) $(UI_CXXFLAGS) -I$(dir $@) -c -o $@ $<
+
+$(obj)/%.mm.o: $(srctree)/launcher/ui/%.mm | $(UIC_HEADERS)
+	@mkdir -p $(dir $@)
+	@echo "  OBJCXX  $<"
+	$(Q)$(CXX) $(UI_CXXFLAGS) -I$(dir $@) -ObjC++ -c -o $@ $<
 
 # UIC processing - different paths
 $(obj)/ui_%.h: $(srctree)/launcher/ui/%.ui

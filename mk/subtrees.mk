@@ -87,14 +87,24 @@ endif
 ifneq ($(WINDOWS_TOOLCHAIN),msvc)
 ZLIB_SHARED_OBJS := $(addprefix $(ZLIB_OBJDIR)/shared/,$(ZLIB_SOURCES:.c=.o))
 
+ifeq ($(TARGET_PLATFORM),macos)
+ZLIB_SHARED_LIB := $(LIBDIR)/libprojtZ.dylib
+else
+ZLIB_SHARED_LIB := $(LIBDIR)/libprojtZ.so.1
+endif
+
 $(ZLIB_OBJDIR)/shared/%.o: $(ZLIB_DIR)/%.c
 	@mkdir -p $(@D)
 	$(Q)$(CC) $(ZLIB_CFLAGS) -fPIC $(ZLIB_INCLUDES) -c -o $@ $<
 
-$(LIBDIR)/libprojtZ.so.1: $(ZLIB_SHARED_OBJS)
+$(ZLIB_SHARED_LIB): $(ZLIB_SHARED_OBJS)
 	@mkdir -p $(@D)
+ifeq ($(TARGET_PLATFORM),macos)
+	$(Q)$(CC) -dynamiclib -Wl,-install_name,@rpath/libprojtZ.dylib -o $@ $^
+else
 	$(Q)$(CC) -shared -Wl,-soname,libprojtZ.so.1 -o $@ $^
 	$(Q)ln -sf libprojtZ.so.1 $(LIBDIR)/libprojtZ.so
+endif
 endif
 
 $(ZLIB_OBJDIR):
@@ -103,14 +113,14 @@ $(ZLIB_OBJDIR):
 zlib: $(ZLIB_STATIC_LIB)
 
 ifneq ($(WINDOWS_TOOLCHAIN),msvc)
-zlib-shared: $(LIBDIR)/libprojtZ.so.1
+zlib-shared: $(ZLIB_SHARED_LIB)
 else
 zlib-shared:
 	@echo "  SKIP    zlib-shared (MSVC)"
 endif
 
 zlib-clean:
-	$(Q)rm -rf $(ZLIB_OBJDIR) $(ZLIB_STATIC_LIB) $(LIBDIR)/libprojtZ.so*
+	$(Q)rm -rf $(ZLIB_OBJDIR) $(ZLIB_STATIC_LIB) $(LIBDIR)/libprojtZ.so* $(LIBDIR)/libprojtZ*.dylib
 
 .PHONY: zlib zlib-shared zlib-clean
 

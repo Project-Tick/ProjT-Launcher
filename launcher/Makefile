@@ -16,6 +16,9 @@
 MOC ?= $(QT_MOC)
 UIC ?= $(QT_UIC)
 RCC ?= $(QT_RCC)
+ifeq ($(TARGET_PLATFORM),macos)
+QT_DEFINES += -DQ_OS_MACOS
+endif
 
 # Qt MOC include paths (for resolving dependencies in headers)
 MOC_INCLUDES := \

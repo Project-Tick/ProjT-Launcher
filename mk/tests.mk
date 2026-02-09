@@ -67,6 +67,8 @@ endif
 
 QT_CFLAGS := $(shell pkg-config --cflags $(QT_MODULES) 2>/dev/null) $(QT_NETWORKAUTH_CFLAGS)
 QT_LIBS := $(shell pkg-config --libs $(QT_MODULES) 2>/dev/null) $(QT_NETWORKAUTH_LIBS)
+OPENSSL_CFLAGS := $(shell pkg-config --cflags openssl 2>/dev/null)
+OPENSSL_LIBS := $(shell pkg-config --libs openssl 2>/dev/null || echo "-lssl -lcrypto")
 
 # MOC path
 MOC := $(shell pkg-config --variable=libexecdir Qt6Core 2>/dev/null)/moc
@@ -136,7 +138,8 @@ COMMON_CXXFLAGS := $(TEST_CPP_STD) -fPIC -g -O0 \
 	-I$(KBUILD_OUTPUT)/include \
 	-I$(KBUILD_OUTPUT)/launcher \
 	-I$(TEST_OUT) \
-	$(QT_CFLAGS)
+	$(QT_CFLAGS) \
+	$(OPENSSL_CFLAGS)
 
 # Full link flags with all libraries
 # Use --start-group/--end-group to resolve circular dependencies
@@ -145,8 +148,17 @@ COMMON_CXXFLAGS := $(TEST_CPP_STD) -fPIC -g -O0 \
 # Qt links to system zlib, so we use a renamed shared lib to avoid Z_VERSION_ERROR
 CMARK_LIBS := -L$(KBUILD_OUTPUT)/lib -lcmark -Wl,-rpath,$(KBUILD_OUTPUT)/lib
 PROJT_ZLIB := -L$(KBUILD_OUTPUT)/lib -lprojtZ -Wl,-rpath,$(KBUILD_OUTPUT)/lib
-COMMON_LDFLAGS := -Wl,--start-group $(LAUNCHER_LIBS) -Wl,--end-group \
-	$(PROJT_ZLIB) $(QT_LIBS) $(CMARK_LIBS) -lssl -lcrypto -lpthread
+ifeq ($(TARGET_PLATFORM),macos)
+  LIB_GROUP_BEGIN :=
+  LIB_GROUP_END :=
+  PLATFORM_TEST_LIBS := -framework Cocoa
+else
+  LIB_GROUP_BEGIN := -Wl,--start-group
+  LIB_GROUP_END := -Wl,--end-group
+  PLATFORM_TEST_LIBS :=
+endif
+COMMON_LDFLAGS := $(LIB_GROUP_BEGIN) $(LAUNCHER_LIBS) $(LIB_GROUP_END) \
+	$(PROJT_ZLIB) $(QT_LIBS) $(CMARK_LIBS) $(OPENSSL_LIBS) -lpthread $(PLATFORM_TEST_LIBS)
 
 # ============================================================================
 # All Tests

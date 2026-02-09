@@ -264,9 +264,7 @@ namespace Net
 			}
 
 			/*
-			 * Next, make sure the URL is parsed in tolerant mode. Qt doesn't parse the location header in tolerant
-			 * mode, which causes issues.
-			 * FIXME: report Qt bug for this
+			 * Parse in tolerant mode to recover malformed Location header values.
 			 */
 			redirect = QUrl(redirectStr, QUrl::TolerantMode);
 			if (!redirect.isValid())
@@ -280,6 +278,12 @@ namespace Net
 		else
 		{
 			qCDebug(logCat) << getUid().toString() << "Location header:" << redirect;
+		}
+
+		// Handle non-absolute redirects (for example "next" relative to the current path).
+		if (redirect.isRelative())
+		{
+			redirect = m_reply->url().resolved(redirect);
 		}
 
 		m_url = QUrl(redirect.toString());
