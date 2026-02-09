@@ -346,7 +346,7 @@ export OBJ_EXT LIB_EXT DLL_EXT EXE_EXT
 # Kconfig Paths
 # ============================================================================
 
-KCONFIG_SRCDIR := $(srctree)/kconfig
+KCONFIG_SRCDIR := $(srctree)/scripts/kconfig
 KCONFIG_OBJDIR := $(KBUILD_OUTPUT)/kconfig
 KCONFIG_CONFIG ?= $(KBUILD_OUTPUT)/.config
 KCONFIG_AUTOCONFIG ?= $(KBUILD_OUTPUT)/include/config/auto.conf
