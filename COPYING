@@ -1,4 +1,5 @@
-## ProjT Launcher
+ProjT Launcher
+==============
 
      ProjT Launcher - Minecraft Launcher
      Copyright (C) 2026 Project Tick
@@ -13,7 +14,8 @@
      GNU General Public License for more details.
 
      You should have received a copy of the GNU General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+     along with this program.  If not, write to the Free Software Foundation,
+     Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
     This file incorporates work covered by the following copyright and
     permission notice:
@@ -44,7 +46,8 @@
          See the License for the specific language governing permissions and
          limitations under the License.
 
-## Prism Launcher
+Prism Launcher
+==============
 
      Prism Launcher - Minecraft Launcher
      Copyright (C) 2022-2025 Prism Launcher Contributors
@@ -59,7 +62,8 @@
      GNU General Public License for more details.
 
      You should have received a copy of the GNU General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+     along with this program.  If not, write to the Free Software Foundation,
+     Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
     This file incorporates work covered by the following copyright and
     permission notice:
@@ -78,7 +82,8 @@
          See the License for the specific language governing permissions and
          limitations under the License.
 
-## PolyMC
+PolyMC
+======
 
      PolyMC - Minecraft Launcher
      Copyright (C) 2021-2022 PolyMC Contributors
@@ -93,7 +98,8 @@
      GNU General Public License for more details.
 
      You should have received a copy of the GNU General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+     along with this program.  If not, write to the Free Software Foundation,
+     Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
     This file incorporates work covered by the following copyright and
     permission notice:
@@ -112,7 +118,8 @@
          See the License for the specific language governing permissions and
          limitations under the License.
 
-## MultiMC
+MultiMC
+=======
 
      Copyright 2013-2021 MultiMC Contributors
 
@@ -128,9 +135,10 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 
-## bzip2 (`bzip2/`)
+bzip2 (`bzip2/`)
+================
 
-     This project includes a forked copy of bzip2.
+     This project includes a forked copy and subtree of bzip2.
 
      Copyright (C) 1996–2010 Julian R Seward.
 
@@ -139,7 +147,8 @@
      See:
      - bzip2/COPYING
 
-## cmark (`cmark/`)
+cmark (`cmark/`)
+================
 
      This project includes a forked copy of cmark.
 
@@ -157,7 +166,8 @@
      Applicable license information is provided via SPDX headers in the source
      files. Full license texts are available in LICENSES/.
 
-## extra-cmake-modules (`extra-cmake-modules/`)
+extra-cmake-modules (`extra-cmake-modules/`)
+============================================
 
      extra-cmake-modules is a collection of CMake modules originating from KDE.
 
@@ -178,7 +188,8 @@
      These licenses apply only to the extra-cmake-modules component and do
      not affect the overall GPL-3.0-only licensing of ProjT Launcher.
 
-## launcherjava (`launcherjava/`)
+launcherjava (`launcherjava/`)
+==============================
 
      ProjT Launcher - Minecraft Launcher
      Copyright (C) 2026 Project Tick
@@ -210,7 +221,8 @@
      so, delete this exception statement from your version.
 
      You should have received a copy of the GNU General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+     along with this program.  If not, write to the Free Software Foundation,
+     Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
     This file incorporates work covered by the following copyright and
     permission notice:
@@ -245,7 +257,8 @@
          so, delete this exception statement from your version.
 
          You should have received a copy of the GNU General Public License
-         along with this program.  If not, see <https://www.gnu.org/licenses/>.
+         along with this program.  If not, write to the Free Software Foundation,
+         Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
         This file incorporates work covered by the following copyright and
         permission notice:
@@ -280,7 +293,8 @@
              so, delete this exception statement from your version.
 
              You should have received a copy of the GNU General Public License
-             along with this program.  If not, see <https://www.gnu.org/licenses/>.
+             along with this program.  If not, write to the Free Software Foundation,
+             Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
             This file incorporates work covered by the following copyright and
             permission notice:
@@ -299,7 +313,8 @@
                  See the License for the specific language governing permissions and
                  limitations under the License.
 
-## JavaCheck (`javacheck/`)
+JavaCheck (`javacheck/`)
+========================
 
      Project Tick JavaCheck - A simple Java system property checker
      Copyright (C) 2026 Project Tick
@@ -326,10 +341,11 @@
      exception is granted by the original copyright holder.
 
      You should have received a copy of the GNU General Public License
-     along with this program; if not, see
-     <https://www.gnu.org/licenses/>.
+     along with this program; If not, write to the Free Software Foundation,
+     Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-## libnbtplusplus (`libnbtplusplus/`)
+libnbtplusplus (`libnbtplusplus/`)
+==================================
 
      libnbt++ - A library for the Minecraft Named Binary Tag format.
      Copyright (C) 2026 Project Tick
@@ -345,28 +361,31 @@
      GNU Lesser General Public License for more details.
 
      You should have received a copy of the GNU Lesser General Public License
-     along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
+     along with libnbt++.  If not, write to the Free Software Foundation, Inc.,
+     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
     This file incorporates work covered by the following copyright and
     permission notice:
 
-        libnbt++ - A library for the Minecraft Named Binary Tag format.
-        Copyright (C) 2013, 2015  ljfa-ag
+         libnbt++ - A library for the Minecraft Named Binary Tag format.
+         Copyright (C) 2013, 2015  ljfa-ag
 
-        libnbt++ is free software: you can redistribute it and/or modify
-        it under the terms of the GNU Lesser General Public License as published by
-        the Free Software Foundation, either version 3 of the License, or
-        (at your option) any later version.
+         libnbt++ is free software: you can redistribute it and/or modify
+         it under the terms of the GNU Lesser General Public License as published by
+         the Free Software Foundation, either version 3 of the License, or
+         (at your option) any later version.
 
-        libnbt++ is distributed in the hope that it will be useful,
-        but WITHOUT ANY WARRANTY; without even the implied warranty of
-        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-        GNU Lesser General Public License for more details.
+         libnbt++ is distributed in the hope that it will be useful,
+         but WITHOUT ANY WARRANTY; without even the implied warranty of
+         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+         GNU Lesser General Public License for more details.
 
-        You should have received a copy of the GNU Lesser General Public License
-        along with libnbt++.  If not, see <http://www.gnu.org/licenses/>.
+         You should have received a copy of the GNU Lesser General Public License
+         along with libnbt++.  If not, write to the Free Software Foundation, Inc.,
+         51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-## libqrencode (`libqrencode/`)
+libqrencode (`libqrencode/`)
+============================
 
      Project Tick libqrencode - Qr code encoder library
      Copyright (C) 2026 Project Tick
@@ -400,14 +419,16 @@
          with this library; if not, write to the Free Software Foundation, Inc., 51
          Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
-## Project Tick Install System
+Project Tick Install System
+===========================
 
      Licensed under zlib/libpng license
      Based on Nullsoft Install System
 
      See also `ptinstaller/COPYING`
 
-## meta (`meta/`)
+meta (`meta/`)
+==============
 
      Microsoft Public License (Ms-PL)
 
@@ -462,7 +483,8 @@
          contributors exclude the implied warranties of merchantability, fitness
          for a particular purpose and non-infringement.
 
-## program_info (`program_info/`)
+program_info (`program_info/`)
+==============================
 
 Logos and branding assets in this directory are licensed under
 Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0).
@@ -477,11 +499,11 @@ See:
 - program_info/LICENSE.projecttick
 - program_info/LICENSE.instanceicons
 
-## quazip (`quazip/`)
+quazip (`quazip/`)
+==================
 
      Project Tick quazip - ZIP archive library for Qt
-     Copyright (C) 2010 Roberto Pompermaier
-     Copyright (C) 2005-2014 Sergey A. Tachenov
+     Copyright (C) 2026 Project Tick
 
      QuaZip is free software: you can redistribute it and/or modify
      it under the terms of the GNU Lesser General Public License as published by
@@ -494,7 +516,8 @@ See:
      GNU Lesser General Public License for more details.
 
      You should have received a copy of the GNU Lesser General Public License
-     along with QuaZip.  If not, see <http://www.gnu.org/licenses/>.
+     along with QuaZip.  If not, write to the Free Software Foundation, Inc.,
+     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
     This file incorporates work covered by the following copyright and
     permission notice:
@@ -513,9 +536,11 @@ See:
          GNU Lesser General Public License for more details.
 
          You should have received a copy of the GNU Lesser General Public License
-         along with QuaZip.  If not, see <http://www.gnu.org/licenses/>.
+         along with QuaZip.  If not, write to the Free Software Foundation, Inc.,
+         51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-## tomlplusplus (`tomlplusplus/`, `website/tomlplusplus/`)
+tomlplusplus (`tomlplusplus/`)
+==============================
 
      MIT License
 
@@ -540,7 +565,8 @@ See:
      WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
      OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-## zlib
+zlib
+====
 
      Copyright notice:
 
@@ -565,7 +591,8 @@ See:
        Jean-loup Gailly        Mark Adler
        jloup@gzip.org          madler@alumni.caltech.edu
 
-## libpng
+libpng
+======
 
      PNG Reference Library License version 2
      ---------------------------------------
@@ -575,6 +602,7 @@ See:
       * Copyright (c) 2000-2002, 2004, 2006-2018 Glenn Randers-Pehrson.
       * Copyright (c) 1996-1997 Andreas Dilger.
       * Copyright (c) 1995-1996 Guy Eric Schalnat, Group 42, Inc.
+      * Copyright (c) 2026 Project Tick
 
      The software is supplied "as is", without warranty of any kind,
      express or implied, including, without limitation, the warranties
@@ -601,7 +629,8 @@ See:
       3. This Copyright notice may not be removed or altered from any
          source or altered source distribution.
 
-## Qt `qt/`
+Qt `qt/`
+========
 
      License Selection Notice
 
@@ -625,10 +654,12 @@ See:
      Public License for more details.
 
      A copy of the GNU General Public License version 3 should have been provided
-     along with this repository. If not, see <https://www.gnu.org/licenses/>.
+     along with this repository. If not, write to the Free Software Foundation,
+     Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-## MinGW-w64 runtime (Windows)
+MinGW-w64 runtime (Windows)
+===========================
 
     Copyright (c) 2009, 2010, 2011, 2012, 2013 by the mingw-w64 project
 
@@ -670,20 +701,15 @@ See:
 
     Information on third party licenses used in MinGW-w64 can be found in its COPYING.MinGW-w64-runtime.txt.
 
-## Qt 6
-
-    Copyright (C) 2022 The Qt Company Ltd and other contributors.
-    Contact: https://www.qt.io/licensing
-
-    Licensed under LGPL v3
-
-## rainbow (KGuiAddons)
+rainbow (KGuiAddons)
+====================
 
     Copyright (C) 2007 Matthew Woehlke <mw_triad@users.sourceforge.net>
     Copyright (C) 2007 Olaf Schmidt <ojschmidt@kde.org>
     Copyright (C) 2007 Thomas Zander <zander@kde.org>
     Copyright (C) 2007 Zack Rusin <zack@kde.org>
     Copyright (C) 2015 Petr Mrazek <peterix@gmail.com>
+    Copyright (C) 2026 Project Tick
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -700,7 +726,8 @@ See:
     the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
     Boston, MA 02110-1301, USA.
 
-## Batch icon set
+Batch icon set
+==============
 
     You are free to use Batch (the "icon set") or any part thereof (the "icons")
     in any personal, open-source or commercial work without obligation of payment
@@ -716,7 +743,8 @@ See:
     PUNITIVE OR EXEMPLARY DAMAGES ARISING OUT OF THE USE OF THE ICONS,
     EVEN IF LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
-## Material Design Icons
+Material Design Icons
+=====================
 
     Copyright (c) 2014, Austin Andrews (http://materialdesignicons.com/),
     with Reserved Font Name Material Design Icons.
@@ -727,7 +755,8 @@ See:
     This license is copied below, and is also available with a FAQ at:
     http://scripts.sil.org/OFL
 
-## lionshead
+lionshead
+=========
 
     Code has been taken from https://github.com/natefoo/lionshead and loosely
     translated to C++ laced with Qt.
@@ -754,9 +783,11 @@ See:
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
-## Gamemode
+Gamemode
+========
 
     Copyright (c) 2017-2025, Feral Interactive and the GameMode contributors
+    Copyright (c) 2026 Project Tick
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -783,7 +814,8 @@ See:
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
 
-## Breeze icons
+Breeze icons
+============
 
     Copyright (C) 2014 Uri Herrera <uri_herrera@nitrux.in> and others
 
@@ -800,7 +832,8 @@ See:
     You should have received a copy of the GNU Lesser General Public
     License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
-## Oxygen Icons
+Oxygen Icons
+============
 
     The Oxygen Icon Theme
         Copyright (C) 2007 Nuno Pinheiro <nuno@oxygen-icons.org>
@@ -825,7 +858,8 @@ See:
     You should have received a copy of the GNU Lesser General Public
     License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
-## vcpkg (`cmake/vcpkg-ports`)
+vcpkg (`cmake/vcpkg-ports`)
+===========================
 
     MIT License
     
