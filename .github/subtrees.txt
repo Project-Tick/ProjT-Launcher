@@ -12,3 +12,7 @@ qtwebengine qt/qtwebengine https://github.com/qt/qtwebengine.git dev
 gcc toolchain/gcc https://gcc.gnu.org/git/gcc.git releases/gcc-15
 llvm toolchain/llvm https://github.com/llvm/llvm-project.git release/20.x
 extra-cmake-modules extra-cmake-modules https://git.projecttick.org/pub/scm/Project-Tick/extra-cmake-modules.git master
+cmark cmark https://git.projecttick.org/pub/scm/Project-Tick/cmark.git master
+bzip2 bzip2 https://git.projecttick.org/pub/scm/Project-Tick/bzip2.git master
+gamemode gamemode https://git.projecttick.org/pub/scm/Project-Tick/gamemode.git master
+libqrencode libqrencode https://git.projecttick.org/pub/scm/Project-Tick/libqrencode.git develop
