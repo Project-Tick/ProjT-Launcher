@@ -1,6 +1,7 @@
 /*
 
 Copyright (c) 2025, the GameMode contributors
+Copyright (c) 2026 Project Tick
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

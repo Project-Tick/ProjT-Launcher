@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component>
-  <id>io.github.feralinteractive.gamemode</id>
+  <id>org.projecttick.gamemode</id>
   
   <name>gamemode</name>
   <summary>daemon that allows games to request a set of optimizations be temporarily applied</summary>
-  <developer_name>Feral Interactive</developer_name>
-
-  <!-- <icon type="stock">io.github.feralinteractive.gamemode</icon> -->
+  <developer_name>Project Tick</developer_name>
+  <!-- <icon type="stock">org.projecttick.gamemode</icon> -->
 
   <metadata_license>FSFAP</metadata_license>
   <project_license>BSD-3-Clause</project_license>
@@ -37,5 +36,5 @@
     <category>Game</category>
   </categories>
 
-  <url type="homepage">https://feralinteractive.github.io/gamemode</url>
+  <url type="homepage">https://projecttick.org/p/gamemode</url>
 </component>

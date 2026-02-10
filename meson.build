@@ -2,7 +2,7 @@ project(
     'gamemode',
     'c',
     default_options : ['c_std=c11', 'warning_level=3'],
-    version: '1.8.2',
+    version: '0.0.5',
     license: 'BSD',
     meson_version: '>= 1.3.1',
 )

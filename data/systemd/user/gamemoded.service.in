@@ -3,7 +3,7 @@ Description=gamemoded
 
 [Service]
 Type=dbus
-BusName=com.feralinteractive.GameMode
+BusName=org.projecttick.GameMode
 NotifyAccess=main
 ExecStart=@BINDIR@/gamemoded
 

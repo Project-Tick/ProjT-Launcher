@@ -1,6 +1,6 @@
 .\" Manpage for gamemoderun.
-.\" Contact linux-contact@feralinteractive.com to correct errors or typos.
-.TH gamemoderun 1 "4 May 2020" "@GAMEMODE_VERSION@" "gamemoderun man page"
+.\" Contact projecttick@projecttick.org to correct errors or typos.
+.TH gamemoderun 1 "1 February 2026" "@GAMEMODE_VERSION@" "gamemoderun man page"
 .SH NAME
 gamemoderun \- invoke gamemode into any program
 .SH SYNOPSIS
@@ -48,3 +48,4 @@ GameMode source can be found at \fIhttps://github.com/FeralInteractive/gamemode.
 
 .SH AUTHOR
 Feral Interactive (linux-contact@feralinteractive.com)
+was authored by Project Tick (projecttick@projecttick.org)
