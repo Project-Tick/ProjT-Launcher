@@ -1,0 +1,74 @@
+# bzip2 Kconfig - Compression library
+# Included from main Kconfig
+
+menuconfig BZIP2
+	bool "bzip2 - Compression library"
+	default y
+	help
+	  High-quality data compression library using the
+	  Burrows-Wheeler transform algorithm.
+
+if BZIP2
+
+config BZIP2_VERSION
+	string "bzip2 version"
+	default "1.0.8"
+
+config BZIP2_STATIC
+	bool "Build as static library"
+	default y
+
+config BZIP2_SHARED
+	bool "Build as shared library"
+	default n
+
+menu "Features"
+
+config BZIP2_SMALL
+	bool "Small memory mode"
+	default n
+	help
+	  Trade speed for memory usage. Uses ~2.5x less memory
+	  but is ~2x slower.
+
+config BZIP2_FAST
+	bool "Fast mode"
+	default n
+	help
+	  Trade compression ratio for speed.
+	  Faster but produces larger output.
+
+endmenu
+
+menu "Limits"
+
+config BZIP2_MAX_BLOCK_SIZE
+	int "Maximum block size (100k multiplier, 1-9)"
+	default 9
+	range 1 9
+	help
+	  Maximum block size for compression (1=100k, 9=900k).
+	  Larger = better compression but more memory.
+
+config BZIP2_WORK_FACTOR
+	int "Work factor (0-250)"
+	default 30
+	range 0 250
+	help
+	  Controls fallback algorithm threshold.
+	  0 = use default (30).
+
+endmenu
+
+config BZIP2_BUILD_TOOLS
+	bool "Build bzip2 command-line tools"
+	default n
+	help
+	  Build bzip2, bunzip2, bzcat, etc. tools.
+
+config BZIP2_TESTS
+	bool "Build tests"
+	default n
+	depends on BUILD_TESTS
+
+endif # BZIP2
