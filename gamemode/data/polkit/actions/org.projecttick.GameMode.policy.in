@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1.0/policyconfig.dtd">
+<policyconfig>
+
+  <!--
+    Copyright (c) 2017-2025, Feral Interactive and the GameMode contributors
+    Copyright (c) 2026 Project Tick
+    All rights reserved.
+  -->
+
+  <vendor>Project Tick GameMode Activation</vendor>
+  <vendor_url>http://www.projecttick.org</vendor_url>
+
+  <action id="org.projecttick.GameMode.governor-helper">
+    <description>Modify the CPU governor</description>
+    <message>Authentication is required to modify the CPU governor</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>no</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@LIBEXECDIR@/cpugovctl</annotate>
+  </action>
+
+  <action id="org.projecttick.GameMode.gpu-helper">
+    <description>Modify the GPU clock states</description>
+    <message>Authentication is required to modify the GPU clock states</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>no</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@LIBEXECDIR@/gpuclockctl</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+
+  <action id="org.projecttick.GameMode.cpu-helper">
+    <description>Modify the CPU core states</description>
+    <message>Authentication is required to modify the CPU core states</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>no</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@LIBEXECDIR@/cpucorectl</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+
+  <action id="org.projecttick.GameMode.procsys-helper">
+    <description>Modify the /proc/sys values</description>
+    <message>Authentication is required to modify the /proc/sys/ values</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>no</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@LIBEXECDIR@/procsysctl</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+
+  <action id="org.projecttick.GameMode.profile-helper">
+    <description>Modify the platform profile</description>
+    <message>Authentication is required to modify platform profile</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>no</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@LIBEXECDIR@/platprofctl</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+
+  <action id="org.projecttick.GameMode.x3dmode-helper">
+    <description>Modify the AMD X3D cache mode</description>
+    <message>Authentication is required to modify AMD X3D cache mode</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>no</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@LIBEXECDIR@/x3dmodectl</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+</policyconfig>

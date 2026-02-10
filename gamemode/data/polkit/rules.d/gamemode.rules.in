@@ -1,0 +1,17 @@
+/*
+ * Allow users in privileged gamemode group to run gamemode utilities
+ * (cpugovctl, gpuclockctl, cpucorectl, procsysctl, platprofctl, x3dmodectl)
+ * without authentication
+ */
+polkit.addRule(function (action, subject) {
+    if ((action.id == "org.projecttick.GameMode.governor-helper" ||
+         action.id == "org.projecttick.GameMode.gpu-helper" ||
+         action.id == "org.projecttick.GameMode.cpu-helper" ||
+         action.id == "org.projecttick.GameMode.procsys-helper" ||
+         action.id == "org.projecttick.GameMode.profile-helper" ||
+         action.id == "org.projecttick.GameMode.x3dmode-helper") &&
+        subject.isInGroup("@GAMEMODE_PRIVILEGED_GROUP@"))
+    {
+        return polkit.Result.YES;
+    }
+});

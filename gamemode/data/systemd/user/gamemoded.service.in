@@ -1,0 +1,11 @@
+[Unit]
+Description=gamemoded
+
+[Service]
+Type=dbus
+BusName=org.projecttick.GameMode
+NotifyAccess=main
+ExecStart=@BINDIR@/gamemoded
+
+[Install]
+WantedBy=default.target

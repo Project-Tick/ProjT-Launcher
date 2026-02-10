@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.projecttick.GameMode
+Exec=@BINDIR@/gamemoded -d
+SystemdService=gamemoded.service
