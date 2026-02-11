@@ -744,7 +744,8 @@ LAUNCHER_CXXFLAGS := \
 	-I$(srctree)/launcher \
 	-I$(srctree)/include \
 	-I$(srctree)/buildconfig \
-        -I$(srctree)/zlib \
+	-I$(srctree)/zlib \
+	-I$(srctree)/libpng \
 	-I$(srctree)/quazip \
 	-I$(srctree)/quazip/quazip \
 	-I$(srctree)/qdcss/include \
