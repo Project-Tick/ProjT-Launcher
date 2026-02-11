@@ -192,15 +192,6 @@ jobs:
             vcvars-arch: arm64
 
           # macOS builds
-          - os: macos-14
-            artifact-name: macOS-14-universal
-            target-platform: macos
-            target-arch: universal
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
-            qt-version: 6.10.2
-
           - os: macos-15
             artifact-name: macOS-15-universal
             target-platform: macos
@@ -219,15 +210,6 @@ jobs:
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
 
-          - os: macos-14
-            artifact-name: macOS-14-arm64
-            target-platform: macos
-            target-arch: aarch64
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
-            qt-version: 6.10.2
-
           - os: macos-15
             artifact-name: macOS-15-arm64
             target-platform: macos
@@ -241,15 +223,6 @@ jobs:
             artifact-name: macOS-arm64
             target-platform: macos
             target-arch: aarch64
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
-            qt-version: 6.10.2
-
-          - os: macos-14-intel
-            artifact-name: macOS-14-intel
-            target-platform: macos
-            target-arch: x86_64
             macosx-deployment-target: 12.0
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
