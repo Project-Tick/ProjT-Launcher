@@ -38,11 +38,21 @@ endif
 # Keep a usable ranlib in non-MSVC builds; MSVC archives do not need ranlib.
 RANLIB ?= ranlib
 ifeq ($(WINDOWS_TOOLCHAIN),msvc)
-  ifeq ($(filter cl.exe clang-cl,$(lastword $(CC))),)
-    CC := cl.exe
+  MSVC_CC_FRONTEND := $(filter cl cl.exe clang-cl clang-cl.exe,$(notdir $(lastword $(CC))))
+  MSVC_CXX_FRONTEND := $(filter cl cl.exe clang-cl clang-cl.exe,$(notdir $(lastword $(CXX))))
+  ifeq ($(MSVC_CC_FRONTEND),)
+    ifneq ($(shell command -v clang-cl 2>/dev/null),)
+      CC := clang-cl
+    else
+      CC := cl.exe
+    endif
   endif
-  ifeq ($(filter cl.exe clang-cl,$(lastword $(CXX))),)
-    CXX := cl.exe
+  ifeq ($(MSVC_CXX_FRONTEND),)
+    ifneq ($(shell command -v clang-cl 2>/dev/null),)
+      CXX := clang-cl
+    else
+      CXX := cl.exe
+    endif
   endif
   ifeq ($(strip $(AR)),)
     AR := lib.exe
@@ -51,6 +61,7 @@ ifeq ($(WINDOWS_TOOLCHAIN),msvc)
 endif
 
 export CC CXX AR RANLIB
+export CFLAGS CXXFLAGS LDFLAGS
 export srctree KBUILD_OUTPUT Q V
 
 JAVAC ?= javac
@@ -169,8 +180,14 @@ define build_local
 		$(MAKE) --no-print-directory -C $(srctree)/$(1) \
 			srctree=$(srctree) \
 			KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
+			TARGET_PLATFORM=$(TARGET_PLATFORM) \
+			TARGET_OS=$(TARGET_OS) \
+			TARGET_ARCH=$(TARGET_ARCH) \
+			WINDOWS_TOOLCHAIN=$(WINDOWS_TOOLCHAIN) \
+			CC="$(CC)" CXX="$(CXX)" AR="$(AR)" RANLIB="$(RANLIB)" \
+			CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS)" \
 			Q=$(Q) V=$(V) \
-			all 2>&1 | sed 's/^/    /'; \
+			$(if $(strip $(2)),$(2),all) 2>&1 | sed 's/^/    /'; \
 		if [ $${PIPESTATUS[0]} -ne 0 ]; then exit 1; fi; \
 	else \
 		echo "  SKIP    $(1) (no Makefile)"; \
@@ -221,6 +238,12 @@ subtrees: configure
 	+$(Q)$(MAKE) -f $(srctree)/mk/subtrees.mk \
 		srctree=$(srctree) \
 		KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
+		TARGET_PLATFORM=$(TARGET_PLATFORM) \
+		TARGET_OS=$(TARGET_OS) \
+		TARGET_ARCH=$(TARGET_ARCH) \
+		WINDOWS_TOOLCHAIN=$(WINDOWS_TOOLCHAIN) \
+		CC="$(CC)" CXX="$(CXX)" AR="$(AR)" RANLIB="$(RANLIB)" \
+		CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS)" \
 		subtrees
 
 # ============================================================================
@@ -256,7 +279,7 @@ libs-tier1: libs-tier0
 
 libs-tier2: libs-tier0
 	@echo "=== Building Tier 2 Libraries ==="
-	$(call build_local,cmark)
+	$(call build_local,cmark,cmake_build)
 	$(call build_local,libnbtplusplus)
 	$(call build_local,libqrencode)
 
@@ -386,7 +409,15 @@ tests: build
 # Subtrees (via wrappers - DO NOT call their Makefiles directly)
 zlib tomlplusplus json:
 	+$(Q)$(MAKE) -f $(srctree)/mk/subtrees.mk \
-		srctree=$(srctree) KBUILD_OUTPUT=$(KBUILD_OUTPUT) $@
+		srctree=$(srctree) \
+		KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
+		TARGET_PLATFORM=$(TARGET_PLATFORM) \
+		TARGET_OS=$(TARGET_OS) \
+		TARGET_ARCH=$(TARGET_ARCH) \
+		WINDOWS_TOOLCHAIN=$(WINDOWS_TOOLCHAIN) \
+		CC="$(CC)" CXX="$(CXX)" AR="$(AR)" RANLIB="$(RANLIB)" \
+		CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS)" \
+		$@
 
 # Local libraries
 bzip2:
@@ -402,7 +433,7 @@ quazip: zlib
 
 # Tier 2 (local only)
 cmark:
-	$(call build_local,cmark)
+	$(call build_local,cmark,cmake_build)
 libnbtplusplus: zlib
 	$(call build_local,libnbtplusplus)
 libqrencode:
