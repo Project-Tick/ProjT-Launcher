@@ -513,6 +513,29 @@ else ifneq ($(SCCACHE),)
   endif
 endif
 
+# Enforce a MSVC-compatible frontend when WINDOWS_TOOLCHAIN=msvc.
+# This also overrides incompatible command-line/env CC/CXX values like plain clang.
+ifeq ($(TARGET_PLATFORM),windows)
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+MSVC_CC_FRONTEND := $(filter cl cl.exe clang-cl clang-cl.exe,$(notdir $(lastword $(CC))))
+MSVC_CXX_FRONTEND := $(filter cl cl.exe clang-cl clang-cl.exe,$(notdir $(lastword $(CXX))))
+ifeq ($(MSVC_CC_FRONTEND),)
+  ifneq ($(shell command -v clang-cl 2>/dev/null),)
+override CC := clang-cl
+  else
+override CC := cl.exe
+  endif
+endif
+ifeq ($(MSVC_CXX_FRONTEND),)
+  ifneq ($(shell command -v clang-cl 2>/dev/null),)
+override CXX := clang-cl
+  else
+override CXX := cl.exe
+  endif
+endif
+endif
+endif
+
 # ============================================================================
 # Directory Targets
 # ============================================================================
@@ -654,11 +677,29 @@ projt_defconfig: $(KCONFIG_OBJDIR)/conf
 all: build
 
 build: prepare
-	$(Q)$(MAKE) -f $(srctree)/mk/targets.mk build
+	$(Q)$(MAKE) -f $(srctree)/mk/targets.mk \
+		srctree=$(srctree) \
+		KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
+		TARGET_PLATFORM=$(TARGET_PLATFORM) \
+		TARGET_OS=$(TARGET_OS) \
+		TARGET_ARCH=$(TARGET_ARCH) \
+		WINDOWS_TOOLCHAIN=$(WINDOWS_TOOLCHAIN) \
+		CC="$(CC)" CXX="$(CXX)" AR="$(AR)" RANLIB="$(RANLIB)" \
+		CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS)" \
+		build
 
 # Individual module builds
 libs launcher java tests configure qt-build java-modules launcher-all:
-	$(Q)$(MAKE) -f $(srctree)/mk/targets.mk $@
+	$(Q)$(MAKE) -f $(srctree)/mk/targets.mk \
+		srctree=$(srctree) \
+		KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
+		TARGET_PLATFORM=$(TARGET_PLATFORM) \
+		TARGET_OS=$(TARGET_OS) \
+		TARGET_ARCH=$(TARGET_ARCH) \
+		WINDOWS_TOOLCHAIN=$(WINDOWS_TOOLCHAIN) \
+		CC="$(CC)" CXX="$(CXX)" AR="$(AR)" RANLIB="$(RANLIB)" \
+		CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS)" \
+		$@
 
 # Module-specific targets (e.g., make zlib, make launcher/ui)
 %/:
@@ -669,7 +710,16 @@ libs launcher java tests configure qt-build java-modules launcher-all:
 # ============================================================================
 
 subtrees: prepare
-	$(Q)$(MAKE) -f $(srctree)/mk/targets.mk subtrees
+	$(Q)$(MAKE) -f $(srctree)/mk/targets.mk \
+		srctree=$(srctree) \
+		KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
+		TARGET_PLATFORM=$(TARGET_PLATFORM) \
+		TARGET_OS=$(TARGET_OS) \
+		TARGET_ARCH=$(TARGET_ARCH) \
+		WINDOWS_TOOLCHAIN=$(WINDOWS_TOOLCHAIN) \
+		CC="$(CC)" CXX="$(CXX)" AR="$(AR)" RANLIB="$(RANLIB)" \
+		CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS)" \
+		subtrees
 
 # ============================================================================
 # Toolchain Targets (Wrapper files in mk/)
