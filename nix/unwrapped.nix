@@ -45,7 +45,7 @@ stdenv.mkDerivation {
     fileset = lib.fileset.unions [
       ../CMakeLists.txt
       ../CMakePresets.json
-      ../COPYING.md
+      ../COPYING
       ../LICENSE
       ../bot
       ../buildconfig

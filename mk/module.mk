@@ -92,7 +92,9 @@ ifeq ($(WINDOWS_TOOLCHAIN),msvc)
 else
 	@echo "  AR      $@"
 	$(Q)$(AR) rcs $@ $^
+ifneq ($(strip $(RANLIB)),)
 	$(Q)$(RANLIB) $@
+endif
 endif
 else
 	@echo "  SKIP    $(lib) (header-only, no objects)"

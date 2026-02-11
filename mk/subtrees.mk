@@ -80,7 +80,9 @@ $(ZLIB_STATIC_LIB): $(ZLIB_OBJS)
 	@mkdir -p $(@D)
 	$(Q)$(ZLIB_AR)
 ifneq ($(WINDOWS_TOOLCHAIN),msvc)
+ifneq ($(strip $(RANLIB)),)
 	$(Q)$(ZLIB_RANLIB)
+endif
 endif
 
 # Shared library version of zlib (for tests to avoid symbol conflicts with Qt)

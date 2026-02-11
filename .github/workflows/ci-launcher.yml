@@ -246,6 +246,8 @@ jobs:
       TARGET_ARCH: ${{ matrix.target-arch || 'x86_64' }}
       WINDOWS_TOOLCHAIN: ${{ matrix.windows-toolchain || 'mingw' }}
       MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
+      MSYS_NO_PATHCONV: ${{ matrix.windows-toolchain == 'msvc' && '1' || '' }}
+      MSYS2_ARG_CONV_EXCL: ${{ matrix.windows-toolchain == 'msvc' && '*' || '' }}
 
     defaults:
       run:

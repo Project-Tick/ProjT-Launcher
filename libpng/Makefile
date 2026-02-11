@@ -41,11 +41,24 @@ CFLAGS ?= -O2 -g -fPIC -Wall -pipe
 CFLAGS += -DPNG_ARM_NEON_OPT=0
 INCLUDES := -I$(CURDIR) -I$(ZLIB_DIR) -I$(OBJDIR)
 
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+OBJ_EXT := obj
+OBJECTS := $(addprefix $(OBJDIR)/,$(SOURCES:.c=.$(OBJ_EXT)))
+INCLUDES := /I$(CURDIR) /I$(ZLIB_DIR) /I$(OBJDIR)
+LIBPNG_COMPILE = $(CC) $(CFLAGS) $(INCLUDES) /c /Fo$@ $<
+LIBPNG_AR = $(AR) /nologo /OUT:$@ $^
+else
+OBJ_EXT := o
+OBJECTS := $(addprefix $(OBJDIR)/,$(SOURCES:.c=.$(OBJ_EXT)))
+LIBPNG_COMPILE = $(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+LIBPNG_AR = $(AR) rcs $@ $^
+endif
+
 all: $(LIBDIR)/libpng.a
 
 $(LIBDIR)/libpng.a: $(OBJECTS)
 	@mkdir -p $(@D)
-	$(Q)$(AR) rcs $@ $^
+	$(Q)$(LIBPNG_AR)
 	@echo "  Built "
 
 # Generate pnglibconf.h from template if not exists
@@ -53,9 +66,9 @@ $(OBJDIR)/pnglibconf.h: $(CURDIR)/scripts/pnglibconf.h.prebuilt | $(OBJDIR)
 	@echo "  GEN     pnglibconf.h"
 	$(Q)cp $< $@
 
-$(OBJDIR)/%.o: $(CURDIR)/%.c $(OBJDIR)/pnglibconf.h | $(OBJDIR)
+$(OBJDIR)/%.$(OBJ_EXT): $(CURDIR)/%.c $(OBJDIR)/pnglibconf.h | $(OBJDIR)
 	@echo "  CC      $<"
-	$(Q)$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+	$(Q)$(LIBPNG_COMPILE)
 
 $(OBJDIR):
 	@mkdir -p $@

@@ -30,12 +30,12 @@ all: cmake_build man/man3/cmark.3
 $(CMARK): cmake_build
 
 cmake_build: $(BUILDDIR)
-	cmake --build $(BUILDDIR)
+	CFLAGS= CXXFLAGS= LDFLAGS= CPPFLAGS= cmake --build $(BUILDDIR)
 	@echo "Binaries can be found in $(BUILDDIR)/src"
 
 $(BUILDDIR):
 	@cmake --version > /dev/null || (echo "You need cmake to build this program: http://www.cmake.org/download/" && exit 1)
-	cmake \
+	CFLAGS= CXXFLAGS= LDFLAGS= CPPFLAGS= cmake \
 	    -S . -B $(BUILDDIR) -G "$(GENERATOR)" \
 	    -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 	    -DCMAKE_INSTALL_PREFIX=$(INSTALL_PREFIX) \

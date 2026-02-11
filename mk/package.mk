@@ -118,7 +118,7 @@ package-deb: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	fi
 	
 	# Copy license and docs
-	$(Q)cp $(srctree)/COPYING.md $(PKG_STAGING)/deb/usr/share/doc/$(PKG_NAME)/copyright 2>/dev/null || true
+	$(Q)cp $(srctree)/COPYING $(PKG_STAGING)/deb/usr/share/doc/$(PKG_NAME)/copyright 2>/dev/null || true
 	$(Q)cp $(srctree)/README.md $(PKG_STAGING)/deb/usr/share/doc/$(PKG_NAME)/ 2>/dev/null || true
 	
 	# Create control file
@@ -222,7 +222,7 @@ package-rpm: build | $(PKG_OUTPUT) $(PKG_STAGING)
 	fi
 	
 	# Copy license and docs
-	$(Q)cp $(srctree)/COPYING.md $(PKG_STAGING)/rpm/BUILDROOT/usr/share/doc/$(PKG_NAME)/ 2>/dev/null || true
+	$(Q)cp $(srctree)/COPYING $(PKG_STAGING)/rpm/BUILDROOT/usr/share/doc/$(PKG_NAME)/ 2>/dev/null || true
 	$(Q)cp $(srctree)/README.md $(PKG_STAGING)/rpm/BUILDROOT/usr/share/doc/$(PKG_NAME)/ 2>/dev/null || true
 	
 	# Create spec file

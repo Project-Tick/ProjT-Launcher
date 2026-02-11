@@ -62,6 +62,13 @@ include $(srctree)/mk/module.mk
 
 # Custom library rule to include MOC objects
 $(STATIC_LIB): $(OBJS) $(EXTRA_OBJS) | $(LIBDIR)
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+	@echo "  LIB     $@"
+	$(Q)$(AR) /nologo /OUT:$@ $^
+else
 	@echo "  AR      $@"
 	$(Q)$(AR) rcs $@ $^
+ifneq ($(strip $(RANLIB)),)
 	$(Q)$(RANLIB) $@
+endif
+endif

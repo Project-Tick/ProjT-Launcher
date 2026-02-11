@@ -186,6 +186,7 @@ ifeq ($(TARGET_PLATFORM),windows)
     STRIP   = 
     RC      = rc.exe
     MT      = mt.exe
+    RANLIB  =
     
     # MSVC-specific flags
     CFLAGS_BASE   = /nologo /W3 /EHsc /MD
@@ -215,6 +216,7 @@ ifeq ($(TARGET_PLATFORM),windows)
     CXX     = $(CROSS_COMPILE)g++
     LD      = $(CROSS_COMPILE)g++
     AR      = $(CROSS_COMPILE)ar
+    RANLIB  = $(CROSS_COMPILE)ranlib
     AS      = $(CROSS_COMPILE)as
     OBJCOPY = $(CROSS_COMPILE)objcopy
     STRIP   = $(CROSS_COMPILE)strip
@@ -263,6 +265,7 @@ else ifeq ($(TARGET_PLATFORM),macos)
     CXX     = $(CROSS_COMPILE)clang++
     LD      = $(CROSS_COMPILE)clang++
     AR      = $(CROSS_COMPILE)ar
+    RANLIB  = $(CROSS_COMPILE)ranlib
     AS      = $(CROSS_COMPILE)as
     OBJCOPY = $(CROSS_COMPILE)objcopy
     STRIP   = $(CROSS_COMPILE)strip
@@ -302,6 +305,7 @@ else
     CXX     = $(CROSS_COMPILE)g++
     LD      = $(CROSS_COMPILE)g++
     AR      = $(CROSS_COMPILE)ar
+    RANLIB  = $(CROSS_COMPILE)ranlib
     AS      = $(CROSS_COMPILE)as
     OBJCOPY = $(CROSS_COMPILE)objcopy
     STRIP   = $(CROSS_COMPILE)strip
@@ -338,9 +342,18 @@ CFLAGS   = $(CFLAGS_BASE) $(CFLAGS_PLATFORM)
 CXXFLAGS = $(CXXFLAGS_BASE) $(CXXFLAGS_PLATFORM)
 LDFLAGS  = $(LDFLAGS_BASE) $(LDFLAGS_PLATFORM)
 
-export CC CXX LD AR AS OBJCOPY STRIP
+export CC CXX LD AR AS OBJCOPY STRIP RANLIB
 export CFLAGS CXXFLAGS LDFLAGS
 export OBJ_EXT LIB_EXT DLL_EXT EXE_EXT
+
+# Prevent MSYS2 path conversion from rewriting MSVC-style /flags into paths.
+ifeq ($(TARGET_PLATFORM),windows)
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+override MSYS_NO_PATHCONV := 1
+override MSYS2_ARG_CONV_EXCL := *
+export MSYS_NO_PATHCONV MSYS2_ARG_CONV_EXCL
+endif
+endif
 
 # ============================================================================
 # Kconfig Paths

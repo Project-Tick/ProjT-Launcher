@@ -106,7 +106,7 @@ runs:
         INSTALL_DIR: install
         DMG_NAME: ProjTLauncher.dmg
         DMG_VOL_NAME: ProjT Launcher
-        DMG_EULA: ${{ github.workspace }}/COPYING.md
+        DMG_EULA: ${{ github.workspace }}/COPYING
         DMG_BG: ${{ github.workspace }}/program_info/dmg-background.png
       run: |
         if ! command -v create-dmg >/dev/null 2>&1; then
@@ -158,7 +158,7 @@ runs:
           --component "ProjT Launcher.app" \
           ../bootstrap-component.pkg
 
-        if [ -f "${{ github.workspace }}/COPYING.md" ]; then
+        if [ -f "${{ github.workspace }}/COPYING" ]; then
           echo ":warning: productbuild does not support --license; building PKG without embedded license." >> $GITHUB_STEP_SUMMARY
         fi
         productbuild --package ../bootstrap-component.pkg \

@@ -83,7 +83,7 @@ namespace
 
 	QString getLicenseHtml()
 	{
-		QFile dataFile(":/documents/COPYING.md");
+		QFile dataFile(":/documents/COPYING");
 		if (dataFile.open(QIODevice::ReadOnly))
 		{
 			QString output = markdownToHTML(dataFile.readAll());
