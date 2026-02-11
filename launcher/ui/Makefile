@@ -84,7 +84,9 @@ UI_TASKS_OBJS := $(patsubst $(srctree)/launcher/ui/%.cpp,$(obj)/%.o,$(UI_TASKS_S
 
 # Themes
 UI_THEMES_SRCS := $(wildcard $(srctree)/launcher/ui/themes/*.cpp)
+ifeq ($(TARGET_PLATFORM),macos)
 UI_THEMES_SRCS += $(wildcard $(srctree)/launcher/ui/themes/*.mm)
+endif
 UI_THEMES_OBJS := $(patsubst $(srctree)/launcher/ui/%.cpp,$(obj)/%.o,$(filter %.cpp,$(UI_THEMES_SRCS)))
 UI_THEMES_OBJS += $(patsubst $(srctree)/launcher/ui/%.mm,$(obj)/%.mm.o,$(filter %.mm,$(UI_THEMES_SRCS)))
 
