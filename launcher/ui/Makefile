@@ -123,7 +123,7 @@ UI_MOC_OBJS := $(UI_MOC_SRCS:.cpp=.o)
 UI_CXXFLAGS := \
 	-I$(srctree)/launcher/ui \
 	-I$(srctree)/launcher \
-	-I$(srctree)/buildconfig -I$(KBUILD_OUTPUT)/obj/generated \
+	-I$(srctree)/buildconfig -I$(KBUILD_OUTPUT)/obj/generated -I$(KBUILD_OUTPUT)/obj/generated/include \
 	-I$(srctree)/libnbtplusplus/include \
 	-I$(srctree)/quazip/quazip \
 	-I$(srctree)/quazip \
