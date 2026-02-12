@@ -294,6 +294,9 @@ $(QRENCODE_CONFIG_OUT):
 CMARK_CONFIG_OUT := $(GENERATED_INCLUDE)/cmark_config.h
 CMARK_EXPORT_OUT := $(GENERATED_INCLUDE)/cmark_export.h
 CMARK_VERSION_OUT := $(GENERATED_INCLUDE)/cmark_version.h
+CMARK_CONFIG_SRC := $(srctree)/cmark/src/cmark_config.h
+CMARK_EXPORT_SRC := $(srctree)/cmark/src/cmark_export.h
+CMARK_VERSION_SRC := $(srctree)/cmark/src/cmark_version.h
 
 $(CMARK_CONFIG_OUT): | $(GENERATED_INCLUDE)
 	@echo "  GEN     $@"
@@ -306,6 +309,18 @@ $(CMARK_EXPORT_OUT): | $(GENERATED_INCLUDE)
 $(CMARK_VERSION_OUT): | $(GENERATED_INCLUDE)
 	@echo "  GEN     $@"
 	$(Q)$(srctree)/scripts/gen-cmark-version.sh $@
+
+$(CMARK_CONFIG_SRC): $(CMARK_CONFIG_OUT)
+	@echo "  COPY    $@"
+	$(Q)cp $< $@
+
+$(CMARK_EXPORT_SRC): $(CMARK_EXPORT_OUT)
+	@echo "  COPY    $@"
+	$(Q)cp $< $@
+
+$(CMARK_VERSION_SRC): $(CMARK_VERSION_OUT)
+	@echo "  COPY    $@"
+	$(Q)cp $< $@
 
 # ============================================================================
 # All generated files
@@ -322,7 +337,10 @@ GENERATED_FILES := \
 	$(QRENCODE_CONFIG_OUT) \
 	$(CMARK_CONFIG_OUT) \
 	$(CMARK_EXPORT_OUT) \
-	$(CMARK_VERSION_OUT)
+	$(CMARK_VERSION_OUT) \
+	$(CMARK_CONFIG_SRC) \
+	$(CMARK_EXPORT_SRC) \
+	$(CMARK_VERSION_SRC)
 
 # ============================================================================
 # Configure cleanup target (configure itself is in targets.mk)
@@ -332,7 +350,8 @@ GENERATED_FILES := \
 
 configure-clean:
 	$(Q)rm -rf $(GENERATED_DIR)
-	$(Q)rm -f $(PNGLIBCONF_SRC) $(NBT_EXPORT_SRC) $(QRENCODE_CONFIG_OUT) $(BZ_VERSION_OUT)
+	$(Q)rm -f $(PNGLIBCONF_SRC) $(NBT_EXPORT_SRC) $(QRENCODE_CONFIG_OUT) $(BZ_VERSION_OUT) \
+		$(CMARK_CONFIG_SRC) $(CMARK_EXPORT_SRC) $(CMARK_VERSION_SRC)
 	@echo "Generated files cleaned."
 
 # ============================================================================

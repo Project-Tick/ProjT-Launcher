@@ -391,6 +391,12 @@ QT_LIBEXECDIR := /usr/lib64/qt6/libexec
 endif
 QT_CFLAGS := $(shell pkg-config --cflags $(QT_CORE_MODULES) 2>/dev/null)
 QT_LIBS := $(shell pkg-config --libs $(QT_CORE_MODULES) 2>/dev/null)
+ifeq ($(strip $(QT_CFLAGS)),)
+QT_CFLAGS := -I$(QT_PREFIX)/include -I$(QT_PREFIX)/include/QtCore -I$(QT_PREFIX)/include/QtGui -I$(QT_PREFIX)/include/QtWidgets -I$(QT_PREFIX)/include/QtNetwork -I$(QT_PREFIX)/include/QtConcurrent -I$(QT_PREFIX)/include/QtXml
+endif
+ifeq ($(strip $(QT_LIBS)),)
+QT_LIBS := -L$(QT_PREFIX)/lib -lQt6Core -lQt6Gui -lQt6Widgets -lQt6Network -lQt6Concurrent -lQt6Xml
+endif
 QT_MOC := $(QT_LIBEXECDIR)/moc
 QT_UIC := $(QT_LIBEXECDIR)/uic
 QT_RCC := $(QT_LIBEXECDIR)/rcc

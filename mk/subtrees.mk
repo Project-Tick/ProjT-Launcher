@@ -28,7 +28,13 @@ CXXFLAGS ?= $(CFLAGS) -std=c++17
 # Zlib Subtree Wrapper
 # ============================================================================
 
+ifneq ($(wildcard $(srctree)/zlib/adler32.c),)
 ZLIB_DIR := $(srctree)/zlib
+else ifneq ($(wildcard $(srctree)/toolchain/gcc/zlib/adler32.c),)
+ZLIB_DIR := $(srctree)/toolchain/gcc/zlib
+else
+$(error zlib sources not found at '$(srctree)/zlib' or '$(srctree)/toolchain/gcc/zlib')
+endif
 ZLIB_OBJDIR := $(OBJDIR)/zlib
 ZLIB_STATIC_LIB := $(LIBDIR)/libz$(LIB_EXT)
 
