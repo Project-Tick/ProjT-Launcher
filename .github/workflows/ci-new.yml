@@ -169,28 +169,3 @@ jobs:
     with:
       ref: ${{ github.sha }}
       run-quazip: ${{ needs.prepare.outputs.run-quazip }}
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # BZIP2 TESTS
-  # ═══════════════════════════════════════════════════════════════════════════
-  bzip2:
-    name: Bzip2
-    needs: prepare
-    if: needs.prepare.outputs.run-bzip2 == 'true'
-    uses: ./.github/workflows/ci-bzip2.yml
-    with:
-      run-bzip2: ${{ needs.prepare.outputs.run-bzip2 }}
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # SCHEDULED JOBS
-  # ═══════════════════════════════════════════════════════════════════════════
-  scheduled:
-    name: Scheduled
-    needs: prepare
-    if: needs.prepare.outputs.is-schedule == 'true' || needs.prepare.outputs.is-pr-closed == 'true' || needs.prepare.outputs.is-pr-review == 'true' || needs.prepare.outputs.is-workflow-run == 'true'
-    uses: ./.github/workflows/ci-scheduled.yml
-    with:
-      schedule-cron: ${{ needs.prepare.outputs.schedule-cron }}
-      is-pr-closed: ${{ needs.prepare.outputs.is-pr-closed }}
-      is-release: ${{ needs.prepare.outputs.is-release }}
-    secrets: inherit
