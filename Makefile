@@ -222,8 +222,28 @@ ifeq ($(TARGET_PLATFORM),windows)
     STRIP   = $(CROSS_COMPILE)strip
     WINDRES = $(CROSS_COMPILE)windres
 
-    # MSYS2 CLANG environments may not provide gcc/g++
+    # On Windows runners with MSYS2, pin to the active MSYSTEM toolchain root
+    # to avoid picking incompatible gcc/clang from other PATH entries.
     ifeq ($(HOST_PLATFORM),windows)
+      ifneq ($(MSYSTEM),)
+        MSYSTEM_LC := $(shell printf '%s' "$(MSYSTEM)" | tr '[:upper:]' '[:lower:]')
+        ifneq ($(wildcard /$(MSYSTEM_LC)/bin/gcc),)
+          CC      := /$(MSYSTEM_LC)/bin/gcc
+          CXX     := /$(MSYSTEM_LC)/bin/g++
+          LD      := /$(MSYSTEM_LC)/bin/g++
+          AR      := /$(MSYSTEM_LC)/bin/ar
+          RANLIB  := /$(MSYSTEM_LC)/bin/ranlib
+          AS      := /$(MSYSTEM_LC)/bin/as
+          OBJCOPY := /$(MSYSTEM_LC)/bin/objcopy
+          STRIP   := /$(MSYSTEM_LC)/bin/strip
+        else ifneq ($(wildcard /$(MSYSTEM_LC)/bin/clang),)
+          CC      := /$(MSYSTEM_LC)/bin/clang
+          CXX     := /$(MSYSTEM_LC)/bin/clang++
+          LD      := /$(MSYSTEM_LC)/bin/clang++
+        endif
+      endif
+
+      # MSYS2 CLANG environments may not provide gcc/g++
       ifeq ($(shell command -v $(CC) 2>/dev/null),)
         ifneq ($(shell command -v clang 2>/dev/null),)
           CC := clang

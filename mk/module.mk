@@ -17,7 +17,13 @@
 MODULE_PATH := $(patsubst $(srctree)/%,%,$(CURDIR))
 
 # Default output directory
-OBJDIR ?= $(KBUILD_OUTPUT)/obj/$(MODULE_PATH)
+# Ignore inherited OBJDIR from parent environment unless module Makefile
+# explicitly sets it before including this file.
+ifneq ($(filter file override,$(origin OBJDIR)),)
+  # Keep module-defined OBJDIR.
+else
+  OBJDIR := $(KBUILD_OUTPUT)/obj/$(MODULE_PATH)
+endif
 LIBDIR ?= $(KBUILD_OUTPUT)/lib
 
 # Compiler settings
@@ -25,6 +31,11 @@ CC ?= gcc
 CXX ?= g++
 AR ?= ar
 RANLIB ?= ranlib
+
+# Preserve top-level toolchain/config flags passed by parent make.
+PARENT_CFLAGS := $(strip $(CFLAGS))
+PARENT_CXXFLAGS := $(strip $(CXXFLAGS))
+PARENT_LDFLAGS := $(strip $(LDFLAGS))
 
 # Base flags - adapt for MSVC vs GCC/Clang
 ifeq ($(WINDOWS_TOOLCHAIN),msvc)
@@ -56,9 +67,9 @@ INC_FLAGS += $(QT_CFLAGS)
 endif
 
 # Final flags
-CFLAGS := $(BASE_CFLAGS) $(INC_FLAGS) $(ccflags-y)
-CXXFLAGS := $(BASE_CXXFLAGS) $(INC_FLAGS) $(cxxflags-y)
-LDFLAGS ?=
+override CFLAGS := $(strip $(BASE_CFLAGS) $(PARENT_CFLAGS) $(INC_FLAGS) $(ccflags-y))
+override CXXFLAGS := $(strip $(BASE_CXXFLAGS) $(PARENT_CXXFLAGS) $(INC_FLAGS) $(cxxflags-y))
+override LDFLAGS := $(strip $(PARENT_LDFLAGS))
 
 # Object files with full path
 OBJS := $(addprefix $(OBJDIR)/,$(lib-y))

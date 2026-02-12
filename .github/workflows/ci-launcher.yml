@@ -306,6 +306,11 @@ jobs:
       - name: Configure (Windows MinGW)
         if: runner.os == 'Windows' && matrix.windows-toolchain == 'mingw'
         run: |
+          if [ -n "${MSYSTEM:-}" ]; then
+            msys_bin="/$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')/bin"
+            export PATH="${msys_bin}:$PATH"
+            hash -r
+          fi
           ./configure \
             --platform=windows \
             --arch=${{ matrix.target-arch || 'x86_64' }} \
@@ -326,6 +331,11 @@ jobs:
       - name: Build (Linux/macOS/MinGW)
         if: runner.os != 'Windows' || matrix.windows-toolchain == 'mingw'
         run: |
+          if [ "${RUNNER_OS}" = "Windows" ] && [ "${WINDOWS_TOOLCHAIN}" = "mingw" ] && [ -n "${MSYSTEM:-}" ]; then
+            msys_bin="/$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')/bin"
+            export PATH="${msys_bin}:$PATH"
+            hash -r
+          fi
           make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 
       - name: Build (Windows MSVC)
@@ -338,6 +348,11 @@ jobs:
       - name: Run Tests (Linux/macOS/MinGW)
         if: runner.os != 'Windows' || matrix.windows-toolchain == 'mingw'
         run: |
+          if [ "${RUNNER_OS}" = "Windows" ] && [ "${WINDOWS_TOOLCHAIN}" = "mingw" ] && [ -n "${MSYSTEM:-}" ]; then
+            msys_bin="/$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')/bin"
+            export PATH="${msys_bin}:$PATH"
+            hash -r
+          fi
           make test TEST_VERBOSE=1
 
       - name: Run Tests (Windows MSVC)
