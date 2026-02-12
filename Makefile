@@ -33,16 +33,29 @@ CFLAGS ?= -O2 -g -fPIC -Wall -pipe
 override CFLAGS += -DHAVE_CONFIG_H=1
 INCLUDES := -I$(CURDIR)
 
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+OBJ_EXT := obj
+OBJECTS := $(addprefix $(OBJDIR)/,$(SOURCES:.c=.$(OBJ_EXT)))
+INCLUDES := /I$(CURDIR)
+QRENCODE_COMPILE = $(CC) $(CFLAGS) $(INCLUDES) /c /Fo$@ $<
+QRENCODE_AR = $(AR) /nologo /OUT:$@ $^
+else
+OBJ_EXT := o
+OBJECTS := $(addprefix $(OBJDIR)/,$(SOURCES:.c=.$(OBJ_EXT)))
+QRENCODE_COMPILE = $(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+QRENCODE_AR = $(AR) rcs $@ $^
+endif
+
 all: $(LIBDIR)/libqrencode.a
 
 $(LIBDIR)/libqrencode.a: $(OBJECTS)
 	@mkdir -p $(@D)
-	$(Q)$(AR) rcs $@ $^
+	$(Q)$(QRENCODE_AR)
 	@echo "  Built "
 
-$(OBJDIR)/%.o: $(CURDIR)/%.c | $(OBJDIR)
+$(OBJDIR)/%.$(OBJ_EXT): $(CURDIR)/%.c | $(OBJDIR)
 	@echo "  CC      $<"
-	$(Q)$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+	$(Q)$(QRENCODE_COMPILE)
 
 $(OBJDIR):
 	@mkdir -p $@
