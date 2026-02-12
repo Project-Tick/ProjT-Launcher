@@ -307,10 +307,28 @@ jobs:
         if: runner.os == 'Windows' && matrix.windows-toolchain == 'mingw'
         run: |
           if [ -n "${MSYSTEM:-}" ]; then
-            msys_bin="/$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')/bin"
+            msys_lc="$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')"
+            msys_bin="/${msys_lc}/bin"
             export PATH="${msys_bin}:$PATH"
+            if [ -x "${msys_bin}/gcc" ] && [ -x "${msys_bin}/g++" ]; then
+              export CC="${msys_bin}/gcc"
+              export CXX="${msys_bin}/g++"
+              export AR="${msys_bin}/ar"
+              export RANLIB="${msys_bin}/ranlib"
+            elif [ -x "${msys_bin}/clang" ] && [ -x "${msys_bin}/clang++" ]; then
+              export CC="${msys_bin}/clang"
+              export CXX="${msys_bin}/clang++"
+              if [ -x "${msys_bin}/llvm-ar" ] && [ -x "${msys_bin}/llvm-ranlib" ]; then
+                export AR="${msys_bin}/llvm-ar"
+                export RANLIB="${msys_bin}/llvm-ranlib"
+              else
+                export AR="${msys_bin}/ar"
+                export RANLIB="${msys_bin}/ranlib"
+              fi
+            fi
             hash -r
           fi
+          export NO_CCACHE=1
           ./configure \
             --platform=windows \
             --arch=${{ matrix.target-arch || 'x86_64' }} \
@@ -332,8 +350,26 @@ jobs:
         if: runner.os != 'Windows' || matrix.windows-toolchain == 'mingw'
         run: |
           if [ "${RUNNER_OS}" = "Windows" ] && [ "${WINDOWS_TOOLCHAIN}" = "mingw" ] && [ -n "${MSYSTEM:-}" ]; then
-            msys_bin="/$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')/bin"
+            msys_lc="$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')"
+            msys_bin="/${msys_lc}/bin"
             export PATH="${msys_bin}:$PATH"
+            if [ -x "${msys_bin}/gcc" ] && [ -x "${msys_bin}/g++" ]; then
+              export CC="${msys_bin}/gcc"
+              export CXX="${msys_bin}/g++"
+              export AR="${msys_bin}/ar"
+              export RANLIB="${msys_bin}/ranlib"
+            elif [ -x "${msys_bin}/clang" ] && [ -x "${msys_bin}/clang++" ]; then
+              export CC="${msys_bin}/clang"
+              export CXX="${msys_bin}/clang++"
+              if [ -x "${msys_bin}/llvm-ar" ] && [ -x "${msys_bin}/llvm-ranlib" ]; then
+                export AR="${msys_bin}/llvm-ar"
+                export RANLIB="${msys_bin}/llvm-ranlib"
+              else
+                export AR="${msys_bin}/ar"
+                export RANLIB="${msys_bin}/ranlib"
+              fi
+            fi
+            export NO_CCACHE=1
             hash -r
           fi
           make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
@@ -349,8 +385,26 @@ jobs:
         if: runner.os != 'Windows' || matrix.windows-toolchain == 'mingw'
         run: |
           if [ "${RUNNER_OS}" = "Windows" ] && [ "${WINDOWS_TOOLCHAIN}" = "mingw" ] && [ -n "${MSYSTEM:-}" ]; then
-            msys_bin="/$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')/bin"
+            msys_lc="$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')"
+            msys_bin="/${msys_lc}/bin"
             export PATH="${msys_bin}:$PATH"
+            if [ -x "${msys_bin}/gcc" ] && [ -x "${msys_bin}/g++" ]; then
+              export CC="${msys_bin}/gcc"
+              export CXX="${msys_bin}/g++"
+              export AR="${msys_bin}/ar"
+              export RANLIB="${msys_bin}/ranlib"
+            elif [ -x "${msys_bin}/clang" ] && [ -x "${msys_bin}/clang++" ]; then
+              export CC="${msys_bin}/clang"
+              export CXX="${msys_bin}/clang++"
+              if [ -x "${msys_bin}/llvm-ar" ] && [ -x "${msys_bin}/llvm-ranlib" ]; then
+                export AR="${msys_bin}/llvm-ar"
+                export RANLIB="${msys_bin}/llvm-ranlib"
+              else
+                export AR="${msys_bin}/ar"
+                export RANLIB="${msys_bin}/ranlib"
+              fi
+            fi
+            export NO_CCACHE=1
             hash -r
           fi
           make test TEST_VERBOSE=1

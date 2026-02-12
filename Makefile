@@ -448,7 +448,9 @@ MAKEFLAGS += -j$(JOBS)
 # Disable built-in rules for speed (like ninja)
 MAKEFLAGS += -r -R
 
-# ccache - enabled by default if available
+# ccache/sccache wrappers
+# Disable on Windows runners to avoid mixing native wrappers with MSYS paths.
+ifneq ($(HOST_PLATFORM),windows)
 CCACHE := $(shell command -v ccache 2>/dev/null)
 ifneq ($(CCACHE),)
   ifndef NO_CCACHE
@@ -460,6 +462,7 @@ endif
 # sccache support (alternative to ccache)
 ifndef CCACHE
   SCCACHE := $(shell command -v sccache 2>/dev/null)
+endif
 endif
 
 # Use pipes instead of temp files (faster, GCC/Clang only)
@@ -515,21 +518,25 @@ ifeq ($(WINDOWS_TOOLCHAIN),msvc)
   # Avoid overriding MSVC toolchain with auto-detected clang/gcc from configure.
   # Allow only MSVC-compatible drivers if explicitly set.
   ifneq ($(_CC_CFG),)
-    ifneq ($(filter cl.exe clang-cl,$(_CC_CFG)),)
+    ifneq ($(filter cl cl.exe clang-cl clang-cl.exe,$(_CC_CFG)),)
       CC := $(_CC_CFG)
     endif
   endif
   ifneq ($(_CXX_CFG),)
-    ifneq ($(filter cl.exe clang-cl,$(_CXX_CFG)),)
+    ifneq ($(filter cl cl.exe clang-cl clang-cl.exe,$(_CXX_CFG)),)
       CXX := $(_CXX_CFG)
     endif
   endif
 else
   ifneq ($(_CC_CFG),)
-    CC := $(_CC_CFG)
+    ifneq ($(shell command -v "$(_CC_CFG)" 2>/dev/null),)
+      CC := $(_CC_CFG)
+    endif
   endif
   ifneq ($(_CXX_CFG),)
-    CXX := $(_CXX_CFG)
+    ifneq ($(shell command -v "$(_CXX_CFG)" 2>/dev/null),)
+      CXX := $(_CXX_CFG)
+    endif
   endif
 endif
 
