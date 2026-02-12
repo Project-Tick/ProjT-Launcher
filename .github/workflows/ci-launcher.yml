@@ -290,6 +290,7 @@ jobs:
             --platform=linux \
             --arch=${{ matrix.target-arch || 'x86_64' }} \
             --build=${{ env.BUILD_TYPE }} \
+            --qt-prefix="${{ steps.setup-dependencies.outputs.qt-path }}" \
             --with-tests
 
       - name: Configure (Windows MSVC)
