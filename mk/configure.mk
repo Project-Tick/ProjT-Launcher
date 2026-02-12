@@ -269,7 +269,7 @@ $(BZ_VERSION_OUT): $(BZ_VERSION_IN)
 NBT_EXPORT_OUT := $(GENERATED_INCLUDE)/nbt_export.h
 NBT_EXPORT_SRC := $(srctree)/libnbtplusplus/include/nbt_export.h
 
-$(NBT_EXPORT_OUT): | $(GENERATED_INCLUDE)
+$(NBT_EXPORT_OUT): $(srctree)/scripts/gen-nbt-export.sh | $(GENERATED_INCLUDE)
 	@echo "  GEN     $@"
 	$(Q)$(srctree)/scripts/gen-nbt-export.sh $@
 
@@ -283,7 +283,7 @@ $(NBT_EXPORT_SRC): $(NBT_EXPORT_OUT)
 
 QRENCODE_CONFIG_OUT := $(srctree)/libqrencode/config.h
 
-$(QRENCODE_CONFIG_OUT):
+$(QRENCODE_CONFIG_OUT): $(srctree)/scripts/gen-qrencode-config.sh
 	@echo "  GEN     $@"
 	$(Q)$(srctree)/scripts/gen-qrencode-config.sh $@
 
@@ -298,15 +298,15 @@ CMARK_CONFIG_SRC := $(srctree)/cmark/src/cmark_config.h
 CMARK_EXPORT_SRC := $(srctree)/cmark/src/cmark_export.h
 CMARK_VERSION_SRC := $(srctree)/cmark/src/cmark_version.h
 
-$(CMARK_CONFIG_OUT): | $(GENERATED_INCLUDE)
+$(CMARK_CONFIG_OUT): $(srctree)/scripts/gen-cmark-config.sh | $(GENERATED_INCLUDE)
 	@echo "  GEN     $@"
 	$(Q)$(srctree)/scripts/gen-cmark-config.sh $@
 
-$(CMARK_EXPORT_OUT): | $(GENERATED_INCLUDE)
+$(CMARK_EXPORT_OUT): $(srctree)/scripts/gen-cmark-export.sh | $(GENERATED_INCLUDE)
 	@echo "  GEN     $@"
 	$(Q)$(srctree)/scripts/gen-cmark-export.sh $@
 
-$(CMARK_VERSION_OUT): | $(GENERATED_INCLUDE)
+$(CMARK_VERSION_OUT): $(srctree)/scripts/gen-cmark-version.sh | $(GENERATED_INCLUDE)
 	@echo "  GEN     $@"
 	$(Q)$(srctree)/scripts/gen-cmark-version.sh $@
 

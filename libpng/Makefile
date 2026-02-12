@@ -34,11 +34,18 @@ SOURCES := \
     pngwtran.c \
     pngwutil.c
 
+# ARM64 builds need NEON translation units when libpng enables ARM NEON paths.
+ifneq ($(filter arm64 aarch64,$(TARGET_ARCH)),)
+SOURCES += \
+    arm/arm_init.c \
+    arm/filter_neon_intrinsics.c \
+    arm/palette_neon_intrinsics.c
+endif
+
 OBJECTS := $(addprefix $(OBJDIR)/,$(SOURCES:.c=.o))
 
 # Compiler flags
 CFLAGS ?= -O2 -g -fPIC -Wall -pipe
-CFLAGS += -DPNG_ARM_NEON_OPT=0
 INCLUDES := -I$(CURDIR) -I$(ZLIB_DIR) -I$(OBJDIR)
 
 ifeq ($(WINDOWS_TOOLCHAIN),msvc)

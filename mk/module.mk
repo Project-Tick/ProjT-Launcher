@@ -75,7 +75,18 @@ QT_MODULE_LIBS := $(strip $(shell \
 	PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --libs $(QT_MODULES_PKG) 2>/dev/null || \
 	pkg-config --libs $(QT_MODULES_PKG) 2>/dev/null))
 ifeq ($(strip $(QT_MODULE_CFLAGS)),)
-  ifneq ($(strip $(QT_CFLAGS)),)
+  QT_SYS_PREFIX := $(strip $(shell \
+    for d in "$(QT_PREFIX)" /usr/include/qt6 /usr/include/*-linux-gnu/qt6 /usr/lib/qt6 /usr/lib64/qt6 /usr/local/qt6 /opt/qt6 ; do \
+      if [ -d "$$d/include/QtCore" ]; then echo "$$d"; break; fi; \
+      if [ -d "$$d/QtCore" ]; then echo "$$d"; break; fi; \
+    done))
+  ifneq ($(strip $(QT_SYS_PREFIX)),)
+    ifneq ($(wildcard $(QT_SYS_PREFIX)/include/QtCore),)
+      QT_MODULE_CFLAGS := -I$(QT_SYS_PREFIX)/include $(foreach m,$(qt-modules-y),-I$(QT_SYS_PREFIX)/include/Qt$(m))
+    else
+      QT_MODULE_CFLAGS := -I$(QT_SYS_PREFIX) $(foreach m,$(qt-modules-y),-I$(QT_SYS_PREFIX)/Qt$(m))
+    endif
+  else ifneq ($(strip $(QT_CFLAGS)),)
     QT_MODULE_CFLAGS := $(QT_CFLAGS)
   else
     QT_MODULE_CFLAGS := -I$(QT_PREFIX)/include $(foreach m,$(qt-modules-y),-I$(QT_PREFIX)/include/Qt$(m))

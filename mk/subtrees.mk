@@ -38,13 +38,37 @@ endif
 ZLIB_OBJDIR := $(OBJDIR)/zlib
 ZLIB_STATIC_LIB := $(LIBDIR)/libz$(LIB_EXT)
 
+# On Windows+MinGW, prefer cwd-relative paths. This avoids /d vs D:/ path
+# translation mismatches between shells/toolchains on CI.
+ifeq ($(TARGET_OS),windows)
+ifeq ($(WINDOWS_TOOLCHAIN),mingw)
+ifneq ($(wildcard zlib/adler32.c),)
+ZLIB_DIR_REL := zlib
+else ifneq ($(wildcard toolchain/gcc/zlib/adler32.c),)
+ZLIB_DIR_REL := toolchain/gcc/zlib
+else
+ZLIB_DIR_REL := $(ZLIB_DIR)
+endif
+ZLIB_OBJDIR_REL := $(patsubst $(srctree)/%,%,$(ZLIB_OBJDIR))
+ifeq ($(ZLIB_OBJDIR_REL),$(ZLIB_OBJDIR))
+ZLIB_OBJDIR_REL := build/obj/zlib
+endif
+else
+ZLIB_DIR_REL := $(ZLIB_DIR)
+ZLIB_OBJDIR_REL := $(ZLIB_OBJDIR)
+endif
+else
+ZLIB_DIR_REL := $(ZLIB_DIR)
+ZLIB_OBJDIR_REL := $(ZLIB_OBJDIR)
+endif
+
 ifeq ($(WINDOWS_TOOLCHAIN),msvc)
-ZLIB_INCLUDES := /I$(ZLIB_DIR)
+ZLIB_INCLUDES := /I$(ZLIB_DIR_REL)
 ZLIB_DEFINES := /DHAVE_SYS_TYPES_H /DHAVE_STDINT_H /DHAVE_STDDEF_H /DZLIB_DLL
 ZLIB_COMPILE_C = $(CC) $(ZLIB_CFLAGS) $(ZLIB_INCLUDES) /c /Fo$@ $<
 ZLIB_AR = $(AR) /nologo /OUT:$@ $^
 else
-ZLIB_INCLUDES := -I$(ZLIB_DIR)
+ZLIB_INCLUDES := -I$(ZLIB_DIR_REL)
 ZLIB_DEFINES := -DHAVE_SYS_TYPES_H -DHAVE_STDINT_H -DHAVE_STDDEF_H
 ifeq ($(TARGET_OS),windows)
     ZLIB_DEFINES += -DZLIB_DLL
@@ -73,12 +97,12 @@ ZLIB_SOURCES := \
     uncompr.c \
     zutil.c
 
-ZLIB_OBJS := $(addprefix $(ZLIB_OBJDIR)/,$(ZLIB_SOURCES:.c=$(OBJ_EXT)))
+ZLIB_OBJS := $(addprefix $(ZLIB_OBJDIR_REL)/,$(ZLIB_SOURCES:.c=$(OBJ_EXT)))
 
 # Zlib build flags (minimal, library doesn't need many flags)
 ZLIB_CFLAGS := $(CFLAGS) $(ZLIB_DEFINES)
 
-$(ZLIB_OBJDIR)/%$(OBJ_EXT): $(ZLIB_DIR)/%.c | $(ZLIB_OBJDIR)
+$(ZLIB_OBJDIR_REL)/%$(OBJ_EXT): $(ZLIB_DIR_REL)/%.c | $(ZLIB_OBJDIR_REL)
 	@mkdir -p $(@D)
 	$(Q)$(ZLIB_COMPILE_C)
 
@@ -93,7 +117,7 @@ endif
 
 # Shared library version of zlib (for tests to avoid symbol conflicts with Qt)
 ifneq ($(WINDOWS_TOOLCHAIN),msvc)
-ZLIB_SHARED_OBJS := $(addprefix $(ZLIB_OBJDIR)/shared/,$(ZLIB_SOURCES:.c=.o))
+ZLIB_SHARED_OBJS := $(addprefix $(ZLIB_OBJDIR_REL)/shared/,$(ZLIB_SOURCES:.c=.o))
 
 ifeq ($(TARGET_PLATFORM),macos)
 ZLIB_SHARED_LIB := $(LIBDIR)/libprojtZ.dylib
@@ -101,7 +125,7 @@ else
 ZLIB_SHARED_LIB := $(LIBDIR)/libprojtZ.so.1
 endif
 
-$(ZLIB_OBJDIR)/shared/%.o: $(ZLIB_DIR)/%.c
+$(ZLIB_OBJDIR_REL)/shared/%.o: $(ZLIB_DIR_REL)/%.c
 	@mkdir -p $(@D)
 	$(Q)$(CC) $(ZLIB_CFLAGS) -fPIC $(ZLIB_INCLUDES) -c -o $@ $<
 
@@ -115,7 +139,7 @@ else
 endif
 endif
 
-$(ZLIB_OBJDIR):
+$(ZLIB_OBJDIR_REL):
 	@mkdir -p $@
 
 zlib: $(ZLIB_STATIC_LIB)
