@@ -39,6 +39,12 @@ OBJECTS := $(addprefix $(OBJDIR)/,$(SOURCES:.c=.$(OBJ_EXT)))
 INCLUDES := /I$(CURDIR)
 QRENCODE_COMPILE = $(CC) $(CFLAGS) $(INCLUDES) /c /Fo$@ $<
 QRENCODE_AR = $(AR) /nologo /OUT:$@ $^
+else ifneq ($(filter lib lib.exe,$(notdir $(firstword $(AR)))),)
+OBJ_EXT := obj
+OBJECTS := $(addprefix $(OBJDIR)/,$(SOURCES:.c=.$(OBJ_EXT)))
+INCLUDES := /I$(CURDIR)
+QRENCODE_COMPILE = $(CC) $(CFLAGS) $(INCLUDES) /c /Fo$@ $<
+QRENCODE_AR = $(AR) /nologo /OUT:$@ $^
 else
 OBJ_EXT := o
 OBJECTS := $(addprefix $(OBJDIR)/,$(SOURCES:.c=.$(OBJ_EXT)))
