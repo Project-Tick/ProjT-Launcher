@@ -29,8 +29,8 @@ OBJECTS := $(addprefix $(OBJDIR)/,$(SOURCES:.c=.o))
 
 # Compiler flags
 CFLAGS ?= -O2 -g -fPIC -Wall -pipe
-# Define inline macros directly (config.h is problematic)
-CFLAGS += -DSTATIC_IN_RELEASE=static -DMAJOR_VERSION=4 -DMINOR_VERSION=1 -DMICRO_VERSION=1 -DHAVE_STRDUP=1 -DVERSION='"4.1.1"'
+# Force config.h usage so version/static macros are always defined.
+override CFLAGS += -DHAVE_CONFIG_H=1
 INCLUDES := -I$(CURDIR)
 
 all: $(LIBDIR)/libqrencode.a
