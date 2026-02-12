@@ -11,6 +11,11 @@ libqrencode/
 cmark/
 extra-cmake-modules/
 zlib/
+qt/
+gamemode/
+json/
+libpng/
+toolchain/
 
 # generated reports
 TODO_FIXME_REPORT.md
