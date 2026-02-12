@@ -114,7 +114,7 @@ ifeq ($(strip $(QT_MODULE_CFLAGS)),)
 endif
 ifeq ($(strip $(QT_MODULE_CFLAGS)),)
   QT_SYS_PREFIX := $(strip $(shell \
-    for d in "$(QT_PREFIX)" /usr/include/qt6 /usr/include/*-linux-gnu/qt6 /usr/lib/qt6 /usr/lib64/qt6 /usr/lib/*-linux-gnu/qt6 /usr/local/qt6 /usr/local/lib/qt6 /opt/qt6 "$$HOME/Qt"/*/* ; do \
+    for d in "$(QT_PREFIX)" "$(QT_PREFIX)"/* "$(QT_PREFIX)"/*/* /usr/include/qt6 /usr/include/*-linux-gnu/qt6 /usr/lib/qt6 /usr/lib64/qt6 /usr/lib/*-linux-gnu/qt6 /usr/local/qt6 /usr/local/lib/qt6 /opt/qt6 "$$HOME/Qt"/*/* ; do \
       [ -d "$$d" ] || continue; \
       if [ -d "$$d/include" ]; then h="$$d/include"; \
       elif [ -d "$$d/QtCore" ]; then h="$$d"; \

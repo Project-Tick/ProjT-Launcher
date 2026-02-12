@@ -375,35 +375,69 @@ export QT_RCC
 
 # Qt modules list
 QT_CORE_MODULES := Qt6Core Qt6Gui Qt6Widgets Qt6Network Qt6Concurrent Qt6Xml Qt6NetworkAuth Qt6OpenGL
+ifeq ($(TARGET_PLATFORM),linux)
+QT_CORE_MODULES += Qt6DBus
+QT_DBUS_INCLUDE_FALLBACK := -I$(QT_PREFIX)/include/QtDBus
+QT_DBUS_LIB_FALLBACK := -lQt6DBus
+endif
 
 # Qt include/lib flags for dependent modules
-QT_CFLAGS := $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --cflags $(QT_CORE_MODULES) 2>/dev/null || echo "-I$(QT_PREFIX)/include -I$(QT_PREFIX)/include/QtCore -I$(QT_PREFIX)/include/QtGui -I$(QT_PREFIX)/include/QtWidgets -I$(QT_PREFIX)/include/QtNetwork")
-QT_LIBS := $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --libs $(QT_CORE_MODULES) 2>/dev/null || echo "-L$(QT_PREFIX)/lib -lQt6Core -lQt6Gui -lQt6Widgets -lQt6Network")
+QT_CFLAGS := $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --cflags $(QT_CORE_MODULES) 2>/dev/null || echo "-I$(QT_PREFIX)/include -I$(QT_PREFIX)/include/QtCore -I$(QT_PREFIX)/include/QtGui -I$(QT_PREFIX)/include/QtWidgets -I$(QT_PREFIX)/include/QtNetwork -I$(QT_PREFIX)/include/QtConcurrent -I$(QT_PREFIX)/include/QtXml -I$(QT_PREFIX)/include/QtNetworkAuth -I$(QT_PREFIX)/include/QtOpenGL $(QT_DBUS_INCLUDE_FALLBACK)")
+QT_LIBS := $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --libs $(QT_CORE_MODULES) 2>/dev/null || echo "-L$(QT_PREFIX)/lib -lQt6Core -lQt6Gui -lQt6Widgets -lQt6Network -lQt6Concurrent -lQt6Xml -lQt6NetworkAuth -lQt6OpenGL $(QT_DBUS_LIB_FALLBACK)")
 
 # If system Qt is selected
 ifeq ($(CONFIG_QT_SYSTEM),y)
-ifneq ($(CONFIG_QT_PREFIX),)
-QT_PREFIX := $(CONFIG_QT_PREFIX)
+QT_PREFIX_CFG := $(call cfg-unquote,$(CONFIG_QT_PREFIX))
+ifneq ($(QT_PREFIX_CFG),)
+QT_PREFIX := $(QT_PREFIX_CFG)
 endif
+
+QT_HOST_BINS_CFG := $(call cfg-unquote,$(CONFIG_QT_HOST_BINS))
+QT_TOOL_DIR := $(strip $(firstword $(foreach d,$(QT_HOST_BINS_CFG) $(QT_PREFIX)/bin $(QT_PREFIX)/libexec,$(if $(wildcard $(d)/moc),$(d),))))
+ifeq ($(strip $(QT_TOOL_DIR)),)
+ifneq ($(WINDOWS_TOOLCHAIN),msvc)
 QT_LIBEXECDIR := $(shell pkg-config --variable=libexecdir Qt6Core 2>/dev/null)
-ifeq ($(QT_LIBEXECDIR),)
-QT_LIBEXECDIR := /usr/lib64/qt6/libexec
+ifneq ($(strip $(QT_LIBEXECDIR)),)
+QT_TOOL_DIR := $(QT_LIBEXECDIR)
 endif
-QT_CFLAGS := $(shell pkg-config --cflags $(QT_CORE_MODULES) 2>/dev/null)
-QT_LIBS := $(shell pkg-config --libs $(QT_CORE_MODULES) 2>/dev/null)
+endif
+endif
+ifeq ($(strip $(QT_TOOL_DIR)),)
+QT_MOC_FROM_PATH := $(shell command -v moc 2>/dev/null)
+ifneq ($(strip $(QT_MOC_FROM_PATH)),)
+QT_TOOL_DIR := $(dir $(QT_MOC_FROM_PATH))
+endif
+endif
+QT_TOOL_DIR := $(patsubst %/,%,$(QT_TOOL_DIR))
+
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+QT_CFLAGS :=
+QT_LIBS :=
+else
+QT_CFLAGS := $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --cflags $(QT_CORE_MODULES) 2>/dev/null || pkg-config --cflags $(QT_CORE_MODULES) 2>/dev/null)
+QT_LIBS := $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --libs $(QT_CORE_MODULES) 2>/dev/null || pkg-config --libs $(QT_CORE_MODULES) 2>/dev/null)
+endif
 ifeq ($(strip $(QT_CFLAGS)),)
-QT_CFLAGS := -I$(QT_PREFIX)/include -I$(QT_PREFIX)/include/QtCore -I$(QT_PREFIX)/include/QtGui -I$(QT_PREFIX)/include/QtWidgets -I$(QT_PREFIX)/include/QtNetwork -I$(QT_PREFIX)/include/QtConcurrent -I$(QT_PREFIX)/include/QtXml
+QT_CFLAGS := -I$(QT_PREFIX)/include -I$(QT_PREFIX)/include/QtCore -I$(QT_PREFIX)/include/QtGui -I$(QT_PREFIX)/include/QtWidgets -I$(QT_PREFIX)/include/QtNetwork -I$(QT_PREFIX)/include/QtConcurrent -I$(QT_PREFIX)/include/QtXml -I$(QT_PREFIX)/include/QtNetworkAuth -I$(QT_PREFIX)/include/QtOpenGL $(QT_DBUS_INCLUDE_FALLBACK)
 endif
 ifeq ($(strip $(QT_LIBS)),)
-QT_LIBS := -L$(QT_PREFIX)/lib -lQt6Core -lQt6Gui -lQt6Widgets -lQt6Network -lQt6Concurrent -lQt6Xml
+QT_LIBS := -L$(QT_PREFIX)/lib -lQt6Core -lQt6Gui -lQt6Widgets -lQt6Network -lQt6Concurrent -lQt6Xml -lQt6NetworkAuth -lQt6OpenGL $(QT_DBUS_LIB_FALLBACK)
 endif
-QT_MOC := $(QT_LIBEXECDIR)/moc
-QT_UIC := $(QT_LIBEXECDIR)/uic
-QT_RCC := $(QT_LIBEXECDIR)/rcc
-QT_LRELEASE := $(QT_LIBEXECDIR)/lrelease
-QT_LUPDATE := $(QT_LIBEXECDIR)/lupdate
+ifeq ($(strip $(QT_TOOL_DIR)),)
+QT_MOC := moc
+QT_UIC := uic
+QT_RCC := rcc
+QT_LRELEASE := lrelease
+QT_LUPDATE := lupdate
+else
+QT_MOC := $(QT_TOOL_DIR)/moc
+QT_UIC := $(QT_TOOL_DIR)/uic
+QT_RCC := $(QT_TOOL_DIR)/rcc
+QT_LRELEASE := $(QT_TOOL_DIR)/lrelease
+QT_LUPDATE := $(QT_TOOL_DIR)/lupdate
+endif
 # Get system Qt version
-QT_VERSION := $(shell pkg-config --modversion Qt6Core 2>/dev/null || echo "6.0.0")
+QT_VERSION := $(shell PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --modversion Qt6Core 2>/dev/null || pkg-config --modversion Qt6Core 2>/dev/null || echo "6.0.0")
 QT_VERSION_MAJOR := $(word 1,$(subst ., ,$(QT_VERSION)))
 QT_VERSION_MINOR := $(word 2,$(subst ., ,$(QT_VERSION)))
 QT_VERSION_PATCH := $(word 3,$(subst ., ,$(QT_VERSION)))

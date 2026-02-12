@@ -322,19 +322,19 @@ jobs:
             msys_bin="/${msys_lc}/bin"
             export PATH="${msys_bin}:$PATH"
             if [ -x "${msys_bin}/gcc" ] && [ -x "${msys_bin}/g++" ]; then
-              export CC="${msys_bin}/gcc"
-              export CXX="${msys_bin}/g++"
-              export AR="${msys_bin}/ar"
-              export RANLIB="${msys_bin}/ranlib"
+              export CC="gcc"
+              export CXX="g++"
+              export AR="ar"
+              export RANLIB="ranlib"
             elif [ -x "${msys_bin}/clang" ] && [ -x "${msys_bin}/clang++" ]; then
-              export CC="${msys_bin}/clang"
-              export CXX="${msys_bin}/clang++"
+              export CC="clang"
+              export CXX="clang++"
               if [ -x "${msys_bin}/llvm-ar" ] && [ -x "${msys_bin}/llvm-ranlib" ]; then
-                export AR="${msys_bin}/llvm-ar"
-                export RANLIB="${msys_bin}/llvm-ranlib"
+                export AR="llvm-ar"
+                export RANLIB="llvm-ranlib"
               else
-                export AR="${msys_bin}/ar"
-                export RANLIB="${msys_bin}/ranlib"
+                export AR="ar"
+                export RANLIB="ranlib"
               fi
             fi
             hash -r
@@ -370,19 +370,19 @@ jobs:
             msys_bin="/${msys_lc}/bin"
             export PATH="${msys_bin}:$PATH"
             if [ -x "${msys_bin}/gcc" ] && [ -x "${msys_bin}/g++" ]; then
-              export CC="${msys_bin}/gcc"
-              export CXX="${msys_bin}/g++"
-              export AR="${msys_bin}/ar"
-              export RANLIB="${msys_bin}/ranlib"
+              export CC="gcc"
+              export CXX="g++"
+              export AR="ar"
+              export RANLIB="ranlib"
             elif [ -x "${msys_bin}/clang" ] && [ -x "${msys_bin}/clang++" ]; then
-              export CC="${msys_bin}/clang"
-              export CXX="${msys_bin}/clang++"
+              export CC="clang"
+              export CXX="clang++"
               if [ -x "${msys_bin}/llvm-ar" ] && [ -x "${msys_bin}/llvm-ranlib" ]; then
-                export AR="${msys_bin}/llvm-ar"
-                export RANLIB="${msys_bin}/llvm-ranlib"
+                export AR="llvm-ar"
+                export RANLIB="llvm-ranlib"
               else
-                export AR="${msys_bin}/ar"
-                export RANLIB="${msys_bin}/ranlib"
+                export AR="ar"
+                export RANLIB="ranlib"
               fi
             fi
             export NO_CCACHE=1
@@ -405,19 +405,19 @@ jobs:
             msys_bin="/${msys_lc}/bin"
             export PATH="${msys_bin}:$PATH"
             if [ -x "${msys_bin}/gcc" ] && [ -x "${msys_bin}/g++" ]; then
-              export CC="${msys_bin}/gcc"
-              export CXX="${msys_bin}/g++"
-              export AR="${msys_bin}/ar"
-              export RANLIB="${msys_bin}/ranlib"
+              export CC="gcc"
+              export CXX="g++"
+              export AR="ar"
+              export RANLIB="ranlib"
             elif [ -x "${msys_bin}/clang" ] && [ -x "${msys_bin}/clang++" ]; then
-              export CC="${msys_bin}/clang"
-              export CXX="${msys_bin}/clang++"
+              export CC="clang"
+              export CXX="clang++"
               if [ -x "${msys_bin}/llvm-ar" ] && [ -x "${msys_bin}/llvm-ranlib" ]; then
-                export AR="${msys_bin}/llvm-ar"
-                export RANLIB="${msys_bin}/llvm-ranlib"
+                export AR="llvm-ar"
+                export RANLIB="llvm-ranlib"
               else
-                export AR="${msys_bin}/ar"
-                export RANLIB="${msys_bin}/ranlib"
+                export AR="ar"
+                export RANLIB="ranlib"
               fi
             fi
             export NO_CCACHE=1

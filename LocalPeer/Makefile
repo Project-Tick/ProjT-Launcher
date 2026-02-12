@@ -36,8 +36,8 @@ cxxflags-y := $(QT_CFLAGS)
 # Qt tools - use exported values from mk/qt.mk
 MOC := $(QT_MOC)
 ifeq ($(MOC),)
-# Fallback for bundled Qt
-MOC := $(KBUILD_OUTPUT)/obj/qt/install/libexec/moc
+# Fallback to PATH if parent did not export a tool path.
+MOC := moc
 endif
 
 # Add moc object to library (will be built by rules below)

@@ -416,11 +416,33 @@ int main(){return 0;}" "-std=c++17"; then
 # Qt Detection
 # ============================================================================
 
+resolve_qt_prefix() {
+    local candidate="$1"
+    [ -z "$candidate" ] && return 0
+
+    if [ -x "$candidate/bin/qmake6" ] || [ -x "$candidate/bin/qmake" ] || [ -d "$candidate/include/QtCore" ]; then
+        printf '%s\n' "$candidate"
+        return 0
+    fi
+
+    local sub
+    for sub in "$candidate"/* "$candidate"/*/*; do
+        [ -d "$sub" ] || continue
+        if [ -x "$sub/bin/qmake6" ] || [ -x "$sub/bin/qmake" ] || [ -d "$sub/include/QtCore" ]; then
+            printf '%s\n' "$sub"
+            return 0
+        fi
+    done
+
+    printf '%s\n' "$candidate"
+}
+
 detect_qt() {
     log_check "for Qt"
     
     # If explicit path given
     if [ -n "$QT_PREFIX" ]; then
+        QT_PREFIX=$(resolve_qt_prefix "$QT_PREFIX")
         if [ -f "$QT_PREFIX/bin/qmake" ] || [ -f "$QT_PREFIX/bin/qmake6" ]; then
             HAVE_QT="y"
         fi
@@ -428,7 +450,11 @@ detect_qt() {
     
     # Try Qt6_DIR environment variable
     if [ "$HAVE_QT" != "y" ] && [ -n "$Qt6_DIR" ]; then
-        QT_PREFIX="$Qt6_DIR"
+        case "$Qt6_DIR" in
+            */lib/cmake/Qt6) QT_PREFIX="${Qt6_DIR%/lib/cmake/Qt6}" ;;
+            *) QT_PREFIX="$Qt6_DIR" ;;
+        esac
+        QT_PREFIX=$(resolve_qt_prefix "$QT_PREFIX")
         if [ -d "$QT_PREFIX" ]; then
             HAVE_QT="y"
         fi

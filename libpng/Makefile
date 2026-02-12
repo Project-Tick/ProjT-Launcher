@@ -9,6 +9,20 @@ LIBDIR := $(KBUILD_OUTPUT)/lib
 
 # Zlib is required
 ZLIB_DIR := $(srctree)/zlib
+LIBPNG_SRCDIR := $(CURDIR)
+
+# Normalize paths for MinGW-on-MSYS2 to avoid /d/... conversion pitfalls.
+ifeq ($(TARGET_OS),windows)
+ifeq ($(WINDOWS_TOOLCHAIN),mingw)
+CYGPATH := $(shell command -v cygpath 2>/dev/null)
+ifneq ($(strip $(CYGPATH)),)
+OBJDIR := $(shell cygpath -m "$(OBJDIR)")
+LIBDIR := $(shell cygpath -m "$(LIBDIR)")
+ZLIB_DIR := $(shell cygpath -m "$(ZLIB_DIR)")
+LIBPNG_SRCDIR := $(shell cygpath -m "$(LIBPNG_SRCDIR)")
+endif
+endif
+endif
 
 ifeq ($(V),1)
 Q :=
@@ -70,11 +84,11 @@ $(LIBDIR)/libpng.a: $(OBJECTS)
 	@echo "  Built "
 
 # Generate pnglibconf.h from template if not exists
-$(OBJDIR)/pnglibconf.h: $(CURDIR)/scripts/pnglibconf.h.prebuilt | $(OBJDIR)
+$(OBJDIR)/pnglibconf.h: $(LIBPNG_SRCDIR)/scripts/pnglibconf.h.prebuilt | $(OBJDIR)
 	@echo "  GEN     pnglibconf.h"
 	$(Q)cp $< $@
 
-$(OBJDIR)/%.$(OBJ_EXT): $(CURDIR)/%.c $(OBJDIR)/pnglibconf.h | $(OBJDIR)
+$(OBJDIR)/%.$(OBJ_EXT): $(LIBPNG_SRCDIR)/%.c $(OBJDIR)/pnglibconf.h | $(OBJDIR)
 	@echo "  CC      $<"
 	$(Q)mkdir -p $(dir $@)
 	$(Q)$(LIBPNG_COMPILE)

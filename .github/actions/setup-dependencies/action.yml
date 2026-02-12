@@ -76,6 +76,28 @@ runs:
       shell: bash
       run: |
         qt_path=""
+        resolve_qt_prefix() {
+          local candidate="$1"
+          [ -z "$candidate" ] && return 0
+
+          # Already a usable Qt prefix.
+          if [ -x "$candidate/bin/qmake6" ] || [ -x "$candidate/bin/qmake" ] || [ -d "$candidate/include/QtCore" ]; then
+            printf '%s\n' "$candidate"
+            return 0
+          fi
+
+          # install-qt-action may return a version root (e.g. .../Qt/6.10.2).
+          local sub
+          for sub in "$candidate"/* "$candidate"/*/*; do
+            [ -d "$sub" ] || continue
+            if [ -x "$sub/bin/qmake6" ] || [ -x "$sub/bin/qmake" ] || [ -d "$sub/include/QtCore" ]; then
+              printf '%s\n' "$sub"
+              return 0
+            fi
+          done
+
+          printf '%s\n' "$candidate"
+        }
 
         # Preferred: explicit output from install-qt-action.
         if [ -n "${{ steps.install-qt.outputs.dir }}" ]; then
@@ -95,5 +117,7 @@ runs:
             *) qt_path="${Qt6_DIR}" ;;
           esac
         fi
+
+        qt_path="$(resolve_qt_prefix "$qt_path")"
 
         echo "qt-path=$qt_path" >> "$GITHUB_OUTPUT"

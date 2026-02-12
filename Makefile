@@ -228,18 +228,25 @@ ifeq ($(TARGET_PLATFORM),windows)
       ifneq ($(MSYSTEM),)
         MSYSTEM_LC := $(shell printf '%s' "$(MSYSTEM)" | tr '[:upper:]' '[:lower:]')
         ifneq ($(wildcard /$(MSYSTEM_LC)/bin/gcc),)
-          CC      := /$(MSYSTEM_LC)/bin/gcc
-          CXX     := /$(MSYSTEM_LC)/bin/g++
-          LD      := /$(MSYSTEM_LC)/bin/g++
-          AR      := /$(MSYSTEM_LC)/bin/ar
-          RANLIB  := /$(MSYSTEM_LC)/bin/ranlib
-          AS      := /$(MSYSTEM_LC)/bin/as
-          OBJCOPY := /$(MSYSTEM_LC)/bin/objcopy
-          STRIP   := /$(MSYSTEM_LC)/bin/strip
+          CC      := gcc
+          CXX     := g++
+          LD      := g++
+          AR      := ar
+          RANLIB  := ranlib
+          AS      := as
+          OBJCOPY := objcopy
+          STRIP   := strip
         else ifneq ($(wildcard /$(MSYSTEM_LC)/bin/clang),)
-          CC      := /$(MSYSTEM_LC)/bin/clang
-          CXX     := /$(MSYSTEM_LC)/bin/clang++
-          LD      := /$(MSYSTEM_LC)/bin/clang++
+          CC      := clang
+          CXX     := clang++
+          LD      := clang++
+          ifneq ($(wildcard /$(MSYSTEM_LC)/bin/llvm-ar),)
+            AR      := llvm-ar
+            RANLIB  := llvm-ranlib
+          else
+            AR      := ar
+            RANLIB  := ranlib
+          endif
         endif
       endif
 

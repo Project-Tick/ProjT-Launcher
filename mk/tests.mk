@@ -31,6 +31,7 @@ TEST_FILTER ?=
 CXX ?= g++
 CC ?= gcc
 MOC ?= moc
+TIMEOUT_CMD ?= $(strip $(shell command -v timeout 2>/dev/null || command -v gtimeout 2>/dev/null || true))
 
 # Output directories
 TEST_OUT := $(KBUILD_OUTPUT)/tests
@@ -253,7 +254,10 @@ tests-run:
 	@echo "  Running ProjT-Launcher Tests"
 	@echo "=================================================================="
 	@echo ""
-	@PASSED=0; FAILED=0; SKIPPED=0; \
+	@PASSED=0; FAILED=0; SKIPPED=0; TIMEOUT_RUNNER="$(TIMEOUT_CMD)"; \
+	if [ -z "$$TIMEOUT_RUNNER" ]; then \
+		echo "  NOTE    timeout/gtimeout not found; running tests without per-test timeout"; \
+	fi; \
 	for test in $(ALL_TEST_BINS); do \
 		testname=$$(basename $$test); \
 		if [ -n "$(TEST_FILTER)" ] && ! echo "$$testname" | grep -q "$(TEST_FILTER)"; then \
@@ -267,7 +271,12 @@ tests-run:
 		fi; \
 		printf "  RUN     %-30s" "$$testname"; \
 		if [ "$(TEST_VERBOSE)" = "1" ]; then \
-			if timeout $(TEST_TIMEOUT) $$test -v1 2>&1; then \
+			if [ -n "$$TIMEOUT_RUNNER" ]; then \
+				TEST_CMD="$$TIMEOUT_RUNNER $(TEST_TIMEOUT) $$test -v1"; \
+			else \
+				TEST_CMD="$$test -v1"; \
+			fi; \
+			if eval "$$TEST_CMD" 2>&1; then \
 				echo "  PASS"; \
 				PASSED=$$((PASSED + 1)); \
 			else \
@@ -275,12 +284,17 @@ tests-run:
 				FAILED=$$((FAILED + 1)); \
 			fi; \
 		else \
-			if timeout $(TEST_TIMEOUT) $$test 2>&1 >/dev/null; then \
+			if [ -n "$$TIMEOUT_RUNNER" ]; then \
+				TEST_CMD="$$TIMEOUT_RUNNER $(TEST_TIMEOUT) $$test"; \
+			else \
+				TEST_CMD="$$test"; \
+			fi; \
+			if eval "$$TEST_CMD" 2>&1 >/dev/null; then \
 				echo "PASS"; \
 				PASSED=$$((PASSED + 1)); \
 			else \
 				echo "FAIL"; \
-				timeout $(TEST_TIMEOUT) $$test 2>&1 | tail -20; \
+				eval "$$TEST_CMD" 2>&1 | tail -20; \
 				FAILED=$$((FAILED + 1)); \
 			fi; \
 		fi; \
