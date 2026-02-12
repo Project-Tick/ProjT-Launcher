@@ -190,7 +190,7 @@ ifeq ($(TARGET_PLATFORM),windows)
     
     # MSVC-specific flags
     CFLAGS_BASE   = /nologo /W3 /EHsc /MD
-    CXXFLAGS_BASE = /nologo /W3 /EHsc /MD /std:c++17 /Zc:__cplusplus
+    CXXFLAGS_BASE = /nologo /W3 /EHsc /MD /std:c++17 /Zc:__cplusplus /permissive-
     LDFLAGS_BASE  = /nologo
     
     # Debug/Release

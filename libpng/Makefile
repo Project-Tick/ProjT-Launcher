@@ -34,8 +34,9 @@ SOURCES := \
     pngwtran.c \
     pngwutil.c
 
-# ARM64 builds need NEON translation units when libpng enables ARM NEON paths.
-ifneq ($(filter arm64 aarch64,$(TARGET_ARCH)),)
+# ARM64/universal builds need NEON translation units when libpng enables ARM
+# NEON paths (macOS universal links arm64 too).
+ifneq ($(filter arm64 aarch64 universal,$(TARGET_ARCH)),)
 SOURCES += \
     arm/arm_init.c \
     arm/filter_neon_intrinsics.c \

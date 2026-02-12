@@ -34,6 +34,9 @@ outputs:
   qt-version:
     description: Version of Qt used
     value: ${{ inputs.qt-version }}
+  qt-path:
+    description: Resolved Qt installation prefix
+    value: ${{ steps.resolve-qt-path.outputs.qt-path }}
 
 runs:
   using: composite
@@ -58,6 +61,7 @@ runs:
         vcvars-arch: ${{ inputs.vcvars-arch }}
 
     - name: Install Qt
+      id: install-qt
       if: ${{ inputs.qt-architecture != '' || inputs.msystem == '' }}
       uses: jurplel/install-qt-action@v4
       with:
@@ -66,3 +70,30 @@ runs:
         arch: ${{ inputs.qt-architecture }}
         modules: ${{ inputs.qt-modules }}
         cache: ${{ inputs.build-type == 'Debug' }}
+
+    - name: Resolve Qt path
+      id: resolve-qt-path
+      shell: bash
+      run: |
+        qt_path=""
+
+        # Preferred: explicit output from install-qt-action.
+        if [ -n "${{ steps.install-qt.outputs.dir }}" ]; then
+          qt_path="${{ steps.install-qt.outputs.dir }}"
+        fi
+
+        # Fallback: environment variables that may be exported by the action.
+        if [ -z "$qt_path" ] && [ -n "${QT_ROOT_DIR:-}" ]; then
+          qt_path="${QT_ROOT_DIR}"
+        fi
+        if [ -z "$qt_path" ] && [ -n "${QTDIR:-}" ]; then
+          qt_path="${QTDIR}"
+        fi
+        if [ -z "$qt_path" ] && [ -n "${Qt6_DIR:-}" ]; then
+          case "${Qt6_DIR}" in
+            */lib/cmake/Qt6) qt_path="${Qt6_DIR%/lib/cmake/Qt6}" ;;
+            *) qt_path="${Qt6_DIR}" ;;
+          esac
+        fi
+
+        echo "qt-path=$qt_path" >> "$GITHUB_OUTPUT"

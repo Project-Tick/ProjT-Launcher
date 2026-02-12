@@ -26,6 +26,22 @@ else
 endif
 LIBDIR ?= $(KBUILD_OUTPUT)/lib
 
+# On Windows+MinGW, normalize key paths to Windows form (D:/...) to avoid
+# MSYS path conversion mismatches in native toolchain components.
+MODULE_SRCDIR := $(CURDIR)
+MODULE_LIBSRCDIR := $(srctree)/$(lib)
+ifeq ($(TARGET_OS),windows)
+ifeq ($(WINDOWS_TOOLCHAIN),mingw)
+CYGPATH := $(shell command -v cygpath 2>/dev/null)
+ifneq ($(strip $(CYGPATH)),)
+OBJDIR := $(shell cygpath -m "$(OBJDIR)")
+LIBDIR := $(shell cygpath -m "$(LIBDIR)")
+MODULE_SRCDIR := $(shell cygpath -m "$(MODULE_SRCDIR)")
+MODULE_LIBSRCDIR := $(shell cygpath -m "$(MODULE_LIBSRCDIR)")
+endif
+endif
+endif
+
 # Compiler settings
 CC ?= gcc
 CXX ?= g++
@@ -40,7 +56,7 @@ PARENT_LDFLAGS := $(strip $(LDFLAGS))
 # Base flags - adapt for MSVC vs GCC/Clang
 ifeq ($(WINDOWS_TOOLCHAIN),msvc)
 BASE_CFLAGS := /nologo /W3 /EHsc /MD /O2
-BASE_CXXFLAGS := $(BASE_CFLAGS) /std:c++17 /Zc:__cplusplus
+BASE_CXXFLAGS := $(BASE_CFLAGS) /std:c++17 /Zc:__cplusplus /permissive-
 else
 BASE_CFLAGS := -O2 -g -fPIC -Wall
 BASE_CXXFLAGS := $(BASE_CFLAGS) -std=c++17
@@ -75,10 +91,39 @@ QT_MODULE_LIBS := $(strip $(shell \
 	PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --libs $(QT_MODULES_PKG) 2>/dev/null || \
 	pkg-config --libs $(QT_MODULES_PKG) 2>/dev/null))
 ifeq ($(strip $(QT_MODULE_CFLAGS)),)
+  QT_HEADERS_DIR := $(strip $(shell \
+    if [ -x "$(QT_PREFIX)/bin/qtpaths6" ]; then \
+      "$(QT_PREFIX)/bin/qtpaths6" --query QT_INSTALL_HEADERS 2>/dev/null; \
+    elif [ -x "$(QT_PREFIX)/bin/qtpaths" ]; then \
+      "$(QT_PREFIX)/bin/qtpaths" --query QT_INSTALL_HEADERS 2>/dev/null; \
+    elif command -v qtpaths6 >/dev/null 2>&1; then \
+      qtpaths6 --query QT_INSTALL_HEADERS 2>/dev/null; \
+    elif command -v qtpaths >/dev/null 2>&1; then \
+      qtpaths --query QT_INSTALL_HEADERS 2>/dev/null; \
+    fi))
+  QT_HEADERS_OK := $(strip $(shell \
+    ok=1; h="$(QT_HEADERS_DIR)"; \
+    [ -n "$$h" ] && [ -d "$$h" ] || ok=0; \
+    for m in $(qt-modules-y); do \
+      [ -d "$$h/Qt$$m" ] || { ok=0; break; }; \
+    done; \
+    [ "$$ok" -eq 1 ] && echo y))
+  ifeq ($(QT_HEADERS_OK),y)
+    QT_MODULE_CFLAGS := -I$(QT_HEADERS_DIR) $(foreach m,$(qt-modules-y),-I$(QT_HEADERS_DIR)/Qt$(m))
+  endif
+endif
+ifeq ($(strip $(QT_MODULE_CFLAGS)),)
   QT_SYS_PREFIX := $(strip $(shell \
-    for d in "$(QT_PREFIX)" /usr/include/qt6 /usr/include/*-linux-gnu/qt6 /usr/lib/qt6 /usr/lib64/qt6 /usr/local/qt6 /opt/qt6 ; do \
-      if [ -d "$$d/include/QtCore" ]; then echo "$$d"; break; fi; \
-      if [ -d "$$d/QtCore" ]; then echo "$$d"; break; fi; \
+    for d in "$(QT_PREFIX)" /usr/include/qt6 /usr/include/*-linux-gnu/qt6 /usr/lib/qt6 /usr/lib64/qt6 /usr/lib/*-linux-gnu/qt6 /usr/local/qt6 /usr/local/lib/qt6 /opt/qt6 "$$HOME/Qt"/*/* ; do \
+      [ -d "$$d" ] || continue; \
+      if [ -d "$$d/include" ]; then h="$$d/include"; \
+      elif [ -d "$$d/QtCore" ]; then h="$$d"; \
+      else continue; fi; \
+      ok=1; \
+      for m in $(qt-modules-y); do \
+        [ -d "$$h/Qt$$m" ] || { ok=0; break; }; \
+      done; \
+      if [ "$$ok" -eq 1 ]; then echo "$$d"; break; fi; \
     done))
   ifneq ($(strip $(QT_SYS_PREFIX)),)
     ifneq ($(wildcard $(QT_SYS_PREFIX)/include/QtCore),)
@@ -154,32 +199,32 @@ COMPILE_C   = $(CC) $(CFLAGS) -c -o $@ $<
 COMPILE_CXX = $(CXX) $(CXXFLAGS) -c -o $@ $<
 endif
 
-$(OBJDIR)/%.o: $(CURDIR)/%.c | $(OBJDIR)
+$(OBJDIR)/%.o: $(MODULE_SRCDIR)/%.c | $(OBJDIR)
 	@echo "  CC      $<"
 	$(Q)mkdir -p $(dir $@)
 	$(Q)$(COMPILE_C)
 
-$(OBJDIR)/%.o: $(CURDIR)/%.cpp | $(OBJDIR)
+$(OBJDIR)/%.o: $(MODULE_SRCDIR)/%.cpp | $(OBJDIR)
 	@echo "  CXX     $<"
 	$(Q)mkdir -p $(dir $@)
 	$(Q)$(COMPILE_CXX)
 
-$(OBJDIR)/%.o: $(CURDIR)/%.cc | $(OBJDIR)
+$(OBJDIR)/%.o: $(MODULE_SRCDIR)/%.cc | $(OBJDIR)
 	@echo "  CXX     $<"
 	$(Q)mkdir -p $(dir $@)
 	$(Q)$(COMPILE_CXX)
 
-$(OBJDIR)/%.o: $(srctree)/$(lib)/%.c | $(OBJDIR)
+$(OBJDIR)/%.o: $(MODULE_LIBSRCDIR)/%.c | $(OBJDIR)
 	@echo "  CC      $<"
 	$(Q)mkdir -p $(dir $@)
 	$(Q)$(COMPILE_C)
 
-$(OBJDIR)/%.o: $(srctree)/$(lib)/%.cpp | $(OBJDIR)
+$(OBJDIR)/%.o: $(MODULE_LIBSRCDIR)/%.cpp | $(OBJDIR)
 	@echo "  CXX     $<"
 	$(Q)mkdir -p $(dir $@)
 	$(Q)$(COMPILE_CXX)
 
-$(OBJDIR)/%.o: $(srctree)/$(lib)/%.cc | $(OBJDIR)
+$(OBJDIR)/%.o: $(MODULE_LIBSRCDIR)/%.cc | $(OBJDIR)
 	@echo "  CXX     $<"
 	$(Q)mkdir -p $(dir $@)
 	$(Q)$(COMPILE_CXX)
