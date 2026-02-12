@@ -22,8 +22,8 @@ QT_PKG_CONFIG ?= pkg-config
 QT_COMPONENTS := Qt6Core Qt6Gui Qt6Widgets Qt6Network Qt6Concurrent Qt6Xml Qt6Test Qt6NetworkAuth Qt6OpenGL
 ifeq ($(TARGET_PLATFORM),linux)
 QT_COMPONENTS += Qt6DBus
-QT_DBUS_INCLUDE_FALLBACK := -I$(QT_PREFIX)/include/QtDBus
-QT_DBUS_LIB_FALLBACK := -lQt6DBus
+QT_DBUS_INCLUDE_FALLBACK = -I$(QT_PREFIX)/include/QtDBus
+QT_DBUS_LIB_FALLBACK = -lQt6DBus
 endif
 ifneq ($(call cfg-yes,$(CONFIG_QT_MODULE_QTWEBENGINE)),)
 QT_COMPONENTS += Qt6WebEngineWidgets Qt6WebChannel

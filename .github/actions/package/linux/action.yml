@@ -40,7 +40,7 @@ runs:
             APPIMAGE_ARCH="aarch64"
             ;;
           *)
-            echo "# 🚨 The Debian architecture \"$deb_arch\" is not recognized!" >> "$GITHUB_STEP_SUMMARY"
+            echo "# 🚨 The Debian architecture \"$dpkg_arch\" is not recognized!" >> "$GITHUB_STEP_SUMMARY"
             exit 1
             ;;
         esac
@@ -57,9 +57,37 @@ runs:
         INSTALL_APPIMAGE_DIR: install-appdir
         LINUX_GPG_KEY: ${{ inputs.gpg-private-key }}
       run: |
-        cmake --install ${{ env.BUILD_DIR }} --config ${{ inputs.build-type }} --prefix ${{ env.INSTALL_APPIMAGE_DIR }}/usr
+        set -euo pipefail
 
-        mv ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/org.projecttick.ProjTLauncher.metainfo.xml ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/org.projecttick.ProjTLauncher.appdata.xml
+        install_root="${{ env.INSTALL_APPIMAGE_DIR }}/usr"
+        if [ -f "${{ env.BUILD_DIR }}/cmake_install.cmake" ]; then
+          cmake --install ${{ env.BUILD_DIR }} --config ${{ inputs.build-type }} --prefix "$install_root"
+        else
+          make DESTDIR="${{ env.INSTALL_APPIMAGE_DIR }}" PREFIX=/usr install
+          mkdir -p "$install_root/share/metainfo" "$install_root/share/icons/hicolor/scalable/apps" "$install_root/share/applications"
+          if [ -f program_info/org.projecttick.ProjTLauncher.metainfo.xml.in ]; then
+            sed \
+              -e "s,@Launcher_Name@,ProjTLauncher,g" \
+              -e "s,@Launcher_DisplayName@,ProjT Launcher,g" \
+              -e "s,@Launcher_Domain@,projecttick.org,g" \
+              program_info/org.projecttick.ProjTLauncher.metainfo.xml.in > "$install_root/share/metainfo/org.projecttick.ProjTLauncher.metainfo.xml" || true
+          fi
+          if [ -f program_info/org.projecttick.ProjTLauncher.svg ]; then
+            cp program_info/org.projecttick.ProjTLauncher.svg "$install_root/share/icons/hicolor/scalable/apps/org.projecttick.ProjTLauncher.svg"
+          fi
+          cat > "$install_root/share/applications/org.projecttick.ProjTLauncher.desktop" <<'EOF'
+        [Desktop Entry]
+        Type=Application
+        Name=ProjT Launcher
+        Exec=projtlauncher
+        Icon=org.projecttick.ProjTLauncher
+        Categories=Game;
+        EOF
+        fi
+
+        if [ -f "${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/org.projecttick.ProjTLauncher.metainfo.xml" ]; then
+          mv ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/org.projecttick.ProjTLauncher.metainfo.xml ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/metainfo/org.projecttick.ProjTLauncher.appdata.xml
+        fi
         export "NO_APPSTREAM=1" # we have to skip appstream checking because appstream on ubuntu 20.04 is outdated
 
         export OUTPUT="ProjTLauncher-Linux-$APPIMAGE_ARCH.AppImage"
@@ -69,11 +97,11 @@ runs:
         mkdir -p ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib
         mkdir -p ${{ env.INSTALL_APPIMAGE_DIR }}/usr/plugins/iconengines
 
-        cp -r ${{ runner.workspace }}/Qt/${{ inputs.qt-version }}/gcc_*64/plugins/iconengines/* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/plugins/iconengines
+        cp -r ${{ runner.workspace }}/Qt/${{ inputs.qt-version }}/gcc_*64/plugins/iconengines/* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/plugins/iconengines 2>/dev/null || true
 
-        cp /usr/lib/"$DEB_HOST_MULTIARCH"/libcrypto.so.* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib/
-        cp /usr/lib/"$DEB_HOST_MULTIARCH"/libssl.so.* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib/
-        cp /usr/lib/"$DEB_HOST_MULTIARCH"/libOpenGL.so.0* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib/
+        cp /usr/lib/"$DEB_HOST_MULTIARCH"/libcrypto.so.* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib/ 2>/dev/null || true
+        cp /usr/lib/"$DEB_HOST_MULTIARCH"/libssl.so.* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib/ 2>/dev/null || true
+        cp /usr/lib/"$DEB_HOST_MULTIARCH"/libOpenGL.so.0* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib/ 2>/dev/null || true
 
         LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib"
         export LD_LIBRARY_PATH
@@ -109,7 +137,15 @@ runs:
         fi
 
 
-        ./linuxdeploy-"$APPIMAGE_ARCH".AppImage --appdir ${{ env.INSTALL_APPIMAGE_DIR }} --output appimage --plugin qt -i ${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/icons/hicolor/scalable/apps/org.projecttick.ProjTLauncher.svg
+        app_icon="${{ env.INSTALL_APPIMAGE_DIR }}/usr/share/icons/hicolor/scalable/apps/org.projecttick.ProjTLauncher.svg"
+        if [ ! -f "$app_icon" ]; then
+          app_icon=""
+        fi
+        if [ -n "$app_icon" ]; then
+          ./linuxdeploy-"$APPIMAGE_ARCH".AppImage --appdir ${{ env.INSTALL_APPIMAGE_DIR }} --output appimage --plugin qt -i "$app_icon"
+        else
+          ./linuxdeploy-"$APPIMAGE_ARCH".AppImage --appdir ${{ env.INSTALL_APPIMAGE_DIR }} --output appimage --plugin qt
+        fi
 
         mv "ProjTLauncher-Linux-$APPIMAGE_ARCH.AppImage" "ProjTLauncher-Linux-${{ env.VERSION }}-${{ inputs.build-type }}-$APPIMAGE_ARCH.AppImage"
 
@@ -122,8 +158,13 @@ runs:
 
         INSTALL_PORTABLE_DIR: install-portable
       run: |
-        cmake --install ${{ env.BUILD_DIR }} --config ${{ inputs.build-type }} --prefix ${{ env.INSTALL_PORTABLE_DIR }}
-        cmake --install ${{ env.BUILD_DIR }} --config ${{ inputs.build-type }} --prefix ${{ env.INSTALL_PORTABLE_DIR }} --component portable
+        set -euo pipefail
+        if [ -f "${{ env.BUILD_DIR }}/cmake_install.cmake" ]; then
+          cmake --install ${{ env.BUILD_DIR }} --config ${{ inputs.build-type }} --prefix ${{ env.INSTALL_PORTABLE_DIR }}
+          cmake --install ${{ env.BUILD_DIR }} --config ${{ inputs.build-type }} --prefix ${{ env.INSTALL_PORTABLE_DIR }} --component portable
+        else
+          make DESTDIR="${{ env.INSTALL_PORTABLE_DIR }}" PREFIX= install
+        fi
 
         for l in $(find ${{ env.INSTALL_PORTABLE_DIR }} -type f); do l=${l#$(pwd)/}; l=${l#${{ env.INSTALL_PORTABLE_DIR }}/}; l=${l#./}; echo $l; done > ${{ env.INSTALL_PORTABLE_DIR }}/manifest.txt
         cd ${{ env.INSTALL_PORTABLE_DIR }}

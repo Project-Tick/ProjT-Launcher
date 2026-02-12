@@ -39,6 +39,11 @@ ifeq ($(MOC),)
 # Fallback to PATH if parent did not export a tool path.
 MOC := moc
 endif
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+MOC_QT_CFLAGS := $(patsubst /I%,-I%,$(QT_CFLAGS))
+else
+MOC_QT_CFLAGS := $(QT_CFLAGS)
+endif
 
 # Add moc object to library (will be built by rules below)
 # This must be done before include module.mk
@@ -48,7 +53,7 @@ EXTRA_OBJS := $(OBJDIR)/moc_LocalPeer.o
 $(OBJDIR)/moc_LocalPeer.cpp: $(CURDIR)/include/LocalPeer.h
 	@echo "  MOC     $<"
 	$(Q)mkdir -p $(dir $@)
-	$(Q)$(MOC) $(QT_CFLAGS) -I$(srctree)/LocalPeer/include $< -o $@
+	$(Q)$(MOC) $(MOC_QT_CFLAGS) -I$(srctree)/LocalPeer/include $< -o $@
 
 $(OBJDIR)/moc_LocalPeer.o: $(OBJDIR)/moc_LocalPeer.cpp
 	@echo "  CXX     $<"

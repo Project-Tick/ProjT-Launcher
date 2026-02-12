@@ -68,6 +68,7 @@ endif
 
 QT_CFLAGS := $(shell pkg-config --cflags $(QT_MODULES) 2>/dev/null) $(QT_NETWORKAUTH_CFLAGS)
 QT_LIBS := $(shell pkg-config --libs $(QT_MODULES) 2>/dev/null) $(QT_NETWORKAUTH_LIBS)
+QT_LIBDIR := $(strip $(shell pkg-config --variable=libdir Qt6Core 2>/dev/null))
 OPENSSL_CFLAGS := $(shell pkg-config --cflags openssl 2>/dev/null)
 OPENSSL_LIBS := $(shell pkg-config --libs openssl 2>/dev/null || echo "-lssl -lcrypto")
 
@@ -159,7 +160,8 @@ else
   PLATFORM_TEST_LIBS :=
 endif
 COMMON_LDFLAGS := $(LIB_GROUP_BEGIN) $(LAUNCHER_LIBS) $(LIB_GROUP_END) \
-	$(PROJT_ZLIB) $(QT_LIBS) $(CMARK_LIBS) $(OPENSSL_LIBS) -lpthread $(PLATFORM_TEST_LIBS)
+	$(PROJT_ZLIB) $(QT_LIBS) $(CMARK_LIBS) $(OPENSSL_LIBS) -lpthread $(PLATFORM_TEST_LIBS) \
+	$(if $(QT_LIBDIR),-Wl,-rpath,$(QT_LIBDIR))
 
 # ============================================================================
 # All Tests
@@ -255,6 +257,7 @@ tests-run:
 	@echo "=================================================================="
 	@echo ""
 	@PASSED=0; FAILED=0; SKIPPED=0; TIMEOUT_RUNNER="$(TIMEOUT_CMD)"; \
+	QT_RUNTIME_DIR="$(QT_LIBDIR)"; \
 	if [ -z "$$TIMEOUT_RUNNER" ]; then \
 		echo "  NOTE    timeout/gtimeout not found; running tests without per-test timeout"; \
 	fi; \
@@ -276,7 +279,12 @@ tests-run:
 			else \
 				TEST_CMD="$$test -v1"; \
 			fi; \
-			if eval "$$TEST_CMD" 2>&1; then \
+			if [ "$(TARGET_PLATFORM)" = "macos" ] && [ -n "$$QT_RUNTIME_DIR" ]; then \
+				RUN_ENV="DYLD_FRAMEWORK_PATH=$$QT_RUNTIME_DIR DYLD_LIBRARY_PATH=$$QT_RUNTIME_DIR"; \
+			else \
+				RUN_ENV=""; \
+			fi; \
+			if eval "$$RUN_ENV $$TEST_CMD" 2>&1; then \
 				echo "  PASS"; \
 				PASSED=$$((PASSED + 1)); \
 			else \
@@ -289,12 +297,17 @@ tests-run:
 			else \
 				TEST_CMD="$$test"; \
 			fi; \
-			if eval "$$TEST_CMD" 2>&1 >/dev/null; then \
+			if [ "$(TARGET_PLATFORM)" = "macos" ] && [ -n "$$QT_RUNTIME_DIR" ]; then \
+				RUN_ENV="DYLD_FRAMEWORK_PATH=$$QT_RUNTIME_DIR DYLD_LIBRARY_PATH=$$QT_RUNTIME_DIR"; \
+			else \
+				RUN_ENV=""; \
+			fi; \
+			if eval "$$RUN_ENV $$TEST_CMD" 2>&1 >/dev/null; then \
 				echo "PASS"; \
 				PASSED=$$((PASSED + 1)); \
 			else \
 				echo "FAIL"; \
-				eval "$$TEST_CMD" 2>&1 | tail -20; \
+				eval "$$RUN_ENV $$TEST_CMD" 2>&1 | tail -20; \
 				FAILED=$$((FAILED + 1)); \
 			fi; \
 		fi; \

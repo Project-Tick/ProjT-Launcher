@@ -30,6 +30,7 @@ LIBDIR ?= $(KBUILD_OUTPUT)/lib
 # MSYS path conversion mismatches in native toolchain components.
 MODULE_SRCDIR := $(CURDIR)
 MODULE_LIBSRCDIR := $(srctree)/$(lib)
+MODULE_ROOT := $(srctree)
 ifeq ($(TARGET_OS),windows)
 ifeq ($(WINDOWS_TOOLCHAIN),mingw)
 CYGPATH := $(shell command -v cygpath 2>/dev/null)
@@ -38,6 +39,7 @@ OBJDIR := $(shell cygpath -m "$(OBJDIR)")
 LIBDIR := $(shell cygpath -m "$(LIBDIR)")
 MODULE_SRCDIR := $(shell cygpath -m "$(MODULE_SRCDIR)")
 MODULE_LIBSRCDIR := $(shell cygpath -m "$(MODULE_LIBSRCDIR)")
+MODULE_ROOT := $(shell cygpath -m "$(MODULE_ROOT)")
 endif
 endif
 endif
@@ -64,11 +66,11 @@ endif
 
 # Add include paths
 ifeq ($(WINDOWS_TOOLCHAIN),msvc)
-INC_FLAGS := $(foreach dir,$(includes-y),/I$(srctree)/$(dir))
-INC_FLAGS += /I$(srctree) /I$(KBUILD_OUTPUT)/include
+INC_FLAGS := $(foreach dir,$(includes-y),/I$(MODULE_ROOT)/$(dir))
+INC_FLAGS += /I$(MODULE_ROOT) /I$(KBUILD_OUTPUT)/include
 else
-INC_FLAGS := $(foreach dir,$(includes-y),-I$(srctree)/$(dir))
-INC_FLAGS += -I$(srctree) -I$(KBUILD_OUTPUT)/include
+INC_FLAGS := $(foreach dir,$(includes-y),-I$(MODULE_ROOT)/$(dir))
+INC_FLAGS += -I$(MODULE_ROOT) -I$(KBUILD_OUTPUT)/include
 endif
 
 # Qt support - if module uses Qt, add Qt flags
@@ -80,9 +82,19 @@ QT_PREFIX := $(KBUILD_OUTPUT)/obj/qt/install
 endif
 QT_PKG_CONFIG_PATH := $(QT_PREFIX)/lib/pkgconfig
 QT_MODULES_PKG := $(foreach m,$(qt-modules-y),Qt6$(m))
+QT_IMPORTED_CFLAGS := $(strip $(QT_CFLAGS))
+QT_IMPORTED_LIBS := $(strip $(QT_LIBS))
 ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+ifneq ($(QT_IMPORTED_CFLAGS),)
+QT_MODULE_CFLAGS := $(QT_IMPORTED_CFLAGS)
+else
 QT_MODULE_CFLAGS := /I$(QT_PREFIX)/include $(foreach m,$(qt-modules-y),/I$(QT_PREFIX)/include/Qt$(m))
-QT_MODULE_LIBS :=
+endif
+QT_MODULE_LIBS := $(QT_IMPORTED_LIBS)
+else
+ifneq ($(QT_IMPORTED_CFLAGS),)
+QT_MODULE_CFLAGS := $(QT_IMPORTED_CFLAGS)
+QT_MODULE_LIBS := $(QT_IMPORTED_LIBS)
 else
 QT_MODULE_CFLAGS := $(strip $(shell \
 	PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --cflags $(QT_MODULES_PKG) 2>/dev/null || \
@@ -131,11 +143,12 @@ ifeq ($(strip $(QT_MODULE_CFLAGS)),)
     else
       QT_MODULE_CFLAGS := -I$(QT_SYS_PREFIX) $(foreach m,$(qt-modules-y),-I$(QT_SYS_PREFIX)/Qt$(m))
     endif
-  else ifneq ($(strip $(QT_CFLAGS)),)
-    QT_MODULE_CFLAGS := $(QT_CFLAGS)
+  else ifneq ($(QT_IMPORTED_CFLAGS),)
+    QT_MODULE_CFLAGS := $(QT_IMPORTED_CFLAGS)
   else
     QT_MODULE_CFLAGS := -I$(QT_PREFIX)/include $(foreach m,$(qt-modules-y),-I$(QT_PREFIX)/include/Qt$(m))
   endif
+endif
 endif
 endif
 QT_CFLAGS := $(QT_MODULE_CFLAGS)

@@ -377,8 +377,8 @@ export QT_RCC
 QT_CORE_MODULES := Qt6Core Qt6Gui Qt6Widgets Qt6Network Qt6Concurrent Qt6Xml Qt6NetworkAuth Qt6OpenGL
 ifeq ($(TARGET_PLATFORM),linux)
 QT_CORE_MODULES += Qt6DBus
-QT_DBUS_INCLUDE_FALLBACK := -I$(QT_PREFIX)/include/QtDBus
-QT_DBUS_LIB_FALLBACK := -lQt6DBus
+QT_DBUS_INCLUDE_FALLBACK = -I$(QT_PREFIX)/include/QtDBus
+QT_DBUS_LIB_FALLBACK = -lQt6DBus
 endif
 
 # Qt include/lib flags for dependent modules
