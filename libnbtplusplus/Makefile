@@ -25,7 +25,11 @@ lib-y := \
 includes-y := libnbtplusplus/include zlib
 
 # Compiler flags
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+cxxflags-y :=
+else
 cxxflags-y := -std=c++17
+endif
 
 # Dependencies
 deps-y := zlib
