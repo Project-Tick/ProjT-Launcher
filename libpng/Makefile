@@ -75,6 +75,7 @@ $(OBJDIR)/pnglibconf.h: $(CURDIR)/scripts/pnglibconf.h.prebuilt | $(OBJDIR)
 
 $(OBJDIR)/%.$(OBJ_EXT): $(CURDIR)/%.c $(OBJDIR)/pnglibconf.h | $(OBJDIR)
 	@echo "  CC      $<"
+	$(Q)mkdir -p $(dir $@)
 	$(Q)$(LIBPNG_COMPILE)
 
 $(OBJDIR):

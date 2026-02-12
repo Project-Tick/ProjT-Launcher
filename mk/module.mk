@@ -40,7 +40,7 @@ PARENT_LDFLAGS := $(strip $(LDFLAGS))
 # Base flags - adapt for MSVC vs GCC/Clang
 ifeq ($(WINDOWS_TOOLCHAIN),msvc)
 BASE_CFLAGS := /nologo /W3 /EHsc /MD /O2
-BASE_CXXFLAGS := $(BASE_CFLAGS) /std:c++17
+BASE_CXXFLAGS := $(BASE_CFLAGS) /std:c++17 /Zc:__cplusplus
 else
 BASE_CFLAGS := -O2 -g -fPIC -Wall
 BASE_CXXFLAGS := $(BASE_CFLAGS) -std=c++17

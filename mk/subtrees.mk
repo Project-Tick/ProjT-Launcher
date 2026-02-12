@@ -53,6 +53,11 @@ ZLIB_OBJDIR_REL := $(patsubst $(srctree)/%,%,$(ZLIB_OBJDIR))
 ifeq ($(ZLIB_OBJDIR_REL),$(ZLIB_OBJDIR))
 ZLIB_OBJDIR_REL := build/obj/zlib
 endif
+ZLIB_LIBDIR_REL := $(patsubst $(srctree)/%,%,$(LIBDIR))
+ifeq ($(ZLIB_LIBDIR_REL),$(LIBDIR))
+ZLIB_LIBDIR_REL := build/lib
+endif
+ZLIB_STATIC_LIB := $(ZLIB_LIBDIR_REL)/libz$(LIB_EXT)
 else
 ZLIB_DIR_REL := $(ZLIB_DIR)
 ZLIB_OBJDIR_REL := $(ZLIB_OBJDIR)
