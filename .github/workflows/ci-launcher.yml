@@ -257,6 +257,7 @@ jobs:
             qt-architecture: linux_gcc_64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
+            cmake-preset: linux
             build-system: cmake
 
           - os: ubuntu-24.04-arm
@@ -266,6 +267,7 @@ jobs:
             qt-architecture: linux_gcc_arm64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
+            cmake-preset: linux
             build-system: cmake
 
           # Windows MSVC builds
@@ -277,6 +279,7 @@ jobs:
             qt-architecture: win64_msvc2022_64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
+            cmake-preset: windows_msvc
             build-system: cmake
 
           - os: windows-2025
@@ -287,6 +290,7 @@ jobs:
             qt-architecture: win64_msvc2022_64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
+            cmake-preset: windows_msvc
             build-system: cmake
 
           - os: windows-11-arm
@@ -298,6 +302,7 @@ jobs:
             qt-architecture: win64_msvc2022_arm64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
+            cmake-preset: windows_msvc
             build-system: cmake
 
           # Windows MinGW builds
@@ -307,6 +312,7 @@ jobs:
             windows-toolchain: mingw
             msystem: MINGW64
             vcvars-arch: amd64_x86
+            cmake-preset: windows_mingw
             build-system: cmake
 
           - os: windows-2025
@@ -315,6 +321,7 @@ jobs:
             windows-toolchain: mingw
             msystem: MINGW64
             vcvars-arch: amd64_x86
+            cmake-preset: windows_mingw
             build-system: cmake
 
           - os: windows-11-arm
@@ -324,6 +331,7 @@ jobs:
             target-arch: aarch64
             msystem: CLANGARM64
             vcvars-arch: arm64
+            cmake-preset: windows_mingw
             build-system: cmake
 
           # macOS builds
@@ -335,6 +343,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
+            cmake-preset: windows_mingw
             build-system: cmake
 
           - os: macos-26
@@ -345,6 +354,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
+            cmake-preset: windows_mingw
             build-system: cmake
 
           - os: macos-15
@@ -355,6 +365,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
+            cmake-preset: windows_mingw
             build-system: cmake
 
           - os: macos-26
@@ -365,6 +376,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
+            cmake-preset: windows_mingw
             build-system: cmake
 
           - os: macos-15-intel
@@ -375,6 +387,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
+            cmake-preset: windows_mingw
             build-system: cmake
 
     runs-on: ${{ matrix.os }}
@@ -382,6 +395,7 @@ jobs:
     env:
       ARTIFACT_NAME: ${{ matrix.artifact-name }}
       BUILD_PLATFORM: official
+      CMAKE_PRESET: ${{ matrix.cmake-preset }}
       TARGET_PLATFORM: ${{ matrix.target-platform }}
       TARGET_ARCH: ${{ matrix.target-arch || 'x86_64' }}
       WINDOWS_TOOLCHAIN: ${{ matrix.windows-toolchain || 'mingw' }}
@@ -503,7 +517,7 @@ jobs:
 
       # Build with Make
       - name: Build (Linux/macOS/MinGW)
-        if: runner.os != 'Windows' || matrix.windows-toolchain == 'mingw' && matrix.build-system == 'make'
+        if: matrix.build-system == 'make' && (runner.os != 'Windows' || matrix.windows-toolchain == 'mingw')
         run: |
           if [ "${RUNNER_OS}" = "Windows" ] && [ "${WINDOWS_TOOLCHAIN}" = "mingw" ] && [ -n "${MSYSTEM:-}" ]; then
             msys_lc="$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')"
@@ -538,7 +552,7 @@ jobs:
 
       # Run Tests
       - name: Run Tests (Linux/macOS/MinGW)
-        if: runner.os != 'Windows' || matrix.windows-toolchain == 'mingw' && matrix.build-system == 'make'
+        if: matrix.build-system == 'make' && (runner.os != 'Windows' || matrix.windows-toolchain == 'mingw')
         run: |
           if [ "${RUNNER_OS}" = "Windows" ] && [ "${WINDOWS_TOOLCHAIN}" = "mingw" ] && [ -n "${MSYSTEM:-}" ]; then
             msys_lc="$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')"
@@ -571,17 +585,17 @@ jobs:
         run: |
           make test TEST_VERBOSE=1
 
-      - name: Configure project
+      - name: CMake Configure
         if: matrix.build-system == 'cmake'
         run: |
           cmake --preset "$CMAKE_PRESET"
 
-      - name: Run build
+      - name: CMake Build
         if: matrix.build-system == 'cmake'
         run: |
           cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
 
-      - name: Run tests
+      - name: CMake Test
         if: matrix.build-system == 'cmake'
         run: |
           ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --extra-verbose --output-on-failure
