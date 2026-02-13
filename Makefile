@@ -7,6 +7,18 @@ KBUILD_OUTPUT ?= $(srctree)/build
 OBJDIR := $(KBUILD_OUTPUT)/libqrencode
 LIBDIR := $(KBUILD_OUTPUT)/lib
 
+# On Windows+MinGW, normalize output dirs to Windows form (D:/...) so native
+# toolchain components don't choke on MSYS-style /d/... paths.
+ifeq ($(TARGET_OS),windows)
+ifeq ($(WINDOWS_TOOLCHAIN),mingw)
+CYGPATH := $(shell command -v cygpath 2>/dev/null)
+ifneq ($(strip $(CYGPATH)),)
+OBJDIR := $(shell cygpath -m "$(OBJDIR)")
+LIBDIR := $(shell cygpath -m "$(LIBDIR)")
+endif
+endif
+endif
+
 ifeq ($(V),1)
 Q :=
 else
@@ -52,6 +64,7 @@ QRENCODE_COMPILE = $(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 QRENCODE_AR = $(AR) rcs $@ $^
 endif
 
+all: | $(OBJDIR) $(LIBDIR)
 all: $(LIBDIR)/libqrencode.a
 
 $(LIBDIR)/libqrencode.a: $(OBJECTS)
@@ -65,6 +78,9 @@ $(OBJDIR)/%.$(OBJ_EXT): %.c | $(OBJDIR)
 	$(Q)$(QRENCODE_COMPILE)
 
 $(OBJDIR):
+	@mkdir -p $@
+
+$(LIBDIR):
 	@mkdir -p $@
 
 clean:
