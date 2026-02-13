@@ -1,8 +1,8 @@
-/* unzip.h -- IO for uncompress .zip files using zlib
+/* unzip.h -- IO for uncompress .zip files using PTlibzippy
    Version 1.1, February 14h, 2010
-   part of the MiniZip project - ( http://www.winimage.com/zLibDll/minizip.html )
+   part of the MiniZip project - ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
-         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/zLibDll/minizip.html )
+         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
          Modifications of Unzip for Zip64
          Copyright (C) 2007-2008 Even Rouault
@@ -14,7 +14,7 @@
 
          ---------------------------------------------------------------------------------
 
-        Condition of use and distribution are the same than zlib :
+        Condition of use and distribution are the same than PTlibzippy :
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -47,16 +47,16 @@
 extern "C" {
 #endif
 
-#ifndef _ZLIB_H
-#include "zlib.h"
+#ifndef _PTLIBZIPPY_H
+#include "ptlibzippy.h"
 #endif
 
-#ifndef  _ZLIBIOAPI_H
+#ifndef  _PTLIBZIPPYIOAPI_H
 #include "ioapi.h"
 #endif
 
 #ifdef HAVE_BZIP2
-#include "bzlib.h"
+#include "bptlibzippy.h"
 #endif
 
 #define Z_BZIP2ED 12
@@ -167,8 +167,8 @@ extern unzFile ZEXPORT unzOpen(const char *path);
 extern unzFile ZEXPORT unzOpen64(const void *path);
 /*
   Open a Zip file. path contain the full pathname (by example,
-     on a Windows XP computer "c:\\zlib\\zlib113.zip" or on an Unix computer
-     "zlib/zlib113.zip".
+     on a Windows XP computer "c:\\ptlibzippy\\ptlibzippy113.zip" or on an Unix computer
+     "ptlibzippy/ptlibzippy113.zip".
      If the zipfile cannot be opened (file don't exist or in not valid), the
        return value is NULL.
      Else, the return value is a unzFile Handle, usable with other function
@@ -182,14 +182,14 @@ extern unzFile ZEXPORT unzOpen64(const void *path);
 
 
 extern unzFile ZEXPORT unzOpen2(const char *path,
-                                zlib_filefunc_def* pzlib_filefunc_def);
+                                ptlibzippy_filefunc_def* pptlibzippy_filefunc_def);
 /*
    Open a Zip file, like unzOpen, but provide a set of file low level API
       for read/write the zip file (see ioapi.h)
 */
 
 extern unzFile ZEXPORT unzOpen2_64(const void *path,
-                                   zlib_filefunc64_def* pzlib_filefunc_def);
+                                   ptlibzippy_filefunc64_def* pptlibzippy_filefunc_def);
 /*
    Open a Zip file, like unz64Open, but provide a set of file low level API
       for read/write the zip file (see ioapi.h)
@@ -391,7 +391,7 @@ extern int ZEXPORT unzReadCurrentFile(unzFile file,
   return the number of byte copied if some bytes are copied
   return 0 if the end of file was reached
   return <0 with error code if there is an error
-    (UNZ_ERRNO for IO error, or zLib error for uncompress error)
+    (UNZ_ERRNO for IO error, or ptLib error for uncompress error)
 */
 
 extern z_off_t ZEXPORT unztell(unzFile file);

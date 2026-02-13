@@ -19,7 +19,7 @@ jobs:
             compiler: gcc
             configure-args: --warn
             build-dir: ../build
-            src-dir: ../zlib
+            src-dir: ../ptlibzippy
 
           - name: Ubuntu GCC ARM SF
             os: ubuntu-latest

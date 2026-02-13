@@ -1,5 +1,5 @@
 #!/bin/sh
-# configure script for zlib.
+# configure script for PTlibzippy.
 #
 # Normally configure builds both a static and a shared library.
 # If you want to build just a static library, use: ./configure --static
@@ -25,7 +25,7 @@ if test $SRCDIR = "."; then
     ZINCOUT="-I."
     SRCDIR=""
 else
-    ZINC='-I. -include zconf.h'
+    ZINC='-I. -include ptzippyconf.h'
     ZINCOUT='-I. -I$(SRCDIR)'
     SRCDIR="$SRCDIR/"
 fi
@@ -40,10 +40,10 @@ else
 fi
 
 # destination name for static library
-STATICLIB=libz.a
+STATICLIB=libptlibzippy.a
 
-# extract zlib version numbers from zlib.h
-VER=`sed -n -e '/VERSION "/s/.*"\(.*\)".*/\1/p' < ${SRCDIR}zlib.h`
+# extract PTlibzippy version numbers from ptlibzippy.h
+VER=`sed -n -e '/VERSION "/s/.*"\(.*\)".*/\1/p' < ${SRCDIR}ptlibzippy.h`
 VER3=`echo ${VER}|sed -n -e 's/\([0-9]\{1,\}\(\\.[0-9]\{1,\}\)\{1,2\}\).*/\1/p'`
 VER1=`echo ${VER}|sed -n -e 's/\([0-9]\{1,\}\)\\..*/\1/p'`
 
@@ -253,7 +253,7 @@ if test "$gcc" -eq 1 && ($cc -c $test.c) >> configure.log 2>&1; then
   fi
   if test "$warn" -eq 1; then
     if test "$zconst" -eq 1; then
-      CFLAGS="${CFLAGS} -Wall -Wextra -Wcast-qual -DZLIB_CONST"
+      CFLAGS="${CFLAGS} -Wall -Wextra -Wcast-qual -DPTLIBZIPPY_CONST"
     else
       CFLAGS="${CFLAGS} -Wall -Wextra"
     fi
@@ -268,11 +268,11 @@ if test "$gcc" -eq 1 && ($cc -c $test.c) >> configure.log 2>&1; then
     CFLAGS="${CFLAGS} -g -fsanitize=undefined -fno-omit-frame-pointer"
   fi
   if test $insecure -eq 1; then
-    CFLAGS="${CFLAGS} -DZLIB_INSECURE"
+    CFLAGS="${CFLAGS} -DPTLIBZIPPY_INSECURE"
   fi
   if test $debug -eq 1; then
-    CFLAGS="${CFLAGS} -DZLIB_DEBUG"
-    SFLAGS="${SFLAGS} -DZLIB_DEBUG"
+    CFLAGS="${CFLAGS} -DPTLIBZIPPY_DEBUG"
+    SFLAGS="${SFLAGS} -DPTLIBZIPPY_DEBUG"
   fi
   if test -z "$uname"; then
     uname=`(uname -s || echo unknown) 2>/dev/null`
@@ -283,9 +283,9 @@ if test "$gcc" -eq 1 && ($cc -c $test.c) >> configure.log 2>&1; then
         *sparc*)
             LDFLAGS="${LDFLAGS} -Wl,--no-warn-rwx-segments" ;;
         esac
-        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.0,--version-script,${SRCDIR}zlib.map"} ;;
+        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libptlibzippy.so.0,--version-script,${SRCDIR}ptlibzippy.map"} ;;
   *BSD | *bsd* | DragonFly)
-        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.0,--version-script,${SRCDIR}zlib.map"}
+        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libptlibzippy.so.0,--version-script,${SRCDIR}ptlibzippy.map"}
         LDCONFIG="ldconfig -m" ;;
   CYGWIN* | Cygwin* | cygwin* | *-cygwin* | OS/2*)
         EXE='.exe' ;;
@@ -297,25 +297,25 @@ if test "$gcc" -eq 1 && ($cc -c $test.c) >> configure.log 2>&1; then
         EXE='.exe' ;;
   QNX*) # This is for QNX6. I suppose that the QNX rule below is for QNX2,QNX4
         # (alain.bonnefoy@icbt.com)
-        LDSHARED=${LDSHARED-"$cc -shared -Wl,-hlibz.so.0"} ;;
+        LDSHARED=${LDSHARED-"$cc -shared -Wl,-hlibptlibzippy.so.0"} ;;
   HP-UX*)
         LDSHARED=${LDSHARED-"$cc -shared $SFLAGS"}
         case `(uname -m || echo unknown) 2>/dev/null` in
         ia64)
             shared_ext='.so'
-            SHAREDLIB='libz.so' ;;
+            SHAREDLIB='libptlibzippy.so' ;;
         *)
             shared_ext='.sl'
-            SHAREDLIB='libz.sl' ;;
+            SHAREDLIB='libptlibzippy.sl' ;;
         esac ;;
   AIX*)
         LDSHARED=${LDSHARED-"$cc -shared"}
         LDFLAGS="${LDFLAGS} -Wl,-brtl" ;;
   Darwin* | darwin* | *-darwin*)
         shared_ext='.dylib'
-        SHAREDLIB=libz$shared_ext
-        SHAREDLIBV=libz.$VER$shared_ext
-        SHAREDLIBM=libz.$VER1$shared_ext
+        SHAREDLIB=libptlibzippy$shared_ext
+        SHAREDLIBV=libptlibzippy.$VER$shared_ext
+        SHAREDLIBM=libptlibzippy.$VER1$shared_ext
         LDSHARED=${LDSHARED-"$cc -dynamiclib -install_name $libdir/$SHAREDLIBM -compatibility_version $VER1 -current_version $VER3"}
         if "${CROSS_PREFIX}libtool" -V 2>&1 | grep Apple > /dev/null; then
             AR="${CROSS_PREFIX}libtool"
@@ -344,21 +344,21 @@ else
          case `(uname -m || echo unknown) 2>/dev/null` in
          ia64)
              shared_ext='.so'
-             SHAREDLIB='libz.so' ;;
+             SHAREDLIB='libptlibzippy.so' ;;
          *)
              shared_ext='.sl'
-             SHAREDLIB='libz.sl' ;;
+             SHAREDLIB='libptlibzippy.sl' ;;
          esac ;;
   IRIX*)     SFLAGS=${CFLAGS-"-ansi -O2 -rpath ."}
              CFLAGS=${CFLAGS-"-ansi -O2"}
-             LDSHARED=${LDSHARED-"cc -shared -Wl,-soname,libz.so.0"} ;;
+             LDSHARED=${LDSHARED-"cc -shared -Wl,-soname,libptlibzippy.so.0"} ;;
   OSF1\ V4*) SFLAGS=${CFLAGS-"-O -std1"}
              CFLAGS=${CFLAGS-"-O -std1"}
              LDFLAGS="${LDFLAGS} -Wl,-rpath,."
-             LDSHARED=${LDSHARED-"cc -shared  -Wl,-soname,libz.so -Wl,-msym -Wl,-rpath,$(libdir) -Wl,-set_version,${VER}:1.0"} ;;
+             LDSHARED=${LDSHARED-"cc -shared  -Wl,-soname,libptlibzippy.so -Wl,-msym -Wl,-rpath,$(libdir) -Wl,-set_version,${VER}:1.0"} ;;
   OSF1*)     SFLAGS=${CFLAGS-"-O -std1"}
              CFLAGS=${CFLAGS-"-O -std1"}
-             LDSHARED=${LDSHARED-"cc -shared -Wl,-soname,libz.so.0"} ;;
+             LDSHARED=${LDSHARED-"cc -shared -Wl,-soname,libptlibzippy.so.0"} ;;
   QNX*)      SFLAGS=${CFLAGS-"-4 -O"}
              CFLAGS=${CFLAGS-"-4 -O"}
              LDSHARED=${LDSHARED-"cc"}
@@ -369,7 +369,7 @@ else
              CFLAGS=${CFLAGS-"-O3"}
              LDSHARED=${LDSHARED-"cc -dy -KPIC -G"} ;;
   SunOS\ 5* | solaris*)
-         LDSHARED=${LDSHARED-"cc -G -h libz$shared_ext.$VER1"}
+         LDSHARED=${LDSHARED-"cc -G -h libptlibzippy$shared_ext.$VER1"}
          SFLAGS=${CFLAGS-"-fast -KPIC"}
          CFLAGS=${CFLAGS-"-fast"}
          if test $build64 -eq 1; then
@@ -416,7 +416,7 @@ else
              SFLAGS=${CFLAGS-"-O -qmaxmem=8192"}
              CFLAGS=${CFLAGS-"-O -qmaxmem=8192"}
              LDSHARED=${LDSHARED-"xlc -G"} ;;
-  # send working options for other systems to zlib@gzip.org
+  # send working options for other systems to PTlibzippy@gzip.org (PTlibzippy fork)
   *)         SFLAGS=${CFLAGS-"-O"}
              CFLAGS=${CFLAGS-"-O"}
              LDSHARED=${LDSHARED-"cc -shared"} ;;
@@ -424,9 +424,9 @@ else
 fi
 
 # destination names for shared library if not defined above
-SHAREDLIB=${SHAREDLIB-"libz$shared_ext"}
-SHAREDLIBV=${SHAREDLIBV-"libz$shared_ext.$VER"}
-SHAREDLIBM=${SHAREDLIBM-"libz$shared_ext.$VER1"}
+SHAREDLIB=${SHAREDLIB-"libptlibzippy$shared_ext"}
+SHAREDLIBV=${SHAREDLIBV-"libptlibzippy$shared_ext.$VER"}
+SHAREDLIBM=${SHAREDLIBM-"libptlibzippy$shared_ext.$VER1"}
 
 echo >> configure.log
 
@@ -616,19 +616,19 @@ else
   echo "Checking for strerror... No." | tee -a configure.log
 fi
 
-# copy clean zconf.h for subsequent edits
-cp -p ${SRCDIR}zconf.h.in zconf.h
+# copy clean ptzippyconf.h for subsequent edits
+cp -p ${SRCDIR}ptzippyconf.h.in ptzippyconf.h
 
 echo >> configure.log
 
-# check for unistd.h and save result in zconf.h
+# check for unistd.h and save result in ptzippyconf.h
 cat > $test.c <<EOF
 #include <unistd.h>
 int main() { return 0; }
 EOF
 if try $CC -c $CFLAGS $test.c; then
-  sed < zconf.h "/^#if HAVE_UNISTD_H-0.* may be/s/ HAVE_UNISTD_H-0\(.*\) may be/ 1\1 was/" > zconf.temp.h
-  mv zconf.temp.h zconf.h
+  sed < ptzippyconf.h "/^#if HAVE_UNISTD_H-0.* may be/s/ HAVE_UNISTD_H-0\(.*\) may be/ 1\1 was/" > zconf.temp.h
+  mv zconf.temp.h ptzippyconf.h
   echo "Checking for unistd.h... Yes." | tee -a configure.log
 else
   echo "Checking for unistd.h... No." | tee -a configure.log
@@ -636,34 +636,34 @@ fi
 
 echo >> configure.log
 
-# check for stdarg.h and save result in zconf.h
+# check for stdarg.h and save result in ptzippyconf.h
 cat > $test.c <<EOF
 #include <stdarg.h>
 int main() { return 0; }
 EOF
 if try $CC -c $CFLAGS $test.c; then
-  sed < zconf.h "/^#if HAVE_STDARG_H-0.* may be/s/ HAVE_STDARG_H-0\(.*\) may be/ 1\1 was/" > zconf.temp.h
-  mv zconf.temp.h zconf.h
+  sed < ptzippyconf.h "/^#if HAVE_STDARG_H-0.* may be/s/ HAVE_STDARG_H-0\(.*\) may be/ 1\1 was/" > zconf.temp.h
+  mv zconf.temp.h ptzippyconf.h
   echo "Checking for stdarg.h... Yes." | tee -a configure.log
 else
   echo "Checking for stdarg.h... No." | tee -a configure.log
 fi
 
-# if the z_ prefix was requested, save that in zconf.h
+# if the z_ prefix was requested, save that in ptzippyconf.h
 if test $zprefix -eq 1; then
-  sed < zconf.h "/#ifdef Z_PREFIX.* may be/s/def Z_PREFIX\(.*\) may be/ 1\1 was/" > zconf.temp.h
-  mv zconf.temp.h zconf.h
+  sed < ptzippyconf.h "/#ifdef Z_PREFIX.* may be/s/def Z_PREFIX\(.*\) may be/ 1\1 was/" > zconf.temp.h
+  mv zconf.temp.h ptzippyconf.h
   echo >> configure.log
   echo "Using z_ prefix on all symbols." | tee -a configure.log
 fi
 
-# if --solo compilation was requested, save that in zconf.h and remove gz stuff from object lists
+# if --solo compilation was requested, save that in ptzippyconf.h and remove gz stuff from object lists
 if test $solo -eq 1; then
   sed '/#define ZCONF_H/a\
 #define Z_SOLO
 
-' < zconf.h > zconf.temp.h
-  mv zconf.temp.h zconf.h
+' < ptzippyconf.h > zconf.temp.h
+  mv zconf.temp.h ptzippyconf.h
 OBJC='$(OBJZ)'
 PIC_OBJC='$(PIC_OBJZ)'
 fi
@@ -684,7 +684,7 @@ echo >> configure.log
 cat > $test.c <<EOF
 #include <stdio.h>
 #include <stdarg.h>
-#include "zconf.h"
+#include "ptzippyconf.h"
 int main()
 {
 #ifndef STDC
@@ -743,7 +743,7 @@ EOF
       CFLAGS="$CFLAGS -DHAS_vsnprintf_void"
       SFLAGS="$SFLAGS -DHAS_vsnprintf_void"
       echo "Checking for return value of vsnprintf()... No." | tee -a configure.log
-      echo "  WARNING: apparently vsnprintf() does not return a value. zlib" | tee -a configure.log
+      echo "  WARNING: apparently vsnprintf() does not return a value. PTlibzippy" | tee -a configure.log
       echo "  can build but will be open to possible string-format security" | tee -a configure.log
       echo "  vulnerabilities." | tee -a configure.log
     fi
@@ -751,7 +751,7 @@ EOF
     CFLAGS="$CFLAGS -DNO_vsnprintf"
     SFLAGS="$SFLAGS -DNO_vsnprintf"
     echo "Checking for vsnprintf() in stdio.h... No." | tee -a configure.log
-    echo "  WARNING: vsnprintf() not found, falling back to vsprintf(). zlib" | tee -a configure.log
+    echo "  WARNING: vsnprintf() not found, falling back to vsprintf(). PTlibzippy" | tee -a configure.log
     echo "  can build but will be open to possible buffer-overflow security" | tee -a configure.log
     echo "  vulnerabilities." | tee -a configure.log
     if test $insecure -ne 1; then
@@ -784,7 +784,7 @@ EOF
       CFLAGS="$CFLAGS -DHAS_vsprintf_void"
       SFLAGS="$SFLAGS -DHAS_vsprintf_void"
       echo "Checking for return value of vsprintf()... No." | tee -a configure.log
-      echo "  WARNING: apparently vsprintf() does not return a value. zlib" | tee -a configure.log
+      echo "  WARNING: apparently vsprintf() does not return a value. PTlibzippy" | tee -a configure.log
       echo "  can build but will be open to possible string-format security" | tee -a configure.log
       echo "  vulnerabilities." | tee -a configure.log
     fi
@@ -830,7 +830,7 @@ EOF
       CFLAGS="$CFLAGS -DHAS_snprintf_void"
       SFLAGS="$SFLAGS -DHAS_snprintf_void"
       echo "Checking for return value of snprintf()... No." | tee -a configure.log
-      echo "  WARNING: apparently snprintf() does not return a value. zlib" | tee -a configure.log
+      echo "  WARNING: apparently snprintf() does not return a value. PTlibzippy" | tee -a configure.log
       echo "  can build but will be open to possible string-format security" | tee -a configure.log
       echo "  vulnerabilities." | tee -a configure.log
     fi
@@ -838,7 +838,7 @@ EOF
     CFLAGS="$CFLAGS -DNO_snprintf"
     SFLAGS="$SFLAGS -DNO_snprintf"
     echo "Checking for snprintf() in stdio.h... No." | tee -a configure.log
-    echo "  WARNING: snprintf() not found, falling back to sprintf(). zlib" | tee -a configure.log
+    echo "  WARNING: snprintf() not found, falling back to sprintf(). PTlibzippy" | tee -a configure.log
     echo "  can build but will be open to possible buffer-overflow security" | tee -a configure.log
     echo "  vulnerabilities." | tee -a configure.log
     if test $insecure -ne 1; then
@@ -865,19 +865,19 @@ EOF
       CFLAGS="$CFLAGS -DHAS_sprintf_void"
       SFLAGS="$SFLAGS -DHAS_sprintf_void"
       echo "Checking for return value of sprintf()... No." | tee -a configure.log
-      echo "  WARNING: apparently sprintf() does not return a value. zlib" | tee -a configure.log
+      echo "  WARNING: apparently sprintf() does not return a value. PTlibzippy" | tee -a configure.log
       echo "  can build but will be open to possible string-format security" | tee -a configure.log
       echo "  vulnerabilities." | tee -a configure.log
     fi
   fi
 fi
 
-# see if we can hide zlib internal symbols that are linked between separate source files
+# see if we can hide PTlibzippy internal symbols that are linked between separate source files
 if test "$gcc" -eq 1; then
   echo >> configure.log
   cat > $test.c <<EOF
-#define ZLIB_INTERNAL __attribute__((visibility ("hidden")))
-int ZLIB_INTERNAL foo;
+#define PTLIBZIPPY_INTERNAL __attribute__((visibility ("hidden")))
+int PTLIBZIPPY_INTERNAL foo;
 int main()
 {
   return 0;
@@ -1026,8 +1026,8 @@ sed < ${SRCDIR}Makefile.in "
 /^test: */s#:.*#: $TEST#
 " > Makefile
 
-# create zlib.pc with the configure results
-sed < ${SRCDIR}zlib.pc.in "
+# create ptlibzippy.pc with the configure results
+sed < ${SRCDIR}ptlibzippy.pc.in "
 /^CC *=/s#=.*#=$CC#
 /^CFLAGS *=/s#=.*#=$CFLAGS#
 /^CPP *=/s#=.*#=$CPP#
@@ -1049,7 +1049,7 @@ sed < ${SRCDIR}zlib.pc.in "
 /^LDFLAGS *=/s#=.*#=$LDFLAGS#
 " | sed -e "
 s/\@VERSION\@/$VER/g;
-" > zlib.pc
+" > ptlibzippy.pc
 
 # done
 leave 0

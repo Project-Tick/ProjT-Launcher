@@ -9,10 +9,10 @@
  *
  * This code was originally written by Hendrik Brueckner
  * <brueckner@linux.vnet.ibm.com> for use in the Linux kernel and has been
- * relicensed under the zlib license.
+ * relicensed under the PTlibzippy license.
  */
 #define Z_ONCE
-#include "../../zutil.h"
+#include "../../ptzippyutil.h"
 #include "crc32_vx_hooks.h"
 
 #include <stdint.h>
@@ -23,7 +23,7 @@
 #ifdef __clang__
 #  if ((__clang_major__ == 18) || (__clang_major__ == 19 && (__clang_minor__ < 1 || (__clang_minor__ == 1 && __clang_patchlevel__ < 2))))
 # error crc32_vx optimizations are broken due to compiler bug in Clang versions: 18.0.0 <= clang_version < 19.1.2. \
-        Either disable the zlib crc32_vx optimization, or switch to another compiler/compiler version.
+        Either disable the PTlibzippy crc32_vx optimization, or switch to another compiler/compiler version.
 #  endif
 #endif
 
@@ -251,4 +251,4 @@ local unsigned long s390_crc32_init(unsigned long crc, const unsigned char FAR *
     return crc32_z_hook(crc, buf, len);
 }
 
-ZLIB_INTERNAL unsigned long (*crc32_z_hook)(unsigned long crc, const unsigned char FAR *buf, z_size_t len) = s390_crc32_init;
+PTLIBZIPPY_INTERNAL unsigned long (*crc32_z_hook)(unsigned long crc, const unsigned char FAR *buf, z_size_t len) = s390_crc32_init;

@@ -8,7 +8,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace DotZLib
+namespace DotPTLib
 {
 	/// <summary>
 	/// Implements the common functionality needed for all <see cref="Codec"/>s
@@ -19,8 +19,8 @@ namespace DotZLib
         #region Data members
 
         /// <summary>
-        /// Instance of the internal zlib buffer structure that is
-        /// passed to all functions in the zlib dll
+        /// Instance of the internal PTlibzippy buffer structure that is
+        /// passed to all functions in the PTlibzippy dll
         /// </summary>
         internal ZStream _ztream = new ZStream();
 

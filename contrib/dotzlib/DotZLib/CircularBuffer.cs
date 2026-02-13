@@ -8,7 +8,7 @@
 using System;
 using System.Diagnostics;
 
-namespace DotZLib
+namespace DotPTLib
 {
 
 	/// <summary>

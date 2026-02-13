@@ -1,9 +1,9 @@
 ----------------------------------------------------------------
---  ZLib for Ada thick binding.                               --
+--  PTLib for Ada thick binding.                               --
 --                                                            --
 --  Copyright (C) 2002-2004 Dmitriy Anisimkov                 --
 --                                                            --
---  Open source license information is in the zlib.ads file.  --
+--  Open source license information is in the ptlibzippy.ads file.  --
 ----------------------------------------------------------------
 --
 --  $Id: buffer_demo.adb,v 1.3 2004/09/06 06:55:35 vagul Exp $
@@ -20,7 +20,7 @@
 with Ada.Streams; use Ada.Streams;
 with Ada.Text_IO;
 
-with ZLib; use ZLib;
+with PTLib; use PTLib;
 
 procedure Buffer_Demo is
    EOL  : Character renames ASCII.LF;

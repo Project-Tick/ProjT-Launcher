@@ -1,5 +1,6 @@
 # check if we compile for IBM s390x
 #
+include(CheckCSourceCompiles)
 CHECK_C_SOURCE_COMPILES("
 #ifndef __s390x__
     #error
@@ -10,7 +11,7 @@ int main() {return 0;}
 #
 # Check for IBM S390X - VX extensions
 #
-if(ZLIB_WITH_CRC32VX AND HAS_S390X_SUPPORT)
+if(PTLIBZIPPY_WITH_CRC32VX AND HAS_S390X_SUPPORT)
     # preset the compiler specific flags
     if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
         set(VGFMAFLAG "-fzvector")
@@ -46,22 +47,22 @@ if(ZLIB_WITH_CRC32VX AND HAS_S390X_SUPPORT)
 
     # prepare compiling for s390x
     if(HAS_S390X_VX_SUPPORT OR HAS_Z13_S390X_VX_SUPPORT)
-        if(ZLIB_BUILD_SHARED)
-            target_sources(zlib
+        if(PTLIBZIPPY_BUILD_SHARED)
+            target_sources(ptlibzippy
                 PRIVATE
                     crc32_vx.c
                     crc32_vx_hooks.h)
-            target_compile_definitions(zlib PUBLIC -DHAVE_S390X_VX=1)
-        endif(ZLIB_BUILD_SHARED)
-        if(ZLIB_BUILD_STATIC)
-            target_sources(zlibstatic
+            target_compile_definitions(ptlibzippy PUBLIC -DHAVE_S390X_VX=1)
+        endif(PTLIBZIPPY_BUILD_SHARED)
+        if(PTLIBZIPPY_BUILD_STATIC)
+            target_sources(ptlibzippystatic
                 PRIVATE
                     crc32_vx.c
                     crc32_vx_hooks.h)
-            target_compile_definitions(zlibstatic PUBLIC -DHAVE_S390X_VX=1)
-        endif(ZLIB_BUILD_STATIC)
+            target_compile_definitions(ptlibzippystatic PUBLIC -DHAVE_S390X_VX=1)
+        endif(PTLIBZIPPY_BUILD_STATIC)
         set_source_files_properties(
             crc32_vx.c
             PROPERTIES COMPILE_OPTIONS "${VGFMAFLAG}")
     endif(HAS_S390X_VX_SUPPORT OR HAS_Z13_S390X_VX_SUPPORT)
-endif(ZLIB_WITH_CRC32VX AND HAS_S390X_SUPPORT)
+endif(PTLIBZIPPY_WITH_CRC32VX AND HAS_S390X_SUPPORT)

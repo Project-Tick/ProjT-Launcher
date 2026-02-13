@@ -48,7 +48,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\..;..\..\minizip"
-				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;ZLIB_WINAPI;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;PTLIBZIPPY_WINAPI;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -70,7 +70,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="x86\ZlibDllDebug\zlibwapi.lib"
+				AdditionalDependencies="x86\PtlibzippyDllDebug\ptlibzippywapi.lib"
 				OutputFile="$(OutDir)/miniunz.exe"
 				LinkIncremental="2"
 				GenerateManifest="false"
@@ -132,7 +132,7 @@
 				InlineFunctionExpansion="1"
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="..\..\..;..\..\minizip"
-				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;ZLIB_WINAPI;NDEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;PTLIBZIPPY_WINAPI;NDEBUG;_CONSOLE"
 				StringPooling="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
@@ -155,7 +155,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="x86\ZlibDllRelease\zlibwapi.lib"
+				AdditionalDependencies="x86\PtlibzippyDllRelease\ptlibzippywapi.lib"
 				OutputFile="$(OutDir)/miniunz.exe"
 				LinkIncremental="1"
 				GenerateManifest="false"
@@ -218,7 +218,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\..;..\..\minizip"
-				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;ZLIB_WINAPI;_DEBUG;_CONSOLE;WIN64"
+				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;PTLIBZIPPY_WINAPI;_DEBUG;_CONSOLE;WIN64"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="3"
@@ -240,7 +240,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="x64\ZlibDllDebug\zlibwapi.lib"
+				AdditionalDependencies="x64\PtlibzippyDllDebug\ptlibzippywapi.lib"
 				OutputFile="$(OutDir)/miniunz.exe"
 				LinkIncremental="2"
 				GenerateManifest="false"
@@ -302,7 +302,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\..;..\..\minizip"
-				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;ZLIB_WINAPI;_DEBUG;_CONSOLE;WIN64"
+				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;PTLIBZIPPY_WINAPI;_DEBUG;_CONSOLE;WIN64"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="3"
@@ -324,7 +324,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ia64\ZlibDllDebug\zlibwapi.lib"
+				AdditionalDependencies="ia64\PtlibzippyDllDebug\ptlibzippywapi.lib"
 				OutputFile="$(OutDir)/miniunz.exe"
 				LinkIncremental="2"
 				GenerateManifest="false"
@@ -388,7 +388,7 @@
 				InlineFunctionExpansion="1"
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="..\..\..;..\..\minizip"
-				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;ZLIB_WINAPI;NDEBUG;_CONSOLE;WIN64"
+				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;PTLIBZIPPY_WINAPI;NDEBUG;_CONSOLE;WIN64"
 				StringPooling="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
@@ -411,7 +411,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="x64\ZlibDllRelease\zlibwapi.lib"
+				AdditionalDependencies="x64\PtlibzippyDllRelease\ptlibzippywapi.lib"
 				OutputFile="$(OutDir)/miniunz.exe"
 				LinkIncremental="1"
 				GenerateManifest="false"
@@ -477,7 +477,7 @@
 				InlineFunctionExpansion="1"
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="..\..\..;..\..\minizip"
-				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;ZLIB_WINAPI;NDEBUG;_CONSOLE;WIN64"
+				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;PTLIBZIPPY_WINAPI;NDEBUG;_CONSOLE;WIN64"
 				StringPooling="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
@@ -500,7 +500,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ia64\ZlibDllRelease\zlibwapi.lib"
+				AdditionalDependencies="ia64\PtlibzippyDllRelease\ptlibzippywapi.lib"
 				OutputFile="$(OutDir)/miniunz.exe"
 				LinkIncremental="1"
 				GenerateManifest="false"

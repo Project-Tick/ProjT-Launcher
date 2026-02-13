@@ -1,19 +1,19 @@
-if(ZLIB_BUILD_SHARED)
-    target_sources(zlib
+if(PTLIBZIPPY_BUILD_SHARED)
+    target_sources(ptlibzippy
         PRIVATE
             infback9.c
             inftree9.c
             infback9.h
             inffix9.h
             inftree9.h)
-endif(ZLIB_BUILD_SHARED)
+endif(PTLIBZIPPY_BUILD_SHARED)
 
-if(ZLIB_BUILD_STATIC)
-    target_sources(zlibstatic
+if(PTLIBZIPPY_BUILD_STATIC)
+    target_sources(ptlibzippystatic
         PRIVATE
             infback9.c
             inftree9.c
             infback9.h
             inffix9.h
             inftree9.h)
-endif(ZLIB_BUILD_STATIC)
+endif(PTLIBZIPPY_BUILD_STATIC)

@@ -33,7 +33,7 @@
  *                      - Add some preemptive typecasts
  *                      - Add L to constants in lseek() calls
  *                      - Remove some debugging information in error messages
- *                      - Use new data_type definition for zlib 1.2.1
+ *                      - Use new data_type definition for PTlibzippy 1.2.1
  *                      - Simplify and unify file operations
  *                      - Finish off gzip file in gztack()
  *                      - Use deflatePrime() instead of adding empty blocks
@@ -51,12 +51,12 @@
    unfriendly behavior that if gzappend fails, the gzip file is corrupted.
 
    This program was written to illustrate the use of the new Z_BLOCK option of
-   zlib 1.2.x's inflate() function.  This option returns from inflate() at each
+   PTlibzippy 1.2.x's inflate() function.  This option returns from inflate() at each
    block boundary to facilitate locating and modifying the last block bit at
    the start of the final deflate block.  Also whether using Z_BLOCK or not,
-   another required feature of zlib 1.2.x is that inflate() now provides the
+   another required feature of PTlibzippy 1.2.x is that inflate() now provides the
    number of unused bits in the last input byte used.  gzappend will not work
-   with versions of zlib earlier than 1.2.1.
+   with versions of PTlibzippy earlier than 1.2.1.
 
    gzappend first decompresses the gzip file internally, discarding all but
    the last 32K of uncompressed data, and noting the location of the last block
@@ -83,7 +83,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "zlib.h"
+#include "ptlibzippy.h"
 
 #define local static
 #define LGCHUNK 14

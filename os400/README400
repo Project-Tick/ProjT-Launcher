@@ -1,7 +1,7 @@
-        ZLIB version 0.0.5.1 for OS/400 installation instructions
+        PTlibzippy version 0.0.5.1 for OS/400 installation instructions
 
-1) Download and unpack the zlib tarball to some IFS directory.
-   (i.e.: /path/to/the/zlib/ifs/source/directory)
+1) Download and unpack the PTlibzippy tarball to some IFS directory.
+   (i.e.: /path/to/the/ptlibzippy/ifs/source/directory)
 
    If the installed IFS command supports gzip format, this is straightforward,
 else you have to unpack first to some directory on a system supporting it,
@@ -9,22 +9,22 @@ then move the whole directory to the IFS via the network (via SMB or FTP).
 
 2) Edit the configuration parameters in the compilation script.
 
-        EDTF STMF('/path/to/the/zlib/ifs/source/directory/os400/make.sh')
+        EDTF STMF('/path/to/the/ptlibzippy/ifs/source/directory/os400/make.sh')
 
 Tune the parameters according to your needs if not matching the defaults.
 Save the file and exit after edition.
 
-3) Enter qshell, then work in the zlib OS/400 specific directory.
+3) Enter qshell, then work in the PTlibzippy OS/400 specific directory.
 
         QSH
-        cd /path/to/the/zlib/ifs/source/directory/os400
+        cd /path/to/the/ptlibzippy/ifs/source/directory/os400
 
 4) Compile and install
 
         sh make.sh
 
 The script will:
-- create the libraries, objects and IFS directories for the zlib environment,
+- create the libraries, objects and IFS directories for the PTlibzippy environment,
 - compile all modules,
 - create a service program,
 - create a static and a dynamic binding directory,
@@ -34,10 +34,10 @@ The script will:
 That's all. 
 
 
-Notes:  For OS/400 ILE RPG programmers, a /copy member defining the ZLIB
-                API prototypes for ILE RPG can be found in ZLIB/H(ZLIB.INC).
+Notes:  For OS/400 ILE RPG programmers, a /copy member defining the PTlibzippy
+                API prototypes for ILE RPG can be found in PTLIBZIPPY/H(PTLIBZIPPY.INC).
                 In the ILE environment, the same definitions are available from
-                file zlib.inc located in the same IFS include directory as the
+                file ptlibzippy.inc located in the same IFS include directory as the
                 C/C++ header files.
                 Please read comments in this member for more information.
 

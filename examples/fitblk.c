@@ -54,7 +54,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "zlib.h"
+#include "ptlibzippy.h"
 
 #define local static
 
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
     unsigned have;          /* bytes written by deflate() call */
     unsigned char *blk;     /* intermediate and final stream */
     unsigned char *tmp;     /* close to desired size stream */
-    z_stream def, inf;      /* zlib deflate and inflate states */
+    z_stream def, inf;      /* PTlibzippy deflate and inflate states */
 
     /* get requested output size */
     if (argc != 2)
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
     ret = strtol(argv[1], argv + 1, 10);
     if (argv[1][0] != 0)
         quit("argument must be a number");
-    if (ret < 8)            /* 8 is minimum zlib stream size */
+    if (ret < 8)            /* 8 is minimum PTlibzippy stream size */
         quit("need positive size of 8 or greater");
     size = (unsigned)ret;
 

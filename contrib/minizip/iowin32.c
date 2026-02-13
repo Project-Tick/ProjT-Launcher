@@ -1,8 +1,8 @@
 /* iowin32.c -- IO base function header for compress/uncompress .zip
      Version 1.1, February 14h, 2010
-     part of the MiniZip project - ( http://www.winimage.com/zLibDll/minizip.html )
+     part of the MiniZip project - ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
-         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/zLibDll/minizip.html )
+         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
          Modifications for Zip64 support
          Copyright (C) 2009-2010 Mathias Svensson ( http://result42.com )
@@ -13,7 +13,7 @@
 
 #include <stdlib.h>
 
-#include "zlib.h"
+#include "ptlibzippy.h"
 #include "ioapi.h"
 #include "iowin32.h"
 
@@ -52,18 +52,18 @@ static void win32_translate_open_mode(int mode,
                                       DWORD* lpdwFlagsAndAttributes) {
     *lpdwDesiredAccess = *lpdwShareMode = *lpdwFlagsAndAttributes = *lpdwCreationDisposition = 0;
 
-    if ((mode & ZLIB_FILEFUNC_MODE_READWRITEFILTER)==ZLIB_FILEFUNC_MODE_READ)
+    if ((mode & PTLIBZIPPY_FILEFUNC_MODE_READWRITEFILTER)==PTLIBZIPPY_FILEFUNC_MODE_READ)
     {
         *lpdwDesiredAccess = GENERIC_READ;
         *lpdwCreationDisposition = OPEN_EXISTING;
         *lpdwShareMode = FILE_SHARE_READ;
     }
-    else if (mode & ZLIB_FILEFUNC_MODE_EXISTING)
+    else if (mode & PTLIBZIPPY_FILEFUNC_MODE_EXISTING)
     {
         *lpdwDesiredAccess = GENERIC_WRITE | GENERIC_READ;
         *lpdwCreationDisposition = OPEN_EXISTING;
     }
-    else if (mode & ZLIB_FILEFUNC_MODE_CREATE)
+    else if (mode & PTLIBZIPPY_FILEFUNC_MODE_CREATE)
     {
         *lpdwDesiredAccess = GENERIC_WRITE | GENERIC_READ;
         *lpdwCreationDisposition = CREATE_ALWAYS;
@@ -306,13 +306,13 @@ long ZCALLBACK win32_seek_file_func(voidpf opaque, voidpf stream, uLong offset, 
         hFile = ((WIN32FILE_IOWIN*)stream) -> hf;
     switch (origin)
     {
-    case ZLIB_FILEFUNC_SEEK_CUR :
+    case PTLIBZIPPY_FILEFUNC_SEEK_CUR :
         dwMoveMethod = FILE_CURRENT;
         break;
-    case ZLIB_FILEFUNC_SEEK_END :
+    case PTLIBZIPPY_FILEFUNC_SEEK_END :
         dwMoveMethod = FILE_END;
         break;
-    case ZLIB_FILEFUNC_SEEK_SET :
+    case PTLIBZIPPY_FILEFUNC_SEEK_SET :
         dwMoveMethod = FILE_BEGIN;
         break;
     default: return -1;
@@ -345,13 +345,13 @@ long ZCALLBACK win32_seek64_file_func(voidpf opaque, voidpf stream, ZPOS64_T off
 
     switch (origin)
     {
-        case ZLIB_FILEFUNC_SEEK_CUR :
+        case PTLIBZIPPY_FILEFUNC_SEEK_CUR :
             dwMoveMethod = FILE_CURRENT;
             break;
-        case ZLIB_FILEFUNC_SEEK_END :
+        case PTLIBZIPPY_FILEFUNC_SEEK_END :
             dwMoveMethod = FILE_END;
             break;
-        case ZLIB_FILEFUNC_SEEK_SET :
+        case PTLIBZIPPY_FILEFUNC_SEEK_SET :
             dwMoveMethod = FILE_BEGIN;
             break;
         default: return -1;
@@ -401,48 +401,48 @@ int ZCALLBACK win32_error_file_func(voidpf opaque, voidpf stream) {
     return ret;
 }
 
-void fill_win32_filefunc(zlib_filefunc_def* pzlib_filefunc_def) {
-    pzlib_filefunc_def->zopen_file = win32_open_file_func;
-    pzlib_filefunc_def->zread_file = win32_read_file_func;
-    pzlib_filefunc_def->zwrite_file = win32_write_file_func;
-    pzlib_filefunc_def->ztell_file = win32_tell_file_func;
-    pzlib_filefunc_def->zseek_file = win32_seek_file_func;
-    pzlib_filefunc_def->zclose_file = win32_close_file_func;
-    pzlib_filefunc_def->zerror_file = win32_error_file_func;
-    pzlib_filefunc_def->opaque = NULL;
+void fill_win32_filefunc(ptlibzippy_filefunc_def* pptlibzippy_filefunc_def) {
+    pptlibzippy_filefunc_def->zopen_file = win32_open_file_func;
+    pptlibzippy_filefunc_def->zread_file = win32_read_file_func;
+    pptlibzippy_filefunc_def->zwrite_file = win32_write_file_func;
+    pptlibzippy_filefunc_def->ztell_file = win32_tell_file_func;
+    pptlibzippy_filefunc_def->zseek_file = win32_seek_file_func;
+    pptlibzippy_filefunc_def->zclose_file = win32_close_file_func;
+    pptlibzippy_filefunc_def->zerror_file = win32_error_file_func;
+    pptlibzippy_filefunc_def->opaque = NULL;
 }
 
-void fill_win32_filefunc64(zlib_filefunc64_def* pzlib_filefunc_def) {
-    pzlib_filefunc_def->zopen64_file = win32_open64_file_func;
-    pzlib_filefunc_def->zread_file = win32_read_file_func;
-    pzlib_filefunc_def->zwrite_file = win32_write_file_func;
-    pzlib_filefunc_def->ztell64_file = win32_tell64_file_func;
-    pzlib_filefunc_def->zseek64_file = win32_seek64_file_func;
-    pzlib_filefunc_def->zclose_file = win32_close_file_func;
-    pzlib_filefunc_def->zerror_file = win32_error_file_func;
-    pzlib_filefunc_def->opaque = NULL;
-}
-
-
-void fill_win32_filefunc64A(zlib_filefunc64_def* pzlib_filefunc_def) {
-    pzlib_filefunc_def->zopen64_file = win32_open64_file_funcA;
-    pzlib_filefunc_def->zread_file = win32_read_file_func;
-    pzlib_filefunc_def->zwrite_file = win32_write_file_func;
-    pzlib_filefunc_def->ztell64_file = win32_tell64_file_func;
-    pzlib_filefunc_def->zseek64_file = win32_seek64_file_func;
-    pzlib_filefunc_def->zclose_file = win32_close_file_func;
-    pzlib_filefunc_def->zerror_file = win32_error_file_func;
-    pzlib_filefunc_def->opaque = NULL;
+void fill_win32_filefunc64(ptlibzippy_filefunc64_def* pptlibzippy_filefunc_def) {
+    pptlibzippy_filefunc_def->zopen64_file = win32_open64_file_func;
+    pptlibzippy_filefunc_def->zread_file = win32_read_file_func;
+    pptlibzippy_filefunc_def->zwrite_file = win32_write_file_func;
+    pptlibzippy_filefunc_def->ztell64_file = win32_tell64_file_func;
+    pptlibzippy_filefunc_def->zseek64_file = win32_seek64_file_func;
+    pptlibzippy_filefunc_def->zclose_file = win32_close_file_func;
+    pptlibzippy_filefunc_def->zerror_file = win32_error_file_func;
+    pptlibzippy_filefunc_def->opaque = NULL;
 }
 
 
-void fill_win32_filefunc64W(zlib_filefunc64_def* pzlib_filefunc_def) {
-    pzlib_filefunc_def->zopen64_file = win32_open64_file_funcW;
-    pzlib_filefunc_def->zread_file = win32_read_file_func;
-    pzlib_filefunc_def->zwrite_file = win32_write_file_func;
-    pzlib_filefunc_def->ztell64_file = win32_tell64_file_func;
-    pzlib_filefunc_def->zseek64_file = win32_seek64_file_func;
-    pzlib_filefunc_def->zclose_file = win32_close_file_func;
-    pzlib_filefunc_def->zerror_file = win32_error_file_func;
-    pzlib_filefunc_def->opaque = NULL;
+void fill_win32_filefunc64A(ptlibzippy_filefunc64_def* pptlibzippy_filefunc_def) {
+    pptlibzippy_filefunc_def->zopen64_file = win32_open64_file_funcA;
+    pptlibzippy_filefunc_def->zread_file = win32_read_file_func;
+    pptlibzippy_filefunc_def->zwrite_file = win32_write_file_func;
+    pptlibzippy_filefunc_def->ztell64_file = win32_tell64_file_func;
+    pptlibzippy_filefunc_def->zseek64_file = win32_seek64_file_func;
+    pptlibzippy_filefunc_def->zclose_file = win32_close_file_func;
+    pptlibzippy_filefunc_def->zerror_file = win32_error_file_func;
+    pptlibzippy_filefunc_def->opaque = NULL;
+}
+
+
+void fill_win32_filefunc64W(ptlibzippy_filefunc64_def* pptlibzippy_filefunc_def) {
+    pptlibzippy_filefunc_def->zopen64_file = win32_open64_file_funcW;
+    pptlibzippy_filefunc_def->zread_file = win32_read_file_func;
+    pptlibzippy_filefunc_def->zwrite_file = win32_write_file_func;
+    pptlibzippy_filefunc_def->ztell64_file = win32_tell64_file_func;
+    pptlibzippy_filefunc_def->zseek64_file = win32_seek64_file_func;
+    pptlibzippy_filefunc_def->zclose_file = win32_close_file_func;
+    pptlibzippy_filefunc_def->zerror_file = win32_error_file_func;
+    pptlibzippy_filefunc_def->opaque = NULL;
 }

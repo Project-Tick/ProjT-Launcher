@@ -9,5 +9,5 @@ Description: minizip compression library
 Version: @minizip_VERSION@
 
 Requires:
-Libs: -L${libdir} -L${sharedlibdir} -lz -lminizip
+Libs: -L${libdir} -L${sharedlibdir} -lptlibzippy -lminizip
 Cflags: -I${includedir}

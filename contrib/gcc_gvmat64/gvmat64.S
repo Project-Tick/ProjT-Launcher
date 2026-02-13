@@ -10,7 +10,7 @@
 ; Copyright (C) 1995-2010 Jean-loup Gailly, Brian Raiter and Gilles Vollant.
 ;
 ; File written by Gilles Vollant, by converting to assembly the longest_match
-;  from Jean-loup Gailly in deflate.c of zLib and infoZip zip.
+;  from Jean-loup Gailly in deflate.c of ptLib and infoZip zip.
 ;  and by taking inspiration on asm686 with masm, optimised assembly code
 ;        from Brian Raiter, written 1998
 ;
@@ -31,10 +31,10 @@
 ;  3. This notice may not be removed or altered from any source distribution.
 ;
 ;         http://www.zlib.net
-;         http://www.winimage.com/zLibDll
+;         http://www.winimage.com/ptlibzippyDll
 ;         http://www.muppetlabs.com/~breadbox/software/assembly.html
 ;
-; to compile this file for zLib, I use option:
+; to compile this file for ptLib, I use option:
 ;   gcc -c -arch x86_64 gvmat64.S
 
 
@@ -84,9 +84,9 @@ longest_match:
 
 
 /*
-;  all the +4 offsets are due to the addition of pending_buf_size (in zlib
+;  all the +4 offsets are due to the addition of pending_buf_size (in PTlibzippy
 ;  in the deflate_state structure since the asm code was first written
-;  (if you compile with zlib 1.0.4 or older, remove the +4).
+;  (if you compile with PTlibzippy 1.0.4 or older, remove the +4).
 ;  Note : these value are good with a 8 bytes boundary pack structure
 */
 
@@ -102,11 +102,11 @@ longest_match:
 ;;; program to crash horribly, without so much as a warning at
 ;;; compile time. Sigh.)
 
-;  all the +zlib1222add offsets are due to the addition of fields
-;  in zlib in the deflate_state structure since the asm code was first written
-;  (if you compile with zlib 1.0.4 or older, use "zlib1222add equ (-4)").
-;  (if you compile with zlib between 1.0.5 and 1.2.2.1, use "zlib1222add equ 0").
-;  if you compile with zlib 1.2.2.2 or later , use "zlib1222add equ 8").
+;  all the +ptlibzippy1222add offsets are due to the addition of fields
+;  in PTlibzippy in the deflate_state structure since the asm code was first written
+;  (if you compile with PTlibzippy 1.0.4 or older, use "ptlibzippy1222add equ (-4)").
+;  (if you compile with PTlibzippy between 1.0.5 and 1.2.2.1, use "ptlibzippy1222add equ 0").
+;  if you compile with PTlibzippy 1.2.2.2 or later , use "ptlibzippy1222add equ 8").
 */
 
 
@@ -234,7 +234,7 @@ LastMatchGood:
         shl ebx, 16
         or  ebx, eax
 
-//;;; on zlib only
+//;;; on PTlibzippy only
 //;;; if ((uInt)nice_match > s->lookahead) nice_match = s->lookahead;
 
 

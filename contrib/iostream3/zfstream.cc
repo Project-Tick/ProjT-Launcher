@@ -1,5 +1,5 @@
 /*
- * A C++ I/O streams interface to the zlib gz* functions
+ * A C++ I/O streams interface to the PTlibzippy gz* functions
  *
  * by Ludwig Schwardt <schwardt@sun.ac.za>
  * original version by Kevin Ruland <kevin@rodin.wustl.edu>

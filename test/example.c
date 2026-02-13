@@ -1,7 +1,7 @@
-/* example.c -- usage example of the zlib compression library
+/* example.c -- usage example of the PTlibzippy compression library
  * Copyright (C) 1995-2006, 2011, 2016 Jean-loup Gailly
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 /* @(#) $Id$ */
@@ -10,7 +10,7 @@
 #  define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "zlib.h"
+#include "ptlibzippy.h"
 #include <stdio.h>
 
 #ifdef STDC
@@ -383,7 +383,7 @@ static void test_sync(Byte *compr, uLong comprLen, Byte *uncompr,
     d_stream.opaque = (voidpf)0;
 
     d_stream.next_in  = compr;
-    d_stream.avail_in = 2; /* just read the zlib header */
+    d_stream.avail_in = 2; /* just read the PTlibzippy header */
 
     err = inflateInit(&d_stream);
     CHECK_ERR(err, "inflateInit");
@@ -499,19 +499,19 @@ int main(int argc, char *argv[]) {
     Byte *compr, *uncompr;
     uLong uncomprLen = 20000;
     uLong comprLen = 3 * uncomprLen;
-    static const char* myVersion = ZLIB_VERSION;
+    static const char* myVersion = PTLIBZIPPY_VERSION;
 
-    if (zlibVersion()[0] != myVersion[0]) {
-        fprintf(stderr, "incompatible zlib version\n");
+    if (ptlibzippyVersion()[0] != myVersion[0]) {
+        fprintf(stderr, "incompatible PTlibzippy version\n");
         exit(1);
 
-    } else if (strcmp(zlibVersion(), ZLIB_VERSION) != 0) {
-        fprintf(stderr, "warning: different zlib version linked: %s\n",
-                zlibVersion());
+    } else if (strcmp(ptlibzippyVersion(), PTLIBZIPPY_VERSION) != 0) {
+        fprintf(stderr, "warning: different PTlibzippy version linked: %s\n",
+                ptlibzippyVersion());
     }
 
-    printf("zlib version %s = 0x%04x, compile flags = 0x%lx\n",
-            ZLIB_VERSION, ZLIB_VERNUM, zlibCompileFlags());
+    printf("PTlibzippy version %s = 0x%04x, compile flags = 0x%lx\n",
+            PTLIBZIPPY_VERSION, PTLIBZIPPY_VERNUM, ptlibzippyCompileFlags());
 
     compr    = (Byte*)calloc((uInt)comprLen, 1);
     uncompr  = (Byte*)calloc((uInt)uncomprLen, 1);

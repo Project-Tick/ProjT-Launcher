@@ -2,7 +2,7 @@
  * Copyright (C) 1995-2024 Jean-loup Gailly
  * Copyright (C) 2026 Project Tick
  * detect_data_type() function provided freely by Cosmin Truta, 2006
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 /*
@@ -37,7 +37,7 @@
 
 #include "deflate.h"
 
-#ifdef ZLIB_DEBUG
+#ifdef PTLIBZIPPY_DEBUG
 #  include <ctype.h>
 #endif
 
@@ -188,7 +188,7 @@ local void bi_windup(deflate_state *s) {
     s->bi_used = ((s->bi_valid - 1) & 7) + 1;
     s->bi_buf = 0;
     s->bi_valid = 0;
-#ifdef ZLIB_DEBUG
+#ifdef PTLIBZIPPY_DEBUG
     s->bits_sent = (s->bits_sent + 7) & ~7;
 #endif
 }
@@ -236,11 +236,11 @@ local void gen_codes(ct_data *tree, int max_code, ushf *bl_count) {
 local void gen_trees_header(void);
 #endif
 
-#ifndef ZLIB_DEBUG
+#ifndef PTLIBZIPPY_DEBUG
 #  define send_code(s, c, tree) send_bits(s, tree[c].Code, tree[c].Len)
    /* Send a code of the given tree. c and tree must not have side effects */
 
-#else /* !ZLIB_DEBUG */
+#else /* !PTLIBZIPPY_DEBUG */
 #  define send_code(s, c, tree) \
      { if (z_verbose>2) fprintf(stderr,"\ncd %3d ",(c)); \
        send_bits(s, tree[c].Code, tree[c].Len); }
@@ -250,7 +250,7 @@ local void gen_trees_header(void);
  * Send a value on a given number of bits.
  * IN assertion: length <= 16 and value fits in length bits.
  */
-#ifdef ZLIB_DEBUG
+#ifdef PTLIBZIPPY_DEBUG
 local void send_bits(deflate_state *s, int value, int length) {
     Tracevv((stderr," l %2d v %4x ", length, value));
     Assert(length > 0 && length <= 15, "invalid length");
@@ -270,7 +270,7 @@ local void send_bits(deflate_state *s, int value, int length) {
         s->bi_valid += length;
     }
 }
-#else /* !ZLIB_DEBUG */
+#else /* !PTLIBZIPPY_DEBUG */
 
 #define send_bits(s, value, length) \
 { int len = length;\
@@ -285,7 +285,7 @@ local void send_bits(deflate_state *s, int value, int length) {
     s->bi_valid += len;\
   }\
 }
-#endif /* ZLIB_DEBUG */
+#endif /* PTLIBZIPPY_DEBUG */
 
 
 /* the arguments must not have side effects */
@@ -378,7 +378,7 @@ local void tr_static_init(void) {
  * Generate the file trees.h describing the static trees.
  */
 #ifdef GEN_TREES_H
-#  ifndef ZLIB_DEBUG
+#  ifndef PTLIBZIPPY_DEBUG
 #    include <stdio.h>
 #  endif
 
@@ -406,14 +406,14 @@ void gen_trees_header(void) {
                 static_dtree[i].Len, SEPARATOR(i, D_CODES-1, 5));
     }
 
-    fprintf(header, "const uch ZLIB_INTERNAL _dist_code[DIST_CODE_LEN] = {\n");
+    fprintf(header, "const uch PTLIBZIPPY_INTERNAL _dist_code[DIST_CODE_LEN] = {\n");
     for (i = 0; i < DIST_CODE_LEN; i++) {
         fprintf(header, "%2u%s", _dist_code[i],
                 SEPARATOR(i, DIST_CODE_LEN-1, 20));
     }
 
     fprintf(header,
-        "const uch ZLIB_INTERNAL _length_code[MAX_MATCH-MIN_MATCH+1]= {\n");
+        "const uch PTLIBZIPPY_INTERNAL _length_code[MAX_MATCH-MIN_MATCH+1]= {\n");
     for (i = 0; i < MAX_MATCH-MIN_MATCH+1; i++) {
         fprintf(header, "%2u%s", _length_code[i],
                 SEPARATOR(i, MAX_MATCH-MIN_MATCH, 20));
@@ -454,7 +454,7 @@ local void init_block(deflate_state *s) {
 /* ===========================================================================
  * Initialize the tree data structures for a new zlib stream.
  */
-void ZLIB_INTERNAL _tr_init(deflate_state *s) {
+void PTLIBZIPPY_INTERNAL _tr_init(deflate_state *s) {
     tr_static_init();
 
     s->l_desc.dyn_tree = s->dyn_ltree;
@@ -469,7 +469,7 @@ void ZLIB_INTERNAL _tr_init(deflate_state *s) {
     s->bi_buf = 0;
     s->bi_valid = 0;
     s->bi_used = 0;
-#ifdef ZLIB_DEBUG
+#ifdef PTLIBZIPPY_DEBUG
     s->compressed_len = 0L;
     s->bits_sent = 0L;
 #endif
@@ -858,7 +858,7 @@ local void send_all_trees(deflate_state *s, int lcodes, int dcodes,
 /* ===========================================================================
  * Send a stored block
  */
-void ZLIB_INTERNAL _tr_stored_block(deflate_state *s, charf *buf,
+void PTLIBZIPPY_INTERNAL _tr_stored_block(deflate_state *s, charf *buf,
                                     ulg stored_len, int last) {
     send_bits(s, (STORED_BLOCK<<1) + last, 3);  /* send block type */
     bi_windup(s);        /* align on byte boundary */
@@ -867,7 +867,7 @@ void ZLIB_INTERNAL _tr_stored_block(deflate_state *s, charf *buf,
     if (stored_len)
         zmemcpy(s->pending_buf + s->pending, (Bytef *)buf, stored_len);
     s->pending += stored_len;
-#ifdef ZLIB_DEBUG
+#ifdef PTLIBZIPPY_DEBUG
     s->compressed_len = (s->compressed_len + 3 + 7) & (ulg)~7L;
     s->compressed_len += (stored_len + 4) << 3;
     s->bits_sent += 2*16;
@@ -878,7 +878,7 @@ void ZLIB_INTERNAL _tr_stored_block(deflate_state *s, charf *buf,
 /* ===========================================================================
  * Flush the bits in the bit buffer to pending output (leaves at most 7 bits)
  */
-void ZLIB_INTERNAL _tr_flush_bits(deflate_state *s) {
+void PTLIBZIPPY_INTERNAL _tr_flush_bits(deflate_state *s) {
     bi_flush(s);
 }
 
@@ -886,10 +886,10 @@ void ZLIB_INTERNAL _tr_flush_bits(deflate_state *s) {
  * Send one empty static block to give enough lookahead for inflate.
  * This takes 10 bits, of which 7 may remain in the bit buffer.
  */
-void ZLIB_INTERNAL _tr_align(deflate_state *s) {
+void PTLIBZIPPY_INTERNAL _tr_align(deflate_state *s) {
     send_bits(s, STATIC_TREES<<1, 3);
     send_code(s, END_BLOCK, static_ltree);
-#ifdef ZLIB_DEBUG
+#ifdef PTLIBZIPPY_DEBUG
     s->compressed_len += 10L; /* 3 for block type, 7 for EOB */
 #endif
     bi_flush(s);
@@ -995,7 +995,7 @@ local int detect_data_type(deflate_state *s) {
  * Determine the best encoding for the current block: dynamic trees, static
  * trees or store, and write out the encoded block.
  */
-void ZLIB_INTERNAL _tr_flush_block(deflate_state *s, charf *buf,
+void PTLIBZIPPY_INTERNAL _tr_flush_block(deflate_state *s, charf *buf,
                                    ulg stored_len, int last) {
     ulg opt_lenb, static_lenb; /* opt_len and static_len in bytes */
     int max_blindex = 0;  /* index of last bit length code of non zero freq */
@@ -1060,7 +1060,7 @@ void ZLIB_INTERNAL _tr_flush_block(deflate_state *s, charf *buf,
         send_bits(s, (STATIC_TREES<<1) + last, 3);
         compress_block(s, (const ct_data *)static_ltree,
                        (const ct_data *)static_dtree);
-#ifdef ZLIB_DEBUG
+#ifdef PTLIBZIPPY_DEBUG
         s->compressed_len += 3 + s->static_len;
 #endif
     } else {
@@ -1069,7 +1069,7 @@ void ZLIB_INTERNAL _tr_flush_block(deflate_state *s, charf *buf,
                        max_blindex + 1);
         compress_block(s, (const ct_data *)s->dyn_ltree,
                        (const ct_data *)s->dyn_dtree);
-#ifdef ZLIB_DEBUG
+#ifdef PTLIBZIPPY_DEBUG
         s->compressed_len += 3 + s->opt_len;
 #endif
     }
@@ -1081,7 +1081,7 @@ void ZLIB_INTERNAL _tr_flush_block(deflate_state *s, charf *buf,
 
     if (last) {
         bi_windup(s);
-#ifdef ZLIB_DEBUG
+#ifdef PTLIBZIPPY_DEBUG
         s->compressed_len += 7;  /* align on byte boundary */
 #endif
     }
@@ -1093,7 +1093,7 @@ void ZLIB_INTERNAL _tr_flush_block(deflate_state *s, charf *buf,
  * Save the match info and tally the frequency counts. Return true if
  * the current block must be flushed.
  */
-int ZLIB_INTERNAL _tr_tally(deflate_state *s, unsigned dist, unsigned lc) {
+int PTLIBZIPPY_INTERNAL _tr_tally(deflate_state *s, unsigned dist, unsigned lc) {
 #ifdef LIT_MEM
     s->d_buf[s->sym_next] = (ush)dist;
     s->l_buf[s->sym_next++] = (uch)lc;

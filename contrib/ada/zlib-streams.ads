@@ -1,14 +1,14 @@
 ----------------------------------------------------------------
---  ZLib for Ada thick binding.                               --
+--  PTLib for Ada thick binding.                               --
 --                                                            --
 --  Copyright (C) 2002-2003 Dmitriy Anisimkov                 --
 --                                                            --
---  Open source license information is in the zlib.ads file.  --
+--  Open source license information is in the ptlibzippy.ads file.  --
 ----------------------------------------------------------------
 
---  $Id: zlib-streams.ads,v 1.12 2004/05/31 10:53:40 vagul Exp $
+--  $Id: ptlibzippy-streams.ads,v 1.12 2004/05/31 10:53:40 vagul Exp $
 
-package ZLib.Streams is
+package PTLib.Streams is
 
    type Stream_Mode is (In_Stream, Out_Stream, Duplex);
 
@@ -74,8 +74,8 @@ package ZLib.Streams is
    --  Data written to the Stream is decompressing to the Back stream
    --  and data read from the Stream is compressed data from the Back stream.
 
-   --  !!! When the Need_Header is False ZLib-Ada is using undocumented
-   --  ZLib 1.1.4 functionality to do not create/wait for ZLib headers.
+   --  !!! When the Need_Header is False PTLib-Ada is using undocumented
+   --  PTLib 1.1.4 functionality to do not create/wait for PTLib headers.
 
    function Is_Open (Stream : Stream_Type) return Boolean;
 
@@ -111,4 +111,4 @@ private
       Writer     : Filter_Type;
    end record;
 
-end ZLib.Streams;
+end PTLib.Streams;

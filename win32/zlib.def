@@ -1,7 +1,7 @@
-; zlib data compression library
+; PTlibzippy data compression library
 EXPORTS
 ; basic functions
-    zlibVersion
+    ptlibzippyVersion
     deflate
     deflateEnd
     inflate
@@ -30,7 +30,7 @@ EXPORTS
     inflateGetHeader
     inflateBack
     inflateBackEnd
-    zlibCompileFlags
+    ptlibzippyCompileFlags
 ; utility functions
     compress
     compress2
@@ -93,7 +93,7 @@ EXPORTS
     inflateInit2_
     inflateBackInit_
     gzgetc_
-    zError
+    ptError
     inflateSyncPoint
     get_crc_table
     inflateUndermine

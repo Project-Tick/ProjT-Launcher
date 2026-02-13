@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<project name="DotZLib" default="build" basedir="./DotZLib">
+<project name="DotPTLib" default="build" basedir="./DotPTLib">
 	<description>A .Net wrapper library around ZLib1.dll</description>
 
 	<property name="nunit.location" value="c:/program files/NUnit V2.1/bin" />
@@ -18,7 +18,7 @@
 	<target name="build" description="compiles the source code">
 
 		<mkdir dir="${build.folder}" />
-		<csc target="library" output="${build.folder}DotZLib.dll" debug="${debug}">
+		<csc target="library" output="${build.folder}DotPTLib.dll" debug="${debug}">
 			<references basedir="${nunit.location}">
 				<includes if="${nunit}" name="nunit.framework.dll" />
 			</references>

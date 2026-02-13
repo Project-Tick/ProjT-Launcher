@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\testzlib\testzlib.c">
+    <ClCompile Include="..\..\testptlibzippy\testptlibzippy.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

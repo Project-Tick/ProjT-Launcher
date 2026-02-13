@@ -1,4 +1,4 @@
-STRPGMEXP PGMLVL(*CURRENT) SIGNATURE('ZLIB')
+STRPGMEXP PGMLVL(*CURRENT) SIGNATURE('PTLIBZIPPY')
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 /*   Version 1.1.3 entry points.                                    */
@@ -44,8 +44,8 @@ STRPGMEXP PGMLVL(*CURRENT) SIGNATURE('ZLIB')
   EXPORT SYMBOL("inflateInit2_")
   EXPORT SYMBOL("inflateSyncPoint")
   EXPORT SYMBOL("uncompress")
-  EXPORT SYMBOL("zlibVersion")
-  EXPORT SYMBOL("zError")
+  EXPORT SYMBOL("ptlibzippyVersion")
+  EXPORT SYMBOL("ptError")
   EXPORT SYMBOL("z_errmsg")
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
@@ -61,7 +61,7 @@ STRPGMEXP PGMLVL(*CURRENT) SIGNATURE('ZLIB')
   EXPORT SYMBOL("inflateBackEnd")
   EXPORT SYMBOL("inflateBackInit_")
   EXPORT SYMBOL("inflateCopy")
-  EXPORT SYMBOL("zlibCompileFlags")
+  EXPORT SYMBOL("ptlibzippyCompileFlags")
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 /*   Version 1.2.4 additional entry points.                         */

@@ -1,7 +1,7 @@
 /*
   Additional tools for Minizip
   Code: Xavier Roche '2004
-  License: Same as ZLIB (www.gzip.org)
+  License: Same as PTLIBZIPPY (www.gzip.org)
 */
 
 /* Code */
@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "zlib.h"
+#include "ptlibzippy.h"
 #include "unzip.h"
 
 #define READ_8(adr)  ((unsigned char)*(adr))
@@ -219,7 +219,7 @@ extern int ZEXPORT unzRepair(const char* file, const char* fileOut, const char* 
     {
       int entriesZip = entries;
       char end[22];
-      char* comment = ""; /* "ZIP File recovered by zlib/minizip/mztools"; */
+      char* comment = ""; /* "ZIP File recovered by PTlibzippy/minizip/mztools"; */
       int comsize = (int) strlen(comment);
       if (entriesZip > 0xffff) {
         entriesZip = 0xffff;

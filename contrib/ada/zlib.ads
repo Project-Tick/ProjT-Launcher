@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
---                      ZLib for Ada thick binding.                         --
+--                      PTLib for Ada thick binding.                         --
 --                                                                          --
 --              Copyright (C) 2002-2004 Dmitriy Anisimkov                   --
 --                                                                          --
@@ -25,13 +25,13 @@
 --  covered by the  GNU Public License.                                     --
 ------------------------------------------------------------------------------
 
---  $Id: zlib.ads,v 1.26 2004/09/06 06:53:19 vagul Exp $
+--  $Id: ptlibzippy.ads,v 1.26 2004/09/06 06:53:19 vagul Exp $
 
 with Ada.Streams;
 
 with Interfaces;
 
-package ZLib is
+package PTLib is
 
    ZLib_Error   : exception;
    Status_Error : exception;
@@ -64,7 +64,7 @@ package ZLib is
    ----------------------------------
 
    Deflated : constant Compression_Method;
-   --  Only one method allowed in this ZLib version
+   --  Only one method allowed in this PTLib version
 
    ---------------------------------
    -- Compression level constants --
@@ -96,7 +96,7 @@ package ZLib is
    Block_Flush   : constant Flush_Mode;
    --  Z_BLOCK requests that inflate() stop
    --  if and when it get to the next deflate block boundary. When decoding the
-   --  zlib or gzip format, this will cause inflate() to return immediately
+   --  PTlibzippy or gzip format, this will cause inflate() to return immediately
    --  after the header and before the first block. When doing a raw inflate,
    --  inflate() will go ahead and process the first block, and will return
    --  when it gets to the end of that block, or when it runs out of data.
@@ -129,7 +129,7 @@ package ZLib is
 
    function Version return String;
    pragma Inline (Version);
-   --  Return string representation of the ZLib version.
+   --  Return string representation of the PTLib version.
 
    procedure Deflate_Init
      (Filter       : in out Filter_Type;
@@ -140,7 +140,7 @@ package ZLib is
       Memory_Level : in     Memory_Level_Type  := Default_Memory_Level;
       Header       : in     Header_Type        := Default);
    --  Compressor initialization.
-   --  When Header parameter is Auto or Default, then default zlib header
+   --  When Header parameter is Auto or Default, then default PTlibzippy header
    --  would be provided for compressed data.
    --  When Header is GZip, then gzip header would be set instead of
    --  default header.
@@ -151,7 +151,7 @@ package ZLib is
       Window_Bits : in     Window_Bits_Type := Default_Window_Bits;
       Header      : in     Header_Type      := Default);
    --  Decompressor initialization.
-   --  Default header type mean that ZLib default header is expecting in the
+   --  Default header type mean that PTLib default header is expecting in the
    --  input compressed stream.
    --  Header type None mean that no header is expecting in the input stream.
    --  GZip header type mean that GZip header is expecting in the
@@ -159,7 +159,7 @@ package ZLib is
    --  Auto header type mean that header type (GZip or Native) would be
    --  detected automatically in the input stream.
    --  Note that header types parameter values None, GZip and Auto are
-   --  supported for inflate routine only in ZLib versions 1.2.0.2 and later.
+   --  supported for inflate routine only in PTLib versions 1.2.0.2 and later.
    --  Deflate_Init is supporting all header types.
 
    function Is_Open (Filter : in Filter_Type) return Boolean;
@@ -325,4 +325,4 @@ private
       --  Offset for gzip header/footer output.
    end record;
 
-end ZLib;
+end PTLib;

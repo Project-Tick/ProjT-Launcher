@@ -6,8 +6,8 @@ using System.Runtime.CompilerServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 //
-[assembly: AssemblyTitle("DotZLib")]
-[assembly: AssemblyDescription(".Net bindings for ZLib compression dll 1.2.x")]
+[assembly: AssemblyTitle("DotPTLib")]
+[assembly: AssemblyDescription(".Net bindings for PTLib compression dll 1.2.x")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Henrik Ravn")]
 [assembly: AssemblyProduct("")]

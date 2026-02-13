@@ -1,10 +1,10 @@
 /* gzread.c -- zlib functions for reading gzip files
  * Copyright (C) 2004-2025 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
-#include "gzguts.h"
+#include "ptzippyguts.h"
 
 /* Use read() to load a buffer -- return -1 on error, otherwise 0.  Read from
    state->fd, and update state->eof, state->err, and state->msg as appropriate.
@@ -389,7 +389,7 @@ local z_size_t gz_read(gz_statep state, voidp buf, z_size_t len) {
     return got;
 }
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 int ZEXPORT gzread(gzFile file, voidp buf, unsigned len) {
     gz_statep state;
 
@@ -432,7 +432,7 @@ int ZEXPORT gzread(gzFile file, voidp buf, unsigned len) {
     return (int)len;
 }
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 z_size_t ZEXPORT gzfread(voidp buf, z_size_t size, z_size_t nitems,
                          gzFile file) {
     z_size_t len;
@@ -461,9 +461,9 @@ z_size_t ZEXPORT gzfread(voidp buf, z_size_t size, z_size_t nitems,
     return len ? gz_read(state, buf, len) / size : 0;
 }
 
-/* -- see zlib.h -- */
-#ifdef Z_PREFIX_SET
-#  undef z_gzgetc
+/* -- see ptlibzippy.h -- */
+#ifdef PT_PREFIX_SET
+#  undef pt_gzgetc
 #else
 #  undef gzgetc
 #endif
@@ -498,7 +498,7 @@ int ZEXPORT gzgetc_(gzFile file) {
     return gzgetc(file);
 }
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 int ZEXPORT gzungetc(int c, gzFile file) {
     gz_statep state;
 
@@ -559,7 +559,7 @@ int ZEXPORT gzungetc(int c, gzFile file) {
     return c;
 }
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 char * ZEXPORT gzgets(gzFile file, char *buf, int len) {
     unsigned left, n;
     char *str;
@@ -620,7 +620,7 @@ char * ZEXPORT gzgets(gzFile file, char *buf, int len) {
     return str;
 }
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 int ZEXPORT gzdirect(gzFile file) {
     gz_statep state;
 
@@ -638,7 +638,7 @@ int ZEXPORT gzdirect(gzFile file) {
     return state->direct == 1;
 }
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 int ZEXPORT gzclose_r(gzFile file) {
     int ret, err;
     gz_statep state;

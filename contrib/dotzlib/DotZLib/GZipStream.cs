@@ -9,7 +9,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace DotZLib
+namespace DotPTLib
 {
 	/// <summary>
 	/// Implements a compressed <see cref="Stream"/>, in GZip (.gz) format.
@@ -17,22 +17,22 @@ namespace DotZLib
 	public class GZipStream : Stream, IDisposable
 	{
         #region Dll Imports
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         private static extern IntPtr gzopen(string name, string mode);
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
         private static extern int gzclose(IntPtr gzFile);
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
         private static extern int gzwrite(IntPtr gzFile, int data, int length);
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
         private static extern int gzread(IntPtr gzFile, int data, int length);
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
         private static extern int gzgetc(IntPtr gzFile);
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
         private static extern int gzputc(IntPtr gzFile, int c);
 
         #endregion
@@ -49,26 +49,26 @@ namespace DotZLib
         /// </summary>
         /// <param name="fileName">The name of the compressed file to create</param>
         /// <param name="level">The compression level to use when adding data</param>
-        /// <exception cref="ZLibException">If an error occurred in the internal zlib function</exception>
+        /// <exception cref="PTLibException">If an error occurred in the internal PTlibzippy function</exception>
 		public GZipStream(string fileName, CompressLevel level)
 		{
             _isWriting = true;
             _gzFile = gzopen(fileName, String.Format("wb{0}", (int)level));
             if (_gzFile == IntPtr.Zero)
-                throw new ZLibException(-1, "Could not open " + fileName);
+                throw new PTLibException(-1, "Could not open " + fileName);
 		}
 
         /// <summary>
         /// Opens an existing file as a readable GZipStream
         /// </summary>
         /// <param name="fileName">The name of the file to open</param>
-        /// <exception cref="ZLibException">If an error occurred in the internal zlib function</exception>
+        /// <exception cref="PTLibException">If an error occurred in the internal PTlibzippy function</exception>
         public GZipStream(string fileName)
         {
             _isWriting = false;
             _gzFile = gzopen(fileName, "rb");
             if (_gzFile == IntPtr.Zero)
-                throw new ZLibException(-1, "Could not open " + fileName);
+                throw new PTLibException(-1, "Could not open " + fileName);
 
         }
         #endregion

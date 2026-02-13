@@ -6,4 +6,4 @@ ibm s390x. However this extension can disabled if desired:
     $ ./configure --disable-crcvx
 
     # for cmake build
-    $ cmake .. -DZLIB_CRC32VX=off
+    $ cmake .. -DPTLIBZIPPY_CRC32VX=off

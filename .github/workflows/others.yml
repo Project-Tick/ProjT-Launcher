@@ -17,7 +17,7 @@ jobs:
           pkg install -y cmake gcc14 bzip2
 
         run: |
-          cmake . -B build -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
+          cmake . -B build -DPTLIBZIPPY_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
           cmake --build build/
           ctest --test-dir build --output-on-failure
 
@@ -42,7 +42,7 @@ jobs:
           pkg install -y cmake gcc14 bzip2
 
         run: |
-          cmake . -B build -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
+          cmake . -B build -DPTLIBZIPPY_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
           cmake --build build/
           ctest --test-dir build --output-on-failure -E .*summary
 
@@ -69,7 +69,7 @@ jobs:
           /usr/sbin/pkg_add bzip2
 
         run: |
-          cmake . -B build -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
+          cmake . -B build -DPTLIBZIPPY_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
           cmake --build build/
           ctest --test-dir build --output-on-failure
 
@@ -86,7 +86,7 @@ jobs:
           pkg install cmake gcc14 make bzip2
 
         run: |
-          cmake . -B build -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
+          cmake . -B build -DPTLIBZIPPY_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
           cmake --build build/
           ctest --test-dir build --output-on-failure
 
@@ -112,7 +112,7 @@ jobs:
           bzip2
 
         run: |
-          cmake . -B build -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
+          cmake . -B build -DPTLIBZIPPY_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
           cmake --build build/
           ctest --test-dir build
 
@@ -129,7 +129,7 @@ jobs:
 #          pkg install cmake gcc-14 make bzip2
 
 #        run: |
-#          cmake . -B build -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
+#          cmake . -B build -DPTLIBZIPPY_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
 #          cmake --build build/
 #          ctest --test-dir build --output-on-failure
 
@@ -148,6 +148,6 @@ jobs:
           pkgutil -y -i cmake bzip2
 
         run: |
-          cmake . -B build -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
+          cmake . -B build -DPTLIBZIPPY_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=ON
           cmake --build build/
           ctest --test-dir build --output-on-failure

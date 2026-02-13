@@ -1,9 +1,9 @@
 ----------------------------------------------------------------
---  ZLib for Ada thick binding.                               --
+--  PTLib for Ada thick binding.                               --
 --                                                            --
 --  Copyright (C) 2002-2003 Dmitriy Anisimkov                 --
 --                                                            --
---  Open source license information is in the zlib.ads file.  --
+--  Open source license information is in the ptlibzippy.ads file.  --
 ----------------------------------------------------------------
 
 --  $Id: read.adb,v 1.8 2004/05/31 10:53:40 vagul Exp $
@@ -14,7 +14,7 @@ with Ada.Numerics.Discrete_Random;
 with Ada.Streams;
 with Ada.Text_IO;
 
-with ZLib;
+with PTLib;
 
 procedure Read is
 
@@ -30,8 +30,8 @@ procedure Read is
    --  If this constant is True, the test would be repeated again and again,
    --  with increment File_Size for every iteration.
 
-   Header      : constant ZLib.Header_Type := ZLib.Default;
-   --  Do not use Header other than Default in ZLib versions 1.1.4 and older.
+   Header      : constant PTLib.Header_Type := PTLib.Default;
+   --  Do not use Header other than Default in PTLib versions 1.1.4 and older.
 
    Init_Random : constant := 8;
    --  We are using the same random sequence, in case of we catch bug,
@@ -42,7 +42,7 @@ procedure Read is
    Pack_Size : Stream_Element_Offset;
    Offset    : Stream_Element_Offset;
 
-   Filter     : ZLib.Filter_Type;
+   Filter     : PTLib.Filter_Type;
 
    subtype Visible_Symbols
       is Stream_Element range 16#20# .. 16#7E#;
@@ -65,10 +65,10 @@ procedure Read is
      (Item : out Stream_Element_Array;
       Last : out Stream_Element_Offset);
    --  this procedure is for generic instantiation of
-   --  ZLib.Read
+   --  PTLib.Read
    --  reading data from the File_In.
 
-   procedure Read is new ZLib.Read
+   procedure Read is new PTLib.Read
                            (Read,
                             Read_Buffer,
                             Rest_First => Read_First,
@@ -111,17 +111,17 @@ procedure Read is
    end Reset;
 
 begin
-   Ada.Text_IO.Put_Line ("ZLib " & ZLib.Version);
+   Ada.Text_IO.Put_Line ("PTLib " & PTLib.Version);
 
    loop
-      for Level in ZLib.Compression_Level'Range loop
+      for Level in PTLib.Compression_Level'Range loop
 
          Ada.Text_IO.Put ("Level ="
-            & ZLib.Compression_Level'Image (Level));
+            & PTLib.Compression_Level'Image (Level));
 
          --  Deflate using generic instantiation.
 
-         ZLib.Deflate_Init
+         PTLib.Deflate_Init
                (Filter,
                 Level,
                 Header => Header);
@@ -146,7 +146,7 @@ begin
 
          Ada.Text_IO.Put_Line (Stream_Element_Offset'Image (Pack_Size));
 
-         ZLib.Close (Filter);
+         PTLib.Close (Filter);
       end loop;
 
       exit when not Continuous;

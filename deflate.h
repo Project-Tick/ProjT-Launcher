@@ -1,12 +1,12 @@
 /* deflate.h -- internal compression state
  * Copyright (C) 1995-2024 Jean-loup Gailly
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 /* WARNING: this file should *not* be used by applications. It is
    part of the implementation of the compression library and is
-   subject to change. Applications should only use zlib.h.
+   subject to change. Applications should only use ptlibzippy.h.
  */
 
 /* @(#) $Id$ */
@@ -14,7 +14,7 @@
 #ifndef DEFLATE_H
 #define DEFLATE_H
 
-#include "zutil.h"
+#include "ptzippyutil.h"
 
 /* define NO_GZIP when compiling if you want to disable gzip header and
    trailer creation by deflate().  NO_GZIP would be used to avoid linking in
@@ -259,7 +259,7 @@ typedef struct internal_state {
     uInt matches;       /* number of string matches in current block */
     uInt insert;        /* bytes at end of window left to insert */
 
-#ifdef ZLIB_DEBUG
+#ifdef PTLIBZIPPY_DEBUG
     ulg compressed_len; /* total bit length of compressed file mod 2^32 */
     ulg bits_sent;      /* bit length of compressed data sent mod 2^32 */
 #endif
@@ -309,13 +309,13 @@ typedef struct internal_state {
    memory checker errors from longest match routines */
 
         /* in trees.c */
-void ZLIB_INTERNAL _tr_init(deflate_state *s);
-int ZLIB_INTERNAL _tr_tally(deflate_state *s, unsigned dist, unsigned lc);
-void ZLIB_INTERNAL _tr_flush_block(deflate_state *s, charf *buf,
+void PTLIBZIPPY_INTERNAL _tr_init(deflate_state *s);
+int PTLIBZIPPY_INTERNAL _tr_tally(deflate_state *s, unsigned dist, unsigned lc);
+void PTLIBZIPPY_INTERNAL _tr_flush_block(deflate_state *s, charf *buf,
                                    ulg stored_len, int last);
-void ZLIB_INTERNAL _tr_flush_bits(deflate_state *s);
-void ZLIB_INTERNAL _tr_align(deflate_state *s);
-void ZLIB_INTERNAL _tr_stored_block(deflate_state *s, charf *buf,
+void PTLIBZIPPY_INTERNAL _tr_flush_bits(deflate_state *s);
+void PTLIBZIPPY_INTERNAL _tr_align(deflate_state *s);
+void PTLIBZIPPY_INTERNAL _tr_stored_block(deflate_state *s, charf *buf,
                                     ulg stored_len, int last);
 
 #define d_code(dist) \
@@ -325,15 +325,15 @@ void ZLIB_INTERNAL _tr_stored_block(deflate_state *s, charf *buf,
  * used.
  */
 
-#ifndef ZLIB_DEBUG
+#ifndef PTLIBZIPPY_DEBUG
 /* Inline versions of _tr_tally for speed: */
 
 #if defined(GEN_TREES_H) || !defined(STDC)
-  extern uch ZLIB_INTERNAL _length_code[];
-  extern uch ZLIB_INTERNAL _dist_code[];
+  extern uch PTLIBZIPPY_INTERNAL _length_code[];
+  extern uch PTLIBZIPPY_INTERNAL _dist_code[];
 #else
-  extern const uch ZLIB_INTERNAL _length_code[];
-  extern const uch ZLIB_INTERNAL _dist_code[];
+  extern const uch PTLIBZIPPY_INTERNAL _length_code[];
+  extern const uch PTLIBZIPPY_INTERNAL _dist_code[];
 #endif
 
 #ifdef LIT_MEM

@@ -1,7 +1,7 @@
 /* gun.c -- simple gunzip to give an example of the use of inflateBack()
  * Copyright (C) 2003, 2005, 2008, 2010, 2012 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
    Version 1.7  12 August 2012  Mark Adler */
 
 /* Version history:
@@ -19,7 +19,7 @@
    1.4   8 Dec 2006  LZW decompression speed improvements
    1.5   9 Feb 2008  Avoid warning in latest version of gcc
    1.6  17 Jan 2010  Avoid signed/unsigned comparison warnings
-   1.7  12 Aug 2012  Update for z_const usage in zlib 1.2.8
+   1.7  12 Aug 2012  Update for z_const usage in PTlibzippy 1.2.8
  */
 
 /*
@@ -52,7 +52,7 @@
    user permissions allow it.
 
    On my Mac OS X PowerPC G4, gun is almost twice as fast as gunzip (version
-   1.2.4) is on the same file, when gun is linked with zlib 1.2.2.  Also the
+   1.2.4) is on the same file, when gun is linked with PTlibzippy 1.2.2.  Also the
    LZW decompression provided by gun is about twice as fast as the standard
    Unix uncompress command.
  */
@@ -67,7 +67,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>       /* stat(), chmod() */
 #include <utime.h>          /* utime() */
-#include "zlib.h"           /* inflateBackInit(), inflateBack(), */
+#include "ptlibzippy.h"           /* inflateBackInit(), inflateBack(), */
                             /* inflateBackEnd(), crc32() */
 
 /* function declaration */
@@ -375,7 +375,7 @@ local int lunpipe(unsigned have, z_const unsigned char *next, struct ind *indp,
    to the output file.  If outfile is -1, then the gzip stream(s) integrity is
    checked and nothing is written.
 
-   The return value is a zlib error code: Z_MEM_ERROR if out of memory,
+   The return value is a PTlibzippy error code: Z_MEM_ERROR if out of memory,
    Z_DATA_ERROR if the header or the compressed data is invalid, or if the
    trailer CRC-32 check or length doesn't match, Z_BUF_ERROR if the input ends
    prematurely or a write error occurs, or Z_ERRNO if junk (not a another gzip

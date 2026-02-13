@@ -1,7 +1,7 @@
-/* gzguts.h -- zlib internal header definitions for gz* operations
+/* ptzippyguts.h -- zlib internal header definitions for gz* operations
  * Copyright (C) 2004-2025 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 #ifdef _LARGEFILE64_SOURCE
@@ -13,9 +13,9 @@
 #endif
 
 #ifdef HAVE_HIDDEN
-#  define ZLIB_INTERNAL __attribute__((visibility ("hidden")))
+#  define PTLIBZIPPY_INTERNAL __attribute__((visibility ("hidden")))
 #else
-#  define ZLIB_INTERNAL
+#  define PTLIBZIPPY_INTERNAL
 #endif
 
 #if defined(_WIN32)
@@ -31,7 +31,7 @@
 #endif
 
 #include <stdio.h>
-#include "zlib.h"
+#include "ptlibzippy.h"
 #ifdef STDC
 #  include <string.h>
 #  include <stdlib.h>
@@ -205,13 +205,13 @@ typedef struct {
 typedef gz_state FAR *gz_statep;
 
 /* shared functions */
-void ZLIB_INTERNAL gz_error(gz_statep, int, const char *);
+void PTLIBZIPPY_INTERNAL gz_error(gz_statep, int, const char *);
 #if defined UNDER_CE
-char ZLIB_INTERNAL *gz_strwinerror(DWORD error);
+char PTLIBZIPPY_INTERNAL *gz_strwinerror(DWORD error);
 #endif
 
 /* GT_OFF(x), where x is an unsigned value, is true if x > maximum z_off64_t
    value -- needed when comparing unsigned to z_off64_t, which is signed
    (possible z_off64_t types off_t, off64_t, and long are all signed) */
-unsigned ZLIB_INTERNAL gz_intmax(void);
+unsigned PTLIBZIPPY_INTERNAL gz_intmax(void);
 #define GT_OFF(x) (sizeof(int) == sizeof(z_off64_t) && (x) > gz_intmax())

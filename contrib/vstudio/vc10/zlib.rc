@@ -16,11 +16,11 @@ BEGIN
     //language ID = U.S. English, char set = Windows, Multilingual
 
     BEGIN
-      VALUE "FileDescription", "zlib data compression and ZIP file I/O library\0"
+      VALUE "FileDescription", "PTlibzippy data compression and ZIP file I/O library\0"
       VALUE "FileVersion",	"0.0.5.1\0"
-      VALUE "InternalName",	"zlib\0"
-      VALUE "OriginalFilename",	"zlibwapi.dll\0"
-      VALUE "ProductName",	"ZLib.DLL\0"
+      VALUE "InternalName",	"ptlibzippy\0"
+      VALUE "OriginalFilename",	"ptlibzippywapi.dll\0"
+      VALUE "ProductName",	"PTLib.DLL\0"
       VALUE "Comments","DLL support by Alessandro Iacopetti & Gilles Vollant\0"
       VALUE "LegalCopyright", "(C) 1995-2025 Jean-loup Gailly & Mark Adler\0"
     END

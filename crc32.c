@@ -1,7 +1,7 @@
 /* crc32.c -- compute the CRC-32 of a data stream
  * Copyright (C) 1995-2022 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  *
  * This interleaved implementation of a CRC makes use of pipelined multiple
  * arithmetic-logic units, commonly found in modern CPU cores. It is due to
@@ -31,7 +31,7 @@
 #  define Z_ONCE
 #endif
 
-#include "zutil.h"      /* for Z_U4, Z_U8, z_crc_t, and FAR definitions */
+#include "ptzippyutil.h"      /* for Z_U4, Z_U8, z_crc_t, and FAR definitions */
 
 #ifdef HAVE_S390X_VX
 #  include "contrib/crc32vx/crc32_vx_hooks.h"

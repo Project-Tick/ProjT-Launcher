@@ -1,10 +1,10 @@
 /* gzwrite.c -- zlib functions for writing gzip files
  * Copyright (C) 2004-2025 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
-#include "gzguts.h"
+#include "ptzippyguts.h"
 
 /* Initialize state for writing a gzip file.  Mark initialization by setting
    state->size to non-zero.  Return -1 on a memory allocation failure, or 0 on
@@ -252,7 +252,7 @@ local z_size_t gz_write(gz_statep state, voidpc buf, z_size_t len) {
     return put;
 }
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 int ZEXPORT gzwrite(gzFile file, voidpc buf, unsigned len) {
     gz_statep state;
 
@@ -277,7 +277,7 @@ int ZEXPORT gzwrite(gzFile file, voidpc buf, unsigned len) {
     return (int)gz_write(state, buf, len);
 }
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 z_size_t ZEXPORT gzfwrite(voidpc buf, z_size_t size, z_size_t nitems,
                           gzFile file) {
     z_size_t len;
@@ -304,7 +304,7 @@ z_size_t ZEXPORT gzfwrite(voidpc buf, z_size_t size, z_size_t nitems,
     return len ? gz_write(state, buf, len) / size : 0;
 }
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 int ZEXPORT gzputc(gzFile file, int c) {
     unsigned have;
     unsigned char buf[1];
@@ -347,7 +347,7 @@ int ZEXPORT gzputc(gzFile file, int c) {
     return c & 0xff;
 }
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 int ZEXPORT gzputs(gzFile file, const char *s) {
     z_size_t len, put;
     gz_statep state;
@@ -374,7 +374,7 @@ int ZEXPORT gzputs(gzFile file, const char *s) {
 
 #if (((!defined(STDC) && !defined(Z_HAVE_STDARG_H)) || !defined(NO_vsnprintf)) && \
      (defined(STDC) || defined(Z_HAVE_STDARG_H) || !defined(NO_snprintf))) || \
-    defined(ZLIB_INSECURE)
+    defined(PTLIBZIPPY_INSECURE)
 /* If the second half of the input buffer is occupied, write out the contents.
    If there is any input remaining due to a non-blocking stall on write, move
    it to the start of the buffer. Return true if this did not open up the
@@ -400,11 +400,11 @@ local int gz_vacate(gz_statep state) {
 #if defined(STDC) || defined(Z_HAVE_STDARG_H)
 #include <stdarg.h>
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 int ZEXPORTVA gzvprintf(gzFile file, const char *format, va_list va) {
-#if defined(NO_vsnprintf) && !defined(ZLIB_INSECURE)
+#if defined(NO_vsnprintf) && !defined(PTLIBZIPPY_INSECURE)
 #warning "vsnprintf() not available -- gzprintf() stub returns Z_STREAM_ERROR"
-#warning "you can recompile with ZLIB_INSECURE defined to use vsprintf()"
+#warning "you can recompile with PTLIBZIPPY_INSECURE defined to use vsprintf()"
     /* prevent use of insecure vsprintf(), unless purposefully requested */
     (void)file, (void)format, (void)va;
     return Z_STREAM_ERROR;
@@ -497,14 +497,14 @@ int ZEXPORTVA gzprintf(gzFile file, const char *format, ...) {
 
 #else /* !STDC && !Z_HAVE_STDARG_H */
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 int ZEXPORTVA gzprintf(gzFile file, const char *format, int a1, int a2, int a3,
                        int a4, int a5, int a6, int a7, int a8, int a9, int a10,
                        int a11, int a12, int a13, int a14, int a15, int a16,
                        int a17, int a18, int a19, int a20) {
-#if defined(NO_snprintf) && !defined(ZLIB_INSECURE)
+#if defined(NO_snprintf) && !defined(PTLIBZIPPY_INSECURE)
 #warning "snprintf() not available -- gzprintf() stub returns Z_STREAM_ERROR"
-#warning "you can recompile with ZLIB_INSECURE defined to use sprintf()"
+#warning "you can recompile with PTLIBZIPPY_INSECURE defined to use sprintf()"
     /* prevent use of insecure sprintf(), unless purposefully requested */
     (void)file, (void)format, (void)a1, (void)a2, (void)a3, (void)a4, (void)a5,
     (void)a6, (void)a7, (void)a8, (void)a9, (void)a10, (void)a11, (void)a12,
@@ -600,7 +600,7 @@ int ZEXPORTVA gzprintf(gzFile file, const char *format, int a1, int a2, int a3,
 
 #endif
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 int ZEXPORT gzflush(gzFile file, int flush) {
     gz_statep state;
 
@@ -627,7 +627,7 @@ int ZEXPORT gzflush(gzFile file, int flush) {
     return state->err;
 }
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 int ZEXPORT gzsetparams(gzFile file, int level, int strategy) {
     gz_statep state;
     z_streamp strm;
@@ -664,7 +664,7 @@ int ZEXPORT gzsetparams(gzFile file, int level, int strategy) {
     return Z_OK;
 }
 
-/* -- see zlib.h -- */
+/* -- see ptlibzippy.h -- */
 int ZEXPORT gzclose_w(gzFile file) {
     int ret = Z_OK;
     gz_statep state;

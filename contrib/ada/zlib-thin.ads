@@ -1,126 +1,126 @@
 ----------------------------------------------------------------
---  ZLib for Ada thick binding.                               --
+--  PTLib for Ada thick binding.                               --
 --                                                            --
 --  Copyright (C) 2002-2003 Dmitriy Anisimkov                 --
 --                                                            --
---  Open source license information is in the zlib.ads file.  --
+--  Open source license information is in the ptlibzippy.ads file.  --
 ----------------------------------------------------------------
 
---  $Id: zlib-thin.ads,v 1.11 2004/07/23 06:33:11 vagul Exp $
+--  $Id: ptlibzippy-thin.ads,v 1.11 2004/07/23 06:33:11 vagul Exp $
 
 with Interfaces.C.Strings;
 
 with System;
 
-private package ZLib.Thin is
+private package PTLib.Thin is
 
-   --  From zconf.h
+   --  From ptzippyconf.h
 
-   MAX_MEM_LEVEL : constant := 9;         --  zconf.h:105
-                                          --  zconf.h:105
-   MAX_WBITS : constant := 15;      --  zconf.h:115
+   MAX_MEM_LEVEL : constant := 9;         --  ptzippyconf.h:105
+                                          --  ptzippyconf.h:105
+   MAX_WBITS : constant := 15;      --  ptzippyconf.h:115
                                     --  32K LZ77 window
-                                    --  zconf.h:115
-   SEEK_SET : constant := 8#0000#;  --  zconf.h:244
+                                    --  ptzippyconf.h:115
+   SEEK_SET : constant := 8#0000#;  --  ptzippyconf.h:244
                                     --  Seek from beginning of file.
-                                    --  zconf.h:244
-   SEEK_CUR : constant := 1;        --  zconf.h:245
+                                    --  ptzippyconf.h:244
+   SEEK_CUR : constant := 1;        --  ptzippyconf.h:245
                                     --  Seek from current position.
-                                    --  zconf.h:245
-   SEEK_END : constant := 2;        --  zconf.h:246
+                                    --  ptzippyconf.h:245
+   SEEK_END : constant := 2;        --  ptzippyconf.h:246
                                     --  Set file pointer to EOF plus "offset"
-                                    --  zconf.h:246
+                                    --  ptzippyconf.h:246
 
    type Byte is new Interfaces.C.unsigned_char; --  8 bits
-                                                --  zconf.h:214
+                                                --  ptzippyconf.h:214
    type UInt is new Interfaces.C.unsigned;      --  16 bits or more
-                                                --  zconf.h:216
+                                                --  ptzippyconf.h:216
    type Int is new Interfaces.C.int;
 
    type ULong is new Interfaces.C.unsigned_long;     --  32 bits or more
-                                                     --  zconf.h:217
+                                                     --  ptzippyconf.h:217
    subtype Chars_Ptr is Interfaces.C.Strings.chars_ptr;
 
    type ULong_Access is access ULong;
    type Int_Access is access Int;
 
-   subtype Voidp is System.Address;            --  zconf.h:232
+   subtype Voidp is System.Address;            --  ptzippyconf.h:232
 
    subtype Byte_Access is Voidp;
 
    Nul : constant Voidp := System.Null_Address;
    --  end from zconf
 
-   Z_NO_FLUSH : constant := 8#0000#;   --  zlib.h:125
-                                       --  zlib.h:125
-   Z_PARTIAL_FLUSH : constant := 1;       --  zlib.h:126
+   Z_NO_FLUSH : constant := 8#0000#;   --  ptlibzippy.h:125
+                                       --  ptlibzippy.h:125
+   Z_PARTIAL_FLUSH : constant := 1;       --  ptlibzippy.h:126
                                           --  will be removed, use
                                           --  Z_SYNC_FLUSH instead
-                                          --  zlib.h:126
-   Z_SYNC_FLUSH : constant := 2;       --  zlib.h:127
-                                       --  zlib.h:127
-   Z_FULL_FLUSH : constant := 3;       --  zlib.h:128
-                                       --  zlib.h:128
-   Z_FINISH : constant := 4;        --  zlib.h:129
-                                    --  zlib.h:129
-   Z_OK : constant := 8#0000#;   --  zlib.h:132
-                                 --  zlib.h:132
-   Z_STREAM_END : constant := 1;       --  zlib.h:133
-                                       --  zlib.h:133
-   Z_NEED_DICT : constant := 2;        --  zlib.h:134
-                                       --  zlib.h:134
-   Z_ERRNO : constant := -1;        --  zlib.h:135
-                                    --  zlib.h:135
-   Z_STREAM_ERROR : constant := -2;       --  zlib.h:136
-                                          --  zlib.h:136
-   Z_DATA_ERROR : constant := -3;      --  zlib.h:137
-                                       --  zlib.h:137
-   Z_MEM_ERROR : constant := -4;       --  zlib.h:138
-                                       --  zlib.h:138
-   Z_BUF_ERROR : constant := -5;       --  zlib.h:139
-                                       --  zlib.h:139
-   Z_VERSION_ERROR : constant := -6;      --  zlib.h:140
-                                          --  zlib.h:140
-   Z_NO_COMPRESSION : constant := 8#0000#;   --  zlib.h:145
-                                             --  zlib.h:145
-   Z_BEST_SPEED : constant := 1;       --  zlib.h:146
-                                       --  zlib.h:146
-   Z_BEST_COMPRESSION : constant := 9;       --  zlib.h:147
-                                             --  zlib.h:147
-   Z_DEFAULT_COMPRESSION : constant := -1;      --  zlib.h:148
-                                                --  zlib.h:148
-   Z_FILTERED : constant := 1;      --  zlib.h:151
-                                    --  zlib.h:151
-   Z_HUFFMAN_ONLY : constant := 2;        --  zlib.h:152
-                                          --  zlib.h:152
-   Z_DEFAULT_STRATEGY : constant := 8#0000#; --  zlib.h:153
-                                             --  zlib.h:153
-   Z_BINARY : constant := 8#0000#;  --  zlib.h:156
-                                    --  zlib.h:156
-   Z_ASCII : constant := 1;      --  zlib.h:157
-                                 --  zlib.h:157
-   Z_UNKNOWN : constant := 2;       --  zlib.h:158
-                                    --  zlib.h:158
-   Z_DEFLATED : constant := 8;      --  zlib.h:161
-                                    --  zlib.h:161
-   Z_NULL : constant := 8#0000#; --  zlib.h:164
+                                          --  ptlibzippy.h:126
+   Z_SYNC_FLUSH : constant := 2;       --  ptlibzippy.h:127
+                                       --  ptlibzippy.h:127
+   Z_FULL_FLUSH : constant := 3;       --  ptlibzippy.h:128
+                                       --  ptlibzippy.h:128
+   Z_FINISH : constant := 4;        --  ptlibzippy.h:129
+                                    --  ptlibzippy.h:129
+   Z_OK : constant := 8#0000#;   --  ptlibzippy.h:132
+                                 --  ptlibzippy.h:132
+   Z_STREAM_END : constant := 1;       --  ptlibzippy.h:133
+                                       --  ptlibzippy.h:133
+   Z_NEED_DICT : constant := 2;        --  ptlibzippy.h:134
+                                       --  ptlibzippy.h:134
+   Z_ERRNO : constant := -1;        --  ptlibzippy.h:135
+                                    --  ptlibzippy.h:135
+   Z_STREAM_ERROR : constant := -2;       --  ptlibzippy.h:136
+                                          --  ptlibzippy.h:136
+   Z_DATA_ERROR : constant := -3;      --  ptlibzippy.h:137
+                                       --  ptlibzippy.h:137
+   Z_MEM_ERROR : constant := -4;       --  ptlibzippy.h:138
+                                       --  ptlibzippy.h:138
+   Z_BUF_ERROR : constant := -5;       --  ptlibzippy.h:139
+                                       --  ptlibzippy.h:139
+   Z_VERSION_ERROR : constant := -6;      --  ptlibzippy.h:140
+                                          --  ptlibzippy.h:140
+   Z_NO_COMPRESSION : constant := 8#0000#;   --  ptlibzippy.h:145
+                                             --  ptlibzippy.h:145
+   Z_BEST_SPEED : constant := 1;       --  ptlibzippy.h:146
+                                       --  ptlibzippy.h:146
+   Z_BEST_COMPRESSION : constant := 9;       --  ptlibzippy.h:147
+                                             --  ptlibzippy.h:147
+   Z_DEFAULT_COMPRESSION : constant := -1;      --  ptlibzippy.h:148
+                                                --  ptlibzippy.h:148
+   Z_FILTERED : constant := 1;      --  ptlibzippy.h:151
+                                    --  ptlibzippy.h:151
+   Z_HUFFMAN_ONLY : constant := 2;        --  ptlibzippy.h:152
+                                          --  ptlibzippy.h:152
+   Z_DEFAULT_STRATEGY : constant := 8#0000#; --  ptlibzippy.h:153
+                                             --  ptlibzippy.h:153
+   Z_BINARY : constant := 8#0000#;  --  ptlibzippy.h:156
+                                    --  ptlibzippy.h:156
+   Z_ASCII : constant := 1;      --  ptlibzippy.h:157
+                                 --  ptlibzippy.h:157
+   Z_UNKNOWN : constant := 2;       --  ptlibzippy.h:158
+                                    --  ptlibzippy.h:158
+   Z_DEFLATED : constant := 8;      --  ptlibzippy.h:161
+                                    --  ptlibzippy.h:161
+   Z_NULL : constant := 8#0000#; --  ptlibzippy.h:164
                                  --  for initializing zalloc, zfree, opaque
-                                 --  zlib.h:164
-   type gzFile is new Voidp;                  --  zlib.h:646
+                                 --  ptlibzippy.h:164
+   type gzFile is new Voidp;                  --  ptlibzippy.h:646
 
    type Z_Stream is private;
 
-   type Z_Streamp is access all Z_Stream;     --  zlib.h:89
+   type Z_Streamp is access all Z_Stream;     --  ptlibzippy.h:89
 
    type alloc_func is access function
      (Opaque : Voidp;
       Items  : UInt;
       Size   : UInt)
-      return Voidp; --  zlib.h:63
+      return Voidp; --  ptlibzippy.h:63
 
    type free_func is access procedure (opaque : Voidp; address : Voidp);
 
-   function zlibVersion return Chars_Ptr;
+   function ptlibzippyVersion return Chars_Ptr;
 
    function Deflate (strm : Z_Streamp; flush : Int) return Int;
 
@@ -137,32 +137,32 @@ private package ZLib.Thin is
       return       Int;
 
    function deflateCopy (dest : Z_Streamp; source : Z_Streamp) return Int;
-   --  zlib.h:478
+   --  ptlibzippy.h:478
 
-   function deflateReset (strm : Z_Streamp) return Int; -- zlib.h:495
+   function deflateReset (strm : Z_Streamp) return Int; -- ptlibzippy.h:495
 
    function deflateParams
      (strm     : Z_Streamp;
       level    : Int;
       strategy : Int)
-      return     Int;       -- zlib.h:506
+      return     Int;       -- ptlibzippy.h:506
 
    function inflateSetDictionary
      (strm       : Z_Streamp;
       dictionary : Byte_Access;
       dictLength : UInt)
-      return       Int; --  zlib.h:548
+      return       Int; --  ptlibzippy.h:548
 
-   function inflateSync (strm : Z_Streamp) return Int;  --  zlib.h:565
+   function inflateSync (strm : Z_Streamp) return Int;  --  ptlibzippy.h:565
 
-   function inflateReset (strm : Z_Streamp) return Int; --  zlib.h:580
+   function inflateReset (strm : Z_Streamp) return Int; --  ptlibzippy.h:580
 
    function compress
      (dest      : Byte_Access;
       destLen   : ULong_Access;
       source    : Byte_Access;
       sourceLen : ULong)
-      return      Int;           -- zlib.h:601
+      return      Int;           -- ptlibzippy.h:601
 
    function compress2
      (dest      : Byte_Access;
@@ -170,7 +170,7 @@ private package ZLib.Thin is
       source    : Byte_Access;
       sourceLen : ULong;
       level     : Int)
-      return      Int;          -- zlib.h:615
+      return      Int;          -- ptlibzippy.h:615
 
    function uncompress
      (dest      : Byte_Access;
@@ -298,7 +298,7 @@ private package ZLib.Thin is
    function Inflate_Init (strm : Z_Streamp; windowBits : Int) return Int;
    pragma Inline (Inflate_Init);
 
-   function zError (err : Int) return Chars_Ptr;
+   function ptError (err : Int) return Chars_Ptr;
 
    function inflateSyncPoint (z : Z_Streamp) return Int;
 
@@ -358,11 +358,11 @@ private package ZLib.Thin is
 
    function gzungetc (C : in Int; File : in  gzFile) return Int;
 
-   function zlibCompileFlags return ULong;
+   function ptlibzippyCompileFlags return ULong;
 
 private
 
-   type Z_Stream is record            -- zlib.h:68
+   type Z_Stream is record            -- ptlibzippy.h:68
       Next_In   : Voidp      := Nul;  -- next input byte
       Avail_In  : UInt       := 0;    -- number of bytes available at next_in
       Total_In  : ULong      := 0;    -- total nb of input bytes read so far
@@ -384,7 +384,7 @@ private
 
    pragma Convention (C, Z_Stream);
 
-   pragma Import (C, zlibVersion, "zlibVersion");
+   pragma Import (C, ptlibzippyVersion, "ptlibzippyVersion");
    pragma Import (C, Deflate, "deflate");
    pragma Import (C, DeflateEnd, "deflateEnd");
    pragma Import (C, Inflate, "inflate");
@@ -422,24 +422,24 @@ private
    pragma Import (C, inflateInit, "inflateInit_");
    pragma Import (C, deflateInit2, "deflateInit2_");
    pragma Import (C, inflateInit2, "inflateInit2_");
-   pragma Import (C, zError, "zError");
+   pragma Import (C, ptError, "ptError");
    pragma Import (C, inflateSyncPoint, "inflateSyncPoint");
    pragma Import (C, get_crc_table, "get_crc_table");
 
-   --  since zlib 1.2.0:
+   --  since PTlibzippy 1.2.0:
 
    pragma Import (C, inflateCopy, "inflateCopy");
    pragma Import (C, compressBound, "compressBound");
    pragma Import (C, deflateBound, "deflateBound");
    pragma Import (C, gzungetc, "gzungetc");
-   pragma Import (C, zlibCompileFlags, "zlibCompileFlags");
+   pragma Import (C, ptlibzippyCompileFlags, "ptlibzippyCompileFlags");
 
    pragma Import (C, inflateBackInit, "inflateBackInit_");
 
    --  I stopped binding the inflateBack routines, because realize that
-   --  it does not support zlib and gzip headers for now, and have no
+   --  it does not support PTlibzippy and gzip headers for now, and have no
    --  symmetric deflateBack routines.
-   --  ZLib-Ada is symmetric regarding deflate/inflate data transformation
+   --  PTLib-Ada is symmetric regarding deflate/inflate data transformation
    --  and has a similar generic callback interface for the
    --  deflate/inflate transformation based on the regular Deflate/Inflate
    --  routines.
@@ -447,4 +447,4 @@ private
    --  pragma Import (C, inflateBack, "inflateBack");
    --  pragma Import (C, inflateBackEnd, "inflateBackEnd");
 
-end ZLib.Thin;
+end PTLib.Thin;

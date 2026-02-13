@@ -1,7 +1,7 @@
 /* ioapi.h -- IO base function header for compress/uncompress .zip
-   part of the MiniZip project - ( http://www.winimage.com/zLibDll/minizip.html )
+   part of the MiniZip project - ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
-         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/zLibDll/minizip.html )
+         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
          Modifications for Zip64 support
          Copyright (C) 2009-2010 Mathias Svensson ( http://result42.com )
@@ -28,7 +28,7 @@
 
 #include "ioapi.h"
 
-voidpf call_zopen64 (const zlib_filefunc64_32_def* pfilefunc, const void*filename, int mode) {
+voidpf call_zopen64 (const ptlibzippy_filefunc64_32_def* pfilefunc, const void*filename, int mode) {
     if (pfilefunc->zfile_func64.zopen64_file != NULL)
         return (*(pfilefunc->zfile_func64.zopen64_file)) (pfilefunc->zfile_func64.opaque,filename,mode);
     else
@@ -37,7 +37,7 @@ voidpf call_zopen64 (const zlib_filefunc64_32_def* pfilefunc, const void*filenam
     }
 }
 
-long call_zseek64 (const zlib_filefunc64_32_def* pfilefunc,voidpf filestream, ZPOS64_T offset, int origin) {
+long call_zseek64 (const ptlibzippy_filefunc64_32_def* pfilefunc,voidpf filestream, ZPOS64_T offset, int origin) {
     if (pfilefunc->zfile_func64.zseek64_file != NULL)
         return (*(pfilefunc->zfile_func64.zseek64_file)) (pfilefunc->zfile_func64.opaque,filestream,offset,origin);
     else
@@ -50,7 +50,7 @@ long call_zseek64 (const zlib_filefunc64_32_def* pfilefunc,voidpf filestream, ZP
     }
 }
 
-ZPOS64_T call_ztell64 (const zlib_filefunc64_32_def* pfilefunc, voidpf filestream) {
+ZPOS64_T call_ztell64 (const ptlibzippy_filefunc64_32_def* pfilefunc, voidpf filestream) {
     if (pfilefunc->zfile_func64.zseek64_file != NULL)
         return (*(pfilefunc->zfile_func64.ztell64_file)) (pfilefunc->zfile_func64.opaque,filestream);
     else
@@ -63,7 +63,7 @@ ZPOS64_T call_ztell64 (const zlib_filefunc64_32_def* pfilefunc, voidpf filestrea
     }
 }
 
-void fill_zlib_filefunc64_32_def_from_filefunc32(zlib_filefunc64_32_def* p_filefunc64_32, const zlib_filefunc_def* p_filefunc32) {
+void fill_ptlibzippy_filefunc64_32_def_from_filefunc32(ptlibzippy_filefunc64_32_def* p_filefunc64_32, const ptlibzippy_filefunc_def* p_filefunc32) {
     p_filefunc64_32->zfile_func64.zopen64_file = NULL;
     p_filefunc64_32->zopen32_file = p_filefunc32->zopen_file;
     p_filefunc64_32->zfile_func64.zread_file = p_filefunc32->zread_file;
@@ -83,13 +83,13 @@ static voidpf ZCALLBACK fopen_file_func(voidpf opaque, const char* filename, int
     FILE* file = NULL;
     const char* mode_fopen = NULL;
     (void)opaque;
-    if ((mode & ZLIB_FILEFUNC_MODE_READWRITEFILTER)==ZLIB_FILEFUNC_MODE_READ)
+    if ((mode & PTLIBZIPPY_FILEFUNC_MODE_READWRITEFILTER)==PTLIBZIPPY_FILEFUNC_MODE_READ)
         mode_fopen = "rb";
     else
-    if (mode & ZLIB_FILEFUNC_MODE_EXISTING)
+    if (mode & PTLIBZIPPY_FILEFUNC_MODE_EXISTING)
         mode_fopen = "r+b";
     else
-    if (mode & ZLIB_FILEFUNC_MODE_CREATE)
+    if (mode & PTLIBZIPPY_FILEFUNC_MODE_CREATE)
         mode_fopen = "wb";
 
     if ((filename!=NULL) && (mode_fopen != NULL))
@@ -101,13 +101,13 @@ static voidpf ZCALLBACK fopen64_file_func(voidpf opaque, const void* filename, i
     FILE* file = NULL;
     const char* mode_fopen = NULL;
     (void)opaque;
-    if ((mode & ZLIB_FILEFUNC_MODE_READWRITEFILTER)==ZLIB_FILEFUNC_MODE_READ)
+    if ((mode & PTLIBZIPPY_FILEFUNC_MODE_READWRITEFILTER)==PTLIBZIPPY_FILEFUNC_MODE_READ)
         mode_fopen = "rb";
     else
-    if (mode & ZLIB_FILEFUNC_MODE_EXISTING)
+    if (mode & PTLIBZIPPY_FILEFUNC_MODE_EXISTING)
         mode_fopen = "r+b";
     else
-    if (mode & ZLIB_FILEFUNC_MODE_CREATE)
+    if (mode & PTLIBZIPPY_FILEFUNC_MODE_CREATE)
         mode_fopen = "wb";
 
     if ((filename!=NULL) && (mode_fopen != NULL))
@@ -151,13 +151,13 @@ static long ZCALLBACK fseek_file_func(voidpf opaque, voidpf stream, uLong offset
     (void)opaque;
     switch (origin)
     {
-    case ZLIB_FILEFUNC_SEEK_CUR :
+    case PTLIBZIPPY_FILEFUNC_SEEK_CUR :
         fseek_origin = SEEK_CUR;
         break;
-    case ZLIB_FILEFUNC_SEEK_END :
+    case PTLIBZIPPY_FILEFUNC_SEEK_END :
         fseek_origin = SEEK_END;
         break;
-    case ZLIB_FILEFUNC_SEEK_SET :
+    case PTLIBZIPPY_FILEFUNC_SEEK_SET :
         fseek_origin = SEEK_SET;
         break;
     default: return -1;
@@ -174,13 +174,13 @@ static long ZCALLBACK fseek64_file_func(voidpf opaque, voidpf stream, ZPOS64_T o
     (void)opaque;
     switch (origin)
     {
-    case ZLIB_FILEFUNC_SEEK_CUR :
+    case PTLIBZIPPY_FILEFUNC_SEEK_CUR :
         fseek_origin = SEEK_CUR;
         break;
-    case ZLIB_FILEFUNC_SEEK_END :
+    case PTLIBZIPPY_FILEFUNC_SEEK_END :
         fseek_origin = SEEK_END;
         break;
-    case ZLIB_FILEFUNC_SEEK_SET :
+    case PTLIBZIPPY_FILEFUNC_SEEK_SET :
         fseek_origin = SEEK_SET;
         break;
     default: return -1;
@@ -208,24 +208,24 @@ static int ZCALLBACK ferror_file_func(voidpf opaque, voidpf stream) {
     return ret;
 }
 
-void fill_fopen_filefunc(zlib_filefunc_def* pzlib_filefunc_def) {
-    pzlib_filefunc_def->zopen_file = fopen_file_func;
-    pzlib_filefunc_def->zread_file = fread_file_func;
-    pzlib_filefunc_def->zwrite_file = fwrite_file_func;
-    pzlib_filefunc_def->ztell_file = ftell_file_func;
-    pzlib_filefunc_def->zseek_file = fseek_file_func;
-    pzlib_filefunc_def->zclose_file = fclose_file_func;
-    pzlib_filefunc_def->zerror_file = ferror_file_func;
-    pzlib_filefunc_def->opaque = NULL;
+void fill_fopen_filefunc(ptlibzippy_filefunc_def* pptlibzippy_filefunc_def) {
+    pptlibzippy_filefunc_def->zopen_file = fopen_file_func;
+    pptlibzippy_filefunc_def->zread_file = fread_file_func;
+    pptlibzippy_filefunc_def->zwrite_file = fwrite_file_func;
+    pptlibzippy_filefunc_def->ztell_file = ftell_file_func;
+    pptlibzippy_filefunc_def->zseek_file = fseek_file_func;
+    pptlibzippy_filefunc_def->zclose_file = fclose_file_func;
+    pptlibzippy_filefunc_def->zerror_file = ferror_file_func;
+    pptlibzippy_filefunc_def->opaque = NULL;
 }
 
-void fill_fopen64_filefunc(zlib_filefunc64_def* pzlib_filefunc_def) {
-    pzlib_filefunc_def->zopen64_file = fopen64_file_func;
-    pzlib_filefunc_def->zread_file = fread_file_func;
-    pzlib_filefunc_def->zwrite_file = fwrite_file_func;
-    pzlib_filefunc_def->ztell64_file = ftell64_file_func;
-    pzlib_filefunc_def->zseek64_file = fseek64_file_func;
-    pzlib_filefunc_def->zclose_file = fclose_file_func;
-    pzlib_filefunc_def->zerror_file = ferror_file_func;
-    pzlib_filefunc_def->opaque = NULL;
+void fill_fopen64_filefunc(ptlibzippy_filefunc64_def* pptlibzippy_filefunc_def) {
+    pptlibzippy_filefunc_def->zopen64_file = fopen64_file_func;
+    pptlibzippy_filefunc_def->zread_file = fread_file_func;
+    pptlibzippy_filefunc_def->zwrite_file = fwrite_file_func;
+    pptlibzippy_filefunc_def->ztell64_file = ftell64_file_func;
+    pptlibzippy_filefunc_def->zseek64_file = fseek64_file_func;
+    pptlibzippy_filefunc_def->zclose_file = fclose_file_func;
+    pptlibzippy_filefunc_def->zerror_file = ferror_file_func;
+    pptlibzippy_filefunc_def->opaque = NULL;
 }

@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="zlibvc"
+	Name="ptlibzippyvc"
 	ProjectGUID="{8FD826F8-3739-44E6-8CC8-997122E53B8D}"
-	RootNamespace="zlibvc"
+	RootNamespace="ptlibzippyvc"
 	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
@@ -23,8 +23,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="x86\ZlibDll$(ConfigurationName)"
-			IntermediateDirectory="x86\ZlibDll$(ConfigurationName)\Tmp"
+			OutputDirectory="x86\PtlibzippyDll$(ConfigurationName)"
+			IntermediateDirectory="x86\PtlibzippyDll$(ConfigurationName)\Tmp"
 			ConfigurationType="2"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -48,17 +48,17 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName="$(OutDir)/zlibvc.tlb"
+				TypeLibraryName="$(OutDir)/ptlibzippyvc.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;ZLIB_WINAPI"
+				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;PTLIBZIPPY_WINAPI"
 				ExceptionHandling="0"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="false"
-				PrecompiledHeaderFile="$(IntDir)/zlibvc.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippyvc.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(OutDir)\"
@@ -81,19 +81,19 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				OutputFile="$(OutDir)\zlibwapi.dll"
+				OutputFile="$(OutDir)\ptlibzippywapi.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				GenerateManifest="false"
-				ModuleDefinitionFile=".\zlibvc.def"
+				ModuleDefinitionFile=".\ptlibzippyvc.def"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(OutDir)/zlibwapi.pdb"
+				ProgramDatabaseFile="$(OutDir)/ptlibzippywapi.pdb"
 				GenerateMapFile="true"
-				MapFileName="$(OutDir)/zlibwapi.map"
+				MapFileName="$(OutDir)/ptlibzippywapi.map"
 				SubSystem="2"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="$(OutDir)/zlibwapi.lib"
+				ImportLibrary="$(OutDir)/ptlibzippywapi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -119,8 +119,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="x64\ZlibDll$(ConfigurationName)"
-			IntermediateDirectory="x64\ZlibDll$(ConfigurationName)\Tmp"
+			OutputDirectory="x64\PtlibzippyDll$(ConfigurationName)"
+			IntermediateDirectory="x64\PtlibzippyDll$(ConfigurationName)\Tmp"
 			ConfigurationType="2"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -144,17 +144,17 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="3"
-				TypeLibraryName="$(OutDir)/zlibvc.tlb"
+				TypeLibraryName="$(OutDir)/ptlibzippyvc.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;ZLIB_WINAPI;WIN64"
+				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;PTLIBZIPPY_WINAPI;WIN64"
 				ExceptionHandling="0"
 				RuntimeLibrary="3"
 				BufferSecurityCheck="false"
-				PrecompiledHeaderFile="$(IntDir)/zlibvc.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippyvc.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(OutDir)\"
@@ -176,17 +176,17 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\zlibwapi.dll"
+				OutputFile="$(OutDir)\ptlibzippywapi.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				GenerateManifest="false"
-				ModuleDefinitionFile=".\zlibvc.def"
+				ModuleDefinitionFile=".\ptlibzippyvc.def"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(OutDir)/zlibwapi.pdb"
+				ProgramDatabaseFile="$(OutDir)/ptlibzippywapi.pdb"
 				GenerateMapFile="true"
-				MapFileName="$(OutDir)/zlibwapi.map"
+				MapFileName="$(OutDir)/ptlibzippywapi.map"
 				SubSystem="2"
-				ImportLibrary="$(OutDir)/zlibwapi.lib"
+				ImportLibrary="$(OutDir)/ptlibzippywapi.lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -213,8 +213,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Itanium"
-			OutputDirectory="ia64\ZlibDll$(ConfigurationName)"
-			IntermediateDirectory="ia64\ZlibDll$(ConfigurationName)\Tmp"
+			OutputDirectory="ia64\PtlibzippyDll$(ConfigurationName)"
+			IntermediateDirectory="ia64\PtlibzippyDll$(ConfigurationName)\Tmp"
 			ConfigurationType="2"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -238,17 +238,17 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="2"
-				TypeLibraryName="$(OutDir)/zlibvc.tlb"
+				TypeLibraryName="$(OutDir)/ptlibzippyvc.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;ZLIB_WINAPI;WIN64"
+				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;PTLIBZIPPY_WINAPI;WIN64"
 				ExceptionHandling="0"
 				RuntimeLibrary="3"
 				BufferSecurityCheck="false"
-				PrecompiledHeaderFile="$(IntDir)/zlibvc.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippyvc.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(OutDir)\"
@@ -270,17 +270,17 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\zlibwapi.dll"
+				OutputFile="$(OutDir)\ptlibzippywapi.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				GenerateManifest="false"
-				ModuleDefinitionFile=".\zlibvc.def"
+				ModuleDefinitionFile=".\ptlibzippyvc.def"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(OutDir)/zlibwapi.pdb"
+				ProgramDatabaseFile="$(OutDir)/ptlibzippywapi.pdb"
 				GenerateMapFile="true"
-				MapFileName="$(OutDir)/zlibwapi.map"
+				MapFileName="$(OutDir)/ptlibzippywapi.map"
 				SubSystem="2"
-				ImportLibrary="$(OutDir)/zlibwapi.lib"
+				ImportLibrary="$(OutDir)/ptlibzippywapi.lib"
 				TargetMachine="5"
 			/>
 			<Tool
@@ -307,8 +307,8 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseWithoutAsm|Win32"
-			OutputDirectory="x86\ZlibDll$(ConfigurationName)"
-			IntermediateDirectory="x86\ZlibDll$(ConfigurationName)\Tmp"
+			OutputDirectory="x86\PtlibzippyDll$(ConfigurationName)"
+			IntermediateDirectory="x86\PtlibzippyDll$(ConfigurationName)\Tmp"
 			ConfigurationType="2"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -333,19 +333,19 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName="$(OutDir)/zlibvc.tlb"
+				TypeLibraryName="$(OutDir)/ptlibzippyvc.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;ZLIB_WINAPI"
+				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;PTLIBZIPPY_WINAPI"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(IntDir)/zlibvc.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippyvc.pch"
 				AssemblerOutput="2"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
@@ -368,20 +368,20 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				OutputFile="$(OutDir)\zlibwapi.dll"
+				OutputFile="$(OutDir)\ptlibzippywapi.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="false"
-				ModuleDefinitionFile=".\zlibvc.def"
-				ProgramDatabaseFile="$(OutDir)/zlibwapi.pdb"
+				ModuleDefinitionFile=".\ptlibzippyvc.def"
+				ProgramDatabaseFile="$(OutDir)/ptlibzippywapi.pdb"
 				GenerateMapFile="true"
-				MapFileName="$(OutDir)/zlibwapi.map"
+				MapFileName="$(OutDir)/ptlibzippywapi.map"
 				SubSystem="2"
 				OptimizeForWindows98="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="$(OutDir)/zlibwapi.lib"
+				ImportLibrary="$(OutDir)/ptlibzippywapi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -407,8 +407,8 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseWithoutAsm|x64"
-			OutputDirectory="x64\ZlibDll$(ConfigurationName)"
-			IntermediateDirectory="x64\ZlibDll$(ConfigurationName)\Tmp"
+			OutputDirectory="x64\PtlibzippyDll$(ConfigurationName)"
+			IntermediateDirectory="x64\PtlibzippyDll$(ConfigurationName)\Tmp"
 			ConfigurationType="2"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -433,19 +433,19 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="3"
-				TypeLibraryName="$(OutDir)/zlibvc.tlb"
+				TypeLibraryName="$(OutDir)/ptlibzippyvc.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;ZLIB_WINAPI;WIN64"
+				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;PTLIBZIPPY_WINAPI;WIN64"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(IntDir)/zlibvc.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippyvc.pch"
 				AssemblerOutput="2"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
@@ -467,18 +467,18 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\zlibwapi.dll"
+				OutputFile="$(OutDir)\ptlibzippywapi.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="false"
-				ModuleDefinitionFile=".\zlibvc.def"
-				ProgramDatabaseFile="$(OutDir)/zlibwapi.pdb"
+				ModuleDefinitionFile=".\ptlibzippyvc.def"
+				ProgramDatabaseFile="$(OutDir)/ptlibzippywapi.pdb"
 				GenerateMapFile="true"
-				MapFileName="$(OutDir)/zlibwapi.map"
+				MapFileName="$(OutDir)/ptlibzippywapi.map"
 				SubSystem="2"
 				OptimizeForWindows98="1"
-				ImportLibrary="$(OutDir)/zlibwapi.lib"
+				ImportLibrary="$(OutDir)/ptlibzippywapi.lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -505,8 +505,8 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseWithoutAsm|Itanium"
-			OutputDirectory="ia64\ZlibDll$(ConfigurationName)"
-			IntermediateDirectory="ia64\ZlibDll$(ConfigurationName)\Tmp"
+			OutputDirectory="ia64\PtlibzippyDll$(ConfigurationName)"
+			IntermediateDirectory="ia64\PtlibzippyDll$(ConfigurationName)\Tmp"
 			ConfigurationType="2"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -531,19 +531,19 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="2"
-				TypeLibraryName="$(OutDir)/zlibvc.tlb"
+				TypeLibraryName="$(OutDir)/ptlibzippyvc.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;ZLIB_WINAPI;WIN64"
+				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;PTLIBZIPPY_WINAPI;WIN64"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(IntDir)/zlibvc.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippyvc.pch"
 				AssemblerOutput="2"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
@@ -565,18 +565,18 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\zlibwapi.dll"
+				OutputFile="$(OutDir)\ptlibzippywapi.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="false"
-				ModuleDefinitionFile=".\zlibvc.def"
-				ProgramDatabaseFile="$(OutDir)/zlibwapi.pdb"
+				ModuleDefinitionFile=".\ptlibzippyvc.def"
+				ProgramDatabaseFile="$(OutDir)/ptlibzippywapi.pdb"
 				GenerateMapFile="true"
-				MapFileName="$(OutDir)/zlibwapi.map"
+				MapFileName="$(OutDir)/ptlibzippywapi.map"
 				SubSystem="2"
 				OptimizeForWindows98="1"
-				ImportLibrary="$(OutDir)/zlibwapi.lib"
+				ImportLibrary="$(OutDir)/ptlibzippywapi.lib"
 				TargetMachine="5"
 			/>
 			<Tool
@@ -603,8 +603,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="x86\ZlibDll$(ConfigurationName)"
-			IntermediateDirectory="x86\ZlibDll$(ConfigurationName)\Tmp"
+			OutputDirectory="x86\PtlibzippyDll$(ConfigurationName)"
+			IntermediateDirectory="x86\PtlibzippyDll$(ConfigurationName)\Tmp"
 			ConfigurationType="2"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -629,19 +629,19 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName="$(OutDir)/zlibvc.tlb"
+				TypeLibraryName="$(OutDir)/ptlibzippyvc.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;ZLIB_WINAPI"
+				PreprocessorDefinitions="WIN32;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;PTLIBZIPPY_WINAPI"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(IntDir)/zlibvc.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippyvc.pch"
 				AssemblerOutput="2"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
@@ -664,20 +664,20 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				OutputFile="$(OutDir)\zlibwapi.dll"
+				OutputFile="$(OutDir)\ptlibzippywapi.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="false"
-				ModuleDefinitionFile=".\zlibvc.def"
-				ProgramDatabaseFile="$(OutDir)/zlibwapi.pdb"
+				ModuleDefinitionFile=".\ptlibzippyvc.def"
+				ProgramDatabaseFile="$(OutDir)/ptlibzippywapi.pdb"
 				GenerateMapFile="true"
-				MapFileName="$(OutDir)/zlibwapi.map"
+				MapFileName="$(OutDir)/ptlibzippywapi.map"
 				SubSystem="2"
 				OptimizeForWindows98="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="$(OutDir)/zlibwapi.lib"
+				ImportLibrary="$(OutDir)/ptlibzippywapi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -703,8 +703,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="x64\ZlibDll$(ConfigurationName)"
-			IntermediateDirectory="x64\ZlibDll$(ConfigurationName)\Tmp"
+			OutputDirectory="x64\PtlibzippyDll$(ConfigurationName)"
+			IntermediateDirectory="x64\PtlibzippyDll$(ConfigurationName)\Tmp"
 			ConfigurationType="2"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -729,19 +729,19 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="3"
-				TypeLibraryName="$(OutDir)/zlibvc.tlb"
+				TypeLibraryName="$(OutDir)/ptlibzippyvc.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;ZLIB_WINAPI;WIN64"
+				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;PTLIBZIPPY_WINAPI;WIN64"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(IntDir)/zlibvc.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippyvc.pch"
 				AssemblerOutput="2"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
@@ -763,18 +763,18 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\zlibwapi.dll"
+				OutputFile="$(OutDir)\ptlibzippywapi.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="false"
-				ModuleDefinitionFile=".\zlibvc.def"
-				ProgramDatabaseFile="$(OutDir)/zlibwapi.pdb"
+				ModuleDefinitionFile=".\ptlibzippyvc.def"
+				ProgramDatabaseFile="$(OutDir)/ptlibzippywapi.pdb"
 				GenerateMapFile="true"
-				MapFileName="$(OutDir)/zlibwapi.map"
+				MapFileName="$(OutDir)/ptlibzippywapi.map"
 				SubSystem="2"
 				OptimizeForWindows98="1"
-				ImportLibrary="$(OutDir)/zlibwapi.lib"
+				ImportLibrary="$(OutDir)/ptlibzippywapi.lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -801,8 +801,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Itanium"
-			OutputDirectory="ia64\ZlibDll$(ConfigurationName)"
-			IntermediateDirectory="ia64\ZlibDll$(ConfigurationName)\Tmp"
+			OutputDirectory="ia64\PtlibzippyDll$(ConfigurationName)"
+			IntermediateDirectory="ia64\PtlibzippyDll$(ConfigurationName)\Tmp"
 			ConfigurationType="2"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -827,19 +827,19 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="2"
-				TypeLibraryName="$(OutDir)/zlibvc.tlb"
+				TypeLibraryName="$(OutDir)/ptlibzippyvc.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;ZLIB_WINAPI;WIN64"
+				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;PTLIBZIPPY_WINAPI;WIN64"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(IntDir)/zlibvc.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippyvc.pch"
 				AssemblerOutput="2"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
@@ -861,18 +861,18 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\zlibwapi.dll"
+				OutputFile="$(OutDir)\ptlibzippywapi.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="false"
-				ModuleDefinitionFile=".\zlibvc.def"
-				ProgramDatabaseFile="$(OutDir)/zlibwapi.pdb"
+				ModuleDefinitionFile=".\ptlibzippyvc.def"
+				ProgramDatabaseFile="$(OutDir)/ptlibzippywapi.pdb"
 				GenerateMapFile="true"
-				MapFileName="$(OutDir)/zlibwapi.map"
+				MapFileName="$(OutDir)/ptlibzippywapi.map"
 				SubSystem="2"
 				OptimizeForWindows98="1"
-				ImportLibrary="$(OutDir)/zlibwapi.lib"
+				ImportLibrary="$(OutDir)/ptlibzippywapi.lib"
 				TargetMachine="5"
 			/>
 			<Tool
@@ -926,7 +926,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\gzguts.h"
+				RelativePath="..\..\..\ptzippyguts.h"
 				>
 			</File>
 			<File
@@ -982,7 +982,7 @@
 					<Tool
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="ZLIB_INTERNAL"
+						PreprocessorDefinitions="PTLIBZIPPY_INTERNAL"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -991,7 +991,7 @@
 					<Tool
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="ZLIB_INTERNAL"
+						PreprocessorDefinitions="PTLIBZIPPY_INTERNAL"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1000,7 +1000,7 @@
 					<Tool
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="ZLIB_INTERNAL"
+						PreprocessorDefinitions="PTLIBZIPPY_INTERNAL"
 					/>
 				</FileConfiguration>
 			</File>
@@ -1013,7 +1013,7 @@
 					<Tool
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="ZLIB_INTERNAL"
+						PreprocessorDefinitions="PTLIBZIPPY_INTERNAL"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1022,7 +1022,7 @@
 					<Tool
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="ZLIB_INTERNAL"
+						PreprocessorDefinitions="PTLIBZIPPY_INTERNAL"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1031,20 +1031,20 @@
 					<Tool
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="ZLIB_INTERNAL"
+						PreprocessorDefinitions="PTLIBZIPPY_INTERNAL"
 					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\zlib.rc"
+				RelativePath=".\ptlibzippy.rc"
 				>
 			</File>
 			<File
-				RelativePath=".\zlibvc.def"
+				RelativePath=".\ptlibzippyvc.def"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\zutil.c"
+				RelativePath="..\..\..\ptzippyutil.c"
 				>
 			</File>
 		</Filter>
@@ -1077,15 +1077,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\zconf.h"
+				RelativePath="..\..\..\ptzippyconf.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\zlib.h"
+				RelativePath="..\..\..\ptlibzippy.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\zutil.h"
+				RelativePath="..\..\..\ptzippyutil.h"
 				>
 			</File>
 		</Filter>

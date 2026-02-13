@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#       ZLIB compilation script for the OS/400.
+#       PTLIBZIPPY compilation script for the OS/400.
 #
 #
 #       This is a shell script since make is not a standard component of OS/400.
@@ -12,11 +12,11 @@
 #
 ################################################################################
 
-TARGETLIB='ZLIB'                # Target OS/400 program library
-STATBNDDIR='ZLIB_A'             # Static binding directory.
-DYNBNDDIR='ZLIB'                # Dynamic binding directory.
-SRVPGM="ZLIB"                   # Service program.
-IFSDIR='/zlib'                  # IFS support base directory.
+TARGETLIB='PTLIBZIPPY'                # Target OS/400 program library
+STATBNDDIR='PTLIBZIPPY_A'             # Static binding directory.
+DYNBNDDIR='PTLIBZIPPY'                # Dynamic binding directory.
+SRVPGM="PTLIBZIPPY"                   # Service program.
+IFSDIR='/ptlibzippy'                  # IFS support base directory.
 TGTCCSID='500'                  # Target CCSID of objects
 DEBUG='*NONE'                   # Debug level
 OPTIMIZE='40'                   # Optimisation level
@@ -164,7 +164,7 @@ export VERSION
 #       Create the OS/400 library if it does not exist.
 
 if action_needed "${LIBIFSNAME}"
-then    CMD="CRTLIB LIB(${TARGETLIB}) TEXT('ZLIB: Data compression API')"
+then    CMD="CRTLIB LIB(${TARGETLIB}) TEXT('PTLIBZIPPY: Data compression API')"
         system "${CMD}"
 fi
 
@@ -198,7 +198,7 @@ SRCPF="${LIBIFSNAME}/H.FILE"
 
 if action_needed "${SRCPF}"
 then    CMD="CRTSRCPF FILE(${TARGETLIB}/H) RCDLEN(112)"
-        CMD="${CMD} CCSID(${TGTCCSID}) TEXT('ZLIB: C/C++ header files')"
+        CMD="${CMD} CCSID(${TGTCCSID}) TEXT('PTLIBZIPPY: C/C++ header files')"
         system "${CMD}"
 fi
 
@@ -239,8 +239,8 @@ done
 #       Install the ILE/RPG header file.
 
 
-HFILE="${SCRIPTDIR}/zlibfixed.rpgle"
-MBR="ZLIBFIXED"
+HFILE="${SCRIPTDIR}/ptlibzippyfixed.rpgle"
+MBR="PTLIBZIPPYFIXED"
 DEST="${SRCPF}/${MBR}.MBR"
 
 if action_needed "${DEST}" "${HFILE}"
@@ -251,8 +251,8 @@ then    CMD="CPY OBJ('${HFILE}') TOOBJ('${DEST}')"
         system "CHGPFM FILE(${TARGETLIB}/H) MBR(${MBR}) SRCTYPE(RPGLE)"
 fi
 
-HFILE="${SCRIPTDIR}/zlibfree.rpgle"
-MBR="ZLIBFREE"
+HFILE="${SCRIPTDIR}/ptlibzippyfree.rpgle"
+MBR="PTLIBZIPPYFREE"
 DEST="${SRCPF}/${MBR}.MBR"
 
 if action_needed "${DEST}" "${HFILE}"
@@ -273,7 +273,7 @@ fi
 
 #      Create and compile the identification source file.
 
-echo '#pragma comment(user, "ZLIB version '"${VERSION}"'")' > os400.c
+echo '#pragma comment(user, "PTLIBZIPPY version '"${VERSION}"'")' > os400.c
 echo '#pragma comment(user, __DATE__)' >> os400.c
 echo '#pragma comment(user, __TIME__)' >> os400.c
 echo '#pragma comment(copyright, "Copyright (C) 1995-2017 Jean-Loup Gailly, Mark Adler. OS/400 version by P. Monnerat.")' >> os400.c
@@ -304,7 +304,7 @@ fi
 if [ "${LINK}" ]
 then    rm -rf "${LIBIFSNAME}/${STATBNDDIR}.BNDDIR"
         CMD="CRTBNDDIR BNDDIR(${TARGETLIB}/${STATBNDDIR})"
-        CMD="${CMD} TEXT('ZLIB static binding directory')"
+        CMD="${CMD} TEXT('PTLIBZIPPY static binding directory')"
         system "${CMD}"
 
         for MODULE in ${MODULES}
@@ -320,7 +320,7 @@ fi
 
 if action_needed "${LIBIFSNAME}/TOOLS.FILE"
 then    CMD="CRTSRCPF FILE(${TARGETLIB}/TOOLS) RCDLEN(112)"
-        CMD="${CMD} CCSID(${TGTCCSID}) TEXT('ZLIB: build tools')"
+        CMD="${CMD} CCSID(${TGTCCSID}) TEXT('PTLIBZIPPY: build tools')"
         system "${CMD}"
 fi
 
@@ -348,7 +348,7 @@ then    CMD="CRTSRVPGM SRVPGM(${TARGETLIB}/${SRVPGM})"
         CMD="${CMD} SRCFILE(${TARGETLIB}/TOOLS) SRCMBR(BNDSRC)"
         CMD="${CMD} MODULE(${TARGETLIB}/OS400)"
         CMD="${CMD} BNDDIR(${TARGETLIB}/${STATBNDDIR})"
-        CMD="${CMD} TEXT('ZLIB ${VERSION} dynamic library')"
+        CMD="${CMD} TEXT('PTLIBZIPPY ${VERSION} dynamic library')"
         CMD="${CMD} TGTRLS(${TGTRLS})"
         system "${CMD}"
         LINK=YES
@@ -375,7 +375,7 @@ fi
 if [ "${LINK}" ]
 then    rm -rf "${LIBIFSNAME}/${DYNBNDDIR}.BNDDIR"
         CMD="CRTBNDDIR BNDDIR(${TARGETLIB}/${DYNBNDDIR})"
-        CMD="${CMD} TEXT('ZLIB dynamic binding directory')"
+        CMD="${CMD} TEXT('PTLIBZIPPY dynamic binding directory')"
         system "${CMD}"
         CMD="ADDBNDDIRE BNDDIR(${TARGETLIB}/${DYNBNDDIR})"
         CMD="${CMD} OBJ((${TARGETLIB}/${SRVPGM} *SRVPGM))"

@@ -51,14 +51,14 @@
 
    This program was written to illustrate the use of the Z_BLOCK option of
    inflate() and the crc32_combine() function.  gzjoin will not compile with
-   versions of zlib earlier than 1.2.3.
+   versions of PTlibzippy earlier than 1.2.3.
  */
 
 #include <stdio.h>      /* fputs(), fprintf(), fwrite(), putc() */
 #include <stdlib.h>     /* exit(), malloc(), free() */
 #include <fcntl.h>      /* open() */
 #include <unistd.h>     /* close(), read(), lseek() */
-#include "zlib.h"
+#include "ptlibzippy.h"
     /* crc32(), crc32_combine(), inflateInit2(), inflate(), inflateEnd() */
 
 #define local static
@@ -251,7 +251,7 @@ local void put4(unsigned long val, FILE *out)
     putc((val >> 24) & 0xff, out);
 }
 
-/* Load up zlib stream from buffered input, bail if end of file */
+/* Load up PTlibzippy stream from buffered input, bail if end of file */
 local void zpull(z_streamp strm, bin *in)
 {
     if (in->left == 0)
@@ -280,14 +280,14 @@ local void gzinit(unsigned long *crc, unsigned long *tot, FILE *out)
 local void gzcopy(char *name, int clr, unsigned long *crc, unsigned long *tot,
                   FILE *out)
 {
-    int ret;                /* return value from zlib functions */
+    int ret;                /* return value from PTlibzippy functions */
     int pos;                /* where the "last block" bit is in byte */
     int last;               /* true if processing the last block */
     bin *in;                /* buffered input file */
     unsigned char *start;   /* start of compressed data in buffer */
     unsigned char *junk;    /* buffer for uncompressed data -- discarded */
     z_off_t len;            /* length of uncompressed data (support > 4 GB) */
-    z_stream strm;          /* zlib inflate stream */
+    z_stream strm;          /* PTlibzippy inflate stream */
 
     /* open gzip file and skip header */
     in = bopen(name);

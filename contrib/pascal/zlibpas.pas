@@ -1,17 +1,17 @@
-(* zlibpas -- Pascal interface to the zlib data compression library
+(* ptlibzippypas -- Pascal interface to the PTlibzippy data compression library
  *
  * Copyright (C) 2003 Cosmin Truta.
  * Derived from original sources by Bob Dellaca.
  * For conditions of distribution and use, see copyright notice in readme.txt
  *)
 
-unit zlibpas;
+unit ptlibzippypas;
 
 interface
 
 const
-  ZLIB_VERSION = '0.0.5.1';
-  ZLIB_VERNUM  = $12a0;
+  PTLIBZIPPY_VERSION = '0.0.5.1';
+  PTLIBZIPPY_VERNUM  = $12a0;
 
 type
   alloc_func = function(opaque: Pointer; items, size: Integer): Pointer;
@@ -102,7 +102,7 @@ const
   Z_DEFLATED = 8;
 
 (* basic functions *)
-function zlibVersion: PChar;
+function ptlibzippyVersion: PChar;
 function deflateInit(var strm: z_stream; level: Integer): Integer;
 function deflate(var strm: z_stream; flush: Integer): Integer;
 function deflateEnd(var strm: z_stream): Integer;
@@ -138,7 +138,7 @@ function inflateBackInit(var strm: z_stream;
 function inflateBack(var strm: z_stream; in_fn: in_func; in_desc: Pointer;
                      out_fn: out_func; out_desc: Pointer): Integer;
 function inflateBackEnd(var strm: z_stream): Integer;
-function zlibCompileFlags: LongInt;
+function ptlibzippyCompileFlags: LongInt;
 
 (* utility functions *)
 function compress(dest: PChar; var destLen: LongInt;
@@ -183,7 +183,7 @@ implementation
 {$L inftrees.obj}
 {$L trees.obj}
 {$L uncompr.obj}
-{$L zutil.obj}
+{$L ptzippyutil.obj}
 
 function adler32; external;
 function adler32_combine; external;
@@ -221,36 +221,36 @@ function inflateReset2; external;
 function inflateSetDictionary; external;
 function inflateSync; external;
 function uncompress; external;
-function zlibCompileFlags; external;
-function zlibVersion; external;
+function ptlibzippyCompileFlags; external;
+function ptlibzippyVersion; external;
 
 function deflateInit(var strm: z_stream; level: Integer): Integer;
 begin
-  Result := deflateInit_(strm, level, ZLIB_VERSION, sizeof(z_stream));
+  Result := deflateInit_(strm, level, PTLIBZIPPY_VERSION, sizeof(z_stream));
 end;
 
 function deflateInit2(var strm: z_stream; level, method, windowBits, memLevel,
                       strategy: Integer): Integer;
 begin
   Result := deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
-                          ZLIB_VERSION, sizeof(z_stream));
+                          PTLIBZIPPY_VERSION, sizeof(z_stream));
 end;
 
 function inflateInit(var strm: z_stream): Integer;
 begin
-  Result := inflateInit_(strm, ZLIB_VERSION, sizeof(z_stream));
+  Result := inflateInit_(strm, PTLIBZIPPY_VERSION, sizeof(z_stream));
 end;
 
 function inflateInit2(var strm: z_stream; windowBits: Integer): Integer;
 begin
-  Result := inflateInit2_(strm, windowBits, ZLIB_VERSION, sizeof(z_stream));
+  Result := inflateInit2_(strm, windowBits, PTLIBZIPPY_VERSION, sizeof(z_stream));
 end;
 
 function inflateBackInit(var strm: z_stream;
                          windowBits: Integer; window: PChar): Integer;
 begin
   Result := inflateBackInit_(strm, windowBits, window,
-                             ZLIB_VERSION, sizeof(z_stream));
+                             PTLIBZIPPY_VERSION, sizeof(z_stream));
 end;
 
 function _malloc(Size: Integer): Pointer; cdecl;

@@ -1,10 +1,10 @@
 /* infback9.c -- inflate deflate64 data using a call-back interface
  * Copyright (C) 1995-2008 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
-#include "zutil.h"
+#include "ptzippyutil.h"
 #include "infback9.h"
 #include "inftree9.h"
 #include "inflate9.h"
@@ -21,7 +21,7 @@ int ZEXPORT inflateBack9Init_(z_stream FAR *strm, unsigned char FAR *window,
                               const char *version, int stream_size) {
     struct inflate_state FAR *state;
 
-    if (version == Z_NULL || version[0] != ZLIB_VERSION[0] ||
+    if (version == Z_NULL || version[0] != PTLIBZIPPY_VERSION[0] ||
         stream_size != (int)(sizeof(z_stream)))
         return Z_VERSION_ERROR;
     if (strm == Z_NULL || window == Z_NULL)
@@ -79,7 +79,7 @@ void makefixed9(void) {
     puts("");
     puts("    /* WARNING: this file should *not* be used by applications.");
     puts("       It is part of the implementation of this library and is");
-    puts("       subject to change. Applications should only use zlib.h.");
+    puts("       subject to change. Applications should only use ptlibzippy.h.");
     puts("     */");
     puts("");
     size = 1U << 9;

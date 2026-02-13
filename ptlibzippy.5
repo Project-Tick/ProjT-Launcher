@@ -1,13 +1,13 @@
-.TH ZLIB 5 "2 Feb 2026"
+.TH PTLIBZIPPY 5 "2 Feb 2026"
 .SH NAME
-zlib \- compression/decompression library
+PTlibzippy \- compression/decompression library
 .SH SYNOPSIS
 [see
-.I zlib.h
+.I ptlibzippy.h
 for full description]
 .SH DESCRIPTION
 The
-.I zlib
+.I PTlibzippy
 library is a general purpose data compression library.
 The code is thread safe, assuming that the standard library functions
 used are thread safe, such as memory allocation routines.
@@ -33,7 +33,7 @@ The decoder checks the consistency of the compressed data,
 so the library should never crash even in the case of corrupted input.
 .LP
 All functions of the compression library are documented in the file
-.IR zlib.h .
+.IR ptlibzippy.h .
 The distribution source includes examples of use of the library
 in the files
 .I test/example.c
@@ -47,13 +47,13 @@ Changes to this version are documented in the file
 .I ChangeLog
 that accompanies the source.
 .LP
-.I zlib
+.I PTlibzippy
 is built in to many languages and operating systems, including but not limited to
 Java, Python, .NET, PHP, Perl, Ruby, Swift, and Go.
 .LP
 An experimental package to read and write files in the .zip format,
 written on top of
-.I zlib
+.I PTlibzippy
 by Gilles Vollant (info@winimage.com),
 is available at:
 .IP
@@ -61,28 +61,28 @@ http://www.winimage.com/zLibDll/minizip.html
 and also in the
 .I contrib/minizip
 directory of the main
-.I zlib
+.I PTlibzippy
 source distribution.
 .SH "SEE ALSO"
 The
-.I zlib
+.I PTlibzippy
 web site can be found at:
 .IP
-http://zlib.net/
+https://projecttick.org/p/zlib
 .LP
 The data format used by the
-.I zlib
+.I PTlibzippy
 library is described by RFC
 (Request for Comments) 1950 to 1952 at:
 .IP
-https://datatracker.ietf.org/doc/html/rfc1950 (for the zlib header and trailer format)
+https://datatracker.ietf.org/doc/html/rfc1950 (for the PTlibzippy header and trailer format)
 .br
 https://datatracker.ietf.org/doc/html/rfc1951 (for the deflate compressed data format)
 .br
 https://datatracker.ietf.org/doc/html/rfc1952 (for the gzip header and trailer format)
 .LP
 Mark Nelson wrote an article about
-.I zlib
+.I PTlibzippy
 for the Jan. 1997 issue of  Dr. Dobb's Journal;
 a copy of the article is available at:
 .IP
@@ -90,19 +90,19 @@ https://zlib.net/nelson/
 .SH "REPORTING PROBLEMS"
 Before reporting a problem,
 please check the
-.I zlib
+.I PTlibzippy
 web site to verify that you have the latest version of
-.IR zlib ;
+.IR PTlibzippy ;
 otherwise,
 obtain the latest version and see if the problem still exists.
 Please read the
-.I zlib
+.I PTlibzippy
 FAQ at:
 .IP
-http://zlib.net/zlib_faq.html
+https://projecttick.org/p/zlib/zlib_faq.html
 .LP
 before asking for help.
-Send questions and/or comments to zlib@gzip.org,
+Send questions and/or comments to ptlibzippy@projtick.dev,
 or (for the Windows DLL version) to Gilles Vollant (info@winimage.com).
 .SH AUTHORS AND LICENSE
 Version 0.0.5.1
@@ -135,14 +135,14 @@ Jean-loup Gailly        Mark Adler
 jloup@gzip.org          madler@alumni.caltech.edu
 .LP
 The deflate format used by
-.I zlib
+.I PTlibzippy
 was defined by Phil Katz.
 The deflate and
-.I zlib
+.I PTlibzippy
 specifications were written by L. Peter Deutsch.
 Thanks to all the people who reported problems and suggested various
 improvements in
-.IR zlib ;
+.IR PTlibzippy ;
 who are too numerous to cite here.
 .LP
 UNIX manual page by R. P. C. Rodgers,

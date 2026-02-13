@@ -1,12 +1,12 @@
 /* inftree9.h -- header to use inftree9.c
  * Copyright (C) 1995-2008 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 /* WARNING: this file should *not* be used by applications. It is
    part of the implementation of the compression library and is
-   subject to change. Applications should only use zlib.h.
+   subject to change. Applications should only use ptlibzippy.h.
  */
 
 /* Structure for decoding tables.  Each entry provides either the
@@ -39,7 +39,7 @@ typedef struct {
 /* Maximum size of the dynamic table.  The maximum number of code structures is
    1446, which is the sum of 852 for literal/length codes and 594 for distance
    codes.  These values were found by exhaustive searches using the program
-   examples/enough.c found in the zlib distribution.  The arguments to that
+   examples/enough.c found in the PTlibzippy distribution.  The arguments to that
    program are the number of symbols, the initial root table size, and the
    maximum bit length of a code.  "enough 286 9 15" for literal/length codes
    returns 852, and "enough 32 6 15" for distance codes returns 594. The

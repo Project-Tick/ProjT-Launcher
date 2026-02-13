@@ -20,14 +20,14 @@
 #define ZSTREAM__H
 
 /*
- * zstream.h - C++ interface to the 'zlib' general purpose compression library
+ * zstream.h - C++ interface to the 'PTlibzippy' general purpose compression library
  * $Id: zstream.h 1.1 1997-06-25 12:00:56+02 tyge Exp tyge $
  */
 
 #include <strstream.h>
 #include <string.h>
 #include <stdio.h>
-#include "zlib.h"
+#include "ptlibzippy.h"
 
 #if defined(_WIN32)
 #   include <fcntl.h>
@@ -60,7 +60,7 @@ class izstream
          * open() can be used to read a file which is not in gzip format;
          * in this case read() will directly read from the file without
          * decompression. errno can be checked to distinguish two error
-         * cases (if errno is zero, the zlib error is Z_MEM_ERROR).
+         * cases (if errno is zero, the PTlibzippy error is Z_MEM_ERROR).
          */
         void open(const char* name) {
             if (m_fp) close();
@@ -75,7 +75,7 @@ class izstream
 
         /* Flushes all pending input if necessary, closes the compressed file
          * and deallocates all the (de)compression state. The return value is
-         * the zlib error number (see function error() below).
+         * the PTlibzippy error number (see function error() below).
          */
         int close() {
             int r = ::gzclose(m_fp);
@@ -89,7 +89,7 @@ class izstream
         }
 
         /* Returns the error message for the last error which occurred on the
-         * given compressed file. errnum is set to zlib error number. If an
+         * given compressed file. errnum is set to PTlibzippy error number. If an
          * error occurred in the file system and not in the compression library,
          * errnum is set to Z_ERRNO and the application may consult errno
          * to get the exact error code.
@@ -172,7 +172,7 @@ class ozstream
         /* Opens a gzip (.gz) file for writing.
          * The compression level parameter should be in 0..9
          * errno can be checked to distinguish two error cases
-         * (if errno is zero, the zlib error is Z_MEM_ERROR).
+         * (if errno is zero, the PTlibzippy error is Z_MEM_ERROR).
          */
         void open(const char* name, int level = Z_DEFAULT_COMPRESSION) {
             char mode[4] = "wb\0";
@@ -193,7 +193,7 @@ class ozstream
 
         /* Flushes all pending output if necessary, closes the compressed file
          * and deallocates all the (de)compression state. The return value is
-         * the zlib error number (see function error() below).
+         * the PTlibzippy error number (see function error() below).
          */
         int close() {
             if (m_os) {
@@ -210,7 +210,7 @@ class ozstream
         }
 
         /* Flushes all pending output into the compressed file. The parameter
-         * _flush is as in the deflate() function. The return value is the zlib
+         * _flush is as in the deflate() function. The return value is the PTlibzippy
          * error number (see function gzerror below). flush() returns Z_OK if
          * the flush_ parameter is Z_FINISH and all output could be flushed.
          * flush() should be called only when strictly necessary because it can
@@ -222,7 +222,7 @@ class ozstream
         }
 
         /* Returns the error message for the last error which occurred on the
-         * given compressed file. errnum is set to zlib error number. If an
+         * given compressed file. errnum is set to PTlibzippy error number. If an
          * error occurred in the file system and not in the compression library,
          * errnum is set to Z_ERRNO and the application may consult errno
          * to get the exact error code.

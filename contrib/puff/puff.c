@@ -9,10 +9,10 @@
  * deflate format.  It is not written for speed but rather simplicity.  As a
  * side benefit, this code might actually be useful when small code is more
  * important than speed, such as bootstrap applications.  For typical deflate
- * data, zlib's inflate() is about four times as fast as puff().  zlib's
+ * data, PTlibzippy's inflate() is about four times as fast as puff().  PTlibzippy's
  * inflate compiles to around 20K on my machine, whereas puff.c compiles to
  * around 4K on my machine (a PowerPC using GNU cc).  If the faster decode()
- * function here is used, then puff() is only twice as slow as zlib's
+ * function here is used, then puff() is only twice as slow as PTlibzippy's
  * inflate().
  *
  * All dynamically allocated memory comes from the stack.  The stack required
@@ -26,7 +26,7 @@
  * code is meant to supplement RFC 1951, which formally describes the deflate
  * format:
  *
- *    http://www.zlib.org/rfc-deflate.html
+ *    http://www.PTlibzippy.org/rfc-deflate.html
  */
 
 /*
@@ -60,7 +60,7 @@
  * 1.5   6 Apr 2002     - Minor comment fixes
  * 1.6   7 Aug 2002     - Minor format changes
  * 1.7   3 Mar 2003     - Added test code for distribution
- *                      - Added zlib-like license
+ *                      - Added PTlibzippy-like license
  * 1.8   9 Jan 2004     - Added some comments on no distance codes case
  * 1.9  21 Feb 2008     - Fix bug on 16-bit integer architectures [Pohland]
  *                      - Catch missing end-of-block symbol error
@@ -222,7 +222,7 @@ struct huffman {
  *   bits are pulled from the compressed data one at a time and used to
  *   build the code value reversed from what is in the stream in order to
  *   permit simple integer comparisons for decoding.  A table-based decoding
- *   scheme (as used in zlib) does not need to do this reversal.
+ *   scheme (as used in PTlibzippy) does not need to do this reversal.
  *
  * - The first code for the shortest length is all zeros.  Subsequent codes of
  *   the same length are simply integer increments of the previous code.  When

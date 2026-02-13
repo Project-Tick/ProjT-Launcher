@@ -1,72 +1,72 @@
-ZLIB DATA COMPRESSION LIBRARY
+PTLIBZIPPY DATA COMPRESSION LIBRARY
 
-zlib 0.0.5.1 is a general purpose data compression library.  All the code is
-thread safe.  The data format used by the zlib library is described by RFCs
+PTlibzippy 0.0.5.1 is a general purpose data compression library.  All the code is
+thread safe.  The data format used by the PTlibzippy library is described by RFCs
 (Request for Comments) 1950 to 1952 in the files
-http://www.ietf.org/rfc/rfc1950.txt (zlib format), rfc1951.txt (deflate format)
+http://www.ietf.org/rfc/rfc1950.txt (PTlibzippy format), rfc1951.txt (deflate format)
 and rfc1952.txt (gzip format).
 
-All functions of the compression library are documented in the file zlib.h
-(volunteer to write man pages welcome, contact zlib@gzip.org).  Two compiled
+All functions of the compression library are documented in the file ptlibzippy.h
+(volunteer to write man pages welcome, contact ptlibzippy@gzip.org).  Two compiled
 examples are distributed in this package, example and minigzip.  The example_d
-and minigzip_d flavors validate that the zlib1.dll file is working correctly.
+and minigzip_d flavors validate that the ptlibzippy1.dll file is working correctly.
 
-Questions about zlib should be sent to <zlib@gzip.org>.  The zlib home page
+Questions about PTlibzippy should be sent to <ptlibzippy@gzip.org>.  The PTlibzippy home page
 is http://zlib.net/ .  Before reporting a problem, please check this site to
-verify that you have the latest version of zlib; otherwise get the latest
+verify that you have the latest version of PTlibzippy; otherwise get the latest
 version and check whether the problem still exists or not.
 
-PLEASE read DLL_FAQ.txt, and the zlib FAQ http://zlib.net/zlib_faq.html before
+PLEASE read DLL_FAQ.txt, and the PTlibzippy FAQ http://zlib.net/ptlibzippy_faq.html before
 asking for help.
 
 
 Manifest:
 
-The package zlib-0.0.5.1-win32-x86.zip will contain the following files:
+The package ptlibzippy-0.0.5.1-win32-x86.zip will contain the following files:
 
   README-WIN32.txt This document
-  ChangeLog        Changes since previous zlib packages
-  DLL_FAQ.txt      Frequently asked questions about zlib1.dll
-  zlib.5.pdf       Documentation of this library in Adobe Acrobat format
+  ChangeLog        Changes since previous PTlibzippy packages
+  DLL_FAQ.txt      Frequently asked questions about ptlibzippy1.dll
+  ptlibzippy.5.pdf       Documentation of this library in Adobe Acrobat format
 
-  example.exe      A statically-bound example (using zlib.lib, not the dll)
+  example.exe      A statically-bound example (using PTlibzippy.lib, not the dll)
   example.pdb      Symbolic information for debugging example.exe
 
-  example_d.exe    A zlib1.dll bound example (using zdll.lib)
+  example_d.exe    A ptlibzippy1.dll bound example (using zdll.lib)
   example_d.pdb    Symbolic information for debugging example_d.exe
 
-  minigzip.exe     A statically-bound test program (using zlib.lib, not the dll)
+  minigzip.exe     A statically-bound test program (using PTlibzippy.lib, not the dll)
   minigzip.pdb     Symbolic information for debugging minigzip.exe
 
-  minigzip_d.exe   A zlib1.dll bound test program (using zdll.lib)
+  minigzip_d.exe   A ptlibzippy1.dll bound test program (using zdll.lib)
   minigzip_d.pdb   Symbolic information for debugging minigzip_d.exe
 
-  zlib.h           Install these files into the compilers' INCLUDE path to
-  zconf.h          compile programs which use zlib.lib or zdll.lib
+  ptlibzippy.h           Install these files into the compilers' INCLUDE path to
+  ptzippyconf.h          compile programs which use ptlibzippy.lib or zdll.lib
 
   zdll.lib         Install these files into the compilers' LIB path if linking
-  zdll.exp         a compiled program to the zlib1.dll binary
+  zdll.exp         a compiled program to the ptlibzippy1.dll binary
 
-  zlib.lib         Install these files into the compilers' LIB path to link zlib
-  zlib.pdb         into compiled programs, without zlib1.dll runtime dependency
-                   (zlib.pdb provides debugging info to the compile time linker)
+  ptlibzippy.lib         Install these files into the compilers' LIB path to link PTlibzippy
+  ptlibzippy.pdb         into compiled programs, without ptlibzippy1.dll runtime dependency
+                   (ptlibzippy.pdb provides debugging info to the compile time linker)
 
-  zlib1.dll        Install this binary shared library into the system PATH, or
+  ptlibzippy1.dll        Install this binary shared library into the system PATH, or
                    the program's runtime directory (where the .exe resides)
-  zlib1.pdb        Install in the same directory as zlib1.dll, in order to debug
+  ptlibzippy1.pdb        Install in the same directory as ptlibzippy1.dll, in order to debug
                    an application crash using WinDbg or similar tools.
 
 All .pdb files above are entirely optional, but are very useful to a developer
 attempting to diagnose program misbehavior or a crash.  Many additional
-important files for developers can be found in the zlib127.zip source package
+important files for developers can be found in the ptlibzippy.zip source package
 available from http://zlib.net/ - review that package's README file for details.
 
 
 Acknowledgments:
 
-The deflate format used by zlib was defined by Phil Katz.  The deflate and
-zlib specifications were written by L.  Peter Deutsch.  Thanks to all the
-people who reported problems and suggested various improvements in zlib; they
+The deflate format used by PTlibzippy was defined by Phil Katz.  The deflate and
+PTlibzippy specifications were written by L.  Peter Deutsch.  Thanks to all the
+people who reported problems and suggested various improvements in PTlibzippy; they
 are too numerous to cite here.
 
 
@@ -93,7 +93,7 @@ Copyright notice:
   Jean-loup Gailly        Mark Adler
   jloup@gzip.org          madler@alumni.caltech.edu
 
-If you use the zlib library in a product, we would appreciate *not* receiving
+If you use the PTlibzippy library in a product, we would appreciate *not* receiving
 lengthy legal documents to sign.  The sources are provided for free but without
 warranty of any kind.  The library has been entirely written by Jean-loup
 Gailly and Mark Adler; it does not include third-party code.

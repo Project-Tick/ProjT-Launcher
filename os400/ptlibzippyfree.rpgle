@@ -1,5 +1,5 @@
 **free
-//  ZLIB.INC - Interface to the general purpose compression library
+//  PTLIBZIPPY.INC - Interface to the general purpose compression library
 
 //  ILE RPG400 version by Patrick Monnerat, DATASPHERE.
 //  Version 1.3.1.1
@@ -12,10 +12,10 @@
 //         the package version string and the stream control structure.
 //         size. This is needed because RPG lacks some macro feature.
 //         Call these procedures as:
-//             inflateInit(...: ZLIB_VERSION: %size(z_stream))
+//             inflateInit(...: PTLIBZIPPY_VERSION: %size(z_stream))
 
-/if not defined(ZLIB_H_)
-/define ZLIB_H_
+/if not defined(PTLIBZIPPY_H_)
+/define PTLIBZIPPY_H_
 
 //*************************************************************************
 //                               Constants
@@ -23,12 +23,12 @@
 
 //  Versioning information.
 
-Dcl-C ZLIB_VERSION '1.3.1.1';
-Dcl-C ZLIB_VERNUM X'12A0';
-Dcl-C ZLIB_VER_MAJOR 1;
-Dcl-C ZLIB_VER_MINOR 3;
-Dcl-C ZLIB_VER_REVISION 1;
-Dcl-C ZLIB_VER_SUBREVISION 1;
+Dcl-C PTLIBZIPPY_VERSION '1.3.1.1';
+Dcl-C PTLIBZIPPY_VERNUM X'12A0';
+Dcl-C PTLIBZIPPY_VER_MAJOR 1;
+Dcl-C PTLIBZIPPY_VER_MINOR 3;
+Dcl-C PTLIBZIPPY_VER_REVISION 1;
+Dcl-C PTLIBZIPPY_VER_SUBREVISION 1;
 
 //  Other equates.
 
@@ -317,7 +317,7 @@ End-Pr;
 //                        Basic function prototypes
 //*************************************************************************
 
-Dcl-Pr zlibVersion Pointer Extproc('zlibVersion'); // Version string
+Dcl-Pr ptlibzippyVersion Pointer Extproc('ptlibzippyVersion'); // Version string
 End-Pr;
 
 Dcl-Pr deflateInit Int(10) Extproc('deflateInit_'); // Init. compression
@@ -509,7 +509,7 @@ Dcl-Pr inflateBackEnd Int(10) Extproc('inflateBackend');
     strm Like(z_stream); // Expansion stream
 End-Pr;
 
-Dcl-Pr zlibCompileFlags Uns(10) Extproc('zlibCompileFlags') End-Pr;
+Dcl-Pr ptlibzippyCompileFlags Uns(10) Extproc('ptlibzippyCompileFlags') End-Pr;
 
 //*************************************************************************
 //                        Checksum function prototypes
@@ -555,7 +555,7 @@ End-Pr;
 //                     Miscellaneous function prototypes
 //*************************************************************************
 
-Dcl-Pr zError Pointer Extproc('zError'); // Error string
+Dcl-Pr ptError Pointer Extproc('ptError'); // Error string
     err Int(10) Value; // Error code
 End-Pr;
 

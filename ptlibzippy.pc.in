@@ -4,10 +4,10 @@ libdir=@libdir@
 sharedlibdir=@sharedlibdir@
 includedir=@includedir@
 
-Name: zlib
-Description: zlib compression library
+Name: PTlibzippy
+Description: PTlibzippy compression library
 Version: @VERSION@
 
 Requires:
-Libs: -L${libdir} -L${sharedlibdir} -lz
+Libs: -L${libdir} -L${sharedlibdir} -lptlibzippy
 Cflags: -I${includedir}

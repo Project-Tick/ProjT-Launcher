@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 
-namespace DotZLib
+namespace DotPTLib
 {
     #region ChecksumGeneratorBase
     /// <summary>
@@ -105,7 +105,7 @@ namespace DotZLib
     {
         #region DLL imports
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
         private static extern uint crc32(uint crc, int data, uint length);
 
         #endregion
@@ -156,7 +156,7 @@ namespace DotZLib
     {
         #region DLL imports
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
         private static extern uint adler32(uint adler, int data, uint length);
 
         #endregion

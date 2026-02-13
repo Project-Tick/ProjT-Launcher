@@ -1,7 +1,7 @@
 /* infback.c -- inflate using a call-back interface
  * Copyright (C) 1995-2025 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 /*
@@ -11,7 +11,7 @@
    inflate_fast() can be used with either inflate.c or infback.c.
  */
 
-#include "zutil.h"
+#include "ptzippyutil.h"
 #include "inftrees.h"
 #include "inflate.h"
 #include "inffast.h"
@@ -28,7 +28,7 @@ int ZEXPORT inflateBackInit_(z_streamp strm, int windowBits,
                              int stream_size) {
     struct inflate_state FAR *state;
 
-    if (version == Z_NULL || version[0] != ZLIB_VERSION[0] ||
+    if (version == Z_NULL || version[0] != PTLIBZIPPY_VERSION[0] ||
         stream_size != (int)(sizeof(z_stream)))
         return Z_VERSION_ERROR;
     if (strm == Z_NULL || window == Z_NULL ||

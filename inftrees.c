@@ -1,7 +1,7 @@
 /* inftrees.c -- generate Huffman trees for efficient decoding
  * Copyright (C) 1995-2025 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 #ifdef MAKEFIXED
@@ -13,7 +13,7 @@
 #  define Z_ONCE
 #endif
 
-#include "zutil.h"
+#include "ptzippyutil.h"
 #include "inftrees.h"
 #include "inflate.h"
 
@@ -40,7 +40,7 @@ const char inflate_copyright[] =
    table index bits.  It will differ if the request is greater than the
    longest code or if it is less than the shortest code.
  */
-int ZLIB_INTERNAL inflate_table(codetype type, unsigned short FAR *lens,
+int PTLIBZIPPY_INTERNAL inflate_table(codetype type, unsigned short FAR *lens,
                                 unsigned codes, code FAR * FAR *table,
                                 unsigned FAR *bits, unsigned short FAR *work) {
     unsigned len;               /* a code's length in bits */
@@ -377,9 +377,9 @@ void inflate_fixed(struct inflate_state FAR *state) {
    Write out the inffixed.h that will be #include'd above.  Defining MAKEFIXED
    also defines BUILDFIXED, so the tables are built on the fly.  main() writes
    those tables to stdout, which would directed to inffixed.h. Compile this
-   along with zutil.c:
+   along with ptzippyutil.c:
 
-       cc -DMAKEFIXED -o fix inftrees.c zutil.c
+       cc -DMAKEFIXED -o fix inftrees.c ptzippyutil.c
        ./fix > inffixed.h
  */
 int main(void) {
@@ -393,7 +393,7 @@ int main(void) {
     puts("");
     puts("/* WARNING: this file should *not* be used by applications.");
     puts("   It is part of the implementation of this library and is");
-    puts("   subject to change. Applications should only use zlib.h.");
+    puts("   subject to change. Applications should only use ptlibzippy.h.");
     puts(" */");
     puts("");
     size = 1U << 9;

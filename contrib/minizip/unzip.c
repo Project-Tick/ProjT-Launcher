@@ -1,8 +1,8 @@
-/* unzip.c -- IO for uncompress .zip files using zlib
+/* unzip.c -- IO for uncompress .zip files using PTlibzippy
    Version 1.1, February 14h, 2010
-   part of the MiniZip project - ( http://www.winimage.com/zLibDll/minizip.html )
+   part of the MiniZip project - ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
-         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/zLibDll/minizip.html )
+         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
          Modifications of Unzip for Zip64
          Copyright (C) 2007-2008 Even Rouault
@@ -68,7 +68,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "zlib.h"
+#include "ptlibzippy.h"
 #include "unzip.h"
 
 #ifdef STDC
@@ -111,7 +111,7 @@
 
 
 const char unz_copyright[] =
-   " unzip 1.01 Copyright 1998-2004 Gilles Vollant - http://www.winimage.com/zLibDll; Copyright (C) 2026 Project Tick";
+   " unzip 1.01 Copyright 1998-2004 Gilles Vollant - http://www.winimage.com/ptlibzippyDll; Copyright (C) 2026 Project Tick";
 
 /* unz_file_info64_internal contain internal info about a file in zipfile*/
 typedef struct unz_file_info64_internal_s
@@ -125,10 +125,10 @@ typedef struct unz_file_info64_internal_s
 typedef struct
 {
     char  *read_buffer;         /* internal buffer for compressed data */
-    z_stream stream;            /* zLib stream structure for inflate */
+    z_stream stream;            /* ptLib stream structure for inflate */
 
 #ifdef HAVE_BZIP2
-    bz_stream bstream;          /* bzLib stream structure for bziped */
+    bz_stream bstream;          /* bptLib stream structure for bziped */
 #endif
 
     ZPOS64_T pos_in_zipfile;       /* position in byte on the zipfile, for fseek*/
@@ -143,7 +143,7 @@ typedef struct
     uLong crc32_wait;           /* crc32 we must obtain after decompress all */
     ZPOS64_T rest_read_compressed; /* number of byte to be decompressed */
     ZPOS64_T rest_read_uncompressed;/*number of byte to be obtained after decomp*/
-    zlib_filefunc64_32_def z_filefunc;
+    ptlibzippy_filefunc64_32_def z_filefunc;
     voidpf filestream;        /* io structure of the zipfile */
     uLong compression_method;   /* compression method (0==store) */
     ZPOS64_T byte_before_the_zipfile;/* byte before the zipfile, (>0 for sfx)*/
@@ -155,7 +155,7 @@ typedef struct
 */
 typedef struct
 {
-    zlib_filefunc64_32_def z_filefunc;
+    ptlibzippy_filefunc64_32_def z_filefunc;
     int is64bitOpenFunction;
     voidpf filestream;        /* io structure of the zipfile */
     unz_global_info64 gi;       /* public global information */
@@ -193,11 +193,11 @@ typedef struct
    Reads a long in LSB order from the given gz_stream. Sets
 */
 
-local int unz64local_getShort(const zlib_filefunc64_32_def* pzlib_filefunc_def,
+local int unz64local_getShort(const ptlibzippy_filefunc64_32_def* pptlibzippy_filefunc_def,
                               voidpf filestream,
                               uLong *pX) {
     unsigned char c[2];
-    int err = (int)ZREAD64(*pzlib_filefunc_def,filestream,c,2);
+    int err = (int)ZREAD64(*pptlibzippy_filefunc_def,filestream,c,2);
     if (err==2)
     {
         *pX = c[0] | ((uLong)c[1] << 8);
@@ -206,18 +206,18 @@ local int unz64local_getShort(const zlib_filefunc64_32_def* pzlib_filefunc_def,
     else
     {
         *pX = 0;
-        if (ZERROR64(*pzlib_filefunc_def,filestream))
+        if (ZERROR64(*pptlibzippy_filefunc_def,filestream))
             return UNZ_ERRNO;
         else
             return UNZ_EOF;
     }
 }
 
-local int unz64local_getLong(const zlib_filefunc64_32_def* pzlib_filefunc_def,
+local int unz64local_getLong(const ptlibzippy_filefunc64_32_def* pptlibzippy_filefunc_def,
                              voidpf filestream,
                              uLong *pX) {
     unsigned char c[4];
-    int err = (int)ZREAD64(*pzlib_filefunc_def,filestream,c,4);
+    int err = (int)ZREAD64(*pptlibzippy_filefunc_def,filestream,c,4);
     if (err==4)
     {
         *pX = c[0] | ((uLong)c[1] << 8) | ((uLong)c[2] << 16) | ((uLong)c[3] << 24);
@@ -226,7 +226,7 @@ local int unz64local_getLong(const zlib_filefunc64_32_def* pzlib_filefunc_def,
     else
     {
         *pX = 0;
-        if (ZERROR64(*pzlib_filefunc_def,filestream))
+        if (ZERROR64(*pptlibzippy_filefunc_def,filestream))
             return UNZ_ERRNO;
         else
             return UNZ_EOF;
@@ -234,11 +234,11 @@ local int unz64local_getLong(const zlib_filefunc64_32_def* pzlib_filefunc_def,
 }
 
 
-local int unz64local_getLong64(const zlib_filefunc64_32_def* pzlib_filefunc_def,
+local int unz64local_getLong64(const ptlibzippy_filefunc64_32_def* pptlibzippy_filefunc_def,
                                voidpf filestream,
                                ZPOS64_T *pX) {
     unsigned char c[8];
-    int err = (int)ZREAD64(*pzlib_filefunc_def,filestream,c,8);
+    int err = (int)ZREAD64(*pptlibzippy_filefunc_def,filestream,c,8);
     if (err==8)
     {
         *pX = c[0] | ((ZPOS64_T)c[1] << 8) | ((ZPOS64_T)c[2] << 16) | ((ZPOS64_T)c[3] << 24)
@@ -248,7 +248,7 @@ local int unz64local_getLong64(const zlib_filefunc64_32_def* pzlib_filefunc_def,
     else
     {
         *pX = 0;
-        if (ZERROR64(*pzlib_filefunc_def,filestream))
+        if (ZERROR64(*pptlibzippy_filefunc_def,filestream))
             return UNZ_ERRNO;
         else
             return UNZ_EOF;
@@ -320,18 +320,18 @@ extern int ZEXPORT unzStringFileNameCompare (const char*  fileName1,
   Locate the Central directory of a zipfile (at the end, just before
     the global comment)
 */
-local ZPOS64_T unz64local_SearchCentralDir(const zlib_filefunc64_32_def* pzlib_filefunc_def, voidpf filestream) {
+local ZPOS64_T unz64local_SearchCentralDir(const ptlibzippy_filefunc64_32_def* pptlibzippy_filefunc_def, voidpf filestream) {
     unsigned char* buf;
     ZPOS64_T uSizeFile;
     ZPOS64_T uBackRead;
     ZPOS64_T uMaxBack=0xffff; /* maximum size of global comment */
     ZPOS64_T uPosFound=CENTRALDIRINVALID;
 
-    if (ZSEEK64(*pzlib_filefunc_def,filestream,0,ZLIB_FILEFUNC_SEEK_END) != 0)
+    if (ZSEEK64(*pptlibzippy_filefunc_def,filestream,0,PTLIBZIPPY_FILEFUNC_SEEK_END) != 0)
         return CENTRALDIRINVALID;
 
 
-    uSizeFile = ZTELL64(*pzlib_filefunc_def,filestream);
+    uSizeFile = ZTELL64(*pptlibzippy_filefunc_def,filestream);
 
     if (uMaxBack>uSizeFile)
         uMaxBack = uSizeFile;
@@ -354,10 +354,10 @@ local ZPOS64_T unz64local_SearchCentralDir(const zlib_filefunc64_32_def* pzlib_f
 
         uReadSize = ((BUFREADCOMMENT+4) < (uSizeFile-uReadPos)) ?
                      (BUFREADCOMMENT+4) : (uLong)(uSizeFile-uReadPos);
-        if (ZSEEK64(*pzlib_filefunc_def,filestream,uReadPos,ZLIB_FILEFUNC_SEEK_SET)!=0)
+        if (ZSEEK64(*pptlibzippy_filefunc_def,filestream,uReadPos,PTLIBZIPPY_FILEFUNC_SEEK_SET)!=0)
             break;
 
-        if (ZREAD64(*pzlib_filefunc_def,filestream,buf,uReadSize)!=uReadSize)
+        if (ZREAD64(*pptlibzippy_filefunc_def,filestream,buf,uReadSize)!=uReadSize)
             break;
 
         for (i=(int)uReadSize-3; (i--)>0;)
@@ -380,7 +380,7 @@ local ZPOS64_T unz64local_SearchCentralDir(const zlib_filefunc64_32_def* pzlib_f
   Locate the Central directory 64 of a zipfile (at the end, just before
     the global comment)
 */
-local ZPOS64_T unz64local_SearchCentralDir64(const zlib_filefunc64_32_def* pzlib_filefunc_def,
+local ZPOS64_T unz64local_SearchCentralDir64(const ptlibzippy_filefunc64_32_def* pptlibzippy_filefunc_def,
                                              voidpf filestream) {
     unsigned char* buf;
     ZPOS64_T uSizeFile;
@@ -390,11 +390,11 @@ local ZPOS64_T unz64local_SearchCentralDir64(const zlib_filefunc64_32_def* pzlib
     uLong uL;
                 ZPOS64_T relativeOffset;
 
-    if (ZSEEK64(*pzlib_filefunc_def,filestream,0,ZLIB_FILEFUNC_SEEK_END) != 0)
+    if (ZSEEK64(*pptlibzippy_filefunc_def,filestream,0,PTLIBZIPPY_FILEFUNC_SEEK_END) != 0)
         return CENTRALDIRINVALID;
 
 
-    uSizeFile = ZTELL64(*pzlib_filefunc_def,filestream);
+    uSizeFile = ZTELL64(*pptlibzippy_filefunc_def,filestream);
 
     if (uMaxBack>uSizeFile)
         uMaxBack = uSizeFile;
@@ -417,10 +417,10 @@ local ZPOS64_T unz64local_SearchCentralDir64(const zlib_filefunc64_32_def* pzlib
 
         uReadSize = ((BUFREADCOMMENT+4) < (uSizeFile-uReadPos)) ?
                      (BUFREADCOMMENT+4) : (uLong)(uSizeFile-uReadPos);
-        if (ZSEEK64(*pzlib_filefunc_def,filestream,uReadPos,ZLIB_FILEFUNC_SEEK_SET)!=0)
+        if (ZSEEK64(*pptlibzippy_filefunc_def,filestream,uReadPos,PTLIBZIPPY_FILEFUNC_SEEK_SET)!=0)
             break;
 
-        if (ZREAD64(*pzlib_filefunc_def,filestream,buf,uReadSize)!=uReadSize)
+        if (ZREAD64(*pptlibzippy_filefunc_def,filestream,buf,uReadSize)!=uReadSize)
             break;
 
         for (i=(int)uReadSize-3; (i--)>0;)
@@ -439,35 +439,35 @@ local ZPOS64_T unz64local_SearchCentralDir64(const zlib_filefunc64_32_def* pzlib
         return CENTRALDIRINVALID;
 
     /* Zip64 end of central directory locator */
-    if (ZSEEK64(*pzlib_filefunc_def,filestream, uPosFound,ZLIB_FILEFUNC_SEEK_SET)!=0)
+    if (ZSEEK64(*pptlibzippy_filefunc_def,filestream, uPosFound,PTLIBZIPPY_FILEFUNC_SEEK_SET)!=0)
         return CENTRALDIRINVALID;
 
     /* the signature, already checked */
-    if (unz64local_getLong(pzlib_filefunc_def,filestream,&uL)!=UNZ_OK)
+    if (unz64local_getLong(pptlibzippy_filefunc_def,filestream,&uL)!=UNZ_OK)
         return CENTRALDIRINVALID;
 
     /* number of the disk with the start of the zip64 end of central directory */
-    if (unz64local_getLong(pzlib_filefunc_def,filestream,&uL)!=UNZ_OK)
+    if (unz64local_getLong(pptlibzippy_filefunc_def,filestream,&uL)!=UNZ_OK)
         return CENTRALDIRINVALID;
     if (uL != 0)
         return CENTRALDIRINVALID;
 
     /* relative offset of the zip64 end of central directory record */
-    if (unz64local_getLong64(pzlib_filefunc_def,filestream,&relativeOffset)!=UNZ_OK)
+    if (unz64local_getLong64(pptlibzippy_filefunc_def,filestream,&relativeOffset)!=UNZ_OK)
         return CENTRALDIRINVALID;
 
     /* total number of disks */
-    if (unz64local_getLong(pzlib_filefunc_def,filestream,&uL)!=UNZ_OK)
+    if (unz64local_getLong(pptlibzippy_filefunc_def,filestream,&uL)!=UNZ_OK)
         return CENTRALDIRINVALID;
     if (uL != 1)
         return CENTRALDIRINVALID;
 
     /* Goto end of central directory record */
-    if (ZSEEK64(*pzlib_filefunc_def,filestream, relativeOffset,ZLIB_FILEFUNC_SEEK_SET)!=0)
+    if (ZSEEK64(*pptlibzippy_filefunc_def,filestream, relativeOffset,PTLIBZIPPY_FILEFUNC_SEEK_SET)!=0)
         return CENTRALDIRINVALID;
 
      /* the signature */
-    if (unz64local_getLong(pzlib_filefunc_def,filestream,&uL)!=UNZ_OK)
+    if (unz64local_getLong(pptlibzippy_filefunc_def,filestream,&uL)!=UNZ_OK)
         return CENTRALDIRINVALID;
 
     if (uL != 0x06064b50)
@@ -478,15 +478,15 @@ local ZPOS64_T unz64local_SearchCentralDir64(const zlib_filefunc64_32_def* pzlib
 
 /*
   Open a Zip file. path contain the full pathname (by example,
-     on a Windows NT computer "c:\\test\\zlib114.zip" or on an Unix computer
-     "zlib/zlib114.zip".
+     on a Windows NT computer "c:\\test\\ptlibzippy114.zip" or on an Unix computer
+     "ptlibzippy/ptlibzippy114.zip".
      If the zipfile cannot be opened (file doesn't exist or in not valid), the
        return value is NULL.
      Else, the return value is a unzFile Handle, usable with other function
        of this unzip package.
 */
 local unzFile unzOpenInternal(const void *path,
-                              zlib_filefunc64_32_def* pzlib_filefunc64_32_def,
+                              ptlibzippy_filefunc64_32_def* pptlibzippy_filefunc64_32_def,
                               int is64bitOpenFunction) {
     unz64_s us;
     unz64_s *s;
@@ -508,18 +508,18 @@ local unzFile unzOpenInternal(const void *path,
 
     us.z_filefunc.zseek32_file = NULL;
     us.z_filefunc.ztell32_file = NULL;
-    if (pzlib_filefunc64_32_def==NULL)
+    if (pptlibzippy_filefunc64_32_def==NULL)
         fill_fopen64_filefunc(&us.z_filefunc.zfile_func64);
     else
-        us.z_filefunc = *pzlib_filefunc64_32_def;
+        us.z_filefunc = *pptlibzippy_filefunc64_32_def;
     us.is64bitOpenFunction = is64bitOpenFunction;
 
 
 
     us.filestream = ZOPEN64(us.z_filefunc,
                                                  path,
-                                                 ZLIB_FILEFUNC_MODE_READ |
-                                                 ZLIB_FILEFUNC_MODE_EXISTING);
+                                                 PTLIBZIPPY_FILEFUNC_MODE_READ |
+                                                 PTLIBZIPPY_FILEFUNC_MODE_EXISTING);
     if (us.filestream==NULL)
         return NULL;
 
@@ -532,7 +532,7 @@ local unzFile unzOpenInternal(const void *path,
         us.isZip64 = 1;
 
         if (ZSEEK64(us.z_filefunc, us.filestream,
-                                      central_pos,ZLIB_FILEFUNC_SEEK_SET)!=0)
+                                      central_pos,PTLIBZIPPY_FILEFUNC_SEEK_SET)!=0)
         err=UNZ_ERRNO;
 
         /* the signature, already checked */
@@ -592,7 +592,7 @@ local unzFile unzOpenInternal(const void *path,
         us.isZip64 = 0;
 
         if (ZSEEK64(us.z_filefunc, us.filestream,
-                                        central_pos,ZLIB_FILEFUNC_SEEK_SET)!=0)
+                                        central_pos,PTLIBZIPPY_FILEFUNC_SEEK_SET)!=0)
             err=UNZ_ERRNO;
 
         /* the signature, already checked */
@@ -666,27 +666,27 @@ local unzFile unzOpenInternal(const void *path,
 
 
 extern unzFile ZEXPORT unzOpen2(const char *path,
-                                zlib_filefunc_def* pzlib_filefunc32_def) {
-    if (pzlib_filefunc32_def != NULL)
+                                ptlibzippy_filefunc_def* pptlibzippy_filefunc32_def) {
+    if (pptlibzippy_filefunc32_def != NULL)
     {
-        zlib_filefunc64_32_def zlib_filefunc64_32_def_fill;
-        fill_zlib_filefunc64_32_def_from_filefunc32(&zlib_filefunc64_32_def_fill,pzlib_filefunc32_def);
-        return unzOpenInternal(path, &zlib_filefunc64_32_def_fill, 0);
+        ptlibzippy_filefunc64_32_def ptlibzippy_filefunc64_32_def_fill;
+        fill_ptlibzippy_filefunc64_32_def_from_filefunc32(&ptlibzippy_filefunc64_32_def_fill,pptlibzippy_filefunc32_def);
+        return unzOpenInternal(path, &ptlibzippy_filefunc64_32_def_fill, 0);
     }
     else
         return unzOpenInternal(path, NULL, 0);
 }
 
 extern unzFile ZEXPORT unzOpen2_64(const void *path,
-                                   zlib_filefunc64_def* pzlib_filefunc_def) {
-    if (pzlib_filefunc_def != NULL)
+                                   ptlibzippy_filefunc64_def* pptlibzippy_filefunc_def) {
+    if (pptlibzippy_filefunc_def != NULL)
     {
-        zlib_filefunc64_32_def zlib_filefunc64_32_def_fill;
-        zlib_filefunc64_32_def_fill.zfile_func64 = *pzlib_filefunc_def;
-        zlib_filefunc64_32_def_fill.zopen32_file = NULL;
-        zlib_filefunc64_32_def_fill.ztell32_file = NULL;
-        zlib_filefunc64_32_def_fill.zseek32_file = NULL;
-        return unzOpenInternal(path, &zlib_filefunc64_32_def_fill, 1);
+        ptlibzippy_filefunc64_32_def ptlibzippy_filefunc64_32_def_fill;
+        ptlibzippy_filefunc64_32_def_fill.zfile_func64 = *pptlibzippy_filefunc_def;
+        ptlibzippy_filefunc64_32_def_fill.zopen32_file = NULL;
+        ptlibzippy_filefunc64_32_def_fill.ztell32_file = NULL;
+        ptlibzippy_filefunc64_32_def_fill.zseek32_file = NULL;
+        return unzOpenInternal(path, &ptlibzippy_filefunc64_32_def_fill, 1);
     }
     else
         return unzOpenInternal(path, NULL, 1);
@@ -784,7 +784,7 @@ local int unz64local_GetCurrentFileInfoInternal(unzFile file,
     s=(unz64_s*)file;
     if (ZSEEK64(s->z_filefunc, s->filestream,
               s->pos_in_central_dir+s->byte_before_the_zipfile,
-              ZLIB_FILEFUNC_SEEK_SET)!=0)
+              PTLIBZIPPY_FILEFUNC_SEEK_SET)!=0)
         err=UNZ_ERRNO;
 
 
@@ -877,7 +877,7 @@ local int unz64local_GetCurrentFileInfoInternal(unzFile file,
 
         if (lSeek!=0)
         {
-            if (ZSEEK64(s->z_filefunc, s->filestream,(ZPOS64_T)lSeek,ZLIB_FILEFUNC_SEEK_CUR)==0)
+            if (ZSEEK64(s->z_filefunc, s->filestream,(ZPOS64_T)lSeek,PTLIBZIPPY_FILEFUNC_SEEK_CUR)==0)
                 lSeek=0;
             else
                 err=UNZ_ERRNO;
@@ -902,7 +902,7 @@ local int unz64local_GetCurrentFileInfoInternal(unzFile file,
 
         if (lSeek!=0)
         {
-            if (ZSEEK64(s->z_filefunc, s->filestream,(ZPOS64_T)lSeek,ZLIB_FILEFUNC_SEEK_CUR)==0)
+            if (ZSEEK64(s->z_filefunc, s->filestream,(ZPOS64_T)lSeek,PTLIBZIPPY_FILEFUNC_SEEK_CUR)==0)
                 lSeek=0;
             else
                 err=UNZ_ERRNO;
@@ -951,7 +951,7 @@ local int unz64local_GetCurrentFileInfoInternal(unzFile file,
             }
             else
             {
-                if (ZSEEK64(s->z_filefunc, s->filestream,dataSize,ZLIB_FILEFUNC_SEEK_CUR)!=0)
+                if (ZSEEK64(s->z_filefunc, s->filestream,dataSize,PTLIBZIPPY_FILEFUNC_SEEK_CUR)!=0)
                     err=UNZ_ERRNO;
             }
 
@@ -972,7 +972,7 @@ local int unz64local_GetCurrentFileInfoInternal(unzFile file,
 
         if (lSeek!=0)
         {
-            if (ZSEEK64(s->z_filefunc, s->filestream,(ZPOS64_T)lSeek,ZLIB_FILEFUNC_SEEK_CUR)==0)
+            if (ZSEEK64(s->z_filefunc, s->filestream,(ZPOS64_T)lSeek,PTLIBZIPPY_FILEFUNC_SEEK_CUR)==0)
                 lSeek=0;
             else
                 err=UNZ_ERRNO;
@@ -1264,7 +1264,7 @@ local int unz64local_CheckCurrentFileCoherencyHeader(unz64_s* s, uInt* piSizeVar
     *psize_local_extrafield = 0;
 
     if (ZSEEK64(s->z_filefunc, s->filestream,s->cur_file_info_internal.offset_curfile +
-                                s->byte_before_the_zipfile,ZLIB_FILEFUNC_SEEK_SET)!=0)
+                                s->byte_before_the_zipfile,PTLIBZIPPY_FILEFUNC_SEEK_SET)!=0)
         return UNZ_ERRNO;
 
 
@@ -1458,7 +1458,7 @@ extern int ZEXPORT unzOpenCurrentFile3(unzFile file, int* method,
         free(pfile_in_zip_read_info);
         return err;
       }
-        /* windowBits is passed < 0 to tell that there is no zlib header.
+        /* windowBits is passed < 0 to tell that there is no PTlibzippy header.
          * Note that in this case inflate *requires* an extra "dummy" byte
          * after the compressed stream in order to complete decompression and
          * return Z_STREAM_END.
@@ -1544,7 +1544,7 @@ extern ZPOS64_T ZEXPORT unzGetCurrentFileZStreamPos64(unzFile file) {
   return the number of byte copied if some bytes are copied
   return 0 if the end of file was reached
   return <0 with error code if there is an error
-    (UNZ_ERRNO for IO error, or zLib error for uncompress error)
+    (UNZ_ERRNO for IO error, or ptLib error for uncompress error)
 */
 extern int ZEXPORT unzReadCurrentFile(unzFile file, voidp buf, unsigned len) {
     int err=UNZ_OK;
@@ -1595,7 +1595,7 @@ extern int ZEXPORT unzReadCurrentFile(unzFile file, voidp buf, unsigned len) {
                       pfile_in_zip_read_info->filestream,
                       pfile_in_zip_read_info->pos_in_zipfile +
                          pfile_in_zip_read_info->byte_before_the_zipfile,
-                         ZLIB_FILEFUNC_SEEK_SET)!=0)
+                         PTLIBZIPPY_FILEFUNC_SEEK_SET)!=0)
                 return UNZ_ERRNO;
             if (ZREAD64(pfile_in_zip_read_info->z_filefunc,
                       pfile_in_zip_read_info->filestream,
@@ -1849,7 +1849,7 @@ extern int ZEXPORT unzGetLocalExtrafield(unzFile file, voidp buf, unsigned len) 
               pfile_in_zip_read_info->filestream,
               pfile_in_zip_read_info->offset_local_extrafield +
               pfile_in_zip_read_info->pos_local_extrafield,
-              ZLIB_FILEFUNC_SEEK_SET)!=0)
+              PTLIBZIPPY_FILEFUNC_SEEK_SET)!=0)
         return UNZ_ERRNO;
 
     if (ZREAD64(pfile_in_zip_read_info->z_filefunc,
@@ -1921,7 +1921,7 @@ extern int ZEXPORT unzGetGlobalComment(unzFile file, char * szComment, uLong uSi
     if (uReadThis>s->gi.size_comment)
         uReadThis = s->gi.size_comment;
 
-    if (ZSEEK64(s->z_filefunc,s->filestream,s->central_pos+22,ZLIB_FILEFUNC_SEEK_SET)!=0)
+    if (ZSEEK64(s->z_filefunc,s->filestream,s->central_pos+22,PTLIBZIPPY_FILEFUNC_SEEK_SET)!=0)
         return UNZ_ERRNO;
 
     if (uReadThis>0)

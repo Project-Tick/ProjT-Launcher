@@ -2,7 +2,7 @@ Possible upgrades to gzfilebuf:
 
 - The ability to do putback (e.g. putbackfail)
 
-- The ability to seek (zlib supports this, but could be slow/tricky)
+- The ability to seek (PTlibzippy supports this, but could be slow/tricky)
 
 - Simultaneous read/write access (does it make sense?)
 

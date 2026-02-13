@@ -1,22 +1,22 @@
-# if we are built from with zlib, use this path's)
-if(DEFINED ZLIB_BUILD_IOSTREAM3)
-    set(WORK_DIR ${zlib_BINARY_DIR})
-    set(inst_setup zlib_install)
-else(DEFINED ZLIB_BUILD_IOSTREAM3)
+# if we are built from with PTlibzippy, use this path's)
+if(DEFINED PTLIBZIPPY_BUILD_IOSTREAM3)
+    set(WORK_DIR ${ptlibzippy_BINARY_DIR})
+    set(inst_setup ptlibzippy_install)
+else(DEFINED PTLIBZIPPY_BUILD_IOSTREAM3)
     set(WORK_DIR ${iostreamV3_BINARY_DIR})
-    set(inst_setup zlib_iostream3_install)
-    set(ZLIB_ARG "-DZLIB_DIR=${ZLIB_DIR}")
+    set(inst_setup ptlibzippy_iostream3_install)
+    set(PTLIBZIPPY_ARG "-DPTLIBZIPPY_DIR=${PTLIBZIPPY_DIR}")
 
     add_test(
-        NAME zlib_iostream3_install
+        NAME ptlibzippy_iostream3_install
         COMMAND ${CMAKE_COMMAND} --install ${iostreamV3_BINARY_DIR} --prefix
                 ${CMAKE_CURRENT_BINARY_DIR}/test_install --config $<CONFIG>
         WORKING_DIRECTORY ${iostreamV3_BINARY_DIR})
 
-    set_tests_properties(zlib_iostream3_install
+    set_tests_properties(ptlibzippy_iostream3_install
         PROPERTIES
-            FIXTURES_SETUP zlib_iostream3_install)
-endif(DEFINED ZLIB_BUILD_IOSTREAM3)
+            FIXTURES_SETUP ptlibzippy_iostream3_install)
+endif(DEFINED PTLIBZIPPY_BUILD_IOSTREAM3)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/findpackage_test)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/add_subdirectory_test)
@@ -56,7 +56,7 @@ endif(GENERATOR)
 # findpackage_test
 #
 add_test(
-    NAME zlib_iostream3_find_package_configure
+    NAME ptlibzippy_iostream3_find_package_configure
     COMMAND
         ${CMAKE_COMMAND}
         ${PLATFORM}
@@ -64,22 +64,22 @@ add_test(
         -DCMAKE_BUILD_TYPE=$<CONFIG>
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -DCMAKE_INSTALL_PREFIX=${WORK_DIR}/test/test_install ${ZLIB_ARG}
+        -DCMAKE_INSTALL_PREFIX=${WORK_DIR}/test/test_install ${PTLIBZIPPY_ARG}
         --fresh
         -G "${CMAKE_GENERATOR}"
         -S${CMAKE_CURRENT_BINARY_DIR}/findpackage_test)
 
 add_test(
-    NAME zlib_iostream3_find_package_build
+    NAME ptlibzippy_iostream3_find_package_build
     COMMAND ${CMAKE_COMMAND} --build . --config $<CONFIG>
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/findpackage_test_build)
 
-set_tests_properties(zlib_iostream3_find_package_configure
+set_tests_properties(ptlibzippy_iostream3_find_package_configure
     PROPERTIES
         FIXTURES_REQUIRED ${inst_setup}
         FIXTURES_SETUP iostream3_fp_config)
 
-set_tests_properties(zlib_iostream3_find_package_build
+set_tests_properties(ptlibzippy_iostream3_find_package_build
     PROPERTIES
         FIXTURES_REQUIRED iostream3_fp_config)
 
@@ -87,7 +87,7 @@ set_tests_properties(zlib_iostream3_find_package_build
 # add_subdirectory_test
 #
 add_test(
-    NAME zlib_iostream3_add_subdirectory_configure
+    NAME ptlibzippy_iostream3_add_subdirectory_configure
     COMMAND
         ${CMAKE_COMMAND}
         ${PLATFORM}
@@ -96,22 +96,22 @@ add_test(
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
         -DCMAKE_INSTALL_PREFIX=${WORK_DIR}/test/test_install
-        ${ZLIB_ARG}
+        ${PTLIBZIPPY_ARG}
         --fresh
         -G "${CMAKE_GENERATOR}"
         -S${CMAKE_CURRENT_BINARY_DIR}/add_subdirectory_test)
 
 add_test(
-    NAME zlib_iostream3_add_subdirectory_build
+    NAME ptlibzippy_iostream3_add_subdirectory_build
     COMMAND ${CMAKE_COMMAND} --build . --config $<CONFIG>
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/add_subdirectory_test_build)
 
-set_tests_properties(zlib_iostream3_add_subdirectory_configure
+set_tests_properties(ptlibzippy_iostream3_add_subdirectory_configure
     PROPERTIES
         FIXTURES_REQUIRED ${inst_setup}
         FIXTURES_SETUP iostream3as_config)
 
-set_tests_properties(zlib_iostream3_add_subdirectory_build
+set_tests_properties(ptlibzippy_iostream3_add_subdirectory_build
     PROPERTIES
         FIXTURES_REQUIRED iostream3_as_config)
 
@@ -119,29 +119,29 @@ set_tests_properties(zlib_iostream3_add_subdirectory_build
 # add_subdirectory_exclude_test
 #
 add_test(
-    NAME zlib_iostream3_add_subdirectory_exclude_configure
+    NAME ptlibzippy_iostream3_add_subdirectory_exclude_configure
     COMMAND
         ${CMAKE_COMMAND} ${PLATFORM}
         -B${CMAKE_CURRENT_BINARY_DIR}/add_subdirectory_exclude_test_build
         -DCMAKE_BUILD_TYPE=$<CONFIG> -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -DCMAKE_INSTALL_PREFIX=${WORK_DIR}/test/test_install ${ZLIB_ARG}
+        -DCMAKE_INSTALL_PREFIX=${WORK_DIR}/test/test_install ${PTLIBZIPPY_ARG}
         --fresh
         -G "${CMAKE_GENERATOR}"
         -S${CMAKE_CURRENT_BINARY_DIR}/add_subdirectory_exclude_test)
 
 add_test(
-    NAME zlib_iostream3_add_subdirectory_exclude_build
+    NAME ptlibzippy_iostream3_add_subdirectory_exclude_build
     COMMAND ${CMAKE_COMMAND} --build . --config $<CONFIG>
     WORKING_DIRECTORY
         ${CMAKE_CURRENT_BINARY_DIR}/add_subdirectory_exclude_test_build)
 
-set_tests_properties(zlib_iostream3_add_subdirectory_exclude_configure
+set_tests_properties(ptlibzippy_iostream3_add_subdirectory_exclude_configure
     PROPERTIES
         FIXTURES_REQUIRED ${inst_setup}
         FIXTURES_SETUP iostream3_asx_config)
 
-set_tests_properties(zlib_iostream3_add_subdirectory_exclude_build
+set_tests_properties(ptlibzippy_iostream3_add_subdirectory_exclude_build
     PROPERTIES
         FIXTURES_REQUIRED iostream3_asx_config)
 
@@ -149,43 +149,43 @@ set_tests_properties(zlib_iostream3_add_subdirectory_exclude_build
 # findpackage_no_components_test
 #
 add_test(
-    NAME zlib_iostream3_find_package_no_components_configure
+    NAME ptlibzippy_iostream3_find_package_no_components_configure
     COMMAND
         ${CMAKE_COMMAND} ${PLATFORM}
         -B${CMAKE_CURRENT_BINARY_DIR}/findpackage_no_components_test_build
         -DCMAKE_BUILD_TYPE=$<CONFIG> -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -DCMAKE_INSTALL_PREFIX=${WORK_DIR}/test/test_install ${ZLIB_ARG}
+        -DCMAKE_INSTALL_PREFIX=${WORK_DIR}/test/test_install ${PTLIBZIPPY_ARG}
         --fresh
         -G "${CMAKE_GENERATOR}"
         -S${CMAKE_CURRENT_BINARY_DIR}/findpackage_no_components_test)
 
-set_tests_properties(zlib_iostream3_find_package_no_components_configure
+set_tests_properties(ptlibzippy_iostream3_find_package_no_components_configure
     PROPERTIES
         FIXTURES_REQUIRED ${inst_setup})
 
-if(NOT ZLIB_IOSTREAM3_BUILD_SHARED OR NOT ZLIB_IOSTREAM3_BUILD_STATIC)
-    set_tests_properties(zlib_iostream3_find_package_no_components_configure
+if(NOT PTLIBZIPPY_IOSTREAM3_BUILD_SHARED OR NOT PTLIBZIPPY_IOSTREAM3_BUILD_STATIC)
+    set_tests_properties(ptlibzippy_iostream3_find_package_no_components_configure
         PROPERTIES
             WILL_FAIL TRUE)
-endif(NOT ZLIB_IOSTREAM3_BUILD_SHARED OR NOT ZLIB_IOSTREAM3_BUILD_STATIC)
+endif(NOT PTLIBZIPPY_IOSTREAM3_BUILD_SHARED OR NOT PTLIBZIPPY_IOSTREAM3_BUILD_STATIC)
 
 #
 # findpackage_no_components_test
 #
 add_test(
-    NAME zlib_iostream3_find_package_wrong_components_configure
+    NAME ptlibzippy_iostream3_find_package_wrong_components_configure
     COMMAND
         ${CMAKE_COMMAND} ${PLATFORM}
         -B${CMAKE_CURRENT_BINARY_DIR}/findpackage_wrong_components_test_build
         -DCMAKE_BUILD_TYPE=$<CONFIG> -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -DCMAKE_INSTALL_PREFIX=${WORK_DIR}/test/test_install ${ZLIB_ARG}
+        -DCMAKE_INSTALL_PREFIX=${WORK_DIR}/test/test_install ${PTLIBZIPPY_ARG}
         --fresh
         -G "${CMAKE_GENERATOR}"
         -S${CMAKE_CURRENT_BINARY_DIR}/findpackage_wrong_components_test)
 
-set_tests_properties(zlib_iostream3_find_package_wrong_components_configure
+set_tests_properties(ptlibzippy_iostream3_find_package_wrong_components_configure
     PROPERTIES
         FIXTURES_REQUIRED ${inst_setup}
         WILL_FAIL TRUE)
