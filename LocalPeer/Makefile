@@ -33,6 +33,12 @@ qt-modules-y := Core Network
 # Compiler flags
 cxxflags-y := $(QT_CFLAGS)
 
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+MOC_OBJ_EXT := obj
+else
+MOC_OBJ_EXT := o
+endif
+
 # Qt tools - use exported values from mk/qt.mk
 MOC := $(QT_MOC)
 ifeq ($(MOC),)
@@ -47,7 +53,7 @@ endif
 
 # Add moc object to library (will be built by rules below)
 # This must be done before include module.mk
-EXTRA_OBJS := $(OBJDIR)/moc_LocalPeer.o
+EXTRA_OBJS := $(OBJDIR)/moc_LocalPeer.$(MOC_OBJ_EXT)
 
 # MOC rules
 $(OBJDIR)/moc_LocalPeer.cpp: $(CURDIR)/include/LocalPeer.h
@@ -55,9 +61,13 @@ $(OBJDIR)/moc_LocalPeer.cpp: $(CURDIR)/include/LocalPeer.h
 	$(Q)mkdir -p $(dir $@)
 	$(Q)$(MOC) $(MOC_QT_CFLAGS) -I$(srctree)/LocalPeer/include $< -o $@
 
-$(OBJDIR)/moc_LocalPeer.o: $(OBJDIR)/moc_LocalPeer.cpp
+$(OBJDIR)/moc_LocalPeer.$(MOC_OBJ_EXT): $(OBJDIR)/moc_LocalPeer.cpp
 	@echo "  CXX     $<"
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+	$(Q)$(CXX) $(BASE_CXXFLAGS) $(QT_CFLAGS) /I$(srctree)/LocalPeer/include /c /Fo$@ $<
+else
 	$(Q)$(CXX) $(BASE_CXXFLAGS) $(QT_CFLAGS) -I$(srctree)/LocalPeer/include -c -o $@ $<
+endif
 
 # Mark that we have custom STATIC_LIB rule
 CUSTOM_STATIC_LIB_RULE := 1

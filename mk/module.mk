@@ -92,10 +92,6 @@ QT_MODULE_CFLAGS := /I$(QT_PREFIX)/include $(foreach m,$(qt-modules-y),/I$(QT_PR
 endif
 QT_MODULE_LIBS := $(QT_IMPORTED_LIBS)
 else
-ifneq ($(QT_IMPORTED_CFLAGS),)
-QT_MODULE_CFLAGS := $(QT_IMPORTED_CFLAGS)
-QT_MODULE_LIBS := $(QT_IMPORTED_LIBS)
-else
 QT_MODULE_CFLAGS := $(strip $(shell \
 	PKG_CONFIG_PATH=$(QT_PKG_CONFIG_PATH) pkg-config --cflags $(QT_MODULES_PKG) 2>/dev/null || \
 	pkg-config --cflags $(QT_MODULES_PKG) 2>/dev/null))
@@ -148,6 +144,12 @@ ifeq ($(strip $(QT_MODULE_CFLAGS)),)
   else
     QT_MODULE_CFLAGS := -I$(QT_PREFIX)/include $(foreach m,$(qt-modules-y),-I$(QT_PREFIX)/include/Qt$(m))
   endif
+endif
+ifneq ($(strip $(QT_MODULE_CFLAGS)),)
+ifneq ($(strip $(QT_IMPORTED_LIBS)),)
+ifeq ($(strip $(QT_MODULE_LIBS)),)
+QT_MODULE_LIBS := $(QT_IMPORTED_LIBS)
+endif
 endif
 endif
 endif

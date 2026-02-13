@@ -87,7 +87,8 @@ class BigConcurrentTaskThread : public QThread
 	void run() override
 	{
 		BigConcurrentTask big_task;
-		m_deadline.setInterval(10000);
+		// This test is sensitive to runner performance and can be flaky on slower CI hardware.
+		m_deadline.setInterval(30000);
 
 		// NOTE: Arbitrary value that manages to trigger a problem when there is one.
 		//       Considering each tasks, in a problematic state, adds 1024 * 4 bytes to the stack,

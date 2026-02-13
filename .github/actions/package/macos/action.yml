@@ -61,7 +61,39 @@ runs:
         BUILD_DIR: build
         INSTALL_DIR: install
       run: |
-        cmake --install ${{ env.BUILD_DIR }} --config ${{ inputs.build-type }}
+        if [ -f "${{ env.BUILD_DIR }}/cmake_install.cmake" ]; then
+          cmake --install ${{ env.BUILD_DIR }} --config ${{ inputs.build-type }}
+        else
+          make DESTDIR="${{ env.INSTALL_DIR }}" PREFIX=/usr install
+          app_root="${{ env.INSTALL_DIR }}/ProjTLauncher.app"
+          mkdir -p "$app_root/Contents/MacOS" "$app_root/Contents/Resources"
+          cp "${{ env.BUILD_DIR }}/bin/projtlauncher" "$app_root/Contents/MacOS/projtlauncher"
+          cat > "$app_root/Contents/Info.plist" <<'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>CFBundleExecutable</key>
+            <string>projtlauncher</string>
+            <key>CFBundleIdentifier</key>
+            <string>org.projecttick.ProjTLauncher</string>
+            <key>CFBundleName</key>
+            <string>ProjT Launcher</string>
+            <key>CFBundleShortVersionString</key>
+            <string>${{ inputs.version }}</string>
+            <key>CFBundleVersion</key>
+            <string>${{ inputs.version }}</string>
+            <key>LSMinimumSystemVersion</key>
+            <string>11.0</string>
+            <key>NSHighResolutionCapable</key>
+            <true/>
+        </dict>
+        </plist>
+        EOF
+          if [ -f "program_info/org.projecttick.ProjTLauncher.icns" ]; then
+            cp "program_info/org.projecttick.ProjTLauncher.icns" "$app_root/Contents/Resources/"
+          fi
+        fi
 
         cd ${{ env.INSTALL_DIR }}
         chmod +x "ProjTLauncher.app/Contents/MacOS/projtlauncher"

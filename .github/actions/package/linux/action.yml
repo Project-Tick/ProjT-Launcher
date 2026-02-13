@@ -102,6 +102,8 @@ runs:
         cp /usr/lib/"$DEB_HOST_MULTIARCH"/libcrypto.so.* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib/ 2>/dev/null || true
         cp /usr/lib/"$DEB_HOST_MULTIARCH"/libssl.so.* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib/ 2>/dev/null || true
         cp /usr/lib/"$DEB_HOST_MULTIARCH"/libOpenGL.so.0* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib/ 2>/dev/null || true
+        cp -a ${{ env.BUILD_DIR }}/lib/libcmark.so* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib/ 2>/dev/null || true
+        cp -a cmark/build/src/libcmark.so* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib/ 2>/dev/null || true
 
         LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib"
         export LD_LIBRARY_PATH
