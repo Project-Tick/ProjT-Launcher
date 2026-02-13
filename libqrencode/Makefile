@@ -59,8 +59,9 @@ $(LIBDIR)/libqrencode.a: $(OBJECTS)
 	$(Q)$(QRENCODE_AR)
 	@echo "  Built "
 
-$(OBJDIR)/%.$(OBJ_EXT): $(CURDIR)/%.c | $(OBJDIR)
+$(OBJDIR)/%.$(OBJ_EXT): %.c | $(OBJDIR)
 	@echo "  CC      $<"
+	@mkdir -p $(dir $@)
 	$(Q)$(QRENCODE_COMPILE)
 
 $(OBJDIR):
