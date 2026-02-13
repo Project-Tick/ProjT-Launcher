@@ -105,6 +105,9 @@ runs:
         cp -a ${{ env.BUILD_DIR }}/lib/libcmark.so* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib/ 2>/dev/null || true
         cp -a cmark/build/src/libcmark.so* ${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib/ 2>/dev/null || true
 
+        # Exclude Oracle driver from Qt SQL plugins: it requires libclntsh at packaging/runtime.
+        find "${{ runner.workspace }}/Qt/${{ inputs.qt-version }}" -path '*/plugins/sqldrivers/libqsqloci.so*' -delete 2>/dev/null || true
+
         LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${{ env.INSTALL_APPIMAGE_DIR }}/usr/lib"
         export LD_LIBRARY_PATH
 
