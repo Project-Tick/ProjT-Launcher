@@ -20,7 +20,7 @@
  */
 #include "Parsers.hpp"
 #include "Json.h"
-#include "Logging.h"
+#include "minecraft/Logging.h"
 
 #include <QDebug>
 #include <QJsonArray>

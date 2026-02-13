@@ -28,7 +28,7 @@
 #include <QUrlQuery>
 
 #include "Application.h"
-#include "Logging.h"
+#include "minecraft/Logging.h"
 #include "net/NetUtils.h"
 #include "net/RawHeaderProxy.h"
 

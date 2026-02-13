@@ -377,6 +377,8 @@ set(MINECRAFT_SOURCES
     # Minecraft skins
     minecraft/skins/CapeChange.cpp
     minecraft/skins/CapeChange.h
+    minecraft/skins/CapeListModel.cpp
+    minecraft/skins/CapeListModel.h
     minecraft/skins/SkinUpload.cpp
     minecraft/skins/SkinUpload.h
     minecraft/skins/SkinDelete.cpp
@@ -669,8 +671,7 @@ endif()
 
 ######## Logging categories ########
 
-ecm_qt_declare_logging_category(CORE_SOURCES
-    HEADER Logging.h
+ecm_qt_export_logging_category(
     IDENTIFIER authCredentials
     CATEGORY_NAME "launcher.auth.credentials"
     DEFAULT_SEVERITY Warning

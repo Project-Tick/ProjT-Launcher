@@ -30,7 +30,7 @@
 #include <QUuid>
 
 #include "Application.h"
-#include "Logging.h"
+#include "minecraft/Logging.h"
 #include "net/RawHeaderProxy.h"
 
 namespace projt::minecraft::auth
