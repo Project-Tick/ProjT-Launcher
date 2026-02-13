@@ -94,6 +94,95 @@
 				"lhs": "${hostSystemName}",
 				"rhs": "Windows"
 			}
+		},
+		{
+			"name": "base-bundled",
+			"hidden": true,
+			"inherits": [
+				"base"
+			],
+			"cacheVariables": {
+				"Launcher_ENABLE_BUNDLED_QT_TARGETS": "ON",
+				"Launcher_ENABLE_BUNDLED_LLVM_TARGETS": "ON",
+				"Launcher_ENABLE_BUNDLED_GCC_TARGETS": "ON",
+				"Launcher_BUNDLED_BUILD_CONFIG": "Release"
+			}
+		},
+		{
+			"name": "linux-bundled",
+			"displayName": "Linux (Bundled Qt/LLVM/GCC)",
+			"inherits": [
+				"base-bundled"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			}
+		},
+		{
+			"name": "macos-bundled",
+			"displayName": "macOS (Bundled Qt/LLVM/GCC)",
+			"inherits": [
+				"base-bundled"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Darwin"
+			}
+		},
+		{
+			"name": "macos_universal_bundled",
+			"displayName": "macOS (Universal, Bundled Qt/LLVM/GCC)",
+			"inherits": [
+				"macos-bundled"
+			],
+			"cacheVariables": {}
+		},
+		{
+			"name": "macos_intel_bundled",
+			"displayName": "macOS (Intel x86_64, Bundled Qt/LLVM/GCC)",
+			"inherits": [
+				"macos-bundled"
+			],
+			"cacheVariables": {
+				"CMAKE_OSX_ARCHITECTURES": "x86_64"
+			}
+		},
+		{
+			"name": "macos_arm64_bundled",
+			"displayName": "macOS (Apple Silicon arm64, Bundled Qt/LLVM/GCC)",
+			"inherits": [
+				"macos-bundled"
+			],
+			"cacheVariables": {
+				"CMAKE_OSX_ARCHITECTURES": "arm64"
+			}
+		},
+		{
+			"name": "windows_mingw_bundled",
+			"displayName": "Windows (MinGW, Bundled Qt/LLVM/GCC)",
+			"inherits": [
+				"base-bundled"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			}
+		},
+		{
+			"name": "windows_msvc_bundled",
+			"displayName": "Windows (MSVC, Bundled Qt/LLVM/GCC)",
+			"inherits": [
+				"base-bundled"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			}
 		}
 	],
 	"buildPresets": [
@@ -162,6 +251,77 @@
 			"configurePreset": "windows_msvc"
 		},
 		{
+			"name": "linux-bundled",
+			"displayName": "Linux (Bundled Qt/LLVM/GCC)",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			},
+			"configurePreset": "linux-bundled",
+			"targets": ["bundled-all"]
+		},
+		{
+			"name": "macos-bundled",
+			"displayName": "macOS (Bundled Qt/LLVM/GCC)",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Darwin"
+			},
+			"configurePreset": "macos-bundled",
+			"targets": ["bundled-all"]
+		},
+		{
+			"name": "macos_universal_bundled",
+			"displayName": "macOS (Universal, Bundled Qt/LLVM/GCC)",
+			"inherits": [
+				"macos-bundled"
+			],
+			"configurePreset": "macos_universal_bundled",
+			"targets": ["bundled-all"]
+		},
+		{
+			"name": "macos_intel_bundled",
+			"displayName": "macOS (Intel x86_64, Bundled Qt/LLVM/GCC)",
+			"inherits": [
+				"macos-bundled"
+			],
+			"configurePreset": "macos_intel_bundled",
+			"targets": ["bundled-all"]
+		},
+		{
+			"name": "macos_arm64_bundled",
+			"displayName": "macOS (Apple Silicon arm64, Bundled Qt/LLVM/GCC)",
+			"inherits": [
+				"macos-bundled"
+			],
+			"configurePreset": "macos_arm64_bundled",
+			"targets": ["bundled-all"]
+		},
+		{
+			"name": "windows_mingw_bundled",
+			"displayName": "Windows (MinGW, Bundled Qt/LLVM/GCC)",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			},
+			"configurePreset": "windows_mingw_bundled",
+			"targets": ["bundled-all"]
+		},
+		{
+			"name": "windows_msvc_bundled",
+			"displayName": "Windows (MSVC, Bundled Qt/LLVM/GCC)",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			},
+			"configurePreset": "windows_msvc_bundled",
+			"targets": ["bundled-all"]
+		},
+		{
 			"name": "build-linux-base",
 			"hidden": true,
 			"condition": {
@@ -201,7 +361,6 @@
 			},
 			"configurePreset": "windows_msvc"
 		},
-
 		{
 			"name": "linux-launcher",
 			"inherits": ["build-linux-base"],

@@ -326,6 +326,142 @@ set(Launcher_BUILD_PLATFORM "unknown" CACHE STRING "A short string identifying t
 # CI fuzz builds use a reduced target set; skip heavy components and installers when enabled.
 option(LAUNCHER_FUZZ_ONLY "Build only fuzzing targets (skips installers, Java launcher, and desktop integration)" OFF)
 
+# Optional bundled toolchain / Qt builds (off by default).
+option(Launcher_ENABLE_BUNDLED_QT_TARGETS "Expose Qt build targets using sources under qt/" OFF)
+option(Launcher_ENABLE_BUNDLED_LLVM_TARGETS "Expose LLVM/Clang build targets using sources under toolchain/llvm" OFF)
+option(Launcher_ENABLE_BUNDLED_GCC_TARGETS "Expose GCC build targets using sources under toolchain/gcc" OFF)
+set(Launcher_BUNDLED_BUILD_ROOT "${PROJECT_BINARY_DIR}/bundled-build" CACHE PATH "Build root for bundled Qt/toolchain targets")
+set(Launcher_BUNDLED_INSTALL_ROOT "${PROJECT_BINARY_DIR}/bundled-install" CACHE PATH "Install root for bundled Qt/toolchain targets")
+set(Launcher_BUNDLED_BUILD_CONFIG "Release" CACHE STRING "Build configuration for bundled Qt/toolchain targets")
+set_property(CACHE Launcher_BUNDLED_BUILD_CONFIG PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
+set(Launcher_BUNDLED_GCC_MAKE_PROGRAM "make" CACHE STRING "Make program used for bundled GCC build")
+
+set(_projt_bundled_targets_enabled FALSE)
+if(Launcher_ENABLE_BUNDLED_QT_TARGETS OR Launcher_ENABLE_BUNDLED_LLVM_TARGETS OR Launcher_ENABLE_BUNDLED_GCC_TARGETS)
+    set(_projt_bundled_targets_enabled TRUE)
+endif()
+
+if(_projt_bundled_targets_enabled)
+    include(ProcessorCount)
+    ProcessorCount(_projt_host_cpu_count)
+    if(NOT _projt_host_cpu_count OR _projt_host_cpu_count LESS 1)
+        set(_projt_host_cpu_count 1)
+    endif()
+endif()
+
+if(Launcher_ENABLE_BUNDLED_QT_TARGETS)
+    set(_projt_qtbase_src "${CMAKE_CURRENT_SOURCE_DIR}/qt/qtbase")
+    set(_projt_qtbase_build "${Launcher_BUNDLED_BUILD_ROOT}/qtbase")
+    set(_projt_qtbase_install "${Launcher_BUNDLED_INSTALL_ROOT}/qt")
+    if(EXISTS "${_projt_qtbase_src}/CMakeLists.txt")
+        add_custom_target(qt-bundled-configure
+            COMMAND "${CMAKE_COMMAND}" -S "${_projt_qtbase_src}" -B "${_projt_qtbase_build}"
+                -G "${CMAKE_GENERATOR}"
+                -DCMAKE_INSTALL_PREFIX="${_projt_qtbase_install}"
+                -DCMAKE_PREFIX_PATH="${_projt_qtbase_install}"
+                -DQT_BUILD_TESTS=OFF
+                -DQT_BUILD_EXAMPLES=OFF
+            COMMENT "Configuring bundled Qt (qtbase) from ${_projt_qtbase_src}"
+            USES_TERMINAL
+        )
+        add_custom_target(qt-bundled-build
+            COMMAND "${CMAKE_COMMAND}" --build "${_projt_qtbase_build}" --config "${Launcher_BUNDLED_BUILD_CONFIG}" --parallel "${_projt_host_cpu_count}"
+            DEPENDS qt-bundled-configure
+            COMMENT "Building bundled Qt (qtbase)"
+            USES_TERMINAL
+        )
+        add_custom_target(qt-bundled-install
+            COMMAND "${CMAKE_COMMAND}" --build "${_projt_qtbase_build}" --target install --config "${Launcher_BUNDLED_BUILD_CONFIG}" --parallel "${_projt_host_cpu_count}"
+            DEPENDS qt-bundled-build
+            COMMENT "Installing bundled Qt into ${_projt_qtbase_install}"
+            USES_TERMINAL
+        )
+    else()
+        message(WARNING "Bundled Qt sources not found at ${_projt_qtbase_src}; qt-bundled-* targets will not be created.")
+    endif()
+endif()
+
+if(Launcher_ENABLE_BUNDLED_LLVM_TARGETS)
+    set(_projt_llvm_src "${CMAKE_CURRENT_SOURCE_DIR}/toolchain/llvm/llvm")
+    set(_projt_llvm_build "${Launcher_BUNDLED_BUILD_ROOT}/llvm")
+    set(_projt_llvm_install "${Launcher_BUNDLED_INSTALL_ROOT}/llvm")
+    if(EXISTS "${_projt_llvm_src}/CMakeLists.txt")
+        add_custom_target(toolchain-llvm-configure
+            COMMAND "${CMAKE_COMMAND}" -S "${_projt_llvm_src}" -B "${_projt_llvm_build}"
+                -G "${CMAKE_GENERATOR}"
+                -DCMAKE_INSTALL_PREFIX="${_projt_llvm_install}"
+                "-DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;lld'"
+                -DLLVM_INCLUDE_TESTS=OFF
+                -DLLVM_INCLUDE_BENCHMARKS=OFF
+                -DLLVM_INCLUDE_EXAMPLES=OFF
+            COMMENT "Configuring bundled LLVM/Clang from ${_projt_llvm_src}"
+            USES_TERMINAL
+        )
+        add_custom_target(toolchain-llvm-build
+            COMMAND "${CMAKE_COMMAND}" --build "${_projt_llvm_build}" --config "${Launcher_BUNDLED_BUILD_CONFIG}" --parallel "${_projt_host_cpu_count}"
+            DEPENDS toolchain-llvm-configure
+            COMMENT "Building bundled LLVM/Clang"
+            USES_TERMINAL
+        )
+        add_custom_target(toolchain-llvm-install
+            COMMAND "${CMAKE_COMMAND}" --build "${_projt_llvm_build}" --target install --config "${Launcher_BUNDLED_BUILD_CONFIG}" --parallel "${_projt_host_cpu_count}"
+            DEPENDS toolchain-llvm-build
+            COMMENT "Installing bundled LLVM/Clang into ${_projt_llvm_install}"
+            USES_TERMINAL
+        )
+    else()
+        message(WARNING "Bundled LLVM sources not found at ${_projt_llvm_src}; toolchain-llvm-* targets will not be created.")
+    endif()
+endif()
+
+if(Launcher_ENABLE_BUNDLED_GCC_TARGETS)
+    if(WIN32)
+        message(WARNING "Bundled GCC targets are disabled on Windows in this CMake setup.")
+    else()
+        set(_projt_gcc_src "${CMAKE_CURRENT_SOURCE_DIR}/toolchain/gcc")
+        set(_projt_gcc_build "${Launcher_BUNDLED_BUILD_ROOT}/gcc")
+        set(_projt_gcc_install "${Launcher_BUNDLED_INSTALL_ROOT}/gcc")
+        if(EXISTS "${_projt_gcc_src}/configure")
+            add_custom_target(toolchain-gcc-configure
+                COMMAND "${CMAKE_COMMAND}" -E make_directory "${_projt_gcc_build}"
+                COMMAND "${_projt_gcc_src}/configure" --prefix="${_projt_gcc_install}" --disable-multilib --enable-languages=c,c++
+                WORKING_DIRECTORY "${_projt_gcc_build}"
+                COMMENT "Configuring bundled GCC from ${_projt_gcc_src}"
+                USES_TERMINAL
+            )
+            add_custom_target(toolchain-gcc-build
+                COMMAND "${Launcher_BUNDLED_GCC_MAKE_PROGRAM}" -j"${_projt_host_cpu_count}"
+                WORKING_DIRECTORY "${_projt_gcc_build}"
+                DEPENDS toolchain-gcc-configure
+                COMMENT "Building bundled GCC"
+                USES_TERMINAL
+            )
+            add_custom_target(toolchain-gcc-install
+                COMMAND "${Launcher_BUNDLED_GCC_MAKE_PROGRAM}" install
+                WORKING_DIRECTORY "${_projt_gcc_build}"
+                DEPENDS toolchain-gcc-build
+                COMMENT "Installing bundled GCC into ${_projt_gcc_install}"
+                USES_TERMINAL
+            )
+        else()
+            message(WARNING "Bundled GCC sources not found at ${_projt_gcc_src}; toolchain-gcc-* targets will not be created.")
+        endif()
+    endif()
+endif()
+
+if(TARGET qt-bundled-install OR TARGET toolchain-llvm-install OR TARGET toolchain-gcc-install)
+    add_custom_target(bundled-all)
+    if(TARGET qt-bundled-install)
+        add_dependencies(bundled-all qt-bundled-install)
+    endif()
+    if(TARGET toolchain-llvm-install)
+        add_dependencies(bundled-all toolchain-llvm-install)
+    endif()
+    if(TARGET toolchain-gcc-install)
+        add_dependencies(bundled-all toolchain-gcc-install)
+    endif()
+endif()
+
 # Github repo URL with releases for updater
 set(Launcher_UPDATER_GITHUB_REPO "https://github.com/Project-Tick/ProjT-Launcher" CACHE STRING "Base github URL for the updater.")
 
