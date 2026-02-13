@@ -12,11 +12,11 @@ examples are distributed in this package, example and minigzip.  The example_d
 and minigzip_d flavors validate that the ptlibzippy1.dll file is working correctly.
 
 Questions about PTlibzippy should be sent to <ptlibzippy@gzip.org>.  The PTlibzippy home page
-is http://zlib.net/ .  Before reporting a problem, please check this site to
+is http://projecttick.org/p/zlib/ .  Before reporting a problem, please check this site to
 verify that you have the latest version of PTlibzippy; otherwise get the latest
 version and check whether the problem still exists or not.
 
-PLEASE read DLL_FAQ.txt, and the PTlibzippy FAQ http://zlib.net/ptlibzippy_faq.html before
+PLEASE read DLL_FAQ.txt, and the PTlibzippy FAQ http://projecttick.org/p/zlib/ptlibzippy_faq.html before
 asking for help.
 
 
@@ -59,7 +59,7 @@ The package ptlibzippy-0.0.5.1-win32-x86.zip will contain the following files:
 All .pdb files above are entirely optional, but are very useful to a developer
 attempting to diagnose program misbehavior or a crash.  Many additional
 important files for developers can be found in the ptlibzippy.zip source package
-available from http://zlib.net/ - review that package's README file for details.
+available from http://projecttick.org/p/zlib/ - review that package's README file for details.
 
 
 Acknowledgments:

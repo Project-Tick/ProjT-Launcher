@@ -7,7 +7,7 @@ https://datatracker.ietf.org/doc/html/rfc1950 (zlib format), rfc1951 (deflate
 format) and rfc1952 (gzip format).
 
 All functions of the compression library are documented in the file ptlibzippy.h
-(volunteer to write man pages welcome, contact ptlibzippy@projtick.dev).  A usage example
+(volunteer to write man pages welcome, contact community@community.projecttick.org).  A usage example
 of the library is given in the file test/example.c which also tests that
 the library is working correctly.  Another example is given in the file
 test/minigzip.c.  The compression library itself is composed of all source
@@ -19,7 +19,7 @@ well, "make install" should work for most flavors of Unix.  For Windows, use
 one of the special makefiles in win32/ or contrib/vstudio/ .  For VMS, use
 make_vms.com.
 
-Questions about PTlibzippy should be sent to <ptlibzippy@projtick.dev>, or to Gilles Vollant
+Questions about PTlibzippy should be sent to <community@community.projecttick.org>, or to Gilles Vollant
 <info@winimage.com> for the Windows DLL version.  The zlib home page is
 https://projecttick.org/p/zlib .  Before reporting a problem, please check this site to
 verify that you have the latest version of PTlibzippy; otherwise get the latest
@@ -29,7 +29,7 @@ PLEASE read the PTlibzippy FAQ https://projecttick.org/p/zlib/zlib_faq.html befo
 
 Mark Nelson <markn@ieee.org> wrote an article about zlib for the Jan.  1997
 issue of Dr.  Dobb's Journal; a copy of the article is available at
-https://zlib.net/nelson/ .
+http://projecttick.org/p/zlib/nelson/ .
 
 The changes made in version 0.0.5.1 are documented in the file ChangeLog.
 

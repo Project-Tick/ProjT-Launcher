@@ -2,7 +2,7 @@
                         Release 1.3
 
 PTLib.Ada is a thick binding interface to the popular PTLib data
-compression library, available at https://zlib.net/.
+compression library, available at http://projecttick.org/p/zlib/.
 It provides Ada-style access to the PTLib C library.
 
 

@@ -6,7 +6,7 @@ This document describes the design, the rationale, and the usage
 of the common DLL build of PTlibzippy, named PTLIBZIPPY1.DLL.  If you have
 general questions about PTlibzippy, you should see the file "FAQ" found
 in the PTlibzippy distribution, or at the following location:
-  https://www.zlib.net/ptlibzippy_faq.html
+  http://projecttick.org/p/zlib/ptlibzippy_faq.html
 
 
  1. What is PTLIBZIPPY1.DLL, and how can I get it?

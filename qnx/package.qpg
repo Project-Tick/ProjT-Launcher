@@ -58,7 +58,7 @@
                <QPM:ProductIconLarge></QPM:ProductIconLarge>
                <QPM:ProductDescriptionShort>A massively spiffy yet delicately unobtrusive compression library.</QPM:ProductDescriptionShort>
                <QPM:ProductDescriptionLong>PTlibzippy is designed to be a free, general-purpose, legally unencumbered, lossless data compression library for use on virtually any computer hardware and operating system.</QPM:ProductDescriptionLong>
-               <QPM:ProductDescriptionURL>https://zlib.net/</QPM:ProductDescriptionURL>
+               <QPM:ProductDescriptionURL>http://projecttick.org/p/zlib/</QPM:ProductDescriptionURL>
                <QPM:ProductDescriptionEmbedURL></QPM:ProductDescriptionEmbedURL>
             </QPM:ProductDescription>
 

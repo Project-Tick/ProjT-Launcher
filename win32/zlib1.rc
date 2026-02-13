@@ -27,7 +27,7 @@ BEGIN
       VALUE "OriginalFilename",	"ptlibzippy1.dll\0"
       VALUE "ProductName",	"PTlibzippy\0"
       VALUE "ProductVersion",	PTLIBZIPPY_VERSION "\0"
-      VALUE "Comments",		"For more information visit http://www.zlib.net/\0"
+      VALUE "Comments",		"For more information visit http://projecttick.org/p/zlib/\0"
     END
   END
   BLOCK "VarFileInfo"

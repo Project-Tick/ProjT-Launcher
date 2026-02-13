@@ -5,7 +5,7 @@ project(
     VERSION 1.0.0
     LANGUAGES CXX
     DESCRIPTION "A library for using C++ IOStreams with PTlibzippy V3"
-    HOMEPAGE_URL "https://www.zlib.net")
+    HOMEPAGE_URL "http://projecttick.org/p/zlib")
 
 option(PTLIBZIPPY_IOSTREAM3_BUILD_SHARED "Enable building blast shared library" ON)
 option(PTLIBZIPPY_IOSTREAM3_BUILD_STATIC "Enable building blast static library" ON)

@@ -3,8 +3,8 @@
 
 
 If your question is not there, please check the zlib home page
-http://zlib.net/ which may have more recent information.
-The latest zlib FAQ is at http://zlib.net/zlib_faq.html
+http://projecttick.org/p/zlib/ which may have more recent information.
+The latest zlib FAQ is at http://projecttick.org/p/zlib/zlib_faq.html
 
 
  1. Is zlib Y2K-compliant?
@@ -19,7 +19,7 @@ The latest zlib FAQ is at http://zlib.net/zlib_faq.html
  3. Where can I get a Visual Basic interface to zlib?
 
     See
-        * https://zlib.net/nelson/
+        * https://projecttick.org/p/zlib/nelson/
         * win32/DLL_FAQ.txt in the zlib distribution
 
  4. compress() returns Z_BUF_ERROR.
@@ -38,7 +38,7 @@ The latest zlib FAQ is at http://zlib.net/zlib_faq.html
     made with more input or output space.  A Z_BUF_ERROR may in fact be
     unavoidable depending on how the functions are used, since it is not
     possible to tell whether or not there is more output pending when
-    strm.avail_out returns with zero.  See http://zlib.net/zlib_how.html for a
+    strm.avail_out returns with zero.  See http://projecttick.org/p/zlib/zlib_how.html for a
     heavily annotated example.
 
  6. Where's the zlib documentation (man pages, etc.)?
@@ -287,7 +287,7 @@ The latest zlib FAQ is at http://zlib.net/zlib_faq.html
     Probably what you want is to use zlib in Java. zlib is already included
     as part of the Java SDK in the java.util.zip package. If you really want
     a version of zlib written in the Java language, look on the zlib home
-    page for links: http://zlib.net/ .
+    page for links: http://projecttick.org/p/zlib/ .
 
 35. I get this or that compiler or source-code scanner warning when I crank it
     up to maximally-pedantic. Can't you guys write proper code?

@@ -7,7 +7,7 @@ project(
     VERSION 1.0.0
     LANGUAGES C ADA
     DESCRIPTION "A library for creating zipfiles based in PTlibzippy"
-    HOMEPAGE_URL "https://www.zlib.net")
+    HOMEPAGE_URL "http://projecttick.org/p/zlib")
 
 option(PTLIBZIPPY_ADA_BUILD_SHARED "Enable building ada bindings shared library" ON)
 option(PTLIBZIPPY_ADA_BUILD_STATIC "Enable building ada bindings static library" ON)

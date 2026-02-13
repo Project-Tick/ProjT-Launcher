@@ -30,8 +30,7 @@
 ;     misrepresented as being the original software
 ;  3. This notice may not be removed or altered from any source distribution.
 ;
-;         http://www.zlib.net
-;         http://www.winimage.com/ptlibzippyDll
+;         http://projecttick.org/p/zlib/
 ;         http://www.muppetlabs.com/~breadbox/software/assembly.html
 ;
 ; to compile this file for ptLib, I use option:

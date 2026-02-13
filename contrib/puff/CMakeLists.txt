@@ -5,7 +5,7 @@ project(
     VERSION 2.3.0
     LANGUAGES C
     DESCRIPTION "A library for decompressing deflate with very little footprint"
-    HOMEPAGE_URL "https://www.zlib.net")
+    HOMEPAGE_URL "http://projecttick.org/p/zlib/")
 
 option(PTLIBZIPPY_PUFF_BUILD_SHARED "Enable building blast shared library" ON)
 option(PTLIBZIPPY_PUFF_BUILD_STATIC "Enable building blast static library" ON)
