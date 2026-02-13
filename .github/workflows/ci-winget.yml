@@ -3,23 +3,29 @@ on:
   workflow_dispatch:
     inputs:
       ref:
+        description: Git reference to build from
+        required: false
+        default: main
+        type: string
       tag_name:
         description: Tag name of the release
         required: true
+        type: string
   workflow_call:
     inputs:
       ref:
         description: Git reference to build from
         required: true
         default: main
+        type: string
       tag_name:
         description: Tag name of the release
         required: true
+        type: string
 
 jobs:
   winget:
     name: Winget
-    if: needs.prepare.outputs.is-release == 'true'
     runs-on: windows-latest
     steps:
       - name: Publish on Winget
