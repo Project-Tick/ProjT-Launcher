@@ -130,6 +130,7 @@ jobs:
             qt-architecture: linux_gcc_64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
+            build-system: make
 
           - os: ubuntu-24.04-arm
             artifact-name: Linux-aarch64
@@ -138,6 +139,7 @@ jobs:
             qt-architecture: linux_gcc_arm64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
+            build-system: make
 
           # Windows MSVC builds
           - os: windows-2022
@@ -148,6 +150,7 @@ jobs:
             qt-architecture: win64_msvc2022_64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
+            build-system: make
 
           - os: windows-2025
             artifact-name: Windows-MSVC-2025
@@ -157,6 +160,7 @@ jobs:
             qt-architecture: win64_msvc2022_64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
+            build-system: make
 
           - os: windows-11-arm
             artifact-name: Windows-MSVC-arm64
@@ -167,6 +171,7 @@ jobs:
             qt-architecture: win64_msvc2022_arm64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
+            build-system: make
 
           # Windows MinGW builds
           - os: windows-2022
@@ -175,6 +180,7 @@ jobs:
             windows-toolchain: mingw
             msystem: MINGW64
             vcvars-arch: amd64_x86
+            build-system: make
 
           - os: windows-2025
             artifact-name: Windows-MinGW-w64-2025
@@ -182,6 +188,7 @@ jobs:
             windows-toolchain: mingw
             msystem: MINGW64
             vcvars-arch: amd64_x86
+            build-system: make
 
           - os: windows-11-arm
             artifact-name: Windows-MinGW-arm64
@@ -190,6 +197,7 @@ jobs:
             target-arch: aarch64
             msystem: CLANGARM64
             vcvars-arch: arm64
+            build-system: make
 
           # macOS builds
           - os: macos-15
@@ -200,6 +208,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
+            build-system: make
 
           - os: macos-26
             artifact-name: macOS-26-universal
@@ -209,6 +218,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
+            build-system: make
 
           - os: macos-15
             artifact-name: macOS-15-arm64
@@ -218,6 +228,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
+            build-system: make
 
           - os: macos-26
             artifact-name: macOS-arm64
@@ -227,6 +238,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
+            build-system: make
 
           - os: macos-15-intel
             artifact-name: macOS-intel
@@ -236,6 +248,134 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
+            build-system: make
+
+          - os: ubuntu-24.04
+            artifact-name: Linux-cmake
+            target-platform: linux
+            target-arch: x86_64
+            qt-architecture: linux_gcc_64
+            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
+            qt-version: 6.10.2
+            build-system: cmake
+
+          - os: ubuntu-24.04-arm
+            artifact-name: Linux-aarch64-cmake
+            target-platform: linux
+            target-arch: aarch64
+            qt-architecture: linux_gcc_arm64
+            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
+            qt-version: 6.10.2
+            build-system: cmake
+
+          # Windows MSVC builds
+          - os: windows-2022
+            artifact-name: Windows-MSVC-cmake
+            target-platform: windows
+            windows-toolchain: msvc
+            vcvars-arch: amd64
+            qt-architecture: win64_msvc2022_64
+            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
+            qt-version: 6.10.2
+            build-system: cmake
+
+          - os: windows-2025
+            artifact-name: Windows-MSVC-2025-cmake
+            target-platform: windows
+            windows-toolchain: msvc
+            vcvars-arch: amd64
+            qt-architecture: win64_msvc2022_64
+            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
+            qt-version: 6.10.2
+            build-system: cmake
+
+          - os: windows-11-arm
+            artifact-name: Windows-MSVC-arm64-cmake
+            target-platform: windows
+            windows-toolchain: msvc
+            target-arch: aarch64
+            vcvars-arch: arm64
+            qt-architecture: win64_msvc2022_arm64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
+            qt-version: 6.10.2
+            build-system: cmake
+
+          # Windows MinGW builds
+          - os: windows-2022
+            artifact-name: Windows-MinGW-w64-cmake
+            target-platform: windows
+            windows-toolchain: mingw
+            msystem: MINGW64
+            vcvars-arch: amd64_x86
+            build-system: cmake
+
+          - os: windows-2025
+            artifact-name: Windows-MinGW-w64-2025-cmake
+            target-platform: windows
+            windows-toolchain: mingw
+            msystem: MINGW64
+            vcvars-arch: amd64_x86
+            build-system: cmake
+
+          - os: windows-11-arm
+            artifact-name: Windows-MinGW-arm64-cmake
+            target-platform: windows
+            windows-toolchain: mingw
+            target-arch: aarch64
+            msystem: CLANGARM64
+            vcvars-arch: arm64
+            build-system: cmake
+
+          # macOS builds
+          - os: macos-15
+            artifact-name: macOS-15-universal-cmake
+            target-platform: macos
+            target-arch: universal
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+            build-system: cmake
+
+          - os: macos-26
+            artifact-name: macOS-26-universal-cmake
+            target-platform: macos
+            target-arch: universal
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+            build-system: cmake
+
+          - os: macos-15
+            artifact-name: macOS-15-arm64-cmake
+            target-platform: macos
+            target-arch: aarch64
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+            build-system: cmake
+
+          - os: macos-26
+            artifact-name: macOS-arm64-cmake
+            target-platform: macos
+            target-arch: aarch64
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+            build-system: cmake
+
+          - os: macos-15-intel
+            artifact-name: macOS-intel-cmake
+            target-platform: macos
+            target-arch: x86_64
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+            build-system: cmake
 
     runs-on: ${{ matrix.os }}
 
@@ -284,7 +424,7 @@ jobs:
 
       # Configure with Make system
       - name: Configure (Linux)
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.build-system == 'make'
         run: |
           QT_PREFIX="${{ steps.setup-dependencies.outputs.qt-path }}"
           if [ -z "$QT_PREFIX" ]; then
@@ -299,7 +439,7 @@ jobs:
             --with-tests
 
       - name: Configure (Windows MSVC)
-        if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc'
+        if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc' && matrix.build-system == 'make'
         shell: bash
         run: |
           QT_PREFIX="${{ steps.setup-dependencies.outputs.qt-path }}"
@@ -315,7 +455,7 @@ jobs:
             --with-tests
 
       - name: Configure (Windows MinGW)
-        if: runner.os == 'Windows' && matrix.windows-toolchain == 'mingw'
+        if: runner.os == 'Windows' && matrix.windows-toolchain == 'mingw' && matrix.build-system == 'make'
         run: |
           if [ -n "${MSYSTEM:-}" ]; then
             msys_lc="$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')"
@@ -347,7 +487,7 @@ jobs:
             --with-tests
 
       - name: Configure (macOS)
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && matrix.build-system == 'make'
         run: |
           QT_PREFIX="${{ steps.setup-dependencies.outputs.qt-path }}"
           if [ -z "$QT_PREFIX" ]; then
@@ -363,7 +503,7 @@ jobs:
 
       # Build with Make
       - name: Build (Linux/macOS/MinGW)
-        if: runner.os != 'Windows' || matrix.windows-toolchain == 'mingw'
+        if: runner.os != 'Windows' || matrix.windows-toolchain == 'mingw' && matrix.build-system == 'make'
         run: |
           if [ "${RUNNER_OS}" = "Windows" ] && [ "${WINDOWS_TOOLCHAIN}" = "mingw" ] && [ -n "${MSYSTEM:-}" ]; then
             msys_lc="$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')"
@@ -391,14 +531,14 @@ jobs:
           make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 
       - name: Build (Windows MSVC)
-        if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc'
+        if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc' && matrix.build-system == 'make'
         shell: bash
         run: |
           make -j${NUMBER_OF_PROCESSORS:-4}
 
       # Run Tests
       - name: Run Tests (Linux/macOS/MinGW)
-        if: runner.os != 'Windows' || matrix.windows-toolchain == 'mingw'
+        if: runner.os != 'Windows' || matrix.windows-toolchain == 'mingw' && matrix.build-system == 'make'
         run: |
           if [ "${RUNNER_OS}" = "Windows" ] && [ "${WINDOWS_TOOLCHAIN}" = "mingw" ] && [ -n "${MSYSTEM:-}" ]; then
             msys_lc="$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')"
@@ -426,10 +566,25 @@ jobs:
           make test TEST_VERBOSE=1
 
       - name: Run Tests (Windows MSVC)
-        if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc'
+        if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc' && matrix.build-system == 'make'
         shell: bash
         run: |
           make test TEST_VERBOSE=1
+
+      - name: Configure project
+        if: matrix.build-system == 'cmake'
+        run: |
+          cmake --preset "$CMAKE_PRESET"
+
+      - name: Run build
+        if: matrix.build-system == 'cmake'
+        run: |
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+
+      - name: Run tests
+        if: matrix.build-system == 'cmake'
+        run: |
+          ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --extra-verbose --output-on-failure
 
       # Upload Artifacts
       - name: Upload build
