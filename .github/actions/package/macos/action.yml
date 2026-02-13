@@ -227,5 +227,17 @@ runs:
         name: ProjTLauncher-${{ inputs.artifact-name }}-${{ inputs.version }}-${{ inputs.build-type }}
         path: |
           ProjTLauncher.zip
+
+    - name: Upload binary tarball
+      uses: actions/upload-artifact@v5
+      with:
+        name: ProjTLauncher-${{ inputs.artifact-name }}-${{ inputs.version }}-${{ inputs.build-type }}-dmg
+        path: |
           ProjTLauncher.dmg
+
+    - name: Upload binary tarball
+      uses: actions/upload-artifact@v5
+      with:
+        name: ProjTLauncher-${{ inputs.artifact-name }}-${{ inputs.version }}-${{ inputs.build-type }}-pkg
+        path: |
           ProjTLauncher-macOS-${{ inputs.version }}.pkg
