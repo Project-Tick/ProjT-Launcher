@@ -1588,6 +1588,7 @@ if(Launcher_BUILD_UPDATER)
         Qt${QT_VERSION_MAJOR}::Widgets
         Qt${QT_VERSION_MAJOR}::Core
         Qt${QT_VERSION_MAJOR}::Network
+        ${Launcher_QT_DBUS}
         ${Launcher_QT_LIBS}
         cmark::cmark
     )
