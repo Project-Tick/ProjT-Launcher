@@ -57,7 +57,7 @@
  *
  * ======================================================================== */
 
-#include <qstringliteral.h>
+#include <QString>
 #include <QObject>
 #include "BuildConfig.h"
 
