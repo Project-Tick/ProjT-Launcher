@@ -148,15 +148,11 @@ jobs:
     name: Winget
     needs: [prepare]
     if: needs.prepare.outputs.is-release == 'true'
-    runs-on: windows-latest
-    steps:
-      - name: Publish on Winget
-        uses: vedantmgoyal2009/winget-releaser@19e706d4c9121098010096f9c495a70a7518b30f
-        with:
-          identifier: ProjectTick.ProjTLauncher
-          version: ${{ github.event.release.tag_name }}
-          installers-regex: 'ProjTLauncher-Windows-MSVC(:?-arm64|-Legacy)?-Setup-.+\.exe$'
-          token: ${{ secrets.WINGET_TOKEN }}
+    uses: ./.github/workflows/ci-winget.yml
+    with:
+      ref: ${{ github.sha }}
+      tag_name: ${{ github.event.release.tag_name }}
+    secrets: inherit
 
   # ═══════════════════════════════════════════════════════════════════════════
   # QUAZIP TESTS
