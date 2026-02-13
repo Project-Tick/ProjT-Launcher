@@ -11,7 +11,7 @@
 #
 # Matching notes:
 # - Use ** for recursive directory matching.
-# - Keep this file in sync with maintainers/CODEOWNERS.
+# - This file is used as the ownership source for maintainer email mapping.
 
 [Mehmet Samet Duman]
 GitHub: @YongDo-Hyun

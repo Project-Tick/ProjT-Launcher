@@ -20,6 +20,16 @@ class CodeownersRule:
     matcher: re.Pattern[str]
 
 
+@dataclass
+class MaintainerRecord:
+    aliases: set[str]
+    emails: set[str]
+    paths: list[str]
+
+
+ALIAS_KEYS = {"github", "user", "username", "nick", "alias", "handle", "name"}
+
+
 def normalize_path(path: str) -> str:
     p = path.strip()
     if p.startswith("\"") and p.endswith("\"") and len(p) >= 2:
@@ -152,6 +162,20 @@ def changed_files_from_patch_file(patch_path: str) -> list[str]:
     return changed_files_from_patch_text(text)
 
 
+def changed_files_from_patch_files(patch_paths: list[str]) -> list[str]:
+    if not patch_paths:
+        return []
+
+    if len(patch_paths) > 1 and "-" in patch_paths:
+        raise RuntimeError("'-' stdin patch cannot be combined with other patch files")
+
+    files: dict[str, None] = {}
+    for patch_path in patch_paths:
+        for path in changed_files_from_patch_file(patch_path):
+            files[path] = None
+    return list(files.keys())
+
+
 def changed_files_from_git_range(git_range: str) -> list[str]:
     result = subprocess.run(
         ["git", "diff", "--name-only", git_range],
@@ -172,40 +196,141 @@ def aliases_from_maintainer_file(content: str, stem: str) -> set[str]:
     if base:
         aliases.add(base)
 
-    for mention in re.findall(r"@[A-Za-z0-9._-]+", content):
-        norm = normalize_alias(mention)
-        if norm:
-            aliases.add(norm)
-
     for line in content.splitlines():
         if ":" not in line:
             continue
         key, value = line.split(":", 1)
-        if key.strip().lower() not in {"github", "user", "username", "nick", "alias", "handle", "name"}:
+        key_norm = key.strip().lower()
+        if key_norm not in ALIAS_KEYS:
             continue
         for token in re.split(r"[\s,]+", value.strip()):
             norm = normalize_alias(token)
+            if norm:
+                aliases.add(norm)
+        for mention in re.findall(r"@[A-Za-z0-9._-]+", value):
+            norm = normalize_alias(mention)
             if norm:
                 aliases.add(norm)
 
     return aliases
 
 
-def build_alias_email_index(maintainers_dir: Path) -> dict[str, set[str]]:
-    index: dict[str, set[str]] = {}
+def parse_maintainers_records(path: Path) -> list[MaintainerRecord]:
+    records: list[MaintainerRecord] = []
+    current_aliases: set[str] | None = None
+    current_emails: set[str] | None = None
+    current_paths: list[str] | None = None
 
-    if not maintainers_dir.exists() or not maintainers_dir.is_dir():
-        return index
+    def flush_current() -> None:
+        nonlocal current_aliases, current_emails, current_paths
+        if current_aliases is None or current_emails is None or current_paths is None:
+            return
+        if not current_emails:
+            current_aliases = None
+            current_emails = None
+            current_paths = None
+            return
+        if not current_paths:
+            current_paths = ["**"]
+        records.append(
+            MaintainerRecord(aliases=set(current_aliases), emails=set(current_emails), paths=list(current_paths))
+        )
+        current_aliases = None
+        current_emails = None
+        current_paths = None
 
-    for entry in sorted(maintainers_dir.rglob("*.txt")):
-        text = entry.read_text(encoding="utf-8", errors="ignore")
-        emails = {email.lower() for email in EMAIL_RE.findall(text)}
-        if not emails:
+    for raw_line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = raw_line.strip()
+        if not line:
             continue
 
-        aliases = aliases_from_maintainer_file(text, entry.stem)
-        for alias in aliases:
-            index.setdefault(alias, set()).update(emails)
+        if line.startswith("[") and line.endswith("]"):
+            flush_current()
+            current_aliases = set()
+            current_emails = set()
+            current_paths = []
+            section_name = line[1:-1].strip()
+            section_alias = normalize_alias(section_name)
+            if section_alias:
+                current_aliases.add(section_alias)
+            continue
+
+        if line.startswith("#"):
+            continue
+
+        if current_aliases is None or current_emails is None or current_paths is None:
+            continue
+
+        payload = line.split("#", 1)[0].strip()
+        if ":" not in payload:
+            continue
+
+        key, value = payload.split(":", 1)
+        key_norm = key.strip().lower()
+        value = value.strip()
+        if not value:
+            continue
+
+        for email in EMAIL_RE.findall(value):
+            current_emails.add(email.lower())
+
+        if key_norm in {"path", "paths"}:
+            for token in re.split(r"[\s,]+", value):
+                candidate = token.strip()
+                if candidate:
+                    current_paths.append(candidate)
+
+        if key_norm in ALIAS_KEYS:
+            for token in re.split(r"[\s,]+", value):
+                alias = normalize_alias(token)
+                if alias:
+                    current_aliases.add(alias)
+            for mention in re.findall(r"@[A-Za-z0-9._-]+", value):
+                alias = normalize_alias(mention)
+                if alias:
+                    current_aliases.add(alias)
+
+    flush_current()
+    return records
+
+
+def rules_from_maintainers_file(path: Path) -> list[CodeownersRule]:
+    if not path.exists() or not path.is_file():
+        return []
+
+    rules: list[CodeownersRule] = []
+    for record in parse_maintainers_records(path):
+        owners = [f"@{alias}" for alias in sorted(record.aliases)]
+        if not owners:
+            owners = sorted(record.emails)
+        for pattern in record.paths:
+            rules.append(compile_rule(pattern, owners))
+
+    return rules
+
+
+def build_alias_email_index(maintainers_source: Path) -> dict[str, set[str]]:
+    index: dict[str, set[str]] = {}
+
+    if not maintainers_source.exists():
+        return index
+
+    if maintainers_source.is_file():
+        for record in parse_maintainers_records(maintainers_source):
+            for alias in record.aliases:
+                index.setdefault(alias, set()).update(record.emails)
+        return index
+
+    if not maintainers_source.is_dir():
+        return index
+
+    for entry in sorted(maintainers_source.rglob("*.txt")):
+        text = entry.read_text(encoding="utf-8", errors="ignore")
+        emails = {email.lower() for email in EMAIL_RE.findall(text)}
+        if emails:
+            aliases = aliases_from_maintainer_file(text, entry.stem)
+            for alias in aliases:
+                index.setdefault(alias, set()).update(emails)
 
     return index
 
@@ -228,15 +353,15 @@ def resolve_owner_emails(owner: str, alias_index: dict[str, set[str]]) -> set[st
     return emails
 
 
-def choose_codeowners(explicit: str | None) -> Path:
+def choose_codeowners(explicit: str | None) -> Path | None:
     if explicit:
         return Path(explicit)
 
-    maintainers_codeowners = Path("maintainers/CODEOWNERS")
-    if maintainers_codeowners.exists():
-        return maintainers_codeowners
+    for candidate in (Path(".github/CODEOWNERS"), Path("CODEOWNERS")):
+        if candidate.exists():
+            return candidate
 
-    return Path(".github/CODEOWNERS")
+    return None
 
 
 def main(argv: list[str]) -> int:
@@ -244,10 +369,19 @@ def main(argv: list[str]) -> int:
         description="Find maintainer emails impacted by a patch using CODEOWNERS-like matching."
     )
     source_group = parser.add_mutually_exclusive_group(required=True)
-    source_group.add_argument("--patch", default=None, help="Patch file path. Use '-' to read patch from stdin.")
+    source_group.add_argument(
+        "--patch",
+        nargs="+",
+        default=None,
+        help="One or more patch file paths. Use '-' to read patch from stdin.",
+    )
     source_group.add_argument("--git-range", default=None, help="Git diff range, e.g. HEAD~1..HEAD")
     parser.add_argument("--codeowners", default=None, help="Path to CODEOWNERS file")
-    parser.add_argument("--maintainers-dir", default="maintainers", help="Directory containing maintainer *.txt files")
+    parser.add_argument(
+        "--maintainers-dir",
+        default="MAINTAINERS",
+        help="Maintainer source path (directory with *.txt files or a MAINTAINERS file)",
+    )
     parser.add_argument("--show-details", action="store_true", help="Print per-file owner and email mapping")
     parser.add_argument(
         "--strict-unresolved",
@@ -256,21 +390,30 @@ def main(argv: list[str]) -> int:
     )
     args = parser.parse_args(argv)
 
+    maintainers_source = Path(args.maintainers_dir)
     codeowners_path = choose_codeowners(args.codeowners)
-    if not codeowners_path.exists():
-        print(f"error: CODEOWNERS file not found: {codeowners_path}", file=sys.stderr)
-        return 1
-
-    rules = parse_codeowners(codeowners_path)
-    if not rules:
-        print(f"error: no usable rules found in {codeowners_path}", file=sys.stderr)
-        return 1
+    if codeowners_path is not None:
+        if not codeowners_path.exists():
+            print(f"error: CODEOWNERS file not found: {codeowners_path}", file=sys.stderr)
+            return 1
+        rules = parse_codeowners(codeowners_path)
+        if not rules:
+            print(f"error: no usable rules found in {codeowners_path}", file=sys.stderr)
+            return 1
+    else:
+        rules = rules_from_maintainers_file(maintainers_source)
+        if not rules:
+            print(
+                f"error: no ownership rules found. Provide --codeowners or a valid MAINTAINERS file: {maintainers_source}",
+                file=sys.stderr,
+            )
+            return 1
 
     try:
         if args.git_range:
             changed_files = changed_files_from_git_range(args.git_range)
         else:
-            changed_files = changed_files_from_patch_file(args.patch)
+            changed_files = changed_files_from_patch_files(args.patch)
     except Exception as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -278,7 +421,7 @@ def main(argv: list[str]) -> int:
     if not changed_files:
         return 0
 
-    alias_index = build_alias_email_index(Path(args.maintainers_dir))
+    alias_index = build_alias_email_index(maintainers_source)
 
     all_emails: set[str] = set()
     unresolved: set[str] = set()
@@ -317,13 +460,13 @@ def main(argv: list[str]) -> int:
         if len(unowned_files) > 5:
             preview += ", ..."
         print(
-            f"warning: no CODEOWNERS match for {len(unowned_files)} changed file(s): {preview}",
+            f"warning: no ownership rule match for {len(unowned_files)} changed file(s): {preview}",
             file=sys.stderr,
         )
 
     if not all_emails:
         print(
-            "warning: no maintainer emails resolved. Check CODEOWNERS patterns and maintainers/*.txt aliases.",
+            "warning: no maintainer emails resolved. Check ownership rules and MAINTAINERS aliases.",
             file=sys.stderr,
         )
 

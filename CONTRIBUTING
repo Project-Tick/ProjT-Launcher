@@ -36,15 +36,13 @@ in Windows:
 
 git clone https://github.com/Project-Tick/ProjT-Launcher.git
 cd ProjT-Launcher
-.\configure.bat --with-tests --platform=windows --shared
-make
+cmake --preset (your_OS)
+cmake --build --preset (your_OS) --config (Debug/Release)
 
-in Linux or macOS
+eg.
 
-git clone https://github.com/Project-Tick/ProjT-Launcher.git
-cd ProjT-Launcher
-./configure --with-tests --shared
-make
+cmake --preset windows_mingw
+cmake --build --preset windows_mingw --config Debug
 
 ----------------------------------------------------------
 
@@ -53,7 +51,7 @@ Requirements
 
 | Component |         Requirement       |
 | --------- | ------------------------- |
-| GNU Make  | Latest Version            |
+| CMake     | Latest Version            |
 | Qt        | 6.8.6+                    |
 | Compiler  | C++23 support             |
 | Python    | 3.9+ (for metadata tools) |
@@ -176,7 +174,7 @@ git format-patch -n1 --cover-letter
 Please edit 0000-cover-letter.patch to add description in this patch.
 
 Add CC recipients from the maintainers list:
-make maintainer-emails
+python scripts/patch_maintainer_emails.py --patch 0001-*.patch
 git send-email --to mailing-list@example.org --cc (make maintainer-emails) 000*.patch
 
 Configure SMTP for git send-email (example):
