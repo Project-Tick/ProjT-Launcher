@@ -834,7 +834,10 @@ install: install-bin install-data
 
 install-bin: build
 	$(Q)$(INSTALL) -d $(DESTDIR)$(BINDIR)
+	$(Q)$(INSTALL) -d $(DESTDIR)$(LIBDIR)
 	$(Q)$(INSTALL) -m 755 $(KBUILD_OUTPUT)/bin/projtlauncher$(EXE_SUFFIX) $(DESTDIR)$(BINDIR)/
+	$(Q)cp -a $(KBUILD_OUTPUT)/lib/*.so* $(DESTDIR)$(LIBDIR)/ 2>/dev/null || true
+	$(Q)cp -a $(srctree)/cmark/build/src/libcmark.so* $(DESTDIR)$(LIBDIR)/ 2>/dev/null || true
 
 install-data:
 	$(Q)$(INSTALL) -d $(DESTDIR)$(DATADIR)/applications

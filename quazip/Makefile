@@ -52,31 +52,43 @@ ifeq ($(MOC),)
 MOC := $(KBUILD_OUTPUT)/obj/qt/install/libexec/moc
 endif
 
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+MOC_OBJ_EXT := obj
+MOC_QT_CFLAGS := $(patsubst /I%,-I%,$(QT_CFLAGS))
+else
+MOC_OBJ_EXT := o
+MOC_QT_CFLAGS := $(QT_CFLAGS)
+endif
+
 # Add moc objects to library
 EXTRA_OBJS := \
-	$(OBJDIR)/moc_quagzipfile.o \
-	$(OBJDIR)/moc_quaziodevice.o \
-	$(OBJDIR)/moc_quazipfile.o
+	$(OBJDIR)/moc_quagzipfile.$(MOC_OBJ_EXT) \
+	$(OBJDIR)/moc_quaziodevice.$(MOC_OBJ_EXT) \
+	$(OBJDIR)/moc_quazipfile.$(MOC_OBJ_EXT)
 
 # MOC rules
 $(OBJDIR)/moc_quagzipfile.cpp: $(CURDIR)/quazip/quagzipfile.h
 	@echo "  MOC     $<"
 	$(Q)mkdir -p $(dir $@)
-	$(Q)$(MOC) $(QT_CFLAGS) -I$(srctree)/quazip $< -o $@
+	$(Q)$(MOC) $(MOC_QT_CFLAGS) -I$(srctree)/quazip $< -o $@
 
 $(OBJDIR)/moc_quaziodevice.cpp: $(CURDIR)/quazip/quaziodevice.h
 	@echo "  MOC     $<"
 	$(Q)mkdir -p $(dir $@)
-	$(Q)$(MOC) $(QT_CFLAGS) -I$(srctree)/quazip $< -o $@
+	$(Q)$(MOC) $(MOC_QT_CFLAGS) -I$(srctree)/quazip $< -o $@
 
 $(OBJDIR)/moc_quazipfile.cpp: $(CURDIR)/quazip/quazipfile.h
 	@echo "  MOC     $<"
 	$(Q)mkdir -p $(dir $@)
-	$(Q)$(MOC) $(QT_CFLAGS) -I$(srctree)/quazip $< -o $@
+	$(Q)$(MOC) $(MOC_QT_CFLAGS) -I$(srctree)/quazip $< -o $@
 
-$(OBJDIR)/moc_%.o: $(OBJDIR)/moc_%.cpp
+$(OBJDIR)/moc_%.$(MOC_OBJ_EXT): $(OBJDIR)/moc_%.cpp
 	@echo "  CXX     $<"
+ifeq ($(WINDOWS_TOOLCHAIN),msvc)
+	$(Q)$(CXX) $(BASE_CXXFLAGS) $(QT_CFLAGS) -DQUAZIP_STATIC /I$(srctree)/quazip /I$(srctree)/zlib /c /Fo$@ $<
+else
 	$(Q)$(CXX) $(BASE_CXXFLAGS) $(QT_CFLAGS) -DQUAZIP_STATIC -I$(srctree)/quazip -I$(srctree)/zlib -c -o $@ $<
+endif
 
 # Mark that we have custom STATIC_LIB rule
 CUSTOM_STATIC_LIB_RULE := 1

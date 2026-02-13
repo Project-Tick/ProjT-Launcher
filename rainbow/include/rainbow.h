@@ -23,7 +23,7 @@
 
 #pragma once
 
-#include <QPainter>
+#include <QtGui/QPainter>
 class QColor;
 
 /**
