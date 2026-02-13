@@ -32,5 +32,5 @@ jobs:
               owner: owner,
               repo: repo,
               issue_number: pr.number,
-              body: `🙏 **Thank you for your interest!**\n\nProject Tick accepts contributions via **mailing list** only. Please:\n\n1. Subscribe to the [**Mailing List**](https://lists.projecttick.org)\n2. Send your code as a patch via email\n\n\`\`\`bash\ngit send-email --to=launcher@dev.projecttick.org *.patch\n\`\`\`\n\n**Note:** GitHub pull requests are automatically closed. For more information about our contribution workflow, please see [CONTRIBUTING.md](./CONTRIBUTING.md).`
+              body: `🙏 **Thank you for your interest!**\n\nProject Tick accepts contributions via **mailing list** only. Please:\n\n1. Subscribe to the [**Mailing List**](https://lists.projecttick.org)\n2. Send your code as a patch via email\n\n\`\`\`bash\ngit send-email --to=launcher@dev.projecttick.org *.patch\n\`\`\`\n\n**Note:** GitHub pull requests are automatically closed. For more information about our contribution workflow, please see [CONTRIBUTING](./CONTRIBUTING).`
             });
