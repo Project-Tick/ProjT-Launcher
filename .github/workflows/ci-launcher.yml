@@ -343,7 +343,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
-            cmake-preset: windows_mingw
+            cmake-preset: macos_universal
             build-system: cmake
 
           - os: macos-26
@@ -354,7 +354,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
-            cmake-preset: windows_mingw
+            cmake-preset: macos_universal
             build-system: cmake
 
           - os: macos-15
@@ -365,7 +365,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
-            cmake-preset: windows_mingw
+            cmake-preset: macos_arm64
             build-system: cmake
 
           - os: macos-26
@@ -376,7 +376,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
-            cmake-preset: windows_mingw
+            cmake-preset: macos_arm64
             build-system: cmake
 
           - os: macos-15-intel
@@ -387,7 +387,7 @@ jobs:
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
-            cmake-preset: windows_mingw
+            cmake-preset: macos_intel
             build-system: cmake
 
     runs-on: ${{ matrix.os }}
