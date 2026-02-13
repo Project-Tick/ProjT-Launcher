@@ -61,39 +61,7 @@ runs:
         BUILD_DIR: build
         INSTALL_DIR: install
       run: |
-        if [ -f "${{ env.BUILD_DIR }}/cmake_install.cmake" ]; then
-          cmake --install ${{ env.BUILD_DIR }} --config ${{ inputs.build-type }}
-        else
-          make DESTDIR="${{ env.INSTALL_DIR }}" PREFIX=/usr install
-          app_root="${{ env.INSTALL_DIR }}/ProjTLauncher.app"
-          mkdir -p "$app_root/Contents/MacOS" "$app_root/Contents/Resources"
-          cp "${{ env.BUILD_DIR }}/bin/projtlauncher" "$app_root/Contents/MacOS/projtlauncher"
-          cat > "$app_root/Contents/Info.plist" <<'EOF'
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
-            <key>CFBundleExecutable</key>
-            <string>projtlauncher</string>
-            <key>CFBundleIdentifier</key>
-            <string>org.projecttick.ProjTLauncher</string>
-            <key>CFBundleName</key>
-            <string>ProjT Launcher</string>
-            <key>CFBundleShortVersionString</key>
-            <string>${{ inputs.version }}</string>
-            <key>CFBundleVersion</key>
-            <string>${{ inputs.version }}</string>
-            <key>LSMinimumSystemVersion</key>
-            <string>11.0</string>
-            <key>NSHighResolutionCapable</key>
-            <true/>
-        </dict>
-        </plist>
-        EOF
-          if [ -f "program_info/org.projecttick.ProjTLauncher.icns" ]; then
-            cp "program_info/org.projecttick.ProjTLauncher.icns" "$app_root/Contents/Resources/"
-          fi
-        fi
+        cmake --install ${{ env.BUILD_DIR }} --config ${{ inputs.build-type }}
 
         cd ${{ env.INSTALL_DIR }}
         chmod +x "ProjTLauncher.app/Contents/MacOS/projtlauncher"
@@ -138,7 +106,7 @@ runs:
         INSTALL_DIR: install
         DMG_NAME: ProjTLauncher.dmg
         DMG_VOL_NAME: ProjT Launcher
-        DMG_EULA: ${{ github.workspace }}/COPYING
+        DMG_EULA: ${{ github.workspace }}/COPYING.md
         DMG_BG: ${{ github.workspace }}/program_info/dmg-background.png
       run: |
         if ! command -v create-dmg >/dev/null 2>&1; then
@@ -190,7 +158,7 @@ runs:
           --component "ProjT Launcher.app" \
           ../bootstrap-component.pkg
 
-        if [ -f "${{ github.workspace }}/COPYING" ]; then
+        if [ -f "${{ github.workspace }}/COPYING.md" ]; then
           echo ":warning: productbuild does not support --license; building PKG without embedded license." >> $GITHUB_STEP_SUMMARY
         fi
         productbuild --package ../bootstrap-component.pkg \
@@ -227,17 +195,5 @@ runs:
         name: ProjTLauncher-${{ inputs.artifact-name }}-${{ inputs.version }}-${{ inputs.build-type }}
         path: |
           ProjTLauncher.zip
-
-    - name: Upload binary tarball
-      uses: actions/upload-artifact@v5
-      with:
-        name: ProjTLauncher-${{ inputs.artifact-name }}-${{ inputs.version }}-${{ inputs.build-type }}-dmg
-        path: |
           ProjTLauncher.dmg
-
-    - name: Upload binary tarball
-      uses: actions/upload-artifact@v5
-      with:
-        name: ProjTLauncher-${{ inputs.artifact-name }}-${{ inputs.version }}-${{ inputs.build-type }}-pkg
-        path: |
           ProjTLauncher-macOS-${{ inputs.version }}.pkg

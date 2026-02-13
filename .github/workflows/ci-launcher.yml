@@ -17,7 +17,7 @@ on:
         required: false
         default: ""
       enable-windows-arm64:
-        description: Enable Windows MSVC ARM64 build
+        description: Enable Windows MSVC ARM64 build (Qt WebEngine not available on ARM64)
         type: boolean
         required: false
         default: false
@@ -32,7 +32,7 @@ on:
         type: string
         default: Debug
       force-prepare-yes:
-        description: Force prepare job to enable tests/builds
+        description: Force prepare job to enable tests/builds (used by release workflow)
         type: boolean
         default: false
       version:
@@ -111,6 +111,7 @@ env:
   NODE_NO_WARNINGS: 1
   CHECKOUT_REF: ${{ inputs.ref || github.event.inputs.ref || github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha || github.sha }}
   OUTPUT_ROOT: ${{ inputs.output-root || github.event.inputs.output-root || format('{0}/build/out', github.workspace) }}
+  CMAKE_CONFIGURE_ARGS: -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING -DLauncher_OUTPUT_ROOT=${{ inputs.output-root || github.event.inputs.output-root || format('{0}/build/out', github.workspace) }}
 
 jobs:
   build-launcher:
@@ -125,270 +126,155 @@ jobs:
         include:
           - os: ubuntu-24.04
             artifact-name: Linux
-            target-platform: linux
-            target-arch: x86_64
+            cmake-preset: linux
             qt-architecture: linux_gcc_64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
-            build-system: make
-
           - os: ubuntu-24.04-arm
             artifact-name: Linux-aarch64
-            target-platform: linux
-            target-arch: aarch64
+            cmake-preset: linux
             qt-architecture: linux_gcc_arm64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
-            build-system: make
-
-          # Windows MSVC builds
           - os: windows-2022
             artifact-name: Windows-MSVC
-            target-platform: windows
-            windows-toolchain: msvc
+            cmake-preset: windows_msvc
             vcvars-arch: amd64
             qt-architecture: win64_msvc2022_64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
-            build-system: make
-
+          - os: windows-2022
+            artifact-name: Windows-MSVC-2022
+            cmake-preset: windows_msvc
+            vcvars-arch: amd64
+            qt-architecture: win64_msvc2022_64
+            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
+            qt-version: 6.10.2
           - os: windows-2025
             artifact-name: Windows-MSVC-2025
-            target-platform: windows
-            windows-toolchain: msvc
+            cmake-preset: windows_msvc
             vcvars-arch: amd64
             qt-architecture: win64_msvc2022_64
             qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
             qt-version: 6.10.2
-            build-system: make
-
           - os: windows-11-arm
             artifact-name: Windows-MSVC-arm64
-            target-platform: windows
-            windows-toolchain: msvc
-            target-arch: aarch64
+            cmake-preset: windows_msvc
             vcvars-arch: arm64
             qt-architecture: win64_msvc2022_arm64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
             qt-version: 6.10.2
-            build-system: make
-
-          # Windows MinGW builds
+          - os: windows-2022
+            artifact-name: Windows-MinGW-w64-2022
+            cmake-preset: windows_mingw
+            msystem: MINGW64
+            vcvars-arch: amd64_x86
           - os: windows-2022
             artifact-name: Windows-MinGW-w64
-            target-platform: windows
-            windows-toolchain: mingw
+            cmake-preset: windows_mingw
             msystem: MINGW64
             vcvars-arch: amd64_x86
-            build-system: make
-
           - os: windows-2025
             artifact-name: Windows-MinGW-w64-2025
-            target-platform: windows
-            windows-toolchain: mingw
+            cmake-preset: windows_mingw
             msystem: MINGW64
             vcvars-arch: amd64_x86
-            build-system: make
-
           - os: windows-11-arm
             artifact-name: Windows-MinGW-arm64
-            target-platform: windows
-            windows-toolchain: mingw
-            target-arch: aarch64
+            cmake-preset: windows_mingw
             msystem: CLANGARM64
             vcvars-arch: arm64
-            build-system: make
-
-          # macOS builds
+          - os: macos-14
+            artifact-name: macOS-14-universal
+            cmake-preset: macos_universal
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
           - os: macos-15
             artifact-name: macOS-15-universal
-            target-platform: macos
-            target-arch: universal
+            cmake-preset: macos_universal
             macosx-deployment-target: 12.0
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
-            build-system: make
-
+          - os: macos-14-intel
+            artifact-name: macOS-14-intel-universal
+            cmake-preset: macos_universal
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-15-intel
+            artifact-name: macOS-15-intel-universal
+            cmake-preset: macos_universal
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
           - os: macos-26
             artifact-name: macOS-26-universal
-            target-platform: macos
-            target-arch: universal
+            cmake-preset: macos_universal
             macosx-deployment-target: 12.0
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
-            build-system: make
-
+          - os: macos-14
+            artifact-name: macOS-14-arm64
+            cmake-preset: macos_arm64
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
           - os: macos-15
             artifact-name: macOS-15-arm64
-            target-platform: macos
-            target-arch: aarch64
+            cmake-preset: macos_arm64
             macosx-deployment-target: 12.0
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
-            build-system: make
-
+          - os: macos-14-intel
+            artifact-name: macOS-14-intel
+            cmake-preset: macos_intel
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-15-intel
+            artifact-name: macOS-15-intel
+            cmake-preset: macos_intel
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-26
+            artifact-name: macOS-26-arm64
+            cmake-preset: macos_arm64
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-26
+            artifact-name: macOS-universal
+            cmake-preset: macos_universal
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
+          - os: macos-15
+            artifact-name: macOS-intel
+            cmake-preset: macos_intel
+            macosx-deployment-target: 12.0
+            qt-architecture: clang_64
+            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
+            qt-version: 6.10.2
           - os: macos-26
             artifact-name: macOS-arm64
-            target-platform: macos
-            target-arch: aarch64
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
-            qt-version: 6.10.2
-            build-system: make
-
-          - os: macos-15-intel
-            artifact-name: macOS-intel
-            target-platform: macos
-            target-arch: x86_64
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
-            qt-version: 6.10.2
-            build-system: make
-
-          - os: ubuntu-24.04
-            artifact-name: Linux-cmake
-            target-platform: linux
-            target-arch: x86_64
-            qt-architecture: linux_gcc_64
-            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
-            qt-version: 6.10.2
-            cmake-preset: linux
-            build-system: cmake
-
-          - os: ubuntu-24.04-arm
-            artifact-name: Linux-aarch64-cmake
-            target-platform: linux
-            target-arch: aarch64
-            qt-architecture: linux_gcc_arm64
-            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
-            qt-version: 6.10.2
-            cmake-preset: linux
-            build-system: cmake
-
-          # Windows MSVC builds
-          - os: windows-2022
-            artifact-name: Windows-MSVC-cmake
-            target-platform: windows
-            windows-toolchain: msvc
-            vcvars-arch: amd64
-            qt-architecture: win64_msvc2022_64
-            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
-            qt-version: 6.10.2
-            cmake-preset: windows_msvc
-            build-system: cmake
-
-          - os: windows-2025
-            artifact-name: Windows-MSVC-2025-cmake
-            target-platform: windows
-            windows-toolchain: msvc
-            vcvars-arch: amd64
-            qt-architecture: win64_msvc2022_64
-            qt-modules: qtimageformats qtnetworkauth qtwebchannel qtwebengine qtpositioning qtserialport
-            qt-version: 6.10.2
-            cmake-preset: windows_msvc
-            build-system: cmake
-
-          - os: windows-11-arm
-            artifact-name: Windows-MSVC-arm64-cmake
-            target-platform: windows
-            windows-toolchain: msvc
-            target-arch: aarch64
-            vcvars-arch: arm64
-            qt-architecture: win64_msvc2022_arm64
-            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport
-            qt-version: 6.10.2
-            cmake-preset: windows_msvc
-            build-system: cmake
-
-          # Windows MinGW builds
-          - os: windows-2022
-            artifact-name: Windows-MinGW-w64-cmake
-            target-platform: windows
-            windows-toolchain: mingw
-            msystem: MINGW64
-            vcvars-arch: amd64_x86
-            cmake-preset: windows_mingw
-            build-system: cmake
-
-          - os: windows-2025
-            artifact-name: Windows-MinGW-w64-2025-cmake
-            target-platform: windows
-            windows-toolchain: mingw
-            msystem: MINGW64
-            vcvars-arch: amd64_x86
-            cmake-preset: windows_mingw
-            build-system: cmake
-
-          - os: windows-11-arm
-            artifact-name: Windows-MinGW-arm64-cmake
-            target-platform: windows
-            windows-toolchain: mingw
-            target-arch: aarch64
-            msystem: CLANGARM64
-            vcvars-arch: arm64
-            cmake-preset: windows_mingw
-            build-system: cmake
-
-          # macOS builds
-          - os: macos-15
-            artifact-name: macOS-15-universal-cmake
-            target-platform: macos
-            target-arch: universal
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
-            qt-version: 6.10.2
-            cmake-preset: macos_universal
-            build-system: cmake
-
-          - os: macos-26
-            artifact-name: macOS-26-universal-cmake
-            target-platform: macos
-            target-arch: universal
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
-            qt-version: 6.10.2
-            cmake-preset: macos_universal
-            build-system: cmake
-
-          - os: macos-15
-            artifact-name: macOS-15-arm64-cmake
-            target-platform: macos
-            target-arch: aarch64
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
-            qt-version: 6.10.2
             cmake-preset: macos_arm64
-            build-system: cmake
-
-          - os: macos-26
-            artifact-name: macOS-arm64-cmake
-            target-platform: macos
-            target-arch: aarch64
             macosx-deployment-target: 12.0
             qt-architecture: clang_64
             qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
             qt-version: 6.10.2
-            cmake-preset: macos_arm64
-            build-system: cmake
-
-          - os: macos-15-intel
-            artifact-name: macOS-intel-cmake
-            target-platform: macos
-            target-arch: x86_64
-            macosx-deployment-target: 12.0
-            qt-architecture: clang_64
-            qt-modules: qtimageformats qtnetworkauth qtpositioning qtserialport qtwebengine qtwebchannel
-            qt-version: 6.10.2
-            cmake-preset: macos_intel
-            build-system: cmake
 
     runs-on: ${{ matrix.os }}
 
@@ -396,19 +282,14 @@ jobs:
       ARTIFACT_NAME: ${{ matrix.artifact-name }}
       BUILD_PLATFORM: official
       CMAKE_PRESET: ${{ matrix.cmake-preset }}
-      TARGET_PLATFORM: ${{ matrix.target-platform }}
-      TARGET_ARCH: ${{ matrix.target-arch || 'x86_64' }}
-      WINDOWS_TOOLCHAIN: ${{ matrix.windows-toolchain || 'mingw' }}
       MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
-      MSYS_NO_PATHCONV: ${{ matrix.windows-toolchain == 'msvc' && '1' || '' }}
-      MSYS2_ARG_CONV_EXCL: ${{ matrix.windows-toolchain == 'msvc' && '*' || '' }}
 
     defaults:
       run:
         shell: ${{ matrix.msystem && 'msys2 {0}' || 'bash' }}
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Project Tick Launcher Repository
         uses: actions/checkout@v6
         with:
           ref: ${{ env.CHECKOUT_REF }}
@@ -429,178 +310,22 @@ jobs:
       - name: Set build type
         run: echo "BUILD_TYPE=${{ inputs.build-type || 'Debug' }}" >> $GITHUB_ENV
 
-      # Windows MSVC Setup
-      - name: Setup MSVC Environment (Windows MSVC)
-        if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: ${{ matrix.vcvars-arch }}
-
-      # Configure with Make system
-      - name: Configure (Linux)
-        if: runner.os == 'Linux' && matrix.build-system == 'make'
+      - name: Clean build directory for builds
         run: |
-          QT_PREFIX="${{ steps.setup-dependencies.outputs.qt-path }}"
-          if [ -z "$QT_PREFIX" ]; then
-            echo "ERROR: setup-dependencies did not provide qt-path" >&2
-            exit 1
-          fi
-          ./configure \
-            --platform=linux \
-            --arch=${{ matrix.target-arch || 'x86_64' }} \
-            --build=${{ env.BUILD_TYPE }} \
-            --qt-prefix="$QT_PREFIX" \
-            --with-tests
+          rm -rf build
 
-      - name: Configure (Windows MSVC)
-        if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc' && matrix.build-system == 'make'
-        shell: bash
+      - name: Configure Preset
         run: |
-          QT_PREFIX="${{ steps.setup-dependencies.outputs.qt-path }}"
-          if [ -z "$QT_PREFIX" ]; then
-            echo "ERROR: setup-dependencies did not provide qt-path" >&2
-            exit 1
-          fi
-          ./configure \
-            --platform=windows \
-            --build=${{ env.BUILD_TYPE }} \
-            --arch=${{ matrix.target-arch || 'x86_64' }} \
-            --qt-prefix="$QT_PREFIX" \
-            --with-tests
+          cmake --preset "$CMAKE_PRESET" $CMAKE_CONFIGURE_ARGS
 
-      - name: Configure (Windows MinGW)
-        if: runner.os == 'Windows' && matrix.windows-toolchain == 'mingw' && matrix.build-system == 'make'
-        run: |
-          if [ -n "${MSYSTEM:-}" ]; then
-            msys_lc="$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')"
-            msys_bin="/${msys_lc}/bin"
-            export PATH="${msys_bin}:$PATH"
-            if [ -x "${msys_bin}/gcc" ] && [ -x "${msys_bin}/g++" ]; then
-              export CC="gcc"
-              export CXX="g++"
-              export AR="ar"
-              export RANLIB="ranlib"
-            elif [ -x "${msys_bin}/clang" ] && [ -x "${msys_bin}/clang++" ]; then
-              export CC="clang"
-              export CXX="clang++"
-              if [ -x "${msys_bin}/llvm-ar" ] && [ -x "${msys_bin}/llvm-ranlib" ]; then
-                export AR="llvm-ar"
-                export RANLIB="llvm-ranlib"
-              else
-                export AR="ar"
-                export RANLIB="ranlib"
-              fi
-            fi
-            hash -r
-          fi
-          export NO_CCACHE=1
-          ./configure \
-            --platform=windows \
-            --arch=${{ matrix.target-arch || 'x86_64' }} \
-            --build=${{ env.BUILD_TYPE }} \
-            --with-tests
-
-      - name: Configure (macOS)
-        if: runner.os == 'macOS' && matrix.build-system == 'make'
-        run: |
-          QT_PREFIX="${{ steps.setup-dependencies.outputs.qt-path }}"
-          if [ -z "$QT_PREFIX" ]; then
-            echo "ERROR: setup-dependencies did not provide qt-path" >&2
-            exit 1
-          fi
-          ./configure \
-            --platform=macos \
-            --arch=${{ matrix.target-arch || 'universal' }} \
-            --build=${{ env.BUILD_TYPE }} \
-            --qt-prefix="$QT_PREFIX" \
-            --with-tests
-
-      # Build with Make
-      - name: Build (Linux/macOS/MinGW)
-        if: matrix.build-system == 'make' && (runner.os != 'Windows' || matrix.windows-toolchain == 'mingw')
-        run: |
-          if [ "${RUNNER_OS}" = "Windows" ] && [ "${WINDOWS_TOOLCHAIN}" = "mingw" ] && [ -n "${MSYSTEM:-}" ]; then
-            msys_lc="$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')"
-            msys_bin="/${msys_lc}/bin"
-            export PATH="${msys_bin}:$PATH"
-            if [ -x "${msys_bin}/gcc" ] && [ -x "${msys_bin}/g++" ]; then
-              export CC="gcc"
-              export CXX="g++"
-              export AR="ar"
-              export RANLIB="ranlib"
-            elif [ -x "${msys_bin}/clang" ] && [ -x "${msys_bin}/clang++" ]; then
-              export CC="clang"
-              export CXX="clang++"
-              if [ -x "${msys_bin}/llvm-ar" ] && [ -x "${msys_bin}/llvm-ranlib" ]; then
-                export AR="llvm-ar"
-                export RANLIB="llvm-ranlib"
-              else
-                export AR="ar"
-                export RANLIB="ranlib"
-              fi
-            fi
-            export NO_CCACHE=1
-            hash -r
-          fi
-          make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
-
-      - name: Build (Windows MSVC)
-        if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc' && matrix.build-system == 'make'
-        shell: bash
-        run: |
-          make -j${NUMBER_OF_PROCESSORS:-4}
-
-      # Run Tests
-      - name: Run Tests (Linux/macOS/MinGW)
-        if: matrix.build-system == 'make' && (runner.os != 'Windows' || matrix.windows-toolchain == 'mingw')
-        run: |
-          if [ "${RUNNER_OS}" = "Windows" ] && [ "${WINDOWS_TOOLCHAIN}" = "mingw" ] && [ -n "${MSYSTEM:-}" ]; then
-            msys_lc="$(echo "${MSYSTEM}" | tr '[:upper:]' '[:lower:]')"
-            msys_bin="/${msys_lc}/bin"
-            export PATH="${msys_bin}:$PATH"
-            if [ -x "${msys_bin}/gcc" ] && [ -x "${msys_bin}/g++" ]; then
-              export CC="gcc"
-              export CXX="g++"
-              export AR="ar"
-              export RANLIB="ranlib"
-            elif [ -x "${msys_bin}/clang" ] && [ -x "${msys_bin}/clang++" ]; then
-              export CC="clang"
-              export CXX="clang++"
-              if [ -x "${msys_bin}/llvm-ar" ] && [ -x "${msys_bin}/llvm-ranlib" ]; then
-                export AR="llvm-ar"
-                export RANLIB="llvm-ranlib"
-              else
-                export AR="ar"
-                export RANLIB="ranlib"
-              fi
-            fi
-            export NO_CCACHE=1
-            hash -r
-          fi
-          make test TEST_VERBOSE=1
-
-      - name: Run Tests (Windows MSVC)
-        if: runner.os == 'Windows' && matrix.windows-toolchain == 'msvc' && matrix.build-system == 'make'
-        shell: bash
-        run: |
-          make test TEST_VERBOSE=1
-
-      - name: CMake Configure
-        if: matrix.build-system == 'cmake'
-        run: |
-          cmake --preset "$CMAKE_PRESET"
-
-      - name: CMake Build
-        if: matrix.build-system == 'cmake'
+      - name: Run Build
         run: |
           cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
 
-      - name: CMake Test
-        if: matrix.build-system == 'cmake'
+      - name: Run tests
         run: |
-          ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --extra-verbose --output-on-failure
+          ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE"
 
-      # Upload Artifacts
       - name: Upload build
         uses: actions/upload-artifact@v6
         with:
@@ -611,7 +336,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: test-results-${{ matrix.artifact-name }}
-          path: build/tests/
+          path: build/Testing/
 
       - name: Get short version
         id: short-version
@@ -619,9 +344,8 @@ jobs:
         run: |
           echo "version=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
-      # Package
       - name: Package (Linux)
-        if: runner.os == 'Linux'
+        if: ${{ runner.os == 'Linux' }}
         uses: ./.github/actions/package/linux
         with:
           version: ${{ steps.short-version.outputs.version }}
@@ -632,7 +356,7 @@ jobs:
           gpg-private-key-id: ${{ secrets.LINUX_GPG_ID }}
 
       - name: Package (Windows)
-        if: runner.os == 'Windows'
+        if: ${{ runner.os == 'Windows' }}
         uses: ./.github/actions/package/windows
         with:
           version: ${{ steps.short-version.outputs.version }}
@@ -643,7 +367,7 @@ jobs:
           msystem: ${{ matrix.msystem }}
 
       - name: Package (macOS)
-        if: runner.os == 'macOS'
+        if: ${{ runner.os == 'macOS' }}
         uses: ./.github/actions/package/macos
         with:
           version: ${{ steps.short-version.outputs.version }}

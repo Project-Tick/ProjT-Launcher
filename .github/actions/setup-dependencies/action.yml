@@ -34,9 +34,6 @@ outputs:
   qt-version:
     description: Version of Qt used
     value: ${{ inputs.qt-version }}
-  qt-path:
-    description: Resolved Qt installation prefix
-    value: ${{ steps.resolve-qt-path.outputs.qt-path }}
 
 runs:
   using: composite
@@ -61,7 +58,6 @@ runs:
         vcvars-arch: ${{ inputs.vcvars-arch }}
 
     - name: Install Qt
-      id: install-qt
       if: ${{ inputs.qt-architecture != '' || inputs.msystem == '' }}
       uses: jurplel/install-qt-action@v4
       with:
@@ -70,54 +66,3 @@ runs:
         arch: ${{ inputs.qt-architecture }}
         modules: ${{ inputs.qt-modules }}
         cache: ${{ inputs.build-type == 'Debug' }}
-
-    - name: Resolve Qt path
-      id: resolve-qt-path
-      shell: bash
-      run: |
-        qt_path=""
-        resolve_qt_prefix() {
-          local candidate="$1"
-          [ -z "$candidate" ] && return 0
-
-          # Already a usable Qt prefix.
-          if [ -x "$candidate/bin/qmake6" ] || [ -x "$candidate/bin/qmake" ] || [ -d "$candidate/include/QtCore" ]; then
-            printf '%s\n' "$candidate"
-            return 0
-          fi
-
-          # install-qt-action may return a version root (e.g. .../Qt/6.10.2).
-          local sub
-          for sub in "$candidate"/* "$candidate"/*/*; do
-            [ -d "$sub" ] || continue
-            if [ -x "$sub/bin/qmake6" ] || [ -x "$sub/bin/qmake" ] || [ -d "$sub/include/QtCore" ]; then
-              printf '%s\n' "$sub"
-              return 0
-            fi
-          done
-
-          printf '%s\n' "$candidate"
-        }
-
-        # Preferred: explicit output from install-qt-action.
-        if [ -n "${{ steps.install-qt.outputs.dir }}" ]; then
-          qt_path="${{ steps.install-qt.outputs.dir }}"
-        fi
-
-        # Fallback: environment variables that may be exported by the action.
-        if [ -z "$qt_path" ] && [ -n "${QT_ROOT_DIR:-}" ]; then
-          qt_path="${QT_ROOT_DIR}"
-        fi
-        if [ -z "$qt_path" ] && [ -n "${QTDIR:-}" ]; then
-          qt_path="${QTDIR}"
-        fi
-        if [ -z "$qt_path" ] && [ -n "${Qt6_DIR:-}" ]; then
-          case "${Qt6_DIR}" in
-            */lib/cmake/Qt6) qt_path="${Qt6_DIR%/lib/cmake/Qt6}" ;;
-            *) qt_path="${Qt6_DIR}" ;;
-          esac
-        fi
-
-        qt_path="$(resolve_qt_prefix "$qt_path")"
-
-        echo "qt-path=$qt_path" >> "$GITHUB_OUTPUT"
