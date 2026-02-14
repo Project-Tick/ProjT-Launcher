@@ -1,11 +1,11 @@
 /* zip.c -- IO on .zip files using PTlibzippy
    Version 1.1, February 14h, 2010
-   part of the MiniZip project - ( http://www.winimage.com/ptlibzippyDll/minizip.html )
+   part of the MiniZip project - ( https://www.winimage.com/zLibDll/minizip.html )
 
-         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/ptlibzippyDll/minizip.html )
+         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( https://www.winimage.com/zLibDll/minizip.html )
 
          Modifications for Zip64 support
-         Copyright (C) 2009-2010 Mathias Svensson ( http://result42.com )
+         Copyright (C) 2009-2010 Mathias Svensson ( https://result42.com )
 
          For more info read MiniZip_info.txt
 
@@ -93,7 +93,7 @@
 #  define DEF_MEM_LEVEL  MAX_MEM_LEVEL
 #endif
 #endif
-const char zip_copyright[] =" zip 1.01 Copyright 1998-2004 Gilles Vollant - http://www.winimage.com/ptlibzippyDll; Copyright (C) 2026 Project Tick";
+const char zip_copyright[] =" zip 1.01 Copyright 1998-2004 Gilles Vollant - https://www.winimage.com/zLibDll/minizip.html; Copyright (C) 2026 Project Tick";
 
 
 #define SIZEDATA_INDATABLOCK (4096-(4*4))
@@ -337,7 +337,7 @@ local int block_get(block_t *block) {
             return -1;
         /* Update left in case more was filled in since we were last here. */
         block->left = block->node->filled_in_this_block -
-                      (block->next - block->node->data);
+                      (size_t)(block->next - block->node->data);
         if (block->left != 0)
             /* There was indeed more data appended in the current datablock. */
             break;
@@ -357,8 +357,9 @@ local int block_get(block_t *block) {
 /* Return a 16-bit unsigned little-endian value from block, or a negative value
 // if the end is reached. */
 local long block_get2(block_t *block) {
-    long got = block_get(block);
-    return got | ((unsigned long)block_get(block) << 8);
+    int low = block_get(block);
+    int high = block_get(block);
+    return low < 0 || high < 0 ? -1 : low | ((long)high << 8);
 }
 
 /* Read up to len bytes from block into buf. Return the number of bytes read. */
@@ -420,9 +421,9 @@ local char *block_central_name(block_t *block, set_t *set) {
         /* Go through the remaining fixed-length portion of the record,
         // extracting the lengths of the three variable-length fields. */
         block_skip(block, 24);
-        unsigned flen = block_get2(block);      /* file name length */
-        unsigned xlen = block_get2(block);      /* extra field length */
-        unsigned clen = block_get2(block);      /* comment field length */
+        unsigned flen = (unsigned)block_get2(block);    /* file name length */
+        unsigned xlen = (unsigned)block_get2(block);    /* extra length */
+        unsigned clen = (unsigned)block_get2(block);    /* comment length */
         if (block_skip(block, 12) == -1)
             /* Premature end of the record. */
             break;
@@ -1283,7 +1284,7 @@ local int isutf8(char const *str, size_t len) {
         if (code > 1)
             utf8 = 1;
         str += code;
-        len -= code;
+        len -= (unsigned)code;
     }
     return utf8;
 }

@@ -326,7 +326,7 @@ static void test_large_inflate(Byte *compr, uLong comprLen, Byte *uncompr,
     CHECK_ERR(err, "inflateEnd");
 
     if (d_stream.total_out != 2*uncomprLen + uncomprLen/2) {
-        fprintf(stderr, "bad large inflate: %ld\n", d_stream.total_out);
+        fprintf(stderr, "bad large inflate: %lu\n", d_stream.total_out);
         exit(1);
     } else {
         printf("large_inflate(): OK\n");
@@ -511,7 +511,7 @@ int main(int argc, char *argv[]) {
     }
 
     printf("PTlibzippy version %s = 0x%04x, compile flags = 0x%lx\n",
-            PTLIBZIPPY_VERSION, PTLIBZIPPY_VERNUM, ptlibzippyCompileFlags());
+            PTLIBZIPPY_VERSION, (unsigned)PTLIBZIPPY_VERNUM, ptlibzippyCompileFlags());
 
     compr    = (Byte*)calloc((uInt)comprLen, 1);
     uncompr  = (Byte*)calloc((uInt)uncomprLen, 1);

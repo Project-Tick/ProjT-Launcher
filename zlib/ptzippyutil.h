@@ -37,6 +37,10 @@
    define "local" for the non-static meaning of "static", for readability
    (compile with -Dlocal if your debugger can't find static symbols) */
 
+extern const char deflate_copyright[];
+extern const char inflate_copyright[];
+extern const char inflate9_copyright[];
+
 typedef unsigned char  uch;
 typedef uch FAR uchf;
 typedef unsigned short ush;

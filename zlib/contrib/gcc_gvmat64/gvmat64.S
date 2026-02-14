@@ -168,9 +168,6 @@ printf("#define dsNiceMatch     %u\n",(int)(((char*)&(s->nice_match))-((char*)s)
 ; windows:
 ; parameter 1 in rcx(deflate state s), param 2 in rdx (cur match)
 
-; see http://weblogs.asp.net/oldnewthing/archive/2004/01/14/58579.aspx and
-; http://msdn.microsoft.com/library/en-us/kmarch/hh/kmarch/64bitAMD_8e951dd2-ee77-4728-8702-55ce4b5dd24a.xml.asp
-;
 ; All registers must be preserved across the call, except for
 ;   rax, rcx, rdx, r8, r9, r10, and r11, which are scratch.
 

@@ -739,7 +739,7 @@ int ZEXPORT inflate(z_streamp strm, int flush) {
                         state->last ? " (last)" : ""));
                 state->mode = TABLE;
                 break;
-            case 3:
+            default:
                 strm->msg = (z_const char *)"invalid block type";
                 state->mode = BAD;
             }

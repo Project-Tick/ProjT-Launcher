@@ -132,9 +132,9 @@ endif(PTLIBZIPPY_BUILD_STATIC)
 
 add_test(
     NAME ptlibzippy_install
-    COMMAND ${CMAKE_COMMAND} --install ${ptlibzippy_BINARY_DIR} --prefix
+    COMMAND ${CMAKE_COMMAND} --install ${PTlibzippy_BINARY_DIR} --prefix
             ${CMAKE_CURRENT_BINARY_DIR}/test_install --config $<CONFIG>
-    WORKING_DIRECTORY ${ptlibzippy_BINARY_DIR})
+    WORKING_DIRECTORY ${PTlibzippy_BINARY_DIR})
 
 set_tests_properties(ptlibzippy_install PROPERTIES FIXTURES_SETUP ptlibzippy_install)
 

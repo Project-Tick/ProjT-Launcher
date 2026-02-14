@@ -58,9 +58,9 @@ int PTLIBZIPPY_INTERNAL inflate_table(codetype type, unsigned short FAR *lens,
     unsigned mask;              /* mask for low root bits */
     code here;                  /* table entry for duplication */
     code FAR *next;             /* next available space in table */
-    const unsigned short FAR *base;     /* base value table to use */
-    const unsigned short FAR *extra;    /* extra bits table to use */
-    unsigned match;             /* use base and extra for symbol >= match */
+    const unsigned short FAR *base = NULL;  /* base value table to use */
+    const unsigned short FAR *extra = NULL; /* extra bits table to use */
+    unsigned match = 0;         /* use base and extra for symbol >= match */
     unsigned short count[MAXBITS+1];    /* number of codes of each length */
     unsigned short offs[MAXBITS+1];     /* offsets in table for each length */
     static const unsigned short lbase[31] = { /* Length codes 257..285 base */
@@ -186,7 +186,6 @@ int PTLIBZIPPY_INTERNAL inflate_table(codetype type, unsigned short FAR *lens,
     /* set up for code type */
     switch (type) {
     case CODES:
-        base = extra = work;    /* dummy value--not used */
         match = 20;
         break;
     case LENS:
@@ -194,10 +193,9 @@ int PTLIBZIPPY_INTERNAL inflate_table(codetype type, unsigned short FAR *lens,
         extra = lext;
         match = 257;
         break;
-    default:    /* DISTS */
+    case DISTS:
         base = dbase;
         extra = dext;
-        match = 0;
     }
 
     /* initialize state for loop */
