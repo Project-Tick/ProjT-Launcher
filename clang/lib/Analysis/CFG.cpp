@@ -1667,12 +1667,20 @@ std::unique_ptr<CFG> CFGBuilder::buildCFG(const Decl *D, Stmt *Statement) {
   assert(Succ == &cfg->getExit());
   Block = nullptr;  // the EXIT block is empty.  Create all other blocks lazily.
 
-  // Add parameters to the initial scope to handle their dtos and lifetime ends.
-  LocalScope *paramScope = nullptr;
-  if (const auto *FD = dyn_cast_or_null<FunctionDecl>(D))
-    for (ParmVarDecl *PD : FD->parameters())
-      paramScope = addLocalScopeForVarDecl(PD, paramScope);
-
+  if (BuildOpts.AddLifetime && BuildOpts.AddParameterLifetimes) {
+    // Add parameters to the initial scope to handle lifetime ends.
+    LocalScope *paramScope = nullptr;
+    if (const auto *FD = dyn_cast_or_null<FunctionDecl>(D))
+      for (ParmVarDecl *PD : FD->parameters()) {
+        paramScope = addLocalScopeForVarDecl(PD, paramScope);
+      }
+    if (auto *C = dyn_cast<CompoundStmt>(Statement))
+      if (C->body_empty() || !isa<ReturnStmt>(*C->body_rbegin()))
+        // If the body ends with a ReturnStmt, the dtors will be added in
+        // VisitReturnStmt.
+        addAutomaticObjHandling(ScopePos, LocalScope::const_iterator(),
+                                Statement);
+  }
   if (BuildOpts.AddImplicitDtors)
     if (const CXXDestructorDecl *DD = dyn_cast_or_null<CXXDestructorDecl>(D))
       addImplicitDtorsForDestructor(DD);
@@ -4740,11 +4748,19 @@ CFGBlock *CFGBuilder::VisitCXXTryStmt(CXXTryStmt *Terminator) {
 
   // Save the current "try" context.
   SaveAndRestore SaveTry(TryTerminatedBlock, NewTryTerminatedBlock);
-  cfg->addTryDispatchBlock(TryTerminatedBlock);
+  cfg->addTryDispatchBlock(NewTryTerminatedBlock);
 
   assert(Terminator->getTryBlock() && "try must contain a non-NULL body");
   Block = nullptr;
-  return addStmt(Terminator->getTryBlock());
+
+  if (CFGBlock *TryBodyEntry = addStmt(Terminator->getTryBlock())) {
+    addSuccessor(NewTryTerminatedBlock, TryBodyEntry);
+  } else {
+    CFGBlock *EmptyTryBody = createBlock(/*add_successor=*/false);
+    addSuccessor(NewTryTerminatedBlock, EmptyTryBody);
+    addSuccessor(EmptyTryBody, TrySuccessor);
+  }
+  return NewTryTerminatedBlock;
 }
 
 CFGBlock *CFGBuilder::VisitCXXCatchStmt(CXXCatchStmt *CS) {
@@ -4807,7 +4823,10 @@ CFGBlock *CFGBuilder::VisitCXXForRangeStmt(CXXForRangeStmt *S) {
   // Save local scope position before the addition of the implicit variables.
   SaveAndRestore save_scope_pos(ScopePos);
 
-  // Create local scopes and destructors for range, begin and end variables.
+  // Create local scopes and destructors for init, range, begin and end
+  // variables.
+  if (Stmt *Init = S->getInit())
+    addLocalScopeForStmt(Init);
   if (Stmt *Range = S->getRangeStmt())
     addLocalScopeForStmt(Range);
   if (Stmt *Begin = S->getBeginStmt())

@@ -123,7 +123,7 @@ public:
   AtomicExpansionKind shouldCastAtomicLoadInIR(LoadInst *LI) const override;
   AtomicExpansionKind shouldCastAtomicStoreInIR(StoreInst *SI) const override;
   AtomicExpansionKind
-  shouldExpandAtomicRMWInIR(AtomicRMWInst *RMW) const override;
+  shouldExpandAtomicRMWInIR(const AtomicRMWInst *RMW) const override;
   bool isLegalICmpImmediate(int64_t Imm) const override;
   bool isLegalAddImmediate(int64_t Imm) const override;
   bool isLegalAddressingMode(const DataLayout &DL, const AddrMode &AM, Type *Ty,
@@ -132,11 +132,11 @@ public:
   bool allowsMisalignedMemoryAccesses(EVT VT, unsigned AS, Align Alignment,
                                       MachineMemOperand::Flags Flags,
                                       unsigned *Fast) const override;
-  bool
-  findOptimalMemOpLowering(LLVMContext &Context, std::vector<EVT> &MemOps,
-                           unsigned Limit, const MemOp &Op, unsigned DstAS,
-                           unsigned SrcAS,
-                           const AttributeList &FuncAttributes) const override;
+  bool findOptimalMemOpLowering(LLVMContext &Context, std::vector<EVT> &MemOps,
+                                unsigned Limit, const MemOp &Op, unsigned DstAS,
+                                unsigned SrcAS,
+                                const AttributeList &FuncAttributes,
+                                EVT *LargestVT = nullptr) const override;
   EVT getOptimalMemOpType(LLVMContext &Context, const MemOp &Op,
                           const AttributeList &FuncAttributes) const override;
   bool isTruncateFree(Type *, Type *) const override;
@@ -227,8 +227,9 @@ public:
 
   /// Override to support customized stack guard loading.
   bool useLoadStackGuardNode(const Module &M) const override { return true; }
-  void insertSSPDeclarations(Module &M) const override {
-  }
+  void
+  insertSSPDeclarations(Module &M,
+                        const LibcallLoweringInfo &Libcalls) const override {}
 
   MachineBasicBlock *
   EmitInstrWithCustomInserter(MachineInstr &MI,

@@ -1292,7 +1292,8 @@ SystemZTargetLowering::shouldCastAtomicStoreInIR(StoreInst *SI) const {
 }
 
 TargetLowering::AtomicExpansionKind
-SystemZTargetLowering::shouldExpandAtomicRMWInIR(AtomicRMWInst *RMW) const {
+SystemZTargetLowering::shouldExpandAtomicRMWInIR(
+    const AtomicRMWInst *RMW) const {
   // Don't expand subword operations as they require special treatment.
   if (RMW->getType()->isIntegerTy(8) || RMW->getType()->isIntegerTy(16))
     return AtomicExpansionKind::None;
@@ -1472,7 +1473,7 @@ bool SystemZTargetLowering::isLegalAddressingMode(const DataLayout &DL,
 bool SystemZTargetLowering::findOptimalMemOpLowering(
     LLVMContext &Context, std::vector<EVT> &MemOps, unsigned Limit,
     const MemOp &Op, unsigned DstAS, unsigned SrcAS,
-    const AttributeList &FuncAttributes) const {
+    const AttributeList &FuncAttributes, EVT *LargestVT) const {
   const int MVCFastLen = 16;
 
   if (Limit != ~unsigned(0)) {
@@ -1485,8 +1486,8 @@ bool SystemZTargetLowering::findOptimalMemOpLowering(
       return false; // Memset zero: Use XC
   }
 
-  return TargetLowering::findOptimalMemOpLowering(Context, MemOps, Limit, Op,
-                                                  DstAS, SrcAS, FuncAttributes);
+  return TargetLowering::findOptimalMemOpLowering(
+      Context, MemOps, Limit, Op, DstAS, SrcAS, FuncAttributes, LargestVT);
 }
 
 EVT SystemZTargetLowering::getOptimalMemOpType(
@@ -2393,9 +2394,11 @@ SystemZTargetLowering::LowerCall(CallLoweringInfo &CLI,
         SlotVT = Outs[I].VT;
       SDValue SpillSlot = DAG.CreateStackTemporary(SlotVT);
       int FI = cast<FrameIndexSDNode>(SpillSlot)->getIndex();
+
+      MachinePointerInfo StackPtrInfo =
+          MachinePointerInfo::getFixedStack(MF, FI);
       MemOpChains.push_back(
-          DAG.getStore(Chain, DL, ArgValue, SpillSlot,
-                       MachinePointerInfo::getFixedStack(MF, FI)));
+          DAG.getStore(Chain, DL, ArgValue, SpillSlot, StackPtrInfo));
       // If the original argument was split (e.g. i128), we need
       // to store all parts of it here (and pass just one address).
       assert(Outs[I].PartOffset == 0);
@@ -2407,7 +2410,7 @@ SystemZTargetLowering::LowerCall(CallLoweringInfo &CLI,
                                       DAG.getIntPtrConstant(PartOffset, DL));
         MemOpChains.push_back(
             DAG.getStore(Chain, DL, PartValue, Address,
-                         MachinePointerInfo::getFixedStack(MF, FI)));
+                         StackPtrInfo.getWithOffset(PartOffset)));
         assert(PartOffset && "Offset should be non-zero.");
         assert((PartOffset + PartValue.getValueType().getStoreSize() <=
                 SlotVT.getStoreSize()) && "Not enough space for argument part!");

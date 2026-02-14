@@ -146,7 +146,7 @@ protected:
 
 protected:
   // Use deleteValue() to delete a generic User.
-  ~User();
+  LLVM_ABI ~User();
 
 public:
   User(const User &) = delete;

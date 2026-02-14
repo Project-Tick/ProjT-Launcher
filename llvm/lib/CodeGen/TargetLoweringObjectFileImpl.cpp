@@ -1924,8 +1924,11 @@ void TargetLoweringObjectFileCOFF::emitModuleMetadata(MCStreamer &Streamer,
     if (MCSymbol *Sym =
             static_cast<MCSectionCOFF *>(Streamer.getCurrentSectionOnly())
                 ->getCOMDATSymbol())
-      if (Sym->isUndefined())
+      if (Sym->isUndefined()) {
+        // COMDAT symbol must be external to perform deduplication.
+        Streamer.emitSymbolAttribute(Sym, MCSA_Global);
         Streamer.emitLabel(Sym);
+      }
   });
 }
 
@@ -1953,7 +1956,6 @@ void TargetLoweringObjectFileCOFF::emitLinkerDirectives(
     raw_string_ostream OS(Flags);
     emitLinkerFlagsForGlobalCOFF(OS, &GV, getContext().getTargetTriple(),
                                  getMangler());
-    OS.flush();
     if (!Flags.empty()) {
       Streamer.switchSection(getDrectveSection());
       Streamer.emitBytes(Flags);
@@ -1978,7 +1980,6 @@ void TargetLoweringObjectFileCOFF::emitLinkerDirectives(
         raw_string_ostream OS(Flags);
         emitLinkerFlagsForUsedCOFF(OS, GV, getContext().getTargetTriple(),
                                    getMangler());
-        OS.flush();
 
         if (!Flags.empty()) {
           Streamer.switchSection(getDrectveSection());
@@ -2391,7 +2392,9 @@ MCSymbol *
 TargetLoweringObjectFileXCOFF::getTargetSymbol(const GlobalValue *GV,
                                                const TargetMachine &TM) const {
   // We always use a qualname symbol for a GV that represents
-  // a declaration, a function descriptor, or a common symbol.
+  // a declaration, a function descriptor, or a common symbol. An IFunc is
+  // lowered as a special trampoline function which has an entry point and a
+  // descriptor.
   // If a GV represents a GlobalVariable and -fdata-sections is enabled, we
   // also return a qualname so that a label symbol could be avoided.
   // It is inherently ambiguous when the GO represents the address of a
@@ -2409,6 +2412,11 @@ TargetLoweringObjectFileXCOFF::getTargetSymbol(const GlobalValue *GV,
         return static_cast<const MCSectionXCOFF *>(
                    SectionForGlobal(GVar, SectionKind::getData(), TM))
             ->getQualNameSymbol();
+
+    if (isa<GlobalIFunc>(GO))
+      return static_cast<const MCSectionXCOFF *>(
+                 getSectionForFunctionDescriptor(GO, TM))
+          ->getQualNameSymbol();
 
     SectionKind GOKind = getKindForGlobal(GO, TM);
     if (GOKind.isText())
@@ -2542,7 +2550,7 @@ MCSection *TargetLoweringObjectFileXCOFF::SelectSectionForGlobal(
 
   // For BSS kind, zero initialized data must be emitted to the .data section
   // because external linkage control sections that get mapped to the .bss
-  // section will be linked as tentative defintions, which is only appropriate
+  // section will be linked as tentative definitions, which is only appropriate
   // for SectionKind::Common.
   if (Kind.isData() || Kind.isReadOnlyWithRel() || Kind.isBSS()) {
     if (TM.getDataSections()) {
@@ -2682,7 +2690,7 @@ TargetLoweringObjectFileXCOFF::getStorageClassForGlobal(const GlobalValue *GV) {
 
 MCSymbol *TargetLoweringObjectFileXCOFF::getFunctionEntryPointSymbol(
     const GlobalValue *Func, const TargetMachine &TM) const {
-  assert((isa<Function>(Func) ||
+  assert((isa<Function>(Func) || isa<GlobalIFunc>(Func) ||
           (isa<GlobalAlias>(Func) &&
            isa_and_nonnull<Function>(
                cast<GlobalAlias>(Func)->getAliaseeObject()))) &&
@@ -2699,7 +2707,7 @@ MCSymbol *TargetLoweringObjectFileXCOFF::getFunctionEntryPointSymbol(
   // undefined symbols gets treated as csect with XTY_ER property.
   if (((TM.getFunctionSections() && !Func->hasSection()) ||
        Func->isDeclarationForLinker()) &&
-      isa<Function>(Func)) {
+      (isa<Function>(Func) || isa<GlobalIFunc>(Func))) {
     return getContext()
         .getXCOFFSection(
             NameStr, SectionKind::getText(),
@@ -2713,7 +2721,9 @@ MCSymbol *TargetLoweringObjectFileXCOFF::getFunctionEntryPointSymbol(
 }
 
 MCSection *TargetLoweringObjectFileXCOFF::getSectionForFunctionDescriptor(
-    const Function *F, const TargetMachine &TM) const {
+    const GlobalObject *F, const TargetMachine &TM) const {
+  assert((isa<Function>(F) || isa<GlobalIFunc>(F)) &&
+         "F must be a function or ifunc object.");
   SmallString<128> NameStr;
   getNameWithPrefix(NameStr, F, TM);
   return getContext().getXCOFFSection(
@@ -2798,6 +2808,11 @@ void TargetLoweringObjectFileGOFF::getModuleMetadata(Module &M) {
   MCSymbolGOFF *ADASym = static_cast<MCSymbolGOFF *>(
       getContext().getOrCreateSymbol(ADAPR->getName()));
   ADAPR->setBeginSymbol(ADASym);
+}
+
+bool TargetLoweringObjectFileGOFF::shouldPutJumpTableInFunctionSection(
+    bool UsesLabelDifference, const Function &F) const {
+  return true;
 }
 
 MCSection *TargetLoweringObjectFileGOFF::getExplicitSectionGlobal(
