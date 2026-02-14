@@ -72,7 +72,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <zlib.h>
+#include <ptlibzippy.h>
 /* z_crc_t is provided by our bundled zlib */
 #include "unzip.h"
 
