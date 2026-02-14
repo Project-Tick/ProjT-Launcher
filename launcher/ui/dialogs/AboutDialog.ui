@@ -228,6 +228,24 @@
          </property>
         </widget>
        </item>
+       <item alignment="Qt::AlignHCenter">
+        <widget class="QLabel" name="qtPoweredLabel">
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>ProjT Launcher is powered by the Qt framework.</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+         <property name="wordWrap">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
        <item>
         <spacer name="verticalSpacer">
          <property name="orientation">
@@ -288,14 +306,14 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
-      <widget class="QPushButton" name="aboutQt">
+      <widget class="QPushButton" name="aboutProjectTick">
        <property name="autoFillBackground">
         <bool>false</bool>
        </property>
        <property name="text">
-        <string>About Qt</string>
+        <string>About Project Tick</string>
        </property>
       </widget>
      </item>
@@ -327,7 +345,7 @@
   <tabstop>tabWidget</tabstop>
   <tabstop>creditsText</tabstop>
   <tabstop>licenseText</tabstop>
-  <tabstop>aboutQt</tabstop>
+  <tabstop>aboutProjectTick</tabstop>
   <tabstop>closeButton</tabstop>
  </tabstops>
  <resources/>

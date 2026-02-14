@@ -62,6 +62,7 @@
 #include "Application.h"
 #include "BuildConfig.h"
 #include "Markdown.h"
+#include "ScrollMessageBox.h"
 #include "StringUtils.h"
 #include "ui_AboutDialog.h"
 
@@ -91,6 +92,22 @@ namespace
 			QString output = markdownToHTML(dataFile.readAll());
 			dataFile.close();
 			return output;
+		}
+		else
+		{
+			qWarning() << "Failed to open file '" << dataFile.fileName() << "' for reading!";
+			return QString();
+		}
+	}
+
+	QString getManifestoHtml()
+	{
+		QFile dataFile(":/documents/manifesto.md");
+		if (dataFile.open(QIODevice::ReadOnly))
+		{
+			QString output = markdownToHTML(dataFile.readAll());
+			dataFile.close();
+			return StringUtils::htmlListPatch(output);
 		}
 		else
 		{
@@ -149,7 +166,25 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent), ui(new Ui::AboutDia
 
 	connect(ui->closeButton, &QPushButton::clicked, this, &AboutDialog::close);
 
-	connect(ui->aboutQt, &QPushButton::clicked, &QApplication::aboutQt);
+	const QString manifestoHtml = getManifestoHtml();
+	if (!manifestoHtml.isEmpty())
+	{
+		connect(ui->aboutProjectTick,
+				&QPushButton::clicked,
+				this,
+				[this, manifestoHtml]
+				{
+					ScrollMessageBox dialog(this,
+											tr("About Project Tick"),
+											tr("Project Tick Overview"),
+											manifestoHtml);
+					dialog.exec();
+				});
+	}
+	else
+	{
+		ui->aboutProjectTick->setEnabled(false);
+	}
 }
 
 AboutDialog::~AboutDialog()

@@ -3,6 +3,6 @@
     <qresource prefix="/documents">
         <file>../../../COPYING</file>
 	<file>credits.html</file>
+	<file>manifesto.md</file>
     </qresource>
 </RCC>
-

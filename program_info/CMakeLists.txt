@@ -22,7 +22,7 @@ set(Launcher_Copyright "${Launcher_Copyright}" PARENT_SCOPE)
 set(Launcher_Domain "projecttick.org" PARENT_SCOPE)
 set(Launcher_UserAgent "${Launcher_CommonName}/${Launcher_VERSION_NAME}" PARENT_SCOPE)
 set(Launcher_ConfigFile "projtlauncher.cfg" PARENT_SCOPE)
-set(Launcher_Git "https://github.com/Project-Tick/ProjT-Launcher" PARENT_SCOPE)
+set(Launcher_Git "https://git.projecttick.org/pub/scm/Project-Tick/ProjT-Launcher" PARENT_SCOPE)
 set(Launcher_AppID "${Launcher_AppID}" PARENT_SCOPE)
 set(Launcher_SVGFileName "${Launcher_SVGFileName}" PARENT_SCOPE)
 
