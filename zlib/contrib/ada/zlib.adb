@@ -1,12 +1,12 @@
 ----------------------------------------------------------------
---  ZLib for Ada thick binding.                               --
+--  PTLib for Ada thick binding.                               --
 --                                                            --
 --  Copyright (C) 2002-2004 Dmitriy Anisimkov                 --
 --                                                            --
---  Open source license information is in the zlib.ads file.  --
+--  Open source license information is in the ptlibzippy.ads file.  --
 ----------------------------------------------------------------
 
---  $Id: zlib.adb,v 1.31 2004/09/06 06:53:19 vagul Exp $
+--  $Id: ptlibzippy.adb,v 1.31 2004/09/06 06:53:19 vagul Exp $
 
 with Ada.Exceptions;
 with Ada.Unchecked_Conversion;
@@ -14,9 +14,9 @@ with Ada.Unchecked_Deallocation;
 
 with Interfaces.C.Strings;
 
-with ZLib.Thin;
+with PTLib.Thin;
 
-package body ZLib is
+package body PTLib is
 
    use type Thin.Int;
 
@@ -203,7 +203,7 @@ package body ZLib is
          raise Status_Error;
       end if;
 
-      --  We allow ZLib to make header only in case of default header type.
+      --  We allow PTLib to make header only in case of default header type.
       --  Otherwise we would either do header by ourselves, or do not do
       --  header at all.
 
@@ -258,7 +258,7 @@ package body ZLib is
    -----------------------
 
    procedure Generic_Translate
-     (Filter          : in out ZLib.Filter_Type;
+     (Filter          : in out PTLib.Filter_Type;
       In_Buffer_Size  : in     Integer := Default_Buffer_Size;
       Out_Buffer_Size : in     Integer := Default_Buffer_Size)
    is
@@ -321,7 +321,7 @@ package body ZLib is
          if Version <= "1.1.4" then
             Raise_Error
               ("Inflate header type " & Header_Type'Image (Header)
-               & " incompatible with ZLib version " & Version);
+               & " incompatible with PTLib version " & Version);
          end if;
       end Check_Version;
 
@@ -658,7 +658,7 @@ package body ZLib is
 
    function Version return String is
    begin
-      return Interfaces.C.Strings.Value (Thin.zlibVersion);
+      return Interfaces.C.Strings.Value (Thin.ptlibzippyVersion);
    end Version;
 
    -----------
@@ -698,4 +698,4 @@ package body ZLib is
       end loop;
    end Write;
 
-end ZLib;
+end PTLib;

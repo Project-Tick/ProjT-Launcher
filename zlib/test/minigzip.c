@@ -1,12 +1,12 @@
-/* minigzip.c -- simulate gzip using the zlib compression library
+/* minigzip.c -- simulate gzip using the PTlibzippy compression library
  * Copyright (C) 1995-2006, 2010, 2011, 2016 Jean-loup Gailly
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 /*
  * minigzip is a minimal implementation of the gzip utility. This is
- * only an example of using zlib and isn't meant to replace the
+ * only an example of using PTlibzippy and isn't meant to replace the
  * full-featured gzip. No attempt is made to deal with file systems
  * limiting names to 14 or 8+3 characters, etc... Error checking is
  * very limited. So use minigzip only for testing; use gzip for the
@@ -27,7 +27,7 @@
 #  define _CRT_NONSTDC_NO_DEPRECATE
 #endif
 
-#include "zlib.h"
+#include "ptlibzippy.h"
 #include <stdio.h>
 
 #ifdef STDC

@@ -1,7 +1,7 @@
 /*
   Additional tools for Minizip
   Code: Xavier Roche '2004
-  License: Same as ZLIB (www.gzip.org)
+  License: Same as PTLIBZIPPY (www.gzip.org)
 */
 
 #ifndef _zip_tools_H
@@ -11,8 +11,8 @@
 extern "C" {
 #endif
 
-#ifndef _ZLIB_H
-#include "zlib.h"
+#ifndef _PTLIBZIPPY_H
+#include "ptlibzippy.h"
 #endif
 
 #include "unzip.h"

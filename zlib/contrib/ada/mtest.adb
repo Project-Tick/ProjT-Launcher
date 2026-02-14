@@ -1,16 +1,16 @@
 ----------------------------------------------------------------
---  ZLib for Ada thick binding.                               --
+--  PTLib for Ada thick binding.                               --
 --                                                            --
 --  Copyright (C) 2002-2003 Dmitriy Anisimkov                 --
 --                                                            --
---  Open source license information is in the zlib.ads file.  --
+--  Open source license information is in the ptlibzippy.ads file.  --
 ----------------------------------------------------------------
---  Continuous test for ZLib multithreading. If the test would fail
+--  Continuous test for PTLib multithreading. If the test would fail
 --  we should provide thread safe allocation routines for the Z_Stream.
 --
 --  $Id: mtest.adb,v 1.4 2004/07/23 07:49:54 vagul Exp $
 
-with ZLib;
+with PTLib;
 with Ada.Streams;
 with Ada.Numerics.Discrete_Random;
 with Ada.Text_IO;
@@ -19,7 +19,7 @@ with Ada.Task_Identification;
 
 procedure MTest is
    use Ada.Streams;
-   use ZLib;
+   use PTLib;
 
    Stop : Boolean := False;
 
@@ -70,7 +70,7 @@ procedure MTest is
             Compare_First := Next_First;
          end Compare;
 
-         procedure Compare_Write is new ZLib.Write (Write => Compare);
+         procedure Compare_Write is new PTLib.Write (Write => Compare);
       begin
          Compare_Write (Inflate, Item, No_Flush);
       end Further;
@@ -130,7 +130,7 @@ procedure MTest is
               (Ada.Task_Identification.Image
                  (Ada.Task_Identification.Current_Task)
                & Stream_Element_Offset'Image (J)
-               & ZLib.Count'Image (Total_Out (Deflate)));
+               & PTLib.Count'Image (Total_Out (Deflate)));
 
             Close (Deflate);
             Close (Inflate);

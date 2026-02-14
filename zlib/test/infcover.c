@@ -1,7 +1,7 @@
-/* infcover.c -- test zlib's inflate routines with full code coverage
+/* infcover.c -- test PTlibzippy's inflate routines with full code coverage
  * Copyright (C) 2011, 2016, 2024 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 /* to use, do: ./configure --cover && make cover */
@@ -10,11 +10,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "zlib.h"
+#include "ptlibzippy.h"
 
 /* get definition of internal structure so we can mess with it (see pull()),
    and so we can call inflate_trees() (see cover5()) */
-#define ZLIB_INTERNAL
+#define PTLIBZIPPY_INTERNAL
 #include "inftrees.h"
 #include "inflate.h"
 
@@ -23,7 +23,7 @@
 /* -- memory tracking routines -- */
 
 /*
-   These memory tracking routines are provided to zlib and track all of zlib's
+   These memory tracking routines are provided to PTlibzippy and track all of PTlibzippy's
    allocations and deallocations, check for LIFO operations, keep a current
    and high water mark of total bytes requested, optionally set a limit on the
    total memory that can be allocated, and when done check for memory leaks.
@@ -33,7 +33,7 @@
    z_stream strm;
    mem_setup(&strm)         initializes the memory tracking and sets the
                             zalloc, zfree, and opaque members of strm to use
-                            memory tracking for all zlib operations on strm
+                            memory tracking for all PTlibzippy operations on strm
    mem_limit(&strm, limit)  sets a limit on the total bytes requested -- a
                             request that exceeds this limit will result in an
                             allocation failure (returns NULL) -- setting the
@@ -42,14 +42,14 @@
    mem_used(&strm, "msg")   prints to stderr "msg" and the total bytes used
    mem_high(&strm, "msg")   prints to stderr "msg" and the high water mark
    mem_done(&strm, "msg")   ends memory tracking, releases all allocations
-                            for the tracking as well as leaked zlib blocks, if
+                            for the tracking as well as leaked PTlibzippy blocks, if
                             any.  If there was anything unusual, such as leaked
                             blocks, non-FIFO frees, or frees of addresses not
                             allocated, then "msg" and information about the
                             problem is printed to stderr.  If everything is
                             normal, nothing is printed. mem_done resets the
                             strm members to Z_NULL to use the default memory
-                            allocation routines on the next zlib initialization
+                            allocation routines on the next PTlibzippy initialization
                             using strm.
  */
 
@@ -68,7 +68,7 @@ struct mem_zone {
     int notlifo, rogue;         /* counts of non-LIFO frees and rogue frees */
 };
 
-/* memory allocation routine to pass to zlib */
+/* memory allocation routine to pass to PTlibzippy */
 local void *mem_alloc(void *mem, unsigned count, unsigned size)
 {
     void *ptr;
@@ -109,7 +109,7 @@ local void *mem_alloc(void *mem, unsigned count, unsigned size)
     return ptr;
 }
 
-/* memory free routine to pass to zlib */
+/* memory free routine to pass to PTlibzippy */
 local void mem_free(void *mem, void *ptr)
 {
     struct mem_item *item, *next;
@@ -279,7 +279,7 @@ local unsigned char *h2b(const char *hex, unsigned *len)
    parameter to inflateInit2(), len is the size of the output buffer, and err
    is the error code expected from the first inflate() call (the second
    inflate() call is expected to return Z_STREAM_END).  If win is 47, then
-   header information is collected with inflateGetHeader().  If a zlib stream
+   header information is collected with inflateGetHeader().  If a PTlibzippy stream
    is looking for a dictionary, then an empty dictionary is provided.
    inflate() is run until all of the input data is consumed. */
 local void inf(char *hex, char *what, unsigned step, int win, unsigned len,
@@ -399,15 +399,15 @@ local void cover_wrap(void)
 
     inf("1f 8b 0 0", "bad gzip method", 0, 31, 0, Z_DATA_ERROR);
     inf("1f 8b 8 80", "bad gzip flags", 0, 31, 0, Z_DATA_ERROR);
-    inf("77 85", "bad zlib method", 0, 15, 0, Z_DATA_ERROR);
+    inf("77 85", "bad PTlibzippy method", 0, 15, 0, Z_DATA_ERROR);
     inf("8 99", "set window size from header", 0, 0, 0, Z_OK);
-    inf("78 9c", "bad zlib window size", 0, 8, 0, Z_DATA_ERROR);
+    inf("78 9c", "bad PTlibzippy window size", 0, 8, 0, Z_DATA_ERROR);
     inf("78 9c 63 0 0 0 1 0 1", "check adler32", 0, 15, 1, Z_STREAM_END);
     inf("1f 8b 8 1e 0 0 0 0 0 0 1 0 0 0 0 0 0", "bad header crc", 0, 47, 1,
         Z_DATA_ERROR);
     inf("1f 8b 8 2 0 0 0 0 0 0 1d 26 3 0 0 0 0 0 0 0 0 0", "check gzip length",
         0, 47, 0, Z_STREAM_END);
-    inf("78 90", "bad zlib header check", 0, 47, 0, Z_DATA_ERROR);
+    inf("78 90", "bad PTlibzippy header check", 0, 47, 0, Z_DATA_ERROR);
     inf("8 b8 0 0 0 1", "need dictionary", 0, 8, 0, Z_NEED_DICT);
     inf("78 9c 63 0", "compute adler32", 0, 15, 1, Z_OK);
 
@@ -624,7 +624,7 @@ local void cover_trees(void)
     code *next, table[ENOUGH_DISTS];
 
     /* we need to call inflate_table() directly in order to manifest not-
-       enough errors, since zlib insures that enough is always enough */
+       enough errors, since PTlibzippy insures that enough is always enough */
     for (bits = 0; bits < 15; bits++)
         lens[bits] = (unsigned short)(bits + 1);
     lens[15] = 15;
@@ -662,7 +662,7 @@ local void cover_fast(void)
 
 int main(void)
 {
-    fprintf(stderr, "%s\n", zlibVersion());
+    fprintf(stderr, "%s\n", ptlibzippyVersion());
     cover_support();
     cover_wrap();
     cover_back();

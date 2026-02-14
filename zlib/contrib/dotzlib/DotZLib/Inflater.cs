@@ -9,25 +9,25 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace DotZLib
+namespace DotPTLib
 {
 
     /// <summary>
-    /// Implements a data decompressor, using the inflate algorithm in the ZLib dll
+    /// Implements a data decompressor, using the inflate algorithm in the PTLib dll
     /// </summary>
     public class Inflater : CodecBase
 	{
         #region Dll imports
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         private static extern int inflateInit_(ref ZStream sz, string vs, int size);
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
         private static extern int inflate(ref ZStream sz, int flush);
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
         private static extern int inflateReset(ref ZStream sz);
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
         private static extern int inflateEnd(ref ZStream sz);
         #endregion
 
@@ -38,7 +38,7 @@ namespace DotZLib
 		{
             int retval = inflateInit_(ref _ztream, Info.Version, Marshal.SizeOf(_ztream));
             if (retval != 0)
-                throw new ZLibException(retval, "Could not initialize inflater");
+                throw new PTLibException(retval, "Could not initialize inflater");
 
             resetOutput();
         }
@@ -96,7 +96,7 @@ namespace DotZLib
         }
 
         /// <summary>
-        /// Closes the internal zlib inflate stream
+        /// Closes the internal PTlibzippy inflate stream
         /// </summary>
         protected override void CleanUp() { inflateEnd(ref _ztream); }
 

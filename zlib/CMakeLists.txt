@@ -1,34 +1,34 @@
 cmake_minimum_required(VERSION 3.12...3.31)
 
 project(
-    zlib
+    PTlibzippy
     LANGUAGES C
     VERSION 0.0.5.1
-    HOMEPAGE_URL "https://zlib.net/"
-    DESCRIPTION "a general-purpose lossless data-compression library")
+    HOMEPAGE_URL "https://projecttick.org/p/zlib"
+    DESCRIPTION "PTlibzippy - a general-purpose lossless data-compression library")
 
 # ============================================================================
 # CPack
 # ============================================================================
-set(CPACK_PACKAGE_VENDOR "zlib-Project")
-set(CPACK_PACKAGE_DESCRIPTION_FILE ${zlib_SOURCE_DIR}/README)
-set(CPACK_RESOURCE_FILE_LICENSE ${zlib_SOURCE_DIR}/LICENSE)
-set(CPACK_RESOURCE_FILE_README ${zlib_SOURCE_DIR}/README)
+set(CPACK_PACKAGE_VENDOR "PTlibzippy-Project")
+set(CPACK_PACKAGE_DESCRIPTION_FILE ${PTlibzippy_SOURCE_DIR}/README)
+set(CPACK_RESOURCE_FILE_LICENSE ${PTlibzippy_SOURCE_DIR}/LICENSE)
+set(CPACK_RESOURCE_FILE_README ${PTlibzippy_SOURCE_DIR}/README)
 
 # ============================================================================
 # configuration
 # ============================================================================
 
-option(ZLIB_BUILD_TESTING "Enable Zlib Examples as tests" ON)
-option(ZLIB_BUILD_SHARED "Enable building zlib shared library" ON)
-option(ZLIB_BUILD_STATIC "Enable building zlib static library" ON)
-option(ZLIB_INSTALL "Enable installation of zlib" ON)
-option(ZLIB_PREFIX "prefix for all types and library functions, see zconf.h.in"
+option(PTLIBZIPPY_BUILD_TESTING "Enable Zlib Examples as tests" ON)
+option(PTLIBZIPPY_BUILD_SHARED "Enable building zlib shared library" ON)
+option(PTLIBZIPPY_BUILD_STATIC "Enable building zlib static library" ON)
+option(PTLIBZIPPY_INSTALL "Enable installation of zlib" ON)
+option(PTLIBZIPPY_PREFIX "prefix for all types and library functions, see ptzippyconf.h.in"
        OFF)
-mark_as_advanced(ZLIB_PREFIX)
+mark_as_advanced(PTLIBZIPPY_PREFIX)
 
 if(WIN32)
-    option(ZLIB_INSTALL_COMPAT_DLL "Install a copy as zlib1.dll" ON)
+    option(PTLIBZIPPY_INSTALL_COMPAT_DLL "Install a copy as ptlibzippy1.dll" ON)
 endif(WIN32)
 
 get_property(IS_MULTI GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -48,26 +48,26 @@ include(GNUInstallDirs)
 
 set(CPACK_INCLUDED TRUE)
 
-if(NOT ZLIB_CONF_WRITTEN)
-    set(Z_PREFIX ${ZLIB_PREFIX})
-    set(CONF_OUT_FILE ${zlib_BINARY_DIR}/zconf.h.cmakein)
-    file(READ ${zlib_SOURCE_DIR}/zconf.h ZCONF_CONTENT)
-    string(FIND "${ZCONF_CONTENT}" "#ifndef ZCONF_H" ZCONF_POS)
-    if(ZCONF_POS EQUAL -1)
-        message(FATAL_ERROR "Failed to find '#ifndef ZCONF_H' in zconf.h")
+if(NOT PTLIBZIPPY_CONF_WRITTEN)
+    set(PT_PREFIX ${PTLIBZIPPY_PREFIX})
+    set(PTCONF_OUT_FILE ${PTlibzippy_BINARY_DIR}/ptzippyconf.h.cmakein)
+    file(READ ${PTlibzippy_SOURCE_DIR}/ptzippyconf.h PTZIPPYCONF_CONTENT)
+    string(FIND "${PTZIPPYCONF_CONTENT}" "#ifndef PTZIPPYCONF_H" PTZIPPYCONF_POS)
+    if(PTZIPPYCONF_POS EQUAL -1)
+        message(FATAL_ERROR "Failed to find '#ifndef PTZIPPYCONF_H' in ptzippyconf.h")
     endif()
-    string(SUBSTRING "${ZCONF_CONTENT}" 0 ${ZCONF_POS} ZCONF_HEAD)
-    string(SUBSTRING "${ZCONF_CONTENT}" ${ZCONF_POS} -1 ZCONF_TAIL)
-    file(WRITE ${CONF_OUT_FILE} "${ZCONF_HEAD}")
-    file(APPEND ${CONF_OUT_FILE} "#cmakedefine Z_PREFIX 1\n")
-    file(APPEND ${CONF_OUT_FILE} "#cmakedefine HAVE_STDARG_H 1\n")
-    file(APPEND ${CONF_OUT_FILE} "#cmakedefine HAVE_UNISTD_H 1\n")
-    file(APPEND ${CONF_OUT_FILE} "${ZCONF_TAIL}")
-    set(ZLIB_CONF_WRITTEN
+    string(SUBSTRING "${PTZIPPYCONF_CONTENT}" 0 ${PTZIPPYCONF_POS} PTZIPPYCONF_HEAD)
+    string(SUBSTRING "${PTZIPPYCONF_CONTENT}" ${PTZIPPYCONF_POS} -1 PTZIPPYCONF_TAIL)
+    file(WRITE ${PTCONF_OUT_FILE} "${PTZIPPYCONF_HEAD}")
+    file(APPEND ${PTCONF_OUT_FILE} "#cmakedefine PT_PREFIX 1\n")
+    file(APPEND ${PTCONF_OUT_FILE} "#cmakedefine HAVE_STDARG_H 1\n")
+    file(APPEND ${PTCONF_OUT_FILE} "#cmakedefine HAVE_UNISTD_H 1\n")
+    file(APPEND ${PTCONF_OUT_FILE} "${PTZIPPYCONF_TAIL}")
+    set(PTLIBZIPPY_CONF_WRITTEN
         TRUE
-        CACHE BOOL "zconf.h.cmakein was created")
-    mark_as_advanced(ZLIB_CONF_WRITTEN)
-endif(NOT ZLIB_CONF_WRITTEN)
+        CACHE BOOL "ptzippyconf.h.cmakein was created")
+    mark_as_advanced(PTLIBZIPPY_CONF_WRITTEN)
+endif(NOT PTLIBZIPPY_CONF_WRITTEN)
 
 #
 # Check to see if we have large file support
@@ -103,34 +103,34 @@ endif(MSVC)
 check_c_source_compiles(
     "
         #include <stdlib.h>
-        static void f(void) __attribute__ ((visibility(\"hidden\")));
+        void f(void) __attribute__ ((visibility(\"hidden\")));
         int main(void) {return 0;}
     "
     HAVE___ATTR__VIS_HIDDEN)
 
 unset(CMAKE_COMPILE_FLAGS)
-set(ZLIB_PC ${zlib_BINARY_DIR}/zlib.pc)
-configure_file(${zlib_SOURCE_DIR}/zlib.pc.cmakein ${ZLIB_PC} @ONLY)
-configure_file(${zlib_BINARY_DIR}/zconf.h.cmakein ${zlib_BINARY_DIR}/zconf.h)
+set(PTLIBZIPPY_PC ${PTlibzippy_BINARY_DIR}/ptlibzippy.pc)
+configure_file(${PTlibzippy_SOURCE_DIR}/ptlibzippy.pc.cmakein ${PTLIBZIPPY_PC} @ONLY)
+configure_file(${PTlibzippy_BINARY_DIR}/ptzippyconf.h.cmakein ${PTlibzippy_BINARY_DIR}/ptzippyconf.h)
 
 # ============================================================================
 # zlib
 # ============================================================================
 
-set(ZLIB_PUBLIC_HDRS ${zlib_BINARY_DIR}/zconf.h zlib.h)
+set(PTLIBZIPPY_PUBLIC_HDRS ${PTlibzippy_BINARY_DIR}/ptzippyconf.h ptlibzippy.h)
 
-set(ZLIB_PRIVATE_HDRS
+set(PTLIBZIPPY_PRIVATE_HDRS
     crc32.h
     deflate.h
-    gzguts.h
+    ptzippyguts.h
     inffast.h
     inffixed.h
     inflate.h
     inftrees.h
     trees.h
-    zutil.h)
+    ptzippyutil.h)
 
-set(ZLIB_SRCS
+set(PTLIBZIPPY_SRCS
     adler32.c
     compress.c
     crc32.c
@@ -145,155 +145,155 @@ set(ZLIB_SRCS
     inffast.c
     trees.c
     uncompr.c
-    zutil.c)
+    ptzippyutil.c)
 
 if(WIN32)
-    set(zlib_static_suffix "s")
+    set(ptlibzippy_static_suffix "s")
     set(CMAKE_DEBUG_POSTFIX "d")
 endif(WIN32)
 
-if(ZLIB_BUILD_SHARED)
+if(PTLIBZIPPY_BUILD_SHARED)
     add_library(
-        zlib SHARED ${ZLIB_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS}
-                    $<$<OR:$<BOOL:${WIN32}>,$<BOOL:${CYGWIN}>>:win32/zlib1.rc>)
-    add_library(ZLIB::ZLIB ALIAS zlib)
+        ptlibzippy SHARED ${PTLIBZIPPY_SRCS} ${PTLIBZIPPY_PUBLIC_HDRS} ${PTLIBZIPPY_PRIVATE_HDRS}
+                    $<$<OR:$<BOOL:${WIN32}>,$<BOOL:${CYGWIN}>>:win32/ptlibzippy1.rc>)
+    add_library(PTlibzippy::PTlibzippy ALIAS ptlibzippy)
     target_include_directories(
-        zlib
-        PUBLIC $<BUILD_INTERFACE:${zlib_BINARY_DIR}>
-               $<BUILD_INTERFACE:${zlib_SOURCE_DIR}>
+        ptlibzippy
+        PUBLIC $<BUILD_INTERFACE:${PTlibzippy_BINARY_DIR}>
+               $<BUILD_INTERFACE:${PTlibzippy_SOURCE_DIR}>
                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
     target_compile_definitions(
-        zlib
-        PRIVATE ZLIB_BUILD
+        ptlibzippy
+        PRIVATE PTLIBZIPPY_BUILD
                 $<$<BOOL:NOT:${HAVE_FSEEKO}>:NO_FSEEKO>
                 $<$<BOOL:${HAVE___ATTR__VIS_HIDDEN}>:HAVE_HIDDEN>
                 $<$<BOOL:${MSVC}>:_CRT_SECURE_NO_DEPRECATE>
                 $<$<BOOL:${MSVC}>:_CRT_NONSTDC_NO_DEPRECATE>
         PUBLIC $<$<BOOL:${HAVE_OFF64_T}>:_LARGEFILE64_SOURCE=1>)
-    set(INSTALL_VERSION ${zlib_VERSION})
+    set(INSTALL_VERSION ${PTlibzippy_VERSION})
 
     if(NOT CYGWIN)
-        set_target_properties(zlib PROPERTIES SOVERSION ${zlib_VERSION_MAJOR}
+        set_target_properties(ptlibzippy PROPERTIES SOVERSION ${PTlibzippy_VERSION_MAJOR}
                                               VERSION ${INSTALL_VERSION})
     endif(NOT CYGWIN)
 
     set_target_properties(
-        zlib
-        PROPERTIES DEFINE_SYMBOL ZLIB_DLL
-                   EXPORT_NAME ZLIB
-                   OUTPUT_NAME z)
+        ptlibzippy
+        PROPERTIES DEFINE_SYMBOL PTLIBZIPPY_DLL
+                   EXPORT_NAME PTlibzippy
+                   OUTPUT_NAME ptlibzippy)
     if(UNIX
         AND NOT APPLE
         AND NOT (CMAKE_SYSTEM_NAME STREQUAL AIX)
         AND NOT (CMAKE_SYSTEM_NAME STREQUAL SunOS))
         # On unix-like platforms the library is almost always called libz
         set_target_properties(
-            zlib
+            ptlibzippy
             PROPERTIES LINK_FLAGS
-                       "-Wl,--version-script,\"${zlib_SOURCE_DIR}/zlib.map\"")
+                       "-Wl,--version-script,\"${PTlibzippy_SOURCE_DIR}/ptlibzippy.map\"")
     endif(
         UNIX
         AND NOT APPLE
         AND NOT (CMAKE_SYSTEM_NAME STREQUAL AIX)
         AND NOT (CMAKE_SYSTEM_NAME STREQUAL SunOS))
-endif(ZLIB_BUILD_SHARED)
+endif(PTLIBZIPPY_BUILD_SHARED)
 
-if(ZLIB_BUILD_STATIC)
-    add_library(zlibstatic STATIC ${ZLIB_SRCS} ${ZLIB_PUBLIC_HDRS}
-                                  ${ZLIB_PRIVATE_HDRS})
-    add_library(ZLIB::ZLIBSTATIC ALIAS zlibstatic)
+if(PTLIBZIPPY_BUILD_STATIC)
+    add_library(ptlibzippystatic STATIC ${PTLIBZIPPY_SRCS} ${PTLIBZIPPY_PUBLIC_HDRS}
+                                  ${PTLIBZIPPY_PRIVATE_HDRS})
+    add_library(PTlibzippy::PTlibzippyStatic ALIAS ptlibzippystatic)
     target_include_directories(
-        zlibstatic
-        PUBLIC $<BUILD_INTERFACE:${zlib_BINARY_DIR}>
-               $<BUILD_INTERFACE:${zlib_SOURCE_DIR}>
+        ptlibzippystatic
+        PUBLIC $<BUILD_INTERFACE:${PTlibzippy_BINARY_DIR}>
+               $<BUILD_INTERFACE:${PTlibzippy_SOURCE_DIR}>
                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
     target_compile_definitions(
-        zlibstatic
-        PRIVATE ZLIB_BUILD
+        ptlibzippystatic
+        PRIVATE PTLIBZIPPY_BUILD
                 $<$<BOOL:NOT:${HAVE_FSEEKO}>:NO_FSEEKO>
                 $<$<BOOL:${HAVE___ATTR__VIS_HIDDEN}>:HAVE_HIDDEN>
                 $<$<BOOL:${MSVC}>:_CRT_SECURE_NO_DEPRECATE>
                 $<$<BOOL:${MSVC}>:_CRT_NONSTDC_NO_DEPRECATE>
         PUBLIC $<$<BOOL:${HAVE_OFF64_T}>:_LARGEFILE64_SOURCE=1>)
     set_target_properties(
-        zlibstatic PROPERTIES EXPORT_NAME ZLIBSTATIC OUTPUT_NAME
-                                                     z${zlib_static_suffix})
-endif(ZLIB_BUILD_STATIC)
+        ptlibzippystatic PROPERTIES EXPORT_NAME PTlibzippyStatic OUTPUT_NAME
+                                                     ptlibzippy${ptlibzippy_static_suffix})
+endif(PTLIBZIPPY_BUILD_STATIC)
 
-if(ZLIB_INSTALL)
-    if(ZLIB_BUILD_SHARED)
+if(PTLIBZIPPY_INSTALL)
+    if(PTLIBZIPPY_BUILD_SHARED)
         install(
-            TARGETS zlib
+            TARGETS ptlibzippy
             COMPONENT Runtime
-            EXPORT zlibSharedExport
+            EXPORT ptlibzippySharedExport
             RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
             ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
             LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
         install(
-            EXPORT zlibSharedExport
-            FILE ZLIB-shared.cmake
-            NAMESPACE ZLIB::
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zlib)
-        if(ZLIB_INSTALL_COMPAT_DLL)
+            EXPORT ptlibzippySharedExport
+            FILE PTlibzippy-shared.cmake
+            NAMESPACE PTlibzippy::
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ptlibzippy)
+        if(PTLIBZIPPY_INSTALL_COMPAT_DLL)
             install(
-                FILES $<TARGET_FILE:zlib>
+                FILES $<TARGET_FILE:ptlibzippy>
                 COMPONENT Development
-                RENAME zlib1.dll
+                RENAME ptlibzippy1.dll
                 DESTINATION "${CMAKE_INSTALL_BINDIR}")
-        endif(ZLIB_INSTALL_COMPAT_DLL)
+        endif(PTLIBZIPPY_INSTALL_COMPAT_DLL)
 
         if(MSVC)
             install(
-                FILES $<TARGET_PDB_FILE:zlib>
+                FILES $<TARGET_PDB_FILE:ptlibzippy>
                 COMPONENT Runtime
                 DESTINATION ${CMAKE_INSTALL_BINDIR}
                 CONFIGURATIONS Debug OR RelWithDebInfo
                 OPTIONAL)
         endif(MSVC)
-    endif(ZLIB_BUILD_SHARED)
+    endif(PTLIBZIPPY_BUILD_SHARED)
 
-    if(ZLIB_BUILD_STATIC)
+    if(PTLIBZIPPY_BUILD_STATIC)
         install(
-            TARGETS zlibstatic
+            TARGETS ptlibzippystatic
             COMPONENT Development
-            EXPORT zlibStaticExport
+            EXPORT ptlibzippyStaticExport
             RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
             ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
             LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
         install(
-            EXPORT zlibStaticExport
-            FILE ZLIB-static.cmake
-            NAMESPACE ZLIB::
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zlib)
+            EXPORT ptlibzippyStaticExport
+            FILE PTlibzippy-static.cmake
+            NAMESPACE PTlibzippy::
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ptlibzippy)
 
-        if(ZLIB_INSTALL_COMPAT_DLL AND MINGW)
+        if(PTLIBZIPPY_INSTALL_COMPAT_DLL AND MINGW)
             install(
-                FILES $<TARGET_FILE:zlibstatic>
+                FILES $<TARGET_FILE:ptlibzippystatic>
                 COMPONENT Development
-                RENAME libz.dll.a
+                RENAME libptlibzippy.dll.a
                 DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-        endif(ZLIB_INSTALL_COMPAT_DLL AND MINGW)
-    endif(ZLIB_BUILD_STATIC)
+        endif(PTLIBZIPPY_INSTALL_COMPAT_DLL AND MINGW)
+    endif(PTLIBZIPPY_BUILD_STATIC)
 
     configure_package_config_file(
-        ${zlib_SOURCE_DIR}/zlibConfig.cmake.in
-        ${zlib_BINARY_DIR}/ZLIBConfig.cmake
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zlib)
+        ${PTlibzippy_SOURCE_DIR}/ptlibzippyConfig.cmake.in
+        ${PTlibzippy_BINARY_DIR}/PTlibzippyConfig.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ptlibzippy)
 
     write_basic_package_version_file(
-        "${zlib_BINARY_DIR}/ZLIBConfigVersion.cmake"
-        VERSION "${zlib_VERSION}"
+        "${PTlibzippy_BINARY_DIR}/PTlibzippyConfigVersion.cmake"
+        VERSION "${PTlibzippy_VERSION}"
         COMPATIBILITY AnyNewerVersion)
 
-    install(FILES ${zlib_BINARY_DIR}/ZLIBConfig.cmake
-                  ${zlib_BINARY_DIR}/ZLIBConfigVersion.cmake
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zlib)
+    install(FILES ${PTlibzippy_BINARY_DIR}/PTlibzippyConfig.cmake
+                  ${PTlibzippy_BINARY_DIR}/PTlibzippyConfigVersion.cmake
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ptlibzippy)
     install(
-        FILES ${ZLIB_PUBLIC_HDRS}
+        FILES ${PTLIBZIPPY_PUBLIC_HDRS}
         COMPONENT Development
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
     install(
-        FILES zlib.5
+        FILES ptlibzippy.5
         COMPONENT Docs
         DESTINATION "${CMAKE_INSTALL_MANDIR}/man5")
     install(
@@ -305,19 +305,19 @@ if(ZLIB_INSTALL)
               doc/rfc1952.txt
               doc/txtvsbin.txt
         COMPONENT Docs
-        DESTINATION "${CMAKE_INSTALL_DOCDIR}/zlib")
+        DESTINATION "${CMAKE_INSTALL_DOCDIR}/ptlibzippy")
     install(
-        FILES ${ZLIB_PC}
+        FILES ${PTLIBZIPPY_PC}
         COMPONENT Development
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
-endif(ZLIB_INSTALL)
+endif(PTLIBZIPPY_INSTALL)
 
 # ============================================================================
 # Tests
 # ============================================================================
-if(ZLIB_BUILD_TESTING)
+if(PTLIBZIPPY_BUILD_TESTING)
     enable_testing()
     add_subdirectory(test)
-endif(ZLIB_BUILD_TESTING)
+endif(PTLIBZIPPY_BUILD_TESTING)
 
 add_subdirectory(contrib)

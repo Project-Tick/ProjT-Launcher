@@ -1,7 +1,7 @@
 /* gznorm.c -- normalize a gzip stream
  * Copyright (C) 2018 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  * Version 1.0  7 Oct 2018  Mark Adler */
 
 // gznorm takes a gzip stream, potentially containing multiple members, and
@@ -21,7 +21,7 @@
 #include <string.h>     // strerror
 #include <errno.h>      // errno
 #include <stdarg.h>     // va_list, va_start, va_end
-#include "zlib.h"       // inflateInit2, inflate, inflateReset, inflateEnd,
+#include "ptlibzippy.h"       // inflateInit2, inflate, inflateReset, inflateEnd,
                         // z_stream, z_off_t, crc32_combine, Z_NULL, Z_BLOCK,
                         // Z_OK, Z_STREAM_END, Z_BUF_ERROR, Z_DATA_ERROR,
                         // Z_MEM_ERROR

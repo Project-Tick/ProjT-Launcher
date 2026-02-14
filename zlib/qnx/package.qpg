@@ -23,12 +23,12 @@
 
    <QPG:Values>
       <QPG:Files>
-         <QPG:Add file="../zconf.h" install="/opt/include/" user="root:sys" permission="644"/>
-         <QPG:Add file="../zlib.h" install="/opt/include/" user="root:sys" permission="644"/>
-         <QPG:Add file="../libz.so.0.0.5.1" install="/opt/lib/" user="root:bin" permission="644"/>
-         <QPG:Add file="libz.so" install="/opt/lib/" component="dev" filetype="symlink" linkto="libz.so.0.0.5.1"/>
-         <QPG:Add file="libz.so.0" install="/opt/lib/" filetype="symlink" linkto="libz.so.0.0.5.1"/>
-         <QPG:Add file="../libz.so.0.0.5.1" install="/opt/lib/" component="slib"/>
+         <QPG:Add file="../ptzippyconf.h" install="/opt/include/" user="root:sys" permission="644"/>
+         <QPG:Add file="../ptlibzippy.h" install="/opt/include/" user="root:sys" permission="644"/>
+         <QPG:Add file="../libptlibzippy.so.0.0.5.1" install="/opt/lib/" user="root:bin" permission="644"/>
+         <QPG:Add file="libptlibzippy.so" install="/opt/lib/" component="dev" filetype="symlink" linkto="libptlibzippy.so.0.0.5.1"/>
+         <QPG:Add file="libptlibzippy.so.0" install="/opt/lib/" filetype="symlink" linkto="libptlibzippy.so.0.0.5.1"/>
+         <QPG:Add file="../libptlibzippy.so.0.0.5.1" install="/opt/lib/" component="slib"/>
       </QPG:Files>
 
       <QPG:PackageFilter>
@@ -42,8 +42,8 @@
             </QPM:PackageDescription>
 
             <QPM:ProductDescription>
-               <QPM:ProductName>zlib</QPM:ProductName>
-               <QPM:ProductIdentifier>zlib</QPM:ProductIdentifier>
+               <QPM:ProductName>PTlibzippy</QPM:ProductName>
+               <QPM:ProductIdentifier>ptlibzippy</QPM:ProductIdentifier>
                <QPM:ProductEmail>alain.bonnefoy@icbt.com</QPM:ProductEmail>
                <QPM:VendorName>Public</QPM:VendorName>
                <QPM:VendorInstallName>public</QPM:VendorInstallName>
@@ -53,12 +53,12 @@
                <QPM:AuthorName>Jean-Loup Gailly,Mark Adler</QPM:AuthorName>
                <QPM:AuthorURL>www.gzip.org/zlib</QPM:AuthorURL>
                <QPM:AuthorEmbedURL></QPM:AuthorEmbedURL>
-               <QPM:AuthorEmail>zlib@gzip.org</QPM:AuthorEmail>
+               <QPM:AuthorEmail>ptlibzippy@gzip.org</QPM:AuthorEmail>
                <QPM:ProductIconSmall></QPM:ProductIconSmall>
                <QPM:ProductIconLarge></QPM:ProductIconLarge>
                <QPM:ProductDescriptionShort>A massively spiffy yet delicately unobtrusive compression library.</QPM:ProductDescriptionShort>
-               <QPM:ProductDescriptionLong>zlib is designed to be a free, general-purpose, legally unencumbered, lossless data compression library for use on virtually any computer hardware and operating system.</QPM:ProductDescriptionLong>
-               <QPM:ProductDescriptionURL>https://zlib.net/</QPM:ProductDescriptionURL>
+               <QPM:ProductDescriptionLong>PTlibzippy is designed to be a free, general-purpose, legally unencumbered, lossless data compression library for use on virtually any computer hardware and operating system.</QPM:ProductDescriptionLong>
+               <QPM:ProductDescriptionURL>http://projecttick.org/p/zlib/</QPM:ProductDescriptionURL>
                <QPM:ProductDescriptionEmbedURL></QPM:ProductDescriptionEmbedURL>
             </QPM:ProductDescription>
 
@@ -77,7 +77,7 @@
 
             <QPM:ContentDescription>
                <QPM:ContentTopic xmlmultiple="true">Software Development/Libraries and Extensions/C Libraries</QPM:ContentTopic>
-               <QPM:ContentKeyword>zlib,compression</QPM:ContentKeyword>
+               <QPM:ContentKeyword>ptlibzippy,compression</QPM:ContentKeyword>
                <QPM:TargetOS>qnx6</QPM:TargetOS>
                <QPM:HostOS>qnx6</QPM:HostOS>
                <QPM:DisplayEnvironment xmlmultiple="true">None</QPM:DisplayEnvironment>
@@ -115,7 +115,7 @@
             <QPM:ProductInstallationProcedure>
 	       <QPM:OrderDependency xmlmultiple="true">
 	          <QPM:Order>InstallOver</QPM:Order>
-	          <QPM:Product>zlib</QPM:Product>
+	          <QPM:Product>ptlibzippy</QPM:Product>
 	       </QPM:OrderDependency>
             </QPM:ProductInstallationProcedure>
          </QPM:PackageManifest>
@@ -129,7 +129,7 @@
             <QPM:ProductInstallationProcedure>
 	       <QPM:OrderDependency xmlmultiple="true">
 	          <QPM:Order>InstallOver</QPM:Order>
-	          <QPM:Product>zlib-dev</QPM:Product>
+	          <QPM:Product>ptlibzippy-dev</QPM:Product>
 	       </QPM:OrderDependency>
             </QPM:ProductInstallationProcedure>
          </QPM:PackageManifest>

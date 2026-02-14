@@ -14,7 +14,7 @@ using System.IO;
 #if nunit
 using NUnit.Framework;
 
-// Unit tests for the DotZLib class library
+// Unit tests for the DotPTLib class library
 // ----------------------------------------
 //
 // Use this with NUnit 2 from http://www.nunit.org
@@ -22,7 +22,7 @@ using NUnit.Framework;
 
 namespace DotZLibTests
 {
-    using DotZLib;
+    using DotPTLib;
 
     // helper methods
     internal class Utils

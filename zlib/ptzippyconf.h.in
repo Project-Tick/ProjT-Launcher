@@ -1,179 +1,179 @@
-/* zconf.h -- configuration of the zlib compression library
+/* ptzippyconf.h -- configuration of the zlib compression library
  * Copyright (C) 1995-2025 Jean-loup Gailly, Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 /* @(#) $Id$ */
 
-#ifndef ZCONF_H
-#define ZCONF_H
+#ifndef PTZIPPYCONF_H
+#define PTZIPPYCONF_H
 
 /*
  * If you *really* need a unique prefix for all types and library functions,
- * compile with -DZ_PREFIX. The "standard" zlib should be compiled without it.
- * Even better than compiling with -DZ_PREFIX would be to use configure to set
- * this permanently in zconf.h using "./configure --zprefix".
+ * compile with -DPT_PREFIX. The "standard" zlib should be compiled without it.
+ * Even better than compiling with -DPT_PREFIX would be to use configure to set
+ * this permanently in ptzippyconf.h using "./configure --zprefix".
  */
-#ifdef Z_PREFIX     /* may be set to #if 1 by ./configure */
-#  define Z_PREFIX_SET
+#ifdef PT_PREFIX     /* may be set to #if 1 by ./configure */
+#  define PT_PREFIX_SET
 
 /* all linked symbols and init macros */
-#  define _dist_code            z__dist_code
-#  define _length_code          z__length_code
-#  define _tr_align             z__tr_align
-#  define _tr_flush_bits        z__tr_flush_bits
-#  define _tr_flush_block       z__tr_flush_block
-#  define _tr_init              z__tr_init
-#  define _tr_stored_block      z__tr_stored_block
-#  define _tr_tally             z__tr_tally
-#  define adler32               z_adler32
-#  define adler32_combine       z_adler32_combine
-#  define adler32_combine64     z_adler32_combine64
-#  define adler32_z             z_adler32_z
+#  define _dist_code            pt__dist_code
+#  define _length_code          pt__length_code
+#  define _tr_align             pt__tr_align
+#  define _tr_flush_bits        pt__tr_flush_bits
+#  define _tr_flush_block       pt__tr_flush_block
+#  define _tr_init              pt__tr_init
+#  define _tr_stored_block      pt__tr_stored_block
+#  define _tr_tally             pt__tr_tally
+#  define adler32               pt_adler32
+#  define adler32_combine       pt_adler32_combine
+#  define adler32_combine64     pt_adler32_combine64
+#  define adler32_z             pt_adler32_z
 #  ifndef Z_SOLO
-#    define compress              z_compress
-#    define compress2             z_compress2
-#    define compress_z            z_compress_z
-#    define compress2_z           z_compress2_z
-#    define compressBound         z_compressBound
-#    define compressBound_z       z_compressBound_z
+#    define compress              pt_compress
+#    define compress2             pt_compress2
+#    define compress_z            pt_compress_z
+#    define compress2_z           pt_compress2_z
+#    define compressBound         pt_compressBound
+#    define compressBound_z       pt_compressBound_z
 #  endif
-#  define crc32                 z_crc32
-#  define crc32_combine         z_crc32_combine
-#  define crc32_combine64       z_crc32_combine64
-#  define crc32_combine_gen     z_crc32_combine_gen
-#  define crc32_combine_gen64   z_crc32_combine_gen64
-#  define crc32_combine_op      z_crc32_combine_op
-#  define crc32_z               z_crc32_z
-#  define deflate               z_deflate
-#  define deflateBound          z_deflateBound
-#  define deflateBound_z        z_deflateBound_z
-#  define deflateCopy           z_deflateCopy
-#  define deflateEnd            z_deflateEnd
-#  define deflateGetDictionary  z_deflateGetDictionary
-#  define deflateInit           z_deflateInit
-#  define deflateInit2          z_deflateInit2
-#  define deflateInit2_         z_deflateInit2_
-#  define deflateInit_          z_deflateInit_
-#  define deflateParams         z_deflateParams
-#  define deflatePending        z_deflatePending
-#  define deflatePrime          z_deflatePrime
-#  define deflateReset          z_deflateReset
-#  define deflateResetKeep      z_deflateResetKeep
-#  define deflateSetDictionary  z_deflateSetDictionary
-#  define deflateSetHeader      z_deflateSetHeader
-#  define deflateTune           z_deflateTune
-#  define deflateUsed           z_deflateUsed
-#  define deflate_copyright     z_deflate_copyright
-#  define get_crc_table         z_get_crc_table
+#  define crc32                 pt_crc32
+#  define crc32_combine         pt_crc32_combine
+#  define crc32_combine64       pt_crc32_combine64
+#  define crc32_combine_gen     pt_crc32_combine_gen
+#  define crc32_combine_gen64   pt_crc32_combine_gen64
+#  define crc32_combine_op      pt_crc32_combine_op
+#  define crc32_z               pt_crc32_z
+#  define deflate               pt_deflate
+#  define deflateBound          pt_deflateBound
+#  define deflateBound_z        pt_deflateBound_z
+#  define deflateCopy           pt_deflateCopy
+#  define deflateEnd            pt_deflateEnd
+#  define deflateGetDictionary  pt_deflateGetDictionary
+#  define deflateInit           pt_deflateInit
+#  define deflateInit2          pt_deflateInit2
+#  define deflateInit2_         pt_deflateInit2_
+#  define deflateInit_          pt_deflateInit_
+#  define deflateParams         pt_deflateParams
+#  define deflatePending        pt_deflatePending
+#  define deflatePrime          pt_deflatePrime
+#  define deflateReset          pt_deflateReset
+#  define deflateResetKeep      pt_deflateResetKeep
+#  define deflateSetDictionary  pt_deflateSetDictionary
+#  define deflateSetHeader      pt_deflateSetHeader
+#  define deflateTune           pt_deflateTune
+#  define deflateUsed           pt_deflateUsed
+#  define deflate_copyright     pt_deflate_copyright
+#  define get_crc_table         pt_get_crc_table
 #  ifndef Z_SOLO
-#    define gz_error              z_gz_error
-#    define gz_intmax             z_gz_intmax
-#    define gz_strwinerror        z_gz_strwinerror
-#    define gzbuffer              z_gzbuffer
-#    define gzclearerr            z_gzclearerr
-#    define gzclose               z_gzclose
-#    define gzclose_r             z_gzclose_r
-#    define gzclose_w             z_gzclose_w
-#    define gzdirect              z_gzdirect
-#    define gzdopen               z_gzdopen
-#    define gzeof                 z_gzeof
-#    define gzerror               z_gzerror
-#    define gzflush               z_gzflush
-#    define gzfread               z_gzfread
-#    define gzfwrite              z_gzfwrite
-#    define gzgetc                z_gzgetc
-#    define gzgetc_               z_gzgetc_
-#    define gzgets                z_gzgets
-#    define gzoffset              z_gzoffset
-#    define gzoffset64            z_gzoffset64
-#    define gzopen                z_gzopen
-#    define gzopen64              z_gzopen64
+#    define gz_error              pt_gz_error
+#    define gz_intmax             pt_gz_intmax
+#    define gz_strwinerror        pt_gz_strwinerror
+#    define gzbuffer              pt_gzbuffer
+#    define gzclearerr            pt_gzclearerr
+#    define gzclose               pt_gzclose
+#    define gzclose_r             pt_gzclose_r
+#    define gzclose_w             pt_gzclose_w
+#    define gzdirect              pt_gzdirect
+#    define gzdopen               pt_gzdopen
+#    define gzeof                 pt_gzeof
+#    define gzerror               pt_gzerror
+#    define gzflush               pt_gzflush
+#    define gzfread               pt_gzfread
+#    define gzfwrite              pt_gzfwrite
+#    define gzgetc                pt_gzgetc
+#    define gzgetc_               pt_gzgetc_
+#    define gzgets                pt_gzgets
+#    define gzoffset              pt_gzoffset
+#    define gzoffset64            pt_gzoffset64
+#    define gzopen                pt_gzopen
+#    define gzopen64              pt_gzopen64
 #    ifdef _WIN32
-#      define gzopen_w              z_gzopen_w
+#      define gzopen_w              pt_gzopen_w
 #    endif
-#    define gzprintf              z_gzprintf
-#    define gzputc                z_gzputc
-#    define gzputs                z_gzputs
-#    define gzread                z_gzread
-#    define gzrewind              z_gzrewind
-#    define gzseek                z_gzseek
-#    define gzseek64              z_gzseek64
-#    define gzsetparams           z_gzsetparams
-#    define gztell                z_gztell
-#    define gztell64              z_gztell64
-#    define gzungetc              z_gzungetc
-#    define gzvprintf             z_gzvprintf
-#    define gzwrite               z_gzwrite
+#    define gzprintf              pt_gzprintf
+#    define gzputc                pt_gzputc
+#    define gzputs                pt_gzputs
+#    define gzread                pt_gzread
+#    define gzrewind              pt_gzrewind
+#    define gzseek                pt_gzseek
+#    define gzseek64              pt_gzseek64
+#    define gzsetparams           pt_gzsetparams
+#    define gztell                pt_gztell
+#    define gztell64              pt_gztell64
+#    define gzungetc              pt_gzungetc
+#    define gzvprintf             pt_gzvprintf
+#    define gzwrite               pt_gzwrite
 #  endif
-#  define inflate               z_inflate
-#  define inflateBack           z_inflateBack
-#  define inflateBackEnd        z_inflateBackEnd
-#  define inflateBackInit       z_inflateBackInit
-#  define inflateBackInit_      z_inflateBackInit_
-#  define inflateCodesUsed      z_inflateCodesUsed
-#  define inflateCopy           z_inflateCopy
-#  define inflateEnd            z_inflateEnd
-#  define inflateGetDictionary  z_inflateGetDictionary
-#  define inflateGetHeader      z_inflateGetHeader
-#  define inflateInit           z_inflateInit
-#  define inflateInit2          z_inflateInit2
-#  define inflateInit2_         z_inflateInit2_
-#  define inflateInit_          z_inflateInit_
-#  define inflateMark           z_inflateMark
-#  define inflatePrime          z_inflatePrime
-#  define inflateReset          z_inflateReset
-#  define inflateReset2         z_inflateReset2
-#  define inflateResetKeep      z_inflateResetKeep
-#  define inflateSetDictionary  z_inflateSetDictionary
-#  define inflateSync           z_inflateSync
-#  define inflateSyncPoint      z_inflateSyncPoint
-#  define inflateUndermine      z_inflateUndermine
-#  define inflateValidate       z_inflateValidate
-#  define inflate_copyright     z_inflate_copyright
-#  define inflate_fast          z_inflate_fast
-#  define inflate_table         z_inflate_table
-#  define inflate_fixed         z_inflate_fixed
+#  define inflate               pt_inflate
+#  define inflateBack           pt_inflateBack
+#  define inflateBackEnd        pt_inflateBackEnd
+#  define inflateBackInit       pt_inflateBackInit
+#  define inflateBackInit_      pt_inflateBackInit_
+#  define inflateCodesUsed      pt_inflateCodesUsed
+#  define inflateCopy           pt_inflateCopy
+#  define inflateEnd            pt_inflateEnd
+#  define inflateGetDictionary  pt_inflateGetDictionary
+#  define inflateGetHeader      pt_inflateGetHeader
+#  define inflateInit           pt_inflateInit
+#  define inflateInit2          pt_inflateInit2
+#  define inflateInit2_         pt_inflateInit2_
+#  define inflateInit_          pt_inflateInit_
+#  define inflateMark           pt_inflateMark
+#  define inflatePrime          pt_inflatePrime
+#  define inflateReset          pt_inflateReset
+#  define inflateReset2         pt_inflateReset2
+#  define inflateResetKeep      pt_inflateResetKeep
+#  define inflateSetDictionary  pt_inflateSetDictionary
+#  define inflateSync           pt_inflateSync
+#  define inflateSyncPoint      pt_inflateSyncPoint
+#  define inflateUndermine      pt_inflateUndermine
+#  define inflateValidate       pt_inflateValidate
+#  define inflate_copyright     pt_inflate_copyright
+#  define inflate_fast          pt_inflate_fast
+#  define inflate_table         pt_inflate_table
+#  define inflate_fixed         pt_inflate_fixed
 #  ifndef Z_SOLO
-#    define uncompress            z_uncompress
-#    define uncompress2           z_uncompress2
-#    define uncompress_z          z_uncompress_z
-#    define uncompress2_z         z_uncompress2_z
+#    define uncompress            pt_uncompress
+#    define uncompress2           pt_uncompress2
+#    define uncompress_z          pt_uncompress_z
+#    define uncompress2_z         pt_uncompress2_z
 #  endif
 #  define zError                z_zError
 #  ifndef Z_SOLO
-#    define zcalloc               z_zcalloc
-#    define zcfree                z_zcfree
+#    define zcalloc               pt_ptcalloc
+#    define zcfree                pt_ptcfree
 #  endif
 #  define zlibCompileFlags      z_zlibCompileFlags
 #  define zlibVersion           z_zlibVersion
 
-/* all zlib typedefs in zlib.h and zconf.h */
-#  define Byte                  z_Byte
-#  define Bytef                 z_Bytef
-#  define alloc_func            z_alloc_func
-#  define charf                 z_charf
-#  define free_func             z_free_func
+/* all zlib typedefs in ptlibzippy.h and ptzippyconf.h */
+#  define Byte                  pt_Byte
+#  define Bytef                 pt_Bytef
+#  define alloc_func            pt_alloc_func
+#  define charf                 pt_charf
+#  define free_func             pt_free_func
 #  ifndef Z_SOLO
-#    define gzFile                z_gzFile
+#    define gzFile                pt_gzFile
 #  endif
-#  define gz_header             z_gz_header
-#  define gz_headerp            z_gz_headerp
-#  define in_func               z_in_func
-#  define intf                  z_intf
-#  define out_func              z_out_func
-#  define uInt                  z_uInt
-#  define uIntf                 z_uIntf
-#  define uLong                 z_uLong
-#  define uLongf                z_uLongf
-#  define voidp                 z_voidp
-#  define voidpc                z_voidpc
-#  define voidpf                z_voidpf
+#  define gz_header             pt_gz_header
+#  define gz_headerp            pt_gz_headerp
+#  define in_func               pt_in_func
+#  define intf                  pt_intf
+#  define out_func              pt_out_func
+#  define uInt                  pt_uInt
+#  define uIntf                 pt_uIntf
+#  define uLong                 pt_uLong
+#  define uLongf                pt_uLongf
+#  define voidp                 pt_voidp
+#  define voidpc                pt_voidpc
+#  define voidpf                pt_voidpf
 
-/* all zlib structs in zlib.h and zconf.h */
-#  define gz_header_s           z_gz_header_s
-#  define internal_state        z_internal_state
+/* all zlib structs in ptlibzippy.h and ptzippyconf.h */
+#  define gz_header_s           pt_gz_header_s
+#  define internal_state        pt_internal_state
 
 #endif
 
@@ -244,7 +244,7 @@
 #endif
 
 #ifndef z_const
-#  ifdef ZLIB_CONST
+#  ifdef PTLIBZIPPY_CONST
 #    define z_const const
 #  else
 #    define z_const
@@ -314,7 +314,7 @@
 /* The following definitions for FAR are needed only for MSDOS mixed
  * model programming (small or medium model with some far allocations).
  * This was tested only with MSC; for other MSDOS compilers you may have
- * to define NO_MEMCPY in zutil.h.  If you don't need the mixed model,
+ * to define NO_MEMCPY in ptzippyutil.h.  If you don't need the mixed model,
  * just define FAR to be empty.
  */
 #ifdef SYS16BIT
@@ -339,23 +339,23 @@
 #endif
 
 #if defined(WINDOWS) || defined(WIN32)
-   /* If building or using zlib as a DLL, define ZLIB_DLL.
+   /* If building or using zlib as a DLL, define PTLIBZIPPY_DLL.
     * This is not mandatory, but it offers a little performance increase.
     */
-#  ifdef ZLIB_DLL
+#  ifdef PTLIBZIPPY_DLL
 #    if defined(WIN32) && (!defined(__BORLANDC__) || (__BORLANDC__ >= 0x500))
-#      ifdef ZLIB_INTERNAL
+#      ifdef PTLIBZIPPY_INTERNAL
 #        define ZEXTERN extern __declspec(dllexport)
 #      else
 #        define ZEXTERN extern __declspec(dllimport)
 #      endif
 #    endif
-#  endif  /* ZLIB_DLL */
+#  endif  /* PTLIBZIPPY_DLL */
    /* If building or using zlib with the WINAPI/WINAPIV calling convention,
-    * define ZLIB_WINAPI.
-    * Caution: the standard ZLIB1.DLL is NOT compiled using ZLIB_WINAPI.
+    * define PTLIBZIPPY_WINAPI.
+    * Caution: the standard PTLIBZIPPY1.DLL is NOT compiled using PTLIBZIPPY_WINAPI.
     */
-#  ifdef ZLIB_WINAPI
+#  ifdef PTLIBZIPPY_WINAPI
 #    ifdef FAR
 #      undef FAR
 #    endif
@@ -363,7 +363,7 @@
 #      define WIN32_LEAN_AND_MEAN
 #    endif
 #    include <windows.h>
-     /* No need for _export, use ZLIB.DEF instead. */
+     /* No need for _export, use PTLIBZIPPY.DEF instead. */
      /* For complete Windows compatibility, use WINAPI, not __stdcall. */
 #    define ZEXPORT WINAPI
 #    ifdef WIN32
@@ -375,8 +375,8 @@
 #endif
 
 #if defined (__BEOS__)
-#  ifdef ZLIB_DLL
-#    ifdef ZLIB_INTERNAL
+#  ifdef PTLIBZIPPY_DLL
+#    ifdef PTLIBZIPPY_INTERNAL
 #      define ZEXPORT   __declspec(dllexport)
 #      define ZEXPORTVA __declspec(dllexport)
 #    else
@@ -549,4 +549,4 @@ typedef uLong FAR uLongf;
   #pragma map(inflate_copyright,"INCOPY")
 #endif
 
-#endif /* ZCONF_H */
+#endif /* PTZIPPYCONF_H */

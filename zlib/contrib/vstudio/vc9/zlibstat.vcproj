@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="zlibstat"
+	Name="ptlibzippystat"
 	ProjectGUID="{745DEC58-EBB3-47A9-A9B8-4C6627C01BF8}"
 	TargetFrameworkVersion="131072"
 	>
@@ -22,8 +22,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="x86\ZlibStat$(ConfigurationName)"
-			IntermediateDirectory="x86\ZlibStat$(ConfigurationName)\Tmp"
+			OutputDirectory="x86\PtlibzippyStat$(ConfigurationName)"
+			IntermediateDirectory="x86\PtlibzippyStat$(ConfigurationName)\Tmp"
 			ConfigurationType="4"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -48,11 +48,11 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="WIN32;ZLIB_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;PTLIBZIPPY_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS"
 				ExceptionHandling="0"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="false"
-				PrecompiledHeaderFile="$(IntDir)/zlibstat.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippystat.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(OutDir)\"
@@ -74,7 +74,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions="/MACHINE:X86 /NODEFAULTLIB"
-				OutputFile="$(OutDir)\zlibstat.lib"
+				OutputFile="$(OutDir)\ptlibzippystat.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -95,8 +95,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="x64\ZlibStat$(ConfigurationName)"
-			IntermediateDirectory="x64\ZlibStat$(ConfigurationName)\Tmp"
+			OutputDirectory="x64\PtlibzippyStat$(ConfigurationName)"
+			IntermediateDirectory="x64\PtlibzippyStat$(ConfigurationName)\Tmp"
 			ConfigurationType="4"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -122,11 +122,11 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="ZLIB_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;WIN64"
+				PreprocessorDefinitions="PTLIBZIPPY_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;WIN64"
 				ExceptionHandling="0"
 				RuntimeLibrary="3"
 				BufferSecurityCheck="false"
-				PrecompiledHeaderFile="$(IntDir)/zlibstat.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippystat.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(OutDir)\"
@@ -148,7 +148,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions="/MACHINE:AMD64 /NODEFAULTLIB"
-				OutputFile="$(OutDir)\zlibstat.lib"
+				OutputFile="$(OutDir)\ptlibzippystat.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -169,8 +169,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Itanium"
-			OutputDirectory="ia64\ZlibStat$(ConfigurationName)"
-			IntermediateDirectory="ia64\ZlibStat$(ConfigurationName)\Tmp"
+			OutputDirectory="ia64\PtlibzippyStat$(ConfigurationName)"
+			IntermediateDirectory="ia64\PtlibzippyStat$(ConfigurationName)\Tmp"
 			ConfigurationType="4"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -196,11 +196,11 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="ZLIB_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;WIN64"
+				PreprocessorDefinitions="PTLIBZIPPY_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;WIN64"
 				ExceptionHandling="0"
 				RuntimeLibrary="3"
 				BufferSecurityCheck="false"
-				PrecompiledHeaderFile="$(IntDir)/zlibstat.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippystat.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(OutDir)\"
@@ -222,7 +222,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions="/MACHINE:IA64 /NODEFAULTLIB"
-				OutputFile="$(OutDir)\zlibstat.lib"
+				OutputFile="$(OutDir)\ptlibzippystat.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -243,8 +243,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="x86\ZlibStat$(ConfigurationName)"
-			IntermediateDirectory="x86\ZlibStat$(ConfigurationName)\Tmp"
+			OutputDirectory="x86\PtlibzippyStat$(ConfigurationName)"
+			IntermediateDirectory="x86\PtlibzippyStat$(ConfigurationName)\Tmp"
 			ConfigurationType="4"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -269,13 +269,13 @@
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="WIN32;ZLIB_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;PTLIBZIPPY_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(IntDir)/zlibstat.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippystat.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(OutDir)\"
@@ -295,7 +295,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions="/MACHINE:X86 /NODEFAULTLIB"
-				OutputFile="$(OutDir)\zlibstat.lib"
+				OutputFile="$(OutDir)\ptlibzippystat.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -316,8 +316,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="x64\ZlibStat$(ConfigurationName)"
-			IntermediateDirectory="x64\ZlibStat$(ConfigurationName)\Tmp"
+			OutputDirectory="x64\PtlibzippyStat$(ConfigurationName)"
+			IntermediateDirectory="x64\PtlibzippyStat$(ConfigurationName)\Tmp"
 			ConfigurationType="4"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -343,13 +343,13 @@
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="ZLIB_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;WIN64"
+				PreprocessorDefinitions="PTLIBZIPPY_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;WIN64"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(IntDir)/zlibstat.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippystat.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(OutDir)\"
@@ -369,7 +369,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions="/MACHINE:AMD64 /NODEFAULTLIB"
-				OutputFile="$(OutDir)\zlibstat.lib"
+				OutputFile="$(OutDir)\ptlibzippystat.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -390,8 +390,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Itanium"
-			OutputDirectory="ia64\ZlibStat$(ConfigurationName)"
-			IntermediateDirectory="ia64\ZlibStat$(ConfigurationName)\Tmp"
+			OutputDirectory="ia64\PtlibzippyStat$(ConfigurationName)"
+			IntermediateDirectory="ia64\PtlibzippyStat$(ConfigurationName)\Tmp"
 			ConfigurationType="4"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -417,13 +417,13 @@
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="ZLIB_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;WIN64"
+				PreprocessorDefinitions="PTLIBZIPPY_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;WIN64"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(IntDir)/zlibstat.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippystat.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(OutDir)\"
@@ -443,7 +443,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions="/MACHINE:IA64 /NODEFAULTLIB"
-				OutputFile="$(OutDir)\zlibstat.lib"
+				OutputFile="$(OutDir)\ptlibzippystat.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -464,8 +464,8 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseWithoutAsm|Win32"
-			OutputDirectory="x86\ZlibStat$(ConfigurationName)"
-			IntermediateDirectory="x86\ZlibStat$(ConfigurationName)\Tmp"
+			OutputDirectory="x86\PtlibzippyStat$(ConfigurationName)"
+			IntermediateDirectory="x86\PtlibzippyStat$(ConfigurationName)\Tmp"
 			ConfigurationType="4"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -490,13 +490,13 @@
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="WIN32;ZLIB_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;PTLIBZIPPY_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(IntDir)/zlibstat.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippystat.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(OutDir)\"
@@ -516,7 +516,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions="/MACHINE:X86 /NODEFAULTLIB"
-				OutputFile="$(OutDir)\zlibstat.lib"
+				OutputFile="$(OutDir)\ptlibzippystat.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -537,8 +537,8 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseWithoutAsm|x64"
-			OutputDirectory="x64\ZlibStat$(ConfigurationName)"
-			IntermediateDirectory="x64\ZlibStat$(ConfigurationName)\Tmp"
+			OutputDirectory="x64\PtlibzippyStat$(ConfigurationName)"
+			IntermediateDirectory="x64\PtlibzippyStat$(ConfigurationName)\Tmp"
 			ConfigurationType="4"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -564,13 +564,13 @@
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="ZLIB_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;WIN64"
+				PreprocessorDefinitions="PTLIBZIPPY_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;WIN64"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(IntDir)/zlibstat.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippystat.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(OutDir)\"
@@ -590,7 +590,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions="/MACHINE:AMD64 /NODEFAULTLIB"
-				OutputFile="$(OutDir)\zlibstat.lib"
+				OutputFile="$(OutDir)\ptlibzippystat.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -611,8 +611,8 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseWithoutAsm|Itanium"
-			OutputDirectory="ia64\ZlibStat$(ConfigurationName)"
-			IntermediateDirectory="ia64\ZlibStat$(ConfigurationName)\Tmp"
+			OutputDirectory="ia64\PtlibzippyStat$(ConfigurationName)"
+			IntermediateDirectory="ia64\PtlibzippyStat$(ConfigurationName)\Tmp"
 			ConfigurationType="4"
 			InheritedPropertySheets="UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -638,13 +638,13 @@
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..\.."
-				PreprocessorDefinitions="ZLIB_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;WIN64"
+				PreprocessorDefinitions="PTLIBZIPPY_WINAPI;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_WARNINGS;WIN64"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(IntDir)/zlibstat.pch"
+				PrecompiledHeaderFile="$(IntDir)/ptlibzippystat.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(OutDir)\"
@@ -664,7 +664,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions="/MACHINE:IA64 /NODEFAULTLIB"
-				OutputFile="$(OutDir)\zlibstat.lib"
+				OutputFile="$(OutDir)\ptlibzippystat.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -711,7 +711,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\gzguts.h"
+				RelativePath="..\..\..\ptzippyguts.h"
 				>
 			</File>
 			<File
@@ -763,15 +763,15 @@
 				>
 			</File>
 			<File
-				RelativePath=".\zlib.rc"
+				RelativePath=".\ptlibzippy.rc"
 				>
 			</File>
 			<File
-				RelativePath=".\zlibvc.def"
+				RelativePath=".\ptlibzippyvc.def"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\zutil.c"
+				RelativePath="..\..\..\ptzippyutil.c"
 				>
 			</File>
 		</Filter>

@@ -3,7 +3,7 @@ $ open/write zdef vmsdefs.h
 $ copy sys$input: zdef
 $ deck
 #define __unix__
-#define fill_zlib_filefunc64_32_def_from_filefunc32 fillzffunc64from
+#define fill_ptlibzippy_filefunc64_32_def_from_filefunc32 fillptfunc64from
 #define Write_Zip64EndOfCentralDirectoryLocator Write_Zip64EoDLocator
 #define Write_Zip64EndOfCentralDirectoryRecord Write_Zip64EoDRecord
 #define Write_EndOfCentralDirectoryRecord Write_EoDRecord

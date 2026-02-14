@@ -12,7 +12,7 @@
           ... | puff [-w] [-f] [-nnn]
 
    where file is the input file with deflate data, nnn is the number of bytes
-   of input to skip before inflating (e.g. to skip a zlib or gzip header), and
+   of input to skip before inflating (e.g. to skip a PTlibzippy or gzip header), and
    -w is used to write the decompressed data to stdout.  -f is for coverage
    testing, and causes pufftest to fail with not enough output space (-f does
    a write like -w, so -w is not required). */

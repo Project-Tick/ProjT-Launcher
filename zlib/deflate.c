@@ -1,7 +1,7 @@
 /* deflate.c -- compress data using the deflation algorithm
  * Copyright (C) 1995-2025 Jean-loup Gailly and Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 /*
@@ -384,7 +384,7 @@ int ZEXPORT deflateInit2_(z_streamp strm, int level, int method,
                           const char *version, int stream_size) {
     deflate_state *s;
     int wrap = 1;
-    static const char my_version[] = ZLIB_VERSION;
+    static const char my_version[] = PTLIBZIPPY_VERSION;
 
     if (version == Z_NULL || version[0] != my_version[0] ||
         stream_size != sizeof(z_stream)) {
@@ -434,7 +434,7 @@ int ZEXPORT deflateInit2_(z_streamp strm, int level, int method,
     if (windowBits == 8) windowBits = 9;  /* until 256-byte window bug fixed */
     s = (deflate_state *) ZALLOC(strm, 1, sizeof(deflate_state));
     if (s == Z_NULL) return Z_MEM_ERROR;
-    zmemzero(s, sizeof(deflate_state));
+    zmemzero((Bytef *)s, sizeof(deflate_state));
     strm->state = (struct internal_state FAR *)s;
     s->strm = strm;
     s->status = INIT_STATE;     /* to pass state test in deflateReset() */
@@ -1324,7 +1324,7 @@ int ZEXPORT deflateCopy(z_streamp dest, z_streamp source) {
 
     ds = (deflate_state *) ZALLOC(dest, 1, sizeof(deflate_state));
     if (ds == Z_NULL) return Z_MEM_ERROR;
-    zmemzero(ds, sizeof(deflate_state));
+    zmemzero((Bytef *)ds, sizeof(deflate_state));
     dest->state = (struct internal_state FAR *) ds;
     zmemcpy((voidpf)ds, (voidpf)ss, sizeof(deflate_state));
     ds->strm = dest;
@@ -1577,7 +1577,7 @@ local uInt longest_match(deflate_state *s, IPos cur_match) {
 
 #endif /* FASTEST */
 
-#ifdef ZLIB_DEBUG
+#ifdef PTLIBZIPPY_DEBUG
 
 #define EQUAL 0
 /* result of memcmp for equal strings */
@@ -1611,7 +1611,7 @@ local void check_match(deflate_state *s, IPos start, IPos match, int length) {
 }
 #else
 #  define check_match(s, start, match, length)
-#endif /* ZLIB_DEBUG */
+#endif /* PTLIBZIPPY_DEBUG */
 
 /* ===========================================================================
  * Flush the current block, with given end-of-file flag.
@@ -1711,7 +1711,7 @@ local block_state deflate_stored(deflate_state *s, int flush) {
         /* Write the stored block header bytes. */
         flush_pending(s->strm);
 
-#ifdef ZLIB_DEBUG
+#ifdef PTLIBZIPPY_DEBUG
         /* Update debugging counts for the data about to be copied. */
         s->compressed_len += len << 3;
         s->bits_sent += len << 3;

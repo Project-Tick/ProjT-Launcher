@@ -1,7 +1,7 @@
 /* ioapi.h -- IO base function header for compress/uncompress .zip
-   part of the MiniZip project - ( http://www.winimage.com/zLibDll/minizip.html )
+   part of the MiniZip project - ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
-         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/zLibDll/minizip.html )
+         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
          Modifications for Zip64 support
          Copyright (C) 2009-2010 Mathias Svensson ( http://result42.com )
@@ -18,8 +18,8 @@
 
 */
 
-#ifndef ZLIBIOAPI64_H
-#define ZLIBIOAPI64_H
+#ifndef PTLIBZIPPYIOAPI64_H
+#define PTLIBZIPPYIOAPI64_H
 
 #if (!defined(_WIN32)) && (!defined(WIN32)) && (!defined(__APPLE__))
 
@@ -43,7 +43,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "zlib.h"
+#include "ptlibzippy.h"
 
 #if defined(USE_FILE32API)
 #define fopen64 fopen
@@ -84,16 +84,16 @@ extern "C" {
 #endif
 
 
-#define ZLIB_FILEFUNC_SEEK_CUR (1)
-#define ZLIB_FILEFUNC_SEEK_END (2)
-#define ZLIB_FILEFUNC_SEEK_SET (0)
+#define PTLIBZIPPY_FILEFUNC_SEEK_CUR (1)
+#define PTLIBZIPPY_FILEFUNC_SEEK_END (2)
+#define PTLIBZIPPY_FILEFUNC_SEEK_SET (0)
 
-#define ZLIB_FILEFUNC_MODE_READ      (1)
-#define ZLIB_FILEFUNC_MODE_WRITE     (2)
-#define ZLIB_FILEFUNC_MODE_READWRITEFILTER (3)
+#define PTLIBZIPPY_FILEFUNC_MODE_READ      (1)
+#define PTLIBZIPPY_FILEFUNC_MODE_WRITE     (2)
+#define PTLIBZIPPY_FILEFUNC_MODE_READWRITEFILTER (3)
 
-#define ZLIB_FILEFUNC_MODE_EXISTING (4)
-#define ZLIB_FILEFUNC_MODE_CREATE   (8)
+#define PTLIBZIPPY_FILEFUNC_MODE_EXISTING (4)
+#define PTLIBZIPPY_FILEFUNC_MODE_CREATE   (8)
 
 
 #ifndef ZCALLBACK
@@ -118,7 +118,7 @@ typedef long     (ZCALLBACK *seek_file_func)      (voidpf opaque, voidpf stream,
 
 
 /* here is the "old" 32 bits structure */
-typedef struct zlib_filefunc_def_s
+typedef struct ptlibzippy_filefunc_def_s
 {
     open_file_func      zopen_file;
     read_file_func      zread_file;
@@ -128,13 +128,13 @@ typedef struct zlib_filefunc_def_s
     close_file_func     zclose_file;
     testerror_file_func zerror_file;
     voidpf              opaque;
-} zlib_filefunc_def;
+} ptlibzippy_filefunc_def;
 
 typedef ZPOS64_T (ZCALLBACK *tell64_file_func)    (voidpf opaque, voidpf stream);
 typedef long     (ZCALLBACK *seek64_file_func)    (voidpf opaque, voidpf stream, ZPOS64_T offset, int origin);
 typedef voidpf   (ZCALLBACK *open64_file_func)    (voidpf opaque, const void* filename, int mode);
 
-typedef struct zlib_filefunc64_def_s
+typedef struct ptlibzippy_filefunc64_def_s
 {
     open64_file_func    zopen64_file;
     read_file_func      zread_file;
@@ -144,19 +144,19 @@ typedef struct zlib_filefunc64_def_s
     close_file_func     zclose_file;
     testerror_file_func zerror_file;
     voidpf              opaque;
-} zlib_filefunc64_def;
+} ptlibzippy_filefunc64_def;
 
-void fill_fopen64_filefunc(zlib_filefunc64_def* pzlib_filefunc_def);
-void fill_fopen_filefunc(zlib_filefunc_def* pzlib_filefunc_def);
+void fill_fopen64_filefunc(ptlibzippy_filefunc64_def* pptlibzippy_filefunc_def);
+void fill_fopen_filefunc(ptlibzippy_filefunc_def* pptlibzippy_filefunc_def);
 
 /* now internal definition, only for zip.c and unzip.h */
-typedef struct zlib_filefunc64_32_def_s
+typedef struct ptlibzippy_filefunc64_32_def_s
 {
-    zlib_filefunc64_def zfile_func64;
+    ptlibzippy_filefunc64_def zfile_func64;
     open_file_func      zopen32_file;
     tell_file_func      ztell32_file;
     seek_file_func      zseek32_file;
-} zlib_filefunc64_32_def;
+} ptlibzippy_filefunc64_32_def;
 
 
 #define ZREAD64(filefunc,filestream,buf,size)     ((*((filefunc).zfile_func64.zread_file))   ((filefunc).zfile_func64.opaque,filestream,buf,size))
@@ -166,11 +166,11 @@ typedef struct zlib_filefunc64_32_def_s
 #define ZCLOSE64(filefunc,filestream)             ((*((filefunc).zfile_func64.zclose_file))  ((filefunc).zfile_func64.opaque,filestream))
 #define ZERROR64(filefunc,filestream)             ((*((filefunc).zfile_func64.zerror_file))  ((filefunc).zfile_func64.opaque,filestream))
 
-voidpf call_zopen64(const zlib_filefunc64_32_def* pfilefunc,const void*filename,int mode);
-long call_zseek64(const zlib_filefunc64_32_def* pfilefunc,voidpf filestream, ZPOS64_T offset, int origin);
-ZPOS64_T call_ztell64(const zlib_filefunc64_32_def* pfilefunc,voidpf filestream);
+voidpf call_zopen64(const ptlibzippy_filefunc64_32_def* pfilefunc,const void*filename,int mode);
+long call_zseek64(const ptlibzippy_filefunc64_32_def* pfilefunc,voidpf filestream, ZPOS64_T offset, int origin);
+ZPOS64_T call_ztell64(const ptlibzippy_filefunc64_32_def* pfilefunc,voidpf filestream);
 
-void fill_zlib_filefunc64_32_def_from_filefunc32(zlib_filefunc64_32_def* p_filefunc64_32,const zlib_filefunc_def* p_filefunc32);
+void fill_ptlibzippy_filefunc64_32_def_from_filefunc32(ptlibzippy_filefunc64_32_def* p_filefunc64_32,const ptlibzippy_filefunc_def* p_filefunc32);
 
 #define ZOPEN64(filefunc,filename,mode)         (call_zopen64((&(filefunc)),(filename),(mode)))
 #define ZTELL64(filefunc,filestream)            (call_ztell64((&(filefunc)),(filestream)))

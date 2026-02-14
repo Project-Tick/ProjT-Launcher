@@ -1,15 +1,15 @@
 {*******************************************************}
 {                                                       }
 {       Borland Delphi Supplemental Components          }
-{       ZLIB Data Compression Interface Unit            }
+{       PTlibzippy Data Compression Interface Unit      }
 {                                                       }
 {       Copyright (c) 1997,99 Borland Corporation       }
 {                                                       }
 {*******************************************************}
 
-{ Updated for zlib 1.2.x by Cosmin Truta <cosmint@cs.ubbcluj.ro> }
+{ Updated for PTlibzippy 1.2.x by Cosmin Truta <cosmint@cs.ubbcluj.ro> }
 
-unit ZLib;
+unit PTLib;
 
 interface
 
@@ -152,7 +152,7 @@ procedure DecompressToUserBuf(const InBuf: Pointer; InBytes: Integer;
   const OutBuf: Pointer; BufSize: Integer);
 
 const
-  zlib_version = '0.0.5.1';
+  ptlibzippy_version = '0.0.5.1';
 
 type
   EZlibError = class(Exception);
@@ -207,7 +207,7 @@ const
 {$L inftrees.obj}
 {$L trees.obj}
 {$L uncompr.obj}
-{$L zutil.obj}
+{$L ptzippyutil.obj}
 
 procedure adler32; external;
 procedure compressBound; external;
@@ -251,18 +251,18 @@ function inflateEnd(var strm: TZStreamRec): Integer; external;
 function inflateReset(var strm: TZStreamRec): Integer; external;
 
 
-function zlibAllocMem(AppData: Pointer; Items, Size: Integer): Pointer; cdecl;
+function ptlibzippyAllocMem(AppData: Pointer; Items, Size: Integer): Pointer; cdecl;
 begin
 //  GetMem(Result, Items*Size);
   Result := AllocMem(Items * Size);
 end;
 
-procedure zlibFreeMem(AppData, Block: Pointer); cdecl;
+procedure ptlibzippyFreeMem(AppData, Block: Pointer); cdecl;
 begin
   FreeMem(Block);
 end;
 
-{function zlibCheck(code: Integer): Integer;
+{function ptlibzippyCheck(code: Integer): Integer;
 begin
   Result := code;
   if code < 0 then
@@ -290,8 +290,8 @@ var
   P: Pointer;
 begin
   FillChar(strm, sizeof(strm), 0);
-  strm.zalloc := zlibAllocMem;
-  strm.zfree := zlibFreeMem;
+  strm.zalloc := ptlibzippyAllocMem;
+  strm.zfree := ptlibzippyFreeMem;
   OutBytes := ((InBytes + (InBytes div 10) + 12) + 255) and not 255;
   GetMem(OutBuf, OutBytes);
   try
@@ -299,7 +299,7 @@ begin
     strm.avail_in := InBytes;
     strm.next_out := OutBuf;
     strm.avail_out := OutBytes;
-    CCheck(deflateInit_(strm, Z_BEST_COMPRESSION, zlib_version, sizeof(strm)));
+    CCheck(deflateInit_(strm, Z_BEST_COMPRESSION, ptlibzippy_version, sizeof(strm)));
     try
       while CCheck(deflate(strm, Z_FINISH)) <> Z_STREAM_END do
       begin
@@ -329,8 +329,8 @@ var
   BufInc: Integer;
 begin
   FillChar(strm, sizeof(strm), 0);
-  strm.zalloc := zlibAllocMem;
-  strm.zfree := zlibFreeMem;
+  strm.zalloc := ptlibzippyAllocMem;
+  strm.zfree := ptlibzippyFreeMem;
   BufInc := (InBytes + 255) and not 255;
   if OutEstimate = 0 then
     OutBytes := BufInc
@@ -342,7 +342,7 @@ begin
     strm.avail_in := InBytes;
     strm.next_out := OutBuf;
     strm.avail_out := OutBytes;
-    DCheck(inflateInit_(strm, zlib_version, sizeof(strm)));
+    DCheck(inflateInit_(strm, ptlibzippy_version, sizeof(strm)));
     try
       while DCheck(inflate(strm, Z_NO_FLUSH)) <> Z_STREAM_END do
       begin
@@ -369,13 +369,13 @@ var
   strm: TZStreamRec;
 begin
   FillChar(strm, sizeof(strm), 0);
-  strm.zalloc := zlibAllocMem;
-  strm.zfree := zlibFreeMem;
+  strm.zalloc := ptlibzippyAllocMem;
+  strm.zfree := ptlibzippyFreeMem;
   strm.next_in := InBuf;
   strm.avail_in := InBytes;
   strm.next_out := OutBuf;
   strm.avail_out := BufSize;
-  DCheck(inflateInit_(strm, zlib_version, sizeof(strm)));
+  DCheck(inflateInit_(strm, ptlibzippy_version, sizeof(strm)));
   try
     if DCheck(inflate(strm, Z_FINISH)) <> Z_STREAM_END then
       raise EZlibError.CreateRes(@sTargetBufferTooSmall);
@@ -391,8 +391,8 @@ begin
   inherited Create;
   FStrm := Strm;
   FStrmPos := Strm.Position;
-  FZRec.zalloc := zlibAllocMem;
-  FZRec.zfree := zlibFreeMem;
+  FZRec.zalloc := ptlibzippyAllocMem;
+  FZRec.zfree := ptlibzippyFreeMem;
 end;
 
 procedure TCustomZLibStream.Progress(Sender: TObject);
@@ -412,7 +412,7 @@ begin
   inherited Create(Dest);
   FZRec.next_out := FBuffer;
   FZRec.avail_out := sizeof(FBuffer);
-  CCheck(deflateInit_(FZRec, Levels[CompressionLevel], zlib_version, sizeof(FZRec)));
+  CCheck(deflateInit_(FZRec, Levels[CompressionLevel], ptlibzippy_version, sizeof(FZRec)));
 end;
 
 destructor TCompressionStream.Destroy;
@@ -485,7 +485,7 @@ begin
   inherited Create(Source);
   FZRec.next_in := FBuffer;
   FZRec.avail_in := 0;
-  DCheck(inflateInit_(FZRec, zlib_version, sizeof(FZRec)));
+  DCheck(inflateInit_(FZRec, ptlibzippy_version, sizeof(FZRec)));
 end;
 
 destructor TDecompressionStream.Destroy;

@@ -9,25 +9,25 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace DotZLib
+namespace DotPTLib
 {
 
     /// <summary>
-    /// Implements a data compressor, using the deflate algorithm in the ZLib dll
+    /// Implements a data compressor, using the deflate algorithm in the PTLib dll
     /// </summary>
 	public sealed class Deflater : CodecBase
 	{
         #region Dll imports
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         private static extern int deflateInit_(ref ZStream sz, int level, string vs, int size);
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
         private static extern int deflate(ref ZStream sz, int flush);
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
         private static extern int deflateReset(ref ZStream sz);
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
         private static extern int deflateEnd(ref ZStream sz);
         #endregion
 
@@ -39,7 +39,7 @@ namespace DotZLib
 		{
             int retval = deflateInit_(ref _ztream, (int)level, Info.Version, Marshal.SizeOf(_ztream));
             if (retval != 0)
-                throw new ZLibException(retval, "Could not initialize deflater");
+                throw new PTLibException(retval, "Could not initialize deflater");
 
             resetOutput();
 		}
@@ -98,7 +98,7 @@ namespace DotZLib
         }
 
         /// <summary>
-        /// Closes the internal zlib deflate stream
+        /// Closes the internal PTlibzippy deflate stream
         /// </summary>
         protected override void CleanUp() { deflateEnd(ref _ztream); }
 

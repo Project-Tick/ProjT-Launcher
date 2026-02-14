@@ -20,14 +20,14 @@ jobs:
             compiler: gcc
             cflags: -Wall -Wextra
             pkgtgt: package package_source
-            cmake-args: -DZLIB_BUILD_SHARED=OFF -DMINIZIP_ENABLE_BZIP2=ON
+            cmake-args: -DPTLIBZIPPY_BUILD_SHARED=OFF -DMINIZIP_ENABLE_BZIP2=ON
 
           - name: Ubuntu GCC no static
             os: ubuntu-latest
             compiler: gcc
             cflags: -Wall -Wextra
             pkgtgt: package package_source
-            cmake-args: -DZLIB_BUILD_STATIC=OFF -DMINIZIP_ENABLE_BZIP2=ON
+            cmake-args: -DPTLIBZIPPY_BUILD_STATIC=OFF -DMINIZIP_ENABLE_BZIP2=ON
 
           - name: Ubuntu GCC -O3
             os: ubuntu-latest
@@ -121,7 +121,7 @@ jobs:
       run: |
         sudo apt install libbz2-dev
     - name: Generate project files
-      run: cmake -S . -B ../build ${{ matrix.cmake-args }} -D CMAKE_BUILD_TYPE=${{ matrix.build-config || 'Release' }} -DZLIB_BUILD_MINIZIP=ON
+      run: cmake -S . -B ../build ${{ matrix.cmake-args }} -D CMAKE_BUILD_TYPE=${{ matrix.build-config || 'Release' }} -DPTLIBZIPPY_BUILD_MINIZIP=ON
       env:
         CC: ${{ matrix.compiler }}
         CFLAGS: ${{ matrix.cflags }}

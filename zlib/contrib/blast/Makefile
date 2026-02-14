@@ -1,7 +1,7 @@
 all: test
 
 libblast.so: blast.c blast.h
-	cc -o libblast.so -shared blast.c
+	cc -o libblast.so -shared -fPIC blast.c
 
 blast-test: libblast.so
 	cc -o blast-test.o -c blast-test.c

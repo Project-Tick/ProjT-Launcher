@@ -1,5 +1,5 @@
 module(
-    name = "zlib",
+    name = "PTlibzippy",
     version = "0.0.0",
     compatibility_level = 1,
 )

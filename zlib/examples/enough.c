@@ -25,7 +25,7 @@
 
 /*
    Examine all possible prefix codes for a given number of symbols and a
-   maximum code length in bits to determine the maximum table size for zlib's
+   maximum code length in bits to determine the maximum table size for PTlibzippy's
    inflate. Only complete prefix codes are counted.
 
    Two codes are considered distinct if the vectors of the number of codes per

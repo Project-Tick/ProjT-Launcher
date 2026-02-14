@@ -2,44 +2,44 @@
 Overview
 ========
 
-This directory contains an update to the ZLib interface unit,
+This directory contains an update to the PTLib interface unit,
 distributed by Borland as a Delphi supplemental component.
 
-The original ZLib unit is Copyright (c) 1997,99 Borland Corp.,
-and is based on zlib version 1.0.4.  There are a series of bugs
-and security problems associated with that old zlib version, and
-we recommend the users to update their ZLib unit.
+The original PTLib unit is Copyright (c) 1997,99 Borland Corp.,
+and is based on PTlibzippy version 1.0.4.  There are a series of bugs
+and security problems associated with that old PTlibzippy version, and
+we recommend the users to update their PTLib unit.
 
 
 Summary of modifications
 ========================
 
-- Improved makefile, adapted to zlib version 1.2.1.
+- Improved makefile, adapted to PTlibzippy version 1.2.1.
 
 - Some field types from TZStreamRec are changed from Integer to
-  Longint, for consistency with the zlib.h header, and for 64-bit
+  Longint, for consistency with the ptlibzippy.h header, and for 64-bit
   readiness.
 
-- The zlib_version constant is updated.
+- The ptlibzippy_version constant is updated.
 
 - The new Z_RLE strategy has its corresponding symbolic constant.
 
 - The allocation and deallocation functions and function types
-  (TAlloc, TFree, zlibAllocMem and zlibFreeMem) are now cdecl,
+  (TAlloc, TFree, ptlibzippyAllocMem and ptlibzippyFreeMem) are now cdecl,
   and _malloc and _free are added as C RTL stubs.  As a result,
-  the original C sources of zlib can be compiled out of the box,
-  and linked to the ZLib unit.
+  the original C sources of PTlibzippy can be compiled out of the box,
+  and linked to the PTLib unit.
 
 
 Suggestions for improvements
 ============================
 
-Currently, the ZLib unit provides only a limited wrapper around
-the zlib library, and much of the original zlib functionality is
+Currently, the PTLib unit provides only a limited wrapper around
+the PTlibzippy library, and much of the original PTlibzippy functionality is
 missing.  Handling compressed file formats like ZIP/GZIP or PNG
 cannot be implemented without having this functionality.
 Applications that handle these formats are either using their own,
-duplicated code, or not using the ZLib unit at all.
+duplicated code, or not using the PTLib unit at all.
 
 Here are a few suggestions:
 
@@ -48,7 +48,7 @@ Here are a few suggestions:
   interface.
 
 - The ability to read and write raw deflate streams, without the
-  zlib stream header and trailer.  Raw deflate streams are used
+  PTlibzippy stream header and trailer.  Raw deflate streams are used
   in the ZIP file format.
 
 - The ability to read and write gzip streams, used in the GZIP

@@ -4,8 +4,8 @@ project(
     minizip
     VERSION 1.0.0
     LANGUAGES C
-    DESCRIPTION "A library for creating zipfiles based in zlib"
-    HOMEPAGE_URL "https://www.winimage.com/zLibDll/minizip.html")
+    DESCRIPTION "A library for creating zipfiles based in PTlibzippy"
+    HOMEPAGE_URL "https://www.winimage.com/ptlibzippyDll/minizip.html")
 
 if(CMAKE_SIZEOF_VOID_P LESS 8 AND NOT MINGW)
     message(WARNING "libminizip needs 64bit - stopping here")
@@ -15,20 +15,20 @@ endif(CMAKE_SIZEOF_VOID_P LESS 8 AND NOT MINGW)
 # ============================================================================
 # CPack
 # ============================================================================
-set(CPACK_PACKAGE_VENDOR "zlib-Project")
+set(CPACK_PACKAGE_VENDOR "PTlibzippy-Project")
 set(CPACK_PACKAGE_DESCRIPTION_FILE ${minizip_SOURCE_DIR}/MiniZip64_info.txt)
 set(CPACK_RESOURCE_FILE_LICENSE ${minizip_SOURCE_DIR}/../../LICENSE)
 set(CPACK_RESOURCE_FILE_README ${minizip_SOURCE_DIR}/MiniZip64_info.txt)
 
 # ============================================================================
-# set options if build from zlib
+# set options if build from PTlibzippy
 # ============================================================================
-if(ZLIB_BUILD_MINIZIP)
-    set(MINIZIP_BUILD_SHARED ${ZLIB_MINIZIP_BUILD_SHARED} CACHE BOOL "")
-    set(MINIZIP_BUILD_STATIC ${ZLIB_MINIZIP_BUILD_STATIC} CACHE BOOL "")
-    set(MINIZIP_BUILD_TESTING ${ZLIB_MINIZIP_INSTALL} CACHE BOOL "")
-    set(MINIZIP_INSTALL ${ZLIB_MINIZIP_INSTALL} CACHE BOOL "")
-endif(ZLIB_BUILD_MINIZIP)
+if(PTLIBZIPPY_BUILD_MINIZIP)
+    set(MINIZIP_BUILD_SHARED ${PTLIBZIPPY_MINIZIP_BUILD_SHARED} CACHE BOOL "")
+    set(MINIZIP_BUILD_STATIC ${PTLIBZIPPY_MINIZIP_BUILD_STATIC} CACHE BOOL "")
+    set(MINIZIP_BUILD_TESTING ${PTLIBZIPPY_MINIZIP_INSTALL} CACHE BOOL "")
+    set(MINIZIP_INSTALL ${PTLIBZIPPY_MINIZIP_INSTALL} CACHE BOOL "")
+endif(PTLIBZIPPY_BUILD_MINIZIP)
 
 # ============================================================================
 # configuration
@@ -54,7 +54,7 @@ if(NOT CPACK_INCLUDED)
     include(CPack)
 endif(NOT CPACK_INCLUDED)
 
-if(NOT DEFINED ZLIB_BUILD_MINIZIP)
+if(NOT DEFINED PTLIBZIPPY_BUILD_MINIZIP)
     if(MINIZIP_BUILD_SHARED)
         list(APPEND REQUIRED_COMPONENTS "shared")
     endif(MINIZIP_BUILD_SHARED)
@@ -63,8 +63,8 @@ if(NOT DEFINED ZLIB_BUILD_MINIZIP)
         list(APPEND REQUIRED_COMPONENTS "static")
     endif(MINIZIP_BUILD_STATIC)
 
-    find_package(ZLIB REQUIRED COMPONENTS ${REQUIRED_COMPONENTS} CONFIG)
-endif(NOT DEFINED ZLIB_BUILD_MINIZIP)
+    find_package(PTlibzippy REQUIRED COMPONENTS ${REQUIRED_COMPONENTS} CONFIG)
+endif(NOT DEFINED PTLIBZIPPY_BUILD_MINIZIP)
 
 if(MINIZIP_ENABLE_BZIP2)
     find_package(BZip2 REQUIRED)
@@ -166,7 +166,7 @@ if(MINIZIP_BUILD_SHARED)
                    SOVERSION ${minizip_VERSION_MAJOR})
 
     target_link_libraries(libminizip
-        PUBLIC ZLIB::ZLIB
+        PUBLIC PTlibzippy::PTlibzippy
             $<$<BOOL:${BZIP2_FOUND}>:BZip2::BZip2>)
 
     add_executable(minizip ${MINIZIP_SRCS} ${MINIZIP_HDRS})
@@ -204,7 +204,7 @@ if(MINIZIP_BUILD_STATIC)
         set_target_properties(libminizipstatic PROPERTIES SUFFIX ".dll.a")
     endif(CYGWIN)
 
-    target_link_libraries(libminizipstatic PUBLIC ZLIB::ZLIBSTATIC
+    target_link_libraries(libminizipstatic PUBLIC PTlibzippy::PTlibzippyStatic
         $<$<BOOL:${BZIP2_FOUND}>:BZip2::BZip2>)
 
     add_executable(minizipstatic ${MINIZIP_SRCS} ${MINIZIP_HDRS})

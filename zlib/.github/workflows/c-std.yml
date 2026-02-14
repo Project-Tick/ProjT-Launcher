@@ -54,15 +54,15 @@ jobs:
         std:
           - name: c89
             value: c89
-            compiler-opt: -DZLIB_INSECURE
+            compiler-opt: -DPTLIBZIPPY_INSECURE
 
           - name: gnu89
             value: gnu89
-            compiler-opt: -DZLIB_INSECURE
+            compiler-opt: -DPTLIBZIPPY_INSECURE
 
           - name: c94
             value: iso9899:199409
-            compiler-opt: -DZLIB_INSECURE
+            compiler-opt: -DPTLIBZIPPY_INSECURE
 
           - name: c99
             value: c99
@@ -152,7 +152,7 @@ jobs:
     - name: Generate project files (cmake)
       if: matrix.builder == 'cmake'
       run: |
-        cmake -S . -B ./build1 -D CMAKE_BUILD_TYPE=Release ${{ matrix.os.cmake-opt }} -DZLIB_BUILD_TESTING=OFF
+        cmake -S . -B ./build1 -D CMAKE_BUILD_TYPE=Release ${{ matrix.os.cmake-opt }} -DPTLIBZIPPY_BUILD_TESTING=OFF
       env:
         CC: ${{ matrix.compiler }}
         CFLAGS: -std=${{ matrix.std.value }} ${{ matrix.std.compiler-opt }} ${{ matrix.arch.compiler-opt }} -Werror -Wall -Wextra
@@ -160,7 +160,7 @@ jobs:
     - name: Generate project files with tests (cmake)
       if: matrix.builder == 'cmake'
       run: |
-        cmake -S . -B ./build2 -D CMAKE_BUILD_TYPE=Release ${{ matrix.os.cmake-opt }} -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=OFF
+        cmake -S . -B ./build2 -D CMAKE_BUILD_TYPE=Release ${{ matrix.os.cmake-opt }} -DPTLIBZIPPY_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=OFF
       env:
         CC: ${{ matrix.compiler }}
         CFLAGS: -std=${{ matrix.std.value }} ${{ matrix.std.compiler-opt }} ${{ matrix.arch.compiler-opt }} -Wall -Wextra
@@ -246,14 +246,14 @@ jobs:
 
     - name: Generate project files (cmake)
       run: |
-        cmake -S . -B ./build1 ${{ matrix.arch.value }} -D CMAKE_BUILD_TYPE=Release -DZLIB_BUILD_TESTING=OFF
+        cmake -S . -B ./build1 ${{ matrix.arch.value }} -D CMAKE_BUILD_TYPE=Release -DPTLIBZIPPY_BUILD_TESTING=OFF
       env:
         CC: ${{ matrix.compiler }}
         CFLAGS: /WX ${{ matrix.std.value }}
 
     - name: Generate project files with tests (cmake)
       run: |
-        cmake -S . -B ./build2 ${{ matrix.arch.value }} -D CMAKE_BUILD_TYPE=Release -DZLIB_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=OFF
+        cmake -S . -B ./build2 ${{ matrix.arch.value }} -D CMAKE_BUILD_TYPE=Release -DPTLIBZIPPY_BUILD_MINIZIP=ON -DMINIZIP_ENABLE_BZIP2=OFF
       env:
         CC: ${{ matrix.compiler }}
         CFLAGS: ${{ matrix.std.value }}

@@ -1,12 +1,12 @@
 /* adler32.c -- compute the Adler-32 checksum of a data stream
  * Copyright (C) 1995-2011, 2016 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 /* @(#) $Id$ */
 
-#include "zutil.h"
+#include "ptzippyutil.h"
 
 #define BASE 65521U     /* largest prime smaller than 65536 */
 #define NMAX 5552

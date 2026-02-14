@@ -1,26 +1,26 @@
-/* zutil.h -- internal interface and configuration of the compression library
+/* ptzippyutil.h -- internal interface and configuration of the compression library
  * Copyright (C) 1995-2024 Jean-loup Gailly, Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 /* WARNING: this file should *not* be used by applications. It is
    part of the implementation of the compression library and is
-   subject to change. Applications should only use zlib.h.
+   subject to change. Applications should only use ptlibzippy.h.
  */
 
 /* @(#) $Id$ */
 
-#ifndef ZUTIL_H
-#define ZUTIL_H
+#ifndef PTZIPPYUTIL_H
+#define PTZIPPYUTIL_H
 
 #ifdef HAVE_HIDDEN
-#  define ZLIB_INTERNAL __attribute__((visibility ("hidden")))
+#  define PTLIBZIPPY_INTERNAL __attribute__((visibility ("hidden")))
 #else
-#  define ZLIB_INTERNAL
+#  define PTLIBZIPPY_INTERNAL
 #endif
 
-#include "zlib.h"
+#include "ptlibzippy.h"
 
 #if defined(STDC) && !defined(Z_SOLO)
 #  if !(defined(_WIN32_WCE) && defined(_MSC_VER))
@@ -215,16 +215,16 @@ extern z_const char * const z_errmsg[10]; /* indexed by 2-zlib_error */
 #    define zmemzero(dest, len) memset(dest, 0, len)
 #  endif
 #else
-   void ZLIB_INTERNAL zmemcpy(Bytef* dest, const Bytef* source, uInt len);
-   int ZLIB_INTERNAL zmemcmp(const Bytef* s1, const Bytef* s2, uInt len);
-   void ZLIB_INTERNAL zmemzero(Bytef* dest, uInt len);
+   void PTLIBZIPPY_INTERNAL zmemcpy(Bytef* dest, const Bytef* source, uInt len);
+   int PTLIBZIPPY_INTERNAL zmemcmp(const Bytef* s1, const Bytef* s2, uInt len);
+   void PTLIBZIPPY_INTERNAL zmemzero(Bytef* dest, uInt len);
 #endif
 
 /* Diagnostic functions */
-#ifdef ZLIB_DEBUG
+#ifdef PTLIBZIPPY_DEBUG
 #  include <stdio.h>
-   extern int ZLIB_INTERNAL z_verbose;
-   extern void ZLIB_INTERNAL z_error(char *m);
+   extern int PTLIBZIPPY_INTERNAL z_verbose;
+   extern void PTLIBZIPPY_INTERNAL z_error(char *m);
 #  define Assert(cond,msg) {if(!(cond)) z_error(msg);}
 #  define Trace(x) {if (z_verbose>=0) fprintf x ;}
 #  define Tracev(x) {if (z_verbose>0) fprintf x ;}
@@ -241,9 +241,9 @@ extern z_const char * const z_errmsg[10]; /* indexed by 2-zlib_error */
 #endif
 
 #ifndef Z_SOLO
-   voidpf ZLIB_INTERNAL zcalloc(voidpf opaque, unsigned items,
+   voidpf PTLIBZIPPY_INTERNAL zcalloc(voidpf opaque, unsigned items,
                                 unsigned size);
-   void ZLIB_INTERNAL zcfree(voidpf opaque, voidpf ptr);
+   void PTLIBZIPPY_INTERNAL zcfree(voidpf opaque, voidpf ptr);
 #endif
 
 #define ZALLOC(strm, items, size) \
@@ -325,4 +325,4 @@ local void z_once(z_once_t *state, void (*init)(void)) {
 
 #endif /* Z_ONCE */
 
-#endif /* ZUTIL_H */
+#endif /* PTZIPPYUTIL_H */

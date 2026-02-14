@@ -1,8 +1,8 @@
-/* zip.h -- IO on .zip files using zlib
+/* zip.h -- IO on .zip files using PTlibzippy
    Version 1.1, February 14h, 2010
-   part of the MiniZip project - ( http://www.winimage.com/zLibDll/minizip.html )
+   part of the MiniZip project - ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
-         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/zLibDll/minizip.html )
+         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
          Modifications for Zip64 support
          Copyright (C) 2009-2010 Mathias Svensson ( http://result42.com )
@@ -11,7 +11,7 @@
 
          ---------------------------------------------------------------------------
 
-   Condition of use and distribution are the same than zlib :
+   Condition of use and distribution are the same than PTlibzippy :
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -46,16 +46,16 @@ extern "C" {
 
 /* #define HAVE_BZIP2 */
 
-#ifndef _ZLIB_H
-#include "zlib.h"
+#ifndef _PTLIBZIPPY_H
+#include "ptlibzippy.h"
 #endif
 
-#ifndef _ZLIBIOAPI_H
+#ifndef _PTLIBZIPPYIOAPI_H
 #include "ioapi.h"
 #endif
 
 #ifdef HAVE_BZIP2
-#include "bzlib.h"
+#include "bptlibzippy.h"
 #endif
 
 #define Z_BZIP2ED 12
@@ -117,8 +117,8 @@ extern zipFile ZEXPORT zipOpen(const char *pathname, int append);
 extern zipFile ZEXPORT zipOpen64(const void *pathname, int append);
 /*
   Create a zipfile.
-     pathname contain on Windows XP a filename like "c:\\zlib\\zlib113.zip" or on
-       an Unix computer "zlib/zlib113.zip".
+     pathname contain on Windows XP a filename like "c:\\ptlibzippy\\ptlibzippy113.zip" or on
+       an Unix computer "ptlibzippy/ptlibzippy113.zip".
      if the file pathname exist and append==APPEND_STATUS_CREATEAFTER, the zip
        will be created at the end of the file.
          (useful if the file contain a self extractor code)
@@ -137,17 +137,17 @@ extern zipFile ZEXPORT zipOpen64(const void *pathname, int append);
 extern zipFile ZEXPORT zipOpen2(const char *pathname,
                                 int append,
                                 zipcharpc* globalcomment,
-                                zlib_filefunc_def* pzlib_filefunc_def);
+                                ptlibzippy_filefunc_def* pptlibzippy_filefunc_def);
 
 extern zipFile ZEXPORT zipOpen2_64(const void *pathname,
                                    int append,
                                    zipcharpc* globalcomment,
-                                   zlib_filefunc64_def* pzlib_filefunc_def);
+                                   ptlibzippy_filefunc64_def* pptlibzippy_filefunc_def);
 
 extern zipFile ZEXPORT zipOpen3(const void *pathname,
                                 int append,
                                 zipcharpc* globalcomment,
-                                zlib_filefunc64_32_def* pzlib_filefunc64_32_def);
+                                ptlibzippy_filefunc64_32_def* pptlibzippy_filefunc64_32_def);
 
 extern int ZEXPORT zipOpenNewFileInZip(zipFile file,
                                        const char* filename,

@@ -7,13 +7,13 @@ jobs:
     - name: Build Fuzzers
       uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@master
       with:
-        oss-fuzz-project-name: 'zlib'
+        oss-fuzz-project-name: 'ptlibzippy'
         dry-run: false
 
     - name: Run Fuzzers
       uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@master
       with:
-        oss-fuzz-project-name: 'zlib'
+        oss-fuzz-project-name: 'ptlibzippy'
         fuzz-seconds: 300
         dry-run: false
 

@@ -39,7 +39,7 @@ jobs:
           -B build \
           -DCMAKE_VERBOSE_MAKEFILE=ON \
           -DCMAKE_BUILD_TYPE=Release \
-          -DZLIB_BUILD_MINIZIP=ON \
+          -DPTLIBZIPPY_BUILD_MINIZIP=ON \
           -DMINIZIP_ENABLE_BZIP2=ON
     - name: Configure clang64
       if: matrix.sys == 'clang64'
@@ -49,7 +49,7 @@ jobs:
           -B build \
           -DCMAKE_VERBOSE_MAKEFILE=ON \
           -DCMAKE_BUILD_TYPE=Release \
-          -DZLIB_BUILD_MINIZIP=ON \
+          -DPTLIBZIPPY_BUILD_MINIZIP=ON \
           -DMINIZIP_ENABLE_BZIP2=ON
     - name: Build
       run: cmake --build build --config Release
@@ -80,10 +80,10 @@ jobs:
           ninja
     - name: Configure
       run: |
-        cmake /cygdrive/d/a/zlib/zlib \
+        cmake /cygdrive/d/a/ptlibzippy/ptlibzippy \
           -B build \
           -DCMAKE_BUILD_TYPE=Release \
-          -DZLIB_BUILD_MINIZIP=ON \
+          -DPTLIBZIPPY_BUILD_MINIZIP=ON \
           -DMINIZIP_ENABLE_BZIP2=OFF \
           -G Ninja
     - name: Build

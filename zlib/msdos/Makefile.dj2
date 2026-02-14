@@ -1,13 +1,13 @@
-# Makefile for zlib.  Modified for djgpp v2.0 by F. J. Donahoe, 3/15/96.
+# Makefile for PTlibzippy.  Modified for djgpp v2.0 by F. J. Donahoe, 3/15/96.
 # Copyright (C) 1995-1998 Jean-loup Gailly.
 # Copyright (C) 2026 Project Tick
-# For conditions of distribution and use, see copyright notice in zlib.h
+# For conditions of distribution and use, see copyright notice in ptlibzippy.h
 
 # To compile, or to compile and test, type:
 #
 #   make -fmakefile.dj2;  make test -fmakefile.dj2
 #
-# To install libz.a, zconf.h and zlib.h in the djgpp directories, type:
+# To install libptlibzippy.a, ptzippyconf.h and ptlibzippy.h in the djgpp directories, type:
 #
 #    make install -fmakefile.dj2
 #
@@ -30,7 +30,7 @@ CC=gcc
 
 #CFLAGS=-MMD -O
 #CFLAGS=-O -DMAX_WBITS=14 -DMAX_MEM_LEVEL=7
-#CFLAGS=-MMD -g -DZLIB_DEBUG
+#CFLAGS=-MMD -g -DPTLIBZIPPY_DEBUG
 CFLAGS=-MMD -O3 $(BUTT) -Wall -Wwrite-strings -Wpointer-arith \
              -Wstrict-prototypes -Wmissing-prototypes
 
@@ -40,12 +40,12 @@ CP=copy /Y
 INSTALL=$(CP)
 # The default value of RM is "rm -f."  If "rm.exe" is found, comment out:
 RM=del
-LDLIBS=-L. -lz
+LDLIBS=-L. -lptlibzippy
 LD=$(CC) -s -o
 LDSHARED=$(CC)
 
-INCL=zlib.h zconf.h
-LIBS=libz.a
+INCL=ptlibzippy.h ptzippyconf.h
+LIBS=libptlibzippy.a
 
 AR=ar rcs
 
@@ -53,7 +53,7 @@ prefix=/usr/local
 exec_prefix = $(prefix)
 
 OBJS = adler32.o compress.o crc32.o gzclose.o gzlib.o gzread.o gzwrite.o \
-       uncompr.o deflate.o trees.o zutil.o inflate.o infback.o inftrees.o inffast.o
+       uncompr.o deflate.o trees.o ptzippyutil.o inflate.o infback.o inftrees.o inffast.o
 
 OBJA =
 # to use the asm code: make OBJA=match.o
@@ -70,7 +70,7 @@ test: all
 %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-libz.a: $(OBJS) $(OBJA)
+libptlibzippy.a: $(OBJS) $(OBJA)
 	$(AR) $@ $(OBJS) $(OBJA)
 
 %.exe : %.o $(LIBS)
@@ -83,20 +83,20 @@ libz.a: $(OBJS) $(OBJA)
 install: $(INCL) $(LIBS)
 	-@if not exist $(INCLUDE_PATH)\nul mkdir $(INCLUDE_PATH)
 	-@if not exist $(LIBRARY_PATH)\nul mkdir $(LIBRARY_PATH)
-	$(INSTALL) zlib.h $(INCLUDE_PATH)
-	$(INSTALL) zconf.h $(INCLUDE_PATH)
-	$(INSTALL) libz.a $(LIBRARY_PATH)
+	$(INSTALL) ptlibzippy.h $(INCLUDE_PATH)
+	$(INSTALL) ptzippyconf.h $(INCLUDE_PATH)
+	$(INSTALL) libptlibzippy.a $(LIBRARY_PATH)
 
 uninstall:
-	$(RM) $(INCLUDE_PATH)\zlib.h
-	$(RM) $(INCLUDE_PATH)\zconf.h
-	$(RM) $(LIBRARY_PATH)\libz.a
+	$(RM) $(INCLUDE_PATH)\ptlibzippy.h
+	$(RM) $(INCLUDE_PATH)\ptzippyconf.h
+	$(RM) $(LIBRARY_PATH)\libptlibzippy.a
 
 clean:
 	$(RM) *.d
 	$(RM) *.o
 	$(RM) *.exe
-	$(RM) libz.a
+	$(RM) libptlibzippy.a
 	$(RM) foo.gz
 
 DEPS := $(wildcard *.d)

@@ -1,4 +1,4 @@
-These classes provide a C++ stream interface to the zlib library. It allows you
+These classes provide a C++ stream interface to the PTlibzippy library. It allows you
 to do things like:
 
   gzofstream outf("blah.gz");
@@ -8,7 +8,7 @@ It does this by deriving a specialized stream buffer for gzipped files, which is
 the way Stroustrup would have done it. :->
 
 The gzifstream and gzofstream classes were originally written by Kevin Ruland
-and made available in the zlib contrib/iostream directory. The older version still
+and made available in the PTlibzippy contrib/iostream directory. The older version still
 compiles under gcc 2.xx, but not under gcc 3.xx, which sparked the development of
 this version.
 

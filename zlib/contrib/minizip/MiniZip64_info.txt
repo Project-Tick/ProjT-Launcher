@@ -2,7 +2,7 @@ MiniZip - Copyright (c) 1998-2010 - by Gilles Vollant - version 1.1 64 bits from
 
 Introduction
 ---------------------
-MiniZip 1.1 is built from MiniZip 1.0 by Gilles Vollant ( http://www.winimage.com/zLibDll/minizip.html )
+MiniZip 1.1 is built from MiniZip 1.0 by Gilles Vollant ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
 When adding ZIP64 support into minizip it would result into risk of breaking compatibility with minizip 1.0.
 All possible work was done for compatibility.
@@ -52,7 +52,7 @@ Notes.
 
 License
 ----------------------------------------------------------
-   Condition of use and distribution are the same than zlib :
+   Condition of use and distribution are the same than PTlibzippy :
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages

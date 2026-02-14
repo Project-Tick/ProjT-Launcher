@@ -1,16 +1,16 @@
 ----------------------------------------------------------------
---  ZLib for Ada thick binding.                               --
+--  PTLib for Ada thick binding.                               --
 --                                                            --
 --  Copyright (C) 2002-2003 Dmitriy Anisimkov                 --
 --                                                            --
---  Open source license information is in the zlib.ads file.  --
+--  Open source license information is in the ptlibzippy.ads file.  --
 ----------------------------------------------------------------
 
---  $Id: zlib-streams.adb,v 1.10 2004/05/31 10:53:40 vagul Exp $
+--  $Id: ptlibzippy-streams.adb,v 1.10 2004/05/31 10:53:40 vagul Exp $
 
 with Ada.Unchecked_Deallocation;
 
-package body ZLib.Streams is
+package body PTLib.Streams is
 
    -----------
    -- Close --
@@ -148,7 +148,7 @@ package body ZLib.Streams is
          Ada.Streams.Read (Stream.Back.all, Item, Last);
       end Read;
 
-      procedure Read is new ZLib.Read
+      procedure Read is new PTLib.Read
          (Read       => Read,
           Buffer     => Stream.Buffer.all,
           Rest_First => Stream.Rest_First,
@@ -196,7 +196,7 @@ package body ZLib.Streams is
          Ada.Streams.Write (Stream.Back.all, Item);
       end Write;
 
-      procedure Write is new ZLib.Write
+      procedure Write is new PTLib.Write
          (Write       => Write,
           Buffer_Size => Stream.Buffer_Size);
 
@@ -222,4 +222,4 @@ package body ZLib.Streams is
       return Total_Out (Stream.Writer);
    end Write_Total_Out;
 
-end ZLib.Streams;
+end PTLib.Streams;

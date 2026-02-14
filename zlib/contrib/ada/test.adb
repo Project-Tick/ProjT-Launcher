@@ -1,20 +1,20 @@
 ----------------------------------------------------------------
---  ZLib for Ada thick binding.                               --
+--  PTLib for Ada thick binding.                               --
 --                                                            --
 --  Copyright (C) 2002-2003 Dmitriy Anisimkov                 --
 --                                                            --
---  Open source license information is in the zlib.ads file.  --
+--  Open source license information is in the ptlibzippy.ads file.  --
 ----------------------------------------------------------------
 
 --  $Id: test.adb,v 1.17 2003/08/12 12:13:30 vagul Exp $
 
 --  The program has a few aims.
---  1. Test ZLib.Ada95 thick binding functionality.
---  2. Show the example of use main functionality of the ZLib.Ada95 binding.
---  3. Build this program automatically compile all ZLib.Ada95 packages under
+--  1. Test PTLib.Ada95 thick binding functionality.
+--  2. Show the example of use main functionality of the PTLib.Ada95 binding.
+--  3. Build this program automatically compile all PTLib.Ada95 packages under
 --     GNAT Ada95 compiler.
 
-with ZLib.Streams;
+with PTLib.Streams;
 with Ada.Streams.Stream_IO;
 with Ada.Numerics.Discrete_Random;
 
@@ -34,33 +34,33 @@ procedure Test is
    File_Size   : Count   := 100_000;
    Continuous  : constant Boolean := False;
 
-   Header      : constant ZLib.Header_Type := ZLib.Default;
-                                              --  ZLib.None;
-                                              --  ZLib.Auto;
-                                              --  ZLib.GZip;
-   --  Do not use Header other then Default in ZLib versions 1.1.4
+   Header      : constant PTLib.Header_Type := PTLib.Default;
+                                              --  PTLib.None;
+                                              --  PTLib.Auto;
+                                              --  PTLib.GZip;
+   --  Do not use Header other then Default in PTLib versions 1.1.4
    --  and older.
 
-   Strategy    : constant ZLib.Strategy_Type := ZLib.Default_Strategy;
+   Strategy    : constant PTLib.Strategy_Type := PTLib.Default_Strategy;
    Init_Random : constant := 10;
 
    -- End --
 
-   In_File_Name  : constant String := "testzlib.in";
+   In_File_Name  : constant String := "testptlibzippy.in";
    --  Name of the input file
 
-   Z_File_Name   : constant String := "testzlib.zlb";
+   Z_File_Name   : constant String := "testptlibzippy.zlb";
    --  Name of the compressed file.
 
-   Out_File_Name : constant String := "testzlib.out";
+   Out_File_Name : constant String := "testptlibzippy.out";
    --  Name of the decompressed file.
 
    File_In   : File_Type;
    File_Out  : File_Type;
    File_Back : File_Type;
-   File_Z    : ZLib.Streams.Stream_Type;
+   File_Z    : PTLib.Streams.Stream_Type;
 
-   Filter : ZLib.Filter_Type;
+   Filter : PTLib.Filter_Type;
 
    Time_Stamp : Ada.Calendar.Time;
 
@@ -86,21 +86,21 @@ procedure Test is
      (Item : out Stream_Element_Array;
       Last : out Stream_Element_Offset);
    --  this procedure is for generic instantiation of
-   --  ZLib.Generic_Translate.
+   --  PTLib.Generic_Translate.
    --  reading data from the File_In.
 
    procedure Data_Out (Item : in Stream_Element_Array);
    --  this procedure is for generic instantiation of
-   --  ZLib.Generic_Translate.
+   --  PTLib.Generic_Translate.
    --  writing data to the File_Out.
 
    procedure Stamp;
    --  Store the timestamp to the local variable.
 
-   procedure Print_Statistic (Msg : String; Data_Size : ZLib.Count);
+   procedure Print_Statistic (Msg : String; Data_Size : PTLib.Count);
    --  Print the time statistic with the message.
 
-   procedure Translate is new ZLib.Generic_Translate
+   procedure Translate is new PTLib.Generic_Translate
                                 (Data_In  => Data_In,
                                  Data_Out => Data_Out);
    --  This procedure is moving data from File_In to File_Out
@@ -258,11 +258,11 @@ procedure Test is
    -- Print_Statistic --
    ---------------------
 
-   procedure Print_Statistic (Msg : String; Data_Size : ZLib.Count) is
+   procedure Print_Statistic (Msg : String; Data_Size : PTLib.Count) is
       use Ada.Calendar;
       use Ada.Text_IO;
 
-      package Count_IO is new Integer_IO (ZLib.Count);
+      package Count_IO is new Integer_IO (PTLib.Count);
 
       Curr_Dur : Duration := Clock - Time_Stamp;
    begin
@@ -288,15 +288,15 @@ procedure Test is
    end Stamp;
 
 begin
-   Ada.Text_IO.Put_Line ("ZLib " & ZLib.Version);
+   Ada.Text_IO.Put_Line ("PTLib " & PTLib.Version);
 
    loop
       Generate_File;
 
-      for Level in ZLib.Compression_Level'Range loop
+      for Level in PTLib.Compression_Level'Range loop
 
          Ada.Text_IO.Put_Line ("Level ="
-            & ZLib.Compression_Level'Image (Level));
+            & PTLib.Compression_Level'Image (Level));
 
          --  Test generic interface.
          Open   (File_In, In_File, In_File_Name);
@@ -306,15 +306,15 @@ begin
 
          --  Deflate using generic instantiation.
 
-         ZLib.Deflate_Init
+         PTLib.Deflate_Init
                (Filter   => Filter,
                 Level    => Level,
                 Strategy => Strategy,
                 Header   => Header);
 
          Translate (Filter);
-         Print_Statistic ("Generic compress", ZLib.Total_Out (Filter));
-         ZLib.Close (Filter);
+         Print_Statistic ("Generic compress", PTLib.Total_Out (Filter));
+         PTLib.Close (Filter);
 
          Close (File_In);
          Close (File_Out);
@@ -326,12 +326,12 @@ begin
 
          --  Inflate using generic instantiation.
 
-         ZLib.Inflate_Init (Filter, Header => Header);
+         PTLib.Inflate_Init (Filter, Header => Header);
 
          Translate (Filter);
-         Print_Statistic ("Generic decompress", ZLib.Total_Out (Filter));
+         Print_Statistic ("Generic decompress", PTLib.Total_Out (Filter));
 
-         ZLib.Close (Filter);
+         PTLib.Close (Filter);
 
          Close (File_In);
          Close (File_Out);
@@ -347,10 +347,10 @@ begin
 
          Stamp;
 
-         ZLib.Streams.Create
+         PTLib.Streams.Create
            (Stream          => File_Z,
-            Mode            => ZLib.Streams.Out_Stream,
-            Back            => ZLib.Streams.Stream_Access
+            Mode            => PTLib.Streams.Out_Stream,
+            Back            => PTLib.Streams.Stream_Access
                                  (Stream (File_Back)),
             Back_Compressed => True,
             Level           => Level,
@@ -363,12 +363,12 @@ begin
 
          --  Flushing internal buffers to the back stream.
 
-         ZLib.Streams.Flush (File_Z, ZLib.Finish);
+         PTLib.Streams.Flush (File_Z, PTLib.Finish);
 
          Print_Statistic ("Write compress",
-                          ZLib.Streams.Write_Total_Out (File_Z));
+                          PTLib.Streams.Write_Total_Out (File_Z));
 
-         ZLib.Streams.Close (File_Z);
+         PTLib.Streams.Close (File_Z);
 
          Close (File_In);
          Close (File_Back);
@@ -379,10 +379,10 @@ begin
          Open (File_In,   In_File, In_File_Name);
          Open (File_Back, In_File, Z_File_Name);
 
-         ZLib.Streams.Create
+         PTLib.Streams.Create
            (Stream          => File_Z,
-            Mode            => ZLib.Streams.In_Stream,
-            Back            => ZLib.Streams.Stream_Access
+            Mode            => PTLib.Streams.In_Stream,
+            Back            => PTLib.Streams.Stream_Access
                                  (Stream (File_Back)),
             Back_Compressed => True,
             Header          => Header);
@@ -391,9 +391,9 @@ begin
          Compare_Streams (Stream (File_In).all, File_Z);
 
          Print_Statistic ("Read decompress",
-                          ZLib.Streams.Read_Total_Out (File_Z));
+                          PTLib.Streams.Read_Total_Out (File_Z));
 
-         ZLib.Streams.Close (File_Z);
+         PTLib.Streams.Close (File_Z);
          Close (File_In);
          Close (File_Back);
 
@@ -402,10 +402,10 @@ begin
          Open (File_Back, In_File, In_File_Name);
          Create (File_Out, Out_File, Z_File_Name);
 
-         ZLib.Streams.Create
+         PTLib.Streams.Create
            (Stream          => File_Z,
-            Mode            => ZLib.Streams.In_Stream,
-            Back            => ZLib.Streams.Stream_Access
+            Mode            => PTLib.Streams.In_Stream,
+            Back            => PTLib.Streams.Stream_Access
                                  (Stream (File_Back)),
             Back_Compressed => False,
             Level           => Level,
@@ -418,9 +418,9 @@ begin
             Target => Stream (File_Out).all);
 
          Print_Statistic ("Read compress",
-                          ZLib.Streams.Read_Total_Out (File_Z));
+                          PTLib.Streams.Read_Total_Out (File_Z));
 
-         ZLib.Streams.Close (File_Z);
+         PTLib.Streams.Close (File_Z);
 
          Close (File_Out);
          Close (File_Back);
@@ -430,10 +430,10 @@ begin
          Open   (File_In,   In_File, Z_File_Name);
          Create (File_Back, Out_File, Out_File_Name);
 
-         ZLib.Streams.Create
+         PTLib.Streams.Create
            (Stream          => File_Z,
-            Mode            => ZLib.Streams.Out_Stream,
-            Back            => ZLib.Streams.Stream_Access
+            Mode            => PTLib.Streams.Out_Stream,
+            Back            => PTLib.Streams.Stream_Access
                                  (Stream (File_Back)),
             Back_Compressed => False,
             Header          => Header);
@@ -445,9 +445,9 @@ begin
             Target => File_Z);
 
          Print_Statistic ("Write decompress",
-                          ZLib.Streams.Write_Total_Out (File_Z));
+                          PTLib.Streams.Write_Total_Out (File_Z));
 
-         ZLib.Streams.Close (File_Z);
+         PTLib.Streams.Close (File_Z);
          Close (File_In);
          Close (File_Back);
 

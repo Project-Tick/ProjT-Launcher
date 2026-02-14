@@ -1,16 +1,16 @@
 ----------------------------------------------------------------
---  ZLib for Ada thick binding.                               --
+--  PTLib for Ada thick binding.                               --
 --                                                            --
 --  Copyright (C) 2002-2003 Dmitriy Anisimkov                 --
 --                                                            --
---  Open source license information is in the zlib.ads file.  --
+--  Open source license information is in the ptlibzippy.ads file.  --
 ----------------------------------------------------------------
 
---  $Id: zlib-thin.adb,v 1.8 2003/12/14 18:27:31 vagul Exp $
+--  $Id: ptlibzippy-thin.adb,v 1.8 2003/12/14 18:27:31 vagul Exp $
 
-package body ZLib.Thin is
+package body PTLib.Thin is
 
-   ZLIB_VERSION  : constant Chars_Ptr := zlibVersion;
+   PTLIBZIPPY_VERSION  : constant Chars_Ptr := ptlibzippyVersion;
 
    Dummy : Z_Stream;
    Z_Stream_Size : constant Int := Dummy'Size / System.Storage_Unit;
@@ -53,7 +53,7 @@ package body ZLib.Thin is
                 windowBits,
                 memLevel,
                 strategy,
-                ZLIB_VERSION,
+                PTLIBZIPPY_VERSION,
                 Z_Stream_Size);
    end Deflate_Init;
 
@@ -63,7 +63,7 @@ package body ZLib.Thin is
 
    function Inflate_Init (strm : Z_Streamp; windowBits : Int) return Int is
    begin
-      return inflateInit2 (strm, windowBits, ZLIB_VERSION, Z_Stream_Size);
+      return inflateInit2 (strm, windowBits, PTLIBZIPPY_VERSION, Z_Stream_Size);
    end Inflate_Init;
 
    ------------------------
@@ -139,4 +139,4 @@ package body ZLib.Thin is
       return Strm.Total_Out;
    end Total_Out;
 
-end ZLib.Thin;
+end PTLib.Thin;

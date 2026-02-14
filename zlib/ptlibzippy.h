@@ -1,4 +1,4 @@
-/* zlib.h -- interface of the 'zlib' general purpose compression library
+/* ptlibzippy.h -- interface of the 'zlib' general purpose compression library
   version 0.0.5.1, December 8th, 2025
 
   Copyright (C) 1995-2025 Jean-loup Gailly and Mark Adler
@@ -29,25 +29,25 @@
   (zlib format), rfc1951 (deflate format) and rfc1952 (gzip format).
 */
 
-#ifndef ZLIB_H
-#define ZLIB_H
+#ifndef PTLIBZIPPY_H
+#define PTLIBZIPPY_H
 
-#ifdef ZLIB_BUILD
-#  include <zconf.h>
+#ifdef PTLIBZIPPY_BUILD
+#  include <ptzippyconf.h>
 #else
-# include "zconf.h"
+# include "ptzippyconf.h"
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define ZLIB_VERSION "0.0.5.1"
-#define ZLIB_VERNUM 0x0051
-#define ZLIB_VER_MAJOR 0
-#define ZLIB_VER_MINOR 0
-#define ZLIB_VER_REVISION 5
-#define ZLIB_VER_SUBREVISION 1
+#define PTLIBZIPPY_VERSION "0.0.5.1"
+#define PTLIBZIPPY_VERNUM 0x0051
+#define PTLIBZIPPY_VER_MAJOR 0
+#define PTLIBZIPPY_VER_MINOR 0
+#define PTLIBZIPPY_VER_REVISION 5
+#define PTLIBZIPPY_VER_SUBREVISION 1
 
 /*
     The 'zlib' compression library provides in-memory compression and
@@ -155,12 +155,12 @@ typedef gz_header FAR *gz_headerp;
 
      On 16-bit systems, the functions zalloc and zfree must be able to allocate
    exactly 65536 bytes, but will not be required to allocate more than this if
-   the symbol MAXSEG_64K is defined (see zconf.h).  WARNING: On MSDOS, pointers
+   the symbol MAXSEG_64K is defined (see ptzippyconf.h).  WARNING: On MSDOS, pointers
    returned by zalloc for objects of exactly 65536 bytes *must* have their
    offset normalized to zero.  The default allocation function provided by this
-   library ensures this (see zutil.c).  To reduce memory requirements and avoid
+   library ensures this (see ptzippyutil.c).  To reduce memory requirements and avoid
    any allocation of 64K objects, at the expense of compression ratio, compile
-   the library with -DMAX_WBITS=14 (see zconf.h).
+   the library with -DMAX_WBITS=14 (see ptzippyconf.h).
 
      The fields total_in and total_out can be used for statistics or progress
    reports.  After compression, total_in holds the total size of the
@@ -216,16 +216,16 @@ typedef gz_header FAR *gz_headerp;
 
 #define Z_NULL  0  /* for initializing zalloc, zfree, opaque */
 
-#define zlib_version zlibVersion()
+#define ptlibzippy_version ptlibzippyVersion()
 /* for compatibility with versions < 1.0.2 */
 
 
                         /* basic functions */
 
-ZEXTERN const char * ZEXPORT zlibVersion(void);
-/* The application can compare zlibVersion and ZLIB_VERSION for consistency.
+ZEXTERN const char * ZEXPORT ptlibzippyVersion(void);
+/* The application can compare ptlibzippyVersion and PTLIBZIPPY_VERSION for consistency.
    If the first character differs, the library code actually used is not
-   compatible with the zlib.h header file used by the application.  This check
+   compatible with the ptlibzippy.h header file used by the application.  This check
    is automatically made by deflateInit and inflateInit.
  */
 
@@ -245,8 +245,8 @@ ZEXTERN int ZEXPORT deflateInit(z_streamp strm, int level);
 
      deflateInit returns Z_OK if success, Z_MEM_ERROR if there was not enough
    memory, Z_STREAM_ERROR if level is not a valid compression level, or
-   Z_VERSION_ERROR if the zlib library version (zlib_version) is incompatible
-   with the version assumed by the caller (ZLIB_VERSION).  msg is set to null
+   Z_VERSION_ERROR if the zlib library version (ptlibzippy_version) is incompatible
+   with the version assumed by the caller (PTLIBZIPPY_VERSION).  msg is set to null
    if there is no error message.  deflateInit does not perform any compression:
    this will be done by deflate().
 */
@@ -587,7 +587,7 @@ ZEXTERN int ZEXPORT deflateInit2(z_streamp strm,
      The memLevel parameter specifies how much memory should be allocated
    for the internal compression state.  memLevel=1 uses minimum memory but is
    slow and reduces compression ratio; memLevel=9 uses maximum memory for
-   optimal speed.  The default value is 8.  See zconf.h for total memory usage
+   optimal speed.  The default value is 8.  See ptzippyconf.h for total memory usage
    as a function of windowBits and memLevel.
 
      The strategy parameter is used to tune the compression algorithm.  Use the
@@ -610,8 +610,8 @@ ZEXTERN int ZEXPORT deflateInit2(z_streamp strm,
 
      deflateInit2 returns Z_OK if success, Z_MEM_ERROR if there was not enough
    memory, Z_STREAM_ERROR if any parameter is invalid (such as an invalid
-   method), or Z_VERSION_ERROR if the zlib library version (zlib_version) is
-   incompatible with the version assumed by the caller (ZLIB_VERSION).  msg is
+   method), or Z_VERSION_ERROR if the zlib library version (ptlibzippy_version) is
+   incompatible with the version assumed by the caller (PTLIBZIPPY_VERSION).  msg is
    set to null if there is no error message.  deflateInit2 does not perform any
    compression: this will be done by deflate().
 */
@@ -1211,7 +1211,7 @@ ZEXTERN int ZEXPORT inflateBackEnd(z_streamp strm);
    state was inconsistent.
 */
 
-ZEXTERN uLong ZEXPORT zlibCompileFlags(void);
+ZEXTERN uLong ZEXPORT ptlibzippyCompileFlags(void);
 /* Return flags indicating compile-time options.
 
     Type sizes, two bits each, 00 = 16 bits, 01 = 32, 10 = 64, 11 = other:
@@ -1221,9 +1221,9 @@ ZEXTERN uLong ZEXPORT zlibCompileFlags(void);
      7.6: size of z_off_t
 
     Compiler, assembler, and debug options:
-     8: ZLIB_DEBUG
+     8: PTLIBZIPPY_DEBUG
      9: ASMV or ASMINF -- use ASM code
-     10: ZLIB_WINAPI -- exported functions use the WINAPI calling convention
+     10: PTLIBZIPPY_WINAPI -- exported functions use the WINAPI calling convention
      11: 0 (reserved)
 
     One-time table building (smaller code, but not thread-safe if true):
@@ -1564,7 +1564,7 @@ ZEXTERN int ZEXPORTVA gzprintf();
    a non-ANSI C compiler. zlib may have been built without gzprintf() because
    secure functions were not available and having gzprintf() be insecure was
    not an option, in which case, gzprintf() returns Z_STREAM_ERROR. All of
-   these possibilities can be determined using zlibCompileFlags().
+   these possibilities can be determined using ptlibzippyCompileFlags().
 
      If a Z_BUF_ERROR is returned, then nothing was written due to a stall on
    the non-blocking write destination.
@@ -1912,34 +1912,34 @@ ZEXTERN int ZEXPORT inflateBackInit_(z_streamp strm, int windowBits,
                                      unsigned char FAR *window,
                                      const char *version,
                                      int stream_size);
-#ifdef Z_PREFIX_SET
+#ifdef PT_PREFIX_SET
 #  define z_deflateInit(strm, level) \
-          deflateInit_((strm), (level), ZLIB_VERSION, (int)sizeof(z_stream))
+          deflateInit_((strm), (level), PTLIBZIPPY_VERSION, (int)sizeof(z_stream))
 #  define z_inflateInit(strm) \
-          inflateInit_((strm), ZLIB_VERSION, (int)sizeof(z_stream))
+          inflateInit_((strm), PTLIBZIPPY_VERSION, (int)sizeof(z_stream))
 #  define z_deflateInit2(strm, level, method, windowBits, memLevel, strategy) \
           deflateInit2_((strm),(level),(method),(windowBits),(memLevel),\
-                        (strategy), ZLIB_VERSION, (int)sizeof(z_stream))
+                        (strategy), PTLIBZIPPY_VERSION, (int)sizeof(z_stream))
 #  define z_inflateInit2(strm, windowBits) \
-          inflateInit2_((strm), (windowBits), ZLIB_VERSION, \
+          inflateInit2_((strm), (windowBits), PTLIBZIPPY_VERSION, \
                         (int)sizeof(z_stream))
 #  define z_inflateBackInit(strm, windowBits, window) \
           inflateBackInit_((strm), (windowBits), (window), \
-                           ZLIB_VERSION, (int)sizeof(z_stream))
+                           PTLIBZIPPY_VERSION, (int)sizeof(z_stream))
 #else
 #  define deflateInit(strm, level) \
-          deflateInit_((strm), (level), ZLIB_VERSION, (int)sizeof(z_stream))
+          deflateInit_((strm), (level), PTLIBZIPPY_VERSION, (int)sizeof(z_stream))
 #  define inflateInit(strm) \
-          inflateInit_((strm), ZLIB_VERSION, (int)sizeof(z_stream))
+          inflateInit_((strm), PTLIBZIPPY_VERSION, (int)sizeof(z_stream))
 #  define deflateInit2(strm, level, method, windowBits, memLevel, strategy) \
           deflateInit2_((strm),(level),(method),(windowBits),(memLevel),\
-                        (strategy), ZLIB_VERSION, (int)sizeof(z_stream))
+                        (strategy), PTLIBZIPPY_VERSION, (int)sizeof(z_stream))
 #  define inflateInit2(strm, windowBits) \
-          inflateInit2_((strm), (windowBits), ZLIB_VERSION, \
+          inflateInit2_((strm), (windowBits), PTLIBZIPPY_VERSION, \
                         (int)sizeof(z_stream))
 #  define inflateBackInit(strm, windowBits, window) \
           inflateBackInit_((strm), (windowBits), (window), \
-                           ZLIB_VERSION, (int)sizeof(z_stream))
+                           PTLIBZIPPY_VERSION, (int)sizeof(z_stream))
 #endif
 
 #ifndef Z_SOLO
@@ -1957,9 +1957,9 @@ struct gzFile_s {
     z_off64_t pos;
 };
 ZEXTERN int ZEXPORT gzgetc_(gzFile file);       /* backward compatibility */
-#ifdef Z_PREFIX_SET
-#  undef z_gzgetc
-#  define z_gzgetc(g) \
+#ifdef PT_PREFIX_SET
+#  undef pt_gzgetc
+#  define pt_gzgetc(g) \
           ((g)->have ? ((g)->have--, (g)->pos++, *((g)->next)++) : (gzgetc)(g))
 #else
 #  define gzgetc(g) \
@@ -1982,8 +1982,8 @@ ZEXTERN int ZEXPORT gzgetc_(gzFile file);       /* backward compatibility */
    ZEXTERN uLong ZEXPORT crc32_combine_gen64(z_off64_t);
 #endif
 
-#if !defined(ZLIB_INTERNAL) && defined(Z_WANT64)
-#  ifdef Z_PREFIX_SET
+#if !defined(PTLIBZIPPY_INTERNAL) && defined(Z_WANT64)
+#  ifdef PT_PREFIX_SET
 #    define z_gzopen z_gzopen64
 #    define z_gzseek z_gzseek64
 #    define z_gztell z_gztell64
@@ -2028,7 +2028,7 @@ ZEXTERN int ZEXPORT gzgetc_(gzFile file);       /* backward compatibility */
 #endif /* !Z_SOLO */
 
 /* undocumented functions */
-ZEXTERN const char   * ZEXPORT zError(int);
+ZEXTERN const char   * ZEXPORT ptError(int);
 ZEXTERN int            ZEXPORT inflateSyncPoint(z_streamp);
 ZEXTERN const z_crc_t FAR * ZEXPORT get_crc_table(void);
 ZEXTERN int            ZEXPORT inflateUndermine(z_streamp, int);
@@ -2052,4 +2052,4 @@ ZEXTERN int            ZEXPORTVA gzvprintf(gzFile file,
 }
 #endif
 
-#endif /* ZLIB_H */
+#endif /* PTLIBZIPPY_H */

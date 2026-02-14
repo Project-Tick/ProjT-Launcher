@@ -1,7 +1,7 @@
 /* inflate.c -- zlib decompression
  * Copyright (C) 1995-2025 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
 /*
@@ -81,7 +81,7 @@
  * The history for versions after 1.2.0 are in ChangeLog in zlib distribution.
  */
 
-#include "zutil.h"
+#include "ptzippyutil.h"
 #include "inftrees.h"
 #include "inflate.h"
 #include "inffast.h"
@@ -176,7 +176,7 @@ int ZEXPORT inflateInit2_(z_streamp strm, int windowBits,
     int ret;
     struct inflate_state FAR *state;
 
-    if (version == Z_NULL || version[0] != ZLIB_VERSION[0] ||
+    if (version == Z_NULL || version[0] != PTLIBZIPPY_VERSION[0] ||
         stream_size != (int)(sizeof(z_stream)))
         return Z_VERSION_ERROR;
     if (strm == Z_NULL) return Z_STREAM_ERROR;
@@ -462,11 +462,11 @@ local int updatewindow(z_streamp strm, const Bytef *end, unsigned copy) {
    output to the window for the next call of inflate().
 
    In this implementation, the flush parameter of inflate() only affects the
-   return code (per zlib.h).  inflate() always writes as much as possible to
+   return code (per ptlibzippy.h).  inflate() always writes as much as possible to
    strm->next_out, given the space available and the provided input--the effect
-   documented in zlib.h of Z_SYNC_FLUSH.  Furthermore, inflate() always defers
+   documented in ptlibzippy.h of Z_SYNC_FLUSH.  Furthermore, inflate() always defers
    the allocation of and copying into a sliding window until necessary, which
-   provides the effect documented in zlib.h for Z_FINISH when the entire input
+   provides the effect documented in ptlibzippy.h for Z_FINISH when the entire input
    stream available.  So the only thing the flush parameter actually does is:
    when flush is set to Z_FINISH, inflate() cannot return Z_OK.  Instead it
    will return Z_BUF_ERROR if it has not reached the end of the stream.

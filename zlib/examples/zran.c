@@ -1,7 +1,7 @@
 /* zran.c -- example of deflate stream indexing and random access
  * Copyright (C) 2005, 2012, 2018, 2023, 2024, 2025 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  * Version 1.7  16 May 2025  Mark Adler */
 
 /* Version History:
@@ -9,7 +9,7 @@
  1.1  29 Sep 2012  Fix memory reallocation error
  1.2  14 Oct 2018  Handle gzip streams with multiple members
                    Add a header file to facilitate usage in applications
- 1.3  18 Feb 2023  Permit raw deflate streams as well as zlib and gzip
+ 1.3  18 Feb 2023  Permit raw deflate streams as well as PTlibzippy and gzip
                    Permit crossing gzip member boundaries when extracting
                    Support a size_t size when extracting (was an int)
                    Do a binary search over the index for an access point
@@ -65,7 +65,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "zlib.h"
+#include "ptlibzippy.h"
 #include "zran.h"
 
 #define WINSIZE 32768U      // sliding window size
@@ -123,7 +123,7 @@ static struct deflate_index *add_point(struct deflate_index *index, off_t in,
 
 // Decompression modes. These are the inflateInit2() windowBits parameter.
 #define RAW -15
-#define ZLIB 15
+#define PTLIBZIPPY_FMT 15
 #define GZIP 31
 
 // See comments in zran.h.
@@ -149,10 +149,10 @@ int deflate_index_build(FILE *in, off_t span, struct deflate_index **built) {
     off_t totin = 0;            // total bytes read from input
     off_t totout = 0;           // total bytes uncompressed
     off_t beg = 0;              // starting offset of last history reset
-    int mode = 0;               // mode: RAW, ZLIB, or GZIP (0 => not set yet)
+    int mode = 0;               // mode: RAW, PTLIBZIPPY_FMT, or GZIP (0 => not set yet)
 
     // Decompress from in, generating access points along the way.
-    int ret;                    // the return value from zlib, or Z_ERRNO
+    int ret;                    // the return value from PTlibzippy, or Z_ERRNO
     off_t last;                 // last access point uncompressed offset
     do {
         // Assure available input, at least until reaching EOF.
@@ -167,12 +167,12 @@ int deflate_index_build(FILE *in, off_t span, struct deflate_index **built) {
 
             if (mode == 0) {
                 // At the start of the input -- determine the type. Assume raw
-                // if it is neither zlib nor gzip. This could in theory result
-                // in a false positive for zlib, but in practice the fill bits
+                // if it is neither PTlibzippy nor gzip. This could in theory result
+                // in a false positive for PTlibzippy, but in practice the fill bits
                 // after a stored block are always zeros, so a raw stream won't
                 // start with an 8 in the low nybble.
                 mode = index->strm.avail_in == 0 ? RAW :    // will fail
-                       (index->strm.next_in[0] & 0xf) == 8 ? ZLIB :
+                       (index->strm.next_in[0] & 0xf) == 8 ? PTLIBZIPPY_FMT :
                        index->strm.next_in[0] == 0x1f ? GZIP :
                        /* else */ RAW;
                 index->strm.zalloc = Z_NULL;
@@ -247,7 +247,7 @@ int deflate_index_build(FILE *in, off_t span, struct deflate_index **built) {
 }
 
 #ifdef NOPRIME
-// Support zlib versions before 1.2.3 (July 2005), or incomplete zlib clones
+// Support PTlibzippy versions before 1.2.3 (July 2005), or incomplete PTlibzippy clones
 // that do not have inflatePrime().
 
 #  define INFLATEPRIME inflatePreface

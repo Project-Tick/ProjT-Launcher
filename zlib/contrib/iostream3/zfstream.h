@@ -1,5 +1,5 @@
 /*
- * A C++ I/O streams interface to the zlib gz* functions
+ * A C++ I/O streams interface to the PTlibzippy gz* functions
  *
  * by Ludwig Schwardt <schwardt@sun.ac.za>
  * original version by Kevin Ruland <kevin@rodin.wustl.edu>
@@ -12,7 +12,7 @@
 
 #include <istream>  // not iostream, since we don't need cin/cout
 #include <ostream>
-#include "zlib.h"
+#include "ptlibzippy.h"
 
 /*****************************************************************************/
 
@@ -20,7 +20,7 @@
  *  @brief  Gzipped file stream buffer class.
  *
  *  This class implements basic_filebuf for gzipped files. It doesn't yet support
- *  seeking (allowed by zlib but slow/limited), putback and read/write access
+ *  seeking (allowed by PTlibzippy but slow/limited), putback and read/write access
  *  (tricky). Otherwise, it attempts to be a drop-in replacement for the standard
  *  file streambuf.
 */
@@ -36,8 +36,8 @@ public:
 
   /**
    *  @brief  Set compression level and strategy on the fly.
-   *  @param  comp_level  Compression level (see zlib.h for allowed values)
-   *  @param  comp_strategy  Compression strategy (see zlib.h for allowed values)
+   *  @param  comp_level  Compression level (see ptlibzippy.h for allowed values)
+   *  @param  comp_strategy  Compression strategy (see ptlibzippy.h for allowed values)
    *  @return  Z_OK on success, Z_STREAM_ERROR otherwise.
    *
    *  Unfortunately, these parameters cannot be modified separately, as the
@@ -85,7 +85,7 @@ public:
 
 protected:
   /**
-   *  @brief  Convert ios open mode int to mode string used by zlib.
+   *  @brief  Convert ios open mode int to mode string used by PTlibzippy.
    *  @return  True if valid mode flag combination.
   */
   bool

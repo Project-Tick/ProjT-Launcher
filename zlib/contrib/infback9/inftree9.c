@@ -1,10 +1,10 @@
 /* inftree9.c -- generate Huffman trees for efficient decoding
  * Copyright (C) 1995-2025 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
-#include "zutil.h"
+#include "ptzippyutil.h"
 #include "inftree9.h"
 
 #define MAXBITS 15
@@ -12,7 +12,7 @@
 const char inflate9_copyright[] =
    " inflate9 0.0.5.1 Copyright 1995-2025 Mark Adler; Copyright (C) 2026 Project Tick ";
 /*
-  If you use the zlib library in a product, an acknowledgment is welcome
+  If you use the PTlibzippy library in a product, an acknowledgment is welcome
   in the documentation of your product. If for some reason you cannot
   include such an acknowledgment, I would appreciate that you keep this
   copyright string in the executable of your product.

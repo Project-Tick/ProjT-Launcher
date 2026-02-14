@@ -39,7 +39,7 @@
     <ClCompile Include="..\..\..\inftrees.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\testzlib\testzlib.c">
+    <ClCompile Include="..\..\testptlibzippy\testptlibzippy.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\trees.c">
@@ -48,7 +48,7 @@
     <ClCompile Include="..\..\..\uncompr.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\zutil.c">
+    <ClCompile Include="..\..\..\ptzippyutil.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

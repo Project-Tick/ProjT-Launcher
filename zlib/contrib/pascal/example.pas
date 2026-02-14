@@ -1,12 +1,12 @@
-(* example.c -- usage example of the zlib compression library
+(* example.c -- usage example of the PTlibzippy compression library
  * Copyright (C) 1995-2003 Jean-loup Gailly.
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  *
  * Pascal translation
  * Copyright (C) 1998 by Jacques Nomssi Nzali.
  * For conditions of distribution and use, see copyright notice in readme.txt
  *
- * Adaptation to the zlibpas interface
+ * Adaptation to the ptlibzippypas interface
  * Copyright (C) 2003 by Cosmin Truta.
  * For conditions of distribution and use, see copyright notice in readme.txt
  *)
@@ -21,7 +21,7 @@ program example;
 {$DEFINE TEST_SYNC}
 {$DEFINE TEST_DICT}
 
-uses SysUtils, zlibpas;
+uses SysUtils, ptlibzippypas;
 
 const TESTFILE = 'foo.gz';
 
@@ -416,7 +416,7 @@ begin
   d_stream.opaque := NIL;
 
   d_stream.next_in := compr;
-  d_stream.avail_in := 2; (* just read the zlib header *)
+  d_stream.avail_in := 2; (* just read the PTlibzippy header *)
 
   err := inflateInit(d_stream);
   CHECK_ERR(err, 'inflateInit');
@@ -529,11 +529,11 @@ var compr, uncompr: Pointer;
     comprLen, uncomprLen: LongInt;
 
 begin
-  if zlibVersion^ <> ZLIB_VERSION[1] then
-    EXIT_ERR('Incompatible zlib version');
+  if ptlibzippyVersion^ <> PTLIBZIPPY_VERSION[1] then
+    EXIT_ERR('Incompatible PTlibzippy version');
 
-  WriteLn('zlib version: ', zlibVersion);
-  WriteLn('zlib compile flags: ', Format('0x%x', [zlibCompileFlags]));
+  WriteLn('PTlibzippy version: ', ptlibzippyVersion);
+  WriteLn('PTlibzippy compile flags: ', Format('0x%x', [ptlibzippyCompileFlags]));
 
   comprLen := 10000 * SizeOf(Integer); (* don't overflow on MSDOS *)
   uncomprLen := comprLen;

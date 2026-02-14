@@ -1,9 +1,9 @@
 /*
    minizip.c
    Version 1.1, February 14h, 2010
-   sample part of the MiniZip project - ( http://www.winimage.com/zLibDll/minizip.html )
+   sample part of the MiniZip project - ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
-         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/zLibDll/minizip.html )
+         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/ptlibzippyDll/minizip.html )
 
          Modifications of Unzip for Zip64
          Copyright (C) 2007-2008 Even Rouault
@@ -163,8 +163,8 @@ static int check_exist_file(const char* filename) {
 }
 
 static void do_banner(void) {
-    printf("MiniZip 1.1, demo of zLib + MiniZip64 package, written by Gilles Vollant\n");
-    printf("more info on MiniZip at http://www.winimage.com/zLibDll/minizip.html\n\n");
+    printf("MiniZip 1.1, demo of ptLib + MiniZip64 package, written by Gilles Vollant\n");
+    printf("more info on MiniZip at http://www.winimage.com/ptlibzippyDll/minizip.html\n\n");
 }
 
 static void do_help(void) {
@@ -363,7 +363,7 @@ int main(int argc, char *argv[]) {
         zipFile zf;
         int errclose;
 #        ifdef USEWIN32IOAPI
-        zlib_filefunc64_def ffunc;
+        ptlibzippy_filefunc64_def ffunc;
         fill_win32_filefunc64A(&ffunc);
         zf = zipOpen2_64(filename_try,(opt_overwrite==2) ? 2 : 0,NULL,&ffunc);
 #        else

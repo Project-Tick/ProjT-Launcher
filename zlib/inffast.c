@@ -1,10 +1,10 @@
 /* inffast.c -- fast decoding
  * Copyright (C) 1995-2025 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
-#include "zutil.h"
+#include "ptzippyutil.h"
 #include "inftrees.h"
 #include "inflate.h"
 #include "inffast.h"
@@ -48,7 +48,7 @@
       requires strm->avail_out >= 258 for each loop to avoid checking for
       output space.
  */
-void ZLIB_INTERNAL inflate_fast(z_streamp strm, unsigned start) {
+void PTLIBZIPPY_INTERNAL inflate_fast(z_streamp strm, unsigned start) {
     struct inflate_state FAR *state;
     z_const unsigned char FAR *in;      /* local strm->next_in */
     z_const unsigned char FAR *last;    /* have enough input while in < last */

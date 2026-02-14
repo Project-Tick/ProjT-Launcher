@@ -11,13 +11,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 
-namespace DotZLib
+namespace DotPTLib
 {
 
     #region Internal types
 
     /// <summary>
-    /// Defines constants for the various flush types used with zlib
+    /// Defines constants for the various flush types used with PTlibzippy
     /// </summary>
     internal enum FlushTypes
     {
@@ -25,7 +25,7 @@ namespace DotZLib
     }
 
     #region ZStream structure
-    // internal mapping of the zlib zstream structure for marshalling
+    // internal mapping of the PTlibzippy zstream structure for marshalling
     [StructLayoutAttribute(LayoutKind.Sequential, Pack=4, Size=0, CharSet=CharSet.Ansi)]
     internal struct ZStream
     {
@@ -56,7 +56,7 @@ namespace DotZLib
 
     #region Public enums
     /// <summary>
-    /// Defines constants for the available compression levels in zlib
+    /// Defines constants for the available compression levels in PTlibzippy
     /// </summary>
     public enum CompressLevel : int
     {
@@ -81,26 +81,26 @@ namespace DotZLib
 
     #region Exception classes
     /// <summary>
-    /// The exception that is thrown when an error occurs on the zlib dll
+    /// The exception that is thrown when an error occurs on the PTlibzippy dll
     /// </summary>
-    public class ZLibException : ApplicationException
+    public class PTLibException : ApplicationException
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ZLibException"/> class with a specified
+        /// Initializes a new instance of the <see cref="PTLibException"/> class with a specified
         /// error message and error code
         /// </summary>
-        /// <param name="errorCode">The zlib error code that caused the exception</param>
+        /// <param name="errorCode">The PTlibzippy error code that caused the exception</param>
         /// <param name="msg">A message that (hopefully) describes the error</param>
-        public ZLibException(int errorCode, string msg) : base(String.Format("ZLib error {0} {1}", errorCode, msg))
+        public PTLibException(int errorCode, string msg) : base(String.Format("PTLib error {0} {1}", errorCode, msg))
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ZLibException"/> class with a specified
+        /// Initializes a new instance of the <see cref="PTLibException"/> class with a specified
         /// error code
         /// </summary>
-        /// <param name="errorCode">The zlib error code that caused the exception</param>
-        public ZLibException(int errorCode) : base(String.Format("ZLib error {0}", errorCode))
+        /// <param name="errorCode">The PTlibzippy error code that caused the exception</param>
+        public PTLibException(int errorCode) : base(String.Format("PTLib error {0}", errorCode))
         {
         }
     }
@@ -211,16 +211,16 @@ namespace DotZLib
 
     #region Classes
     /// <summary>
-    /// Encapsulates general information about the ZLib library
+    /// Encapsulates general information about the PTLib library
     /// </summary>
     public class Info
     {
         #region DLL imports
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
-        private static extern uint zlibCompileFlags();
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
+        private static extern uint ptlibzippyCompileFlags();
 
-        [DllImport("ZLIB1.dll", CallingConvention=CallingConvention.Cdecl)]
-        private static extern string zlibVersion();
+        [DllImport("PTLIBZIPPY1.dll", CallingConvention=CallingConvention.Cdecl)]
+        private static extern string ptlibzippyVersion();
         #endregion
 
         #region Private stuff
@@ -244,7 +244,7 @@ namespace DotZLib
         /// </summary>
         public Info()
         {
-            _flags = zlibCompileFlags();
+            _flags = ptlibzippyCompileFlags();
         }
 
         /// <summary>
@@ -278,9 +278,9 @@ namespace DotZLib
         public int SizeOfOffset { get { return bitSize((_flags >> 6) & 3); } }
 
         /// <summary>
-        /// Gets the version of ZLib as a string, e.g. "1.2.1"
+        /// Gets the version of PTLib as a string, e.g. "1.2.1"
         /// </summary>
-        public static string Version { get { return zlibVersion(); } }
+        public static string Version { get { return ptlibzippyVersion(); } }
     }
 
     #endregion

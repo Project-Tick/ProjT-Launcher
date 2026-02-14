@@ -1,4 +1,4 @@
-      *  ZLIB.INC - Interface to the general purpose compression library
+      *  PTLIBZIPPY.INC - Interface to the general purpose compression library
       *
       *  ILE RPG400 version by Patrick Monnerat, DATASPHERE.
       *  Version 0.0.5.1
@@ -11,10 +11,10 @@
       *         the package version string and the stream control structure.
       *         size. This is needed because RPG lacks some macro feature.
       *         Call these procedures as:
-      *             inflateInit(...: ZLIB_VERSION: %size(z_stream))
+      *             inflateInit(...: PTLIBZIPPY_VERSION: %size(z_stream))
       *
-      /if not defined(ZLIB_H_)
-      /define ZLIB_H_
+      /if not defined(PTLIBZIPPY_H_)
+      /define PTLIBZIPPY_H_
       *
       **************************************************************************
       *                               Constants
@@ -22,13 +22,13 @@
       *
       *  Versioning information.
       *
-     D ZLIB_VERSION    C                   '0.0.5.1'
-     D ZLIB_VERNUM     C                   X'12a0'
-     D ZLIB_VER_MAJOR  C                   1
-     D ZLIB_VER_MINOR  C                   3
-     D ZLIB_VER_REVISION...
+     D PTLIBZIPPY_VERSION    C                   '0.0.5.1'
+     D PTLIBZIPPY_VERNUM     C                   X'12a0'
+     D PTLIBZIPPY_VER_MAJOR  C                   1
+     D PTLIBZIPPY_VER_MINOR  C                   3
+     D PTLIBZIPPY_VER_REVISION...
      D                 C                   1
-     D ZLIB_VER_SUBREVISION...
+     D PTLIBZIPPY_VER_SUBREVISION...
      D                 C                   2
       *
       *  Other equates.
@@ -325,7 +325,7 @@
       *                        Basic function prototypes
       **************************************************************************
       *
-     D zlibVersion     PR              *   extproc('zlibVersion')               Version string
+     D ptlibzippyVersion     PR              *   extproc('ptlibzippyVersion')               Version string
       *
      D deflateInit     PR            10I 0 extproc('deflateInit_')              Init. compression
      D  strm                               like(z_stream)                       Compression stream
@@ -496,8 +496,8 @@
      D inflateBackEnd  PR            10I 0 extproc('inflateBackEnd')
      D  strm                               like(z_stream)                       Expansion stream
       *
-     D zlibCompileFlags...
-     D                 PR            10U 0 extproc('zlibCompileFlags')
+     D ptlibzippyCompileFlags...
+     D                 PR            10U 0 extproc('ptlibzippyCompileFlags')
       *
       **************************************************************************
       *                        Checksum function prototypes
@@ -539,7 +539,7 @@
       *                     Miscellaneous function prototypes
       **************************************************************************
       *
-     D zError          PR              *   extproc('zError')                    Error string
+     D ptError          PR              *   extproc('ptError')                    Error string
      D  err                          10I 0 value                                Error code
       *
      D inflateSyncPoint...

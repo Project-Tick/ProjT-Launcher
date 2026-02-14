@@ -1,11 +1,11 @@
 /* zran.h -- example of deflate stream indexing and random access
  * Copyright (C) 2005, 2012, 2018, 2023, 2024, 2025 Mark Adler
  * Copyright (C) 2026 Project Tick
- * For conditions of distribution and use, see copyright notice in zlib.h
+ * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  * Version 1.7  16 May 2025  Mark Adler */
 
 #include <stdio.h>
-#include "zlib.h"
+#include "ptlibzippy.h"
 
 // Access point.
 typedef struct point {
@@ -19,13 +19,13 @@ typedef struct point {
 // Access point list.
 struct deflate_index {
     int have;           // number of access points in list
-    int mode;           // -15 for raw, 15 for zlib, or 31 for gzip
+    int mode;           // -15 for raw, 15 for PTlibzippy, or 31 for gzip
     off_t length;       // total length of uncompressed data
     point_t *list;      // allocated list of access points
     z_stream strm;      // re-usable inflate engine for extraction
 };
 
-// Make one pass through a zlib, gzip, or raw deflate compressed stream and
+// Make one pass through a PTlibzippy, gzip, or raw deflate compressed stream and
 // build an index, with access points about every span bytes of uncompressed
 // output. gzip files with multiple members are fully indexed. span should be
 // chosen to balance the speed of random access against the memory requirements
