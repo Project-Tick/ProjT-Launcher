@@ -96,6 +96,7 @@ import javax.swing.JFrame;
 
 import net.minecraft.Launcher;
 
+@SuppressWarnings({ "removal", "deprecation" })
 final class LegacyFrame extends JFrame {
     private static final long serialVersionUID = 1L;
 

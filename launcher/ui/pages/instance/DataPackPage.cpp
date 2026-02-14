@@ -152,7 +152,7 @@ void DataPackPage::downloadDialogFinished(int result)
 
 		ProgressDialog loadDialog(this);
 		loadDialog.setSkipButton(true, tr("Abort"));
-		loadDialog.execWithTask(tasks);
+		loadDialog.execWithTask(*tasks);
 
 		m_model->update();
 	}
@@ -272,7 +272,7 @@ void DataPackPage::updateDataPacks()
 
 		ProgressDialog loadDialog(this);
 		loadDialog.setSkipButton(true, tr("Abort"));
-		loadDialog.execWithTask(tasks);
+		loadDialog.execWithTask(*tasks);
 
 		m_model->update();
 	}
@@ -367,7 +367,7 @@ void DataPackPage::changeDataPackVersion()
 
 		ProgressDialog loadDialog(this);
 		loadDialog.setSkipButton(true, tr("Abort"));
-		loadDialog.execWithTask(tasks);
+		loadDialog.execWithTask(*tasks);
 
 		m_model->update();
 	}

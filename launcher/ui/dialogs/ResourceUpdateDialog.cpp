@@ -162,7 +162,7 @@ void ResourceUpdateDialog::checkCandidates()
 	ProgressDialog progress_dialog(m_parent);
 	progress_dialog.setSkipButton(true, tr("Abort"));
 	progress_dialog.setWindowTitle(tr("Checking for updates..."));
-	auto ret = progress_dialog.execWithTask(&check_task);
+	auto ret = progress_dialog.execWithTask(check_task);
 
 	// If the dialog was skipped / some download error happened
 	if (ret == QDialog::DialogCode::Rejected)
@@ -273,7 +273,7 @@ void ResourceUpdateDialog::checkCandidates()
 			ProgressDialog progress_dialog_deps(m_parent);
 			progress_dialog_deps.setSkipButton(true, tr("Abort"));
 			progress_dialog_deps.setWindowTitle(tr("Checking for dependencies..."));
-			auto dret = progress_dialog_deps.execWithTask(depTask.get());
+			auto dret = progress_dialog_deps.execWithTask(*depTask);
 
 			// If the dialog was skipped / some download error happened
 			if (dret == QDialog::DialogCode::Rejected)
@@ -488,7 +488,7 @@ auto ResourceUpdateDialog::ensureMetadata() -> bool
 	ProgressDialog checking_dialog(m_parent);
 	checking_dialog.setSkipButton(true, tr("Abort"));
 	checking_dialog.setWindowTitle(tr("Generating metadata..."));
-	auto ret_metadata = checking_dialog.execWithTask(&seq);
+	auto ret_metadata = checking_dialog.execWithTask(seq);
 
 	return (ret_metadata != QDialog::DialogCode::Rejected);
 }

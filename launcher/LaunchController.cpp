@@ -375,7 +375,7 @@ void LaunchController::login()
 				progDialog.setSkipButton(true, tr("Abort"));
 
 				auto task = accountToCheck->currentTask();
-				progDialog.execWithTask(task.get());
+				progDialog.execWithTask(*task);
 
 				// don't retry if aborted
 				if (task->getState() == Task::State::AbortedByUser)
@@ -594,10 +594,12 @@ void LaunchController::onFailed(QString reason)
 
 void LaunchController::onProgressRequested(Task* task)
 {
+	if (!task)
+		return;
 	ProgressDialog progDialog(m_parentWidget);
 	progDialog.setSkipButton(true, tr("Abort"));
 	m_launcher->proceed();
-	progDialog.execWithTask(task);
+	progDialog.execWithTask(*task);
 }
 
 bool LaunchController::abort()

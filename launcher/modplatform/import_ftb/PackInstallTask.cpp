@@ -127,6 +127,10 @@ namespace FTBImportAPP
 				case ModPlatform::LegacyFabric: break;
 				case ModPlatform::Ornithe: break;
 				case ModPlatform::Rift: break;
+				case ModPlatform::Risugami: break;
+				case ModPlatform::StationLoader: break;
+				case ModPlatform::ModLoaderMP: break;
+				case ModPlatform::Optifine: break;
 			}
 		components->saveNow();
 

@@ -209,7 +209,7 @@ namespace ResourceDownload
 			ProgressDialog progress_dialog(this);
 			progress_dialog.setSkipButton(true, tr("Abort"));
 			progress_dialog.setWindowTitle(tr("Checking for dependencies..."));
-			auto ret = progress_dialog.execWithTask(task.get());
+			auto ret = progress_dialog.execWithTask(*task);
 
 			// If the dialog was skipped / some download error happened
 			if (ret == QDialog::DialogCode::Rejected)

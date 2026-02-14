@@ -2309,7 +2309,7 @@ bool Application::handleDataMigration(const QString& currentData,
 
 		ProgressDialog diag;
 		DataMigrationTask task(oldData, currentData, any(std::move(filters)));
-		if (diag.execWithTask(&task))
+		if (diag.execWithTask(task))
 		{
 			qDebug() << "<> Migration succeeded";
 			setDoNotMigrate();

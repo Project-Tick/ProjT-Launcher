@@ -167,7 +167,7 @@ void ShaderPackPage::downloadDialogFinished(int result)
 
 		ProgressDialog loadDialog(this);
 		loadDialog.setSkipButton(true, tr("Abort"));
-		loadDialog.execWithTask(tasks);
+		loadDialog.execWithTask(*tasks);
 
 		m_model->update();
 	}
@@ -282,7 +282,7 @@ void ShaderPackPage::updateShaderPacks()
 
 		ProgressDialog loadDialog(this);
 		loadDialog.setSkipButton(true, tr("Abort"));
-		loadDialog.execWithTask(tasks);
+		loadDialog.execWithTask(*tasks);
 
 		m_model->update();
 	}

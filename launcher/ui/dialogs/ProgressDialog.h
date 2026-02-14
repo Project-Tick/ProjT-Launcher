@@ -90,6 +90,9 @@ class ProgressDialog : public QDialog
 	// Deprecated: Use unique_ptr overloads instead for better ownership semantics
 	[[deprecated("Use execWithTask(std::unique_ptr<Task>&&) instead")]] int execWithTask(Task* task);
 
+	// Non-owning overload for tasks managed elsewhere
+	int execWithTask(Task& task);
+
 	// Preferred: Takes ownership of the task
 	int execWithTask(std::unique_ptr<Task>&& task);
 	int execWithTask(std::unique_ptr<Task>& task);
@@ -117,6 +120,7 @@ class ProgressDialog : public QDialog
   private:
 	bool handleImmediateResult(QDialog::DialogCode& result);
 	void addTaskProgress(TaskStepProgress const& progress);
+	int execWithTaskInternal(Task* task);
 
   private:
 	Ui::ProgressDialog* ui;

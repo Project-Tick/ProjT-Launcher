@@ -112,6 +112,7 @@ import java.util.List;
 /**
  * Used to launch old versions which support applets.
  */
+@SuppressWarnings({ "removal", "deprecation" })
 public final class LegacyLauncher extends AbstractLauncher {
     private final String user, session;
     private final String title;

@@ -950,6 +950,8 @@ void MainWindow::setCatBackground(bool enabled)
 
 void MainWindow::runModalTask(Task* task)
 {
+	if (!task)
+		return;
 	connect(task,
 			&Task::failed,
 			[this](QString reason)
@@ -974,10 +976,10 @@ void MainWindow::runModalTask(Task* task)
 											 tr("The task has been aborted by the user."),
 											 QMessageBox::Information)
 					->show();
-			});
+	});
 	ProgressDialog loadDialog(this);
 	loadDialog.setSkipButton(true, tr("Abort"));
-	loadDialog.execWithTask(task);
+	loadDialog.execWithTask(*task);
 }
 
 void MainWindow::instanceFromInstanceTask(InstanceTask* rawTask)
@@ -1122,7 +1124,7 @@ void MainWindow::processURLs(QList<QUrl> urls)
 				{ // drop stack
 					ProgressDialog dlUrlDialod(this);
 					dlUrlDialod.setSkipButton(true, tr("Abort"));
-					dlUrlDialod.execWithTask(job.get());
+					dlUrlDialod.execWithTask(*job);
 				}
 			}
 			else if (url.scheme() == BuildConfig.LAUNCHER_APP_BINARY_NAME)
@@ -1163,7 +1165,7 @@ void MainWindow::processURLs(QList<QUrl> urls)
 			{ // drop stack
 				ProgressDialog dlUrlDialod(this);
 				dlUrlDialod.setSkipButton(true, tr("Abort"));
-				dlUrlDialod.execWithTask(dl_job.get());
+				dlUrlDialod.execWithTask(*dl_job);
 			}
 
 			if (!dl_success)

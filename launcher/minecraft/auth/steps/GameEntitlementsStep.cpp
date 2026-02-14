@@ -84,7 +84,10 @@ namespace projt::minecraft::auth
 		qCDebug(authCredentials()) << *m_response;
 
 		// Entitlements fetch is non-critical - continue even on failure
-		parseEntitlementsResponse(*m_response);
+		if (!parseEntitlementsResponse(*m_response))
+		{
+			qWarning() << "Failed to parse entitlements response; continuing without entitlements.";
+		}
 
 		emit completed(StepResult::Continue, tr("Got entitlements info."));
 	}

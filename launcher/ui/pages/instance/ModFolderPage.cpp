@@ -240,7 +240,7 @@ void ModFolderPage::downloadDialogFinished(int result)
 
 		ProgressDialog loadDialog(this);
 		loadDialog.setSkipButton(true, tr("Abort"));
-		loadDialog.execWithTask(tasks);
+		loadDialog.execWithTask(*tasks);
 
 		m_model->update();
 	}
@@ -356,7 +356,7 @@ void ModFolderPage::updateMods(bool includeDeps)
 
 		ProgressDialog loadDialog(this);
 		loadDialog.setSkipButton(true, tr("Abort"));
-		loadDialog.execWithTask(tasks);
+		loadDialog.execWithTask(*tasks);
 
 		m_model->update();
 	}

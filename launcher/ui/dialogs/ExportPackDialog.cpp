@@ -265,7 +265,7 @@ void ExportPackDialog::done(int result)
 
 		ProgressDialog progress(this);
 		progress.setSkipButton(true, tr("Abort"));
-		if (progress.execWithTask(task) != QDialog::Accepted)
+		if (progress.execWithTask(*task) != QDialog::Accepted)
 			return;
 	}
 

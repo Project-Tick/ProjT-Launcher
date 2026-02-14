@@ -348,7 +348,7 @@ void SkinManageDialog::accept()
 	}
 
 	skinUpload->addTask(m_acct->refresh().staticCast<Task>());
-	if (prog.execWithTask(skinUpload.get()) != QDialog::Accepted)
+		if (prog.execWithTask(*skinUpload) != QDialog::Accepted)
 	{
 		CustomMessageBox::selectable(this, tr("Skin Upload"), tr("Failed to upload skin!"), QMessageBox::Warning)
 			->exec();
@@ -365,7 +365,7 @@ void SkinManageDialog::on_resetBtn_clicked()
 	NetJob::Ptr skinReset{ new NetJob(tr("Reset skin"), APPLICATION->network(), 1) };
 	skinReset->addNetAction(SkinDelete::make(m_acct->accessToken()));
 	skinReset->addTask(m_acct->refresh().staticCast<Task>());
-	if (prog.execWithTask(skinReset.get()) != QDialog::Accepted)
+		if (prog.execWithTask(*skinReset) != QDialog::Accepted)
 	{
 		CustomMessageBox::selectable(this,
 									 tr("Skin Delete"),
@@ -466,7 +466,7 @@ void SkinManageDialog::on_urlBtn_clicked()
 	auto path = FS::PathCombine(m_list.getDir(), url.fileName());
 	job->addNetAction(Net::Download::makeFile(url, path));
 	ProgressDialog dlg(this);
-	dlg.execWithTask(job.get());
+		dlg.execWithTask(*job);
 	SkinModel s(path);
 	if (!s.isValid())
 	{
@@ -629,7 +629,7 @@ void SkinManageDialog::on_userBtn_clicked()
 	job->addTask(profileLoop);
 	job->addNetAction(downloadSkin);
 	ProgressDialog dlg(this);
-	dlg.execWithTask(job.get());
+		dlg.execWithTask(*job);
 
 	SkinModel s(path);
 	if (!s.isValid())

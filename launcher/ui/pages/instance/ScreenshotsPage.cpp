@@ -486,7 +486,7 @@ void ScreenshotsPage::on_actionUpload_triggered()
 
 		m_uploadActive = true;
 
-		if (dialog.execWithTask(job.get()) == QDialog::Accepted)
+		if (dialog.execWithTask(*job) == QDialog::Accepted)
 		{
 			auto link			  = screenshot->m_url;
 			QClipboard* clipboard = QApplication::clipboard();
@@ -539,7 +539,7 @@ void ScreenshotsPage::on_actionUpload_triggered()
 			});
 
 	m_uploadActive = true;
-	if (dialog.execWithTask(&task) == QDialog::Accepted)
+	if (dialog.execWithTask(task) == QDialog::Accepted)
 	{
 		if (imgurResult->id.isEmpty())
 		{

@@ -536,7 +536,7 @@ void VersionPage::on_actionDownload_All_triggered()
 	}
 	ProgressDialog tDialog(this);
 	connect(task.get(), &Task::failed, this, &VersionPage::onGameUpdateError);
-	int result = tDialog.execWithTask(task.get());
+	int result = tDialog.execWithTask(*task);
 	if (result == QDialog::Rejected)
 	{
 		qDebug() << "Update task was cancelled by user";

@@ -71,7 +71,7 @@ static void init_ui(void) {
 
         g_progress = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(24, 125, 472, 12)];
         [g_progress setIndeterminate:YES];
-        [g_progress setStyle:NSProgressIndicatorBarStyle];
+        [g_progress setStyle:NSProgressIndicatorStyleBar];
         [g_progress startAnimation:nil];
         [content addSubview:g_progress];
 

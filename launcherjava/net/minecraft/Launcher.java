@@ -109,6 +109,7 @@ import java.util.Map;
  * Changing field and method declarations without further testing is not
  * recommended.
  */
+@SuppressWarnings({ "removal", "deprecation" })
 public final class Launcher extends Applet implements AppletStub {
     private static final long serialVersionUID = 1L;
 

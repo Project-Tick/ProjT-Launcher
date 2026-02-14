@@ -931,7 +931,7 @@ QFileInfo ProjTUpdaterApp::downloadAsset(const GitHubReleaseAsset& asset)
 	auto progress_dialog = ProgressDialog();
 	progress_dialog.adjustSize();
 
-	progress_dialog.execWithTask(download.get());
+	progress_dialog.execWithTask(*download);
 
 	qDebug() << "download complete";
 

@@ -338,7 +338,7 @@ void LogPage::on_btnPaste_clicked()
 
 	// Run the task with progress dialog
 	ProgressDialog dialog(this);
-	dialog.execWithTask(uploadTask);
+	dialog.execWithTask(*uploadTask);
 }
 
 void LogPage::on_btnCopy_clicked()

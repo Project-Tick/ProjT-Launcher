@@ -158,6 +158,36 @@ void ProgressDialog::updateSize(bool recenterParent)
 
 int ProgressDialog::execWithTask(Task* task)
 {
+	return execWithTaskInternal(task);
+}
+
+int ProgressDialog::execWithTask(Task& task)
+{
+	return execWithTaskInternal(&task);
+}
+
+// Preferred overloads: Take ownership of the task via unique_ptr
+// The task will be automatically deleted when the dialog is destroyed
+int ProgressDialog::execWithTask(std::unique_ptr<Task>&& task)
+{
+	if (task)
+	{
+		connect(this, &ProgressDialog::destroyed, task.get(), &Task::deleteLater);
+	}
+	return execWithTaskInternal(task.release());
+}
+
+int ProgressDialog::execWithTask(std::unique_ptr<Task>& task)
+{
+	if (task)
+	{
+		connect(this, &ProgressDialog::destroyed, task.get(), &Task::deleteLater);
+	}
+	return execWithTaskInternal(task.release());
+}
+
+int ProgressDialog::execWithTaskInternal(Task* task)
+{
 	this->m_task = task;
 
 	if (!task)
@@ -200,20 +230,6 @@ int ProgressDialog::execWithTask(Task* task)
 	}
 
 	return QDialog::exec();
-}
-
-// Preferred overloads: Take ownership of the task via unique_ptr
-// The task will be automatically deleted when the dialog is destroyed
-int ProgressDialog::execWithTask(std::unique_ptr<Task>&& task)
-{
-	connect(this, &ProgressDialog::destroyed, task.get(), &Task::deleteLater);
-	return execWithTask(task.release());
-}
-
-int ProgressDialog::execWithTask(std::unique_ptr<Task>& task)
-{
-	connect(this, &ProgressDialog::destroyed, task.get(), &Task::deleteLater);
-	return execWithTask(task.release());
 }
 
 bool ProgressDialog::handleImmediateResult(QDialog::DialogCode& result)

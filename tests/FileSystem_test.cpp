@@ -35,7 +35,7 @@
 namespace fs = std::filesystem;
 
 #if defined(Q_OS_WIN32)
-static bool canCreateSymlink()
+[[maybe_unused]] static bool canCreateSymlink()
 {
 	QTemporaryDir tempDir;
 	if (!tempDir.isValid())
@@ -58,7 +58,7 @@ static bool canCreateSymlink()
 	return true;
 }
 #else
-static bool canCreateSymlink()
+[[maybe_unused]] static bool canCreateSymlink()
 {
 	return true;
 }

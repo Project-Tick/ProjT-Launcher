@@ -402,6 +402,11 @@ namespace Java
 							CustomMessageBox::selectable(this, tr("Error"), error, QMessageBox::Warning)->show();
 							deletePath();
 					}
+					if (!task)
+					{
+						QDialog::done(result);
+						return;
+					}
 #if defined(Q_OS_MACOS)
 					auto seq = makeShared<SequentialTask>(tr("Install Java"));
 					seq->addTask(task);
@@ -420,7 +425,7 @@ namespace Java
 					connect(task.get(), &Task::aborted, this, deletePath);
 					ProgressDialog pg(this);
 					pg.setSkipButton(true, tr("Abort"));
-					pg.execWithTask(task.get());
+					pg.execWithTask(*task);
 				}
 				else
 				{

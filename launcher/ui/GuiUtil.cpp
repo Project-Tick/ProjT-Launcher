@@ -193,7 +193,7 @@ std::optional<QString> GuiUtil::uploadPaste(const QString& name, const QString& 
 							 ->show();
 					 });
 
-	if (dialog.execWithTask(job.get()) == QDialog::Accepted)
+	if (dialog.execWithTask(*job) == QDialog::Accepted)
 	{
 		if (pasteJob->pasteLink().isEmpty())
 		{
