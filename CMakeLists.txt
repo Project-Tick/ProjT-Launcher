@@ -611,22 +611,24 @@ if(WIN32 AND NOT MINGW)
         endif()
     endif()
 
-    list(APPEND CMAKE_PREFIX_PATH "${ZLIB_ROOT}" "${OPENSSL_ROOT_DIR}")
+    list(APPEND CMAKE_PREFIX_PATH "${PTLIBZIPPY_ROOT}" "${OPENSSL_ROOT_DIR}")
     list(APPEND CMAKE_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/dependencies")
 endif()
 
-# Always use bundled zlib
-set(ZLIB_FOUND FALSE)
+# Always use bundled ptlibzippy
+set(PTLIBZIPPY_FOUND FALSE)
 
-# System Libraries - Using bundled zlib only
+# System Libraries - Using bundled ptlibzippy only
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
-    message(STATUS "Using bundled zlib")
+    message(STATUS "Using bundled ptlibzippy")
         set(_projt_prev_skip_install_all "${SKIP_INSTALL_ALL}")
         set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
         # For fuzzing builds, disable shared library to avoid sanitizer symbol conflicts
         if(BUILD_FUZZERS)
             set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-            message(STATUS "Fuzzing build: Building zlib as static library only")
+            set(PTLIBZIPPY_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+            set(PTLIBZIPPY_BUILD_STATIC ON CACHE BOOL "" FORCE)
+            message(STATUS "Fuzzing build: Building ptlibzippy as static library only")
         endif()
         # Disable instrumentation for external dependencies to avoid linker issues
         # IMPORTANT: Save and restore flags to prevent interference with fuzzer compilation
@@ -639,9 +641,9 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
         string(REGEX REPLACE "-fprofile-instr-generate|--coverage|-fprofile-generate|-fprofile-arcs|-ftest-coverage" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
         if(UNIX AND NOT APPLE)
-        # Provide a shared zlib so libpng and the launcher can use the bundled copy at runtime.
-        set(ZLIB_BUILD_SHARED ON CACHE BOOL "" FORCE)
-        set(ZLIB_BUILD_STATIC ON CACHE BOOL "" FORCE)
+        # Provide a shared ptlibzippy so libpng and the launcher can use the bundled copy at runtime.
+        set(PTLIBZIPPY_BUILD_SHARED ON CACHE BOOL "" FORCE)
+        set(PTLIBZIPPY_BUILD_STATIC ON CACHE BOOL "" FORCE)
         endif()
         
         # For OSS-Fuzz: Strip sanitizer flags from zlib build to avoid symbol conflicts
@@ -662,33 +664,35 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
         set(CMAKE_C_FLAGS_DEBUG "${_SAVED_CMAKE_C_FLAGS_DEBUG}")
         set(CMAKE_C_FLAGS_RELEASE "${_SAVED_CMAKE_C_FLAGS_RELEASE}")
         
-        if(TARGET zlibstatic)
-            set_target_properties(zlibstatic PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        if(TARGET ptlibzippystatic)
+            set_target_properties(ptlibzippystatic PROPERTIES POSITION_INDEPENDENT_CODE ON)
         endif()
-        if(TARGET zlib)
-            set_target_properties(zlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        if(TARGET ptlibzippy)
+            set_target_properties(ptlibzippy PROPERTIES POSITION_INDEPENDENT_CODE ON)
         endif()
 
-        # Create the ZLIB::ZLIB alias target for consistency (prefer shared)
-        if(TARGET zlib AND NOT TARGET ZLIB::ZLIB)
-            add_library(ZLIB::ZLIB ALIAS zlib)
-        elseif(TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
-            add_library(ZLIB::ZLIB ALIAS zlibstatic)
+        # Set PTlibzippy variables for projects that need them
+        if(TARGET PTlibzippy::PTlibzippy)
+            get_target_property(_projt_ptlibzippy_includes PTlibzippy::PTlibzippy INTERFACE_INCLUDE_DIRECTORIES)
         endif()
-        
-        # Set ZLIB variables for projects that need them
-        # Our custom FindZLIB.cmake will handle these when find_package(ZLIB) is called
-        set(ZLIB_INCLUDE_DIR "${zlib_SOURCE_DIR};${zlib_BINARY_DIR}")
-        set(ZLIB_INCLUDE_DIRS "${ZLIB_INCLUDE_DIR}")
-        set(ZLIB_LIBRARY "ZLIB::ZLIB")
-        set(ZLIB_LIBRARIES "ZLIB::ZLIB")
-        set(ZLIB_FOUND TRUE)
+        if(_projt_ptlibzippy_includes)
+            set(PTLIBZIPPY_INCLUDE_DIR "${_projt_ptlibzippy_includes}")
+        elseif(DEFINED PTlibzippy_SOURCE_DIR AND DEFINED PTlibzippy_BINARY_DIR)
+            set(PTLIBZIPPY_INCLUDE_DIR "${PTlibzippy_SOURCE_DIR};${PTlibzippy_BINARY_DIR}")
+        endif()
+        if(PTLIBZIPPY_INCLUDE_DIR)
+            set(PTLIBZIPPY_INCLUDE_DIRS "${PTLIBZIPPY_INCLUDE_DIR}")
+        endif()
+        set(PTLIBZIPPY_LIBRARY "PTlibzippy::PTlibzippy")
+        set(PTLIBZIPPY_LIBRARIES "PTlibzippy::PTlibzippy")
+        set(PTLIBZIPPY_FOUND TRUE)
 
-        set(PROJT_ZLIB_AVAILABLE TRUE)
+        set(PROJT_PTLIBZIPPY_AVAILABLE TRUE)
+        unset(_projt_ptlibzippy_includes)
         # Restore libpng install behavior (libpng uses SKIP_INSTALL_ALL)
         set(SKIP_INSTALL_ALL "${_projt_prev_skip_install_all}" CACHE BOOL "" FORCE)
 else()
-    message(FATAL_ERROR "Bundled zlib not found in ${CMAKE_CURRENT_SOURCE_DIR}/zlib/")
+    message(FATAL_ERROR "Bundled ptlibzippy not found in ${CMAKE_CURRENT_SOURCE_DIR}/zlib/")
 endif()
 
 if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND NOT APPLE)
@@ -774,7 +778,7 @@ if(NOT LAUNCHER_FUZZ_ONLY)
     endif()
 
     # Build bundled minizip for deterministic WebEngine linking on Linux
-    if(PROJT_ZLIB_AVAILABLE AND UNIX AND NOT APPLE)
+    if(PROJT_PTLIBZIPPY_AVAILABLE AND UNIX AND NOT APPLE)
         set(MINIZIP_BUILD_SHARED ON CACHE BOOL "" FORCE)
         set(MINIZIP_BUILD_STATIC OFF CACHE BOOL "" FORCE)
         set(MINIZIP_BUILD_TESTING OFF CACHE BOOL "" FORCE)

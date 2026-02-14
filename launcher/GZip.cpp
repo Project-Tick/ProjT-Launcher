@@ -55,7 +55,7 @@
  *
    ======================================================================== */
 #include "GZip.h"
-#include <zlib.h>
+#include <ptlibzippy.h>
 #include <QByteArray>
 #include <QDebug>
 #include <QFile>

@@ -75,7 +75,9 @@ function(stop_warnings target)
 endfunction()
 
 if(NBT_USE_ZLIB)
-    set(EXTRA_TEST_LIBS ${ZLIB_LIBRARY})
+    if(TARGET PTlibzippy::PTlibzippy)
+        set(EXTRA_TEST_LIBS PTlibzippy::PTlibzippy)
+    endif()
 endif()
 
 CXXTEST_ADD_TEST(nbttest nbttest.cpp ${CMAKE_CURRENT_SOURCE_DIR}/nbttest.h)

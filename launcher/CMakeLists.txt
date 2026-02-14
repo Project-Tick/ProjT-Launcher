@@ -1323,7 +1323,7 @@ target_link_libraries(Launcher_logic
     systeminfo
     Launcher_murmur2
     nbt++
-    ZLIB::ZLIB
+    PTlibzippy::PTlibzippy
     qdcss
     BuildConfig
     Qt${QT_VERSION_MAJOR}::Widgets
@@ -1534,9 +1534,9 @@ if(APPLE)
 endif()
 
 # Install bundled zlib DLLs from bin/ to root on Windows
-if(WIN32 AND ZLIB_FOUND)
+if(WIN32 AND PTLIBZIPPY_FOUND)
     install(CODE "
-        file(GLOB ZLIB_DLLS \"${CMAKE_INSTALL_PREFIX}/bin/z*.dll\")
+        file(GLOB ZLIB_DLLS \"${CMAKE_INSTALL_PREFIX}/bin/ptlibzippy*.dll\")
         foreach(DLL \${ZLIB_DLLS})
             get_filename_component(DLL_NAME \"\${DLL}\" NAME)
             message(STATUS \"Copying zlib DLL to root: \${DLL_NAME}\")
@@ -1568,7 +1568,9 @@ install(TARGETS ${Launcher_Name}
     FRAMEWORK DESTINATION ${FRAMEWORK_DEST_DIR} COMPONENT Runtime
 )
 if(WIN32 AND FORCE_BUNDLED_ZLIB)
-    install(FILES $<TARGET_FILE:zlib> DESTINATION ${BINARY_DEST_DIR} COMPONENT Runtime)
+    if(TARGET ptlibzippy)
+        install(FILES $<TARGET_FILE:ptlibzippy> DESTINATION ${BINARY_DEST_DIR} COMPONENT Runtime)
+    endif()
 endif()
 
 # Deploy PDBs
@@ -1582,7 +1584,7 @@ if(Launcher_BUILD_UPDATER)
     target_include_directories(projt_updater_logic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(projt_updater_logic
         QuaZip::QuaZip
-        ZLIB::ZLIB
+        PTlibzippy::PTlibzippy
         systeminfo
         BuildConfig
         Qt${QT_VERSION_MAJOR}::Widgets
@@ -1763,11 +1765,11 @@ if(WIN32 OR (UNIX AND APPLE))
             ${CMAKE_BINARY_DIR}/$<CONFIG>
             ${OPENSSL_ROOT_DIR}
             ${OPENSSL_ROOT_DIR}/bin
-            ${ZLIB_ROOT}
-            ${ZLIB_ROOT}/bin
-            ${ZLIB_ROOT_DIR}
-            ${ZLIB_ROOT_DIR}/build/native
-            ${ZLIB_ROOT_DIR}/build/native/bin
+            ${PTLIBZIPPY_ROOT}
+            ${PTLIBZIPPY_ROOT}/bin
+            ${PTLIBZIPPY_ROOT_DIR}
+            ${PTLIBZIPPY_ROOT_DIR}/build/native
+            ${PTLIBZIPPY_ROOT_DIR}/build/native/bin
         PRE_EXCLUDE_REGEXES
             "^(api-ms-win|ext-ms)-.*\\.dll$"
             "^azure.*\\.dll$"
@@ -1802,7 +1804,7 @@ if(WIN32 OR (UNIX AND APPLE))
     # Copy zlib DLLs from bin/ to root on Windows
     if(WIN32)
         install(CODE "
-            file(GLOB ZLIB_DLLS \"${CMAKE_INSTALL_PREFIX}/bin/z*.dll\")
+            file(GLOB ZLIB_DLLS \"${CMAKE_INSTALL_PREFIX}/bin/ptlibzippy*.dll\")
             foreach(DLL \${ZLIB_DLLS})
                 get_filename_component(DLL_NAME \"\${DLL}\" NAME)
                 message(STATUS \"Copying zlib DLL: \${DLL_NAME} to root\")

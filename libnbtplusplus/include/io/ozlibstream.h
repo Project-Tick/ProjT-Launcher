@@ -22,7 +22,7 @@
 
 #include "io/zlib_streambuf.h"
 #include <ostream>
-#include <zlib.h>
+#include <ptlibzippy.h>
 
 namespace zlib
 {

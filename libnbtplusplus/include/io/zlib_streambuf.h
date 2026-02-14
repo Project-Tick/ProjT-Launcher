@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <streambuf>
 #include <vector>
-#include <zlib.h>
+#include <ptlibzippy.h>
 #include "nbt_export.h"
 
 namespace zlib
@@ -17,7 +17,7 @@ namespace zlib
 		const int errcode;
 
 		zlib_error(const char* msg, int errcode)
-			: std::runtime_error(msg ? std::string(zError(errcode)) + ": " + msg : zError(errcode)),
+			: std::runtime_error(msg ? std::string(ptError(errcode)) + ": " + msg : ptError(errcode)),
 			  errcode(errcode)
 		{}
 	};

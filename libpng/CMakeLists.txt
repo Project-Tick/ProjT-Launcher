@@ -126,20 +126,24 @@ message(STATUS "Building for target architecture: ${PNG_TARGET_ARCHITECTURE}")
 
 # Allow the users to specify a custom location of zlib.
 # With CMake 3.12 and newer, this option is no longer necessary.
-option(PNG_BUILD_ZLIB "[Deprecated; please use ZLIB_ROOT]" OFF)
+option(PNG_BUILD_ZLIB "[Deprecated; please use PTLIBZIPPY_ROOT]" OFF)
 if(PNG_BUILD_ZLIB)
-  if("x${ZLIB_ROOT}" STREQUAL "x")
+  if("x${PTLIBZIPPY_ROOT}" STREQUAL "x")
     message(SEND_ERROR "The option PNG_BUILD_ZLIB=${PNG_BUILD_ZLIB} is no longer supported; "
-                       "please use ZLIB_ROOT instead")
+                       "please use PTLIBZIPPY_ROOT instead")
   else()
     message(SEND_ERROR "The option PNG_BUILD_ZLIB=${PNG_BUILD_ZLIB} is no longer supported; "
-                       "using ZLIB_ROOT=\"${ZLIB_ROOT}\"")
+                       "using PTLIBZIPPY_ROOT=\"${PTLIBZIPPY_ROOT}\"")
   endif()
 endif()
 
-# Find the zlib library.
-find_package(ZLIB REQUIRED)
-set(PNG_LINK_LIBRARIES ZLIB::ZLIB)
+# Find the ptlibzippy library.
+if(TARGET PTlibzippy::PTlibzippy)
+  set(PNG_LINK_LIBRARIES PTlibzippy::PTlibzippy)
+else()
+  find_package(PTlibzippy REQUIRED CONFIG)
+  set(PNG_LINK_LIBRARIES PTlibzippy::PTlibzippy)
+endif()
 
 # Find the math library (unless we already know it's not available or
 # not needed).
