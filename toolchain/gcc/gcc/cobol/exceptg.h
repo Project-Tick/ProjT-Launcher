@@ -1,5 +1,5 @@
  /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -77,7 +77,7 @@ class exception_turn_t {
   bool add_exception( ec_type_t type, const filelist_t& files = filelist_t() ) {
     ec_disposition_t disposition = ec_type_disposition(type);
     if( disposition != ec_implemented(disposition) ) {
-	cbl_unimplementedw("CDF: exception '%s'", ec_type_str(type));
+      cbl_unimplementedw(EcUnknownW, "exception %qs", ec_type_str(type));
     }
     auto elem = exceptions.find(type);
     if( elem != exceptions.end() ) return false; // cannot add twice

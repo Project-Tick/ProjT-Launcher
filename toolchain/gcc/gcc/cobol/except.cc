@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -73,15 +73,6 @@ ec_level( ec_type_t ec ) {
   if( ec == ec_all_e ) return 1;
   if( 0 == (static_cast<unsigned int>(ec) & ~EC_ALL_E) ) return 2;
   return 3;
-}
-
-void
-cbl_enabled_exception_t::dump( int i ) const {
-  cbl_message(2, "cbl_enabled_exception_t: %2d  {%s, %s, %zu}",
-              i,
-              location? "location" : "    none",
-              ec_type_str(ec),
-              file );
 }
 
 void

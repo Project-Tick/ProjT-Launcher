@@ -1,5 +1,5 @@
 ;; ARM Thumb-2 Machine Description
-;; Copyright (C) 2007-2025 Free Software Foundation, Inc.
+;; Copyright (C) 2007-2026 Free Software Foundation, Inc.
 ;; Written by CodeSourcery, LLC.
 ;;
 ;; This file is part of GCC.
@@ -235,7 +235,7 @@
 (define_insn "*thumb2_movsi_insn"
   [(set (match_operand:SI 0 "nonimmediate_operand" "=rk,r,l,r,r,lk*r,m")
 	(match_operand:SI 1 "general_operand"	   "rk,I,Py,K,j,mi,lk*r"))]
-  "TARGET_THUMB2 && !TARGET_IWMMXT && !TARGET_HARD_FLOAT
+  "TARGET_THUMB2 && !TARGET_HARD_FLOAT
    && (   register_operand (operands[0], SImode)
        || register_operand (operands[1], SImode))"
 {
@@ -537,10 +537,10 @@
 )
 
 (define_insn "*nonsecure_call_reg_thumb2_fpcxt"
-  [(call (unspec:SI [(mem:SI (match_operand:SI 0 "s_register_operand" "l*r"))]
-		    UNSPEC_NONSECURE_MEM)
+  [(call (mem:SI (match_operand:SI 0 "s_register_operand" "l*r"))
 	 (match_operand 1 "" ""))
    (use (match_operand 2 "" ""))
+   (unspec:SI [(match_operand 3)] UNSPEC_NONSECURE_MEM)
    (clobber (reg:SI LR_REGNUM))]
   "TARGET_THUMB2 && use_cmse && TARGET_HAVE_FPCXT_CMSE"
   "blxns\\t%0"
@@ -549,10 +549,10 @@
 )
 
 (define_insn "*nonsecure_call_reg_thumb2"
-  [(call (unspec:SI [(mem:SI (reg:SI R4_REGNUM))]
-		    UNSPEC_NONSECURE_MEM)
+  [(call (mem:SI (reg:SI R4_REGNUM))
 	 (match_operand 0 "" ""))
    (use (match_operand 1 "" ""))
+   (unspec:SI [(match_operand 2)] UNSPEC_NONSECURE_MEM)
    (clobber (reg:SI LR_REGNUM))]
   "TARGET_THUMB2 && use_cmse && !TARGET_HAVE_FPCXT_CMSE"
   "bl\\t__gnu_cmse_nonsecure_call"
@@ -573,11 +573,10 @@
 
 (define_insn "*nonsecure_call_value_reg_thumb2_fpcxt"
   [(set (match_operand 0 "" "")
-	(call
-	 (unspec:SI [(mem:SI (match_operand:SI 1 "register_operand" "l*r"))]
-		    UNSPEC_NONSECURE_MEM)
-	 (match_operand 2 "" "")))
+	(call (mem:SI (match_operand:SI 1 "register_operand" "l*r"))
+	(match_operand 2 "" "")))
    (use (match_operand 3 "" ""))
+   (unspec:SI [(match_operand 4)] UNSPEC_NONSECURE_MEM)
    (clobber (reg:SI LR_REGNUM))]
   "TARGET_THUMB2 && use_cmse && TARGET_HAVE_FPCXT_CMSE"
   "blxns\\t%1"
@@ -587,10 +586,10 @@
 
 (define_insn "*nonsecure_call_value_reg_thumb2"
   [(set (match_operand 0 "" "")
-	(call
-	 (unspec:SI [(mem:SI (reg:SI R4_REGNUM))] UNSPEC_NONSECURE_MEM)
-	 (match_operand 1 "" "")))
+	(call (mem:SI (reg:SI R4_REGNUM))
+	      (match_operand 1 "" "")))
    (use (match_operand 2 "" ""))
+   (unspec:SI [(match_operand 3)] UNSPEC_NONSECURE_MEM)
    (clobber (reg:SI LR_REGNUM))]
   "TARGET_THUMB2 && use_cmse && !TARGET_HAVE_FPCXT_CMSE"
   "bl\\t__gnu_cmse_nonsecure_call"

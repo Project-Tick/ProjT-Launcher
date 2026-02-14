@@ -1,5 +1,5 @@
 /* Calculate branch probabilities, and basic block execution counts.
-   Copyright (C) 1990-2025 Free Software Foundation, Inc.
+   Copyright (C) 1990-2026 Free Software Foundation, Inc.
    Contributed by James E. Wilson, UC Berkeley/Cygnus Support;
    based on some ideas from Dain Samples of UC Berkeley.
    Further mangling by Bob Manson, Cygnus Support.
@@ -1242,7 +1242,7 @@ gimple_init_gcov_profiler (void)
       fn_name = concat ("__gcov_interval_profiler", fn_suffix, NULL);
       tree_interval_profiler_fn = build_fn_decl (fn_name,
 						 interval_profiler_fn_type);
-      free (CONST_CAST (char *, fn_name));
+      free (const_cast<char *> (fn_name));
       TREE_NOTHROW (tree_interval_profiler_fn) = 1;
       DECL_ATTRIBUTES (tree_interval_profiler_fn)
 	= tree_cons (get_identifier ("leaf"), NULL,
@@ -1255,7 +1255,7 @@ gimple_init_gcov_profiler (void)
 					  NULL_TREE);
       fn_name = concat ("__gcov_pow2_profiler", fn_suffix, NULL);
       tree_pow2_profiler_fn = build_fn_decl (fn_name, pow2_profiler_fn_type);
-      free (CONST_CAST (char *, fn_name));
+      free (const_cast<char *> (fn_name));
       TREE_NOTHROW (tree_pow2_profiler_fn) = 1;
       DECL_ATTRIBUTES (tree_pow2_profiler_fn)
 	= tree_cons (get_identifier ("leaf"), NULL,
@@ -1269,7 +1269,7 @@ gimple_init_gcov_profiler (void)
       fn_name = concat ("__gcov_topn_values_profiler", fn_suffix, NULL);
       tree_topn_values_profiler_fn
 	= build_fn_decl (fn_name, topn_values_profiler_fn_type);
-      free (CONST_CAST (char *, fn_name));
+      free (const_cast<char *> (fn_name));
 
       TREE_NOTHROW (tree_topn_values_profiler_fn) = 1;
       DECL_ATTRIBUTES (tree_topn_values_profiler_fn)
@@ -1287,7 +1287,7 @@ gimple_init_gcov_profiler (void)
       fn_name = concat ("__gcov_indirect_call_profiler_v4", fn_suffix, NULL);
       tree_indirect_call_profiler_fn
 	= build_fn_decl (fn_name, ic_profiler_fn_type);
-      free (CONST_CAST (char *, fn_name));
+      free (const_cast<char *> (fn_name));
 
       TREE_NOTHROW (tree_indirect_call_profiler_fn) = 1;
       DECL_ATTRIBUTES (tree_indirect_call_profiler_fn)
@@ -1311,14 +1311,14 @@ gimple_init_gcov_profiler (void)
       fn_name = concat ("__gcov_average_profiler", fn_suffix, NULL);
       tree_average_profiler_fn = build_fn_decl (fn_name,
 						average_profiler_fn_type);
-      free (CONST_CAST (char *, fn_name));
+      free (const_cast<char *> (fn_name));
       TREE_NOTHROW (tree_average_profiler_fn) = 1;
       DECL_ATTRIBUTES (tree_average_profiler_fn)
 	= tree_cons (get_identifier ("leaf"), NULL,
 		     DECL_ATTRIBUTES (tree_average_profiler_fn));
       fn_name = concat ("__gcov_ior_profiler", fn_suffix, NULL);
       tree_ior_profiler_fn = build_fn_decl (fn_name, average_profiler_fn_type);
-      free (CONST_CAST (char *, fn_name));
+      free (const_cast<char *> (fn_name));
       TREE_NOTHROW (tree_ior_profiler_fn) = 1;
       DECL_ATTRIBUTES (tree_ior_profiler_fn)
 	= tree_cons (get_identifier ("leaf"), NULL,
@@ -1847,19 +1847,32 @@ tree_profiling (void)
 	can_support_atomic = have_atomic_8;
     }
 
-  if (flag_profile_update != PROFILE_UPDATE_SINGLE && needs_split)
-    counter_update = COUNTER_UPDATE_ATOMIC_PARTIAL;
-
   if (flag_profile_update == PROFILE_UPDATE_ATOMIC
       && !can_support_atomic)
     {
-      warning (0, "target does not support atomic profile update, "
-	       "single mode is selected");
+      if (needs_split)
+	{
+	  warning (0, "target does not fully support atomic profile "
+		   "update, single mode is selected with partial "
+		   "atomic updates");
+	  counter_update = COUNTER_UPDATE_ATOMIC_PARTIAL;
+	}
+      else
+	warning (0, "target does not support atomic profile update, "
+		 "single mode is selected");
       flag_profile_update = PROFILE_UPDATE_SINGLE;
     }
   else if (flag_profile_update == PROFILE_UPDATE_PREFER_ATOMIC)
-    flag_profile_update
-      = can_support_atomic ? PROFILE_UPDATE_ATOMIC : PROFILE_UPDATE_SINGLE;
+    {
+      if (can_support_atomic)
+	flag_profile_update = PROFILE_UPDATE_ATOMIC;
+      else
+	{
+	  if (needs_split)
+	    counter_update = COUNTER_UPDATE_ATOMIC_PARTIAL;
+	  flag_profile_update = PROFILE_UPDATE_SINGLE;
+	}
+    }
 
   if (flag_profile_update == PROFILE_UPDATE_ATOMIC)
     {
@@ -2031,6 +2044,7 @@ tree_profiling (void)
   handle_missing_profiles ();
 
   del_node_map ();
+  end_branch_prob ();
   return 0;
 }
 
@@ -2065,10 +2079,8 @@ public:
 bool
 pass_ipa_tree_profile::gate (function *)
 {
-  /* When profile instrumentation, use or test coverage shall be performed.
-     But for AutoFDO, this there is no instrumentation, thus this pass is
-     disabled.  */
-  return (!in_lto_p && !flag_auto_profile
+  /* When profile instrumentation, use or test coverage shall be performed.  */
+  return (!in_lto_p
 	  && (flag_branch_probabilities || flag_test_coverage
 	      || coverage_instrumentation_p ())
 	  && !seen_error ());

@@ -1,10 +1,7 @@
-2025-08-08  Release Manager
+2025-06-02  Kito Cheng  <kito.cheng@sifive.com>
 
-	* GCC 15.2.0 released.
-
-2025-04-25  Release Manager
-
-	* GCC 15.1.0 released.
+	* configure.ac: Don't check `--enable-default-pie`.
+	* configure: Regen.
 
 2024-05-07  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
 
@@ -213,9 +210,8 @@
 	* resolver.cc: New.
 	* resolver.h: New.
 	* server.cc: New.
-
 
-Copyright (C) 2020-2025 Free Software Foundation, Inc.
+Copyright (C) 2020-2026 Free Software Foundation, Inc.
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright

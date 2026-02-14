@@ -1,5 +1,4 @@
 // { dg-do compile }
-// { dg-additional-options "-std=gnu++20" }
 
 template <int kBytes, typename From, typename To>
 void CopyBytes(From from, To to) {

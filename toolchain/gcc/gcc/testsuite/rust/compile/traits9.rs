@@ -1,3 +1,4 @@
+#![feature(lang_items)]
 #[lang = "sized"]
 pub trait Sized {}
 
@@ -11,6 +12,5 @@ fn main() {
     a = Foo(123);
 
     let b: &dyn Bar = &a;
-    // { dg-error "bounds not satisfied for Foo .Bar. is not satisfied" "" { target *-*-* } .-1 }
-    // { dg-error "expected" "" { target *-*-* } .-2 }
+    // { dg-error "bounds not satisfied for Foo .Bar. is not satisfied .E0277." "" { target *-*-* } .-1 }
 }

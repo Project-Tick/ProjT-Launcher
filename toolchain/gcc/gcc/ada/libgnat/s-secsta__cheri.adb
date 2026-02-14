@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2025, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2026, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -662,6 +662,15 @@ package body System.Secondary_Stack is
 
       if Over_Aligning then
          Over_Align_Padding := Alignment;
+
+         --  Typically the padding would be
+         --  Alignment - (Addr mod Alignment)
+         --  however Addr in this case is not known yet. It depends on the
+         --  type of the secondary stack (Dynamic/Static). The allocation
+         --  routine for the respective type of stack requires to know the
+         --  allocation size before the address is known. To ensure a
+         --  sufficient allocation size to fit the padding, the padding is
+         --  calculated conservatively.
       end if;
 
       --  It should not be possible to request an allocation of negative

@@ -1,4 +1,5 @@
-// { dg-additional-options "-frust-name-resolution-2.0" }
+#![feature(lang_items)]
+
 #[lang = "sized"]
 trait Sized {}
 

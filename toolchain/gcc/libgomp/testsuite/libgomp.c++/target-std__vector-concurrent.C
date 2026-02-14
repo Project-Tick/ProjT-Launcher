@@ -1,6 +1,6 @@
 // { dg-do run }
 // { dg-additional-options -DMEM_SHARED { target offload_device_shared_as } }
-
+// { dg-additional-options "-Wno-deprecated-openmp" }
 #include <stdlib.h>
 #include <time.h>
 #include <vector>
@@ -38,7 +38,7 @@ int main (void)
 #endif
 
 #ifndef MEM_SHARED
-  #pragma omp target data map (to: data[:N]) map (alloc: vec)
+  #pragma omp target data map (to: data[ :N]) map (alloc: vec)
 #endif
     {
 #ifndef MEM_SHARED
@@ -53,6 +53,11 @@ int main (void)
       #pragma omp target map (from: ok)
 	{
 	  ok = validate (vec, data);
+
+#ifdef OMP_USM
+	  /* (By construction) we're not allocating memory during device
+	     execution, so have nothing to clean up.  */
+#endif
 #ifndef MEM_SHARED
 	  vec.~vector ();
 #endif

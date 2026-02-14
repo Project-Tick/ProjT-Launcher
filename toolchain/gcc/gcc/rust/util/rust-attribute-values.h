@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2025 Free Software Foundation, Inc.
+// Copyright (C) 2020-2026 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -36,6 +36,7 @@ public:
   static constexpr auto &DOC = "doc";
   static constexpr auto &MUST_USE = "must_use";
   static constexpr auto &LANG = "lang";
+  static constexpr auto &LINK_NAME = "link_name";
   static constexpr auto &LINK_SECTION = "link_section";
   static constexpr auto &NO_MANGLE = "no_mangle";
   static constexpr auto &REPR = "repr";
@@ -60,6 +61,8 @@ public:
   static constexpr auto &RUSTC_PROMOTABLE = "rustc_promotable";
   static constexpr auto &RUSTC_CONST_STABLE = "rustc_const_stable";
   static constexpr auto &RUSTC_CONST_UNSTABLE = "rustc_const_unstable";
+  static constexpr auto &RUSTC_ALLOW_CONST_FN_UNSTABLE
+    = "rustc_allow_const_fn_unstable";
 
   static constexpr auto &RUSTC_SPECIALIZATION_TRAIT
     = "rustc_specialization_trait";
@@ -85,6 +88,11 @@ public:
   static constexpr auto &NON_EXHAUSTIVE = "non_exhaustive";
 
   static constexpr auto &RUSTFMT = "rustfmt";
+
+  static constexpr auto &TEST = "test";
+
+  static constexpr auto &RUSTC_ARGS_REQUIRED_CONST
+    = "rustc_args_required_const";
 };
 } // namespace Values
 } // namespace Rust

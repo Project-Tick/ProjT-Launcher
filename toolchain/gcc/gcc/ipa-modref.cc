@@ -1,5 +1,5 @@
 /* Search for references that a functions loads or stores.
-   Copyright (C) 2020-2025 Free Software Foundation, Inc.
+   Copyright (C) 2020-2026 Free Software Foundation, Inc.
    Contributed by David Cepelik and Jan Hubicka
 
 This file is part of GCC.
@@ -3752,8 +3752,8 @@ modref_write ()
 
   for (i = 0; i < lto_symtab_encoder_size (encoder); i++)
     {
-      symtab_node *snode = lto_symtab_encoder_deref (encoder, i);
-      cgraph_node *cnode = dyn_cast <cgraph_node *> (snode);
+      toplevel_node *tnode = lto_symtab_encoder_deref (encoder, i);
+      cgraph_node *cnode = dyn_cast <cgraph_node *> (tnode);
       modref_summary_lto *r;
 
       if (cnode && cnode->definition && !cnode->alias
@@ -3765,8 +3765,8 @@ modref_write ()
 
   for (i = 0; i < lto_symtab_encoder_size (encoder); i++)
     {
-      symtab_node *snode = lto_symtab_encoder_deref (encoder, i);
-      cgraph_node *cnode = dyn_cast <cgraph_node *> (snode);
+      toplevel_node *tnode = lto_symtab_encoder_deref (encoder, i);
+      cgraph_node *cnode = dyn_cast <cgraph_node *> (tnode);
 
       if (cnode && cnode->definition && !cnode->alias)
 	{
@@ -5352,7 +5352,7 @@ ipa_merge_modref_summary_after_inlining (cgraph_edge *edge)
 
   if (!callee_info && to_info)
     {
-      if (!(flags & (ECF_CONST | ECF_PURE | ECF_NOVOPS)))
+      if (!(flags & (ECF_CONST | ECF_NOVOPS)))
 	to_info->loads->collapse ();
       if (!ignore_stores)
 	to_info->stores->collapse ();

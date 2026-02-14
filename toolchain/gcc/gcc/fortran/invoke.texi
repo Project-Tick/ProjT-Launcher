@@ -1,10 +1,10 @@
-@c Copyright (C) 2004-2025 Free Software Foundation, Inc.
+@c Copyright (C) 2004-2026 Free Software Foundation, Inc.
 @c This is part of the GNU Fortran manual.
 @c For copying conditions, see the file gfortran.texi.
 
 @ignore
 @c man begin COPYRIGHT
-Copyright @copyright{} 2004-2025 Free Software Foundation, Inc.
+Copyright @copyright{} 2004-2026 Free Software Foundation, Inc.
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -149,9 +149,9 @@ by type.  Explanations are in the following sections.
 and warnings}.
 @gccoptlist{-Waliasing -Wall -Wampersand -Warray-bounds
 -Wc-binding-type -Wcharacter-truncation -Wconversion
--Wdo-subscript -Wfunction-elimination -Wimplicit-interface
--Wimplicit-procedure -Wintrinsic-shadow -Wuse-without-only
--Wintrinsics-std -Wline-truncation -Wno-align-commons
+-Wno-deprecated-openmp -Wdo-subscript -Wfunction-elimination
+-Wimplicit-interface -Wimplicit-procedure -Wintrinsic-shadow
+-Wuse-without-only -Wintrinsics-std -Wline-truncation -Wno-align-commons
 -Wno-overwrite-recursive -Wno-tabs -Wreal-q-constant -Wsurprising
 -Wunderflow -Wunused-parameter -Wrealloc-lhs -Wrealloc-lhs-all
 -Wfrontend-loop-interchange -Wtarget-lifetime -fmax-errors=@var{n}
@@ -189,7 +189,7 @@ and warnings}.
 -fbounds-check -ftail-call-workaround -ftail-call-workaround=@var{n}
 -fcheck-array-temporaries
 -fcheck=<all|array-temps|bits|bounds|do|mem|pointer|recursion>
--fcoarray=<none|single|lib> -fexternal-blas -ff2c
+-fcoarray=<none|single|lib> -fexternal-blas -fexternal-blas64 -ff2c
 -ffrontend-loop-interchange -ffrontend-optimize
 -finit-character=@var{n} -finit-integer=@var{n} -finit-local-zero
 -finit-derived -finit-logical=<true|false>
@@ -592,6 +592,8 @@ BOZ literal constant conversion, and I/O and calls to intrinsic procedures
 when passing a value to the @code{kind=} dummy argument.  Inspection of the
 intermediate representation of the translated Fortran code, produced by
 @option{-fdump-fortran-original} or @option{-fdump-tree-original}, is suggested.
+NOTE: These options are incompatible with user defined derived
+type I/O (DTIO).
 
 @opindex std=@var{std}
 @item -std=@var{std}
@@ -646,6 +648,10 @@ filename extension is @file{.F}, @file{.FOR}, @file{.FTN}, @file{.fpp},
 invoke the preprocessor on any file, use @option{-cpp}, to disable
 preprocessing on files where the preprocessor is run automatically, use
 @option{-nocpp}.
+
+When compiling a preprocessed file, use @option{-fpreprocessed}
+(@pxref{Preprocessor Options,,Options Controlling the Preprocessor,gcc,
+Using the GNU Compiler Collection (GCC)}).  This skips the C preprocessor.
 
 If a preprocessed file includes another file with the Fortran @code{INCLUDE}
 statement, the included file is not preprocessed.  To preprocess included
@@ -1069,6 +1075,11 @@ the expression after conversion. Implied by @option{-Wall}.
 Warn about implicit conversions between different types and kinds. This
 option does @emph{not} imply @option{-Wconversion}.
 
+@opindex Wdeprecated-openmp
+@cindex warnings
+@item -Wdeprecated-openmp
+Warn for usage of deprecated OpenMP code.
+
 @opindex Wexternal-argument-mismatch
 @cindex warnings, argument mismatch
 @cindex argment mismatch, warnings
@@ -1170,6 +1181,10 @@ A @code{CHARACTER} variable is declared with negative length.
 With @option{-fopenmp}, for fixed-form source code, when an @code{omx}
 vendor-extension sentinel is encountered. (The equivalent @code{ompx},
 used in free-form source code, is diagnosed by default.)
+
+@item
+With @option{-fopenacc}, when using named constances with clauses that
+take a variable as doing so has no effect.
 @end itemize
 
 @opindex Wtabs
@@ -2010,13 +2025,27 @@ for some matrix operations like @code{MATMUL}, instead of using our own
 algorithms, if the size of the matrices involved is larger than a given
 limit (see @option{-fblas-matmul-limit}).  This may be profitable if an
 optimized vendor BLAS library is available.  The BLAS library has
-to be specified at link time.
+to be specified at link time.  This option specifies a BLAS library
+with integer arguments of default kind (32 bits). It cannot be used
+together with @option{-fexternal-blas64}.
+
+@opindex fexternal-blas64
+@item -fexternal-blas64
+makes @command{gfortran} generate calls to BLAS functions
+for some matrix operations like @code{MATMUL}, instead of using our own
+algorithms, if the size of the matrices involved is larger than a given
+limit (see @option{-fblas-matmul-limit}).  This may be profitable if an
+optimized vendor BLAS library is available.  The BLAS library has
+to be specified at link time.  This option specifies a BLAS library
+with integer arguments of @code{KIND=8} (64 bits). It cannot be used
+together with @option{-fexternal-blas}, and requires a 64-bit system.
+This option also requires @option{-ffrontend-optimize}.
 
 @opindex fblas-matmul-limit
 @item -fblas-matmul-limit=@var{n}
-Only significant when @option{-fexternal-blas} is in effect.
-Matrix multiplication of matrices with size larger than (or equal to) @var{n}
-is performed by calls to BLAS functions, while others are
+Only significant when @option{-fexternal-blas} or @option{-fexternal-blas64}
+are in effect. Matrix multiplication of matrices with size larger than or equal
+to @var{n} is performed by calls to BLAS functions, while others are
 handled by @command{gfortran} internal algorithms. If the matrices
 involved are not square, the size comparison is performed using the
 geometric mean of the dimensions of the argument and result matrices.

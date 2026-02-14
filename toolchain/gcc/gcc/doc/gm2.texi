@@ -1,6 +1,6 @@
 \input texinfo
 @c -*-texinfo-*-
-@c Copyright (C) 2001-2025 Free Software Foundation, Inc.
+@c Copyright (C) 2001-2026 Free Software Foundation, Inc.
 @c This is part of the GM2 manual.
 
 @c User level documentation for GNU Modula-2
@@ -15,7 +15,7 @@
 @include gcc-common.texi
 
 @c Copyright years for this manual.
-@set copyrights-gm2 1999-2025
+@set copyrights-gm2 1999-2026
 
 @copying
 @c man begin COPYRIGHT
@@ -143,11 +143,7 @@ available and access to assembly programming is achieved using the
 same syntax as that used by GCC.
 
 The gm2 driver allows third party libraries to be installed alongside
-gm2 libraries.  For example if the user specifies library @code{foo}
-using @code{-flibs=foo} the driver will check the standard GCC install
-directory for a sub directory @code{foo} containing the library
-contents.  The library module search path is altered accordingly
-for compile and link.
+gm2 libraries.  @xref{Module Search Path}.
 
 @node Development, Features, Why use GNU Modula-2, Overview
 @section How to get source code using git
@@ -229,6 +225,7 @@ such as the AVR and the ARM).
 * Standard procedures::   Permanently accessible base procedures.
 * High procedure function:: Behavior of the high procedure function.
 * Dialect::               GNU Modula-2 supported dialects.
+* Module Search Path::    How to add library modules.
 * Exceptions::            Exception implementation
 * Semantic checking::     How to detect run time problems at compile time.
 * Extensions::            GNU Modula-2 language extensions.
@@ -525,6 +522,15 @@ following include paths.
 for internal use only: used by the driver to copy the user facing @samp{-I}
 option.
 
+@item -fm2-pathname-root=@file{pathroot}
+add search paths derived from the specified @file{pathroot}.
+@xref{Module Search Path} for examples.
+
+@item -fm2-pathname-rootI
+for internal use only: used by the driver to copy every user
+@samp{-fm2-pathname-root=} facing option in order with all other
+@samp{-I} options.
+
 @item -fm2-plugin
 insert plugin to identify run time errors at compile time (default on).
 
@@ -539,6 +545,9 @@ lines compiled.
 
 @item -fm2-strict-type
 experimental flag to turn on the new strict type checker.
+
+@item -fm2-strict-type-reason
+provides more detail why the types are incompatible.
 
 @item -fm2-whole-program
 compile all implementation modules and program module at once.  Notice
@@ -713,6 +722,12 @@ or the top of a loop is encountered.
 The option @samp{-Wall} will turn on this flag with
 @samp{-Wuninit-variable-checking=known}.
 The @samp{-Wuninit-variable-checking=all} will increase compile time.
+
+@item -fwideset
+turn on access to the runtime support library module @samp{M2WIDESET}.
+By default this option is on.
+Wideset provision can be disabled by @samp{-fno-wideset}
+and no reference will be made to the run time @samp{M2WIDESET} library.
 
 @c the following warning options are complete but need to be
 @c regression tested against all other front ends
@@ -1376,7 +1391,7 @@ Actual parameter | HIGH (a) | a[HIGH (a)] = nul
  str3            | 3        | TRUE
 @end example
 
-@node Dialect, Exceptions, High procedure function, Using
+@node Dialect, Module Search Path, High procedure function, Using
 @section GNU Modula-2 supported dialects
 
 This section describes the dialects understood by GNU Modula-2.
@@ -1440,6 +1455,43 @@ Standard.  At present all dialect division, remainder and modulus are
 implemented as above, apart from the exception calling in the ISO
 dialect.  Instead of exception handling the results are the same as the
 PIM4 dialect.  This is a temporary implementation situation.
+
+@node Module Search Path, Exceptions, Dialect, Using
+@section Module Search Path
+
+This section describes the default module search path and how this
+might be changed.  By default the compiler will search the current
+directory, local include dir, prefix include dir, gcc version specific
+modules and lastly native system header dir.  The exact location and
+whether all these directories are used depends upon the configuration
+options used when building GCC.
+
+The @samp{-I} option option can be used to introduce new directories
+in the module search path and for convenience the options @samp{-flibs=}
+and @samp{-fm2-pathname-root=} are also provided.
+
+The site wide modules are typically located at
+@var{prefix}@file{/include/m2}
+whereas the version specific modules are located in
+@var{libsubdir}@file{/m2}.  Both of these @file{/m2} directories
+are organized such that the non dialect specific modules are at the
+top and dialect specific modules are in subdirectories.
+
+The @samp{-fm2-pathname-root=} option is equivalent to adding a
+@samp{-I} path for every library dialect.  For example if the library
+dialect order is selected by @samp{-flibs=pim,iso,log} and
+@samp{-fm2-pathname-root=foo} is supplied then this is equivalent to
+the following pairs of options:
+
+@example
+-fm2-pathname=m2pim -I@file{foo/m2/m2pim}
+-fm2-pathname=m2iso -I@file{foo/m2/m2iso}
+-fm2-pathname=m2log -I@file{foo/m2/m2log}
+-fm2-pathname=- -I@file{foo/m2}
+@end example
+
+The option @samp{-fsources} will show the source module, path and
+pathname for each module parsed.
 
 @node Exceptions, Semantic checking, Dialect, Using
 @section Exception implementation
@@ -2020,7 +2072,7 @@ CONST
 
 VAR
    head: List ;
-@end group   
+@end group
 @end example
 
 @example
@@ -2031,13 +2083,13 @@ VAR
 BEGIN
    p := head^.next ;
    printf ("\nunique data\n");
-   printf ("===========\n");   
+   printf ("===========\n");
    WHILE p # NIL DO
       printf ("%d\n", p^.value);
       p := p^.next
    END
 END Display ;
-@end group   
+@end group
 @end example
 
 @example
@@ -2050,7 +2102,7 @@ BEGIN
       next := NIL
    END
 END Add ;
-@end group   
+@end group
 @end example
 
 @example
@@ -2072,17 +2124,17 @@ EXCEPT
    THEN
       printf ("list was empty, add sentinal\n");
       Add (head, -1) ;
-      RETRY  (* Jump back to the begin statement.  *)      
+      RETRY  (* Jump back to the begin statement.  *)
    ELSIF p^.next = NIL
    THEN
       printf ("growing the list\n");
       Add (p^.next, val) ;
       RETRY  (* Jump back to the begin statement.  *)
    ELSE
-      printf ("should never reach here!\n");   
+      printf ("should never reach here!\n");
    END
 END Unique ;
-@end group   
+@end group
 @end example
 
 @example
@@ -2101,7 +2153,7 @@ BEGIN
    head := NIL ;
    unique
 END lazyunique.
-@end group   
+@end group
 @end example
 
 @example
@@ -2124,7 +2176,7 @@ unique data
 0
 2
 1
-@end group   
+@end group
 @end example
 
 @node Unbounded by reference, Building a shared library, Exception handling, Using

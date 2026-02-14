@@ -1,6 +1,6 @@
 (* M2Check.mod perform rigerous type checking for fully declared symbols.
 
-Copyright (C) 2020-2025 Free Software Foundation, Inc.
+Copyright (C) 2020-2026 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -34,6 +34,7 @@ IMPLEMENTATION MODULE M2Check ;
 
 FROM M2System IMPORT IsSystemType, IsGenericSystemType, IsSameSize, IsComplexN ;
 FROM M2Base IMPORT IsParameterCompatible, IsAssignmentCompatible, IsExpressionCompatible, IsComparisonCompatible, IsBaseType, IsMathType, ZType, CType, RType, IsComplexType, Char ;
+FROM M2Bitset IMPORT Bitset ;
 FROM Indexing IMPORT Index, InitIndex, GetIndice, PutIndice, KillIndex, HighIndice, LowIndice, IncludeIndiceIntoIndex, ForeachIndiceInIndexDo ;
 FROM M2Error IMPORT Error, InternalError, NewError, ErrorString, ChainError ;
 
@@ -456,7 +457,23 @@ END checkUnbounded ;
 
 
 (*
-   checkArrayTypeEquivalence - check array and unbounded array type equivalence.
+   checkGenericUnboundedTyped - return TRUE if we have a match for
+                                an unbounded generic type and a typed object
+                                which is not a Z, R or C type.
+*)
+
+PROCEDURE checkGenericUnboundedTyped (unbounded, typed: CARDINAL) : BOOLEAN ;
+BEGIN
+   RETURN (IsUnbounded (unbounded) AND
+           IsGenericSystemType (GetDType (unbounded)) AND
+           ((NOT IsZRCType (typed)) OR
+            IsTyped (typed) AND (NOT IsZRCType (GetDType (typed)))))
+END checkGenericUnboundedTyped ;
+
+
+(*
+   checkArrayTypeEquivalence - check array and unbounded array type
+                               equivalence.
 *)
 
 PROCEDURE checkArrayTypeEquivalence (result: status; tinfo: tInfo;
@@ -476,6 +493,12 @@ BEGIN
       THEN
          result := checkSubrange (result, tinfo, getSType (lSub), getSType (rSub))
       END
+   ELSIF checkGenericUnboundedTyped (left, right) OR
+         checkGenericUnboundedTyped (right, left)
+   THEN
+      (* ARRAY OF BYTE (or WORD or LOC etc will be compatible with any typed
+         non ZRC type.  *)
+      RETURN true
    ELSIF IsUnbounded (left) AND (IsArray (right) OR IsUnbounded (right))
    THEN
       IF IsGenericSystemType (getSType (left)) OR IsGenericSystemType (getSType (right))
@@ -592,7 +615,7 @@ BEGIN
          (* We need to create top level error message first.  *)
          tinfo^.error := NewError (tinfo^.token) ;
          (* The parameters to MetaString4 in buildError4 must match the order
-            of paramters passed to ParameterTypeCompatible.  *)
+            of parameters passed to ParameterTypeCompatible.  *)
          s := MetaString4 (tinfo^.format,
                            tinfo^.procedure,
                            tinfo^.formal, tinfo^.actual,

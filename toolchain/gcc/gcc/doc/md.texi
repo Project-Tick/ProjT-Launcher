@@ -1,4 +1,4 @@
-@c Copyright (C) 1988-2025 Free Software Foundation, Inc.
+@c Copyright (C) 1988-2026 Free Software Foundation, Inc.
 @c This is part of the GCC manual.
 @c For copying conditions, see the file gcc.texi.
 
@@ -1366,6 +1366,12 @@ as for @samp{<} apply.
 A register operand is allowed provided that it is in a general
 register.
 
+@cindex hard registers in constraint
+@item @samp{@{r@}}
+An operand is bound to hard register @samp{r} which may be any general,
+floating-point, or vector register except a fixed register like a stack pointer
+register.  The set of fixed registers is target dependent.
+
 @cindex constants in constraints
 @cindex @samp{i} in constraint
 @item @samp{i}
@@ -2171,12 +2177,6 @@ VFP floating-point registers @code{d0}-@code{d31} and the appropriate
 subset @code{d0}-@code{d15} based on command line options.
 Used for 64 bit values only.  Not valid for Thumb1.
 
-@item y
-The iWMMX co-processor registers.
-
-@item z
-The iWMMX GR registers.
-
 @item G
 The floating-point constant 0.0
 
@@ -2209,9 +2209,6 @@ A symbol in the text segment of the current file
 
 @item Uv
 A memory reference suitable for VFP load/store insns (reg+constant offset)
-
-@item Uy
-A memory reference suitable for iWMMXt load/store instructions.
 
 @item Uq
 A memory reference suitable for the ARMv4 ldrsb instruction.
@@ -2927,6 +2924,9 @@ A signed 16-bit constant.
 A memory operand whose address is formed by a base register and offset
 that is suitable for use in instructions with the same addressing mode
 as @code{st.w} and @code{ld.w}.
+@item q
+A general-purpose register except for $r0 and $r1 (for the csrxchg
+instruction)
 @item I
 A signed 12-bit constant (for arithmetic instructions).
 @item K
@@ -3702,6 +3702,9 @@ RVC general purpose register (x8-x15).
 @item cf
 RVC floating-point registers (f8-f15), if available, reuse GPR as FPR when use
 zfinx.
+
+@item cR
+Even-odd RVC general purpose register pair.
 
 @item R
 Even-odd general purpose register pair.
@@ -5000,8 +5003,8 @@ This pattern is not allowed to @code{FAIL}.
 Like @samp{vec_load_lanes@var{m}@var{n}}, but takes an additional
 mask operand (operand 2) that specifies which elements of the destination
 vectors should be loaded.  Other elements of the destination vectors are
-taken from operand 3, which is an else operand similar to the one in
-@code{maskload}.
+taken from operand 3, which is an else operand in the subvector mode
+@var{n}, similar to the one in @code{maskload}.
 The operation is equivalent to:
 
 @smallexample
@@ -5270,13 +5273,14 @@ for (i = 1; i < operand3; i++)
   operand0[i] = operand0[i - 1] && (operand1 + i < operand2);
 @end smallexample
 
-@cindex @code{select_vl@var{m}} instruction pattern
-@item @code{select_vl@var{m}}
-Set operand 0 to the number of scalar iterations that should be handled
-by one iteration of a vector loop.  Operand 1 is the total number of
-scalar iterations that the loop needs to process and operand 2 is a
-maximum bound on the result (also known as the maximum ``vectorization
-factor'').
+@cindex @code{select_vl@var{m}@var{n}} instruction pattern
+@item @code{select_vl@var{m}@var{n}}
+Set operand 0 (of mode @var{n}) to the number of scalar iterations that
+should be handled by one iteration of a vector loop.  Operand 1 is the
+total number of scalar iterations that the loop needs to process and
+operand 2 is a maximum bound on the result (also known as the
+maximum ``vectorization factor'').  Operand 3 (of mode @var{m}) is
+a dummy parameter to pass the vector mode to be used.
 
 The maximum value of operand 0 is given by:
 @smallexample
@@ -5290,7 +5294,7 @@ this, it is generally not useful to define this instruction if it will
 always calculate the maximum value.
 
 This optab is only useful on targets that implement @samp{len_load_@var{m}}
-and/or @samp{len_store_@var{m}}.
+and/or @samp{len_store_@var{m}} or the associated @samp{_len} variants.
 
 @cindex @code{check_raw_ptrs@var{m}} instruction pattern
 @item @samp{check_raw_ptrs@var{m}}
@@ -5327,7 +5331,7 @@ The split is possible in this case if:
 @item @samp{vec_cmp@var{m}@var{n}}
 Output a vector comparison.  Operand 0 of mode @var{n} is the destination for
 predicate in operand 1 which is a signed vector comparison with operands of
-mode @var{m} in operands 2 and 3.  Predicate is computed by element-wise
+mode @var{m} in operands 2 and 3.  Predicate is computed by elementwise
 evaluation of the vector comparison with a truth value of all-ones and a false
 value of all-zeros.
 
@@ -5404,18 +5408,20 @@ This pattern is not allowed to @code{FAIL}.
 
 @cindex @code{len_load_@var{m}} instruction pattern
 @item @samp{len_load_@var{m}}
-Load (operand 2 + operand 3) elements from memory operand 1
-into vector register operand 0, setting the other elements of
-operand 0 to undefined values.  Operands 0 and 1 have mode @var{m},
-which must be a vector mode.  Operand 2 has whichever integer mode the
-target prefers.  Operand 3 conceptually has mode @code{QI}.
+Load (operand 3 + operand 4) elements from memory operand 1
+into vector register operand 0.  Operands 0 and 1 have mode @var{m},
+which must be a vector mode.  Operand 3 has whichever integer mode the
+target prefers.  Operand 2 (the ``else value'') is of mode @var{m} and
+specifies which value is loaded for the remaining elements.  The predicate
+of operand 2 must only accept the else values that the target actually
+supports.  Operand 4 conceptually has mode @code{QI}.
 
-Operand 2 can be a variable or a constant amount.  Operand 3 specifies a
+Operand 3 can be a variable or a constant amount.  Operand 4 specifies a
 constant bias: it is either a constant 0 or a constant -1.  The predicate on
-operand 3 must only accept the bias values that the target actually supports.
+operand 4 must only accept the bias values that the target actually supports.
 GCC handles a bias of 0 more efficiently than a bias of -1.
 
-If (operand 2 + operand 3) exceeds the number of elements in mode
+If (operand 3 + operand 4) exceeds the number of elements in mode
 @var{m}, the behavior is undefined.
 
 If the target prefers the length to be measured in bytes rather than
@@ -5733,6 +5739,19 @@ of a vector of mode @var{m}.  Operand 1 is the vector input and operand 0
 is the scalar result.  The mode of the scalar result is the same as one
 element of @var{m}.
 
+@cindex @code{reduc_sbool_and_scal_@var{m}} instruction pattern
+@cindex @code{reduc_sbool_ior_scal_@var{m}} instruction pattern
+@cindex @code{reduc_sbool_xor_scal_@var{m}} instruction pattern
+@item @samp{reduc_sbool_and_scal_@var{m}}
+@itemx @samp{reduc_sbool_ior_scal_@var{m}}
+@itemx @samp{reduc_sbool_xor_scal_@var{m}}
+Compute the bitwise @code{AND}/@code{IOR}/@code{XOR} reduction of the elements
+of a vector boolean of mode @var{m}.  Operand 1 is the vector input and
+operand 0 is the scalar result.  The mode of the scalar result is @var{QImode}
+with its value either zero or one.  If mode @var{m} is a scalar integer mode
+then operand 2 is the number of elements in the input vector to provide
+disambiguation for the case @var{m} is ambiguous.
+
 @cindex @code{extract_last_@var{m}} instruction pattern
 @item @code{extract_last_@var{m}}
 Find the last set bit in mask operand 1 and extract the associated element
@@ -5844,15 +5863,15 @@ equal or wider than the mode of the absolute difference. The result is placed
 in operand 0, which is of the same mode as operand 3.
 @var{m} is the mode of operand 1 and operand 2.
 
-@cindex @code{widen_ssum@var{m}3} instruction pattern
-@cindex @code{widen_usum@var{m}3} instruction pattern
-@item @samp{widen_ssum@var{m}3}
-@itemx @samp{widen_usum@var{m}3}
+@cindex @code{widen_ssum@var{n}@var{m}3} instruction pattern
+@cindex @code{widen_usum@var{n}@var{m}3} instruction pattern
+@item @samp{widen_ssum@var{n}@var{m}3}
+@itemx @samp{widen_usum@var{n}@var{m}3}
 Operands 0 and 2 are of the same mode, which is wider than the mode of
 operand 1. Add operand 1 to operand 2 and place the widened result in
 operand 0. (This is used express accumulation of elements into an accumulator
 of a wider mode.)
-@var{m} is the mode of operand 1.
+@var{m} is the mode of operand 1 and @var{n} is the mode of operand 0.
 
 @cindex @code{smulhs@var{m}3} instruction pattern
 @cindex @code{umulhs@var{m}3} instruction pattern
@@ -6083,6 +6102,25 @@ Signed/Unsigned widening absolute difference.  Operands 1 and 2 are
 vectors with N signed/unsigned elements of size S@.  Find the absolute
 difference between operands 1 and 2 and widen the resulting elements.
 Put the N/2 results of size 2*S in the output vector (operand 0).
+
+@cindex @code{vec_trunc_add_high@var{m}} instruction pattern
+@item @samp{vec_trunc_add_high@var{m}}
+Signed or unsigned addition of two input integer vectors of mode @var{m}, then
+extracts the most significant half of each result element and narrows it to
+elements of half the original width.
+
+Concretely, it computes:
+@code{(bits(a)/2)((a + b) >> bits(a)/2)}
+
+where @code{bits(a)} is the width in bits of each input element.
+
+Operand 1 and 2 are of integer vector mode @var{m} containing the same number
+of signed or unsigned integral elements.  The result (operand @code{0}) is of an
+integer vector mode with the same number of elements but elements of half of the
+width of those of mode @var{m}.
+
+This operation currently only used for early break result compression when the
+result of a vector boolean can be represented as 0 or -1.
 
 @cindex @code{vec_addsub@var{m}3} instruction pattern
 @item @samp{vec_addsub@var{m}3}
@@ -7324,8 +7362,18 @@ operand 0, otherwise (operand 2 + operand 3) is moved.
 
 @cindex @code{cond_neg@var{mode}} instruction pattern
 @cindex @code{cond_one_cmpl@var{mode}} instruction pattern
+@cindex @code{cond_sqrt@var{mode}} instruction pattern
+@cindex @code{cond_ceil@var{mode}} instruction pattern
+@cindex @code{cond_floor@var{mode}} instruction pattern
+@cindex @code{cond_round@var{mode}} instruction pattern
+@cindex @code{cond_rint@var{mode}} instruction pattern
 @item @samp{cond_neg@var{mode}}
 @itemx @samp{cond_one_cmpl@var{mode}}
+@itemx @samp{cond_sqrt@var{mode}}
+@itemx @samp{cond_ceil@var{mode}}
+@itemx @samp{cond_floor@var{mode}}
+@itemx @samp{cond_round@var{mode}}
+@itemx @samp{cond_rint@var{mode}}
 When operand 1 is true, perform an operation on operands 2 and
 store the result in operand 0, otherwise store operand 3 in operand 0.
 The operation works elementwise if the operands are vectors.
@@ -7449,8 +7497,18 @@ for (i = 0; i < GET_MODE_NUNITS (@var{m}); i++)
 
 @cindex @code{cond_len_neg@var{mode}} instruction pattern
 @cindex @code{cond_len_one_cmpl@var{mode}} instruction pattern
+@cindex @code{cond_len_sqrt@var{mode}} instruction pattern
+@cindex @code{cond_len_ceil@var{mode}} instruction pattern
+@cindex @code{cond_len_floor@var{mode}} instruction pattern
+@cindex @code{cond_len_round@var{mode}} instruction pattern
+@cindex @code{cond_len_rint@var{mode}} instruction pattern
 @item @samp{cond_len_neg@var{mode}}
 @itemx @samp{cond_len_one_cmpl@var{mode}}
+@itemx @samp{cond_len_sqrt@var{mode}}
+@itemx @samp{cond_len_ceil@var{mode}}
+@itemx @samp{cond_len_floor@var{mode}}
+@itemx @samp{cond_len_round@var{mode}}
+@itemx @samp{cond_len_rint@var{mode}}
 When operand 1 is true and element index < operand 4 + operand 5, perform an operation on operands 1 and
 store the result in operand 0, otherwise store operand 2 in operand 0.
 The operation only works for the operands are vectors.
@@ -7629,7 +7687,67 @@ position of Operand 1 to test.  Operand 3 is the @code{code_label} to jump to.
 Conditional branch instruction combined with a compare instruction.
 Operand 0 is a comparison operator.  Operand 1 and operand 2 are the
 first and second operands of the comparison, respectively.  Operand 3
+is the @code{code_label} to jump to.  For vectors this optab is only used for
+comparisons of VECTOR_BOOLEAN_TYPE_P values and it never called for
+data-registers.  Data vector operands should use one of the patterns below
+instead.
+
+@cindex @code{vec_cbranch_any@var{mode}} instruction pattern
+@item @samp{vec_cbranch_any@var{mode}}
+Conditional branch instruction based on a vector compare that branches
+when at least one of the elementwise comparisons of the two input
+vectors is true.
+Operand 0 is a comparison operator.  Operand 1 and operand 2 are the
+first and second operands of the comparison, respectively.  Operand 3
 is the @code{code_label} to jump to.
+
+@cindex @code{vec_cbranch_all@var{mode}} instruction pattern
+@item @samp{vec_cbranch_all@var{mode}}
+Conditional branch instruction based on a vector compare that branches
+when all of the elementwise comparisons of the two input vectors is true.
+Operand 0 is a comparison operator.  Operand 1 and operand 2 are the
+first and second operands of the comparison, respectively.  Operand 3
+is the @code{code_label} to jump to.
+
+@cindex @code{cond_vec_cbranch_any@var{mode}} instruction pattern
+@item @samp{cond_vec_cbranch_any@var{mode}}
+Masked conditional branch instruction based on a vector compare that branches
+when at least one of the elementwise comparisons of the two input
+vectors is true.
+Operand 0 is a comparison operator.  Operand 1 is the mask operand.
+Operand 2 and operand 3 are the first and second operands of the comparison,
+respectively.  Operand 5 is the @code{code_label} to jump to.  Inactive lanes in
+the mask operand should not influence the decision to branch.
+
+@cindex @code{cond_vec_cbranch_all@var{mode}} instruction pattern
+@item @samp{cond_vec_cbranch_all@var{mode}}
+Masked conditional branch instruction based on a vector compare that branches
+when all of the elementwise comparisons of the two input vectors is true.
+Operand 0 is a comparison operator.  Operand 1 is the mask operand.
+Operand 2 and operand 3 are the first and second operands of the comparison,
+respectively.  Operand 5 is the @code{code_label} to jump to.  Inactive lanes in
+the mask operand should not influence the decision to branch.
+
+@cindex @code{cond_len_vec_cbranch_any@var{mode}} instruction pattern
+@item @samp{cond_len_vec_cbranch_any@var{mode}}
+Len based conditional branch instruction based on a vector compare that branches
+when at least one of the elementwise comparisons of the two input
+vectors is true.
+Operand 0 is a comparison operator.  Operand 1 is the mask operand.  Operand 2
+and operand 3 are the first and second operands of the comparison, respectively.
+Operand 4 is the len operand and Operand 5 is the bias operand.  Operand 6 is
+the @code{code_label} to jump to.  Inactive lanes in the mask operand should not
+influence the decision to branch.
+
+@cindex @code{cond_len_vec_cbranch_all@var{mode}} instruction pattern
+@item @samp{cond_len_vec_cbranch_all@var{mode}}
+Len based conditional branch instruction based on a vector compare that branches
+when all of the elementwise comparisons of the two input vectors is true.
+Operand 0 is a comparison operator.  Operand 1 is the mask operand.  Operand 2
+and operand 3 are the first and second operands of the comparison, respectively.
+Operand 4 is the len operand and Operand 5 is the bias operand.  Operand 6 is
+the @code{code_label} to jump to. Inactive lanes in the mask operand should not
+influence the decision to branch.
 
 @cindex @code{jump} instruction pattern
 @item @samp{jump}
@@ -8581,6 +8699,16 @@ the values were equal.
 If this pattern is not defined, then a plain compare pattern and
 conditional branch pattern is used.
 
+@cindex @code{tag_memory} instruction pattern
+This pattern tags an object that begins at the address specified by
+operand 0, has the byte size indicated by the operand 2, and uses the
+tag from operand 1.
+
+@cindex @code{compose_tag} instruction pattern
+This pattern composes a tagged address specified by operand 1 with
+mode @code{ptr_mode}, with an integer operand 2 representing the tag
+offset.  It returns the result in operand 0 with mode @code{ptr_mode}.
+
 @cindex @code{clear_cache} instruction pattern
 @item @samp{clear_cache}
 This pattern, if defined, flushes the instruction cache for a region of
@@ -8592,7 +8720,7 @@ If this pattern is not defined, a call to the library function
 
 @cindex @code{spaceship@var{m}4} instruction pattern
 @item @samp{spaceship@var{m}4}
-Initialize output operand 0 with mode of integer type to -1, 0, 1 or 2
+Initialize output operand 0 with mode of integer type to -1, 0, 1 or -128
 if operand 1 with mode @var{m} compares less than operand 2, equal to
 operand 2, greater than operand 2 or is unordered with operand 2.
 Operand 3 should be @code{const0_rtx} if the result is used in comparisons,
@@ -8600,7 +8728,7 @@ Operand 3 should be @code{const0_rtx} if the result is used in comparisons,
 is integral unsigned, @code{constm1_rtx} if the result is used as integer
 value and the comparison is integral signed and some other @code{CONST_INT}
 if the result is used as integer value and the comparison is floating point.
-In the last case, instead of setting output operand 0 to 2 for unordered,
+In the last case, instead of setting output operand 0 to -128 for unordered,
 set it to operand 3.
 @var{m} should be a scalar floating point mode.
 
@@ -8610,6 +8738,12 @@ This pattern is not allowed to @code{FAIL}.
 @item @samp{isfinite@var{m}2}
 Return 1 if operand 1 is a finite floating point number and 0
 otherwise.  @var{m} is a scalar floating point mode.  Operand 0
+has mode @code{SImode}, and operand 1 has mode @var{m}.
+
+@cindex @code{isnan@var{m}2} instruction pattern
+@item @samp{isnan@var{m}2}
+Return 1 if operand 1 is a @code{NaN} and 0 otherwise.
+@var{m} is a scalar floating point mode.  Operand 0
 has mode @code{SImode}, and operand 1 has mode @var{m}.
 
 @cindex @code{isnormal@var{m}2} instruction pattern

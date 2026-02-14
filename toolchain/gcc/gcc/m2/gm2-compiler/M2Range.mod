@@ -1,6 +1,6 @@
 (* M2Range.mod exports procedures which maintain the range checking.
 
-Copyright (C) 2008-2025 Free Software Foundation, Inc.
+Copyright (C) 2008-2026 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -1869,14 +1869,12 @@ END FoldTypeAssign ;
 
 PROCEDURE FoldTypeIndrX (q: CARDINAL; tokenNo: CARDINAL; des, expr: CARDINAL; r: CARDINAL) ;
 VAR
-   desType,
    exprType: CARDINAL ;
 BEGIN
    (* Need to skip over a variable or temporary in des and expr so
       long as expr is not a procedure.  In the case of des = *expr,
       both expr and des will be variables due to the property of
       indirection.  *)
-   desType := GetType (des) ;
    IF IsProcedure (expr)
    THEN
       (* Must not GetType for a procedure as it gives the return type.  *)
@@ -1980,7 +1978,7 @@ BEGIN
       IF NOT reportedError (r)
       THEN
          MetaErrorT2 (tokenNo,
-                      'assignment designator {%1Ea} {%1ta:of type {%1ta}} {%1d:is a {%1d}} and expression {%2a} {%2tad:of type {%2tad}} are incompatible',
+                      'assignment designator {%1Ea} {%1ta:of type {%1ta}} {%1d:is a {%1dv}} and expression {%2a} {%2tad:of type {%2tad}} are incompatible',
                       des, expr)
       END ;
       setReported (r)
@@ -2049,7 +2047,7 @@ BEGIN
          ELSE
             MetaErrorT2 (tokenNo,
                          'assignment designator {%1Ea} {%1ta:of type {%1ta}}' +
-                         ' {%1d:is a {%1d}} and expression {%2a}' +
+                         ' {%1d:is a {%1dv}} and expression {%2a}' +
                          ' {%2tad:of type {%2tad}} are incompatible',
                          des, expr)
          END ;

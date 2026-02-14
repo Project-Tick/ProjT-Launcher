@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -495,7 +495,6 @@ void gg_create_goto_pair( tree *goto_expr,
                           tree *label_expr,
                           tree *label_addr,
                           tree *label_decl);
-void gg_goto_label_decl(tree label_decl);
 
 // Used for implementing SECTIONS and PARAGRAPHS.  When you have a
 // void *pointer = &&label, gg_goto is the same as

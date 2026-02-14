@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -29,13 +29,6 @@
  */
 #ifndef _GENUTIL_H_
 #define _GENUTIL_H_
-
-#define EBCDIC_MINUS (0x60)
-#define EBCDIC_PLUS  (0x4E)
-#define EBCDIC_ZERO  (0xF0)
-#define EBCDIC_NINE  (0xF9)
-
-bool internal_codeset_is_ebcdic();
 
 extern bool exception_location_active;
 extern bool skip_exception_processing;
@@ -84,9 +77,9 @@ extern tree var_decl_treeplet_3s; // SIZE_T_P                , "__gg__treeplet_3
 extern tree var_decl_treeplet_4f; // cblc_field_pp_type_node , "__gg__treeplet_4f"
 extern tree var_decl_treeplet_4o; // SIZE_T_P                , "__gg__treeplet_4o"
 extern tree var_decl_treeplet_4s; // SIZE_T_P                , "__gg__treeplet_4s"
-
 extern tree var_decl_nop;         // int __gg__nop
 extern tree var_decl_main_called; // int __gg__main_called
+extern tree var_decl_entry_label; // void* __gg__entry_label
 
 int       get_scaled_rdigits(cbl_field_t *field);
 int       get_scaled_digits(cbl_field_t *field);

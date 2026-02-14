@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -81,7 +81,7 @@ void parser_accept_date_dow( cbl_field_t *tgt );
 void parser_accept_date_hhmmssff( cbl_field_t *tgt );
 
 void
-parser_alphabet( cbl_alphabet_t& alphabet );
+parser_alphabet( const cbl_alphabet_t& alphabet );
 void
 parser_alphabet_use( cbl_alphabet_t& alphabet );
 
@@ -89,6 +89,18 @@ void
 parser_allocate( cbl_refer_t size_or_based, cbl_refer_t returning, bool initialized );
 void
 parser_free( size_t n, cbl_refer_t refers[] );
+
+void parser_xml_parse( cbl_label_t *stmt,
+                       cbl_refer_t input,
+                       cbl_field_t *encoding,
+                       cbl_field_t *validating,
+                       bool returns_national,
+                       cbl_label_t *from_proc,
+                       cbl_label_t *to_proc );
+
+void parser_xml_on_exception( cbl_label_t *name );
+void parser_xml_not_exception( cbl_label_t *name );
+void parser_xml_end( cbl_label_t *name );
 
 void
 parser_add( size_t nC, cbl_num_result_t *C,
@@ -322,6 +334,9 @@ parser_label_label( struct cbl_label_t *label );
 void
 parser_label_goto( struct cbl_label_t *label );
 
+callback_t *
+parser_label_addr( struct cbl_label_t *label );
+
 void
 parser_goto( cbl_refer_t value, size_t narg, cbl_label_t * const labels[] );
 
@@ -385,6 +400,12 @@ parser_file_rewrite( cbl_file_t *file, cbl_field_t *field,
 void
 parser_file_delete( cbl_file_t *file, bool sequentially );
 
+void parser_file_delete_file( cbl_label_t *name,
+                              std::vector<cbl_file_t*> filenames );
+void parser_file_delete_on_exception( cbl_label_t *name );
+void parser_file_delete_not_exception( cbl_label_t *name );
+void parser_file_delete_end( cbl_label_t *name );
+
 #if condition_lists
 struct cbl_conditional_t {
   cbl_field_t *tgt;
@@ -447,6 +468,20 @@ parser_release( cbl_field_t *record_area );
 
 void
 parser_exception_file( cbl_field_t *tgt, cbl_file_t* file = NULL );
+
+void
+parser_intrinsic_convert(cbl_field_t *tgt,
+                         const cbl_refer_t& input,                           
+                         convert_type_t src_fmt, 
+                         unsigned int   dst_fmt );
+
+void
+parser_intrinsic_find_string(cbl_field_t *tgt,
+                             const cbl_refer_t& haystack,
+                             const cbl_refer_t& needle,
+                             const cbl_refer_t *after,
+                             bool last,
+                             bool anycase);
 
 void
 parser_module_name( cbl_field_t *tgt, module_type_t type );
@@ -536,8 +571,6 @@ void parser_exception_raise(ec_type_t ec);
 void parser_call_exception( cbl_label_t *name );
 void parser_call_exception_end( cbl_label_t *name );
 
-//void parser_stash_exceptions(const cbl_enabled_exceptions_array_t *enabled);
-
 void parser_match_exception(cbl_field_t *index);
 void parser_check_fatal_exception();
 void parser_clear_exception();
@@ -560,8 +593,9 @@ void parser_call( cbl_refer_t name,
 
 void parser_entry_activate( size_t iprog, const cbl_label_t *declarative );
 
-void parser_entry( cbl_field_t *name,
-                   size_t narg = 0, cbl_ffi_arg_t args[] = NULL);
+void parser_entry( const cbl_field_t *name,
+                   size_t narg = 0,
+                   cbl_ffi_arg_t args[] = NULL);
 
 bool is_ascending_key(const cbl_refer_t& key);
 

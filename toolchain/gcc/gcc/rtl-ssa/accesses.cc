@@ -1,5 +1,5 @@
 // Implementation of access-related functions for RTL SSA           -*- C++ -*-
-// Copyright (C) 2020-2025 Free Software Foundation, Inc.
+// Copyright (C) 2020-2026 Free Software Foundation, Inc.
 //
 // This file is part of GCC.
 //
@@ -1090,6 +1090,38 @@ rtl_ssa::lookup_use (splay_tree<use_info *> &tree, insn_info *insn)
       return compare_use_insns (insn, node->value ()->insn ());
     };
   return tree.lookup (compare);
+}
+
+// See the comment above the declaration.
+use_lookup
+function_info::find_use (set_info *def, insn_info *insn)
+{
+  gcc_assert (!insn->is_debug_insn ());
+  use_info *first = def->first_nondebug_insn_use ();
+  if (!first)
+    // There are no uses.  The comparison result is pretty meaningless
+    // in this case.
+    return { nullptr, -1 };
+
+  // See whether the first use matches.
+  if (*insn <= *first->insn ())
+    {
+      int comparison = (insn == first->insn () ? 0 : -1);
+      return { first, comparison };
+    }
+
+  // See whether the last use matches.
+  use_info *last = def->last_nondebug_insn_use ();
+  if (*insn >= *last->insn ())
+    {
+      int comparison = (insn == last->insn () ? 0 : 1);
+      return { last, comparison };
+    }
+
+  // Resort to using a splay tree to search for the result.
+  need_use_splay_tree (def);
+  int comparison = lookup_use (def->m_use_tree, insn);
+  return { def->m_use_tree.root ()->value (), comparison };
 }
 
 // Add USE to USE->def ()'s list of uses. inserting USE immediately before

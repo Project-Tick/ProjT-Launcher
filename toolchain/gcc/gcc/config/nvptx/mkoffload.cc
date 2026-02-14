@@ -1,6 +1,6 @@
 /* Offload image generation tool for PTX.
 
-   Copyright (C) 2014-2025 Free Software Foundation, Inc.
+   Copyright (C) 2014-2026 Free Software Foundation, Inc.
 
    Contributed by Nathan Sidwell <nathan@codesourcery.com> and
    Bernd Schmidt <bernds@codesourcery.com>.
@@ -104,7 +104,7 @@ xputenv (const char *string)
 {
   if (verbose)
     fprintf (stderr, "%s\n", string);
-  putenv (CONST_CAST (char *, string));
+  putenv (const_cast<char *> (string));
 }
 
 
@@ -625,7 +625,7 @@ compile_native (const char *infile, const char *outfile, const char *compiler,
   obstack_ptr_grow (&argv_obstack, NULL);
 
   const char **new_argv = XOBFINISH (&argv_obstack, const char **);
-  fork_execute (new_argv[0], CONST_CAST (char **, new_argv), true,
+  fork_execute (new_argv[0], const_cast<char **> (new_argv), true,
 		".gccnative_args");
   obstack_free (&argv_obstack, NULL);
 }
@@ -842,7 +842,7 @@ main (int argc, char **argv)
 	omp_requires_file = make_temp_file (".mkoffload.omp_requires");
 
       xputenv (concat ("GCC_OFFLOAD_OMP_REQUIRES_FILE=", omp_requires_file, NULL));
-      fork_execute (new_argv[0], CONST_CAST (char **, new_argv), true,
+      fork_execute (new_argv[0], const_cast<char **> (new_argv), true,
 		    ".gcc_args");
       obstack_free (&argv_obstack, NULL);
       unsetenv("GCC_OFFLOAD_OMP_REQUIRES_FILE");

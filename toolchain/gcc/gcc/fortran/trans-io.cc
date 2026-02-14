@@ -1,5 +1,5 @@
 /* IO Code translation/library interface
-   Copyright (C) 2002-2025 Free Software Foundation, Inc.
+   Copyright (C) 2002-2026 Free Software Foundation, Inc.
    Contributed by Paul Brook
 
 This file is part of GCC.
@@ -1698,8 +1698,9 @@ transfer_namelist_element (stmtblock_t * block, const char * var_name,
   gcc_assert (sym || c);
 
   /* Build the namelist object name.  */
-  if (sym && !sym->attr.use_only && sym->attr.use_rename
-      && sym->ns->use_stmts->rename)
+  if (sym && sym->attr.use_rename && sym->ns->use_stmts->rename
+      && strlen(sym->ns->use_stmts->rename->local_name) > 0
+      && strcmp(sym->ns->use_stmts->rename->use_name, var_name) == 0)
     string = gfc_build_cstring_const (sym->ns->use_stmts->rename->local_name);
   else
     string = gfc_build_cstring_const (var_name);
@@ -2499,7 +2500,8 @@ transfer_expr (gfc_se * se, gfc_typespec * ts, tree addr_expr,
 	      for (c = ts->u.derived->components; c; c = c->next)
 		{
 		  /* Ignore hidden string lengths.  */
-		  if (c->name[0] == '_')
+		  if (c->name[0] == '_'
+		      || c->attr.pdt_kind || c->attr.pdt_len)
 		    continue;
 
 		  field = c->backend_decl;

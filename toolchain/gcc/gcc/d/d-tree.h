@@ -1,5 +1,5 @@
 /* d-tree.h -- Definitions and declarations for code generation.
-   Copyright (C) 2006-2025 Free Software Foundation, Inc.
+   Copyright (C) 2006-2026 Free Software Foundation, Inc.
 
 GCC is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -568,6 +568,7 @@ extern tree d_mark_read (tree);
 extern tree build_memcmp_call (tree, tree, tree);
 extern tree build_memcpy_call (tree, tree, tree);
 extern tree build_memset_call (tree, tree = NULL_TREE);
+extern tree build_clear_padding_call (tree);
 extern bool identity_compare_p (StructDeclaration *);
 extern tree build_float_identity (tree_code, tree, tree);
 extern tree build_struct_comparison (tree_code, StructDeclaration *,
@@ -693,6 +694,7 @@ extern void d_defer_declaration (Declaration *);
 extern void d_finish_compilation (tree *, int);
 
 /* In runtime.cc.  */
+extern tree build_libcall (libcall_fn, int ...);
 extern tree build_libcall (libcall_fn, Type *, int ...);
 
 /* In typeinfo.cc.  */

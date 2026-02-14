@@ -1,5 +1,5 @@
 /* Full and partial redundancy elimination and code hoisting on SSA GIMPLE.
-   Copyright (C) 2001-2025 Free Software Foundation, Inc.
+   Copyright (C) 2001-2026 Free Software Foundation, Inc.
    Contributed by Daniel Berlin <dan@dberlin.org> and Steven Bosscher
    <stevenb@suse.de>
 
@@ -908,7 +908,8 @@ sorted_array_from_bitmap_set (bitmap_set_t set)
 /* Subtract all expressions contained in ORIG from DEST.  */
 
 static bitmap_set_t
-bitmap_set_subtract_expressions (bitmap_set_t dest, bitmap_set_t orig)
+bitmap_set_subtract_expressions (bitmap_set_t dest, bitmap_set_t orig,
+				 bool copy_values = false)
 {
   bitmap_set_t result = bitmap_set_new ();
   bitmap_iterator bi;
@@ -917,12 +918,15 @@ bitmap_set_subtract_expressions (bitmap_set_t dest, bitmap_set_t orig)
   bitmap_and_compl (&result->expressions, &dest->expressions,
 		    &orig->expressions);
 
-  FOR_EACH_EXPR_ID_IN_SET (result, i, bi)
-    {
-      pre_expr expr = expression_for_id (i);
-      unsigned int value_id = get_expr_value_id (expr);
-      bitmap_set_bit (&result->values, value_id);
-    }
+  if (copy_values)
+    bitmap_copy (&result->values, &dest->values);
+  else
+    FOR_EACH_EXPR_ID_IN_SET (result, i, bi)
+      {
+	pre_expr expr = expression_for_id (i);
+	unsigned int value_id = get_expr_value_id (expr);
+	bitmap_set_bit (&result->values, value_id);
+      }
 
   return result;
 }
@@ -1195,7 +1199,7 @@ translate_vuse_through_block (vec<vn_reference_op_s> operands,
 			      tree type, tree vuse, edge e, bool *same_valid)
 {
   basic_block phiblock = e->dest;
-  gimple *phi = SSA_NAME_DEF_STMT (vuse);
+  gimple *def = SSA_NAME_DEF_STMT (vuse);
   ao_ref ref;
 
   if (same_valid)
@@ -1203,9 +1207,9 @@ translate_vuse_through_block (vec<vn_reference_op_s> operands,
 
   /* If value-numbering provided a memory state for this
      that dominates PHIBLOCK we can just use that.  */
-  if (gimple_nop_p (phi)
-      || (gimple_bb (phi) != phiblock
-	  && dominated_by_p (CDI_DOMINATORS, phiblock, gimple_bb (phi))))
+  if (gimple_nop_p (def)
+      || (gimple_bb (def) != phiblock
+	  && dominated_by_p (CDI_DOMINATORS, phiblock, gimple_bb (def))))
     return vuse;
 
   /* We have pruned expressions that are killed in PHIBLOCK via
@@ -1213,7 +1217,7 @@ translate_vuse_through_block (vec<vn_reference_op_s> operands,
      live at the start of the block.  If there is no virtual PHI to translate
      through return the VUSE live at entry.  Otherwise the VUSE to translate
      is the def of the virtual PHI node.  */
-  phi = get_virtual_phi (phiblock);
+  gphi *phi = get_virtual_phi (phiblock);
   if (!phi)
     return BB_LIVE_VOP_ON_EXIT
 	     (get_immediate_dominator (CDI_DOMINATORS, phiblock));
@@ -2045,8 +2049,12 @@ prune_clobbered_mems (bitmap_set_t set, basic_block block, bool clean_traps)
      the bitmap_find_leader way to see if there's still an expression
      for it.  For some ratio of to be removed values and number of
      values/expressions in the set this might be faster than rebuilding
-     the value-set.  */
-  if (any_removed)
+     the value-set.
+     Note when there's a MAX solution on one edge (clean_traps) do not
+     prune values as we need to consider the resulting expression set MAX
+     as well.  This avoids a later growing ANTIC_IN value-set during
+     iteration, when the explicitly represented expression set grows. */
+  if (any_removed && !clean_traps)
     {
       bitmap_clear (&set->values);
       FOR_EACH_EXPR_ID_IN_SET (set, i, bi)
@@ -2123,7 +2131,7 @@ compute_antic_aux (basic_block block, bool block_has_abnormal_pred_edge)
 	      /* Unvisited successors get their ANTIC_IN replaced by the
 		 maximal set to arrive at a maximum ANTIC_IN solution.
 		 We can ignore them in the intersection operation and thus
-		 need not explicitely represent that maximum solution.  */
+		 need not explicitly represent that maximum solution.  */
 	      any_max_on_edge = true;
 	      if (dump_file && (dump_flags & TDF_DETAILS))
 		fprintf (dump_file, "ANTIC_IN is MAX on %d->%d\n",
@@ -2192,8 +2200,13 @@ compute_antic_aux (basic_block block, bool block_has_abnormal_pred_edge)
      invalid if translated from ANTIC_OUT to ANTIC_IN.  */
   prune_clobbered_mems (ANTIC_OUT, block, any_max_on_edge);
 
-  /* Generate ANTIC_OUT - TMP_GEN.  */
-  S = bitmap_set_subtract_expressions (ANTIC_OUT, TMP_GEN (block));
+  /* Generate ANTIC_OUT - TMP_GEN.  Note when there's a MAX solution
+     on one edge do not prune values as we need to consider the resulting
+     expression set MAX as well.  This avoids a later growing ANTIC_IN
+     value-set during iteration, when the explicitly represented
+     expression set grows.  */
+  S = bitmap_set_subtract_expressions (ANTIC_OUT, TMP_GEN (block),
+				       any_max_on_edge);
 
   /* Start ANTIC_IN with EXP_GEN - TMP_GEN.  */
   ANTIC_IN (block) = bitmap_set_subtract_expressions (EXP_GEN (block),
@@ -2207,9 +2220,6 @@ compute_antic_aux (basic_block block, bool block_has_abnormal_pred_edge)
   /* clean (ANTIC_IN (block)) is defered to after the iteration converged
      because it can cause non-convergence, see for example PR81181.  */
 
-  /* Intersect ANTIC_IN with the old ANTIC_IN.  This is required until
-     we properly represent the maximum expression set, thus not prune
-     values without expressions during the iteration.  */
   if (was_visited
       && bitmap_and_into (&ANTIC_IN (block)->values, &old->values))
     {
@@ -4139,6 +4149,33 @@ compute_avail (function *fun)
 		      vec<vn_reference_op_s> operands
 			= vn_reference_operands_for_lookup (rhs1);
 		      vn_reference_t ref;
+
+		      /* We handle &MEM[ptr + 5].b[1].c as
+			 POINTER_PLUS_EXPR.  */
+		      if (operands[0].opcode == ADDR_EXPR
+			  && operands.last ().opcode == SSA_NAME)
+			{
+			  tree ops[2];
+			  if (vn_pp_nary_for_addr (operands, ops))
+			    {
+			      vn_nary_op_t nary;
+			      vn_nary_op_lookup_pieces (2, POINTER_PLUS_EXPR,
+							TREE_TYPE (rhs1), ops,
+							&nary);
+			      operands.release ();
+			      if (nary && !nary->predicated_values)
+				{
+				  unsigned value_id = nary->value_id;
+				  if (value_id_constant_p (value_id))
+				    continue;
+				  result = get_or_alloc_expr_for_nary
+				      (nary, value_id, gimple_location (stmt));
+				  break;
+				}
+			      continue;
+			    }
+			}
+
 		      vn_reference_lookup_pieces (gimple_vuse (stmt), set,
 						  base_set, TREE_TYPE (rhs1),
 						  operands, &ref, VN_WALK);

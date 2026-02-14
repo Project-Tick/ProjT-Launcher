@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -31,8 +31,6 @@
 #ifndef _UTIL_H_
 #define _UTIL_H_
 
-void cbl_message(int fd, const char *format_string, ...)
-  ATTRIBUTE_PRINTF_2;
 [[noreturn]] void cbl_internal_error(const char *format_string, ...)
   ATTRIBUTE_GCOBOL_DIAG(1, 2);
 

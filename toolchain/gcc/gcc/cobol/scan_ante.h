@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -120,6 +120,7 @@ static bool nonspace( char ch ) { return !ISSPACE(ch); }
 
 static int
 numstr_of( const char string[], radix_t radix = decimal_e ) {
+  yylval.numstr.is_float = false;
   yylval.numstr.radix = radix;
   ydflval.string = yylval.numstr.string = xstrdup(string);
   char *comma = strchr(yylval.numstr.string, ',');
@@ -185,6 +186,7 @@ numstr_of( const char string[], radix_t radix = decimal_e ) {
         return NO_CONDITION;
       }
     }
+    yylval.numstr.is_float = true;
   }
   if( 1 < std::count(input, eoinput, symbol_decimal_point()) ) {
     error_msg(yylloc, "invalid numeric literal %qs", ++p);
@@ -295,7 +297,7 @@ static class parsing_status_t : public std::stack<cdf_status_t> {
   void splat() const {
     int i=0;
     for( const auto& status : c ) {
-      yywarn( "%d %s", ++i, status.str() );
+      dbgmsg( "%d %s", ++i, status.str() );
     }
   }
 } parsing;
@@ -316,11 +318,9 @@ bool scanner_normal()  { return parsing.normal(); }
 
 void scanner_parsing( int token, bool tf ) {
   parsing.push( cdf_status_t(token, tf) );
-  if( yydebug ) {
-    yywarn("%s: parsing now %s, depth %zu",
-            keyword_str(token), boolalpha(parsing.on()), parsing.size());
-    parsing.splat();
-  }
+  dbgmsg("%s: parsing now %s, depth %zu",
+         keyword_str(token), boolalpha(parsing.on()), parsing.size());
+  parsing.splat();
 }
 void scanner_parsing_toggle() {
   if( parsing.empty() ) {
@@ -328,10 +328,8 @@ void scanner_parsing_toggle() {
     return;
   }
   parsing.top().toggle();
-  if( yydebug ) {
-    yywarn("%s: parsing now %s",
-            keyword_str(CDF_ELSE), boolalpha(parsing.on()));
-  }
+  dbgmsg("%s: parsing now %s",
+         keyword_str(CDF_ELSE), boolalpha(parsing.on()));
 }
 void scanner_parsing_pop() {
   if( parsing.empty() ) {
@@ -339,12 +337,10 @@ void scanner_parsing_pop() {
     return;
   }
   parsing.pop();
-  if( yydebug ) {
-    yywarn("%s: parsing now %s, depth %zu",
-            keyword_str(CDF_END_IF), boolalpha(parsing.on()),
-	   parsing.size());
-    parsing.splat();
-  }
+  dbgmsg("%s: parsing now %s, depth %zu",
+         keyword_str(CDF_END_IF), boolalpha(parsing.on()),
+         parsing.size());
+  parsing.splat();
 }
 
 
@@ -575,41 +571,48 @@ keyword_alias_add( const std::string& keyword, const std::string& alias ) {
 struct bint_t {
   int token;
   cbl_field_type_t type;
-  uint32_t capacity;
+  uint32_t capacity; // zero means capacity depends on PICTURE
   bool signable;
 };
 static const std::map <std::string, bint_t > binary_integers {
-  { "COMP-X", { COMPUTATIONAL, FldNumericBin5, 0xFF, false } }, 
-  { "COMP-6", { COMPUTATIONAL, FldPacked, 0, false } }, 
-  { "COMP-5", { COMPUTATIONAL, FldNumericBin5, 0, false } }, 
-  { "COMP-4", { COMPUTATIONAL, FldNumericBinary, 0, true } }, 
-  { "COMP-2", { COMPUTATIONAL, FldFloat, 8, false } }, 
-  { "COMP-1", { COMPUTATIONAL, FldFloat, 4, false } }, 
-  { "COMP", { COMPUTATIONAL, FldNumericBinary, 0, false } }, 
-  { "COMPUTATIONAL-X", { COMPUTATIONAL, FldNumericBin5, 0xFF, false } }, 
-  { "COMPUTATIONAL-6", { COMPUTATIONAL, FldPacked, 0, false } }, 
-  { "COMPUTATIONAL-5", { COMPUTATIONAL, FldNumericBin5, 0, false } }, 
-  { "COMPUTATIONAL-4", { COMPUTATIONAL, FldNumericBinary, 0, true } }, 
-  { "COMPUTATIONAL-2", { COMPUTATIONAL, FldFloat, 8, false } }, 
-  { "COMPUTATIONAL-1", { COMPUTATIONAL, FldFloat, 4, false } }, 
-  { "COMPUTATIONAL", { COMPUTATIONAL, FldNumericBinary, 0, false } }, 
-  { "BINARY", { BINARY_INTEGER, FldNumericBinary, 0, true } }, 
-  { "BINARY-CHAR", { BINARY_INTEGER, FldNumericBin5, 1, true } }, 
-  { "BINARY-SHORT", { BINARY_INTEGER, FldNumericBin5, 2, true } }, 
-  { "BINARY-LONG", { BINARY_INTEGER, FldNumericBin5, 4, true } }, 
-  { "BINARY-DOUBLE", { BINARY_INTEGER, FldNumericBin5, 8, true } }, 
-  { "BINARY-LONG-LONG", { BINARY_INTEGER, FldNumericBin5, 8, true } }, 
-  { "FLOAT-BINARY-32", { COMPUTATIONAL, FldFloat, 4, false } }, 
-  { "FLOAT-BINARY-64", { COMPUTATIONAL, FldFloat, 8, false } }, 
+  { "BINARY",           { COMPUTATIONAL, FldNumericBinary,  0, false } }, 
+  { "COMP",             { COMPUTATIONAL, FldNumericBinary,  0, false } }, 
+  { "COMPUTATIONAL",    { COMPUTATIONAL, FldNumericBinary,  0, false } }, 
+  { "COMP-4",           { COMPUTATIONAL, FldNumericBinary,  0, false } }, 
+  { "COMPUTATIONAL-4",  { COMPUTATIONAL, FldNumericBinary,  0, false } }, 
+  
+  { "BINARY-CHAR",      { BINARY_INTEGER, FldNumericBin5,   1, true } }, 
+  { "BINARY-SHORT",     { BINARY_INTEGER, FldNumericBin5,   2, true } }, 
+  { "BINARY-LONG",      { BINARY_INTEGER, FldNumericBin5,   4, true } }, 
+  { "BINARY-DOUBLE",    { BINARY_INTEGER, FldNumericBin5,   8, true } }, 
+  { "BINARY-LONG-LONG", { BINARY_INTEGER, FldNumericBin5,   8, true } }, 
+
+  { "COMP-5",           { COMPUTATIONAL, FldNumericBin5,    0, false } }, 
+  { "COMPUTATIONAL-5",  { COMPUTATIONAL, FldNumericBin5,    0, false } }, 
+  { "COMP-X",           { COMPUTATIONAL, FldNumericBin5, 0xFF, false } }, 
+  { "COMPUTATIONAL-X",  { COMPUTATIONAL, FldNumericBin5, 0xFF, false } }, 
+
+  { "COMP-1",           { COMPUTATIONAL, FldFloat,  4, false } }, 
+  { "COMPUTATIONAL-1",  { COMPUTATIONAL, FldFloat,  4, false } }, 
+  { "FLOAT-BINARY-32",  { COMPUTATIONAL, FldFloat,  4, false } }, 
+  { "FLOAT-SHORT",      { COMPUTATIONAL, FldFloat,  4, false } }, 
+
+  { "COMP-2",           { COMPUTATIONAL, FldFloat,  8, false } }, 
+  { "COMPUTATIONAL-2",  { COMPUTATIONAL, FldFloat,  8, false } }, 
+  { "FLOAT-BINARY-64",  { COMPUTATIONAL, FldFloat,  8, false } }, 
+  { "FLOAT-LONG",       { COMPUTATIONAL, FldFloat,  8, false } }, 
   { "FLOAT-BINARY-128", { COMPUTATIONAL, FldFloat, 16, false } }, 
-  { "FLOAT-EXTENDED", { COMPUTATIONAL, FldFloat, 16, false } }, 
-  { "FLOAT-LONG", { COMPUTATIONAL, FldFloat, 8, false } }, 
-  { "FLOAT-SHORT", { COMPUTATIONAL, FldFloat, 4, false } }, 
+  { "FLOAT-EXTENDED",   { COMPUTATIONAL, FldFloat, 16, false } }, 
+
+  { "COMP-6",           { COMPUTATIONAL, FldPacked, 0, false } }, 
+  { "COMPUTATIONAL-6",  { COMPUTATIONAL, FldPacked, 0, false } }, 
 };
 
 static int
 binary_integer_usage( const char name[]) {
-  cbl_name_t uname = {};
+  // uname can't be cbl_name_t, because at this point name[] might have more
+  // than sizeof(cbl_name_t) characters.  The length check comes later.
+  char *uname = xstrdup(name);
   std::transform(name, name + strlen(name), uname, ftoupper);
 
   dbgmsg("%s:%d: checking %s in %zu keyword_aliases",
@@ -628,15 +631,14 @@ binary_integer_usage( const char name[]) {
   yylval.computational.signable = p->second.signable;
   dbgmsg("%s:%d: %s has type %d", __func__, __LINE__,
 	 uname, p->second.type );
+  free(uname);
   return p->second.token;
 }
       
 static void
-verify_ws( const YYLTYPE& loc, const char input[], char ch ) {
+verify_ws( const YYLTYPE& loc, const char [] /* input[] */, char ch ) {
   if( ! fisspace(ch) ) {
-    if( ! (dialect_mf() || dialect_gnu()) ) {
-      dialect_error(loc, "separator space required in %qs", input);
-    }
+    dialect_ok(loc, LexSeparatorE, "missing separator space");
   }
 }
 #define verify_ws(C) verify_ws(yylloc, yytext, C)
@@ -668,7 +670,7 @@ level_of( const char input[] ) {
   if( input[0] == '0' ) input++;
 
   if( 1 != sscanf(input, "%u", &output) ) {
-    yywarn( "%s:%d: invalid level '%s'", __func__, __LINE__, input );
+    cbl_internal_error( "%s:%d: invalid level '%s'", __func__, __LINE__, input );
   }
 
   return output;
@@ -1165,13 +1167,13 @@ typed_name( const char name[] ) {
     {
       auto f = cbl_field_of(e);
       if( is_constant(f) ) {
-	if(  f->data.initial ) {
-	  int token = cbl_figconst_tok(f->data.initial);
+	if(  f->data.original() ) {
+	  int token = cbl_figconst_tok(f->data.original());
 	  if( token ) return token;
 	}
-        int token = datetime_format_of(f->data.initial);
+        int token = datetime_format_of(f->data.original());
         if( token ) {
-          yylval.string = xstrdup(f->data.initial);
+          yylval.string = xstrdup(f->data.original());
           return token;
         }
       }
@@ -1183,7 +1185,7 @@ typed_name( const char name[] ) {
       if( type == FldLiteralN ) {
         yylval.numstr.radix =
           f->has_attr(hex_encoded_e)? hexadecimal_e : decimal_e;
-        yylval.numstr.string = xstrdup(f->data.initial);
+        yylval.numstr.string = xstrdup(f->data.original());
         return NUMSTR;
       }
       if( !f->has_attr(record_key_e) ) { // not a key-name literal
@@ -1213,7 +1215,7 @@ typed_name( const char name[] ) {
     return cbl_field_of(e)->level == 88? NAME88 : CLASS_NAME;
     break;
   default:
-    yywarn("%s:%d: invalid symbol type %s for symbol %qs",
+    cbl_internal_error("%s:%d: invalid symbol type %s for symbol %qs",
           __func__, __LINE__, cbl_field_type_str(type), name);
     return NAME;
   }
@@ -1245,8 +1247,14 @@ integer_of( const char input[], bool is_hex = false) {
   if( input[0] == '0' ) input++;
 
   if( 1 != sscanf(input, fmt, &output) ) {
-    yywarn( "%s:%d: invalid integer '%s'", __func__, __LINE__, input );
+    cbl_internal_error( "%s:%d: invalid integer '%s'", __func__, __LINE__, input );
   }
 
   return output;
 }
+
+
+
+
+
+

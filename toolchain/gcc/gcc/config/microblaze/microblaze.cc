@@ -1,5 +1,5 @@
 /* Subroutines used for code generation on Xilinx MicroBlaze.
-   Copyright (C) 2009-2025 Free Software Foundation, Inc.
+   Copyright (C) 2009-2026 Free Software Foundation, Inc.
 
    Contributed by Michael Eager <eager@eagercon.com>.
 
@@ -589,8 +589,7 @@ microblaze_call_tls_get_addr (rtx x, rtx reg, rtx *valuep, int reloc)
                                      LCT_PURE, /* LCT_CONST?  */
                                      Pmode, reg, Pmode);
 
-  insns = get_insns ();
-  end_sequence ();
+  insns = end_sequence ();
 
   return insns;
 }

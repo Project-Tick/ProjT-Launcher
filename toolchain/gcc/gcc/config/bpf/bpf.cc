@@ -1,5 +1,5 @@
 /* Subroutines used for code generation for eBPF.
-   Copyright (C) 2019-2025 Free Software Foundation, Inc.
+   Copyright (C) 2019-2026 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -444,7 +444,7 @@ bpf_expand_cbranch (machine_mode mode, rtx *operands)
   if ((code == LT || code == LE || code == LTU || code == LEU))
     {
       /* Reverse the condition.  */
-      PUT_CODE (operands[0], reverse_condition (code));
+      PUT_CODE (operands[0], swap_condition (code));
 
       /* Swap the operands, and ensure that the first is a register.  */
       if (!register_operand (operands[2], mode))
@@ -1252,13 +1252,11 @@ static void
 emit_move_loop (rtx src, rtx dst, machine_mode mode, int offset, int inc,
 		unsigned iters, unsigned remainder)
 {
-  rtx reg = gen_reg_rtx (mode);
-
   /* First copy in chunks as large as alignment permits.  */
   for (unsigned int i = 0; i < iters; i++)
     {
-      emit_move_insn (reg, adjust_address (src, mode, offset));
-      emit_move_insn (adjust_address (dst, mode, offset), reg);
+      emit_insn (gen_rtx_SET (adjust_address (dst, mode, offset),
+			      adjust_address (src, mode, offset)));
       offset += inc;
     }
 
@@ -1266,22 +1264,22 @@ emit_move_loop (rtx src, rtx dst, machine_mode mode, int offset, int inc,
      used above.  */
   if (remainder & 4)
     {
-      emit_move_insn (reg, adjust_address (src, SImode, offset));
-      emit_move_insn (adjust_address (dst, SImode, offset), reg);
+      emit_insn (gen_rtx_SET (adjust_address (dst, SImode, offset),
+			      adjust_address (src, SImode, offset)));
       offset += (inc < 0 ? -4 : 4);
       remainder -= 4;
     }
   if (remainder & 2)
     {
-      emit_move_insn (reg, adjust_address (src, HImode, offset));
-      emit_move_insn (adjust_address (dst, HImode, offset), reg);
+      emit_insn (gen_rtx_SET (adjust_address (dst, HImode, offset),
+			      adjust_address (src, HImode, offset)));
       offset += (inc < 0 ? -2 : 2);
       remainder -= 2;
     }
   if (remainder & 1)
     {
-      emit_move_insn (reg, adjust_address (src, QImode, offset));
-      emit_move_insn (adjust_address (dst, QImode, offset), reg);
+      emit_insn (gen_rtx_SET (adjust_address (dst, QImode, offset),
+			      adjust_address (src, QImode, offset)));
     }
 }
 
@@ -1351,13 +1349,13 @@ bpf_expand_cpymem (rtx *operands, bool is_move)
       fwd_label = gen_label_rtx ();
       done_label = gen_label_rtx ();
 
-      rtx dst_addr = copy_to_mode_reg (Pmode, XEXP (dst, 0));
-      rtx src_addr = copy_to_mode_reg (Pmode, XEXP (src, 0));
+      rtx src_addr = force_operand (XEXP (src, 0), NULL_RTX);
+      rtx dst_addr = force_operand (XEXP (dst, 0), NULL_RTX);
       emit_cmp_and_jump_insns (src_addr, dst_addr, GEU, NULL_RTX, Pmode,
 			       true, fwd_label, profile_probability::even ());
 
       /* Emit the "backwards" unrolled loop.  */
-      emit_move_loop (src, dst, mode, size_bytes, -inc, iters, remainder);
+      emit_move_loop (src, dst, mode, (size_bytes - 1), -inc, iters, remainder);
       emit_jump_insn (gen_jump (done_label));
       emit_barrier ();
 
@@ -1427,25 +1425,82 @@ bpf_expand_setmem (rtx *operands)
   unsigned inc = GET_MODE_SIZE (mode);
   unsigned offset = 0;
 
+  /* If val is a constant, then build a new constant value duplicating
+     the byte across to the size of stores we might do.
+       e.g. if val is 0xab and we can store in 4-byte chunks, build
+       0xabababab and use that to do the memset.
+     If val is not a constant, then by constraint it is a QImode register
+     and we similarly duplicate the byte across.  */
+  rtx src;
+  if (CONST_INT_P (val))
+    {
+      unsigned HOST_WIDE_INT tmp = UINTVAL (val) & 0xff;
+      /* Need src in the proper mode.  */
+      switch (mode)
+	{
+	case DImode:
+	  src = gen_rtx_CONST_INT (DImode, tmp * 0x0101010101010101);
+	  break;
+	case SImode:
+	  src = gen_rtx_CONST_INT (SImode, tmp * 0x01010101);
+	  break;
+	case HImode:
+	  src = gen_rtx_CONST_INT (HImode, tmp * 0x0101);
+	  break;
+	default:
+	  src = val;
+	  break;
+	}
+    }
+  else
+    {
+      /* VAL is a subreg:QI (reg:DI N).
+	 Copy that byte to fill the whole register.  */
+      src = gen_reg_rtx (mode);
+      emit_move_insn (src, gen_rtx_ZERO_EXTEND (mode, val));
+
+      /* We can fill the whole register with copies of the byte by multiplying
+	 by 0x010101...
+	 For DImode this requires a tmp reg with lldw, but only if we will
+	 actually do nonzero iterations of stxdw.  */
+      if (mode < DImode || iters == 0)
+	emit_move_insn (src, gen_rtx_MULT (mode, src, GEN_INT (0x01010101)));
+      else
+	{
+	  rtx tmp = gen_reg_rtx (mode);
+	  emit_move_insn (tmp, GEN_INT (0x0101010101010101));
+	  emit_move_insn (src, gen_rtx_MULT (mode, src, tmp));
+	}
+    }
+
   for (unsigned int i = 0; i < iters; i++)
     {
-      emit_move_insn (adjust_address (dst, mode, offset), val);
+      emit_move_insn (adjust_address (dst, mode, offset), src);
       offset += inc;
     }
   if (remainder & 4)
     {
-      emit_move_insn (adjust_address (dst, SImode, offset), val);
+      emit_move_insn (adjust_address (dst, SImode, offset),
+		      REG_P (src)
+		      ? simplify_gen_subreg (SImode, src, mode, 0)
+		      : src);
       offset += 4;
       remainder -= 4;
     }
   if (remainder & 2)
     {
-      emit_move_insn (adjust_address (dst, HImode, offset), val);
+      emit_move_insn (adjust_address (dst, HImode, offset),
+		      REG_P (src)
+		      ? simplify_gen_subreg (HImode, src, mode, 0)
+		      : src);
       offset += 2;
       remainder -= 2;
     }
   if (remainder & 1)
-    emit_move_insn (adjust_address (dst, QImode, offset), val);
+    emit_move_insn (adjust_address (dst, QImode, offset),
+		    REG_P (src)
+		    ? simplify_gen_subreg (QImode, src, mode, 0)
+		    : src);
 
   return true;
 }

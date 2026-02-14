@@ -46,7 +46,7 @@ namespace std _GLIBCXX_VISIBILITY(default)
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// Add two integers, with saturation in case of overflow.
-  template<typename _Tp> requires __is_standard_integer<_Tp>::value
+  template<typename _Tp> requires __is_signed_or_unsigned_integer<_Tp>::value
     constexpr _Tp
     add_sat(_Tp __x, _Tp __y) noexcept
     {
@@ -62,7 +62,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
 
   /// Subtract one integer from another, with saturation in case of overflow.
-  template<typename _Tp> requires __is_standard_integer<_Tp>::value
+  template<typename _Tp> requires __is_signed_or_unsigned_integer<_Tp>::value
     constexpr _Tp
     sub_sat(_Tp __x, _Tp __y) noexcept
     {
@@ -78,7 +78,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
 
   /// Multiply two integers, with saturation in case of overflow.
-  template<typename _Tp> requires __is_standard_integer<_Tp>::value
+  template<typename _Tp> requires __is_signed_or_unsigned_integer<_Tp>::value
     constexpr _Tp
     mul_sat(_Tp __x, _Tp __y) noexcept
     {
@@ -87,14 +87,14 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	return __z;
       if constexpr (is_unsigned_v<_Tp>)
 	return __gnu_cxx::__int_traits<_Tp>::__max;
-      else if (__x < 0 != __y < 0)
+      else if ((__x < 0) != (__y < 0))
 	return __gnu_cxx::__int_traits<_Tp>::__min;
       else
 	return __gnu_cxx::__int_traits<_Tp>::__max;
     }
 
   /// Divide one integer by another, with saturation in case of overflow.
-  template<typename _Tp> requires __is_standard_integer<_Tp>::value
+  template<typename _Tp> requires __is_signed_or_unsigned_integer<_Tp>::value
     constexpr _Tp
     div_sat(_Tp __x, _Tp __y) noexcept
     {
@@ -107,8 +107,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// Divide one integer by another, with saturation in case of overflow.
   template<typename _Res, typename _Tp>
-    requires __is_standard_integer<_Res>::value
-      && __is_standard_integer<_Tp>::value
+    requires __is_signed_or_unsigned_integer<_Res>::value
+      && __is_signed_or_unsigned_integer<_Tp>::value
     constexpr _Res
     saturate_cast(_Tp __x) noexcept
     {

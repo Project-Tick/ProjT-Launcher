@@ -30,6 +30,7 @@ load_gcc_lib scandump.exp
 load_gcc_lib scanlang.exp
 load_gcc_lib scanrtl.exp
 load_gcc_lib scansarif.exp
+load_gcc_lib scanhtml.exp
 load_gcc_lib scantree.exp
 load_gcc_lib scanltrans.exp
 load_gcc_lib scanoffload.exp
@@ -294,7 +295,9 @@ proc libgomp_target_compile { source dest type options } {
 	set options [concat "$ALWAYS_CFLAGS" $options]
     }
 
-    set options [dg-additional-files-options $options $source $dest $type]
+    if { $source != "" } {
+        set options [dg-additional-files-options $options $source $dest $type]
+    }
 
     set result [target_compile $source $dest $type $options]
 
@@ -720,4 +723,80 @@ int main() {
 	return 1;
     return 0;
 } } "-lhipblas" ]
+}
+
+# return 1 if OpenMP Unified Shared Memory is supported by offload devices
+
+proc check_effective_target_omp_usm { } {
+    set flags ""
+    if { [check_effective_target_offload_target_amdgcn] } {
+	# Specify '-mxnack=any' to inhibit GCN offloading compilation
+	# 'warning: Unified Shared Memory is required, but XNACK is disabled'.
+	# This run-time effective-target check shouldn't fail in case there's
+	# actually no AMD GPU, but there's an USM-capable NVIDIA GPU.
+	lappend flags "-foffload-options=amdgcn-amdhsa=-mxnack=any"
+    }
+    if { $flags != ""
+	 || [check_effective_target_offload_device_nvptx] } {
+	if [check_runtime usm_available_ {
+	    #include <omp.h>
+	    #pragma omp requires unified_shared_memory
+	    int main ()
+	    {
+	      int a;
+	      #pragma omp target map(from: a)
+		a = omp_is_initial_device ();
+	      return a;
+	    }
+	} "$flags" ] {
+	  return 1
+	}
+    }
+
+    return 0
+}
+
+# return 1 if OpenMP Device Managed Memory is supported
+
+proc check_effective_target_omp_managedmem { } {
+    if { [check_effective_target_offload_device_nvptx] } {
+	return 1
+    }
+
+    if { [libgomp_check_effective_target_offload_target "amdgcn"] } {
+	if [check_runtime_nocache managed_available_ {
+	    #include <omp.h>
+	    #include <stdlib.h>
+	    int main ()
+	    {
+	      const omp_alloctrait_t traits[] = {
+		  { omp_atk_fallback, omp_atv_null_fb }
+	      };
+	      omp_allocator_handle_t managed_no_fallback
+	         = omp_init_allocator (ompx_gnu_managed_mem_space, 1, traits);
+	      void *a = omp_alloc (16, managed_no_fallback);
+	      return a == NULL;
+	    }
+	} ] {
+	  return 1
+	}
+    }
+
+    return 0
+}
+
+# return 1 if -mxnack=on is accepted
+
+proc check_effective_target_offload_target_amdgcn_with_xnack { } {
+    if { [libgomp_check_effective_target_offload_target "amdgcn"] } {
+	return [check_runtime amd_xnack_ {
+	   int main () {
+	     #pragma omp target
+	       ;
+	     return 0;
+	   }
+	} "-foffload-options=amdgcn-amdhsa=-mxnack=on" ]
+    }
+
+    return 0
 }

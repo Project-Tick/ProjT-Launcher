@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2025 Free Software Foundation, Inc.
+# Copyright (C) 2009-2026 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -337,6 +337,7 @@ proc lto-build-archive { testname objlist dest } {
 	} else {
 	    set ar_cmd [gcc-transform-out-of-tree gcc-ar]
 	}
+	set ar_cmd "$ar_cmd [lrange $GCC_UNDER_TEST 1 end]"
     } else {
         set ar_cmd $GCC_AR_UNDER_TEST
     }

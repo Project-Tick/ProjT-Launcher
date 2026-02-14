@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2023-2025 Free Software Foundation, Inc.
+# Copyright (C) 2023-2026 Free Software Foundation, Inc.
 #
 # Script to regenerate FOO.opt.urls files for each FOO.opt in the
 # source tree.
@@ -361,7 +361,8 @@ def write_url_file(index, optfile, dstfile):
 PER_LANGUAGE_OPTION_INDEXES = [
     ('gcc/Option-Index.html', None),
     ('gdc/Option-Index.html', 'D'),
-    ('gfortran/Option-Index.html', 'Fortran')
+    ('gfortran/Option-Index.html', 'Fortran'),
+    ('ga68/Option-Index.html', 'Algol68'),
 ]
 
 def main(args):

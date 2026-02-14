@@ -1,5 +1,5 @@
 /* CPP Library - lexical analysis.
-   Copyright (C) 2000-2025 Free Software Foundation, Inc.
+   Copyright (C) 2000-2026 Free Software Foundation, Inc.
    Contributed by Per Bothner, 1994-95.
    Based on CCCP program by Paul Rubin, June 1986
    Adapted to ANSI C, Richard Stallman, Jan 1987
@@ -1353,6 +1353,8 @@ get_location_for_byte_range_in_cur_line (cpp_reader *pfile,
 					 const unsigned char *const start,
 					 size_t num_bytes)
 {
+  if (pfile->forced_token_location)
+    return pfile->forced_token_location;
   gcc_checking_assert (num_bytes > 0);
 
   /* CPP_BUF_COLUMN and linemap_position_for_column both refer
@@ -2035,6 +2037,7 @@ warn_about_normalization (cpp_reader *pfile,
       /* If possible, create a location range for the token.  */
       if (loc >= RESERVED_LOCATION_COUNT
 	  && token->type != CPP_EOF
+	  && !pfile->forced_token_location
 	  /* There must be no line notes to process.  */
 	  && (!(pfile->buffer->cur
 		>= pfile->buffer->notes[pfile->buffer->cur_note].pos
@@ -2711,8 +2714,9 @@ lex_raw_string (cpp_reader *pfile, cpp_token *token, const uchar *base)
 		       || c == '!' || c == '=' || c == ','
 		       || c == '"' || c == '\''
 		       || ((c == '$' || c == '@' || c == '`')
-			   && CPP_OPTION (pfile, cplusplus)
-			   && CPP_OPTION (pfile, lang) > CLK_CXX23)))
+			   && (CPP_OPTION (pfile, cplusplus)
+			       ? CPP_OPTION (pfile, lang) > CLK_CXX23
+			       : CPP_OPTION (pfile, low_ucns)))))
 	    prefix[prefix_len++] = c;
 	  else
 	    {
@@ -4308,6 +4312,10 @@ _cpp_lex_direct (cpp_reader *pfile)
 	  else
 	    result->flags |= COLON_SCOPE;
 	}
+      else if (*buffer->cur == ']'
+	       && CPP_OPTION (pfile, cplusplus)
+	       && CPP_OPTION (pfile, lang) >= CLK_GNUCXX26)
+	buffer->cur++, result->type = CPP_CLOSE_SPLICE;
       else if (*buffer->cur == '>' && CPP_OPTION (pfile, digraphs))
 	{
 	  buffer->cur++;
@@ -4319,7 +4327,15 @@ _cpp_lex_direct (cpp_reader *pfile)
     case '*': IF_NEXT_IS ('=', CPP_MULT_EQ, CPP_MULT); break;
     case '=': IF_NEXT_IS ('=', CPP_EQ_EQ, CPP_EQ); break;
     case '!': IF_NEXT_IS ('=', CPP_NOT_EQ, CPP_NOT); break;
-    case '^': IF_NEXT_IS ('=', CPP_XOR_EQ, CPP_XOR); break;
+    case '^':
+      result->type = CPP_XOR;
+      if (*buffer->cur == '=')
+	buffer->cur++, result->type = CPP_XOR_EQ;
+      else if (*buffer->cur == '^'
+	       && CPP_OPTION (pfile, cplusplus)
+	       && CPP_OPTION (pfile, lang) >= CLK_GNUCXX26)
+	buffer->cur++, result->type = CPP_REFLECT_OP;
+      break;
     case '#': IF_NEXT_IS ('#', CPP_PASTE, CPP_HASH); result->val.token_no = 0; break;
 
     case '?': result->type = CPP_QUERY; break;
@@ -4327,7 +4343,24 @@ _cpp_lex_direct (cpp_reader *pfile)
     case ',': result->type = CPP_COMMA; break;
     case '(': result->type = CPP_OPEN_PAREN; break;
     case ')': result->type = CPP_CLOSE_PAREN; break;
-    case '[': result->type = CPP_OPEN_SQUARE; break;
+    case '[':
+      result->type = CPP_OPEN_SQUARE;
+      /* C++ [lex.pptoken]/4.3: "Otherwise, if the next three characters are
+	 [:: and the subsequent character is not :, or if the next three
+	 characters are [:>, the [ is treated as a preprocessing token by
+	 itself and not as the first character of the preprocessing token [:."
+	 Also, the tokens [: and :] cannot be composed from digraphs.  */
+      if (*buffer->cur == ':'
+	  && CPP_OPTION (pfile, cplusplus)
+	  && CPP_OPTION (pfile, lang) >= CLK_GNUCXX26)
+	{
+	  if ((buffer->cur[1] == ':' && buffer->cur[2] != ':')
+	      || buffer->cur[1] == '>')
+	    break;
+	  else
+	    buffer->cur++, result->type = CPP_OPEN_SPLICE;
+	}
+      break;
     case ']': result->type = CPP_CLOSE_SQUARE; break;
     case '{': result->type = CPP_OPEN_BRACE; break;
     case '}': result->type = CPP_CLOSE_BRACE; break;
@@ -4398,7 +4431,8 @@ _cpp_lex_direct (cpp_reader *pfile)
 
   /* Potentially convert the location of the token to a range.  */
   if (result->src_loc >= RESERVED_LOCATION_COUNT
-      && result->type != CPP_EOF)
+      && result->type != CPP_EOF
+      && !pfile->forced_token_location)
     {
       /* Ensure that any line notes are processed, so that we have the
 	 correct physical line/column for the end-point of the token even
@@ -5456,7 +5490,13 @@ cpp_directive_only_process (cpp_reader *pfile,
 		    switch (c)
 		      {
 		      case '\\':
-			esc = true;
+			if (esc)
+			  {
+			    star = false;
+			    esc = false;
+			  }
+			else
+			  esc = true;
 			break;
 
 		      case '\r':
@@ -5487,7 +5527,7 @@ cpp_directive_only_process (cpp_reader *pfile,
 			break;
 
 		      case '/':
-			if (star)
+			if (star && !esc)
 			  goto done_comment;
 			/* FALLTHROUGH  */
 

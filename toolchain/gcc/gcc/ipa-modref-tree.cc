@@ -1,5 +1,5 @@
 /* Data structure for the modref pass.
-   Copyright (C) 2020-2025 Free Software Foundation, Inc.
+   Copyright (C) 2020-2026 Free Software Foundation, Inc.
    Contributed by David Cepelik and Jan Hubicka
 
 This file is part of GCC.
@@ -32,7 +32,7 @@ along with GCC; see the file COPYING3.  If not see
 
 /* Return true if both accesses are the same.  */
 bool
-modref_access_node::operator == (modref_access_node &a) const
+modref_access_node::operator == (const modref_access_node &a) const
 {
   if (parm_index != a.parm_index)
     return false;

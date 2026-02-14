@@ -184,7 +184,7 @@ AC_SEARCH_LIBS([malloc], [c])
 AC_SEARCH_LIBS([clock_gettime], [c rt])
 
 # libgcobol soname version
-LIBGCOBOL_VERSION=1:0:0
+LIBGCOBOL_VERSION=2:0:0
 AC_SUBST(LIBGCOBOL_VERSION)
 
 ## added, currently unused.
@@ -231,6 +231,16 @@ libgcobol_have_sinf128=no
 AC_SEARCH_LIBS([sinf128], [c m], libgcobol_have_sinf128=yes)
 libgcobol_have_cacosf128=no
 AC_SEARCH_LIBS([cacosf128], [c m], libgcobol_have_cacosf128=yes)
+
+# These are libxml2.
+AC_CHECK_LIB(xml2, xmlSAXUserParseMemory,
+  [LIBS="-lxml2 $LIBS"
+   AC_DEFINE(HAVE_SAX_XML_PARSER, 1,
+	     [Define to 1 if you have the `xmlSAXUserParseMemory' function.])])
+AC_CHECK_LIB(xml2, xmlParseChunk,
+  [LIBS="-lxml2 $LIBS"
+   AC_DEFINE(HAVE_SAX_XML_PARSER, 1,
+	     [Define to 1 if you have the `xmlParseChunk' function.])])
 
 # Copied from gcc/configure.ac. 2025-06-05 R.J.Dubner
 # At least for glibc, clock_gettime is in librt.  But don't pull that

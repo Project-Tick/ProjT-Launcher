@@ -1,6 +1,6 @@
 // Functor implementations -*- C++ -*-
 
-// Copyright (C) 2001-2025 Free Software Foundation, Inc.
+// Copyright (C) 2001-2026 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -801,6 +801,58 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	  is_convertible<_Up, const volatile void*>>::value;
 #endif
     };
+#else // < C++14
+
+  // We need less<void> and equal_to<void> for <bits/predefined_ops.h>
+
+  template<>
+    struct equal_to<void>
+    {
+#ifdef __cpp_rvalue_references
+      template<typename _Tp, typename _Up>
+	bool
+	operator()(_Tp&& __t, _Up&& __u) const
+	{ return __t == __u; }
+#else // C++98
+      template<typename _Tp, typename _Up>
+	bool
+	operator()(_Tp& __t, _Up& __u) const { return __t == __u; }
+      template<typename _Tp, typename _Up>
+	bool
+	operator()(const _Tp& __t, _Up& __u) const { return __t == __u; }
+      template<typename _Tp, typename _Up>
+	bool
+	operator()(_Tp& __t, const _Up& __u) const { return __t == __u; }
+      template<typename _Tp, typename _Up>
+	bool
+	operator()(const _Tp& __t, const _Up& __u) const { return __t == __u; }
+#endif
+    };
+
+  template<>
+    struct less<void>
+    {
+#ifdef __cpp_rvalue_references
+      template<typename _Tp, typename _Up>
+	bool
+	operator()(_Tp&& __t, _Up&& __u) const
+	{ return __t < __u; }
+#else // C++98
+      template<typename _Tp, typename _Up>
+	bool
+	operator()(_Tp& __t, _Up& __u) const { return __t < __u; }
+      template<typename _Tp, typename _Up>
+	bool
+	operator()(const _Tp& __t, _Up& __u) const { return __t < __u; }
+      template<typename _Tp, typename _Up>
+	bool
+	operator()(_Tp& __t, const _Up& __u) const { return __t < __u; }
+      template<typename _Tp, typename _Up>
+	bool
+	operator()(const _Tp& __t, const _Up& __u) const { return __t < __u; }
+#endif
+    };
+
 #endif // __glibcxx_transparent_operators
   /** @}  */
 
@@ -1473,6 +1525,68 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 #endif
 #endif
 
+#ifdef __glibcxx_associative_heterogeneous_erasure // C++ >= 23
+template <typename _Kt, typename _Container>
+  concept __not_container_iterator =
+    (!is_convertible_v<_Kt&&, typename _Container::iterator> &&
+     !is_convertible_v<_Kt&&, typename _Container::const_iterator>);
+
+template <typename _Kt, typename _Container>
+  concept __heterogeneous_key =
+    (!is_same_v<typename _Container::key_type, remove_cvref_t<_Kt>>) &&
+    __not_container_iterator<_Kt, _Container>;
+#endif
+
+#if __cplusplus > 201703L
+  template<template<typename> class>
+    constexpr bool __is_std_op_template = false;
+
+  template<>
+    inline constexpr bool __is_std_op_template<std::equal_to> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::not_equal_to> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::greater> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::less> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::greater_equal> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::less_equal> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::plus> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::minus> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::multiplies> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::divides> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::modulus> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::negate> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::logical_and> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::logical_or> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::logical_not> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::bit_and> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::bit_or> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::bit_xor> = true;
+  template<>
+    inline constexpr bool __is_std_op_template<std::bit_not> = true;
+
+  template<typename _Fn>
+    constexpr bool __is_std_op_wrapper = false;
+
+  template<template<typename> class _Ft, typename _Tp>
+    constexpr bool __is_std_op_wrapper<_Ft<_Tp>>
+      = __is_std_op_template<_Ft>;
+#endif
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
 

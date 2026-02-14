@@ -1,5 +1,5 @@
 /* toir.cc -- Lower D frontend statements to GCC trees.
-   Copyright (C) 2006-2025 Free Software Foundation, Inc.
+   Copyright (C) 2006-2026 Free Software Foundation, Inc.
 
 GCC is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -831,7 +831,7 @@ public:
 
     /* A switch statement on a string gets turned into a library call.
        It is not lowered during codegen.  */
-    if (!condtype->isScalar ())
+    if (!dmd::isScalar (condtype))
       {
 	error ("cannot handle switch condition of type %s",
 	       condtype->toChars ());
@@ -920,7 +920,7 @@ public:
     else
       {
 	tree casevalue;
-	if (s->exp->type->isScalar ())
+	if (dmd::isScalar (s->exp->type))
 	  casevalue = build_expr (s->exp);
 	else
 	  casevalue = build_integer_cst (s->index, build_ctype (Type::tint32));
@@ -1081,13 +1081,8 @@ public:
 	  }
 	else if (sle != NULL)
 	  {
-	    StructDeclaration *sd = type->baseElemOf ()->isTypeStruct ()->sym;
 	    sle->sym = build_address (this->func_->shidden);
 	    using_rvo_p = true;
-
-	    /* Fill any alignment holes in the return slot using memset.  */
-	    if (!identity_compare_p (sd) || sd->isUnionDeclaration ())
-	      add_stmt (build_memset_call (this->func_->shidden));
 	  }
 
 	if (using_rvo_p == true)
@@ -1246,7 +1241,7 @@ public:
     else
       arg = build_nop (build_ctype (get_object_type ()), arg);
 
-    add_stmt (build_libcall (LIBCALL_THROW, Type::tvoid, 1, arg));
+    add_stmt (build_libcall (LIBCALL_THROW, 1, arg));
   }
 
   /* Build a try-catch statement, one of the building blocks for exception
@@ -1312,8 +1307,7 @@ public:
 	       the end catch callback.  */
 	    if (cd->isCPPclass ())
 	      {
-		tree endcatch = build_libcall (LIBCALL_CXA_END_CATCH,
-					       Type::tvoid, 0);
+		tree endcatch = build_libcall (LIBCALL_CXA_END_CATCH, 0);
 		catchbody = build2 (TRY_FINALLY_EXPR, void_type_node,
 				    catchbody, endcatch);
 	      }
@@ -1383,7 +1377,7 @@ public:
 
   void visit (GccAsmStatement *s) final override
   {
-    StringExp *insn = s->insn->toStringExp ();
+    StringExp *insn = dmd::toStringExp (s->insn);
     tree outputs = NULL_TREE;
     tree inputs = NULL_TREE;
     tree clobbers = NULL_TREE;
@@ -1398,7 +1392,7 @@ public:
 	    const char *sname = name ? name->toChars () : NULL;
 	    tree id = name ? build_string (strlen (sname), sname) : NULL_TREE;
 
-	    StringExp *constr = (*s->constraints)[i]->toStringExp ();
+	    StringExp *constr = dmd::toStringExp ((*s->constraints)[i]);
 	    const char *cstring = (const char *)(constr->len
 						 ? constr->string : "");
 	    tree str = build_string (constr->len, cstring);
@@ -1424,7 +1418,7 @@ public:
       {
 	for (size_t i = 0; i < s->clobbers->length; i++)
 	  {
-	    StringExp *clobber = (*s->clobbers)[i]->toStringExp ();
+	    StringExp *clobber = dmd::toStringExp ((*s->clobbers)[i]);
 	    const char *cstring = (const char *)(clobber->len
 						 ? clobber->string : "");
 
@@ -1478,7 +1472,8 @@ public:
 	    oconstraints[i] = constraint;
 
 	    if (parse_output_constraint (&constraint, i, ninputs, noutputs,
-					 &allows_mem, &allows_reg, &is_inout))
+					 &allows_mem, &allows_reg, &is_inout,
+					 nullptr))
 	      {
 		/* If the output argument is going to end up in memory.  */
 		if (!allows_reg)
@@ -1497,7 +1492,8 @@ public:
 	      = TREE_STRING_POINTER (TREE_VALUE (TREE_PURPOSE (t)));
 
 	    if (parse_input_constraint (&constraint, i, ninputs, noutputs, 0,
-					oconstraints, &allows_mem, &allows_reg))
+					oconstraints, &allows_mem, &allows_reg,
+					nullptr))
 	      {
 		/* If the input argument is going to end up in memory.  */
 		if (!allows_reg && allows_mem)

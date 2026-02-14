@@ -1,3 +1,4 @@
+#![feature(lang_items)]
 #[lang = "sized"]
 pub trait Sized {}
 
@@ -5,7 +6,6 @@ struct Foo<A, B>(A, B);
 
 impl<T> Foo<T, f32> {
     fn test<X>(self, a: X) -> X {
-        // { dg-warning "unused name" "" { target *-*-* } .-1 }
         a
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -120,7 +120,8 @@ datetime_format_of( const char input[] ) {
       if( 0 != (erc = regcomp(&p->re, p->regex, cflags)) ) {
         static char msg[80];
         regerror(erc, &p->re, msg, sizeof(msg));
-        yywarn("%s:%d: %s: %s", __func__, __LINE__, keyword_str(p->token), msg);
+        cbl_internal_error("%s:%d: %s: %s", __func__, __LINE__,
+                           keyword_str(p->token), msg);
       }
     }
   }
@@ -293,12 +294,12 @@ prelex() {
   if( YY_START == field_state && level_needed() ) {
     switch( token ) {
     case NUMSTR:
-      if( yy_flex_debug ) yywarn("final token is NUMSTR");
+      dbgmsg("final token is NUMSTR");
       yylval.number = level_of(yylval.numstr.string);
       token = LEVEL;
       break;
     case YDF_NUMBER:
-      if( yy_flex_debug ) yywarn("final token is %<YDF_NUMBER%>");
+      dbgmsg("final token is YDF_NUMBER");
       yylval.number = ydflval.number;
       token = LEVEL;
       break;
@@ -401,3 +402,12 @@ yylex(void) {
 
   return token;
 }
+
+/*
+ * Token name<->string utilities
+ */
+
+// tokens.h is generated as needed from parse.h with tokens.h.gen
+current_tokens_t::tokenset_t::tokenset_t() {
+#include "token_names.h"
+};

@@ -1,12 +1,8 @@
 /* -fanalyzer plugin for CPython extension modules  */
 /* { dg-options "-g" } */
 
-#define INCLUDE_MEMORY
-#define INCLUDE_VECTOR
+#include "analyzer/common.h"
 #include "gcc-plugin.h"
-#include "config.h"
-#include "system.h"
-#include "coretypes.h"
 #include "tree.h"
 #include "function.h"
 #include "basic-block.h"
@@ -22,14 +18,14 @@
 #include "target.h"
 #include "fold-const.h"
 #include "tree-pretty-print.h"
-#include "diagnostic-color.h"
-#include "diagnostic-metadata.h"
+#include "diagnostics/color.h"
+#include "diagnostics/metadata.h"
 #include "tristate.h"
 #include "bitmap.h"
 #include "selftest.h"
 #include "function.h"
 #include "json.h"
-#include "analyzer/analyzer.h"
+#include "analyzer/common.h"
 #include "analyzer/analyzer-language.h"
 #include "analyzer/analyzer-logging.h"
 #include "ordered-hash-map.h"
@@ -39,6 +35,8 @@
 #include "digraph.h"
 #include "analyzer/supergraph.h"
 #include "sbitmap.h"
+#include "context.h"
+#include "channels.h"
 #include "analyzer/call-string.h"
 #include "analyzer/program-point.h"
 #include "analyzer/store.h"
@@ -46,7 +44,6 @@
 #include "analyzer/call-details.h"
 #include "analyzer/call-info.h"
 #include "analyzer/exploded-graph.h"
-#include "make-unique.h"
 
 int plugin_is_GPL_compatible;
 
@@ -193,97 +190,6 @@ public:
   }
 };
 
-/* This is just a copy of leak_stmt_finder for now (subject to change if
- * necssary)  */
-
-class refcnt_stmt_finder : public stmt_finder
-{
-public:
-  refcnt_stmt_finder (const exploded_graph &eg, tree var)
-      : m_eg (eg), m_var (var)
-  {
-  }
-
-  std::unique_ptr<stmt_finder>
-  clone () const final override
-  {
-    return make_unique<refcnt_stmt_finder> (m_eg, m_var);
-  }
-
-  const gimple *
-  find_stmt (const exploded_path &epath) final override
-  {
-    logger *const logger = m_eg.get_logger ();
-    LOG_FUNC (logger);
-
-    if (m_var && TREE_CODE (m_var) == SSA_NAME)
-      {
-	/* Locate the final write to this SSA name in the path.  */
-	const gimple *def_stmt = SSA_NAME_DEF_STMT (m_var);
-
-	int idx_of_def_stmt;
-	bool found = epath.find_stmt_backwards (def_stmt, &idx_of_def_stmt);
-	if (!found)
-	  goto not_found;
-
-	/* What was the next write to the underlying var
-	   after the SSA name was set? (if any).  */
-
-	for (unsigned idx = idx_of_def_stmt + 1; idx < epath.m_edges.length ();
-	     ++idx)
-	  {
-	    const exploded_edge *eedge = epath.m_edges[idx];
-	    if (logger)
-		    logger->log ("eedge[%i]: EN %i -> EN %i", idx,
-				 eedge->m_src->m_index,
-				 eedge->m_dest->m_index);
-	    const exploded_node *dst_node = eedge->m_dest;
-	    const program_point &dst_point = dst_node->get_point ();
-	    const gimple *stmt = dst_point.get_stmt ();
-	    if (!stmt)
-		    continue;
-	    if (const gassign *assign = dyn_cast<const gassign *> (stmt))
-		    {
-			    tree lhs = gimple_assign_lhs (assign);
-			    if (TREE_CODE (lhs) == SSA_NAME
-				&& SSA_NAME_VAR (lhs) == SSA_NAME_VAR (m_var))
-				    return assign;
-		    }
-	  }
-      }
-
-  not_found:
-
-    /* Look backwards for the first statement with a location.  */
-    int i;
-    const exploded_edge *eedge;
-    FOR_EACH_VEC_ELT_REVERSE (epath.m_edges, i, eedge)
-    {
-      if (logger)
-	logger->log ("eedge[%i]: EN %i -> EN %i", i, eedge->m_src->m_index,
-		     eedge->m_dest->m_index);
-      const exploded_node *dst_node = eedge->m_dest;
-      const program_point &dst_point = dst_node->get_point ();
-      const gimple *stmt = dst_point.get_stmt ();
-      if (stmt)
-	if (get_pure_location (stmt->location) != UNKNOWN_LOCATION)
-	  return stmt;
-    }
-
-    gcc_unreachable ();
-    return NULL;
-  }
-
-  void update_event_loc_info (event_loc_info &) final override
-  {
-    /* No-op.  */
-  }
-
-private:
-  const exploded_graph &m_eg;
-  tree m_var;
-};
-
 class refcnt_mismatch : public pending_diagnostic_subclass<refcnt_mismatch>
 {
 public:
@@ -416,7 +322,7 @@ count_pyobj_references (const region_model *model,
 
   for (const auto &binding : retval_binding_map)
     {
-      const svalue *binding_sval = binding.second;
+      const svalue *binding_sval = binding.m_sval;
       const svalue *unwrapped_sval = binding_sval->unwrap_any_unmergeable ();
       const region *pointee = unwrapped_sval->maybe_get_region ();
 
@@ -450,11 +356,13 @@ check_refcnt (const region_model *model,
 	return;
 
       const auto &eg = ctxt->get_eg ();
-      refcnt_stmt_finder finder (*eg, reg_tree);
-      auto pd = make_unique<refcnt_mismatch> (curr_region, ob_refcnt_sval,
-					      actual_refcnt_sval, reg_tree);
+      auto pd = std::make_unique<refcnt_mismatch> (curr_region, ob_refcnt_sval,
+						   actual_refcnt_sval,
+						   reg_tree);
       if (pd && eg)
-	ctxt->warn (std::move (pd), &finder);
+	ctxt->warn (std::move (pd),
+		    make_ploc_fixer_for_epath_for_leak_diagnostic (*eg,
+								   NULL_TREE));
     }
 }
 
@@ -505,7 +413,7 @@ count_all_references (const region_model *model,
       auto binding_cluster = cluster.second;
       for (const auto &binding : binding_cluster->get_map ())
 	{
-	  const svalue *binding_sval = binding.second;
+	  const svalue *binding_sval = binding.m_sval;
 
 	  const svalue *unwrapped_sval
 	      = binding_sval->unwrap_any_unmergeable ();
@@ -680,7 +588,7 @@ kf_PyList_Append::impl_call_post (const call_details &cd) const
           = old_ptr_sval->dyn_cast_region_svalue ())
         {
           const region *freed_reg = old_reg->get_pointee ();
-          model->unbind_region_and_descendents (freed_reg, POISON_KIND_FREED);
+          model->unbind_region_and_descendents (freed_reg, poison_kind::freed);
           model->unset_dynamic_extents (freed_reg);
         }
 
@@ -885,7 +793,7 @@ kf_PyList_Append::impl_call_post (const call_details &cd) const
               model->mark_region_as_unknown (freed_reg, cd.get_uncertainty ());
             }
 
-          model->unbind_region_and_descendents (freed_reg, POISON_KIND_FREED);
+          model->unbind_region_and_descendents (freed_reg, poison_kind::freed);
           model->unset_dynamic_extents (freed_reg);
         }
 
@@ -943,9 +851,9 @@ kf_PyList_Append::impl_call_post (const call_details &cd) const
   /* Body of kf_PyList_Append::impl_call_post.  */
   if (cd.get_ctxt ())
     {
-      cd.get_ctxt ()->bifurcate (make_unique<realloc_failure> (cd));
-      cd.get_ctxt ()->bifurcate (make_unique<realloc_success_no_move> (cd));
-      cd.get_ctxt ()->bifurcate (make_unique<realloc_success_move> (cd));
+      cd.get_ctxt ()->bifurcate (std::make_unique<realloc_failure> (cd));
+      cd.get_ctxt ()->bifurcate (std::make_unique<realloc_success_no_move> (cd));
+      cd.get_ctxt ()->bifurcate (std::make_unique<realloc_success_move> (cd));
       cd.get_ctxt ()->terminate_path ();
     }
 }
@@ -1078,8 +986,8 @@ kf_PyList_New::impl_call_post (const call_details &cd) const
 
   if (cd.get_ctxt ())
     {
-      cd.get_ctxt ()->bifurcate (make_unique<pyobj_init_fail> (cd));
-      cd.get_ctxt ()->bifurcate (make_unique<success> (cd));
+      cd.get_ctxt ()->bifurcate (std::make_unique<pyobj_init_fail> (cd));
+      cd.get_ctxt ()->bifurcate (std::make_unique<success> (cd));
       cd.get_ctxt ()->terminate_path ();
     }
 }
@@ -1147,8 +1055,8 @@ kf_PyLong_FromLong::impl_call_post (const call_details &cd) const
 
   if (cd.get_ctxt ())
     {
-      cd.get_ctxt ()->bifurcate (make_unique<pyobj_init_fail> (cd));
-      cd.get_ctxt ()->bifurcate (make_unique<success> (cd));
+      cd.get_ctxt ()->bifurcate (std::make_unique<pyobj_init_fail> (cd));
+      cd.get_ctxt ()->bifurcate (std::make_unique<success> (cd));
       cd.get_ctxt ()->terminate_path ();
     }
 }
@@ -1272,33 +1180,53 @@ sorry_no_cpython_plugin ()
 	 "Python/C API", "#include <Python.h>");
 }
 
-static void
-cpython_analyzer_init_cb (void *gcc_data, void * /*user_data */)
+namespace analyzer_events = ::gcc::topics::analyzer_events;
+
+class cpython_analyzer_events_subscriber : public analyzer_events::subscriber
 {
-  ana::plugin_analyzer_init_iface *iface
-      = (ana::plugin_analyzer_init_iface *)gcc_data;
-  LOG_SCOPE (iface->get_logger ());
-  if (0)
-    inform (input_location, "got here: cpython_analyzer_init_cb");
+public:
+  void
+  on_message (const analyzer_events::on_tu_finished &msg) final override
+  {
+    LOG_SCOPE (msg.m_logger);
+    stash_named_types (msg.m_logger, msg.m_tu);
+    stash_global_vars (msg.m_logger, msg.m_tu);
+  }
 
-  init_py_structs ();
+  void
+  on_message (const analyzer_events::on_ana_init &m) final override
+  {
+    LOG_SCOPE (m.get_logger ());
 
-  if (pyobj_record == NULL_TREE)
-    {
-      sorry_no_cpython_plugin ();
-      return;
-    }
+    init_py_structs ();
 
-  iface->register_known_function ("PyList_Append",
-                                  make_unique<kf_PyList_Append> ());
-  iface->register_known_function ("PyList_New", make_unique<kf_PyList_New> ());
-  iface->register_known_function ("PyLong_FromLong",
-                                  make_unique<kf_PyLong_FromLong> ());
+    if (pyobj_record == NULL_TREE)
+      {
+	sorry_no_cpython_plugin ();
+	return;
+      }
 
-  iface->register_known_function (
-      "__analyzer_cpython_dump_refcounts",
-      make_unique<kf_analyzer_cpython_dump_refcounts> ());
-}
+    m.register_known_function ("PyList_Append",
+			       std::make_unique<kf_PyList_Append> ());
+    m.register_known_function ("PyList_New",
+			       std::make_unique<kf_PyList_New> ());
+    m.register_known_function ("PyLong_FromLong",
+			       std::make_unique<kf_PyLong_FromLong> ());
+    m.register_known_function
+      ("__analyzer_cpython_dump_refcounts",
+       std::make_unique<kf_analyzer_cpython_dump_refcounts> ());
+  }
+
+  void
+  on_message (const analyzer_events::on_frame_popped &msg) final override
+  {
+    pyobj_refcnt_checker (msg.m_new_model,
+			  msg.m_old_model,
+			  msg.m_retval,
+			  msg.m_ctxt);
+  }
+} cpython_sub;
+
 } // namespace ana
 
 #endif /* #if ENABLE_ANALYZER */
@@ -1311,12 +1239,7 @@ plugin_init (struct plugin_name_args *plugin_info,
   const char *plugin_name = plugin_info->base_name;
   if (0)
     inform (input_location, "got here; %qs", plugin_name);
-  register_finish_translation_unit_callback (&stash_named_types);
-  register_finish_translation_unit_callback (&stash_global_vars);
-  region_model::register_pop_frame_callback(pyobj_refcnt_checker);
-  register_callback (plugin_info->base_name, PLUGIN_ANALYZER_INIT,
-                     ana::cpython_analyzer_init_cb,
-                     NULL); /* void *user_data */
+  g->get_channels ().analyzer_events_channel.add_subscriber (ana::cpython_sub);
 #else
   sorry_no_analyzer ();
 #endif

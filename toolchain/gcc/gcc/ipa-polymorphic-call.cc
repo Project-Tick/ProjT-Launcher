@@ -1,5 +1,5 @@
 /* Analysis of polymorphic call context.
-   Copyright (C) 2013-2025 Free Software Foundation, Inc.
+   Copyright (C) 2013-2026 Free Software Foundation, Inc.
    Contributed by Jan Hubicka
 
 This file is part of GCC.
@@ -1353,7 +1353,7 @@ record_known_type (struct type_change_info *tci, tree type, HOST_WIDE_INT offset
 
   /* If we found a constructor of type that is not polymorphic or
      that may contain the type in question as a field (not as base),
-     restrict to the inner class first to make type matching bellow
+     restrict to the inner class first to make type matching below
      happier.  */
   if (type
       && (offset
@@ -2363,7 +2363,18 @@ ipa_polymorphic_call_context::possible_dynamic_type_change (bool in_poly_cdtor,
 							    tree otr_type)
 {
   if (dynamic)
-    make_speculative (otr_type);
+    {
+      /* See if existing speculation was inconsistent before type change.
+	 If so drop it first, so we do not lose track about it being
+	 impossible.  */
+      if (speculative_outer_type
+	  && !speculation_consistent_p (speculative_outer_type,
+					speculative_offset,
+					speculative_maybe_derived_type,
+					otr_type))
+	clear_speculation ();
+      make_speculative (otr_type);
+    }
   else if (in_poly_cdtor)
     maybe_in_construction = true;
 }

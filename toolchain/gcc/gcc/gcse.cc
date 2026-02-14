@@ -1,5 +1,5 @@
 /* Partial redundancy elimination / Hoisting for RTL.
-   Copyright (C) 1997-2025 Free Software Foundation, Inc.
+   Copyright (C) 1997-2026 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -2094,8 +2094,7 @@ prepare_copy_insn (rtx reg, rtx exp)
 	gcc_unreachable ();
     }
 
-  pat = get_insns ();
-  end_sequence ();
+  pat = end_sequence ();
 
   return pat;
 }

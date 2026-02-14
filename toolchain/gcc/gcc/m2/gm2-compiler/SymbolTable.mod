@@ -1,6 +1,6 @@
 (* SymbolTable.mod provides access to the symbol table.
 
-Copyright (C) 2001-2025 Free Software Foundation, Inc.
+Copyright (C) 2001-2026 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -80,9 +80,9 @@ FROM SymbolKey IMPORT NulKey, SymbolTree, IsSymbol,
                       NoOfNodes ;
 
 FROM M2Base IMPORT MixTypes, MixTypesDecl, InitBase, Char, Integer, LongReal,
-                   Cardinal, LongInt, LongCard, ZType, RType ;
+                   Cardinal, LongInt, LongCard, Boolean, ZType, RType ;
 
-FROM M2System IMPORT Address ;
+FROM M2System IMPORT Address, Byte ;
 FROM m2expr IMPORT OverflowZType ;
 FROM gcctypes IMPORT tree ;
 FROM m2linemap IMPORT BuiltinsLocation ;
@@ -94,6 +94,7 @@ FROM M2Comp IMPORT CompilingDefinitionModule,
 
 FROM FormatStrings IMPORT HandleEscape ;
 FROM M2Scaffold IMPORT DeclareArgEnvParams ;
+FROM M2Diagnostic IMPORT Diagnostic, InitMemDiagnostic, MemIncr, MemSet ;
 
 FROM M2SymInit IMPORT InitDesc, InitSymInit, GetInitialized, ConfigSymInit,
                       SetInitialized, SetFieldInitialized, GetFieldInitialized,
@@ -107,6 +108,7 @@ CONST
    DebugUnknownToken    =  FALSE ;   (* If enabled it will generate a warning every
                                         time a symbol is created with an unknown
                                         location.  *)
+   BreakNew             = 97 ;       (* -1 disables the break.  *)
 
    (*
       The Unbounded is a pseudo type used within the compiler
@@ -228,6 +230,10 @@ TYPE
    SymUndefined = RECORD
                      name      : Name ;       (* Index into name array, name *)
                                               (* of record.                  *)
+                     declScope : CARDINAL ;   (* Scope where unknown is      *)
+                                              (* created.                    *)
+                     onImport  : BOOLEAN ;    (* Was it created during an    *)
+                                              (* import?                     *)
                      oafamily  : CARDINAL ;   (* The oafamily for this sym   *)
                      errorScope: ErrorScope ; (* Title scope used if an      *)
                                               (* error is emitted.           *)
@@ -653,6 +659,9 @@ TYPE
       	       	     	      	       	      (* (subrange or enumeration).  *)
                 packedInfo: PackedInfo ;      (* the equivalent packed type  *)
                 ispacked : BOOLEAN ;
+                SetInWord: BOOLEAN ;          (* Is the set stored in a word? *)
+                SetArray : CARDINAL ;         (* Array used for large sets.  *)
+                Align    : CARDINAL ;         (* The alignment of this type  *)
                 Size     : PtrToValue ;       (* Runtime size of symbol.     *)
                 oafamily : CARDINAL ;         (* The oafamily for this sym   *)
                 Scope    : CARDINAL ;         (* Scope of declaration.       *)
@@ -933,6 +942,7 @@ VAR
                                       (* errors.                            *)
    ConstLitArray     : Indexing.Index ;
    BreakSym          : CARDINAL ;     (* Allows interactive debugging.      *)
+   SymMemDiag        : Diagnostic ;   (* Contains memory related statistics *)
 
 
 (*
@@ -1080,7 +1090,9 @@ BEGIN
    END ;
    PutIndice(Symbols, sym, pSym) ;
    CheckBreak (sym) ;
-   INC(FreeSymbol)
+   INC (FreeSymbol) ;
+   MemSet (SymMemDiag, 1, FreeSymbol-1) ;
+   MemIncr (SymMemDiag, 2, SIZE (pSym^))
 END NewSym ;
 
 
@@ -1583,7 +1595,7 @@ END IsError ;
    MakeObject - creates an object node.
 *)
 
-PROCEDURE MakeObject (name: Name) : CARDINAL ;
+PROCEDURE MakeObject (tok: CARDINAL; name: Name) : CARDINAL ;
 VAR
    pSym: PtrToSymbol ;
    Sym : CARDINAL ;
@@ -1593,8 +1605,8 @@ BEGIN
    WITH pSym^ DO
       SymbolType := ObjectSym ;
       Object.name := name ;
-      InitWhereDeclared(Object.At) ;
-      InitWhereFirstUsed(Object.At)
+      InitWhereDeclaredTok (tok, Object.At) ;
+      InitWhereFirstUsedTok (tok, Object.At)
    END ;
    RETURN( Sym )
 END MakeObject ;
@@ -1683,6 +1695,10 @@ PROCEDURE Init ;
 VAR
    pCall: PtrToCallFrame ;
 BEGIN
+   SymMemDiag
+      := InitMemDiagnostic
+            ('SymbolTable:Symbols',
+            '{0N} total symbols {1d} consuming {2M} ram {0M} ({2P})') ;
    BreakWhenSymCreated (NulSym) ;  (* Disable the intereactive sym watch.  *)
    (* To examine the symbol table when a symbol is created run cc1gm2 from gdb
       and set a break point on gdbhook.
@@ -5404,6 +5420,28 @@ END MakeConstVar ;
 
 
 (*
+   IsConstVar - returns TRUE if sym is a const var.  This is a
+                constant which might be assigned to TRUE or FALSE
+                depending upon the result of the quad stack control flow.
+                Typically used in CONST foo = (a AND b) or similar.
+                This symbol will only be assigned once with a value, but
+                will appear more than once as a designator to an assignment
+                in the quad table.  However as the quad table is reduced
+                only one assignment will remain.  If after reducing quads
+                two or more assignments remain, then there is an error
+                as sym should not have been declared a constant.
+*)
+
+PROCEDURE IsConstVar (sym: CARDINAL) : BOOLEAN ;
+VAR
+   pSym: PtrToSymbol ;
+BEGIN
+   pSym := GetPsym (sym) ;
+   RETURN( pSym^.SymbolType=ConstVarSym )
+END IsConstVar ;
+
+
+(*
    InitConstString - initialize the constant string.
 *)
 
@@ -5827,7 +5865,7 @@ BEGIN
       VarSym:  RETURN Var.IsSSA
 
       ELSE
-         InternalError ('expecting a variable symbol')
+         RETURN FALSE
       END
    END
 END IsVariableSSA ;
@@ -6391,8 +6429,8 @@ BEGIN
             Size := InitValue() ;   (* Size of array.                      *)
             Offset := InitValue() ; (* Offset of array.                    *)
             Type := NulSym ;        (* The Array Type. ARRAY OF Type.      *)
+            Align := NulSym ;       (* Alignment of this type.     *)
 	    Large := FALSE ;        (* is this array large?                *)
-            Align := NulSym ;       (* The alignment of this type.         *)
             oafamily := oaf ;       (* The unbounded for this array        *)
             Scope := GetCurrentScope() ;        (* Which scope created it  *)
             InitWhereDeclaredTok(tok, At)   (* Declared here               *)
@@ -6992,19 +7030,19 @@ END GetNthParamChoice ;
 
 PROCEDURE GetNthParamOrdered (sym: CARDINAL; ParamNo: CARDINAL;
                               a, b, c: ProcedureKind) : CARDINAL ;
-VAR
-   param: CARDINAL ;
 BEGIN
-   param := GetNthParamChoice (sym, ParamNo, a) ;
-   IF param = NulSym
+   IF GetProcedureParametersDefined (sym, a)
    THEN
-      param := GetNthParamChoice (sym, ParamNo, b) ;
-      IF param = NulSym
+      RETURN GetNthParamChoice (sym, ParamNo, a)
+   ELSIF GetProcedureParametersDefined (sym, b)
+   THEN
+      RETURN GetNthParamChoice (sym, ParamNo, b)
+   ELSIF GetProcedureParametersDefined (sym, c)
       THEN
-         param := GetNthParamChoice (sym, ParamNo, c)
+      RETURN GetNthParamChoice (sym, ParamNo, c)
+   ELSE
+      RETURN NulSym
       END
-   END ;
-   RETURN param
 END GetNthParamOrdered ;
 
 
@@ -7023,6 +7061,10 @@ END GetNthParamOrdered ;
 PROCEDURE GetNthParamAnyClosest (sym: CARDINAL; ParamNo: CARDINAL;
                                  currentmodule: CARDINAL) : CARDINAL ;
 BEGIN
+   IF IsUnknown (sym)
+   THEN
+      InternalError (__FILE__ + ":" + __FUNCTION__ + ":not expecting an unknown symbol")
+   END ;
    IF GetOuterModuleScope (currentmodule) = GetOuterModuleScope (sym)
    THEN
       (* Same module.  *)
@@ -7042,11 +7084,22 @@ END GetNthParamAnyClosest ;
 
 PROCEDURE GetOuterModuleScope (sym: CARDINAL) : CARDINAL ;
 BEGIN
-   WHILE NOT (IsDefImp (sym) OR
-              (IsModule (sym) AND (GetScope (sym) = NulSym))) DO
-      sym := GetScope (sym)
-   END ;
+   REPEAT
+      IF IsDefImp (sym)
+      THEN
+         (* Definition/implementation module.  *)
    RETURN sym
+      ELSIF IsModule (sym)
+      THEN
+         IF GetScope (sym) = NulSym
+         THEN
+            (* Outer module.  *)
+            RETURN sym
+         END
+      END ;
+      sym := GetScope (sym)
+   UNTIL sym = NulSym ;
+   InternalError ('not expecting to reach an outer scope')
 END GetOuterModuleScope ;
 
 
@@ -8598,7 +8651,7 @@ BEGIN
       THEN
          (* Make unknown *)
          NewSym (Sym) ;
-         FillInUnknownFields (tok, Sym, SymName) ;
+         FillInUnknownFields (tok, Sym, SymName, NulSym, FALSE) ;
          (* Add to unknown tree *)
          AddSymToUnknownTree (ScopePtr, SymName, Sym)
          (*
@@ -8628,14 +8681,14 @@ BEGIN
       WriteString('RequestSym for: ') ; WriteKey(SymName) ; WriteLn ;
    *)
    Sym := GetSym (SymName) ;
-   IF Sym=NulSym
+   IF Sym = NulSym
    THEN
       Sym := GetSymFromUnknownTree (SymName) ;
-      IF Sym=NulSym
+      IF Sym = NulSym
       THEN
-         (* Make unknown *)
+         (* Make unknown.  *)
          NewSym (Sym) ;
-         FillInUnknownFields (tok, Sym, SymName) ;
+         FillInUnknownFields (tok, Sym, SymName, NulSym, FALSE) ;
          (* Add to unknown tree *)
          AddSymToUnknownTree (ScopePtr, SymName, Sym)
          (*
@@ -9203,7 +9256,7 @@ BEGIN
                        IF Sym=NulSym
                        THEN
                           NewSym (Sym) ;
-                          FillInUnknownFields (tok, Sym, SymName) ;
+                          FillInUnknownFields (tok, Sym, SymName, ModSym, TRUE) ;
                           PutSymKey (Unresolved, SymName, Sym)
                        END
                     END
@@ -9234,7 +9287,7 @@ BEGIN
                        IF Sym=NulSym
                        THEN
                           NewSym(Sym) ;
-                          FillInUnknownFields (tok, Sym, SymName) ;
+                          FillInUnknownFields (tok, Sym, SymName, ModSym, TRUE) ;
                           PutSymKey (Unresolved, SymName, Sym)
                        END
                     END
@@ -9261,7 +9314,7 @@ BEGIN
                        IF Sym=NulSym
                        THEN
                           NewSym(Sym) ;
-                          FillInUnknownFields (tok, Sym, SymName) ;
+                          FillInUnknownFields (tok, Sym, SymName, scope, TRUE) ;
                           PutSymKey(Unresolved, SymName, Sym)
                        END
                     END |
@@ -9270,7 +9323,7 @@ BEGIN
                        IF Sym=NulSym
                        THEN
                           NewSym(Sym) ;
-                          FillInUnknownFields (tok, Sym, SymName) ;
+                          FillInUnknownFields (tok, Sym, SymName, scope, TRUE) ;
                           PutSymKey(Unresolved, SymName, Sym)
                        END
                     END |
@@ -9279,7 +9332,7 @@ BEGIN
                           IF Sym=NulSym
                           THEN
                              NewSym(Sym) ;
-                             FillInUnknownFields (tok, Sym, SymName) ;
+                             FillInUnknownFields (tok, Sym, SymName, NulSym, FALSE) ;
                              PutSymKey(Unresolved, SymName, Sym)
                           END
                        END
@@ -9536,29 +9589,30 @@ END ForeachParamSymDo ;
                              an error message is displayed.
 *)
 
-PROCEDURE CheckForUnknownInModule ;
+PROCEDURE CheckForUnknownInModule (tokno: CARDINAL) ;
 VAR
    pSym: PtrToSymbol ;
 BEGIN
-   pSym := GetPsym(GetCurrentModuleScope()) ;
+   pSym := GetPsym (GetCurrentModuleScope ()) ;
    WITH pSym^ DO
       CASE SymbolType OF
 
       DefImpSym: WITH DefImp DO
-                    CheckForUnknowns (name, ExportQualifiedTree,
+                    CheckForUnknowns (tokno, name, ExportQualifiedTree,
                                       'EXPORT QUALIFIED') ;
-                    CheckForUnknowns (name, ExportUnQualifiedTree,
+                    CheckForUnknowns (tokno, name, ExportUnQualifiedTree,
                                       'EXPORT UNQUALIFIED') ;
-                    CheckForSymbols  (ExportRequest,
-                                      'requested by another modules import (symbols have not been exported by the appropriate definition module)') ;
-                    CheckForUnknowns (name, Unresolved, 'unresolved') ;
-                    CheckForUnknowns (name, LocalSymbols, 'locally used')
+                    CheckForSymbols (ExportRequest,
+                                     'requested by another module import' +
+                                     ' and the symbol has not been exported by the appropriate definition module') ;
+                    CheckForUnknowns (tokno, name, Unresolved, 'unresolved') ;
+                    CheckForUnknowns (tokno, name, LocalSymbols, 'locally used')
                  END |
       ModuleSym: WITH Module DO
-                    CheckForUnknowns (name, Unresolved, 'unresolved') ;
-                    CheckForUnknowns (name, ExportUndeclared, 'exported but undeclared') ;
-                    CheckForUnknowns (name, ExportTree, 'exported but undeclared') ;
-                    CheckForUnknowns (name, LocalSymbols, 'locally used')
+                    CheckForUnknowns (tokno, name, Unresolved, 'unresolved') ;
+                    CheckForUnknowns (tokno, name, ExportUndeclared, 'exported but undeclared') ;
+                    CheckForUnknowns (tokno, name, ExportTree, 'exported but undeclared') ;
+                    CheckForUnknowns (tokno, name, LocalSymbols, 'locally used')
                  END
 
       ELSE
@@ -9577,7 +9631,7 @@ BEGIN
    IF IsUnreportedUnknown (sym)
    THEN
       IncludeElementIntoSet (ReportedUnknowns, sym) ;
-      MetaErrorStringT1 (GetFirstUsed (sym), InitString ("unknown symbol {%1EUad}"), sym)
+      MetaErrorStringT1 (GetFirstUsed (sym), InitString ("unknown symbol {%1EUad} {%1&s}"), sym)
    END
 END UnknownSymbolError ;
 
@@ -9656,22 +9710,24 @@ END Listify ;
                       together with an error message.
 *)
 
-PROCEDURE CheckForUnknowns (name: Name; Tree: SymbolTree;
+PROCEDURE CheckForUnknowns (tokno: CARDINAL; name: Name; Tree: SymbolTree;
                             a: ARRAY OF CHAR) ;
 VAR
    s: String ;
 BEGIN
-   IF DoesTreeContainAny(Tree, IsUnreportedUnknown)
+   IF DoesTreeContainAny (Tree, IsUnreportedUnknown)
    THEN
-      CurrentError := NewError(GetTokenNo()) ;
-      s := InitString("{%E} the following unknown symbols in module %<") ;
-      s := ConCat(s, Mark(InitStringCharStar(KeyToCharStar(name)))) ;
-      s := ConCat(s, Mark(InitString('%> were '))) ;
-      s := ConCat(s, Mark(InitString(a))) ;
-      s := ConCat (s, Mark (InitString (': '))) ;
-      s := ConCat (s, Mark (Listify (Tree, IsUnreportedUnknown))) ;
-      MetaErrorStringT0(GetTokenNo(), s) ;
-      ForeachNodeDo(Tree, UnknownSymbolError)
+      ForeachNodeDo (Tree, UnknownSymbolError) ;
+      IF NoOfNodes (Tree, IsUnreportedUnknown) > 0
+      THEN
+         s := InitString ("{%E} the following unknown symbols in module %<") ;
+         s := ConCat (s, Mark (InitStringCharStar (KeyToCharStar (name)))) ;
+         s := ConCat (s, Mark (InitString ('%> were '))) ;
+         s := ConCat (s, Mark (InitString (a))) ;
+         s := ConCat (s, Mark (InitString (': '))) ;
+         s := ConCat (s, Mark (Listify (Tree, IsUnreportedUnknown))) ;
+         MetaErrorStringT0 (tokno, s)
+      END
    END
 END CheckForUnknowns ;
 
@@ -9701,12 +9757,12 @@ PROCEDURE CheckForSymbols (Tree: SymbolTree; a: ARRAY OF CHAR) ;
 VAR
    s: String ;
 BEGIN
-   IF NOT IsEmptyTree(Tree)
+   IF DoesTreeContainAny (Tree, IsUnreportedUnknown)
    THEN
       s := InitString ("the symbols are unknown at the end of module {%1Ea} when ") ;
       s := ConCat (s, Mark(InitString(a))) ;
       MetaErrorString1 (s, MainModule) ;
-      ForeachNodeDo(Tree, SymbolError)
+      ForeachNodeDo (Tree, SymbolError)
    END
 END CheckForSymbols ;
 
@@ -11657,10 +11713,11 @@ END IsProcedureAnyNoReturn ;
 
 
 (*
-   FillInUnknownFields -
+   FillInUnknownFields - fills in all fields for the undefined sym.
 *)
 
-PROCEDURE FillInUnknownFields (tok: CARDINAL; sym: CARDINAL; SymName: Name) ;
+PROCEDURE FillInUnknownFields (tok: CARDINAL; sym: CARDINAL; SymName: Name;
+                               descscope: CARDINAL; onimport: BOOLEAN) ;
 VAR
    pSym: PtrToSymbol ;
 BEGIN
@@ -11671,10 +11728,40 @@ BEGIN
          name     := SymName ;
          oafamily := NulSym ;
          errorScope := GetCurrentErrorScope () ;
+         declScope := descscope ;
+         onImport := onimport ;
          InitWhereFirstUsedTok (tok, At)
       END
    END
 END FillInUnknownFields ;
+
+
+(*
+   GetUnknownOnImport - returns the onimport field of unknown sym.
+*)
+
+PROCEDURE GetUnknownOnImport (sym: CARDINAL) : BOOLEAN ;
+VAR
+   pSym: PtrToSymbol ;
+BEGIN
+   Assert (IsUnknown (sym)) ;
+   pSym := GetPsym (sym) ;
+   RETURN pSym^.Undefined.onImport
+END GetUnknownOnImport ;
+
+
+(*
+   GetUnknownDeclScope - returns the decl scope of unknown sym.
+*)
+
+PROCEDURE GetUnknownDeclScope (sym: CARDINAL) : CARDINAL ;
+VAR
+   pSym: PtrToSymbol ;
+BEGIN
+   Assert (IsUnknown (sym)) ;
+   pSym := GetPsym (sym) ;
+   RETURN pSym^.Undefined.declScope
+END GetUnknownDeclScope ;
 
 
 (*
@@ -11857,10 +11944,6 @@ BEGIN
       CASE SymbolType OF
 
       ErrorSym      : n := 0 |
-(*
-      ArraySym      ,
-      UnboundedSym  : n := 1 |   (* Standard language limitation *)
-*)
       EnumerationSym: n := pSym^.Enumeration.NoOfElements |
       InterfaceSym  : n := HighIndice(Interface.Parameters)
 
@@ -11995,6 +12078,10 @@ BEGIN
             InitPacked(packedInfo) ;        (* not packed and no      *)
                                             (* equivalent (yet).      *)
             ispacked := FALSE ;        (* Not yet known to be packed. *)
+            SetInWord := TRUE ;        (* Can the set be stored in a  *)
+                                       (* single word?                *)
+            SetArray := NulSym ;       (* Set used for large sets.    *)
+            Align := NulSym ;
             oafamily := oaf ;          (* The unbounded sym for this  *)
             Scope := GetCurrentScope() ;    (* Which scope created it *)
             InitWhereDeclaredTok(tok, At)   (* Declared here          *)
@@ -12032,6 +12119,46 @@ END PutSet ;
 
 
 (*
+   PutSetArray - places array into the setarray field.
+*)
+
+PROCEDURE PutSetArray (Sym: CARDINAL; array: CARDINAL) ;
+VAR
+   pSym: PtrToSymbol ;
+BEGIN
+   pSym := GetPsym(Sym) ;
+   WITH pSym^ DO
+      CASE SymbolType OF
+
+      ErrorSym: |
+      SetSym: WITH Set DO
+                 SetArray := array
+              END
+      ELSE
+         InternalError ('expecting a Set symbol')
+      END
+   END
+END PutSetArray ;
+
+
+(*
+   MakeSetArray - create an ARRAY simpletype OF BOOLEAN.
+*)
+
+PROCEDURE MakeSetArray (token: CARDINAL; subrangetype: CARDINAL) : CARDINAL ;
+VAR
+   array, subscript: CARDINAL ;
+BEGIN
+   array := MakeArray (token, NulSym) ;
+   PutArray (array, Byte) ;
+   subscript := MakeSubscript () ;
+   PutSubscript (subscript, subrangetype) ;
+   PutArraySubscript (array, subscript) ;
+   RETURN array
+END MakeSetArray ;
+
+
+(*
    IsSet - returns TRUE if Sym is a set symbol.
 *)
 
@@ -12057,6 +12184,77 @@ BEGIN
    pSym := GetPsym (Sym) ;
    RETURN (pSym^.SymbolType=SetSym) AND pSym^.Set.ispacked
 END IsSetPacked ;
+
+
+(*
+   GetSetArray - return the set array for a large set.
+*)
+
+PROCEDURE GetSetArray (sym: CARDINAL) : CARDINAL ;
+VAR
+   pSym: PtrToSymbol ;
+BEGIN
+   AssertInRange (sym) ;
+   pSym := GetPsym (sym) ;
+   WITH pSym^ DO
+      CASE SymbolType OF
+
+      SetSym: RETURN Set.SetArray
+
+      ELSE
+         RETURN NulSym
+      END
+   END
+END GetSetArray ;
+
+
+(*
+   PutSetInWord - set the SetInWord boolean to value.
+*)
+
+PROCEDURE PutSetInWord (sym: CARDINAL; value: BOOLEAN) ;
+VAR
+   pSym: PtrToSymbol ;
+BEGIN
+   AssertInRange (sym) ;
+   pSym := GetPsym (sym) ;
+   WITH pSym^ DO
+      CASE SymbolType OF
+
+      SetSym: Set.SetInWord := value ;
+              IF value
+              THEN
+                 Set.Align := MakeConstant (GetDeclaredMod (sym), 0) ;
+                 Set.ispacked := TRUE
+              END
+
+      ELSE
+         InternalError ('expecting a set symbol')
+      END
+   END
+END PutSetInWord ;
+
+
+(*
+   GetSetInWord - return SetInWord.
+*)
+
+PROCEDURE GetSetInWord (sym: CARDINAL) : BOOLEAN ;
+VAR
+   pSym: PtrToSymbol ;
+BEGIN
+   AssertInRange (sym) ;
+   pSym := GetPsym (sym) ;
+   WITH pSym^ DO
+      CASE SymbolType OF
+
+      SetSym: RETURN Set.SetInWord
+
+      ELSE
+         InternalError ('expecting a Set symbol')
+      END
+   END
+END GetSetInWord ;
 
 
 (*
@@ -12742,9 +12940,9 @@ BEGIN
          type := SkipType(GetType(subscript)) ;
          IF IsAModula2Type(type)
          THEN
-            (* ok all is good *)
+            (* Ok all is good.  *)
          ELSE
-            MetaError2('the array {%1Dad} must be declared with a simpletype in the [..] component rather than a {%2d}',
+            MetaError2('the array {%1Dad} must be declared with a simpletype in the [..] component rather than a {%2dv}',
                        sym, type)
          END
       END
@@ -12823,7 +13021,7 @@ END AddNameTo ;
                     current scope.
 *)
 
-PROCEDURE AddNameToScope (n: Name) ;
+PROCEDURE AddNameToScope (tok: CARDINAL; n: Name) ;
 VAR
    pSym : PtrToSymbol ;
    scope: CARDINAL ;
@@ -12833,9 +13031,9 @@ BEGIN
    WITH pSym^ DO
       CASE SymbolType OF
 
-      ProcedureSym:  AddNameTo(Procedure.NamedObjects, MakeObject(n)) |
-      ModuleSym   :  AddNameTo(Module.NamedObjects, MakeObject(n)) |
-      DefImpSym   :  AddNameTo(DefImp.NamedObjects, MakeObject(n))
+      ProcedureSym:  AddNameTo(Procedure.NamedObjects, MakeObject (tok, n)) |
+      ModuleSym   :  AddNameTo(Module.NamedObjects, MakeObject (tok, n)) |
+      DefImpSym   :  AddNameTo(DefImp.NamedObjects, MakeObject (tok, n))
 
       ELSE
          InternalError ('expecting - DefImp')
@@ -12849,7 +13047,7 @@ END AddNameToScope ;
                          module.
 *)
 
-PROCEDURE AddNameToImportList (n: Name) ;
+PROCEDURE AddNameToImportList (tok: CARDINAL; n: Name) ;
 VAR
    pSym : PtrToSymbol ;
    scope: CARDINAL ;
@@ -12859,8 +13057,8 @@ BEGIN
    WITH pSym^ DO
       CASE SymbolType OF
 
-      ModuleSym:  AddNameTo(Module.NamedImports, MakeObject(n)) |
-      DefImpSym:  AddNameTo(DefImp.NamedImports, MakeObject(n))
+      ModuleSym:  AddNameTo (Module.NamedImports, MakeObject (tok, n)) |
+      DefImpSym:  AddNameTo (DefImp.NamedImports, MakeObject (tok, n))
 
       ELSE
          InternalError ('expecting - DefImp or Module symbol')
@@ -15166,9 +15364,10 @@ BEGIN
       RecordSym     :  Record.Align := align |
       RecordFieldSym:  RecordField.Align := align |
       TypeSym       :  Type.Align := align |
-      ArraySym      :  Array.Align := align |
       PointerSym    :  Pointer.Align := align |
-      SubrangeSym   :  Subrange.Align := align
+      SubrangeSym   :  Subrange.Align := align |
+      SetSym        :  Set.Align := align |
+      ArraySym      :  Array.Align := align
 
       ELSE
          InternalError ('expecting record, field, pointer, type, subrange or an array symbol')
@@ -15193,11 +15392,12 @@ BEGIN
       RecordSym      :  RETURN( Record.Align ) |
       RecordFieldSym :  RETURN( RecordField.Align ) |
       TypeSym        :  RETURN( Type.Align ) |
-      ArraySym       :  RETURN( Array.Align ) |
       PointerSym     :  RETURN( Pointer.Align ) |
       VarientFieldSym:  RETURN( GetAlignment(VarientField.Parent) ) |
       VarientSym     :  RETURN( GetAlignment(Varient.Parent) ) |
-      SubrangeSym    :  RETURN( Subrange.Align )
+      SubrangeSym    :  RETURN( Subrange.Align ) |
+      SetSym         :  RETURN( Set.Align ) |
+      ArraySym       :  RETURN( Array.Align )
 
       ELSE
          InternalError ('expecting record, field, pointer, type, subrange or an array symbol')

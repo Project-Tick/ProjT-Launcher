@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2025, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2026, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -26,11 +26,9 @@
 with Aspects;        use Aspects;
 with Atree;          use Atree;
 with Checks;         use Checks;
-with Debug;          use Debug;
-with Diagnostics.Constructors; use Diagnostics.Constructors;
-with Einfo;          use Einfo;
 with Einfo.Utils;    use Einfo.Utils;
 with Elists;         use Elists;
+with Errid;          use Errid;
 with Errout;         use Errout;
 with Expander;       use Expander;
 with Exp_Tss;        use Exp_Tss;
@@ -60,7 +58,6 @@ with Sem_Res;        use Sem_Res;
 with Sem_Util;       use Sem_Util;
 with Sem_Type;       use Sem_Type;
 with Sem_Warn;       use Sem_Warn;
-with Sinfo;          use Sinfo;
 with Sinfo.Utils;    use Sinfo.Utils;
 with Snames;         use Snames;
 with Stringt;        use Stringt;
@@ -1137,10 +1134,18 @@ package body Sem_Aggr is
    begin
       Error_Msg_Warn := SPARK_Mode /= On;
 
-      if Is_Modular_Integer_Type (Index_Typ) then
+      if Has_Modular_Operations (Index_Typ) then
          Error_Msg_N
            ("null array aggregate indexed by a modular type<<", N);
-      else
+
+      elsif Is_Modular_Integer_Type (Index_Typ)
+        and then Has_Unsigned_Base_Range_Aspect (Base_Type (Index_Typ))
+      then
+         Error_Msg_N
+           ("null array aggregate indexed by an unsigned base range type<<",
+            N);
+
+      elsif Is_Enumeration_Type (Index_Typ) then
          Error_Msg_N
            ("null array aggregate indexed by an enumeration type<<", N);
       end if;
@@ -3332,6 +3337,24 @@ package body Sem_Aggr is
                      --  Not needed if others, since missing impossible.
 
                      if No (Others_N) then
+                        --  We are dealing with a gap in the indicies. However
+                        --  we should also check for an out of bounds error. If
+                        --  there exists an out of bounds error then we should
+                        --  not be suggesting that the user should add the
+                        --  missing indices but rather remove the ones that are
+                        --  out of bounds.
+
+                        Aggr_Low := Table (1).Lo;
+                        Aggr_High := Table (Nb_Discrete_Choices).Hi;
+
+                        Check_Bounds
+                          (Index_Typ_Low, Index_Typ_High, Aggr_Low, Aggr_High);
+                        Check_Bounds
+                          (Index_Base_Low,
+                           Index_Base_High,
+                           Aggr_Low,
+                           Aggr_High);
+
                         for J in 2 .. Nb_Discrete_Choices loop
                            Lo_Val := Expr_Value (Table (J).Lo);
                            Hi_Val := Table (J - 1).Highest;
@@ -3359,11 +3382,13 @@ package body Sem_Aggr is
                                  if Hi_Val + 1 = Lo_Val - 1 then
                                     Error_Msg_N
                                       ("missing index value "
-                                       & "in array aggregate!", Error_Node);
+                                       & "in array aggregate!",
+                                       Error_Node);
                                  else
                                     Error_Msg_N
                                       ("missing index values "
-                                       & "in array aggregate!", Error_Node);
+                                       & "in array aggregate!",
+                                       Error_Node);
                                  end if;
 
                                  Output_Bad_Choices
@@ -4040,15 +4065,18 @@ package body Sem_Aggr is
       if Present (First (Expressions (N)))
         and then Present (First (Component_Associations (N)))
       then
-         if Debug_Flag_Underscore_DD then
-            Record_Mixed_Container_Aggregate_Error
-              (Aggr       => N,
-               Pos_Elem   => First (Expressions (N)),
-               Named_Elem => First (Component_Associations (N)));
-         else
-            Error_Msg_N
-              ("container aggregate cannot be both positional and named", N);
-         end if;
+         Error_Msg_N
+           (Msg        =>
+              "container aggregate cannot be both positional and named",
+            N          => N,
+            Error_Code => GNAT0006,
+            Spans      =>
+              (1 =>
+                 Secondary_Labeled_Span
+                   (First (Expressions (N)), "positional element "),
+               2 =>
+                 Secondary_Labeled_Span
+                   (First (Component_Associations (N)), "named element")));
          return;
       end if;
 
@@ -5443,8 +5471,13 @@ package body Sem_Aggr is
 
             Hi := New_Copy_Tree (Lo);
 
-            Report_Null_Array_Constraint_Error (N, Index_Typ);
-            Set_Raises_Constraint_Error (N);
+            --  On multidimiensional arrays, avoid reporting the same error
+            --  several times.
+
+            if not Raises_Constraint_Error (N) then
+               Report_Null_Array_Constraint_Error (N, Index_Typ);
+               Set_Raises_Constraint_Error (N);
+            end if;
 
          else
             --  The upper bound is the predecessor of the lower bound
@@ -5457,6 +5490,15 @@ package body Sem_Aggr is
 
          Append (Make_Range (Loc, New_Copy_Tree (Lo), Hi), Constr);
          Analyze_And_Resolve (Last (Constr), Etype (Index));
+
+         if Known_Bounds
+           and then
+             (Nkind (High_Bound (Last (Constr))) = N_Raise_Constraint_Error
+                or else
+              Nkind (Low_Bound (Last (Constr))) = N_Raise_Constraint_Error)
+         then
+            Set_Raises_Constraint_Error (N);
+         end if;
 
          Next_Index (Index);
       end loop;
@@ -6355,7 +6397,12 @@ package body Sem_Aggr is
                & "has unknown discriminants", N, Typ);
          end if;
 
-         if Has_Unknown_Discriminants (Typ)
+         --  Mutably tagged class-wide types do not have discriminants;
+         --  however, all class-wide types are considered to have unknown
+         --  discriminants.
+
+         if not Is_Mutably_Tagged_Type (Typ)
+           and then Has_Unknown_Discriminants (Typ)
            and then Present (Underlying_Record_View (Typ))
          then
             Discrim := First_Discriminant (Underlying_Record_View (Typ));
@@ -6427,7 +6474,13 @@ package body Sem_Aggr is
       --  STEP 4: Set the Etype of the record aggregate
 
       if Has_Discriminants (Typ)
-        or else (Has_Unknown_Discriminants (Typ)
+
+         --  Handle types with unknown discriminants, excluding mutably tagged
+         --  class-wide types because, although they do not have discriminants,
+         --  all class-wide types are considered to have unknown discriminants.
+
+        or else (not Is_Mutably_Tagged_Type (Typ)
+                  and then Has_Unknown_Discriminants (Typ)
                   and then Present (Underlying_Record_View (Typ)))
       then
          Build_Constrained_Itype (N, Typ, New_Assoc_List);
@@ -6598,7 +6651,13 @@ package body Sem_Aggr is
             if Null_Present (Record_Def) then
                null;
 
-            elsif not Has_Unknown_Discriminants (Typ) then
+            --  Explicitly add here mutably class-wide types because they do
+            --  not have discriminants; however, all class-wide types are
+            --  considered to have unknown discriminants.
+
+            elsif not Has_Unknown_Discriminants (Typ)
+              or else Is_Mutably_Tagged_Type (Typ)
+            then
                Gather_Components
                  (Base_Type (Typ),
                   Component_List (Record_Def),
@@ -6784,6 +6843,11 @@ package body Sem_Aggr is
                   Set_Has_Self_Reference (N);
 
                elsif Needs_Simple_Initialization (Ctyp)
+
+                  --  Mutably tagged class-wide type components are initialized
+                  --  by the expander calling their IP subprogram.
+
+                 or else Is_Mutably_Tagged_CW_Equivalent_Type (Ctyp)
                  or else Has_Non_Null_Base_Init_Proc (Ctyp)
                  or else not Expander_Active
                then
@@ -6988,6 +7052,30 @@ package body Sem_Aggr is
       --  Check the dimensions of the components in the record aggregate
 
       Analyze_Dimension_Extension_Or_Record_Aggregate (N);
+
+      --  Do a pass for constructors which rely on things being fully expanded
+
+      declare
+         function Resolve_Make_Expr (N : Node_Id) return Traverse_Result;
+         --  Recurse in the aggregate and resolve references to 'Make
+
+         function Resolve_Make_Expr (N : Node_Id) return Traverse_Result is
+         begin
+            if Nkind (N) = N_Attribute_Reference
+              and then Attribute_Name (N) = Name_Make
+            then
+               Set_Analyzed (N, False);
+               Resolve (N);
+            end if;
+
+            return OK;
+         end Resolve_Make_Expr;
+
+         procedure Search_And_Resolve_Make_Expr is new
+           Traverse_Proc (Resolve_Make_Expr);
+      begin
+         Search_And_Resolve_Make_Expr (N);
+      end;
    end Resolve_Record_Aggregate;
 
    -----------------------------

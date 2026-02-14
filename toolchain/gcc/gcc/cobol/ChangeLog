@@ -1,20 +1,898 @@
-2025-08-08  Release Manager
+2026-02-13  Robert Dubner  <rdubner@symas.com>
 
-	* GCC 15.2.0 released.
+	PR cobol/119455
+	* genapi.cc (mh_source_is_group): Formatting.
+	(mh_source_is_literalA): Implement accelerated move.
+	(mh_alpha_to_alpha): New function; implements accelerated move.
+	(move_helper): Calls new mh_alpha_to_alpha.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
+2026-02-12  Robert Dubner  <rdubner@symas.com>
 
-	Backported from master:
-	2025-07-24  Robert Dubner  <rdubner@symas.com>
+	* cbldiag.h: Copyright updated to 2026.
+	* cdf-copy.cc: Likewise.
+	* cdf.y: Likewise.
+	* cdfval.h: Likewise.
+	* cobol-system.h: Likewise.
+	* convert.cc: Likewise.
+	* copybook.h: Likewise.
+	* except.cc: Likewise.
+	* exceptg.h: Likewise.
+	* genapi.cc: Likewise.
+	* genapi.h: Likewise.
+	* gengen.cc: Likewise.
+	* gengen.h: Likewise.
+	* genmath.cc: Likewise.
+	* genmath.h: Likewise.
+	* genutil.cc: Likewise.
+	* genutil.h: Likewise.
+	* inspect.h: Likewise.
+	* lang-specs.h: Likewise.
+	* lexio.cc: Likewise.
+	* lexio.h: Likewise.
+	* messages.cc: Likewise.
+	* parse.y: Likewise.
+	* parse_ante.h: Likewise.
+	* parse_util.h: Likewise.
+	* scan.l: Likewise.
+	* scan_ante.h: Likewise.
+	* scan_post.h: Likewise.
+	* show_parse.h: Likewise.
+	* structs.cc: Likewise.
+	* structs.h: Likewise.
+	* symbols.cc: Likewise.
+	* symbols.h: Likewise.
+	* symfind.cc: Likewise.
+	* util.cc: Likewise.
+	* util.h: Likewise.
+
+2026-02-12  Robert Dubner  <rdubner@symas.com>
+
+	* genapi.cc (establish_using): Use a 128-bit type for
+	float-extended; handle numeric-edited values of different sizes
+	and signs correctly.
+	(create_and_call):  Use a 128-bit type for float-extended.
+
+2026-02-06  Robert Dubner  <rdubner@symas.com>
+
+	PR cobol/119332
+	* gcobolspec.cc (lang_specific_driver): Add -dumpspecs,
+	-dumpversion, -dumpmachine to the no_files_error=false cases.
+
+2026-02-05  Robert Dubner  <rdubner@symas.com>
+
+	* genapi.cc (DEFAULT_LINE_NUMBER): Remove unused #define.
+	(parser_statement_begin): Implement perform_is_armed logic.
+	(initialize_variable_internal): Handle both real and int types in
+	SHOW_PARSE tracing.
+	(section_label): Comment a renumbered insert_nop() for gdb-cobol
+	logic.
+	(paragraph_label): Likewise.
+	(leave_procedure): Eliminate call to gg_insert_into_assembler().
+	(parser_enter_section): Renumber insert_nop().
+	(parser_perform): Eliminate call to gg_insert_into_assembler().
+	(parser_perform_times): Likewise.
+	(internal_perform_through): Likewise.
+	(internal_perform_through_times): Likewise.
+	(parser_leave_file): Create the static _perform_line_pairs table.
+	(parser_sleep): Renumber insert_nop().
+	(parser_division): Remove calls to initialize_the_data().
+	(parser_perform_start): New call to insert_nop().
+	(parser_perform_conditional): Likewise.
+	(perform_outofline_before_until): Expanded comment.
+	(perform_outofline_after_until): Eliminate call to
+	gg_insert_into_assembler().
+	(perform_outofline_testafter_varying): Likewise.
+	(perform_outofline_before_varying): Likewise.
+	(perform_inline_testbefore_varying):  New call to insert_nop().
+	(create_and_call): Change a comment.
+	* gengen.cc (gg_create_goto_pair): Change characteristics of a
+	label.
+	* parse.y: Change how data are initialized.
+	* parse_ante.h (field_type_update): Likewise.
+	* symbols.cc (cbl_field_t::set_signable): Likewise.
+	(cbl_field_t::encode): Likewise.
+	* symbols.h (struct cbl_field_t): Likewise.
+	* util.cc (symbol_field_type_update): Likewise.
+	(cbl_field_t::encode_numeric): Likewise.
+
+2026-01-20  Jakub Jelinek  <jakub@redhat.com>
+
+	* lang.opt (fexec-national-charset=): Add dot at the end of the
+	description.
+
+2026-01-20  Jakub Jelinek  <jakub@redhat.com>
+
+	* lang.opt (Wmove-index): Add missing dot at the end of description.
+
+2026-01-17  Jakub Jelinek  <jakub@redhat.com>
+
+	* lang.opt.urls: Regenerate.
+
+2026-01-17  Robert Dubner  <rdubner@symas.com>
+	    James K. Lowden  <jklowden@cobolworx.com>
+
+	* cbldiag.h (struct cbl_loc_t): Diagnostics.
+	(enum cbl_diag_id_t): Diagnostics.
+	* cdf.y: Includes.
+	* cobol1.cc (cobol_warning_suppress): Diagnostics.
+	(cobol_langhook_handle_option): Implement -fexec-charset.  Expand
+	the use of diagnostics.
+	* gcobc: Expand options and warnings.
+	* gcobol.1: Documentation.
+	* genapi.cc (level_88_helper): Charsets.
+	(get_level_88_domain): Charsets.
+	(get_class_condition_string): Charsets.
+	(function_pointer_from_name): Charsets.
+	(initialize_variable_internal):  Charsets.
+	(parser_initialize): Charsets.
+	(get_binary_value_from_float): Charsets.
+	(get_bytes_needed): Charsets.
+	(cobol_compare): Charsets.
+	(move_tree): Eliminate function.
+	(move_tree_to_field): Eliminate function.
+	(get_string_from): Eliminate function.
+	(parser_init_list): Charsets.
+	(psa_FldLiteralN): Charsets.
+	(parser_accept_date_yymmdd): Charsets.
+	(parser_accept_date_yyyymmdd): Charsets.
+	(parser_accept_date_yyddd): Charsets.
+	(parser_accept_date_yyyyddd): Charsets.
+	(parser_accept_date_dow): Charsets.
+	(parser_accept_date_hhmmssff): Charsets.
+	(parser_alphabet): Charsets.
+	(parser_alphabet_use): Charsets.
+	(parser_display_internal): Charsets.
+	(get_literalN_value): Charsets.
+	(tree_type_from_field_type): Charsets.
+	(program_end_stuff): Charsets.
+	(walk_initialization): Charsets.
+	(parser_xml_parse): Charsets.
+	(initialize_the_data): Charsets.
+	(establish_using): Charsets.
+	(parser_setop): Charsets.
+	(parser_set_conditional88): Charsets.
+	(parser_file_add): Charsets.
+	(get_the_filename): Eliminate function.
+	(parser_file_open): Charsets.
+	(parser_file_delete_file): Charsets.
+	(parser_file_start): Charsets.
+	(parser_module_name): Charsets.
+	(parser_intrinsic_find_string): New function.
+	(parser_intrinsic_numval_c): Charsets.
+	(parser_intrinsic_convert): New function.
+	(parser_intrinsic_call_1): Charsets.
+	(create_and_call): Charsets.
+	(mh_identical): Charsets.
+	(mh_source_is_literalN): Charsets.
+	(float_type_of): Charsets.
+	(mh_dest_is_float): Charsets.
+	(mh_numeric_display): Charsets.
+	(mh_little_endian): Charsets.
+	(mh_source_is_group): Charsets.
+	(mh_source_is_literalA): Charsets.
+	(move_helper): Charsets.
+	(binary_initial): Eliminate function.
+	(digits_from_int128): Eliminate function.
+	(digits_from_float128): Eliminate function.
+	(initial_from_initial):  Eliminate function.
+	(convert_data_initial): New function.
+	(actually_create_the_static_field): Charsets.
+	(psa_new_var_decl): Charsets.
+	(psa_FldLiteralA): Charsets.
+	(parser_local_add): Charsets.
+	(parser_symbol_add): Charsets.
+	* genapi.h (parser_intrinsic_convert): New function.
+	(parser_intrinsic_find_string): New function.
+	* genmath.cc (arithmetic_operation): Charsets.
+	(largest_binary_term): Charsets.
+	(fast_add): Charsets.
+	(fast_subtract): Charsets.
+	(fast_multiply): Charsets.
+	(fast_divide): Charsets.
+	(parser_subtract): Fix subtract float from float.
+	* genutil.cc (get_any_capacity): Charsets.
+	(get_and_check_refstart_and_reflen): Charsets.
+	(get_data_offset): Charsets.
+	(get_binary_value): Charsets.
+	(tree_type_from_field): Charsets.
+	(copy_little_endian_into_place): Charsets.
+	(get_literal_string): Charsets.
+	(refer_is_clean): Charsets.
+	(refer_fill_depends): Charsets.
+	(refer_size_source): Comment.
+	* lang-specs.h: Charsets.
+	* lang.opt: Charsets.
+	* lexio.cc (parse_copy_directive): Diagnostics.
+	* messages.cc (cbl_diagnostic_kind): Diagnostics.
+	(cobol_warning_suppress): Diagnostics.
+	* parse.y: Many changes for charsets and diagnostics.
+	* parse_ante.h (MAXLENGTH_FORMATTED_DATE): Charsets.
+	(MAXLENGTH_FORMATTED_TIME): Charsets.
+	(MAXLENGTH_CALENDAR_DATE): Charsets.
+	(MAXLENGTH_FORMATTED_DATETIME): Charsets.
+	(consistent_encoding_check): Charsets.
+	(enum data_clause_t): Charsets.
+	(new_alphanumeric): Charsets.
+	(name_of): Charsets.
+	(class eval_subject_t): Charsets.
+	(struct domain_t): Charsets.
+	(struct file_list_t): Charsets.
+	(current_encoding): Charsets.
+	(new_tempnumeric): Charsets.
+	(is_integer_literal): Charsets.
+	(new_literal): Charsets.
+	(new_constant): Charsets.
+	(conditional_set): Charsets.
+	(field_find): Charsets.
+	(valid_redefine): Charsets.
+	(field_value_all): Charsets.
+	(parent_has_picture): Charsets.
+	(parent_has_value): Charsets.
+	(blank_pad_initial): Charsets.
+	(blankit): Charsets.
+	(cbl_field_t::blank_initial): Charsets.
+	(value_encoding_check): Charsets.
+	(cbl_field_t::set_initial): Charsets.
+	(field_alloc): Charsets.
+	(parser_move_carefully): Charsets.
+	(data_division_ready): Charsets.
+	(anybody_redefines): Charsets.
+	(procedure_division_ready): Charsets.
+	(file_section_parent_set): Charsets.
+	(field_binary_usage): Charsets.
+	(goodnight_gracie): Formatting.
+	* scan.l: Charsets.
+	* scan_ante.h (numstr_of): Charsets.
+	(typed_name): Charsets.
+	* show_parse.h: Charsets.
+	* structs.cc (create_cblc_file_t): Charsets.
+	* symbols.cc (symbol_table_extend): Charsets.
+	(WARNING_FIELD): Diagnostics.
+	(constq): Charsets.
+	(elementize): Charsets.
+	(field_size): Charsets.
+	(cbl_field_t::set_attr): Eliminate run-time component.
+	(cbl_field_t::clear_attr): Eliminate run-time component.
+	(field_memsize): Charsets.
+	(cbl_encoding_str): Charsets.
+	(symbols_dump): Charsets.
+	(is_variable_length): Formatting.
+	(field_str): Charsets.
+	(extend_66_capacity): Charsets.
+	(operator<<): Charsets.
+	(symbols_update): Charsets.
+	(symbol_field_parent_set): Charsets.
+	(symbol_table_init): Charsets.
+	(numeric_group_attrs): Charsets.
+	(symbol_field_add): Charsets.
+	(symbol_field_alias): Charsets.
+	(fd_record_size_cmp): Charsets.
+	(symbol_file_record_sizes): Charsets.
+	(cbl_alphabet_t::reencode): Charsets.
+	(symbol_temporary_location): Charsets.
+	(new_literal_2): Charsets.
+	(new_alphanumeric): Charsets.
+	(standard_internal): Charsets.
+	(cbl_field_t::codeset_t::stride): Charsets.
+	(cobol_alpha_encoding): Charsets.
+	(cobol_national_encoding): Charsets.
+	(new_temporary): Charsets.
+	(new_literal_float): Charsets.
+	(cbl_field_t::is_ascii): Charsets.
+	(cbl_field_t::internalize): Eliminate function.
+	(cbl_field_t::source_code_check): Charsets.
+	(iconv_cd): Charsets.
+	(cbl_field_t::encode): New function for charsets.
+	(cbl_field_t::set_capacity): Charsets.
+	(cbl_field_t::add_capacity): Charsets.
+	(cbl_field_t::char_capacity): Charsets.
+	(symbol_label_section_exists): Charsets.
+	(size): Charsets.
+	(validate_numeric_edited): Charsets.
+	* symbols.h (cobol_alpha_encoding): Charsets.
+	(cobol_national_encoding): Charsets.
+	(consistent_encoding_check): Charsets.
+	(class cbl_domain_elem_t): Charsets.
+	(struct cbl_domain_t): Charsets.
+	(struct cbl_field_data_t): Charsets.
+	(class cbl_field_data_t): Charsets.
+	(struct cbl_subtable_t): Charsets.
+	(struct cbl_field_t): Charsets.
+	(new_literal_float): Charsets.
+	(new_temporary): Charsets.
+	(new_literal_2): Charsets.
+	(symbol_temporary_location): Charsets.
+	(class temporaries_t): Charsets.
+	(struct symbol_elem_t): Charsets.
+	(symbol_elem_of): Charsets.
+	(symbol_unique_index): Charsets.
+	(cbl_field_type_name): Charsets.
+	(validate_numeric_edited): Charsets.
+	* token_names.h: Charsets.
+	* util.cc (cdf_literalize): Charsets.
+	(cbl_field_type_name): Charsets.
+	(determine_intermediate_type): Charsets.
+	(is_alpha_edited): Charsets.
+	(cbl_field_data_t::is_alpha_edited): Charsets.
+	(symbol_field_type_update): Charsets.
+	(redefine_field): Charsets.
+	(FIXED_WIDE_INT): Charsets.
+	(dirty_to_binary): Charsets.
+	(digits_from_int128): Charsets.
+	(binary_initial): Charsets.
+	(cbl_field_t::encode_numeric): Charsets.
+	(FOR_JIM): Temporary conditional demonstration code.
+	(parse_error_inc): Diagnostics.
+	(parse_error_count): Diagnostics.
+	(cbl_field_t::report_invalid_initial_value): Diagnostics.
+	(valid_move): Diagnostics.
+	(type_capacity): Charsets.
+	(symbol_unique_index): New function.
+	(cbl_unimplementedw): Formatting.
+
+2025-12-19  Jakub Jelinek  <jakub@redhat.com>
+
+	* lexio.cc (parse_replace_pairs): Fix comment typo, statment
+	-> statement.
+	(cdftext::free_form_reference_format): Likewise.
+
+2025-12-11  Jakub Jelinek  <jakub@redhat.com>
+
+	* util.cc (class temp_loc_t): Fix comment typo, paramters
+	-> parameters.
+	* lexio.cc (valid_sequence_area): Fix comment typo, begining
+	-> beginning.
+
+2025-12-03  Jakub Jelinek  <jakub@redhat.com>
+
+	* lang.opt: Make sure all option descriptions are terminated with
+	a dot.
+	(preprocess): Capitalize first letter of option description.
+
+2025-12-01  James K. Lowden  <jklowden@cobolworx.com>
+
+	PR cobol/119329
+	PR cobol/119331
+	PR cobol/120786
+	* Make-lang.in: Add cobol/messages.o to cobol1 sources.
+	* cbldiag.h (yywarn): Remove function.
+	(struct cbl_loc_t): Introduce new location type independent of Bison.
+	(enum cbl_diag_id_t): Enumerate diagnostic messages.
+	(cbl_message): New function.
+	(dialect_ok): Test for dialect, emit standard message.
+	(dialect_not_ok): Emit standard message if syntax excluded by dialect.
+	(dialect_error): Remove function.
+	(cbl_unimplementedw): Use cbl_diag_id_t.
+	(cbl_unimplemented): Whitespace.
+	* cdf.y: Update token values.
+	* cobol1.cc (enable_exceptions): Use cbl_message.
+	(cobol_warning): Declare function.
+	(cobol_langhook_handle_option): Add 44 new warning options.
+	(cobol_langhook_type_for_mode): Remove function.
+	* except.cc (cbl_enabled_exception_t::dump): Remove function.
+	* exceptg.h (class exception_turn_t): Use cbl_diag_id_t.
+	* gcobol.1: Document dialect syntax and new warning options.
+	* genapi.cc (parser_label_label): Remove unused warning.
+	* gengen.cc (gg_find_field_in_struct): Use cbl_internal_error.
+	(gg_printf): Same.
+	(gg_fprintf): Same.
+	(gg_define_function): Same.
+	(gg_get_function_decl): Same.
+	(gg_call_expr): Same.
+	(gg_call): Same.
+	* lang-specs.h: Add warning options.
+	* lang.opt: Add ISO dialect and options.
+	* lexio.cc (parse_replacing_term): Use cbl_message.
+	(parse_replacing_pair): Same.
+	(preprocess_filter_add): Same.
+	(cdftext::echo_input): Same.
+	(cdftext::lex_open): Same.
+	(cdftext::open_input): Same.
+	* messages.cc: New file implements cbl_message.
+	* parse.y: Use cbl_message.
+	* parse_ante.h (dialect_proscribed): Remove function.
+	(parser_move_carefully): Use dialect_ok.
+	(goodnight_gracie): Convert warning to debug message.
+	* scan.l: Use dialect_ok.
+	* scan_ante.h (scanner_parsing): Use cbl_diag_id_t.
+	(scanner_parsing_toggle): Same.
+	(scanner_parsing_pop): Same.
+	(verify_ws): Same.
+	(level_of): Same.
+	(typed_name): Same.
+	(integer_of): Same.
+	* scan_post.h (datetime_format_of): Use cbl_internal_error.
+	(prelex): Emit only debug messages.
+	* show_parse.h: Use cbl_internal_error.
+	* symbols.cc (symbols_update): Remove dialect test because parser's problem.
+	(cbl_field_t::internalize): Use cbl_message.
+	* symbols.h (enum cbl_dialect_t): Add ISO to cbl_dialect_t.
+	(cbl_dialect_str): Recognize ISO dialect.
+	(dialect_has): New function.
+	(cbl_diagnostic_kind): New function.
+	(cbl_dialect_kind): New function.
+	(struct cbl_alphabet_t): Emit only debug message.
+	* token_names.h: Regenerate.
+	* util.cc (gb4): Emit only debug message.
+	(current_token_location): Add overload to set token_location.
+	(yywarn): Remove function.
+	(cobol_fileline_set): Use cbl_message.
+	(cobol_parse_files): Same.
+	(cbl_message): New diagnostic message function uses cbl_diag_id_t.
+	(cbl_diagnostic_kind): New function.
+	(cbl_diagnostic_option): New function.
+	(cbl_unimplementedw): Use cbl_diag_id_t.
+	(dialect_error): Remove function.
+	* util.h (cbl_message): Remove obsolete prototype for cbl_message.
+
+2025-11-30  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	* lang.opt.urls: Regenerate.
+
+2025-11-17  James K. Lowden  <jklowden@cobolworx.com>
+
+	PR cobol/122702
+	* Make-lang.in: Move stored-char-length.cbl to libgcobol.
+
+2025-11-17  Jakub Jelinek  <jakub@redhat.com>
+
+	* symbols.cc (symbol_table_init): Avoid arithmetics or
+	bitwise operations between enumerators from different enums.
+
+2025-11-15  Jakub Jelinek  <jakub@redhat.com>
+
+	PR cobol/122691
+	* lexio.cc (parse_replace_pairs): Replace parsed.stmt.p with
+	parsed.stmt.size() ? parsed.stmt.p : "" in the last argument to
+	dbgmsg.
+
+2025-11-13  James K. Lowden  <jklowden@cobolworx.com>
+
+	* cdf.y: Install literals in symbol table.
+	* genapi.cc (parser_alphabet): Use std::string for currency.
+	(initialize_the_data): Rely on constructor.
+	(parser_file_add): Better #pragma message.
+	(parser_exception_file): Return early if not generating code.
+	* parse.y: Allow library programs to act as functions.
+	* parse_ante.h (dialect_proscribed): Standardize message.
+	(intrinsic_call_2): Correct s/fund/func/ misspelling.
+	* scan.l: Comment.
+	* symbols.cc (symbols_update): Add unreachable assertion.
+	(symbol_field_parent_set): Reduce error to debug message.
+	(cdf_literalize): Declare.
+	(symbol_table_init): Insert CDF constants as literals.
+	* symbols.h (cbl_dialect_str): Provide string values for enum.
+	(is_working_storage): Remove function.
+	(struct cbl_field_data_t): Add manhandle_initial for Numeric Edited.
+	(struct cbl_field_t): Initialize name to zeros.
+	(struct cbl_section_t): Delete unused attr() function.
+	(symbol_unique_index): Declare.
+	* token_names.h: Regenerate.
+	* util.cc (cdf_literalize): Construct a cbl_field_t from a CDF literal.
+	(symbol_unique_index): Supply "globally" unique number for a program.
+
+2025-11-10  Sandra Loosemore  <sloosemore@baylibre.com>
+
+	PR other/122243
+	* lang.opt.urls: Regenerated.
+
+2025-11-06  Robert Dubner  <rdubner@symas.com>
+	    James K. Lowden  <jklowden@cobolworx.com>
+
+	* Make-lang.in: Repair documentation generation.
+	* cdf.y: Changes to tokens.
+	* cobol1.cc (cobol_langhook_handle_option): Add comment.
+	* genapi.cc (function_pointer_from_name): Use data.original() for
+	function name.
+	(parser_initialize_programs): Likewise.
+	(cobol_compare): Make sure encodings of comparands are the same.
+	(move_tree): Change name of DEFAULT_SOURCE_ENCODING macro.
+	(parser_enter_program): Typo.
+	(psa_FldLiteralN): Break out dirty_to_binary() support routine.
+	(dirty_to_binary): Likewise.
+	(parser_alphabet): Rename 'alphabet' to 'collation_sequence'.
+	(parser_allocate): Change wsclear() to be uint32_t instead of char.
+	(parser_label_label): Formatting.
+	(parser_label_goto): Likewise.
+	(get_the_filename): Breakout get_the_filename(), which handles
+	encoding.
+	(parser_file_open): Likewise.
+	(set_up_delete_file_label): Implement DELETE FILE (Format 2).
+	(parser_file_delete_file): Likewise.
+	(parser_file_delete_on_exception): Likewise.
+	(parser_file_delete_not_exception): Likewise.
+	(parser_file_delete_end): Likewise.
+	(parser_call): Use data.original().
+	(parser_entry): Use data.original().
+	(mh_source_is_literalN): Convert from
+	sourceref.field->codeset.encoding.
+	(binary_initial_from_float128): Change to "binary_initial".
+	(binary_initial): Calculate in FIXED_WIDE_INT(128) instead of
+	REAL_VALUE_TYPE.
+	(digits_from_int128): New routine uses binary_initial.
+	(digits_from_float128): Removed.  Kept as comment for reference.
+	(initial_from_initial): Use binary_initial.
+	(actually_create_the_static_field): Use correct encoding.
+	(parser_symbol_add): Likewise.
+	* genapi.h (parser_file_delete_file): Implement FILE DELETE.
+	(parser_file_delete_on_exception): Implement FILE DELETE.
+	(parser_file_delete_not_exception): Implement FILE DELETE.
+	(parser_file_delete_end): Implement FILE DELETE.
+	* genmath.cc: Include charmaps.h.
+	* genutil.cc (get_literal_string):  Change name of
+	DEFAULT_SOURCE_ENCODING macro.
+	* parse.y: Token changes; numerous changes in support of encoding;
+	support for DELETE FILE.
+	* parse_ante.h (name_of): Use data.original().
+	(class prog_descr_t): Support of locales.
+	(current_options): Formatting.
+	(current_encoding):  Formatting.
+	(current_program_index): Formatting.
+	(current_section): Formatting.
+	(current_paragraph): Formatting.
+	(is_integer_literal): Use correct encoding.
+	(value_encoding_check): Handle encoding changes.
+	(alphabet_add): Likewise.
+	(data_division_ready): Likewise.
+	* scan.l: Use data.original().
+	* show_parse.h: Use correct encoding.
+	* symbols.cc (elementize): Likewise.
+	(symbol_elem_cmp): Handle locale.
+	(struct symbol_elem_t): Likewise.
+	(symbol_locale): Likewise.
+	(field_str): Change DEFAULT_SOURCE_ENCODING macro name.
+	(symbols_alphabet_set): Formatting.
+	(symbols_update): Modify consistency checks.
+	(symbol_locale_add): Locale support.
+	(cbl_locale_t::cbl_locale_t): Locale support.
+	(cbl_alphabet_t::cbl_alphabet_t): New structure.
+	(cbl_alphabet_t::reencode): Formatting.
+	(cbl_alphabet_t::assign): Change name of collation_sequence.
+	(cbl_alphabet_t::also): Likewise.
+	(new_literal_add): Anticipate the need for four-byte characters.
+	(guess_encoding): Eliminate.
+	(cbl_field_t::internalize): Refine conversion of data.initial to
+	specified encoding.
+	* symbols.h (enum symbol_type_t): Add SymLocale.
+	(struct cbl_field_data_t): Incorporate data.orig.
+	(struct cbl_field_t): Likewise.
+	(struct cbl_delete_file_t): New structure.
+	(struct cbl_label_t): Incorporate cbl_delete_file_t.
+	(struct cbl_locale_t): Support for locale.
+	(hex_decode): Comment.
+	(struct cbl_alphabet_t): Incorporate locale; change variable name
+	to collation_sequence.
+	(struct symbol_elem_t): Incorporate locale.
+	(cbl_locale_of): Likewise.
+	(cbl_alphabet_of): Likewise.
+	(symbol_locale_add): Likewise.
+	(wsclear): Type is now uint32_t instead of char.
+	* util.cc (symbol_type_str):  Incorporate locale.
+	(cbl_field_t::report_invalid_initial_value): Change test so that
+	pure PIC A() variables are limited to [a-zA-Z] and space.
+	(valid_move): Use DEFAULT_SOURCE_ENCODING macro.
+	(cobol_filename): Formatting.
+
+2025-10-26  Eric Botcazou  <ebotcazou@adacore.com>
+
+	* Make-lang.in ($(srcdir)/cobol/token_names.h): Silence recipe.
+
+2025-10-23  Robert Dubner  <rdubner@symas.com>
+
+	* genapi.cc (parser_alphabet): Alphabet encoding.
+	(parser_alphabet_use): Likewise.
+	(parser_xml_parse): Use correct debugging macro; encoding.
+	(parser_xml_on_exception): Likewise.
+	(parser_xml_not_exception): Likewise.
+	(parser_xml_end): Likewise.
+	(initialize_the_data): Encoding.
+	(parser_label_label): Debugging macros.
+	(parser_label_goto): Likewise.
+	(parser_file_add): Encoding.
+	(parser_intrinsic_call_1): Special handling for __gg__char.
+	(parser_intrinsic_call_2): Formatting.
+	* parse.y: Response from FUNCTION ORD is flagged "unsigned".
+	* symbols.cc (cbl_alphabet_t::reencode): Establish
+	low_char & high_char.
+	* symbols.h (struct cbl_alphabet_t): Likewise.
+
+2025-10-23  Robert Dubner  <rdubner@symas.com>
+	    James K. Lowden  <jklowden@cobolworx.com>
+
+	* Make-lang.in: Incorporate new token_names.h file.
+	* cdf.y: Modify tokens.
+	* gcobol.1: Document XML PARSE statement
+	* genapi.cc (parser_enter_program): Verify that every goto has a
+	matching label.
+	(parser_end_program): Likewise.
+	(parser_alphabet): Refine handling codeset encodings.
+	(parser_alphabet_use): Likewise.
+	(label_fetch): Moved from later in the source code.
+	(parser_xml_parse): New routine for XML PARSE.
+	(parser_xml_on_exception): Likewise.
+	(parser_xml_not_exception): Likewise.
+	(parser_xml_end): Likewise.
+	(parser_label_label): Verify goto/label matching.
+	(parser_label_goto): Likewise.
+	(parser_entry): Minor change to SHOW_PARSE report.
+	* genapi.h (parser_alphabet): Set parameter to const.
+	(parser_xml_parse): Declare new function.
+	(parser_xml_on_exception): Likewise.
+	(parser_xml_not_exception): Likewise.
+	(parser_xml_end): Likewise.
+	(parser_label_addr): Likewise.
+	* parse.y: label_pair_t structure; locale processing; new token
+	processing for alphabets and XML PARSE.
+	* parse_ante.h (name_of): Return field->name when initial is NULL.
+	(new_tempnumeric): Make signable_e optional.
+	(ast_save_locale): New function.
+	(data_division_ready): Warning for "no alphabet".
+	* scan.l: Repair interpretation of BINARY, COMP, COMP-4, and
+	COMP-5.
+	* scan_ante.h (struct bint_t): Likewise.
+	* scan_post.h (current_tokens_t::tokenset_t::tokenset_t):
+	Include token_names.h.
+	* symbols.cc (symbols_alphabet_set): Revert to prior alphabet
+	determination.
+	(symbol_table_init): New XML special registers.
+	(new_temporary): Make signable_e controllable, not fixed.
+	* symbols.h (__gg__encoding_iconv_valid): New declaration.
+	(enum cbl_label_type_t): New LblXml label type.
+	(struct cbl_xml_parse_t):
+	(struct cbl_label_t): Implement XML PARSE.
+	(new_temporary): Incorporate boolean for signable_e.
+	(symbol_elem_of): Change label field type handling.
+	(cbl_section_of): Likewise.
+	(cbl_field_of): Likewise.
+	(cbl_label_of): Likewise.
+	(cbl_special_name_of):  Likewise.
+	(cbl_alphabet_of):  Likewise.
+	(cbl_file_of):  Likewise.
+	* token_names.h: New file.
+	* util.cc (gcc_location_set_impl): Improve location_t calculations
+	when entering and leaving COPYBOOKs.
+
+2025-10-19  Robert Dubner  <rdubner@symas.com>
+
+	* genapi.cc (move_tree): Formatting.
+	(parser_enter_file): Incorporate global __gg__entry_label.
+	(enter_program_common): Remove calls to alphabet overrides.
+	(parser_alphabet): Change cbl_alphabet_e handling.
+	(parser_alphabet_use): Likewise.
+	(initialize_the_data): Likewise.
+	(establish_using): Process passed parameters in a subroutine.
+	(parser_division): Remove in-line parameter processing;
+	call establish_using() instead. Check for __gg__entry_label.
+	(parser_file_add): Temporary workaround for charset encoding.
+	(parser_file_open): Likewise.
+	(create_and_call): Push/pop program state around call to external.
+	(parser_entry): Implement new ENTRY statement feature.
+	(mh_source_is_literalN): Formatting.
+	* genapi.h (parser_entry): New ENTRY statement.
+	* gengen.cc (gg_create_goto_pair): Formatting.
+	(gg_goto_label_decl): Remove.
+	* gengen.h (gg_goto_label_decl): Remove.
+	* genutil.cc (internal_codeset_is_ebcdic): Remove.
+	* genutil.h (internal_codeset_is_ebcdic): Remove.
+	* symbols.cc (symbols_alphabet_set): Restrict alphabet scan to
+	program.
+	* symbols.h (is_elementary): Use defined constants instead of
+	explicit 'A'and 'N'
+
+2025-10-10  Robert Dubner  <rdubner@symas.com>
+
+	* cdf.y: In support of the described changes.
+	* gcobol.1: Likewise.
+	* genapi.cc (level_88_helper): Likewise.
+	(get_level_88_domain): Likewise.
+	(get_class_condition_string): Likewise.
+	(initialize_variable_internal): Likewise.
+	(gg_default_qualification): Likewise.
+	(cobol_compare): Likewise.
+	(move_tree): Likewise.
+	(move_tree_to_field): Likewise.
+	(psa_FldBlob): Likewise.
+	(parser_accept_date_yymmdd): Likewise.
+	(parser_accept_date_yyyymmdd): Likewise.
+	(parser_accept_date_yyddd): Likewise.
+	(parser_accept_date_yyyyddd): Likewise.
+	(parser_accept_date_dow): Likewise.
+	(parser_accept_date_hhmmssff): Likewise.
+	(parser_alphabet): Likewise.
+	(parser_alphabet_use): Likewise.
+	(parser_display_internal): Likewise.
+	(parser_display): Likewise.
+	(is_valuable): Likewise.
+	(parser_division): Likewise.
+	(parser_relop_long): Likewise.
+	(parser_setop): Likewise.
+	(parser_set_conditional88): Likewise.
+	(parser_file_add): Likewise.
+	(parser_file_open): Likewise.
+	(create_and_call): Likewise.
+	(parser_call): Likewise.
+	(mh_identical): Likewise.
+	(mh_source_is_literalN): Likewise.
+	(picky_memcpy): Likewise.
+	(mh_numeric_display): Likewise.
+	(mh_source_is_group): Likewise.
+	(mh_source_is_literalA): Likewise.
+	(move_helper): Likewise.
+	(initial_from_initial): Likewise.
+	(actually_create_the_static_field): Likewise.
+	(psa_FldLiteralA): Likewise.
+	(parser_symbol_add): Likewise.
+	* genmath.cc (arithmetic_operation): Likewise.
+	* genutil.cc (get_binary_value): Likewise.
+	(get_literal_string): Likewise.
+	* genutil.h (EBCDIC_MINUS): Likewise.
+	(EBCDIC_PLUS): Likewise.
+	(EBCDIC_ZERO): Likewise.
+	(EBCDIC_NINE): Likewise.
+	* parse.y: Likewise.
+	* parse_ante.h (name_of): Likewise.
+	(class prog_descr_t): Likewise.
+	(current_encoding): Likewise.
+	(needs_picture): Likewise.
+	(is_callable): Likewise.
+	(field_attr_str): Likewise.
+	(value_encoding_check): Likewise.
+	(field_alloc): Likewise.
+	(file_add): Likewise.
+	* scan.l: Likewise.
+	* structs.cc (create_cblc_field_t): Likewise.
+	* symbols.cc (elementize): Likewise.
+	(cbl_field_attr_str): Likewise.
+	(is_variable_length): Likewise.
+	(field_str): Likewise.
+	(extend_66_capacity): Likewise.
+	(assert): Likewise.
+	(symbols_update): Likewise.
+	(symbol_field_parent_set): Likewise.
+	(add_token): Likewise.
+	(symbol_table_init): Likewise.
+	(symbol_field_add): Likewise.
+	(symbol_field_forward_add): Likewise.
+	(symbol_field_same_as): Likewise.
+	(cbl_alphabet_t::reencode): Likewise.
+	(new_temporary_impl): Likewise.
+	(parser_symbol_add2): Likewise.
+	(new_literal_add): Likewise.
+	(temporaries_t::literal): Likewise.
+	(new_literal): Likewise.
+	(standard_internal): Likewise.
+	(new_temporary): Likewise.
+	(cbl_field_t::holds_ascii): Likewise.
+	(cbl_field_t::is_ascii): Likewise.
+	(cbl_field_t::internalize): Likewise.
+	(symbol_label_add): Likewise.
+	(symbol_label_section_exists): Likewise.
+	(cbl_occurs_t::subscript_ok): Likewise.
+	(cbl_file_t::deforward): Likewise.
+	(has_value): Likewise.
+	* symbols.h (is_numeric): Likewise.
+	(__gg__encoding_iconv_name): Likewise.
+	(current_encoding): Likewise.
+	(struct cbl_field_t): Likewise.
+	(new_literal): Likewise.
+	(class temporaries_t): Likewise.
+	(struct function_descr_t): Likewise.
+	(hex_decode): Likewise.
+	(struct cbl_alphabet_t): Likewise.
+	(struct cbl_file_t): Likewise.
+	* symfind.cc (field_structure): Likewise.
+	(erase_symbol_map_fwds): Likewise.
+	(symbol_find): Likewise.
+	* token_names.h: Likewise.
+	* util.cc (cbl_field_type_str): Likewise.
+	(is_elementary): Likewise.
+	(symbol_field_type_update): Likewise.
+	(cbl_field_t::report_invalid_initial_value): Likewise.
+	(valid_move): Likewise.
+	(valid_picture): Likewise.
+	(type_capacity): Likewise.
+	(gcc_location_set_impl): Likewise.
+	(cbl_unimplementedw): Likewise.
+
+2025-09-05  Robert Dubner  <rdubner@symas.com>
+
+	* genapi.cc (trace1_init): Prepend two internal variables with
+	underscore.
+	(initialize_variable_internal): Use new register_e attribute.
+	(psa_global): Use "__ggsr__" prefix to identify special registers
+	(parser_symbol_add): Use new register_e attribute.
+	* symbols.cc (cbl_field_attr_str): Likewise.
+	(symbol_table_init): Likewise.
+	(is_register_field): Eliminated in favor of (attr & register_e).
+	* symbols.h (is_register_field): Likewise.
+
+2025-08-20  Robert Dubner  <rdubner@symas.com>
+
+	* genutil.cc (get_binary_value): Fix a comment.
+	* parse.y: udf_args_valid(): Fix loc calculation.
+	* symbols.cc (assert): extend_66_capacity(): Avoid assert(e < e2) in
+	-O0 build until symbol_table expansion is fixed.
+
+2025-08-15  Robert Dubner  <rdubner@symas.com>
+
+	* genapi.h (parser_call_exception_end): Remove obsolete comment.
+	* structs.cc (create_cbl_enabled_exception_t):
+	Remove cbl_enabled_exception_type_node;
+	remove create_cbl_enabled_exception_t().
+	(create_our_type_nodes): Likewise.
+	* structs.h (GTY): Likewise.
+
+2025-08-13  Robert Dubner  <rdubner@symas.com>
+
+	* genutil.cc (get_binary_value): Use the new routine.
+
+2025-08-13  Robert Dubner  <rdubner@symas.com>
+
+	* genutil.cc (get_binary_value): Use the new routine.
+
+2025-08-12  Robert Dubner  <rdubner@symas.com>
+
+	* genapi.cc (compare_binary_binary): Formatting.
+	(cobol_compare): Formatting.
+	(mh_numeric_display): Rewrite "move ND to ND" algorithm.
+	(initial_from_initial): Proper initialization of EBCDIC ND variables.
+	* genmath.cc (fast_add): Delete comment.
+	* genutil.cc (get_binary_value): Modify for updated EBCDIC.
+
+2025-08-07  Robert Dubner  <rdubner@symas.com>
+
+	* cbldiag.h (location_dump): Source code formatting.
+	* parse.y: error_msg formatting.
+	* scan.l: Remove UTF-8 character from regex pattern.
+	* scan_ante.h (numstr_of): error_msg formatting.
+	* show_parse.h (class ANALYZE): Suppress cppcheck error.
+	* util.cc (cbl_field_t::report_invalid_initial_value):
+	error_msg formatting.
+
+2025-08-02  Jakub Jelinek  <jakub@redhat.com>
+
+	* parse.y (intrinsic): Use %td format specifier with no cast on
+	argument instead of %ld with cast to long.
+	* scan_ante.h (numstr_of): Likewise.
+	* util.cc (cbl_field_t::report_invalid_initial_value): Likewise.
+
+2025-08-01  Robert Dubner  <rdubner@symas.com>
+
+	PR cobol/119324
+	* cbldiag.h (location_dump): Inline suppression of knownConditionTrueFalse.
+	* genapi.cc (parser_statement_begin): Combine two if() statements.
+	* genutil.cc (get_binary_value): File-level suppression of duplicateBreak.
+	* symbols.cc (symbol_elem_cmp): File-level suppression of duplicateBreak.
+
+2025-07-31  Robert Dubner  <rdubner@symas.com>
+
+	PR cobol/120244
+	* genapi.cc (get_level_88_domain): Increase array size for final byte.
+	(psa_FldLiteralA): Use correct length in build_string_literal call.
+	* scan.l: Use a loop instead of std:transform to avoid EOF overrun.
+	* scan_ante.h (binary_integer_usage): Use a variable-length buffer.
+
+2025-07-25  David Malcolm  <dmalcolm@redhat.com>
+
+	* util.cc: Update for diagnostic_t becoming
+	enum class diagnostics::kind.
+
+2025-07-25  David Malcolm  <dmalcolm@redhat.com>
+
+	* util.cc: Update for renaming of diagnostic_option_id to
+	diagnostics::option_id.
+
+2025-07-25  David Malcolm  <dmalcolm@redhat.com>
+
+	* util.cc: Remove redundant #includes
+
+2025-07-24  Robert Dubner  <rdubner@symas.com>
 
 	PR cobol/119231
 	* gcobolspec.cc: (lang_specific_driver): Pass OPT_static through.
 	Handle -static and -static-libgcobol properly.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-07-23  Robert Dubner  <rdubner@symas.com>
+2025-07-23  Robert Dubner  <rdubner@symas.com>
 
 	* genapi.cc (leave_procedure): Adjust location_t for PERFORM.
 	(parser_perform_times): Likewise.
@@ -24,11 +902,8 @@
 	(perform_outofline_testafter_varying): Likewise.
 	(perform_outofline_before_varying): Likewise.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-07-21  Robert Dubner  <rdubner@symas.com>
-		    James K. Lowden  <jklowden@cobolworx.com>
+2025-07-21  Robert Dubner  <rdubner@symas.com>
+	    James K. Lowden  <jklowden@cobolworx.com>
 
 	PR cobol/120402
 	* Make-lang.in: Elminate commented-out scripting.
@@ -162,10 +1037,14 @@
 	(warn_msg): Improved linemap handling.
 	* util.h (cobol_lineno): Improved linemap handling.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
+2025-07-15  Jakub Jelinek  <jakub@redhat.com>
+	    Jason Merrill  <jason@redhat.com>
 
-	Backported from master:
-	2025-07-14  Robert Dubner  <rdubner@symas.com>
+	PR c/44677
+	* gcobolspec.cc (lang_specific_driver): Remove unused but set variable
+	n_cobol_files.
+
+2025-07-14  Robert Dubner  <rdubner@symas.com>
 
 	* cobol1.cc (cobol_langhook_handle_option): Eliminate cppcheck warnings.
 	* dts.h: Likewise.
@@ -234,10 +1113,7 @@
 	(yyerror): Likewise.
 	(cbl_unimplemented_at): Likewise.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-07-13  Robert Dubner  <rdubner@symas.com>
+2025-07-13  Robert Dubner  <rdubner@symas.com>
 
 	* Make-lang.in: Eliminate the .cc.o override.
 	* genapi.cc (level_88_helper): Eliminate cppcheck warning.
@@ -307,10 +1183,7 @@
 	* util.cc (cbl_internal_error): Apply [[noreturn]] attribute.
 	* util.h (cbl_internal_error): Likewise.
 
-2025-07-29  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
-
-	Backported from master:
-	2025-07-11  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+2025-07-11  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
 
 	PR cobol/120621
 	* lexio.cc (parse_replace_pairs): Cast mfile.lineno() to fmt_size_t.
@@ -319,10 +1192,7 @@
 	* util.cc (cbl_field_t::report_invalid_initial_value): Print
 	ptrdiff_t using %ld, cast arg to long.
 
-2025-07-29  James K. Lowden  <jklowden@cobolworx.com>
-
-	Backported from master:
-	2025-07-10  James K. Lowden  <jklowden@cobolworx.com>
+2025-07-10  James K. Lowden  <jklowden@cobolworx.com>
 
 	PR cobol/120765
 	* cdf.y: Extend grammar for new CDF syntax, relocate dictionary.
@@ -381,11 +1251,8 @@
 	(cdf_pop_source_format): Same.
 	(cdf_pop_enabled_exceptions): Same.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-07-09  Robert Dubner  <rdubner@symas.com>
-		    James K. Lowden  <jklowden@cobolworx.com>
+2025-07-09  Robert Dubner  <rdubner@symas.com>
+	    James K. Lowden  <jklowden@cobolworx.com>
 
 	PR cobol/120765
 	PR cobol/119337
@@ -462,24 +1329,15 @@
 	(error_msg_direct): New function.
 	* util.h (class source_format_t): New class.
 
-2025-07-29  James K. Lowden  <jklowden@cobolworx.com>
-
-	Backported from master:
-	2025-07-01  James K. Lowden  <jklowden@cobolworx.com>
+2025-07-01  James K. Lowden  <jklowden@cobolworx.com>
 
 	* Make-lang.in: Use && instead of semicolon between commands.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-07-01  Robert Dubner  <rdubner@symas.com>
+2025-07-01  Robert Dubner  <rdubner@symas.com>
 
 	* parse.y: printf() of size_t is %zu, not %ld.
 
-2025-07-29  James K. Lowden  <jklowden@cobolworx.com>
-
-	Backported from master:
-	2025-06-30  James K. Lowden  <jklowden@cobolworx.com>
+2025-06-30  James K. Lowden  <jklowden@cobolworx.com>
 
 	PR cobol/120772
 	PR cobol/120779
@@ -527,10 +1385,7 @@
 	(cobol_lineno_save): Remove declaration.
 	(cobol_lineno): Declare.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-06-29  Robert Dubner  <rdubner@symas.com>
+2025-06-29  Robert Dubner  <rdubner@symas.com>
 
 	* Make-lang.in: Incorporate gcobol.clean.
 	* except.cc (cbl_enabled_exceptions_t::dump): Update debug message.
@@ -598,10 +1453,7 @@
 	* parse.y: Format debugging message.
 	* parse_ante.h: Normalize function_decl use.
 
-2025-07-29  James K. Lowden  <jklowden@cobolworx.com>
-
-	Backported from master:
-	2025-06-20  James K. Lowden  <jklowden@cobolworx.com>
+2025-06-20  James K. Lowden  <jklowden@cobolworx.com>
 
 	PR cobol/120621
 	* genapi.cc (parser_compile_ecs): Cast argument to unsigned long.
@@ -612,10 +1464,7 @@
 	* parse.y: hard-code values for old versions of Bison, and message format.
 	* scan_ante.h (wait_for_the_child): Cast pid_t to long.
 
-2025-07-29  James K. Lowden  <jklowden@cobolworx.com>
-
-	Backported from master:
-	2025-06-18  James K. Lowden  <jklowden@cobolworx.com>
+2025-06-18  James K. Lowden  <jklowden@cobolworx.com>
 
 	PR cobol/120621
 	* cbldiag.h (yyerror): Add diagnostic attributes.
@@ -715,10 +1564,7 @@
 	(cbl_err): Same.
 	(cbl_errx): Same.
 
-2025-07-29  James K. Lowden  <jklowden@cobolworx.com>
-
-	Backported from master:
-	2025-06-16  James K. Lowden  <jklowden@cobolworx.com>
+2025-06-16  James K. Lowden  <jklowden@cobolworx.com>
 
 	PR cobol/120621
 	* Make-lang.in: Use STRICT_WARN.
@@ -970,10 +1816,7 @@
 	(cobol_parse_files): Const pointer.
 	* util.h (as_voidp): Define convenient converter.
 
-2025-07-29  James K. Lowden  <jklowden@cobolworx.com>
-
-	Backported from master:
-	2025-06-10  James K. Lowden  <jklowden@cobolworx.com>
+2025-06-10  James K. Lowden  <jklowden@cobolworx.com>
 
 	* Make-lang.in: cobol.clean does not remove libgcobol files.
 	* cdf.y: Suppress 1 cppcheck false positive.
@@ -982,11 +1825,8 @@
 	* gcobolspec.cc (append_arg): Const parameter.
 	* parse_ante.h (intrinsic_call_2): Avoid NULL dereference.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-06-06  Robert Dubner  <rdubner@symas.com>
-		    James K. Lowden  <jklowden@cobolworx.com>
+2025-06-06  Robert Dubner  <rdubner@symas.com>
+	    James K. Lowden  <jklowden@cobolworx.com>
 
 	PR cobol/120328
 	PR cobol/119695
@@ -1050,10 +1890,7 @@
 	* util.h (gb4): New function.
 	* TODO: New file.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-06-05  Robert Dubner  <rdubner@symas.com>
+2025-06-05  Robert Dubner  <rdubner@symas.com>
 
 	PR cobol/119975
 	* genapi.cc (parser_intrinsic_call_0): Use get_time_nanoseconds().
@@ -1066,30 +1903,21 @@
 	(operator-): Likewise.
 	(parse_file): Likewise.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-06-02  Robert Dubner  <rdubner@symas.com>
+2025-06-02  Robert Dubner  <rdubner@symas.com>
 
 	PR cobol/119975
 	* genapi.cc (parser_intrinsic_call_0): Use get_time_64() function.
 	* genutil.cc (get_time_64): Definition created.
 	* genutil.h (get_time_64): Declaration created.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-06-01  Robert Dubner  <rdubner@symas.com>
+2025-06-01  Robert Dubner  <rdubner@symas.com>
 
 	PR cobol/119524
 	* gengen.cc (gg_printf): Use the new __gg__fprintf_stderr() function
 	instead of generating a call to fprintf().
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-05-20  Robert Dubner  <rdubner@symas.com>
-		    James K. Lowden  <jklowden@cobolworx.com>
+2025-05-20  Robert Dubner  <rdubner@symas.com>
+	    James K. Lowden  <jklowden@cobolworx.com>
 
 	PR cobol/119770
 	PR cobol/119772
@@ -1127,17 +1955,11 @@
 	* symfind.cc (symbol_match2): Change declaration.
 	(symbol_match): Change declaration.
 
-2025-07-29  Mark Wielaard  <mark@klomp.org>
-
-	Backported from master:
-	2025-05-18  Mark Wielaard  <mark@klomp.org>
+2025-05-18  Mark Wielaard  <mark@klomp.org>
 
 	* lang.opt.urls: Regenerated.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-05-16  Robert Dubner  <rdubner@symas.com>
+2025-05-16  Robert Dubner  <rdubner@symas.com>
 
 	* cobol1.cc (cobol_langhook_handle_option): Eliminate OPT_M.
 	* except.cc (cbl_enabled_exception_t::dump): Formatting.
@@ -1209,10 +2031,7 @@
 	(parse_file): Likewise.
 	* util.h (cobol_set_pp_option): Likewise.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-05-10  Robert Dubner  <rdubner@symas.com>
+2025-05-10  Robert Dubner  <rdubner@symas.com>
 
 	PR cobol/119337
 	* Make-lang.in: Change how $(FLEX) is invoked.
@@ -1265,35 +2084,23 @@
 	* token_names.h: Change list of tokens.
 	* util.cc (iso_cobol_word): Change list of COBOL reserved words.
 
-2025-07-29  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
-
-	Backported from master:
-	2025-05-08  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+2025-05-08  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
 
 	PR cobol/119217
 	* symbols.h (NAME_MAX): Define fallback.
 
-2025-07-29  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
-
-	Backported from master:
-	2025-05-08  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+2025-05-08  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
 
 	PR cobol/119217
 	* dts.h (csub_match): Initialize rm_so, rm_eo fields explicitly.
 
-2025-07-29  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
-
-	Backported from master:
-	2025-05-08  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+2025-05-08  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
 
 	PR cobol/119217
 	* cdf-copy.cc (GLOB_BRACE): Define fallback.
 	(GLOB_TILDE): Likewise.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-05-05  Robert Dubner  <rdubner@symas.com>
+2025-05-05  Robert Dubner  <rdubner@symas.com>
 
 	* cdf.y: Exceptions.
 	* except.cc (cbl_enabled_exception_t::dump): Likewise.
@@ -1426,10 +2233,7 @@
 	(iso_cobol_word): Add list of ISO reserved words.
 	* util.h (ftoupper): Added.
 
-2025-07-29  Jakub Jelinek  <jakub@redhat.com>
-
-	Backported from master:
-	2025-05-02  Jakub Jelinek  <jakub@redhat.com>
+2025-05-02  Jakub Jelinek  <jakub@redhat.com>
 
 	PR cobol/119364
 	* structs.h (cbl_enabled_exception_type_node): New variable
@@ -1443,10 +2247,7 @@
 	cbl_enabled_exception_type_node for target size and field offsets
 	and native_encode_expr to write each field into byte sequence.
 
-2025-07-29  Jakub Jelinek  <jakub@redhat.com>
-
-	Backported from master:
-	2025-05-02  Jakub Jelinek  <jakub@redhat.com>
+2025-05-02  Jakub Jelinek  <jakub@redhat.com>
 
 	PR cobol/119364
 	* util.cc (is_numeric_edited): Use HOST_SIZE_T_PRINT_UNSIGNED
@@ -1611,10 +2412,7 @@
 	(cbl_perform_tgt_t::dump): Likewise.
 	(numeric_group_attrs): Change return type from size_t to uint64_t.
 
-2025-07-29  Robert Dubner  <rdubner@symas.com>
-
-	Backported from master:
-	2025-04-24  Robert Dubner  <rdubner@symas.com>
+2025-04-24  Robert Dubner  <rdubner@symas.com>
 
 	* genapi.cc: (initialize_variable_internal): Change TRACE1 formatting.
 	(create_and_call): Repair RETURN-CODE processing.
@@ -1630,10 +2428,6 @@
 	(refer_offset_dest): Likewise.
 	(refer_size_dest): Likewise.
 	(refer_offset_source): Likewise.
-
-2025-04-25  Release Manager
-
-	* GCC 15.1.0 released.
 
 2025-04-16  Bob Dubner  <rdubner@symas.com>
 
@@ -2210,9 +3004,8 @@
 	* gcobol.3: New file.
 	* help.gen: New file.
 	* udf/stored-char-length.cbl: New file.
-
 
-Copyright (C) 2025 Free Software Foundation, Inc.
+Copyright (C) 2025-2026 Free Software Foundation, Inc.
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright

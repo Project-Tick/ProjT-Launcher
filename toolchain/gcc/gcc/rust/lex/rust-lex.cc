@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2025 Free Software Foundation, Inc.
+// Copyright (C) 2020-2026 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -236,10 +236,11 @@ Lexer::dump_and_skip (int n)
 
 	  out << "<id=";
 	  out << tok->token_id_to_str ();
-	  out << (tok->has_str () ? (std::string (", text=") + tok->get_str ()
-				     + std::string (", typehint=")
-				     + std::string (tok->get_type_hint_str ()))
-				  : "")
+	  out << (tok->should_have_str ()
+		    ? (std::string (", text=") + tok->get_str ()
+		       + std::string (", typehint=")
+		       + std::string (tok->get_type_hint_str ()))
+		    : "")
 	      << " ";
 	  out << Linemap::location_to_string (loc) << '\n';
 	}
@@ -1317,7 +1318,8 @@ Lexer::parse_escape (char opening_char)
 
   switch (current_char.value)
     {
-      case 'x': {
+    case 'x':
+      {
 	auto hex_escape_pair = parse_partial_hex_escape ();
 	long hexLong = hex_escape_pair.first;
 	additional_length_offset += hex_escape_pair.second;
@@ -1400,7 +1402,8 @@ Lexer::parse_utf8_escape ()
 
   switch (current_char.value)
     {
-      case 'x': {
+    case 'x':
+      {
 	auto hex_escape_pair = parse_partial_hex_escape ();
 	long hexLong = hex_escape_pair.first;
 	additional_length_offset += hex_escape_pair.second;
@@ -1438,7 +1441,8 @@ Lexer::parse_utf8_escape ()
     case '"':
       output_char = '"';
       break;
-      case 'u': {
+    case 'u':
+      {
 	auto unicode_escape_pair = parse_partial_unicode_escape ();
 	output_char = unicode_escape_pair.first;
 	additional_length_offset += unicode_escape_pair.second;
@@ -1894,17 +1898,17 @@ Lexer::parse_raw_byte_string (location_t loc)
 	      break;
 	    }
 	}
+      else if (current_char.is_eof ())
+	{
+	  rust_error_at (string_begin_locus, "unended raw byte string literal");
+	  return Token::make (END_OF_FILE, get_current_location ());
+	}
       else if (current_char.value > 127)
 	{
 	  rust_error_at (get_current_location (),
 			 "character %qs in raw byte string out of range",
 			 current_char.as_string ().c_str ());
 	  current_char = 0;
-	}
-      else if (current_char.is_eof ())
-	{
-	  rust_error_at (string_begin_locus, "unended raw byte string literal");
-	  return Token::make (END_OF_FILE, get_current_location ());
 	}
 
       length++;
@@ -2635,37 +2639,37 @@ void
 rust_input_source_test ()
 {
   // ASCII
-  std::string src = u8"_abcde\tXYZ\v\f";
-  std::vector<uint32_t> expected
-    = {'_', 'a', 'b', 'c', 'd', 'e', '\t', 'X', 'Y', 'Z', '\v', '\f'};
+  std::string src = (const char *) u8"_abcde\tXYZ\v\f";
+  std::vector<uint32_t> expected = {u'_',  u'a', u'b', u'c', u'd',  u'e',
+				    u'\t', u'X', u'Y', u'Z', u'\v', u'\f'};
   test_buffer_input_source (src, expected);
 
   // BOM
-  src = u8"\xef\xbb\xbfOK";
-  expected = {'O', 'K'};
+  src = (const char *) u8"\xef\xbb\xbfOK";
+  expected = {u'O', u'K'};
   test_buffer_input_source (src, expected);
 
   // Russian
-  src = u8"приве́т";
-  expected = {L'п',
-	      L'р',
-	      L'и',
-	      L'в',
+  src = (const char *) u8"приве́т";
+  expected = {u'п',
+	      u'р',
+	      u'и',
+	      u'в',
 	      0x0435 /* CYRILLIC SMALL LETTER IE е */,
 	      0x301 /* COMBINING ACUTE ACCENT ́ */,
-	      L'т'};
+	      u'т'};
   test_buffer_input_source (src, expected);
 
-  src = u8"❤️🦀";
+  src = (const char *) u8"❤️🦀";
   expected = {0x2764 /* HEAVY BLACK HEART */,
-	      0xfe0f /* VARIATION SELECTOR-16 */, L'🦀'};
+	      0xfe0f /* VARIATION SELECTOR-16 */, U'🦀'};
   test_buffer_input_source (src, expected);
 
-  src = u8"こんにちは";
-  expected = {L'こ', L'ん', L'に', L'ち', L'は'};
+  src = (const char *) u8"こんにちは";
+  expected = {u'こ', u'ん', u'に', u'ち', u'は'};
   test_file_input_source (src, expected);
 
-  src = u8"👮‍♂👩‍⚕";
+  src = (const char *) u8"👮‍♂👩‍⚕";
   expected
     = {0x1f46e /* POLICE OFFICER */,   0x200d /* ZERO WIDTH JOINER */,
        0x2642 /* MALE SIGN */,	       0x1f469 /* WOMAN */,

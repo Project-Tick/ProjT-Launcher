@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2025 Free Software Foundation, Inc.
+// Copyright (C) 2020-2026 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -18,7 +18,6 @@
 
 #include "rust-ast-builder.h"
 #include "optional.h"
-#include "rust-ast-builder-type.h"
 #include "rust-ast.h"
 #include "rust-common.h"
 #include "rust-expr.h"
@@ -29,7 +28,6 @@
 #include "rust-pattern.h"
 #include "rust-system.h"
 #include "rust-token.h"
-#include <memory>
 
 namespace Rust {
 namespace AST {
@@ -332,6 +330,12 @@ Builder::block () const
 }
 
 std::unique_ptr<BlockExpr>
+Builder::block (std::unique_ptr<Expr> &&tail_expr) const
+{
+  return block (tl::nullopt, std::move (tail_expr));
+}
+
+std::unique_ptr<BlockExpr>
 Builder::block (std::vector<std::unique_ptr<Stmt>> &&stmts,
 		std::unique_ptr<Expr> &&tail_expr) const
 {
@@ -442,6 +446,14 @@ Builder::field_access (std::unique_ptr<Expr> &&instance,
     new FieldAccessExpr (std::move (instance), field, {}, loc));
 }
 
+std::unique_ptr<StructPatternField>
+Builder::struct_pattern_ident_pattern (std::string field_name,
+				       std::unique_ptr<Pattern> &&pattern)
+{
+  return std::make_unique<StructPatternFieldIdentPat> (
+    field_name, std::move (pattern), std::vector<Attribute> (), loc);
+}
+
 std::unique_ptr<Pattern>
 Builder::wildcard () const
 {
@@ -472,19 +484,21 @@ Builder::match (std::unique_ptr<Expr> &&scrutinee,
 MatchArm
 Builder::match_arm (std::unique_ptr<Pattern> &&pattern)
 {
-  auto patterns = std::vector<std::unique_ptr<Pattern>> ();
-  patterns.emplace_back (std::move (pattern));
-
-  return MatchArm (std::move (patterns), loc);
+  return MatchArm (std::move (pattern), loc);
 }
 
 MatchCase
 Builder::match_case (std::unique_ptr<Pattern> &&pattern,
 		     std::unique_ptr<Expr> &&expr)
 {
-  return MatchCase (match_arm (std::move (pattern)), std::move (expr));
+  return match_case (match_arm (std::move (pattern)), std::move (expr));
 }
 
+MatchCase
+Builder::match_case (MatchArm &&arm, std::unique_ptr<Expr> &&expr)
+{
+  return MatchCase (std::move (arm), std::move (expr));
+}
 std::unique_ptr<Expr>
 Builder::loop (std::vector<std::unique_ptr<Stmt>> &&stmts)
 {
@@ -523,27 +537,40 @@ Builder::generic_type_param (
 				      std::vector<Attribute> ());
 }
 
-std::unique_ptr<Type>
-Builder::new_type (Type &type)
+std::unique_ptr<Stmt>
+Builder::discriminant_value (std::string binding_name, std::string instance)
 {
-  Type *t = ASTTypeBuilder::build (type);
-  return std::unique_ptr<Type> (t);
+  auto intrinsic = ptrify (
+    path_in_expression ({"core", "intrinsics", "discriminant_value"}, true));
+
+  return let (identifier_pattern (binding_name), nullptr,
+	      call (std::move (intrinsic), identifier (instance)));
 }
 
 std::unique_ptr<GenericParam>
 Builder::new_lifetime_param (LifetimeParam &param)
 {
   Lifetime l = new_lifetime (param.get_lifetime ());
+
   std::vector<Lifetime> lifetime_bounds;
+  lifetime_bounds.reserve (param.get_lifetime_bounds ().size ());
+
   for (auto b : param.get_lifetime_bounds ())
-    {
-      Lifetime bl = new_lifetime (b);
-      lifetime_bounds.push_back (bl);
-    }
+    lifetime_bounds.emplace_back (new_lifetime (b));
 
   auto p = new LifetimeParam (l, std::move (lifetime_bounds),
 			      param.get_outer_attrs (), param.get_locus ());
   return std::unique_ptr<GenericParam> (p);
+}
+
+std::unique_ptr<GenericParam>
+Builder::new_const_param (ConstGenericParam &param) const
+{
+  return std::make_unique<ConstGenericParam> (param.get_name (),
+					      param.get_type ().clone_type (),
+					      param.get_default_value (),
+					      param.get_outer_attrs (),
+					      param.get_locus ());
 }
 
 std::unique_ptr<GenericParam>
@@ -557,7 +584,7 @@ Builder::new_type_param (
   std::unique_ptr<Type> type = nullptr;
 
   if (param.has_type ())
-    type = new_type (param.get_type ());
+    type = param.get_type ().reconstruct ();
 
   for (auto &&extra_bound : extra_bounds)
     type_param_bounds.emplace_back (std::move (extra_bound));
@@ -566,7 +593,8 @@ Builder::new_type_param (
     {
       switch (b->get_bound_type ())
 	{
-	  case TypeParamBound::TypeParamBoundType::TRAIT: {
+	case TypeParamBound::TypeParamBoundType::TRAIT:
+	  {
 	    const TraitBound &tb = (const TraitBound &) *b.get ();
 	    const TypePath &path = tb.get_type_path ();
 
@@ -574,11 +602,11 @@ Builder::new_type_param (
 	    for (const auto &lifetime : tb.get_for_lifetimes ())
 	      {
 		std::vector<Lifetime> lifetime_bounds;
+		lifetime_bounds.reserve (
+		  lifetime.get_lifetime_bounds ().size ());
+
 		for (const auto &b : lifetime.get_lifetime_bounds ())
-		  {
-		    Lifetime bl = new_lifetime (b);
-		    lifetime_bounds.push_back (std::move (bl));
-		  }
+		  lifetime_bounds.emplace_back (new_lifetime (b));
 
 		Lifetime nl = new_lifetime (lifetime.get_lifetime ());
 		LifetimeParam p (std::move (nl), std::move (lifetime_bounds),
@@ -591,33 +619,34 @@ Builder::new_type_param (
 	      {
 		switch (seg->get_type ())
 		  {
-		    case TypePathSegment::REG: {
+		  case TypePathSegment::REG:
+		    {
 		      const TypePathSegment &segment
 			= (const TypePathSegment &) (*seg.get ());
-		      TypePathSegment *s = new TypePathSegment (
+
+		      segments.emplace_back (new TypePathSegment (
 			segment.get_ident_segment (),
 			segment.get_separating_scope_resolution (),
-			segment.get_locus ());
-		      std::unique_ptr<TypePathSegment> sg (s);
-		      segments.push_back (std::move (sg));
+			segment.get_locus ()));
 		    }
 		    break;
 
-		    case TypePathSegment::GENERIC: {
+		  case TypePathSegment::GENERIC:
+		    {
 		      TypePathSegmentGeneric &generic
 			= (TypePathSegmentGeneric &) (*seg.get ());
 
 		      GenericArgs args
 			= new_generic_args (generic.get_generic_args ());
-		      TypePathSegmentGeneric *s = new TypePathSegmentGeneric (
+
+		      segments.emplace_back (new TypePathSegmentGeneric (
 			generic.get_ident_segment (), false, std::move (args),
-			generic.get_locus ());
-		      std::unique_ptr<TypePathSegment> sg (s);
-		      segments.push_back (std::move (sg));
+			generic.get_locus ()));
 		    }
 		    break;
 
-		    case TypePathSegment::FUNCTION: {
+		  case TypePathSegment::FUNCTION:
+		    {
 		      rust_unreachable ();
 		      // TODO
 		      // const TypePathSegmentFunction &fn
@@ -630,22 +659,19 @@ Builder::new_type_param (
 	    TypePath p (std::move (segments), path.get_locus (),
 			path.has_opening_scope_resolution_op ());
 
-	    TraitBound *b = new TraitBound (std::move (p), tb.get_locus (),
-					    tb.is_in_parens (),
-					    tb.has_opening_question_mark (),
-					    std::move (for_lifetimes));
-	    std::unique_ptr<TypeParamBound> bound (b);
-	    type_param_bounds.push_back (std::move (bound));
+	    type_param_bounds.emplace_back (new TraitBound (
+	      std::move (p), tb.get_locus (), tb.is_in_parens (),
+	      tb.has_opening_question_mark (), std::move (for_lifetimes)));
 	  }
 	  break;
 
-	  case TypeParamBound::TypeParamBoundType::LIFETIME: {
+	case TypeParamBound::TypeParamBoundType::LIFETIME:
+	  {
 	    const Lifetime &l = (const Lifetime &) *b.get ();
 
-	    auto bl = new Lifetime (l.get_lifetime_type (),
-				    l.get_lifetime_name (), l.get_locus ());
-	    std::unique_ptr<TypeParamBound> bound (bl);
-	    type_param_bounds.push_back (std::move (bound));
+	    type_param_bounds.emplace_back (
+	      new Lifetime (l.get_lifetime_type (), l.get_lifetime_name (),
+			    l.get_locus ()));
 	  }
 	  break;
 	}
@@ -674,35 +700,37 @@ Builder::new_generic_args (GenericArgs &args)
   location_t locus = args.get_locus ();
 
   for (const auto &lifetime : args.get_lifetime_args ())
-    {
-      Lifetime l = new_lifetime (lifetime);
-      lifetime_args.push_back (std::move (l));
-    }
+    lifetime_args.push_back (new_lifetime (lifetime));
 
   for (auto &binding : args.get_binding_args ())
     {
       Type &t = *binding.get_type_ptr ().get ();
-      std::unique_ptr<Type> ty = new_type (t);
-      GenericArgsBinding b (binding.get_identifier (), std::move (ty),
-			    binding.get_locus ());
-      binding_args.push_back (std::move (b));
+      std::unique_ptr<Type> ty = t.reconstruct ();
+      binding_args.emplace_back (binding.get_identifier (), std::move (ty),
+				 binding.get_locus ());
     }
 
   for (auto &arg : args.get_generic_args ())
     {
+      tl::optional<GenericArg> new_arg = tl::nullopt;
+
       switch (arg.get_kind ())
 	{
-	  case GenericArg::Kind::Type: {
-	    std::unique_ptr<Type> ty = new_type (arg.get_type ());
-	    GenericArg arg = GenericArg::create_type (std::move (ty));
-	  }
+	case GenericArg::Kind::Type:
+	  new_arg = GenericArg::create_type (arg.get_type ().reconstruct ());
 	  break;
-
-	default:
-	  // FIXME
-	  rust_unreachable ();
+	case GenericArg::Kind::Either:
+	  new_arg
+	    = GenericArg::create_ambiguous (arg.get_path (), arg.get_locus ());
+	  break;
+	case GenericArg::Kind::Const:
+	  new_arg
+	    = GenericArg::create_const (arg.get_expression ().clone_expr ());
+	  // FIXME: Use `reconstruct()` here, not `clone_expr()`
 	  break;
 	}
+
+      generic_args.emplace_back (*new_arg);
     }
 
   return GenericArgs (std::move (lifetime_args), std::move (generic_args),

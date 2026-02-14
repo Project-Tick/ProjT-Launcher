@@ -1,10 +1,20 @@
-2025-08-08  Release Manager
+2026-01-08  Olivier Hainque  <hainque@adacore.com>
+	    Alexandre Oliva  <oliva@adacore.com>
 
-	* GCC 15.2.0 released.
+	* configure.ac (default_gnattools_target): Use gnattools-cross
+	when not bootstrapping x86_64 configurations defaulting to
+	-m32.
+	* configure: Rebuild.
 
-2025-04-25  Release Manager
+2025-06-22  Nicolas Boulenguez  <nicolas@debian.org>
 
-	* GCC 15.1.0 released.
+	PR ada/120106
+	* configure.ac: Remove ACX_NONCANONICAL_HOST and add ACX_PROG_GNAT.
+	* configure: Regenerate.
+	* Makefile.in: Do not substitute host_noncanonical but substitute
+	GNATMAKE and GNATBIND.
+	Set GNAT{MAKE,BIND,LINK_LS}_FOR_HOST from GNAT{MAKE,BIND} instead
+	of using hardcoded commands.
 
 2025-04-01  Eric Botcazou  <ebotcazou@adacore.com>
 
@@ -371,7 +381,7 @@
 	* configure: Regenerate.
 	* New directory, cloned from libada.
 
-Copyright 2004-2024 Free Software Foundation, Inc.
+Copyright 2004-2026 Free Software Foundation, Inc.
 
 This ChangeLog is free software; the Free Software Foundation gives
 unlimited permission to copy, distribute, and modify it.

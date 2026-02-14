@@ -4,7 +4,7 @@
 
 struct A { virtual void foo () = 0; };
 struct B { A a[1]; };	// { dg-error "cannot declare field 'B::a' to be of abstract type 'A'" }
-// { dg-error "cannot allocate an object of abstract type 'A'" "" { target *-*-* } .-1 }
+// { dg-error "cannot construct an object of abstract type 'A'" "" { target *-*-* } .-1 }
 
 template <typename T>
 void

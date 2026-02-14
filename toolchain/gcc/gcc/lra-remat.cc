@@ -1,5 +1,5 @@
 /* Rematerialize pseudos values.
-   Copyright (C) 2014-2025 Free Software Foundation, Inc.
+   Copyright (C) 2014-2026 Free Software Foundation, Inc.
    Contributed by Vladimir Makarov <vmakarov@redhat.com>.
 
 This file is part of GCC.
@@ -1185,8 +1185,7 @@ do_remat (void)
 
 		      start_sequence ();
 		      emit_insn (remat_pat);
-		      remat_insn = get_insns ();
-		      end_sequence ();
+		      remat_insn = end_sequence ();
 		      if (recog_memoized (remat_insn) < 0)
 			remat_insn = NULL;
 		      cand_sp_offset = cand_id->sp_offset;

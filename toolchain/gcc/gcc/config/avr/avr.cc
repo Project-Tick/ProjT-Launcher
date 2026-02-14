@@ -1,5 +1,5 @@
 /* Subroutines for insn-output.cc for AVR 8-bit microcontrollers
-   Copyright (C) 1998-2025 Free Software Foundation, Inc.
+   Copyright (C) 1998-2026 Free Software Foundation, Inc.
    Contributed by Denis Chertykov (chertykov@gmail.com)
 
    This file is part of GCC.
@@ -118,6 +118,25 @@ const avr_addrspace_t avr_addrspace[ADDR_SPACE_COUNT] =
   { ADDR_SPACE_FLASHX, 1, 3, "__flashx",  0, ".progmemx.data" },
   { ADDR_SPACE_MEMX, 1, 3, "__memx",  0, ".progmemx.data" },
 };
+
+
+#ifdef HAVE_LD_AVR_AVRXMEGA2_FLMAP
+static const bool have_avrxmega2_flmap = true;
+#else
+static const bool have_avrxmega2_flmap = false;
+#endif
+
+#ifdef HAVE_LD_AVR_AVRXMEGA4_FLMAP
+static const bool have_avrxmega4_flmap = true;
+#else
+static const bool have_avrxmega4_flmap = false;
+#endif
+
+#ifdef HAVE_LD_AVR_AVRXMEGA3_RODATA_IN_FLASH
+static const bool have_avrxmega3_rodata_in_flash = true;
+#else
+static const bool have_avrxmega3_rodata_in_flash = false;
+#endif
 
 
 /* Holding RAM addresses of some SFRs used by the compiler and that
@@ -287,6 +306,36 @@ avr_tolower (char *lo, const char *up)
 }
 
 
+/* Return TRUE when the .rodata sections are located in program memory (flash).
+   Otherwise, the .rodata input sections are located in RAM and FALSE is
+   returned.  Note that the FLMAP cases are a bit wonky since the libs are
+   compiled with the default but -mrodata-in-ram is not a multilib option.  */
+
+static bool
+avr_rodata_in_flash_p ()
+{
+  switch (avr_arch_index)
+    {
+    default:
+      break;
+
+    case ARCH_AVRTINY:
+      return true;
+
+    case ARCH_AVRXMEGA3:
+      return have_avrxmega3_rodata_in_flash;
+
+    case ARCH_AVRXMEGA2:
+      return avropt_flmap && have_avrxmega2_flmap && avropt_rodata_in_ram != 1;
+
+    case ARCH_AVRXMEGA4:
+      return avropt_flmap && have_avrxmega4_flmap && avropt_rodata_in_ram != 1;
+    }
+
+  return false;
+}
+
+
 /* Return chunk of mode MODE of X as an rtx.  N specifies the subreg
    byte at which the chunk starts.  N must be an integral multiple
    of the mode size.  */
@@ -411,6 +460,29 @@ avr_to_int_mode (rtx x)
 }
 
 
+/* Return the pattern of INSN, but with added (clobber (reg:CC REG_CC)).
+   The pattern of INSN must be a PARALLEL or a SET.  INSN is unchanged.  */
+
+rtx
+avr_add_ccclobber (rtx_insn *insn)
+{
+  rtx pat = PATTERN (insn);
+  gcc_assert (GET_CODE (pat) == SET || GET_CODE (pat) == PARALLEL);
+
+  int newlen = GET_CODE (pat) == SET ? 2 : 1 + XVECLEN (pat, 0);
+  rtx newpat = gen_rtx_PARALLEL (VOIDmode, rtvec_alloc (newlen));
+  rtx elt0 = GET_CODE (pat) == SET ? pat : XVECEXP (pat, 0, 0);
+
+  XVECEXP (newpat, 0, 0) = copy_rtx (elt0);
+  XVECEXP (newpat, 0, newlen - 1) = gen_rtx_CLOBBER (VOIDmode, cc_reg_rtx);
+
+  for (int i = 1; i < newlen - 1; ++i)
+    XVECEXP (newpat, 0, i) = copy_rtx (XVECEXP (pat, 0, i));
+
+  return newpat;
+}
+
+
 /* Return true if hard register REG supports the ADIW and SBIW instructions.  */
 
 bool
@@ -427,13 +499,6 @@ static bool
 avr_ld_regno_p (int regno)
 {
   return TEST_HARD_REG_CLASS (LD_REGS, regno);
-}
-
-
-static bool
-ra_in_progress ()
-{
-  return avropt_lra_p ? lra_in_progress : reload_in_progress;
 }
 
 
@@ -1660,8 +1725,7 @@ avr_prologue_setup_frame (HOST_WIDE_INT size, HARD_REG_SET set)
 							-size_cfa)));
 	    }
 
-	  fp_plus_insns = get_insns ();
-	  end_sequence ();
+	  fp_plus_insns = end_sequence ();
 
 	  /************  Method 2: Adjust Stack pointer  ************/
 
@@ -1693,8 +1757,7 @@ avr_prologue_setup_frame (HOST_WIDE_INT size, HARD_REG_SET set)
 		  RTX_FRAME_RELATED_P (insn) = 1;
 		}
 
-	      sp_plus_insns = get_insns ();
-	      end_sequence ();
+	      sp_plus_insns = end_sequence ();
 
 	      /************ Use shortest method  ************/
 
@@ -2060,8 +2123,7 @@ avr_expand_epilogue (bool sibcall_p)
       emit_insn (gen_movhi_sp_r (stack_pointer_rtx, fp,
 				 GEN_INT (irq_state)));
 
-      rtx_insn *fp_plus_insns = get_insns ();
-      end_sequence ();
+      rtx_insn *fp_plus_insns = end_sequence ();
 
       /********** Method 2: Adjust Stack pointer  **********/
 
@@ -2072,8 +2134,7 @@ avr_expand_epilogue (bool sibcall_p)
 	  emit_move_insn (stack_pointer_rtx,
 			  plus_constant (Pmode, stack_pointer_rtx, size));
 
-	  rtx_insn *sp_plus_insns = get_insns ();
-	  end_sequence ();
+	  rtx_insn *sp_plus_insns = end_sequence ();
 
 	  /************ Use shortest method  ************/
 
@@ -2328,8 +2389,8 @@ avr_legitimate_address_p (machine_mode mode, rtx x, bool strict)
   if (avr_log.legitimate_address_p)
     {
       avr_edump ("\n%?: ret=%d, mode=%m strict=%d "
-		 "reload_completed=%d ra_in_progress=%d %s:",
-		 ok, mode, strict, reload_completed, ra_in_progress (),
+		 "reload_completed=%d lra_in_progress=%d %s:",
+		 ok, mode, strict, reload_completed, lra_in_progress,
 		 reg_renumber ? "(reg_renumber)" : "");
 
       if (GET_CODE (x) == PLUS
@@ -2396,88 +2457,6 @@ avr_legitimize_address (rtx x, rtx oldx, machine_mode mode)
     }
 
   return x;
-}
-
-
-/* Implement `LEGITIMIZE_RELOAD_ADDRESS'.  */
-/* This will allow register R26/27 to be used where it is no worse than normal
-   base pointers R28/29 or R30/31.  For example, if base offset is greater
-   than 63 bytes or for R++ or --R addressing.  */
-
-rtx
-avr_legitimize_reload_address (rtx *px, machine_mode mode, int opnum,
-			       int type, int addr_type, int /*ind_levels*/,
-			       rtx (*mk_memloc)(rtx,int))
-{
-  rtx x = *px;
-
-  if (avr_log.legitimize_reload_address)
-    avr_edump ("\n%?:%m %r\n", mode, x);
-
-  if (1 && (GET_CODE (x) == POST_INC
-	    || GET_CODE (x) == PRE_DEC))
-    {
-      push_reload (XEXP (x, 0), XEXP (x, 0), &XEXP (x, 0), &XEXP (x, 0),
-		   POINTER_REGS, GET_MODE (x), GET_MODE (x), 0, 0,
-		   opnum, RELOAD_OTHER);
-
-      if (avr_log.legitimize_reload_address)
-	avr_edump (" RCLASS.1 = %R\n IN = %r\n OUT = %r\n",
-		   POINTER_REGS, XEXP (x, 0), XEXP (x, 0));
-
-      return x;
-    }
-
-  if (GET_CODE (x) == PLUS
-      && REG_P (XEXP (x, 0))
-      && reg_equiv_constant (REGNO (XEXP (x, 0))) == 0
-      && CONST_INT_P (XEXP (x, 1))
-      && INTVAL (XEXP (x, 1)) >= 1)
-    {
-      bool fit = INTVAL (XEXP (x, 1)) <= MAX_LD_OFFSET (mode);
-
-      if (fit)
-	{
-	  if (reg_equiv_address (REGNO (XEXP (x, 0))) != 0)
-	    {
-	      int regno = REGNO (XEXP (x, 0));
-	      rtx mem = mk_memloc (x, regno);
-
-	      push_reload (XEXP (mem, 0), NULL_RTX, &XEXP (mem, 0), NULL,
-			   POINTER_REGS, Pmode, VOIDmode, 0, 0,
-			   1, (enum reload_type) addr_type);
-
-	      if (avr_log.legitimize_reload_address)
-		avr_edump (" RCLASS.2 = %R\n IN = %r\n OUT = %r\n",
-			   POINTER_REGS, XEXP (mem, 0), NULL_RTX);
-
-	      push_reload (mem, NULL_RTX, &XEXP (x, 0), NULL,
-			   BASE_POINTER_REGS, GET_MODE (x), VOIDmode, 0, 0,
-			   opnum, (enum reload_type) type);
-
-	      if (avr_log.legitimize_reload_address)
-		avr_edump (" RCLASS.2 = %R\n IN = %r\n OUT = %r\n",
-			   BASE_POINTER_REGS, mem, NULL_RTX);
-
-	      return x;
-	    }
-	}
-      else if (! (frame_pointer_needed
-		  && XEXP (x, 0) == frame_pointer_rtx))
-	{
-	  push_reload (x, NULL_RTX, px, NULL,
-		       POINTER_REGS, GET_MODE (x), VOIDmode, 0, 0,
-		       opnum, (enum reload_type) type);
-
-	  if (avr_log.legitimize_reload_address)
-	    avr_edump (" RCLASS.3 = %R\n IN = %r\n OUT = %r\n",
-		       POINTER_REGS, x, NULL_RTX);
-
-	  return x;
-	}
-    }
-
-  return NULL_RTX;
 }
 
 
@@ -6938,27 +6917,55 @@ avr_out_cmp_ext (rtx xop[], rtx_code code, int *plen)
 }
 
 
-/* Generate asm equivalent for various shifts.  This only handles cases
-   that are not already carefully hand-optimized in ?sh<mode>3_out.
+/* Helper for the next function:  Shift register REG by 1 bit position
+   according to the shift CODE of ASHIFT, LSHIFTRT or ASHIFTRT.
+   PLEN == 0: Asm output respective shift instruction(s).
+   PLEN != 0: Add the length of the sequence in words to *PLEN.  */
 
-   OPERANDS[0] resp. %0 in TEMPL is the operand to be shifted.
+static void
+avr_out_shift_1 (rtx_code code, rtx reg, int *plen)
+{
+  const int n_bytes = GET_MODE_SIZE (GET_MODE (reg));
+  const int dir = code == ASHIFT ? 1 : -1;
+  const int regno = REGNO (reg);
+  const int first = code == ASHIFT ? 0 : n_bytes - 1;
+  for (int i = 0; i < n_bytes; ++i)
+    {
+      rtx reg8 = all_regs_rtx[regno + first + i * dir];
+      if (code == ASHIFT)
+	avr_asm_len (i == 0 ? "lsl %0" : "rol %0", &reg8, plen, 1);
+      else if (code == LSHIFTRT)
+	avr_asm_len (i == 0 ? "lsr %0" : "ror %0", &reg8, plen, 1);
+      else if (code == ASHIFTRT)
+	avr_asm_len (i == 0 ? "asr %0" : "ror %0", &reg8, plen, 1);
+      else
+	gcc_unreachable ();
+    }
+}
+
+
+/* Generate asm code to perform a shift of code CODE on register OPERANDS[0].
+   This only handles cases that are not already carefully hand-optimized
+   in ?sh<mode>3_out.  Always returns "".
+
    OPERANDS[2] is the shift count as CONST_INT, MEM or REG.
    OPERANDS[3] is a QImode scratch register from LD regs if
-               available and SCRATCH, otherwise (no scratch available)
-
-   TEMPL is an assembler template that shifts by one position.
-   T_LEN is the length of this template.
+	       available and SCRATCH, otherwise (no scratch available).
    PLEN != 0: Set *PLEN to the length of the sequence in words.
    PLEN == 0: Output instructions.  */
 
-void
-out_shift_with_cnt (const char *templ, rtx_insn *insn, rtx operands[],
-		    int *plen, int t_len)
+static const char*
+avr_out_shift_with_cnt (rtx_code code, rtx_insn *insn, rtx operands[],
+			int *plen)
 {
   bool second_label = true;
   bool saved_in_tmp = false;
   bool use_zero_reg = false;
-  rtx op[5];
+  bool tail_bits = false;
+  const int t_len = GET_MODE_SIZE (GET_MODE (operands[0]));
+  const int regno = REGNO (operands[0]);
+  const int tail_regno = regno + (code == ASHIFT ? t_len - 1 : 0);
+  rtx op[6];
 
   op[0] = operands[0];
   op[1] = operands[1];
@@ -6982,25 +6989,47 @@ out_shift_with_cnt (const char *templ, rtx_insn *insn, rtx operands[],
       int max_len = 10;  /* If larger than this, always use a loop.  */
 
       if (count <= 0)
-	return;
+	return "";
 
-      if (count < 8 && !scratch)
+      if (count < 8 && tail_regno >= REG_16)
+	tail_bits = true;
+      else if (count < 8 && !scratch)
 	use_zero_reg = true;
 
       if (optimize_size)
-	max_len = t_len + (scratch ? 3 : (use_zero_reg ? 4 : 5));
+	max_len = t_len + (scratch || tail_bits ? 3 : (use_zero_reg ? 4 : 5));
 
       if (t_len * count <= max_len)
 	{
 	  /* Output shifts inline with no loop - faster.  */
 
 	  while (count-- > 0)
-	    avr_asm_len (templ, op, plen, t_len);
+	    avr_out_shift_1 (code, op[0], plen);
 
-	  return;
+	  return "";
 	}
 
-      if (scratch)
+      if (tail_bits)
+	{
+	  /* The tail register (the last one in a multi-byte shift) is
+	     an upper register, so we can insert a stop mask into it.
+	     This will cost 2 instructions, but the loop body is one
+	     instruction shorter.  That yields the same code size like
+	     the "scratch" case but saves count-1 cycles.
+	     The loop branch is a BRCC that sees count-1 zeros and then
+	     a one to drop out of the loop.  */
+
+	  op[3] = all_regs_rtx[tail_regno];
+	  op[4] = gen_int_mode (code == ASHIFT
+				? 0xff >> count
+				: 0xff << count, QImode);
+	  op[5] = gen_int_mode (code == ASHIFT
+				? 0x80 >> (count - 1)
+				: 0x01 << (count - 1), QImode);
+	  avr_asm_len ("andi %3,%4" CR_TAB
+		       "ori %3,%5", op, plen, 2);
+	}
+      else if (scratch)
 	{
 	  avr_asm_len ("ldi %3,%2", op, plen, 1);
 	}
@@ -7056,16 +7085,25 @@ out_shift_with_cnt (const char *templ, rtx_insn *insn, rtx operands[],
     avr_asm_len ("rjmp 2f", op, plen, 1);
 
   avr_asm_len ("1:", op, plen, 0);
-  avr_asm_len (templ, op, plen, t_len);
+  avr_out_shift_1 (code, op[0], plen);
 
   if (second_label)
     avr_asm_len ("2:", op, plen, 0);
 
-  avr_asm_len (use_zero_reg ? "lsr %3" : "dec %3", op, plen, 1);
-  avr_asm_len (second_label ? "brpl 1b" : "brne 1b", op, plen, 1);
+  if (tail_bits)
+    {
+      avr_asm_len ("brcc 1b", op, plen, 1);
+    }
+  else
+    {
+      avr_asm_len (use_zero_reg ? "lsr %3" : "dec %3", op, plen, 1);
+      avr_asm_len (second_label ? "brpl 1b" : "brne 1b", op, plen, 1);
+    }
 
   if (saved_in_tmp)
     avr_asm_len ("mov %3,%4", op, plen, 1);
+
+  return "";
 }
 
 
@@ -7143,9 +7181,7 @@ ashlqi3_out (rtx_insn *insn, rtx operands[], int *plen)
   else if (CONSTANT_P (operands[2]))
     fatal_insn ("internal compiler error.  Incorrect shift:", insn);
 
-  out_shift_with_cnt ("lsl %0",
-		      insn, operands, plen, 1);
-  return "";
+  return avr_out_shift_with_cnt (ASHIFT, insn, operands, plen);
 }
 
 
@@ -7410,9 +7446,7 @@ ashlhi3_out (rtx_insn *insn, rtx operands[], int *plen)
 	} // switch
     }
 
-  out_shift_with_cnt ("lsl %A0" CR_TAB
-		      "rol %B0", insn, operands, plen, 2);
-  return "";
+  return avr_out_shift_with_cnt (ASHIFT, insn, operands, plen);
 }
 
 
@@ -7476,10 +7510,7 @@ avr_out_ashlpsi3 (rtx_insn *insn, rtx *op, int *plen)
 	}
     }
 
-  out_shift_with_cnt ("lsl %A0" CR_TAB
-		      "rol %B0" CR_TAB
-		      "rol %C0", insn, op, plen, 3);
-  return "";
+  return avr_out_shift_with_cnt (ASHIFT, insn, op, plen);
 }
 
 
@@ -7625,11 +7656,7 @@ ashlsi3_out (rtx_insn *insn, rtx operands[], int *plen)
 	}
     }
 
-  out_shift_with_cnt ("lsl %A0" CR_TAB
-		      "rol %B0" CR_TAB
-		      "rol %C0" CR_TAB
-		      "rol %D0", insn, operands, plen, 4);
-  return "";
+  return avr_out_shift_with_cnt (ASHIFT, insn, operands, plen);
 }
 
 
@@ -7680,9 +7707,7 @@ ashrqi3_out (rtx_insn *insn, rtx operands[], int *plen)
   else if (CONSTANT_P (operands[2]))
     fatal_insn ("internal compiler error.  Incorrect shift:", insn);
 
-  out_shift_with_cnt ("asr %0",
-		      insn, operands, plen, 1);
-  return "";
+  return avr_out_shift_with_cnt (ASHIFTRT, insn, operands, plen);
 }
 
 
@@ -7839,9 +7864,7 @@ ashrhi3_out (rtx_insn *insn, rtx operands[], int *plen)
 	} // switch
     }
 
-  out_shift_with_cnt ("asr %B0" CR_TAB
-		      "ror %A0", insn, operands, plen, 2);
-  return "";
+  return avr_out_shift_with_cnt (ASHIFTRT, insn, operands, plen);
 }
 
 
@@ -7936,10 +7959,7 @@ avr_out_ashrpsi3 (rtx_insn *insn, rtx *op, int *plen)
 	} /* switch */
     }
 
-  out_shift_with_cnt ("asr %C0" CR_TAB
-		      "ror %B0" CR_TAB
-		      "ror %A0", insn, op, plen, 3);
-  return "";
+  return avr_out_shift_with_cnt (ASHIFTRT, insn, op, plen);
 }
 
 
@@ -8073,11 +8093,7 @@ ashrsi3_out (rtx_insn *insn, rtx operands[], int *plen)
 	} // switch
     }
 
-  out_shift_with_cnt ("asr %D0" CR_TAB
-		      "ror %C0" CR_TAB
-		      "ror %B0" CR_TAB
-		      "ror %A0", insn, operands, plen, 4);
-  return "";
+  return avr_out_shift_with_cnt (ASHIFTRT, insn, operands, plen);
 }
 
 /* 8-bit logic shift right ((unsigned char)x >> i) */
@@ -8154,9 +8170,7 @@ lshrqi3_out (rtx_insn *insn, rtx operands[], int *plen)
   else if (CONSTANT_P (operands[2]))
     fatal_insn ("internal compiler error.  Incorrect shift:", insn);
 
-  out_shift_with_cnt ("lsr %0",
-		      insn, operands, plen, 1);
-  return "";
+  return avr_out_shift_with_cnt (LSHIFTRT, insn, operands, plen);
 }
 
 
@@ -8360,9 +8374,7 @@ lshrhi3_out (rtx_insn *insn, rtx operands[], int *plen)
 	}
     }
 
-  out_shift_with_cnt ("lsr %B0" CR_TAB
-		      "ror %A0", insn, operands, plen, 2);
-  return "";
+  return avr_out_shift_with_cnt (LSHIFTRT, insn, operands, plen);
 }
 
 
@@ -8427,10 +8439,7 @@ avr_out_lshrpsi3 (rtx_insn *insn, rtx *op, int *plen)
 	} /* switch */
     }
 
-  out_shift_with_cnt ("lsr %C0" CR_TAB
-		      "ror %B0" CR_TAB
-		      "ror %A0", insn, op, plen, 3);
-  return "";
+  return avr_out_shift_with_cnt (LSHIFTRT, insn, op, plen);
 }
 
 
@@ -8576,11 +8585,7 @@ lshrsi3_out (rtx_insn *insn, rtx operands[], int *plen)
 	} // switch
     }
 
-  out_shift_with_cnt ("lsr %D0" CR_TAB
-		      "ror %C0" CR_TAB
-		      "ror %B0" CR_TAB
-		      "ror %A0", insn, operands, plen, 4);
-  return "";
+  return avr_out_shift_with_cnt (LSHIFTRT, insn, operands, plen);
 }
 
 
@@ -11593,6 +11598,18 @@ avr_addr_space_diagnose_usage (addr_space_t as, location_t loc)
 }
 
 
+/* Implement `TARGET_ADDR_SPACE_FOR_ARTIFICIAL_RODATA'.  */
+
+static addr_space_t
+avr_addr_space_for_artificial_rodata (tree /*type*/,
+				      artificial_rodata /*kind*/)
+{
+  return avr_rodata_in_flash_p ()
+    ? ADDR_SPACE_GENERIC
+    : avropt_n_flash > 1 ? ADDR_SPACE_FLASHX : ADDR_SPACE_FLASH;
+}
+
+
 /* Implement `TARGET_ADDR_SPACE_ZERO_ADDRESS_VALID'.  Zero is a valid
    address in all address spaces. Even in ADDR_SPACE_FLASH1 etc..,
    a zero address is valid and means 0x<RAMPZ val>0000, where RAMPZ is
@@ -11932,49 +11949,6 @@ avr_insert_attributes (tree node, tree *attributes)
 		 " read-only section by means of %qs", node, reason);
 	}
     }
-}
-
-#ifdef HAVE_LD_AVR_AVRXMEGA2_FLMAP
-static const bool have_avrxmega2_flmap = true;
-#else
-static const bool have_avrxmega2_flmap = false;
-#endif
-
-#ifdef HAVE_LD_AVR_AVRXMEGA4_FLMAP
-static const bool have_avrxmega4_flmap = true;
-#else
-static const bool have_avrxmega4_flmap = false;
-#endif
-
-#ifdef HAVE_LD_AVR_AVRXMEGA3_RODATA_IN_FLASH
-static const bool have_avrxmega3_rodata_in_flash = true;
-#else
-static const bool have_avrxmega3_rodata_in_flash = false;
-#endif
-
-
-static bool
-avr_rodata_in_flash_p ()
-{
-  switch (avr_arch_index)
-    {
-    default:
-      break;
-
-    case ARCH_AVRTINY:
-      return true;
-
-    case ARCH_AVRXMEGA3:
-      return have_avrxmega3_rodata_in_flash;
-
-    case ARCH_AVRXMEGA2:
-      return avropt_flmap && have_avrxmega2_flmap && avropt_rodata_in_ram != 1;
-
-    case ARCH_AVRXMEGA4:
-      return avropt_flmap && have_avrxmega4_flmap && avropt_rodata_in_ram != 1;
-    }
-
-  return false;
 }
 
 
@@ -12891,6 +12865,16 @@ avr_rtx_costs_1 (rtx x, machine_mode mode, int outer_code,
       return true;
 
     case SIGN_EXTEND:
+      if (GET_CODE (XEXP (x, 0)) == ASHIFT
+	  && CONST_INT_P (XEXP (XEXP (x, 0), 1)))
+	{
+	  // "*sext.ashift<QIPSI:mode><HISI:mode>2_split"
+	  int m0 = GET_MODE_SIZE (GET_MODE (XEXP (x, 0)));
+	  int m1 = GET_MODE_SIZE (mode);
+	  *total = COSTS_N_INSNS (m0 * INTVAL (XEXP (XEXP (x, 0), 1))
+				  + m1 - m0);
+	  return true;
+	}
       *total = COSTS_N_INSNS (n_bytes + 2
 			      - GET_MODE_SIZE (GET_MODE (XEXP (x, 0))));
       *total += avr_operand_rtx_cost (XEXP (x, 0), GET_MODE (XEXP (x, 0)),
@@ -14003,8 +13987,8 @@ extra_constraint_Q (rtx x)
 	    || xx == arg_pointer_rtx);
 
       if (avr_log.constraints)
-	avr_edump ("\n%?=%d reload_completed=%d ra_in_progress=%d\n %r\n",
-		   ok, reload_completed, ra_in_progress (), x);
+	avr_edump ("\n%?=%d reload_completed=%d lra_in_progress=%d\n %r\n",
+		   ok, reload_completed, lra_in_progress, x);
     }
 
   return ok;
@@ -14208,17 +14192,6 @@ avr_hard_regno_mode_ok (unsigned int regno, machine_mode mode)
 
   if (GET_MODE_SIZE (mode) == 1)
     return true;
-
-  /* FIXME: Ideally, the following test is not needed.
-	However, it turned out that it can reduce the number
-	of spill fails.  AVR and it's poor endowment with
-	address registers is extreme stress test for reload.  */
-
-  if (GET_MODE_SIZE (mode) >= 4
-      && regno >= REG_X
-      // This problem only concerned the old reload.
-      && ! avropt_lra_p)
-    return false;
 
   /* All modes larger than 8 bits should start in an even register.  */
 
@@ -15003,8 +14976,8 @@ avr_addr_space_legitimate_address_p (machine_mode mode, rtx x, bool strict,
   if (avr_log.legitimate_address_p)
     {
       avr_edump ("\n%?: ret=%b, mode=%m strict=%d "
-		 "reload_completed=%d ra_in_progress=%d %s:",
-		 ok, mode, strict, reload_completed, ra_in_progress (),
+		 "reload_completed=%d lra_in_progress=%d %s:",
+		 ok, mode, strict, reload_completed, lra_in_progress,
 		 reg_renumber ? "(reg_renumber)" : "");
 
       if (GET_CODE (x) == PLUS
@@ -15338,7 +15311,7 @@ avr_emit3_fix_outputs (rtx (*gen)(rtx,rtx,rtx), rtx *op,
 
 
 /* A helper for the insn condition of "*nzb=1.<code>.lsr[.not]_split"
-   where <code> is AND, IOR or XOR.  Return true when
+   where <code> is AND, IOR, XOR or PLUS.  Return true when
 
       OP[0] <code>= OP[1] >> OP[2]
 
@@ -15367,6 +15340,7 @@ avr_nonzero_bits_lsr_operands_p (rtx_code code, rtx *op)
 
     case IOR:
     case XOR:
+    case PLUS:
       return op1_non0 >> offs == 1;
 
     case AND:
@@ -16782,15 +16756,6 @@ avr_unwind_word_mode ()
   return Pmode;
 }
 
-
-/* Implement `TARGET_LRA_P'.  */
-
-static bool
-avr_use_lra_p ()
-{
-  return avropt_lra_p;
-}
-
 
 
 /* Initialize the GCC target structure.  */
@@ -16932,9 +16897,6 @@ avr_use_lra_p ()
 #undef  TARGET_CONVERT_TO_TYPE
 #define TARGET_CONVERT_TO_TYPE avr_convert_to_type
 
-#undef TARGET_LRA_P
-#define TARGET_LRA_P avr_use_lra_p
-
 #undef  TARGET_ADDR_SPACE_SUBSET_P
 #define TARGET_ADDR_SPACE_SUBSET_P avr_addr_space_subset_p
 
@@ -16956,6 +16918,10 @@ avr_use_lra_p ()
 
 #undef  TARGET_ADDR_SPACE_DIAGNOSE_USAGE
 #define TARGET_ADDR_SPACE_DIAGNOSE_USAGE avr_addr_space_diagnose_usage
+
+#undef  TARGET_ADDR_SPACE_FOR_ARTIFICIAL_RODATA
+#define TARGET_ADDR_SPACE_FOR_ARTIFICIAL_RODATA \
+  avr_addr_space_for_artificial_rodata
 
 #undef  TARGET_ADDR_SPACE_ZERO_ADDRESS_VALID
 #define TARGET_ADDR_SPACE_ZERO_ADDRESS_VALID avr_addr_space_zero_address_valid
@@ -17000,6 +16966,11 @@ avr_use_lra_p ()
 
 #undef TARGET_C_MODE_FOR_FLOATING_TYPE
 #define TARGET_C_MODE_FOR_FLOATING_TYPE avr_c_mode_for_floating_type
+
+#if defined WITH_AVRLIBC
+#undef  TARGET_SETJMP_PRESERVES_NONVOLATILE_REGS_P
+#define TARGET_SETJMP_PRESERVES_NONVOLATILE_REGS_P hook_bool_void_true
+#endif // WITH_AVRLIBC
 
 gcc_target targetm = TARGET_INITIALIZER;
 

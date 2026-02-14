@@ -6,7 +6,7 @@
  *                                                                          *
  *                          C Implementation File                           *
  *                                                                          *
- *          Copyright (C) 1992-2025, Free Software Foundation, Inc.         *
+ *          Copyright (C) 1992-2026, Free Software Foundation, Inc.         *
  *                                                                          *
  * GNAT is free software;  you can  redistribute it  and/or modify it under *
  * terms of the  GNU General Public License as published  by the Free Soft- *
@@ -47,6 +47,7 @@
 #ifdef __vxworks
 #include "vxWorks.h"
 #include "version.h" /* for _WRS_VXWORKS_MAJOR */
+#include <string.h> /* for strncmp */
 #endif
 
 #ifdef __ANDROID__

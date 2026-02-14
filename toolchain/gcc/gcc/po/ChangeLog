@@ -1,3 +1,7 @@
+2026-02-05  Joseph Myers  <josmyers@redhat.com>
+
+	* es.po: Update.
+
 2026-01-27  Joseph Myers  <josmyers@redhat.com>
 
 	* sv.po: Update.
@@ -20,14 +24,6 @@
 	ja.po, ka.po, nl.po, ru.po, sr.po, sv.po, tr.po, uk.po, vi.po,
 	zh_CN.po, zh_TW.po: Update.
 
-2025-08-08  Release Manager
-
-	* GCC 15.2.0 released.
-
-2025-08-01  Joseph Myers  <josmyers@redhat.com>
-
-	* gcc.pot: Regenerate.
-
 2025-06-12  Joseph Myers  <josmyers@redhat.com>
 
 	* es.po: Update.
@@ -49,10 +45,6 @@
 	* be.po, da.po, de.po, el.po, es.po, fi.po, fr.po, hr.po, id.po,
 	ja.po, ka.po, nl.po, ru.po, sr.po, sv.po, tr.po, uk.po, vi.po,
 	zh_CN.po, zh_TW.po: Update.
-
-2025-04-25  Release Manager
-
-	* GCC 15.1.0 released.
 
 2025-04-23  Joseph Myers  <josmyers@redhat.com>
 
@@ -3511,7 +3503,7 @@ Sun Oct 31 17:17:18 1999  Jeffrey A Law  (law@cygnus.com)
 	Fix names of those files which are now living in egcs's
 	libiberty/include directories.
 
-Copyright (C) 1999-2025 Free Software Foundation, Inc.
+Copyright (C) 1999-2026 Free Software Foundation, Inc.
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright

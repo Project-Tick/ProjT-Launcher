@@ -1,5 +1,5 @@
 /* Routines for manipulation of expression nodes.
-   Copyright (C) 2000-2025 Free Software Foundation, Inc.
+   Copyright (C) 2000-2026 Free Software Foundation, Inc.
    Contributed by Andy Vaught
 
 This file is part of GCC.
@@ -116,6 +116,25 @@ gfc_get_operator_expr (locus *where, gfc_intrinsic_op op,
   return e;
 }
 
+/* Get a new expression node that is an conditional expression node.  */
+
+gfc_expr *
+gfc_get_conditional_expr (locus *where, gfc_expr *condition,
+			  gfc_expr *true_expr, gfc_expr *false_expr)
+{
+  gfc_expr *e;
+
+  e = gfc_get_expr ();
+  e->expr_type = EXPR_CONDITIONAL;
+  e->value.conditional.condition = condition;
+  e->value.conditional.true_expr = true_expr;
+  e->value.conditional.false_expr = false_expr;
+
+  if (where)
+    e->where = *where;
+
+  return e;
+}
 
 /* Get a new expression node that is an structure constructor
    of given type and kind.  */
@@ -393,6 +412,15 @@ gfc_copy_expr (gfc_expr *p)
 
       break;
 
+    case EXPR_CONDITIONAL:
+      q->value.conditional.condition
+	= gfc_copy_expr (p->value.conditional.condition);
+      q->value.conditional.true_expr
+	= gfc_copy_expr (p->value.conditional.true_expr);
+      q->value.conditional.false_expr
+	= gfc_copy_expr (p->value.conditional.false_expr);
+      break;
+
     case EXPR_FUNCTION:
       q->value.function.actual =
 	gfc_copy_actual_arglist (p->value.function.actual);
@@ -500,6 +528,12 @@ free_expr0 (gfc_expr *e)
 	gfc_free_expr (e->value.op.op1);
       if (e->value.op.op2 != NULL)
 	gfc_free_expr (e->value.op.op2);
+      break;
+
+    case EXPR_CONDITIONAL:
+      gfc_free_expr (e->value.conditional.condition);
+      gfc_free_expr (e->value.conditional.true_expr);
+      gfc_free_expr (e->value.conditional.false_expr);
       break;
 
     case EXPR_FUNCTION:
@@ -1083,6 +1117,11 @@ gfc_is_constant_expr (gfc_expr *e)
 	      && (e->value.op.op2 == NULL
 		  || gfc_is_constant_expr (e->value.op.op2)));
 
+    case EXPR_CONDITIONAL:
+      return gfc_is_constant_expr (e->value.conditional.condition)
+	     && gfc_is_constant_expr (e->value.conditional.true_expr)
+	     && gfc_is_constant_expr (e->value.conditional.false_expr);
+
     case EXPR_VARIABLE:
       /* The only context in which this can occur is in a parameterized
 	 derived type declaration, so returning true is OK.  */
@@ -1354,6 +1393,43 @@ simplify_intrinsic_op (gfc_expr *p, int type)
   return true;
 }
 
+/* Try to collapse conditional expressions.  */
+
+static bool
+simplify_conditional (gfc_expr *p, int type)
+{
+  gfc_expr *condition, *true_expr, *false_expr;
+
+  condition = p->value.conditional.condition;
+  true_expr = p->value.conditional.true_expr;
+  false_expr = p->value.conditional.false_expr;
+
+  if (!gfc_simplify_expr (condition, type)
+      || !gfc_simplify_expr (true_expr, type)
+      || !gfc_simplify_expr (false_expr, type))
+    return false;
+
+  if (!gfc_is_constant_expr (condition))
+    return true;
+
+  p->value.conditional.condition = NULL;
+  p->value.conditional.true_expr = NULL;
+  p->value.conditional.false_expr = NULL;
+
+  if (condition->value.logical)
+    {
+      gfc_replace_expr (p, true_expr);
+      gfc_free_expr (false_expr);
+    }
+  else
+    {
+      gfc_replace_expr (p, false_expr);
+      gfc_free_expr (true_expr);
+    }
+  gfc_free_expr (condition);
+
+  return true;
+}
 
 /* Subroutine to simplify constructor expressions.  Mutually recursive
    with gfc_simplify_expr().  */
@@ -2459,6 +2535,11 @@ gfc_simplify_expr (gfc_expr *p, int type)
 	return false;
       break;
 
+    case EXPR_CONDITIONAL:
+      if (!simplify_conditional (p, type))
+	return false;
+      break;
+
     case EXPR_VARIABLE:
       /* Only substitute array parameter variables if we are in an
 	 initialization expression, or we want a subsection.  */
@@ -3133,6 +3214,20 @@ gfc_check_init_expr (gfc_expr *e)
 
       break;
 
+    case EXPR_CONDITIONAL:
+      t = gfc_check_init_expr (e->value.conditional.condition);
+      if (!t)
+	break;
+      t = gfc_check_init_expr (e->value.conditional.true_expr);
+      if (!t)
+	break;
+      t = gfc_check_init_expr (e->value.conditional.false_expr);
+      if (t)
+	t = gfc_simplify_expr (e, 0);
+      else
+	t = false;
+      break;
+
     case EXPR_FUNCTION:
       t = false;
 
@@ -3609,6 +3704,20 @@ check_restricted (gfc_expr *e)
 
       break;
 
+    case EXPR_CONDITIONAL:
+      t = check_restricted (e->value.conditional.condition);
+      if (!t)
+	break;
+      t = check_restricted (e->value.conditional.true_expr);
+      if (!t)
+	break;
+      t = check_restricted (e->value.conditional.false_expr);
+      if (t)
+	t = gfc_simplify_expr (e, 0);
+      else
+	t = false;
+      break;
+
     case EXPR_FUNCTION:
       if (e->value.function.esym)
 	{
@@ -3821,6 +3930,67 @@ gfc_check_conformance (gfc_expr *op1, gfc_expr *op2, const char *optype_msgid, .
 }
 
 
+/* Functions to check constant valued type specification parameters.  */
+
+static gfc_actual_arglist *
+get_parm_list_from_expr (gfc_expr *expr)
+{
+  gfc_actual_arglist *a = NULL;
+  gfc_constructor *c;
+
+  if (expr->expr_type == EXPR_STRUCTURE)
+    a = expr->param_list;
+  else if (expr->expr_type == EXPR_ARRAY)
+    {
+      /* Take the first constant expression, if there is one.  */
+      c = gfc_constructor_first (expr->value.constructor);
+      for (; c; c = gfc_constructor_next (c))
+	if (!c->iterator && c->expr && c->expr->param_list)
+	  {
+	    a = c->expr->param_list;
+	    break;
+	  }
+    }
+  else if (expr->expr_type == EXPR_VARIABLE)
+    a = expr->symtree->n.sym->param_list;
+
+  return a;
+}
+
+bool
+gfc_check_type_spec_parms (gfc_expr *expr1, gfc_expr *expr2,
+			   const char *context)
+{
+  bool t = true;
+  gfc_actual_arglist *a1, *a2;
+
+  gcc_assert (expr1->ts.type == BT_DERIVED
+	      && expr1->ts.u.derived->attr.pdt_type);
+
+  a1 = get_parm_list_from_expr (expr1);
+  a2 = get_parm_list_from_expr (expr2);
+
+  for (; a1 && a2; a1 = a1->next, a2 = a2->next)
+    {
+      if (a1->expr && a1->expr->expr_type == EXPR_CONSTANT
+	  && a2->expr && a2->expr->expr_type == EXPR_CONSTANT
+	  && !strcmp (a1->name, a2->name)
+	  && mpz_cmp (a1->expr->value.integer, a2->expr->value.integer))
+	{
+	  gfc_error ("Mismatched type parameters %qs(%d/%d) %s at %L/%L",
+		     a2->name,
+		     (int)mpz_get_ui (a1->expr->value.integer),
+		     (int)mpz_get_ui (a2->expr->value.integer),
+		     context,
+		     &expr1->where, &expr2->where);
+	  t = false;
+	}
+    }
+
+  return t;
+}
+
+
 /* Given an assignable expression and an arbitrary expression, make
    sure that the assignment can take place.  Only add a call to the intrinsic
    conversion routines, when allow_convert is set.  When this assign is a
@@ -3940,7 +4110,13 @@ gfc_check_assign (gfc_expr *lvalue, gfc_expr *rvalue, int conform,
       if (has_pointer && (ref == NULL || ref->next == NULL)
 	  && lvalue->symtree->n.sym->attr.data)
         return true;
-      else
+      /* Prevent the following error message for caf-single mode, because there
+	 are no teams in single mode and the simplify returns a null then.  */
+      else if (!(flag_coarray == GFC_FCOARRAY_SINGLE
+		 && rvalue->ts.type == BT_DERIVED
+		 && rvalue->ts.u.derived->from_intmod == INTMOD_ISO_FORTRAN_ENV
+		 && rvalue->ts.u.derived->intmod_sym_id
+		      == ISOFORTRAN_TEAM_TYPE))
 	{
 	  gfc_error ("NULL appears on right-hand side in assignment at %L",
 		     &rvalue->where);
@@ -4007,6 +4183,12 @@ gfc_check_assign (gfc_expr *lvalue, gfc_expr *rvalue, int conform,
 		 &lvalue->where);
       return false;
     }
+
+
+  /* Check that the type spec. parameters are the same on both sides.  */
+  if (lvalue->ts.type == BT_DERIVED && lvalue->ts.u.derived->attr.pdt_type
+      && !gfc_check_type_spec_parms (lvalue, rvalue, "in assignment"))
+    return false;
 
   if (gfc_compare_types (&lvalue->ts, &rvalue->ts))
     return true;
@@ -4462,7 +4644,8 @@ gfc_check_pointer_assign (gfc_expr *lvalue, gfc_expr *rvalue,
       return false;
     }
 
-  if (lvalue->rank != rvalue->rank && !rank_remap)
+  if (lvalue->rank != rvalue->rank && !rank_remap
+      && !(rvalue->expr_type == EXPR_NULL && is_init_expr))
     {
       gfc_error ("Different ranks in pointer assignment at %L", &lvalue->where);
       return false;
@@ -4762,6 +4945,52 @@ gfc_check_assign_symbol (gfc_symbol *sym, gfc_component *comp, gfc_expr *rvalue)
   bool pointer, proc_pointer;
 
   memset (&lvalue, '\0', sizeof (gfc_expr));
+
+  if (sym && sym->attr.pdt_template && comp && comp->initializer)
+    {
+      int i, flag;
+      gfc_expr *param_expr;
+      flag = 0;
+
+      if (comp->as && comp->as->type == AS_EXPLICIT
+	  && !(comp->ts.type == BT_DERIVED
+	       && comp->ts.u.derived->attr.pdt_template))
+	{
+	  /* Are the bounds of the array parameterized?  */
+	  for (i = 0; i < comp->as->rank; i++)
+	    {
+	      param_expr = gfc_copy_expr (comp->as->lower[i]);
+	      if (gfc_simplify_expr (param_expr, 1)
+		  && param_expr->expr_type != EXPR_CONSTANT)
+		flag++;
+	      gfc_free_expr (param_expr);
+	      param_expr = gfc_copy_expr (comp->as->upper[i]);
+	      if (gfc_simplify_expr (param_expr, 1)
+		  && param_expr->expr_type != EXPR_CONSTANT)
+		flag++;
+	      gfc_free_expr (param_expr);
+	    }
+	}
+
+      /* Is the character length parameterized?  */
+      if (comp->ts.type == BT_CHARACTER && comp->ts.u.cl->length)
+	{
+	  param_expr = gfc_copy_expr (comp->ts.u.cl->length);
+	  if (gfc_simplify_expr (param_expr, 1)
+	      && param_expr->expr_type != EXPR_CONSTANT)
+	    flag++;
+	  gfc_free_expr (param_expr);
+	}
+
+      if (flag)
+	{
+	  gfc_error ("The component %qs at %L of derived type %qs has "
+		     "paramterized type or array length parameters, which is "
+		     "not compatible with a default initializer",
+		      comp->name, &comp->initializer->where, sym->name);
+	  return false;
+	}
+    }
 
   lvalue.expr_type = EXPR_VARIABLE;
   lvalue.ts = sym->ts;
@@ -5648,6 +5877,15 @@ gfc_traverse_expr (gfc_expr *expr, gfc_symbol *sym,
 	return true;
       break;
 
+    case EXPR_CONDITIONAL:
+      if (gfc_traverse_expr (expr->value.conditional.condition, sym, func, f))
+	return true;
+      if (gfc_traverse_expr (expr->value.conditional.true_expr, sym, func, f))
+	return true;
+      if (gfc_traverse_expr (expr->value.conditional.false_expr, sym, func, f))
+	return true;
+      break;
+
     default:
       gcc_unreachable ();
       break;
@@ -5905,6 +6143,7 @@ gfc_spec_list_type (gfc_actual_arglist *param_list, gfc_symbol *derived)
   gfc_component *c;
   bool seen_assumed = false;
   bool seen_deferred = false;
+  bool seen_len = false;
 
   if (derived == NULL)
     {
@@ -5926,10 +6165,12 @@ gfc_spec_list_type (gfc_actual_arglist *param_list, gfc_symbol *derived)
 	    return SPEC_EXPLICIT;
 	  seen_assumed = param_list->spec_type == SPEC_ASSUMED;
 	  seen_deferred = param_list->spec_type == SPEC_DEFERRED;
+	  if (c->attr.pdt_len)
+	    seen_len = true;
 	  if (seen_assumed && seen_deferred)
 	    return SPEC_EXPLICIT;
 	}
-      res = seen_assumed ? SPEC_ASSUMED : SPEC_DEFERRED;
+      res = (seen_assumed || !seen_len) ? SPEC_ASSUMED : SPEC_DEFERRED;
     }
   return res;
 }
@@ -6583,7 +6824,10 @@ gfc_check_vardef_context (gfc_expr* e, bool pointer, bool alloc_obj,
 		  ? CLASS_DATA (sym)->attr.class_pointer : sym->attr.pointer;
   for (ref = e->ref; ref && check_intentin; ref = ref->next)
     {
-      if (ptr_component && ref->type == REF_COMPONENT)
+      /* Associate-targets need special handling.  Subobjects of an object with
+	 the PROTECTED attribute inherit this attribute.  */
+      if (ptr_component && ref->type == REF_COMPONENT
+	  && !sym->assoc && !sym->attr.is_protected)
 	check_intentin = false;
       if (ref->type == REF_COMPONENT)
 	{
@@ -6606,24 +6850,51 @@ gfc_check_vardef_context (gfc_expr* e, bool pointer, bool alloc_obj,
 	}
     }
 
+  /* See if the INTENT(IN) check should apply to an ASSOCIATE target.  */
+  if (check_intentin && sym->assoc && sym->assoc->target)
+    {
+      gfc_expr *target;
+      gfc_symbol *tsym;
+
+      check_intentin = false;
+
+      /* Walk through associate target chain to find a dummy argument.  */
+      for (target = sym->assoc->target; target; target = tsym->assoc->target)
+	{
+	  tsym = target->symtree ? target->symtree->n.sym : NULL;
+
+	  if (tsym == NULL)
+	    break;
+
+	  if (tsym->attr.dummy)
+	    {
+	      check_intentin = (tsym->attr.intent == INTENT_IN);
+	      break;
+	    }
+
+	  if (tsym->assoc == NULL)
+	    break;
+	}
+    }
+
   if (check_intentin
       && (sym->attr.intent == INTENT_IN
 	  || (sym->attr.select_type_temporary && sym->assoc
 	      && sym->assoc->target && sym->assoc->target->symtree
 	      && sym->assoc->target->symtree->n.sym->attr.intent == INTENT_IN)))
     {
+      const char *name = (sym->attr.select_type_temporary
+			  ? sym->assoc->target->symtree->name : sym->name);
       if (pointer && is_pointer)
 	{
 	  if (context)
 	    gfc_error ("Dummy argument %qs with INTENT(IN) in pointer"
 		       " association context (%s) at %L",
-		       sym->name, context, &e->where);
+		       name, context, &e->where);
 	  return false;
 	}
       if (!pointer && !is_pointer && !sym->attr.pointer)
 	{
-	  const char *name = sym->attr.select_type_temporary
-			   ? sym->assoc->target->symtree->name : sym->name;
 	  if (context)
 	    gfc_error ("Dummy argument %qs with INTENT(IN) in variable"
 		       " definition context (%s) at %L",
@@ -6636,7 +6907,8 @@ gfc_check_vardef_context (gfc_expr* e, bool pointer, bool alloc_obj,
   if (sym->attr.is_protected
       && (sym->attr.use_assoc
 	  || (sym->attr.used_in_submodule && !sym_is_from_ancestor (sym)))
-      && check_intentin)
+      && !own_scope
+      && (check_intentin || !pointer))
     {
       if (pointer && is_pointer)
 	{
@@ -6689,7 +6961,8 @@ gfc_check_vardef_context (gfc_expr* e, bool pointer, bool alloc_obj,
 	}
     }
   /* Check variable definition context for associate-names.  */
-  if (!pointer && sym->assoc && !sym->attr.select_rank_temporary)
+  if ((!pointer || check_intentin)
+      && sym->assoc && !sym->attr.select_rank_temporary)
     {
       const char* name;
       gfc_association_list* assoc;
@@ -6753,8 +7026,10 @@ gfc_check_vardef_context (gfc_expr* e, bool pointer, bool alloc_obj,
 	    }
 	}
 
-      /* Target must be allowed to appear in a variable definition context.  */
-      if (!gfc_check_vardef_context (assoc->target, pointer, false, false, NULL))
+      /* Target must be allowed to appear in a variable definition context.
+	 Check valid assignment to pointers and invalid reassociations.  */
+      if (!gfc_check_vardef_context (assoc->target, pointer, false, false, NULL)
+	  && (!ptr_component || pointer))
 	{
 	  if (context)
 	    gfc_error ("Associate-name %qs cannot appear in a variable"

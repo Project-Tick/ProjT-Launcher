@@ -23,7 +23,7 @@ struct D5 : B3<D5> {};
 
 struct D6 : B4<D6> {}; // { dg-error "cannot derive from 'final' base" }
 
-struct B6 final final {}; // { dg-error "duplicate virt-specifier" }
+struct B6 final final {}; // { dg-error "duplicate 'final' specifier" }
 
 struct B7 override {}; // { dg-error "variable 'B7 override' has initializer but incomplete type" }
 

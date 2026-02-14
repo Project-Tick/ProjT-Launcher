@@ -1,4 +1,6 @@
 /* { dg-output "123\r*\n" } */
+#![feature(lang_items)]
+
 extern "C" {
     fn printf(s: *const i8, ...);
 }
@@ -26,7 +28,6 @@ impl Bar for Foo {
 struct S;
 impl S {
     fn dynamic_dispatch(self, t: &dyn Bar) {
-        // { dg-warning "unused name" "" { target *-*-* } .-1 }
         t.baz();
     }
 }

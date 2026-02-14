@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2025 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2026 Free Software Foundation, Inc.
    Contributed by Andy Vaught
    F2003 I/O support contributed by Jerry DeLisle
 
@@ -945,6 +945,7 @@ parse_format_list (st_parameter_dt *dtp, bool *seen_dd)
 	      goto finished;
 	    }
 	  tail->u.real.w = 0;
+	  tail->u.real.e = -1;
 
 	  /* Look for the dot seperator.  */
 	  u = format_lex (fmt);

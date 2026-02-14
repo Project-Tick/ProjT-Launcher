@@ -1,6 +1,6 @@
 // Pair implementation -*- C++ -*-
 
-// Copyright (C) 2001-2025 Free Software Foundation, Inc.
+// Copyright (C) 2001-2026 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -1132,6 +1132,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 #endif // C++23
 
 #if __cplusplus > 201402L || !defined(__STRICT_ANSI__) // c++1z or gnu++11
+  // _GLIBCXX_RESOLVE_LIB_DEFECTS
+  // 2766. Swapping non-swappable types
   template<typename _T1, typename _T2>
     typename enable_if<!__and_<__is_swappable<_T1>,
 			       __is_swappable<_T2>>::value>::type

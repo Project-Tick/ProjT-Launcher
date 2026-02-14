@@ -1,5 +1,5 @@
 /* Automatic generation of links into GCC's documentation.
-   Copyright (C) 2023-2025 Free Software Foundation, Inc.
+   Copyright (C) 2023-2026 Free Software Foundation, Inc.
    Contributed by David Malcolm <dmalcolm@redhat.com>.
 
 This file is part of GCC.
@@ -29,7 +29,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "options.h"
 #include "diagnostic.h"
 #include "selftest.h"
-#include "make-unique.h"
 #include "target.h"
 
 /* class attribute_urlifier : public urlifier.  */

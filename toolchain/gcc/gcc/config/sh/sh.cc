@@ -1,5 +1,5 @@
 /* Output routines for GCC for Renesas / SuperH SH.
-   Copyright (C) 1993-2025 Free Software Foundation, Inc.
+   Copyright (C) 1993-2026 Free Software Foundation, Inc.
    Contributed by Steve Chamberlain (sac@cygnus.com).
    Improved by Jim Wilson (wilson@cygnus.com).
 
@@ -12346,6 +12346,23 @@ sh_recog_treg_set_expr (rtx op, machine_mode mode)
   PUT_MODE (op, prev_op_mode);
   recog_data = prev_recog_data;
   return result >= 0;
+}
+
+/* Return TRUE if OP is an expression for which there is a pattern to
+   set the T bit unless the expression is trivially loadable into
+   the T bit, FALSE otherwise.  */
+bool
+sh_recog_treg_set_expr_not_01 (rtx op, machine_mode mode)
+{
+  if (op == const0_rtx || op == const1_rtx)
+    return false;
+
+  /* A right shift of 31 will return 0 or 1.  */
+  if ((GET_CODE (op) == LSHIFTRT || GET_CODE (op) == ASHIFTRT)
+      && INTVAL (XEXP (op, 1)) == 31)
+    return false;
+
+  return sh_recog_treg_set_expr (op, mode);
 }
 
 /* Returns true when recog of a 'treg_set_expr' is currently in progress.

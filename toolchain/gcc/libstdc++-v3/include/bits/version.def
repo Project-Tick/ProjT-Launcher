@@ -1,5 +1,5 @@
 // Feature test macro definitions                                  -*- C++ -*-
-// Copyright (C) 2023-2025 Free Software Foundation, Inc.
+// Copyright (C) 2023-2026 Free Software Foundation, Inc.
 
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -394,6 +394,14 @@ ftms = {
 };
 
 ftms = {
+  name = constant_wrapper;
+  values = {
+    v = 202506;
+    cxxmin = 26;
+  };
+};
+
+ftms = {
   name = has_unique_object_representations;
   values = {
     v = 201606;
@@ -463,6 +471,10 @@ ftms = {
 
 ftms = {
   name = not_fn;
+  values = {
+    v = 202306;
+    cxxmin = 26;
+  };
   values = {
     v = 201603;
     cxxmin = 17;
@@ -582,6 +594,12 @@ ftms = {
 ftms = {
   name = chrono;
   values = {
+    v = 202306;
+    cxxmin = 26;
+    hosted = yes;
+    cxx11abi = yes;
+  };
+  values = {
     v = 201907;
     cxxmin = 20;
     hosted = yes;
@@ -591,6 +609,21 @@ ftms = {
     v = 201611;
     cxxmin = 17;
     hosted = yes;
+  };
+};
+
+ftms = {
+  // Unofficial macro for chrono features supported for old string ABI.
+  name = chrono_cxx20;
+  values = {
+    v = 202306;
+    cxxmin = 26;
+    no_stdname = yes;
+  };
+  values = {
+    v = 201800;
+    cxxmin = 20;
+    no_stdname = yes;
   };
 };
 
@@ -649,7 +682,7 @@ ftms = {
   };
   values = {
     v = 1;
-    /* For when there's no gthread.  */
+    // For when there is no gthread.
     cxxmin = 17;
     hosted = yes;
     gthread = no;
@@ -733,6 +766,14 @@ ftms = {
 };
 
 ftms = {
+  name = is_sufficiently_aligned;
+  values = {
+    v = 202411;
+    cxxmin = 26;
+  };
+};
+
+ftms = {
   name = atomic_flag_test;
   values = {
     v = 201907;
@@ -749,6 +790,14 @@ ftms = {
 };
 
 ftms = {
+  name = atomic_min_max;
+  values = {
+    v = 202403;
+    cxxmin = 26;
+  };
+};
+
+ftms = {
   name = atomic_lock_free_type_aliases;
   values = {
     v = 201907;
@@ -759,6 +808,10 @@ ftms = {
 
 ftms = {
   name = atomic_ref;
+  values = {
+    v = 202411;
+    cxxmin = 26;
+  };
   values = {
     v = 201806;
     cxxmin = 20;
@@ -777,6 +830,10 @@ ftms = {
 ftms = {
   name = bind_front;
   values = {
+    v = 202306;
+    cxxmin = 26;
+  };
+  values = {
     v = 201907;
     cxxmin = 20;
   };
@@ -784,6 +841,10 @@ ftms = {
 
 ftms = {
   name = bind_back;
+  values = {
+    v = 202306;
+    cxxmin = 26;
+  };
   values = {
     v = 202202;
     cxxmin = 23;
@@ -826,8 +887,12 @@ ftms = {
 
 ftms = {
   name = concepts;
+  // 201806 P0898R3 Standard Library Concepts
+  // 201907 P1754R1 Rename concepts to standard_case for C++20
+  // 202002 P1964R2 Wording for boolean-testable
+  // 202207 P2404R3 Move-only types for equality_comparable_with, etc.
   values = {
-    v = 202002;
+    v = 202207;
     cxxmin = 20;
     extra_cond = "__cpp_concepts >= 201907L";
   };
@@ -836,18 +901,31 @@ ftms = {
 // Moved down here (after concepts) by topological sort.
 ftms = {
   name = optional;
-  values = {
+  values = { // optional<T&>
+    v = 202506;
+    cxxmin = 26;
+    extra_cond = "__glibcxx_concepts";
+  };
+  values = { // monadic operations
     v = 202110;
     cxxmin = 23;
     extra_cond = "__glibcxx_concepts";
   };
-  values = {
+  values = { // full constexpr support
     v = 202106;
     cxxmin = 20;
   };
   values = {
     v = 201606;
     cxxmin = 17;
+  };
+};
+
+ftms = {
+  name = optional_range_support;
+  values = {
+    v = 202406;
+    cxxmin = 26;
   };
 };
 
@@ -957,6 +1035,7 @@ ftms = {
 
 ftms = {
   name = make_obj_using_allocator;
+  no_stdname = true;
   values = {
     // Not specified by C++20, used internally
     v = 201811;
@@ -993,6 +1072,47 @@ ftms = {
     v = 202002;
     cxxmin = 20;
     extra_cond = "__glibcxx_concepts";
+  };
+};
+
+ftms = {
+  name = mdspan;
+  values = {
+    v = 202406;
+    cxxmin = 26;
+  };
+  values = {
+    v = 202207;
+    cxxmin = 23;
+  };
+};
+
+ftms = {
+  name = aligned_accessor;
+  values = {
+    v = 202411;
+    cxxmin = 26;
+    extra_cond = "__glibcxx_assume_aligned "
+    "&& __glibcxx_is_sufficiently_aligned";
+    };
+};
+
+// Purely internal macro padded layouts.
+ftms = {
+  name = padded_layouts;
+  no_stdname = true; // internal
+  values = {
+    v = 202403;
+    cxxmin = 26;
+  };
+};
+
+ftms = {
+  name = submdspan;
+  values = {
+    v = 202411;
+    cxxmin = 26;
+    extra_cond = "__glibcxx_constant_wrapper >= 202506L";
   };
 };
 
@@ -1073,6 +1193,10 @@ ftms = {
 
 ftms = {
   name = shift;
+  values = {
+    v = 202202;
+    cxxmin = 23;
+  };
   values = {
     v = 201806;
     cxxmin = 20;
@@ -1236,6 +1360,22 @@ ftms = {
 };
 
 ftms = {
+  name = constexpr_flat_map;
+  values = {
+    v = 202502;
+    cxxmin = 26;
+  };
+};
+
+ftms = {
+  name = constexpr_flat_set;
+  values = {
+    v = 202502;
+    cxxmin = 26;
+  };
+};
+
+ftms = {
   name = constexpr_string;
   values = {
     v = 201907;
@@ -1353,7 +1493,7 @@ ftms = {
     v = 201907;
     cxxmin = 20;
     hosted = yes;
-    extra_cond = "__glibcxx_atomic_wait || _GLIBCXX_HAVE_POSIX_SEMAPHORE";
+    extra_cond = "__glibcxx_atomic_wait";
   };
 };
 
@@ -1489,6 +1629,14 @@ ftms = {
   name = invoke_r;
   values = {
     v = 202106;
+    cxxmin = 23;
+  };
+};
+
+ftms = {
+  name = associative_heterogeneous_erasure;
+  values = {
+    v = 202110;
     cxxmin = 23;
   };
 };
@@ -1651,6 +1799,22 @@ ftms = {
 };
 
 ftms = {
+  name = ranges_starts_ends_with;
+  values = {
+    v = 202106;
+    cxxmin = 23;
+  };
+};
+
+ftms = {
+  name = ranges_indices;
+  values = {
+    v = 202506;
+    cxxmin = 26;
+  };
+};
+
+ftms = {
   name = constexpr_bitset;
   values = {
     v = 202202;
@@ -1702,6 +1866,14 @@ ftms = {
 };
 
 ftms = {
+  name = common_reference_wrapper;
+  values = {
+    v = 202302;
+    cxxmin = 20; // We treat P2655R3 as a DR against C++20.
+  };
+};
+
+ftms = {
   name = formatters;
   values = {
     v = 202302;
@@ -1746,6 +1918,23 @@ ftms = {
 };
 
 ftms = {
+  name = copyable_function;
+  values = {
+    v = 202306;
+    cxxmin = 26;
+    hosted = yes;
+  };
+};
+
+ftms = {
+  name = function_ref;
+  values = {
+    v = 202306;
+    cxxmin = 26;
+  };
+};
+
+ftms = {
   name = out_ptr;
   values = {
     v = 202311;
@@ -1756,7 +1945,7 @@ ftms = {
 ftms = {
   name = print;
   values = {
-    v = 202211;
+    v = 202406;
     cxxmin = 23;
     hosted = yes;
   };
@@ -1783,6 +1972,14 @@ ftms = {
 };
 
 ftms = {
+  name = start_lifetime_as;
+  values = {
+    v =  202207;
+    cxxmin = 23;
+  };
+};
+
+ftms = {
   name = string_contains;
   values = {
     v = 202011;
@@ -1797,6 +1994,14 @@ ftms = {
     v = 202110;
     cxxmin = 23;
     hosted = yes;
+  };
+};
+
+ftms = {
+  name = string_subview;
+  values = {
+    v = 202506;
+    cxxmin = 26;
   };
 };
 
@@ -1830,6 +2035,24 @@ ftms = {
 };
 
 ftms = {
+  name = observable_checkpoint;
+  values = {
+    v = 202506;
+    cxxmin = 26;
+    extra_cond = "__has_builtin(__builtin_observable_checkpoint)";
+  };
+};
+
+ftms = {
+  name = algorithm_iterator_requirements;
+  values = {
+    v = 202207;
+    // P2408R5 is a C++23 feature, but we support it in C++20.
+    cxxmin = 20;
+  };
+};
+
+ftms = {
   name = algorithm_default_value_type;
   values = {
     v = 202403;
@@ -1843,6 +2066,14 @@ ftms = {
     v = 202406;
     cxxmin = 26;
     extra_cond = "__cpp_constexpr >= 202406L";
+  };
+};
+
+ftms = {
+  name = debugging;
+  values = {
+    v = 202403;
+    cxxmin = 26;
   };
 };
 
@@ -1947,6 +2178,132 @@ ftms = {
     v = 202207;
     cxxmin = 20;
     extra_cond = "__cpp_modules";
+  };
+};
+
+ftms = {
+  name = inplace_vector;
+  values = {
+    v = 202406;
+    cxxmin = 26;
+  };
+};
+
+ftms = {
+  name = indirect;
+  values = {
+    v = 202502;
+    cxxmin = 26;
+    hosted = yes;
+  };
+};
+
+ftms = {
+  name = polymorphic;
+  values = {
+    v = 202502;
+    cxxmin = 26;
+    hosted = yes;
+  };
+};
+
+ftms = {
+  name = smart_ptr_owner_equality;
+  values = {
+    v = 202306;
+    cxxmin = 26;
+    hosted = yes;
+  };
+};
+
+ftms = {
+  name = sstream_from_string_view;
+  values = {
+    v = 202306;
+    cxxmin = 26;
+    hosted = yes;
+  };
+};
+
+ftms = {
+  name = type_order;
+  values = {
+    v = 202506;
+    cxxmin = 26;
+    extra_cond = "__has_builtin(__builtin_type_order) "
+    "&& __cpp_lib_three_way_comparison >= 201907L";
+  };
+};
+
+ftms = {
+  name = exception_ptr_cast;
+  values = {
+    v = 202506;
+    cxxmin = 26;
+  };
+};
+
+ftms = {
+  name = bitset;  // ...construct from string_view
+  values = {
+    v = 202306;
+    cxxmin = 26;
+  };
+};
+
+ftms = {
+  name = constexpr_exceptions;
+  values = {
+    v = 202502;
+    cxxmin = 26;
+    extra_cond = "__cpp_constexpr_exceptions >= 202411L";
+    cxx11abi = yes;
+  };
+};
+
+ftms = {
+  name = philox_engine;
+  values = {
+    v = 202406;
+    cxxmin = 26;
+  };
+};
+
+ftms = {
+  name = reflection;
+  values = {
+    v = 202506;
+    cxxmin = 26;
+    extra_cond = "__cpp_impl_reflection >= 202506L";
+    cxx11abi = yes;
+  };
+};
+
+ftms = {
+  name = define_static;
+  values = {
+    v = 202506;
+    cxxmin = 26;
+    extra_cond = "__cpp_impl_reflection >= 202506L";
+    cxx11abi = yes;
+  };
+};
+
+ftms = {
+  name = is_implicit_lifetime;
+  values = {
+    v =  202302;
+    cxxmin = 23;
+    extra_cond = "__has_builtin(__builtin_is_implicit_lifetime)";
+  };
+};
+
+ftms = {
+  name = contracts;
+  values = {
+    v = 202502;
+    cxxmin = 26;
+    extra_cond = "__cpp_contracts >= 202502L";
   };
 };
 

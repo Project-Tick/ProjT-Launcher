@@ -1,5 +1,5 @@
 /* Language independent return value optimizations
-   Copyright (C) 2004-2025 Free Software Foundation, Inc.
+   Copyright (C) 2004-2026 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -385,7 +385,7 @@ pass_return_slot::execute (function *fun)
 		 undesirable warnings with some backends.  */
 	      && !gimple_call_internal_p (stmt)
 	      && aggregate_value_p (TREE_TYPE (gimple_call_lhs (stmt)),
-				    gimple_call_fndecl (stmt)))
+				    gimple_call_fntype (stmt)))
 	    {
 	      /* Check if the location being assigned to is
 		 clobbered by the call.  */

@@ -1,5 +1,5 @@
 /* decl.cc -- Lower D frontend declarations to GCC trees.
-   Copyright (C) 2006-2025 Free Software Foundation, Inc.
+   Copyright (C) 2006-2026 Free Software Foundation, Inc.
 
 GCC is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -449,7 +449,7 @@ public:
     if (dmd::isError (d)|| !d->members)
       return;
 
-    if (!d->needsCodegen ())
+    if (!dmd::needsCodegen (d))
       return;
 
     for (size_t i = 0; i < d->members->length; i++)
@@ -534,7 +534,7 @@ public:
       {
 	FuncDeclaration *fd = d->vtbl[i]->isFuncDeclaration ();
 
-	if (!fd || (!fd->fbody && d->isAbstract ()))
+	if (!fd || (!fd->fbody && dmd::isAbstract (d)))
 	  continue;
 
 	/* Ensure function has a return value.  */
@@ -643,7 +643,7 @@ public:
       {
 	FuncDeclaration *fd = d->vtbl[i]->isFuncDeclaration ();
 
-	if (fd && (fd->fbody || !d->isAbstract ()))
+	if (fd && (fd->fbody || !dmd::isAbstract (d)))
 	  {
 	    CONSTRUCTOR_APPEND_ELT (elms, size_int (i),
 				    build_address (get_symbol_decl (fd)));
@@ -731,9 +731,10 @@ public:
     if (tc->sym->members && !dmd::isZeroInit (d->type))
       {
 	/* Generate static initializer.  */
-	d->sinit = enum_initializer_decl (d);
-	DECL_INITIAL (d->sinit) = build_expr (tc->sym->defaultval, true);
-	d_finish_decl (d->sinit);
+	tree sinit = enum_initializer_decl (d);
+	d->sinit = sinit;
+	DECL_INITIAL (sinit) = build_expr (tc->sym->defaultval, true);
+	d_finish_decl (sinit);
       }
 
     d->semanticRun (PASS::obj);
@@ -765,7 +766,7 @@ public:
 	    Expression *ie = dmd::initializerToExpression (d->_init);
 	    add_stmt (build_expr (ie));
 
-	    Expression *e = d->type->defaultInitLiteral (d->loc);
+	    Expression *e = dmd::defaultInitLiteral (d->type, d->loc);
 	    add_stmt (build_expr (e));
 	  }
 
@@ -774,7 +775,7 @@ public:
 
     if (d->aliasTuple)
       {
-	this->build_dsymbol (d->toAlias ());
+	this->build_dsymbol (dmd::toAlias (d));
 	return;
       }
 
@@ -782,7 +783,7 @@ public:
       {
 	/* Do not store variables we cannot take the address of,
 	   but keep the values for purposes of debugging.  */
-	if (d->type->isScalar () && !dmd::hasPointers (d->type))
+	if (dmd::isScalar (d->type) && !dmd::hasPointers (d->type))
 	  {
 	    tree decl = get_symbol_decl (d);
 	    d_pushdecl (decl);
@@ -833,7 +834,7 @@ public:
 	      DECL_INITIAL (decl) = layout_struct_initializer (ts->sym);
 	    else
 	      {
-		Expression *e = d->type->defaultInitLiteral (d->loc);
+		Expression *e = dmd::defaultInitLiteral (d->type, d->loc);
 		DECL_INITIAL (decl) = build_expr (e, true);
 	      }
 	  }
@@ -968,7 +969,7 @@ public:
 
 	doing_semantic_analysis_p = true;
 	dmd::functionSemantic3 (d);
-	Module::runDeferredSemantic3 ();
+	dmd::runDeferredSemantic3 ();
 	doing_semantic_analysis_p = false;
       }
 
@@ -1048,10 +1049,15 @@ public:
 	else
 	  d->shidden = resdecl;
 
-	if (d->isNRVO () && d->nrvo_var)
-	  {
-	    tree var = get_symbol_decl (d->nrvo_var);
+	tree var = NULL_TREE;
 
+	if (d->isNRVO () && d->nrvo_var)
+	  var = get_symbol_decl (d->nrvo_var);
+	else if (d->vresult)
+	  var = get_symbol_decl (d->vresult);
+
+	if (var != NULL_TREE)
+	  {
 	    /* Copy name from VAR to RESULT.  */
 	    DECL_NAME (resdecl) = DECL_NAME (var);
 	    /* Don't forget that we take its address.  */
@@ -1249,7 +1255,7 @@ get_symbol_decl (Declaration *decl)
       /* CONST_DECL was initially intended for enumerals and may be used for
 	 scalars in general, but not for aggregates.  Here a non-constant
 	 value is generated anyway so as its value can be used.  */
-      if (!vd->canTakeAddressOf () && !vd->type->isScalar ())
+      if (!vd->canTakeAddressOf () && !dmd::isScalar (vd->type))
 	{
 	  gcc_assert (vd->_init && !vd->_init->isVoidInitializer ());
 	  Expression *ie = dmd::initializerToExpression (vd->_init);
@@ -1309,7 +1315,7 @@ get_symbol_decl (Declaration *decl)
 	  /* Cannot make an expression out of a void initializer.  */
 	  gcc_assert (vd->_init && !vd->_init->isVoidInitializer ());
 	  /* Non-scalar manifest constants have already been dealt with.  */
-	  gcc_assert (vd->type->isScalar ());
+	  gcc_assert (dmd::isScalar (vd->type));
 
 	  Expression *ie = dmd::initializerToExpression (vd->_init);
 	  DECL_INITIAL (decl->csym) = build_expr (ie, true);
@@ -2049,7 +2055,7 @@ make_thunk (FuncDeclaration *decl, int offset)
       unsigned identlen = IDENTIFIER_LENGTH (target_name) + 14;
       ident = XNEWVEC (const char, identlen);
 
-      snprintf (CONST_CAST (char *, ident), identlen,
+      snprintf (const_cast<char *> (ident), identlen,
 		"_DTi%u%s", offset, IDENTIFIER_POINTER (target_name));
     }
 
@@ -2059,7 +2065,7 @@ make_thunk (FuncDeclaration *decl, int offset)
   d_keep (thunk);
 
   if (decl->resolvedLinkage () != LINK::cpp)
-    free (CONST_CAST (char *, ident));
+    free (const_cast<char *> (ident));
 
   /* Thunks are connected to the definitions of the functions, so thunks are
      not produced for external functions.  */
@@ -2454,20 +2460,21 @@ tree
 enum_initializer_decl (EnumDeclaration *decl)
 {
   if (decl->sinit)
-    return decl->sinit;
+    return (tree) decl->sinit;
 
   gcc_assert (decl->ident);
 
   tree type = build_ctype (decl->type);
   tree ident = mangle_internal_decl (decl, "__init", "Z");
 
-  decl->sinit = declare_extern_var (ident, type);
-  DECL_LANG_SPECIFIC (decl->sinit) = build_lang_decl (NULL);
+  tree sinit = declare_extern_var (ident, type);
+  DECL_LANG_SPECIFIC (sinit) = build_lang_decl (NULL);
 
-  DECL_CONTEXT (decl->sinit) = d_decl_context (decl);
-  TREE_READONLY (decl->sinit) = 1;
+  DECL_CONTEXT (sinit) = d_decl_context (decl);
+  TREE_READONLY (sinit) = 1;
 
-  return decl->sinit;
+  decl->sinit = sinit;
+  return sinit;
 }
 
 /* Return an anonymous static variable of type TYPE, initialized with INIT,

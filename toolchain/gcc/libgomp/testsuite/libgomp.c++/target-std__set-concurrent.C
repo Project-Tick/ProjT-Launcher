@@ -40,7 +40,7 @@ int main (void)
   init (data);
 
 #ifndef MEM_SHARED
-  #pragma omp target data map (to: data[:N]) map (alloc: _set)
+  #pragma omp target data map (to: data[ :N]) map (alloc: _set)
 #endif
     {
       #pragma omp target
@@ -57,6 +57,14 @@ int main (void)
 	  if (_set.find (i) != _set.end ())
 	    sum += i;
 
+#ifdef OMP_USM
+      #pragma omp target
+	/* Restore the object into pristine state.  In particular, deallocate
+	   any memory allocated during device execution, which otherwise, back
+	   on the host, we'd SIGSEGV on, when attempting to deallocate during
+	   destruction of the object.  */
+	__typeof__ (_set){}.swap (_set);
+#endif
 #ifndef MEM_SHARED
       #pragma omp target
 	_set.~set ();

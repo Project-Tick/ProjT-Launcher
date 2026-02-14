@@ -1,5 +1,5 @@
 /* Backend support for Fortran 95 basic types and derived types.
-   Copyright (C) 2002-2025 Free Software Foundation, Inc.
+   Copyright (C) 2002-2026 Free Software Foundation, Inc.
    Contributed by Paul Brook <paul@nowt.org>
    and Steven Bosscher <s.bosscher@student.tudelft.nl>
 
@@ -799,6 +799,9 @@ gfc_init_kinds (void)
   gfc_character_storage_size = gfc_default_character_kind * 8;
 
   gfc_index_integer_kind = get_int_kind_from_name (PTRDIFF_TYPE);
+
+  if (flag_external_blas64 && gfc_index_integer_kind != gfc_integer_8_kind)
+    gfc_fatal_error ("-fexternal-blas64 requires a 64-bit system");
 
   /* Pick a kind the same size as the C "int" type.  */
   gfc_c_int_kind = INT_TYPE_SIZE / 8;
@@ -3188,7 +3191,7 @@ copy_derived_types:
     for (c = derived->components; c; c = c->next)
       {
 	/* Do not add a caf_token field for class container components.  */
-	if ((codimen || coarray_flag) && !c->attr.dimension
+	if (codimen && coarray_flag && !c->attr.dimension
 	    && !c->attr.codimension && (c->attr.allocatable || c->attr.pointer)
 	    && !derived->attr.is_class)
 	  {
@@ -3232,13 +3235,14 @@ gfc_return_by_reference (gfc_symbol * sym)
 
   /* Possibly return complex numbers by reference for g77 compatibility.
      We don't do this for calls to intrinsics (as the library uses the
-     -fno-f2c calling convention), nor for calls to functions which always
+     -fno-f2c calling convention) except for calls to specific wrappers
+     (_gfortran_f2c_specific_*), nor for calls to functions which always
      require an explicit interface, as no compatibility problems can
      arise there.  */
   if (flag_f2c && sym->ts.type == BT_COMPLEX
       && !sym->attr.pointer
       && !sym->attr.allocatable
-      && !sym->attr.intrinsic && !sym->attr.always_explicit)
+      && !sym->attr.always_explicit)
     return 1;
 
   return 0;

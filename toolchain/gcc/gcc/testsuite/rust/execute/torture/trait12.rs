@@ -1,4 +1,6 @@
 /* { dg-output "3\r*\n" } */
+#![feature(lang_items)]
+
 extern "C" {
     fn printf(s: *const i8, ...);
 }
@@ -16,7 +18,6 @@ struct Identity;
 
 impl<'a, T> FnLike<&'a T, &'a T> for Identity {
     fn call(&self, arg: &'a T) -> &'a T {
-        // { dg-warning "unused name .self." "" { target *-*-* } .-1 }
         arg
     }
 }

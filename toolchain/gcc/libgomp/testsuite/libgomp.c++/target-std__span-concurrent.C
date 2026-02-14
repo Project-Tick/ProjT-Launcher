@@ -1,7 +1,7 @@
 // { dg-do run }
 // { dg-additional-options "-std=c++20" }
 // { dg-additional-options -DMEM_SHARED { target offload_device_shared_as } }
-
+// { dg-additional-options "-Wno-deprecated-openmp" }
 #include <stdlib.h>
 #include <time.h>
 #include <span>
@@ -35,7 +35,7 @@ int main (void)
   init (data);
 
 #ifndef MEM_SHARED
-  #pragma omp target enter data map (to: data[:N]) map (alloc: elements, span)
+  #pragma omp target enter data map (to: data[ :N]) map (alloc: elements, span)
 #endif
 
   #pragma omp target
@@ -53,6 +53,11 @@ int main (void)
   #pragma omp target map (from: ok)
     {
       ok = validate (span, data);
+
+#ifdef OMP_USM
+      /* (By construction) we're not allocating memory during device
+	 execution, so have nothing to clean up.  */
+#endif
 #ifndef MEM_SHARED
       span.~span ();
 #endif

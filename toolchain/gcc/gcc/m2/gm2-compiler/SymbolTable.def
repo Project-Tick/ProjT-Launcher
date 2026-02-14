@@ -1,6 +1,6 @@
 (* SymbolTable.def provides access to the symbol table.
 
-Copyright (C) 2001-2025 Free Software Foundation, Inc.
+Copyright (C) 2001-2026 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -578,6 +578,41 @@ PROCEDURE MakeSubrange (tok: CARDINAL; SubrangeName: Name) : CARDINAL ;
 *)
 
 PROCEDURE MakeSet (tok: CARDINAL; SetName: Name) : CARDINAL ;
+
+
+(*
+   GetSetArray - return the set array for a large set.
+*)
+
+PROCEDURE GetSetArray (sym: CARDINAL) : CARDINAL ;
+
+
+(*
+   PutSetArray - places array into the setarray field.
+*)
+
+PROCEDURE PutSetArray (Sym: CARDINAL; array: CARDINAL) ;
+
+
+(*
+   MakeSetArray - create an ARRAY simpletype OF BOOLEAN.
+*)
+
+PROCEDURE MakeSetArray (token: CARDINAL; subrangetype: CARDINAL) : CARDINAL ;
+
+
+(*
+   PutSetInWord - set the SetInWord boolean to value.
+*)
+
+PROCEDURE PutSetInWord (sym: CARDINAL; value: BOOLEAN) ;
+
+
+(*
+   GetSetInWord - return SetInWord.
+*)
+
+PROCEDURE GetSetInWord (sym: CARDINAL) : BOOLEAN ;
 
 
 (*
@@ -2089,7 +2124,7 @@ PROCEDURE CheckForUndeclaredExports (ModSym: CARDINAL) ;
                              an error message is displayed.
 *)
 
-PROCEDURE CheckForUnknownInModule ;
+PROCEDURE CheckForUnknownInModule (tokno: CARDINAL) ;
 
 
 (*
@@ -2098,6 +2133,20 @@ PROCEDURE CheckForUnknownInModule ;
 *)
 
 PROCEDURE UnknownReported (sym: CARDINAL) ;
+
+
+(*
+   GetUnknownOnImport - returns the onimport field of unknown sym.
+*)
+
+PROCEDURE GetUnknownOnImport (sym: CARDINAL) : BOOLEAN ;
+
+
+(*
+   GetUnknownDeclScope - returns the decl scope of unknown sym.
+*)
+
+PROCEDURE GetUnknownDeclScope (sym: CARDINAL) : CARDINAL ;
 
 
 (*
@@ -2578,7 +2627,7 @@ PROCEDURE ResolveConstructorTypes ;
                     current scope.
 *)
 
-PROCEDURE AddNameToScope (n: Name) ;
+PROCEDURE AddNameToScope (tok: CARDINAL; n: Name) ;
 
 
 (*
@@ -2586,7 +2635,7 @@ PROCEDURE AddNameToScope (n: Name) ;
                          module.
 *)
 
-PROCEDURE AddNameToImportList (n: Name) ;
+PROCEDURE AddNameToImportList (tok: CARDINAL; n: Name) ;
 
 
 (*
@@ -3494,6 +3543,22 @@ PROCEDURE GetProcedureKindDesc (kind: ProcedureKind) : String ;
 
 PROCEDURE GetNthParamAnyClosest (sym: CARDINAL; ParamNo: CARDINAL;
                                  currentmodule: CARDINAL) : CARDINAL ;
+
+
+(*
+   IsConstVar - returns TRUE if sym is a const var.  This is a
+                constant which might be assigned to TRUE or FALSE
+                depending upon the result of the quad stack control flow.
+                Typically used in CONST foo = (a AND b) or similar.
+                This symbol will only be assigned once with a value, but
+                will appear more than once as a designator to an assignment
+                in the quad table.  However as the quad table is reduced
+                only one assignment will remain.  If after reducing quads
+                two or more assignments remain, then there is an error
+                as sym should not have been declared a constant.
+*)
+
+PROCEDURE IsConstVar (sym: CARDINAL) : BOOLEAN ;
 
 
 END SymbolTable.

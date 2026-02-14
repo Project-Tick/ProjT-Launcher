@@ -1,6 +1,6 @@
 (* P1SymBuild.mod pass 1 symbol creation.
 
-Copyright (C) 2001-2025 Free Software Foundation, Inc.
+Copyright (C) 2001-2026 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -39,6 +39,7 @@ FROM M2Reserved IMPORT ImportTok, ExportTok, QualifiedTok, UnQualifiedTok,
 
 FROM FifoQueue IMPORT PutEnumerationIntoFifoQueue ;
 FROM P0SymBuild IMPORT EnterBlock, LeaveBlock ;
+FROM libc IMPORT printf ;
 
 FROM SymbolTable IMPORT NulSym,
                         ModeOfAddr,
@@ -472,9 +473,6 @@ BEGIN
                              OperandT(n+1)) ;
       i := 1 ;
       WHILE i<=n DO
-(*
-         WriteString('Importing ') ; WriteKey(Operand(j)) ; WriteString(' from ') ; WriteKey(GetSymName(ModSym)) ; WriteLn ;
-*)
          Sym := GetExported (OperandTok (n+1-i),
                              ModSym, OperandT (n+1-i)) ;
          PutImported (Sym) ;
@@ -619,7 +617,7 @@ BEGIN
       (* Ident List contains list of objects *)
       i := 1 ;
       WHILE i<=n DO
-         AddNameToImportList (OperandT (i)) ;
+         AddNameToImportList (OperandTok (i), OperandT (i)) ;
          INC (i)
       END
    ELSE
@@ -914,7 +912,7 @@ BEGIN
          EndBuildForward.  *)
       PutDeclared (tokno, ProcSym)
    ELSE
-      MetaError1 ('expecting a procedure name and symbol {%1Ea} has been declared as a {%1d}', ProcSym) ;
+      MetaError1 ('expecting a procedure name and symbol {%1Ea} has been declared as a {%1dv}', ProcSym) ;
       PushT (ProcSym) ;
       RETURN
    END ;

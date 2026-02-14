@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2025 Free Software Foundation, Inc.
+// Copyright (C) 2020-2026 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -38,6 +38,31 @@ Attributes::is_known (const std::string &attribute_path)
   return !lookup.is_error ();
 }
 
+tl::optional<std::string>
+Attributes::extract_string_literal (const AST::Attribute &attr)
+{
+  if (!attr.has_attr_input ())
+    return tl::nullopt;
+
+  auto &attr_input = attr.get_attr_input ();
+
+  if (attr_input.get_attr_input_type ()
+      != AST::AttrInput::AttrInputType::LITERAL)
+    return tl::nullopt;
+
+  auto &literal_expr
+    = static_cast<AST::AttrInputLiteral &> (attr_input).get_literal ();
+
+  auto lit_type = literal_expr.get_lit_type ();
+
+  // TODO: bring escape sequence handling out of lexing?
+  if (lit_type != AST::Literal::LitType::STRING
+      && lit_type != AST::Literal::LitType::RAW_STRING)
+    return tl::nullopt;
+
+  return literal_expr.as_string ();
+}
+
 using Attrs = Values::Attributes;
 
 // https://doc.rust-lang.org/stable/nightly-rustc/src/rustc_feature/builtin_attrs.rs.html#248
@@ -53,6 +78,7 @@ static const BuiltinAttrDefinition __definitions[]
      {Attrs::DOC, HIR_LOWERING},
      {Attrs::MUST_USE, STATIC_ANALYSIS},
      {Attrs::LANG, HIR_LOWERING},
+     {Attrs::LINK_NAME, CODE_GENERATION},
      {Attrs::LINK_SECTION, CODE_GENERATION},
      {Attrs::NO_MANGLE, CODE_GENERATION},
      {Attrs::REPR, CODE_GENERATION},
@@ -73,11 +99,11 @@ static const BuiltinAttrDefinition __definitions[]
      {Attrs::RUSTC_INHERIT_OVERFLOW_CHECKS, CODE_GENERATION},
      {Attrs::STABLE, STATIC_ANALYSIS},
      {Attrs::UNSTABLE, STATIC_ANALYSIS},
-
      // assuming we keep these for static analysis
      {Attrs::RUSTC_PROMOTABLE, CODE_GENERATION},
      {Attrs::RUSTC_CONST_STABLE, STATIC_ANALYSIS},
      {Attrs::RUSTC_CONST_UNSTABLE, STATIC_ANALYSIS},
+     {Attrs::RUSTC_ALLOW_CONST_FN_UNSTABLE, STATIC_ANALYSIS},
      {Attrs::PRELUDE_IMPORT, NAME_RESOLUTION},
      {Attrs::TRACK_CALLER, CODE_GENERATION},
      {Attrs::RUSTC_SPECIALIZATION_TRAIT, TYPE_CHECK},
@@ -85,17 +111,21 @@ static const BuiltinAttrDefinition __definitions[]
      {Attrs::RUSTC_RESERVATION_IMPL, TYPE_CHECK},
      {Attrs::RUSTC_PAREN_SUGAR, TYPE_CHECK},
      {Attrs::RUSTC_NONNULL_OPTIMIZATION_GUARANTEED, TYPE_CHECK},
-
      {Attrs::RUSTC_LAYOUT_SCALAR_VALID_RANGE_START, CODE_GENERATION},
-
+     // TODO: be careful about calling functions marked with this?
+     {Attrs::RUSTC_ARGS_REQUIRED_CONST, CODE_GENERATION},
      {Attrs::PRELUDE_IMPORT, NAME_RESOLUTION},
-
      {Attrs::RUSTC_DIAGNOSTIC_ITEM, STATIC_ANALYSIS},
      {Attrs::RUSTC_ON_UNIMPLEMENTED, STATIC_ANALYSIS},
-
      {Attrs::FUNDAMENTAL, TYPE_CHECK},
      {Attrs::NON_EXHAUSTIVE, TYPE_CHECK},
-     {Attrs::RUSTFMT, EXTERNAL}};
+     {Attrs::RUSTFMT, EXTERNAL},
+     {Attrs::TEST, CODE_GENERATION}};
+
+static const std::set<std::string> __outer_attributes
+  = {Attrs::INLINE,	    Attrs::DERIVE_ATTR, Attrs::ALLOW_INTERNAL_UNSTABLE,
+     Attrs::LANG,	    Attrs::REPR,	Attrs::PATH,
+     Attrs::TARGET_FEATURE, Attrs::TEST};
 
 BuiltinAttributeMappings *
 BuiltinAttributeMappings::get ()
@@ -138,6 +168,7 @@ AttributeChecker::go (AST::Crate &crate)
 void
 AttributeChecker::visit (AST::Crate &crate)
 {
+  check_inner_attributes (crate.get_inner_attrs ());
   check_attributes (crate.get_inner_attrs ());
 
   for (auto &item : crate.items)
@@ -208,8 +239,8 @@ check_doc_attribute (const AST::Attribute &attribute)
     {
       rust_error_at (
 	attribute.get_locus (),
-	// FIXME: Improve error message here. Rustc has a very good one
-	"%<#[doc]%> cannot be an empty attribute");
+	"valid forms for the attribute are "
+	"%<#[doc(hidden|inline|...)]%> and %<#[doc = \" string \"]%>");
       return;
     }
 
@@ -221,7 +252,8 @@ check_doc_attribute (const AST::Attribute &attribute)
       break;
       // FIXME: Handle them as well
 
-      case AST::AttrInput::TOKEN_TREE: {
+    case AST::AttrInput::TOKEN_TREE:
+      {
 	// FIXME: This doesn't check for #[doc(alias(...))]
 	const auto &option = static_cast<const AST::DelimTokenTree &> (
 	  attribute.get_attr_input ());
@@ -242,6 +274,97 @@ check_doc_attribute (const AST::Attribute &attribute)
 	  }
 	break;
       }
+    }
+}
+
+static void
+check_deprecated_attribute (const AST::Attribute &attribute)
+{
+  const auto &input = attribute.get_attr_input ();
+
+  if (input.get_attr_input_type () != AST::AttrInput::META_ITEM)
+    return;
+
+  auto &meta = static_cast<const AST::AttrInputMetaItemContainer &> (input);
+
+  for (auto &current : meta.get_items ())
+    {
+      switch (current->get_kind ())
+	{
+	case AST::MetaItemInner::Kind::MetaItem:
+	  {
+	    auto *meta_item = static_cast<AST::MetaItem *> (current.get ());
+
+	    switch (meta_item->get_item_kind ())
+	      {
+	      case AST::MetaItem::ItemKind::NameValueStr:
+		{
+		  auto *nv = static_cast<AST::MetaNameValueStr *> (meta_item);
+
+		  const std::string key = nv->get_name ().as_string ();
+
+		  if (key != "since" && key != "note")
+		    {
+		      rust_error_at (nv->get_locus (), "unknown meta item %qs",
+				     key.c_str ());
+		      rust_inform (nv->get_locus (),
+				   "expected one of %<since%>, %<note%>");
+		    }
+		}
+		break;
+
+	      case AST::MetaItem::ItemKind::Path:
+		{
+		  // #[deprecated(a,a)]
+		  auto *p = static_cast<AST::MetaItemPath *> (meta_item);
+
+		  std::string ident = p->get_path ().as_string ();
+
+		  rust_error_at (p->get_locus (), "unknown meta item %qs",
+				 ident.c_str ());
+		  rust_inform (p->get_locus (),
+			       "expected one of %<since%>, %<note%>");
+		}
+		break;
+
+	      case AST::MetaItem::ItemKind::Word:
+		{
+		  // #[deprecated("a")]
+		  auto *w = static_cast<AST::MetaWord *> (meta_item);
+
+		  rust_error_at (
+		    w->get_locus (),
+		    "item in %<deprecated%> must be a key/value pair");
+		}
+		break;
+
+	      case AST::MetaItem::ItemKind::PathExpr:
+		{
+		  // #[deprecated(since=a)]
+		  auto *px = static_cast<AST::MetaItemPathExpr *> (meta_item);
+
+		  rust_error_at (
+		    px->get_locus (),
+		    "expected unsuffixed literal or identifier, found %qs",
+		    px->get_expr ().as_string ().c_str ());
+		}
+		break;
+
+	      case AST::MetaItem::ItemKind::Seq:
+	      case AST::MetaItem::ItemKind::ListPaths:
+	      case AST::MetaItem::ItemKind::ListNameValueStr:
+	      default:
+		gcc_unreachable ();
+		break;
+	      }
+	  }
+	  break;
+
+	case AST::MetaItemInner::Kind::LitExpr:
+	default:
+	  gcc_unreachable ();
+	  break;
+	}
     }
 }
 
@@ -291,8 +414,42 @@ check_proc_macro_non_root (AST::AttrVec attributes, location_t loc)
 }
 
 void
+AttributeChecker::check_inner_attribute (const AST::Attribute &attribute)
+{
+  BuiltinAttrDefinition result;
+
+  if (!is_builtin (attribute, result))
+    return;
+
+  if (__outer_attributes.find (result.name) != __outer_attributes.end ())
+    rust_error_at (attribute.get_locus (),
+		   "attribute cannot be used at crate level");
+}
+
+void
+AttributeChecker::check_inner_attributes (const AST::AttrVec &attributes)
+{
+  for (auto &attr : attributes)
+    check_inner_attribute (attr);
+}
+
+void
 AttributeChecker::check_attribute (const AST::Attribute &attribute)
 {
+  if (!attribute.empty_input ())
+    {
+      const auto &attr_input = attribute.get_attr_input ();
+      auto type = attr_input.get_attr_input_type ();
+      if (type == AST::AttrInput::AttrInputType::TOKEN_TREE)
+	{
+	  const auto &option = static_cast<const AST::DelimTokenTree &> (
+	    attribute.get_attr_input ());
+	  std::unique_ptr<AST::AttrInputMetaItemContainer> meta_item (
+	    option.parse_to_meta_item ());
+	  AST::DefaultASTVisitor::visit (meta_item);
+	}
+    }
+
   BuiltinAttrDefinition result;
 
   // This checker does not check non-builtin attributes
@@ -304,8 +461,9 @@ AttributeChecker::check_attribute (const AST::Attribute &attribute)
   // and costly
   if (result.name == Attrs::DOC)
     check_doc_attribute (attribute);
+  else if (result.name == Attrs::DEPRECATED)
+    check_deprecated_attribute (attribute);
 }
-
 void
 AttributeChecker::check_attributes (const AST::AttrVec &attributes)
 {
@@ -319,10 +477,6 @@ AttributeChecker::visit (AST::Token &)
 
 void
 AttributeChecker::visit (AST::DelimTokenTree &)
-{}
-
-void
-AttributeChecker::visit (AST::AttrInputMetaItemContainer &)
 {}
 
 void
@@ -388,8 +542,16 @@ AttributeChecker::visit (AST::MetaItemLitExpr &)
 {}
 
 void
-AttributeChecker::visit (AST::MetaItemPathLit &)
-{}
+AttributeChecker::visit (AST::MetaItemPathExpr &attribute)
+{
+  if (!attribute.get_expr ().is_literal ())
+    {
+      rust_error_at (attribute.get_expr ().get_locus (),
+		     "malformed %<path%> attribute input");
+      rust_inform (attribute.get_expr ().get_locus (),
+		   "must be of the form: %<#[path = \"file\"]%>");
+    }
+}
 
 void
 AttributeChecker::visit (AST::BorrowExpr &)
@@ -615,6 +777,7 @@ AttributeChecker::visit (AST::TypeBoundWhereClauseItem &)
 void
 AttributeChecker::visit (AST::Module &module)
 {
+  check_attributes (module.get_outer_attrs ());
   check_proc_macro_non_function (module.get_outer_attrs ());
   for (auto &item : module.get_items ())
     {
@@ -700,8 +863,39 @@ AttributeChecker::visit (AST::Function &fun)
 	{
 	  check_crate_type (name, attribute);
 	}
+      else if (result.name == Attrs::TARGET_FEATURE)
+	{
+	  if (!attribute.has_attr_input ())
+	    {
+	      rust_error_at (attribute.get_locus (),
+			     "malformed %<target_feature%> attribute input");
+	      rust_inform (attribute.get_locus (),
+			   "must be of the form: %<#[target_feature(enable = "
+			   "\"name\")]%>");
+	    }
+	}
       else if (result.name == "no_mangle")
-	check_no_mangle_function (attribute, fun);
+	{
+	  if (attribute.has_attr_input ())
+	    {
+	      rust_error_at (attribute.get_locus (),
+			     "malformed %<no_mangle%> attribute input");
+	      rust_inform (attribute.get_locus (),
+			   "must be of the form: %<#[no_mangle]%>");
+	    }
+	  else
+	    check_no_mangle_function (attribute, fun);
+	}
+      else if (result.name == Attrs::LINK_NAME)
+	{
+	  if (!attribute.has_attr_input ())
+	    {
+	      rust_error_at (attribute.get_locus (),
+			     "malformed %<link_name%> attribute input");
+	      rust_inform (attribute.get_locus (),
+			   "must be of the form: %<#[link_name = \"name\"]%>");
+	    }
+	}
     }
   if (fun.has_body ())
     fun.get_definition ().value ()->accept_vis (*this);
@@ -767,10 +961,6 @@ AttributeChecker::visit (AST::StaticItem &item)
 }
 
 void
-AttributeChecker::visit (AST::TraitItemConst &)
-{}
-
-void
 AttributeChecker::visit (AST::TraitItemType &)
 {}
 
@@ -778,6 +968,7 @@ void
 AttributeChecker::visit (AST::Trait &trait)
 {
   check_proc_macro_non_function (trait.get_outer_attrs ());
+  check_attributes (trait.get_outer_attrs ());
 }
 
 void
@@ -831,10 +1022,6 @@ AttributeChecker::visit (AST::MacroInvocation &)
 
 void
 AttributeChecker::visit (AST::MetaItemPath &)
-{}
-
-void
-AttributeChecker::visit (AST::MetaItemSeq &)
 {}
 
 void
@@ -913,11 +1100,11 @@ AttributeChecker::visit (AST::StructPattern &)
 // void AttributeChecker::visit(TupleStructItems& ){}
 
 void
-AttributeChecker::visit (AST::TupleStructItemsNoRange &)
+AttributeChecker::visit (AST::TupleStructItemsNoRest &)
 {}
 
 void
-AttributeChecker::visit (AST::TupleStructItemsRange &)
+AttributeChecker::visit (AST::TupleStructItemsHasRest &)
 {}
 
 void
@@ -927,11 +1114,11 @@ AttributeChecker::visit (AST::TupleStructPattern &)
 // void AttributeChecker::visit(TuplePatternItems& ){}
 
 void
-AttributeChecker::visit (AST::TuplePatternItemsMultiple &)
+AttributeChecker::visit (AST::TuplePatternItemsNoRest &)
 {}
 
 void
-AttributeChecker::visit (AST::TuplePatternItemsRanged &)
+AttributeChecker::visit (AST::TuplePatternItemsHasRest &)
 {}
 
 void

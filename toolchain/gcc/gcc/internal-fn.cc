@@ -1,5 +1,5 @@
 /* Internal functions.
-   Copyright (C) 2011-2025 Free Software Foundation, Inc.
+   Copyright (C) 2011-2026 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -194,6 +194,8 @@ init_internal_fns ()
 #define mask_len_fold_left_direct { 1, 1, false }
 #define check_ptrs_direct { 0, 0, false }
 #define crc_direct { 1, -1, true }
+#define reduc_sbool_direct { 0, 0, true }
+#define select_vl_direct { 2, 0, false }
 
 const direct_internal_fn_info direct_internal_fn_array[IFN_LAST + 1] = {
 #define DEF_INTERNAL_FN(CODE, FLAGS, FNSPEC) not_direct,
@@ -749,6 +751,54 @@ expand_HWASAN_CHECK (internal_fn, gcall *)
 }
 
 /* For hwasan stack tagging:
+   Tag memory which is dynamically allocated.  */
+static void
+expand_HWASAN_ALLOCA_POISON (internal_fn, gcall *gc)
+{
+  gcc_assert (ptr_mode == Pmode);
+  tree g_target = gimple_call_lhs (gc);
+  tree g_ptr = gimple_call_arg (gc, 0);
+  tree g_size = gimple_call_arg (gc, 1);
+
+  /* There is no target; this happens, usually, when we have an alloca of zero
+     size.  */
+  if (!g_target)
+    return;
+  rtx target = expand_normal (g_target);
+  rtx ptr = expand_normal (g_ptr);
+  rtx size = expand_normal (g_size);
+
+  /* No size, nothing to do.  */
+  if (size == const0_rtx)
+    return;
+
+  /* Get new tag for the alloca'd memory.
+     Doing a regular add_tag () like so:
+	rtx tag = targetm.memtag.add_tag (hwasan_frame_base (), 0,
+					  hwasan_current_frame_tag ());
+     gets a new tag, which can be used for tagging memory.  But for alloca, we
+     need both tagged memory and a tagged pointer to pass to consumers.  Invoke
+     insert_random_tag () instead to add a random tag to ptr to get a tagged
+     pointer that will work for both purposes.  */
+  rtx tagged_ptr
+    = force_reg (Pmode, targetm.memtag.insert_random_tag (ptr, NULL_RTX));
+  rtx tag = targetm.memtag.extract_tag (tagged_ptr, NULL_RTX);
+
+  if (memtag_sanitize_p ())
+    {
+      /* Need to put the tagged ptr into the `target` RTX for consumers
+	 of alloca'd memory.  */
+      if (tagged_ptr != target)
+	emit_move_insn (target, tagged_ptr);
+      /* Tag the memory.  */
+      emit_insn (targetm.gen_tag_memory (ptr, tag, size));
+      hwasan_increment_frame_tag ();
+    }
+  else
+    gcc_unreachable ();
+}
+
+/* For hwasan stack tagging:
    Clear tags on the dynamically allocated space.
    For use after an object dynamically allocated on the stack goes out of
    scope.  */
@@ -759,14 +809,22 @@ expand_HWASAN_ALLOCA_UNPOISON (internal_fn, gcall *gc)
   tree restored_position = gimple_call_arg (gc, 0);
   rtx restored_rtx = expand_expr (restored_position, NULL_RTX, VOIDmode,
 				  EXPAND_NORMAL);
-  rtx func = init_one_libfunc ("__hwasan_tag_memory");
   rtx off = expand_simple_binop (Pmode, MINUS, restored_rtx,
 				 stack_pointer_rtx, NULL_RTX, 0,
 				 OPTAB_WIDEN);
-  emit_library_call_value (func, NULL_RTX, LCT_NORMAL, VOIDmode,
-			   virtual_stack_dynamic_rtx, Pmode,
-			   HWASAN_STACK_BACKGROUND, QImode,
-			   off, Pmode);
+
+  if (memtag_sanitize_p ())
+    emit_insn (targetm.gen_tag_memory (virtual_stack_dynamic_rtx,
+				       HWASAN_STACK_BACKGROUND,
+				       off));
+  else
+    {
+      rtx func = init_one_libfunc ("__hwasan_tag_memory");
+      emit_library_call_value (func, NULL_RTX, LCT_NORMAL, VOIDmode,
+			       virtual_stack_dynamic_rtx, Pmode,
+			       HWASAN_STACK_BACKGROUND, QImode,
+			       off, Pmode);
+    }
 }
 
 /* For hwasan stack tagging:
@@ -820,9 +878,14 @@ expand_HWASAN_MARK (internal_fn, gcall *gc)
   tree len = gimple_call_arg (gc, 2);
   rtx r_len = expand_normal (len);
 
-  rtx func = init_one_libfunc ("__hwasan_tag_memory");
-  emit_library_call (func, LCT_NORMAL, VOIDmode, address, Pmode,
-		     tag, QImode, r_len, Pmode);
+  if (memtag_sanitize_p ())
+    emit_insn (targetm.gen_tag_memory (address, tag, r_len));
+  else
+    {
+      rtx func = init_one_libfunc ("__hwasan_tag_memory");
+      emit_library_call (func, LCT_NORMAL, VOIDmode, address, Pmode,
+			 tag, QImode, r_len, Pmode);
+    }
 }
 
 /* For hwasan stack tagging:
@@ -926,7 +989,10 @@ get_min_precision (tree arg, signop sign)
 	{
 	  if (TYPE_UNSIGNED (TREE_TYPE (arg)))
 	    sign = UNSIGNED;
-	  else if (sign == UNSIGNED && get_range_pos_neg (arg) != 1)
+	  else if (sign == UNSIGNED
+		   && (get_range_pos_neg (arg,
+					  currently_expanding_gimple_stmt)
+		       != 1))
 	    return prec + (orig_sign != sign);
 	  prec = TYPE_PRECISION (TREE_TYPE (arg));
 	}
@@ -946,7 +1012,8 @@ get_min_precision (tree arg, signop sign)
   if (TREE_CODE (arg) != SSA_NAME)
     return prec + (orig_sign != sign);
   int_range_max r;
-  while (!get_global_range_query ()->range_of_expr (r, arg)
+  gimple *cg = currently_expanding_gimple_stmt;
+  while (!get_range_query (cfun)->range_of_expr (r, arg, cg)
 	 || r.varying_p ()
 	 || r.undefined_p ())
     {
@@ -963,7 +1030,8 @@ get_min_precision (tree arg, signop sign)
 		{
 		  if (TYPE_UNSIGNED (TREE_TYPE (arg)))
 		    sign = UNSIGNED;
-		  else if (sign == UNSIGNED && get_range_pos_neg (arg) != 1)
+		  else if (sign == UNSIGNED
+			   && get_range_pos_neg (arg, g) != 1)
 		    return prec + (orig_sign != sign);
 		  prec = TYPE_PRECISION (TREE_TYPE (arg));
 		}
@@ -1301,7 +1369,7 @@ expand_addsub_overflow (location_t loc, tree_code code, tree lhs,
 	 unsigned.  */
       res = expand_binop (mode, sub_optab, op0, op1, NULL_RTX, false,
 			  OPTAB_LIB_WIDEN);
-      int pos_neg = get_range_pos_neg (arg0);
+      int pos_neg = get_range_pos_neg (arg0, currently_expanding_gimple_stmt);
       if (pos_neg == 2)
 	/* If ARG0 is known to be always negative, this is always overflow.  */
 	emit_jump (do_error);
@@ -1361,10 +1429,11 @@ expand_addsub_overflow (location_t loc, tree_code code, tree lhs,
 	 unsigned.  */
       res = expand_binop (mode, code == PLUS_EXPR ? add_optab : sub_optab,
 			  op0, op1, NULL_RTX, false, OPTAB_LIB_WIDEN);
-      int pos_neg = get_range_pos_neg (arg1);
+      int pos_neg = get_range_pos_neg (arg1, currently_expanding_gimple_stmt);
       if (code == PLUS_EXPR)
 	{
-	  int pos_neg0 = get_range_pos_neg (arg0);
+	  int pos_neg0 = get_range_pos_neg (arg0,
+					    currently_expanding_gimple_stmt);
 	  if (pos_neg0 != 3 && pos_neg == 3)
 	    {
 	      std::swap (op0, op1);
@@ -1462,10 +1531,11 @@ expand_addsub_overflow (location_t loc, tree_code code, tree lhs,
        the second operand, as subtraction is not commutative) is always
        non-negative or always negative, we can do just one comparison
        and conditional jump.  */
-    int pos_neg = get_range_pos_neg (arg1);
+    int pos_neg = get_range_pos_neg (arg1, currently_expanding_gimple_stmt);
     if (code == PLUS_EXPR)
       {
-	int pos_neg0 = get_range_pos_neg (arg0);
+	int pos_neg0 = get_range_pos_neg (arg0,
+					  currently_expanding_gimple_stmt);
 	if (pos_neg0 != 3 && pos_neg == 3)
 	  {
 	    std::swap (op0, op1);
@@ -1757,8 +1827,8 @@ expand_mul_overflow (location_t loc, tree lhs, tree arg0, tree arg1,
       uns1_p = true;
     }
 
-  int pos_neg0 = get_range_pos_neg (arg0);
-  int pos_neg1 = get_range_pos_neg (arg1);
+  int pos_neg0 = get_range_pos_neg (arg0, currently_expanding_gimple_stmt);
+  int pos_neg1 = get_range_pos_neg (arg1, currently_expanding_gimple_stmt);
   /* Unsigned types with smaller than mode precision, even if they have most
      significant bit set, are still zero-extended.  */
   if (uns0_p && TYPE_PRECISION (TREE_TYPE (arg0)) < GET_MODE_PRECISION (mode))
@@ -2763,9 +2833,9 @@ expand_arith_overflow (enum tree_code code, gimple *stmt)
   int prec1 = TYPE_PRECISION (TREE_TYPE (arg1));
   int precres = TYPE_PRECISION (type);
   location_t loc = gimple_location (stmt);
-  if (!uns0_p && get_range_pos_neg (arg0) == 1)
+  if (!uns0_p && get_range_pos_neg (arg0, stmt) == 1)
     uns0_p = true;
-  if (!uns1_p && get_range_pos_neg (arg1) == 1)
+  if (!uns1_p && get_range_pos_neg (arg1, stmt) == 1)
     uns1_p = true;
   int pr = get_min_precision (arg0, uns0_p ? UNSIGNED : SIGNED);
   prec0 = MIN (prec0, pr);
@@ -3435,25 +3505,23 @@ expand_DEFERRED_INIT (internal_fn, gcall *stmt)
 }
 
 /* Expand the IFN_ACCESS_WITH_SIZE function:
-   ACCESS_WITH_SIZE (REF_TO_OBJ, REF_TO_SIZE, CLASS_OF_SIZE,
-		     TYPE_OF_SIZE, ACCESS_MODE)
+   ACCESS_WITH_SIZE (REF_TO_OBJ, REF_TO_SIZE,
+		     TYPE_OF_SIZE + ACCESS_MODE, TYPE_SIZE_UNIT for element)
    which returns the REF_TO_OBJ same as the 1st argument;
 
    1st argument REF_TO_OBJ: The reference to the object;
    2nd argument REF_TO_SIZE: The reference to the size of the object,
-   3rd argument CLASS_OF_SIZE: The size referenced by the REF_TO_SIZE represents
-     0: the number of bytes.
-     1: the number of the elements of the object type;
-   4th argument TYPE_OF_SIZE: A constant 0 with its TYPE being the same as the TYPE
-    of the object referenced by REF_TO_SIZE
-   5th argument ACCESS_MODE:
-    -1: Unknown access semantics
-     0: none
-     1: read_only
-     2: write_only
-     3: read_write
-   6th argument: A constant 0 with the pointer TYPE to the original flexible
-     array type.
+   3rd argument TYPE_OF_SIZE + ACCESS_MODE: An integer constant with a pointer
+     TYPE.
+     The pointee TYPE of the pointer TYPE is the TYPE of the object referenced
+	by REF_TO_SIZE.
+     The integer constant value represents the ACCESS_MODE:
+	0: none
+	1: read_only
+	2: write_only
+	3: read_write
+
+   4th argument: The TYPE_SIZE_UNIT of the element TYPE of the array.
 
    Both the return type and the type of the first argument of this
    function have been converted from the incomplete array type to
@@ -3647,8 +3715,8 @@ expand_scatter_store_optab_fn (internal_fn, gcall *stmt, direct_optab optab)
   internal_fn ifn = gimple_call_internal_fn (stmt);
   int rhs_index = internal_fn_stored_value_index (ifn);
   tree base = gimple_call_arg (stmt, 0);
-  tree offset = gimple_call_arg (stmt, 1);
-  tree scale = gimple_call_arg (stmt, 2);
+  tree offset = gimple_call_arg (stmt, internal_fn_offset_index (ifn));
+  tree scale = gimple_call_arg (stmt, internal_fn_scale_index (ifn));
   tree rhs = gimple_call_arg (stmt, rhs_index);
 
   rtx base_rtx = expand_normal (base);
@@ -3673,12 +3741,12 @@ expand_scatter_store_optab_fn (internal_fn, gcall *stmt, direct_optab optab)
 /* Expand {MASK_,}GATHER_LOAD call CALL using optab OPTAB.  */
 
 static void
-expand_gather_load_optab_fn (internal_fn, gcall *stmt, direct_optab optab)
+expand_gather_load_optab_fn (internal_fn ifn, gcall *stmt, direct_optab optab)
 {
   tree lhs = gimple_call_lhs (stmt);
   tree base = gimple_call_arg (stmt, 0);
-  tree offset = gimple_call_arg (stmt, 1);
-  tree scale = gimple_call_arg (stmt, 2);
+  tree offset = gimple_call_arg (stmt, internal_fn_offset_index (ifn));
+  tree scale = gimple_call_arg (stmt, internal_fn_scale_index (ifn));
 
   rtx lhs_rtx = expand_expr (lhs, NULL_RTX, VOIDmode, EXPAND_WRITE);
   rtx base_rtx = expand_normal (base);
@@ -4094,6 +4162,42 @@ expand_crc_optab_fn (internal_fn fn, gcall *stmt, convert_optab optab)
     }
 }
 
+/* Expand .REDUC_SBOOL_{AND,IOR,XOR}.  */
+
+static void
+expand_reduc_sbool_optab_fn (internal_fn fn, gcall *stmt, direct_optab optab)
+{
+  tree_pair types = direct_internal_fn_types (fn, stmt);
+  insn_code icode = direct_optab_handler (optab, TYPE_MODE (types.first));
+
+  /* Below copied from expand_fn_using_insn.  */
+
+  gcc_assert (icode != CODE_FOR_nothing);
+
+  expand_operand *ops = XALLOCAVEC (expand_operand, 3);
+  rtx lhs_rtx = NULL_RTX;
+  tree lhs = gimple_call_lhs (stmt);
+  if (lhs)
+    lhs_rtx = expand_expr (lhs, NULL_RTX, VOIDmode, EXPAND_WRITE);
+  create_call_lhs_operand (&ops[0], lhs_rtx,
+			   insn_data[icode].operand[0].mode);
+
+  tree rhs = gimple_call_arg (stmt, 0);
+  tree rhs_type = TREE_TYPE (rhs);
+  rtx rhs_rtx = expand_normal (rhs);
+  gcc_assert (VECTOR_BOOLEAN_TYPE_P (rhs_type));
+  create_input_operand (&ops[1], rhs_rtx, TYPE_MODE (rhs_type));
+  if (SCALAR_INT_MODE_P (TYPE_MODE (rhs_type)))
+    {
+      rtx nunits = GEN_INT (TYPE_VECTOR_SUBPARTS (rhs_type).to_constant ());
+      gcc_assert (insn_operand_matches (icode, 2, nunits));
+      create_input_operand (&ops[2], nunits, SImode);
+    }
+  expand_insn (icode, SCALAR_INT_MODE_P (TYPE_MODE (rhs_type)) ? 3 : 2, ops);
+  if (lhs_rtx)
+    assign_call_lhs (lhs, lhs_rtx, &ops[0]);
+}
+
 /* Expanders for optabs that can use expand_direct_optab_fn.  */
 
 #define expand_unary_optab_fn(FN, STMT, OPTAB) \
@@ -4140,6 +4244,9 @@ expand_crc_optab_fn (internal_fn fn, gcall *stmt, convert_optab optab)
 
 #define expand_check_ptrs_optab_fn(FN, STMT, OPTAB) \
   expand_direct_optab_fn (FN, STMT, OPTAB, 4)
+
+#define expand_select_vl_optab_fn(FN, STMT, OPTAB) \
+  expand_convert_optab_fn (FN, STMT, OPTAB, 3)
 
 /* Expanders for optabs that can use expand_convert_optab_fn.  */
 
@@ -4256,6 +4363,8 @@ multi_vector_optab_supported_p (convert_optab optab, tree_pair types,
 #define direct_check_ptrs_optab_supported_p direct_optab_supported_p
 #define direct_vec_set_optab_supported_p direct_optab_supported_p
 #define direct_vec_extract_optab_supported_p convert_optab_supported_p
+#define direct_reduc_sbool_optab_supported_p direct_optab_supported_p
+#define direct_select_vl_optab_supported_p convert_optab_supported_p
 
 /* Return the optab used by internal function FN.  */
 
@@ -4421,6 +4530,7 @@ commutative_binary_fn_p (internal_fn fn)
     case IFN_ADD_OVERFLOW:
     case IFN_MUL_OVERFLOW:
     case IFN_SAT_ADD:
+    case IFN_SAT_MUL:
     case IFN_VEC_WIDEN_PLUS:
     case IFN_VEC_WIDEN_PLUS_LO:
     case IFN_VEC_WIDEN_PLUS_HI:
@@ -4719,7 +4829,12 @@ get_conditional_len_internal_fn (tree_code code)
   T (FMA) \
   T (FMS) \
   T (FNMA) \
-  T (FNMS)
+  T (FNMS) \
+  T (SQRT) \
+  T (ROUND) \
+  T (FLOOR) \
+  T (RINT) \
+  T (CEIL)
 
 /* Return a function that only performs internal function FN when a
    certain condition is met and that uses a given fallback value otherwise.
@@ -4957,15 +5072,18 @@ internal_fn_len_index (internal_fn fn)
   switch (fn)
     {
     case IFN_LEN_LOAD:
+      return 3;
     case IFN_LEN_STORE:
       return 2;
 
     case IFN_MASK_LEN_SCATTER_STORE:
+      return 6;
+
     case IFN_MASK_LEN_STRIDED_LOAD:
       return 5;
 
     case IFN_MASK_LEN_GATHER_LOAD:
-      return 6;
+      return 7;
 
     case IFN_COND_LEN_FMA:
     case IFN_COND_LEN_FMS:
@@ -5016,8 +5134,21 @@ internal_fn_else_index (internal_fn fn)
     {
     case IFN_COND_NEG:
     case IFN_COND_NOT:
+    case IFN_COND_SQRT:
+    case IFN_COND_CEIL:
+    case IFN_COND_FLOOR:
+    case IFN_COND_ROUND:
+    case IFN_COND_RINT:
     case IFN_COND_LEN_NEG:
     case IFN_COND_LEN_NOT:
+    case IFN_COND_LEN_SQRT:
+    case IFN_COND_LEN_CEIL:
+    case IFN_COND_LEN_FLOOR:
+    case IFN_COND_LEN_ROUND:
+    case IFN_COND_LEN_RINT:
+      return 2;
+
+    case IFN_LEN_LOAD:
       return 2;
 
     case IFN_COND_ADD:
@@ -5069,7 +5200,7 @@ internal_fn_else_index (internal_fn fn)
 
     case IFN_MASK_GATHER_LOAD:
     case IFN_MASK_LEN_GATHER_LOAD:
-      return 5;
+      return 6;
 
     default:
       return -1;
@@ -5104,7 +5235,7 @@ internal_fn_mask_index (internal_fn fn)
     case IFN_MASK_SCATTER_STORE:
     case IFN_MASK_LEN_GATHER_LOAD:
     case IFN_MASK_LEN_SCATTER_STORE:
-      return 4;
+      return 5;
 
     case IFN_VCOND_MASK:
     case IFN_VCOND_MASK_LEN:
@@ -5129,10 +5260,11 @@ internal_fn_stored_value_index (internal_fn fn)
 
     case IFN_MASK_STORE:
     case IFN_MASK_STORE_LANES:
+      return 3;
     case IFN_SCATTER_STORE:
     case IFN_MASK_SCATTER_STORE:
     case IFN_MASK_LEN_SCATTER_STORE:
-      return 3;
+      return 4;
 
     case IFN_LEN_STORE:
       return 4;
@@ -5146,6 +5278,75 @@ internal_fn_stored_value_index (internal_fn fn)
     }
 }
 
+/* If FN has an alias pointer return its index, otherwise return -1.  */
+
+int
+internal_fn_alias_ptr_index (internal_fn fn)
+{
+  switch (fn)
+    {
+    case IFN_MASK_LOAD:
+    case IFN_MASK_LEN_LOAD:
+    case IFN_GATHER_LOAD:
+    case IFN_MASK_GATHER_LOAD:
+    case IFN_MASK_LEN_GATHER_LOAD:
+    case IFN_SCATTER_STORE:
+    case IFN_MASK_SCATTER_STORE:
+    case IFN_MASK_LEN_SCATTER_STORE:
+      return 1;
+
+    default:
+      return -1;
+    }
+}
+
+/* If FN is a gather/scatter return the index of its offset argument,
+   otherwise return -1.  */
+
+int
+internal_fn_offset_index (internal_fn fn)
+{
+  if (!internal_gather_scatter_fn_p (fn))
+    return -1;
+
+  switch (fn)
+    {
+    case IFN_GATHER_LOAD:
+    case IFN_MASK_GATHER_LOAD:
+    case IFN_MASK_LEN_GATHER_LOAD:
+    case IFN_SCATTER_STORE:
+    case IFN_MASK_SCATTER_STORE:
+    case IFN_MASK_LEN_SCATTER_STORE:
+      return 2;
+
+    default:
+      return -1;
+    }
+}
+
+/* If FN is a gather/scatter return the index of its scale argument,
+   otherwise return -1.  */
+
+int
+internal_fn_scale_index (internal_fn fn)
+{
+  if (!internal_gather_scatter_fn_p (fn))
+    return -1;
+
+  switch (fn)
+    {
+    case IFN_GATHER_LOAD:
+    case IFN_MASK_GATHER_LOAD:
+    case IFN_MASK_LEN_GATHER_LOAD:
+    case IFN_SCATTER_STORE:
+    case IFN_MASK_SCATTER_STORE:
+    case IFN_MASK_LEN_SCATTER_STORE:
+      return 3;
+
+    default:
+      return -1;
+    }
+}
 
 /* Store all supported else values for the optab referred to by ICODE
    in ELSE_VALS.  The index of the else operand must be specified in
@@ -5156,7 +5357,7 @@ get_supported_else_vals (enum insn_code icode, unsigned else_index,
 			 vec<int> &else_vals)
 {
   const struct insn_data_d *data = &insn_data[icode];
-  if ((char)else_index >= data->n_operands)
+  if ((int) else_index >= data->n_operands || (int) else_index == -1)
     return;
 
   machine_mode else_mode = data->operand[else_index].mode;
@@ -5224,13 +5425,29 @@ internal_gather_scatter_fn_supported_p (internal_fn ifn, tree vector_type,
     && insn_operand_matches (icode, 2 + output_ops, GEN_INT (unsigned_p))
     && insn_operand_matches (icode, 3 + output_ops, GEN_INT (scale));
 
-  /* For gather the optab's operand indices do not match the IFN's because
-     the latter does not have the extension operand (operand 3).  It is
-     implicitly added during expansion so we use the IFN's else index + 1.
-     */
   if (ok && elsvals)
     get_supported_else_vals
-      (icode, internal_fn_else_index (IFN_MASK_GATHER_LOAD) + 1, *elsvals);
+      (icode, internal_fn_else_index (IFN_MASK_GATHER_LOAD), *elsvals);
+
+  return ok;
+}
+
+/* Return true if the target supports a strided load/store function IFN
+   with VECTOR_TYPE.  If supported and ELSVALS is nonzero the supported else
+   values will be added to the vector ELSVALS points to.  */
+
+bool
+internal_strided_fn_supported_p (internal_fn ifn, tree vector_type,
+				 vec<int> *elsvals)
+{
+  machine_mode mode = TYPE_MODE (vector_type);
+  optab optab = direct_internal_fn_optab (ifn);
+  insn_code icode = direct_optab_handler (optab, mode);
+
+  bool ok = icode != CODE_FOR_nothing;
+
+  if (ok && elsvals)
+    get_supported_else_vals (icode, internal_fn_else_index (ifn), *elsvals);
 
   return ok;
 }
@@ -5264,7 +5481,7 @@ internal_len_load_store_bias (internal_fn ifn, machine_mode mode)
 {
   optab optab = direct_internal_fn_optab (ifn);
   insn_code icode = direct_optab_handler (optab, mode);
-  int bias_no = 3;
+  int bias_idx = internal_fn_len_index (ifn) + 1;
 
   if (icode == CODE_FOR_nothing)
     {
@@ -5275,22 +5492,23 @@ internal_len_load_store_bias (internal_fn ifn, machine_mode mode)
 	{
 	  /* Try MASK_LEN_LOAD.  */
 	  optab = direct_internal_fn_optab (IFN_MASK_LEN_LOAD);
+	  bias_idx = internal_fn_len_index (IFN_MASK_LEN_LOAD) + 1;
 	}
       else
 	{
 	  /* Try MASK_LEN_STORE.  */
 	  optab = direct_internal_fn_optab (IFN_MASK_LEN_STORE);
+	  bias_idx = internal_fn_len_index (IFN_MASK_LEN_STORE) + 1;
 	}
       icode = convert_optab_handler (optab, mode, mask_mode);
-      bias_no = 4;
     }
 
   if (icode != CODE_FOR_nothing)
     {
       /* For now we only support biases of 0 or -1.  Try both of them.  */
-      if (insn_operand_matches (icode, bias_no, GEN_INT (0)))
+      if (insn_operand_matches (icode, bias_idx, GEN_INT (0)))
 	return 0;
-      if (insn_operand_matches (icode, bias_no, GEN_INT (-1)))
+      if (insn_operand_matches (icode, bias_idx, GEN_INT (-1)))
 	return -1;
     }
 
@@ -5584,10 +5802,9 @@ expand_POPCOUNT (internal_fn fn, gcall *stmt)
   do_pending_stack_adjust ();
   start_sequence ();
   expand_unary_optab_fn (fn, stmt, popcount_optab);
-  rtx_insn *popcount_insns = get_insns ();
-  end_sequence ();
+  rtx_insn *popcount_insns = end_sequence ();
   start_sequence ();
-  rtx plhs = expand_normal (lhs);
+  rtx plhs = expand_expr (lhs, NULL_RTX, VOIDmode, EXPAND_WRITE);
   rtx pcmp = emit_store_flag (NULL_RTX, EQ, plhs, const1_rtx, lhsmode, 0, 0);
   if (pcmp == NULL_RTX)
     {
@@ -5596,8 +5813,7 @@ expand_POPCOUNT (internal_fn fn, gcall *stmt)
       emit_insn (popcount_insns);
       return;
     }
-  rtx_insn *popcount_cmp_insns = get_insns ();
-  end_sequence ();
+  rtx_insn *popcount_cmp_insns = end_sequence ();
   start_sequence ();
   rtx op0 = expand_normal (arg);
   rtx argm1 = expand_simple_binop (mode, PLUS, op0, constm1_rtx, NULL_RTX,
@@ -5615,8 +5831,7 @@ expand_POPCOUNT (internal_fn fn, gcall *stmt)
     cmp = emit_store_flag (NULL_RTX, GTU, argxorargm1, argm1, mode, 1, 1);
   if (cmp == NULL_RTX)
     goto fail;
-  rtx_insn *cmp_insns = get_insns ();
-  end_sequence ();
+  rtx_insn *cmp_insns = end_sequence ();
   unsigned popcount_cost = (seq_cost (popcount_insns, speed_p)
 			    + seq_cost (popcount_cmp_insns, speed_p));
   unsigned cmp_cost = seq_cost (cmp_insns, speed_p);
@@ -5631,7 +5846,7 @@ expand_POPCOUNT (internal_fn fn, gcall *stmt)
     {
       start_sequence ();
       emit_insn (cmp_insns);
-      plhs = expand_normal (lhs);
+      plhs = expand_expr (lhs, NULL_RTX, VOIDmode, EXPAND_WRITE);
       if (GET_MODE (cmp) != GET_MODE (plhs))
 	cmp = convert_to_mode (GET_MODE (plhs), cmp, 1);
       /* For `<= 1`, we need to produce `2 - cmp` or `cmp ? 1 : 2` as that
@@ -5644,8 +5859,7 @@ expand_POPCOUNT (internal_fn fn, gcall *stmt)
 	    goto fail;
 	}
       emit_move_insn (plhs, cmp);
-      rtx_insn *all_insns = get_insns ();
-      end_sequence ();
+      rtx_insn *all_insns = end_sequence ();
       emit_insn (all_insns);
     }
 }

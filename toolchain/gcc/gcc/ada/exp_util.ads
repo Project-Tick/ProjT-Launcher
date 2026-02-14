@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 1992-2025, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2026, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,7 +29,6 @@ with Einfo.Utils;    use Einfo.Utils;
 with Exp_Tss;        use Exp_Tss;
 with Namet;          use Namet;
 with Rtsfind;        use Rtsfind;
-with Sinfo;          use Sinfo;
 with Sinfo.Nodes;    use Sinfo.Nodes;
 with Snames;         use Snames;
 with Types;          use Types;
@@ -644,6 +643,13 @@ package Exp_Util is
    --  Same as Find_Prim_Op but for the three controlled primitive operations,
    --  and returns Empty if not found.
 
+   function Find_Master_Context (N : Node_Id) return Node_Id;
+   --  Determine a suitable node on which to attach actions related to N that
+   --  need to be performed immediately after the execution of N is complete.
+   --  In general this is the topmost expression or statement of which N is a
+   --  subexpression, but note that object declarations may be returned here,
+   --  although they are not master constructs in the language.
+
    function Find_Optional_Prim_Op
      (T : Entity_Id; Name : Name_Id) return Entity_Id;
    function Find_Optional_Prim_Op
@@ -673,12 +679,11 @@ package Exp_Util is
    --  indicating that the operation is defaulted in the aspect (can occur in
    --  the case where the storage-model address type is System.Address).
 
-   function Find_Hook_Context (N : Node_Id) return Node_Id;
-   --  Determine a suitable node on which to attach actions related to N that
-   --  need to be elaborated unconditionally. In general this is the topmost
-   --  expression of which N is a subexpression, which in turn may or may not
-   --  be evaluated, for example if N is the right operand of a short circuit
-   --  operator.
+   procedure Flag_Interface_Pointer_Displacement (N : Node_Id);
+   --  If N is an N_Type_Conversion node then flag N to indicate that this
+   --  type conversion was internally added to force the displacement of the
+   --  pointer to the object (pointer named "this" in the C++ terminology)
+   --  from a dispatch table to another dispatch table.
 
    function Following_Address_Clause (D : Node_Id) return Node_Id;
    --  D is the node for an object declaration. This function searches the
@@ -1344,6 +1349,10 @@ package Exp_Util is
 
    function Unconditional_Parent (N : Node_Id) return Node_Id;
    --  Return the first parent of arbitrary node N that is not a conditional
+   --  expression, one of whose dependent expressions is N, recursively.
+
+   function Unqualified_Unconditional_Parent (N : Node_Id) return Node_Id;
+   --  Return the first parent of arbitrary node N that is not a conditional
    --  expression, one of whose dependent expressions is N, and that is not
    --  a qualified expression, whose expression is N, recursively.
 
@@ -1366,6 +1375,7 @@ private
    pragma Inline (Duplicate_Subexpr);
    pragma Inline (Find_Controlled_Prim_Op);
    pragma Inline (Find_Prim_Op);
+   pragma Inline (Flag_Interface_Pointer_Displacement);
    pragma Inline (Force_Evaluation);
    pragma Inline (Get_Mapped_Entity);
    pragma Inline (Is_Library_Level_Tagged_Type);

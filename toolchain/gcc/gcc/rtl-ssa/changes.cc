@@ -1,5 +1,5 @@
 // RTL SSA routines for changing instructions                       -*- C++ -*-
-// Copyright (C) 2020-2025 Free Software Foundation, Inc.
+// Copyright (C) 2020-2026 Free Software Foundation, Inc.
 //
 // This file is part of GCC.
 //
@@ -258,28 +258,40 @@ rtl_ssa::changes_are_worthwhile (array_slice<insn_change *const> changes,
 void
 function_info::process_uses_of_deleted_def (set_info *set)
 {
-  if (!set->has_any_uses ())
-    return;
-
-  auto *use = *set->all_uses ().begin ();
-  do
+  // Each member of the worklist is either SET or a dead phi.
+  auto_vec<set_info *, 16> worklist;
+  worklist.quick_push (set);
+  while (!worklist.is_empty ())
     {
-      auto *next_use = use->next_use ();
+      auto *this_set = worklist.pop ();
+      auto *use = this_set->first_use ();
+      if (!use)
+	{
+	  if (this_set != set)
+	    delete_phi (as_a<phi_info *> (this_set));
+	  continue;
+	}
       if (use->is_in_phi ())
 	{
-	  // This call will not recurse.
-	  process_uses_of_deleted_def (use->phi ());
-	  delete_phi (use->phi ());
+	  // Removing all uses from the phi ensures that we'll only add
+	  // the phi to the worklist once.
+	  auto *phi = use->phi ();
+	  for (auto *input : phi->inputs ())
+	    {
+	      remove_use (input);
+	      input->set_def (nullptr);
+	    }
+	  worklist.safe_push (phi);
 	}
       else
 	{
 	  gcc_assert (use->is_live_out_use ());
 	  remove_use (use);
 	}
-      use = next_use;
+      // The phi handling above might have removed multiple uses of THIS_SET.
+      if (this_set->has_any_uses ())
+	worklist.safe_push (this_set);
     }
-  while (use);
-  gcc_assert (!set->has_any_uses ());
 }
 
 // Update the REG_NOTES of INSN, whose pattern has just been changed.
@@ -701,7 +713,11 @@ function_info::apply_changes_to_insn (insn_change &change,
 
   // Add all uses, now that their position is final.
   for (use_info *use : change.new_uses)
-    add_use (use);
+    {
+      if (use->def ())
+	commit_make_use_available (use);
+      add_use (use);
+    }
 
   // Copy the uses and definitions.
   unsigned int num_defs = change.new_defs.size ();

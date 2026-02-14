@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <map>
+#include <omp.h>
 
 // Make sure that KEY_MAX is less than N to ensure some duplicate keys.
 #define N 3000
@@ -33,7 +34,7 @@ int main (void)
   init (data, RAND_MAX);
 
 #ifndef MEM_SHARED
-  #pragma omp target enter data map (to: keys[:N], data[:N]) map (alloc: _map)
+  #pragma omp target enter data map (to: keys[ :N], data[ :N]) map (alloc: _map)
 #endif
 
   #pragma omp target
@@ -54,6 +55,14 @@ int main (void)
 	  sum += (long long) it->first * it->second;
       }
 
+#ifdef OMP_USM
+  #pragma omp target
+    /* Restore the object into pristine state.  In particular, deallocate
+       any memory allocated during device execution, which otherwise, back
+       on the host, we'd SIGSEGV on, when attempting to deallocate during
+       destruction of the object.  */
+    __typeof__ (_map){}.swap (_map);
+#endif
 #ifndef MEM_SHARED
   #pragma omp target
     _map.~multimap ();

@@ -1,5 +1,5 @@
 /* AVL propagation pass for RISC-V 'V' Extension for GNU compiler.
-   Copyright (C) 2023-2025 Free Software Foundation, Inc.
+   Copyright (C) 2023-2026 Free Software Foundation, Inc.
    Contributed by Juzhe Zhong (juzhe.zhong@rivai.ai), RiVAI Technologies Ltd.
 
 This file is part of GCC.
@@ -77,6 +77,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-pass.h"
 #include "df.h"
 #include "rtl-ssa.h"
+#include "rtl-iter.h"
 #include "cfgcleanup.h"
 #include "insn-attr.h"
 #include "tm-constrs.h"
@@ -412,6 +413,46 @@ pass_avlprop::get_vlmax_ta_preferred_avl (insn_info *insn) const
 		  && def1->insn ()->compare_with (insn) >= 0)
 		return NULL_RTX;
 	    }
+	  else
+	    {
+	      /* If the use is in a subreg e.g. in a store it is possible that
+		 we punned the vector mode with a larger mode like
+		   (subreg:V1SI (reg:V4QI 123)).
+		 For an AVL of 1 that means we actually store one SImode
+		 element and not 1 QImode elements.  But the latter is what we
+		 would propagate if we took the AVL operand literally.
+		 Instead we scale it by the ratio of inner and outer mode
+		 (4 in the example above).  */
+	      int factor = 1;
+	      if (use->includes_subregs ())
+		{
+		  subrtx_iterator::array_type array;
+		  FOR_EACH_SUBRTX (iter, array, use_insn->rtl (), NONCONST)
+		    {
+		      const_rtx x = *iter;
+		      if (x
+			  && SUBREG_P (x)
+			  && REG_P (SUBREG_REG (x))
+			  && REGNO (SUBREG_REG (x)) == use->regno ()
+			  && known_eq (GET_MODE_SIZE (use->mode ()),
+				       GET_MODE_SIZE (GET_MODE (x))))
+			{
+			  if (can_div_trunc_p (GET_MODE_NUNITS (use->mode ()),
+					       GET_MODE_NUNITS (GET_MODE (x)),
+					       &factor))
+			    {
+			      gcc_assert (factor > 0);
+			      break;
+			    }
+			  else
+			    return NULL_RTX;
+			}
+		    }
+		}
+
+	      if (factor > 1)
+		new_use_avl = GEN_INT (INTVAL (new_use_avl) * factor);
+	    }
 
 	  if (!use_avl)
 	    use_avl = new_use_avl;
@@ -535,7 +576,14 @@ pass_avlprop::execute (function *fn)
 	      && !m_avl_propagations->get (candidate.second)
 	      && imm_avl_p (vtype_mode))
 	    {
-	      rtx new_avl = gen_int_mode (GET_MODE_NUNITS (vtype_mode), Pmode);
+	      /* For segmented operations AVL refers to a single register and
+		 not all NF registers.  Therefore divide the mode size by NF
+		 to obtain the proper AVL.  */
+	      int nf = 1;
+	      if (riscv_tuple_mode_p (vtype_mode))
+		nf = get_nf (vtype_mode);
+	      rtx new_avl = gen_int_mode
+	      (GET_MODE_NUNITS (vtype_mode).to_constant () / nf, Pmode);
 	      simplify_replace_vlmax_avl (rinsn, new_avl);
 	    }
 	}

@@ -1,6 +1,6 @@
 // This file is included in both the libgcobol and gcc/cobol compilations
 /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -39,21 +39,10 @@
 
 #include "ec.h"
 #include "common-defs.h"
+#include "valconv.h"
 #include "charmaps.h"
 
-#include "valconv.h"
 #include "exceptl.h"
-
-int __gg__decimal_point        = '.'  ;
-int __gg__decimal_separator    = ','  ;
-int __gg__quote_character      = '"'  ;
-int __gg__low_value_character  = 0x00 ;
-int __gg__high_value_character = 0xFF ;
-char **__gg__currency_signs           ;
-
-int __gg__default_currency_sign;
-
-char *__gg__ct_currency_signs[256];  // Compile-time currency signs
 
 std::unordered_map<size_t, alphabet_state> __gg__alphabet_states;
 
@@ -90,6 +79,9 @@ __gg__alphabet_create(  cbl_encoding_t encoding,
 
   if( it == __gg__alphabet_states.end() )
     {
+    // This is an alphabet we don't know about.  So just assume the collation
+    // is the same as the character ordering:
+
     alphabet_state new_state;
     new_state.low_char  = low_char;
     new_state.high_char = high_char;
@@ -112,7 +104,6 @@ __gg__alphabet_create(  cbl_encoding_t encoding,
 
   return;
   }
-
 
 static int
 expand_picture(char *dest, const char *picture)
@@ -154,7 +145,7 @@ expand_picture(char *dest, const char *picture)
       *d++ = ch;
       }
 
-    if( __gg__currency_signs[ch] )
+    if( ! __gg__currency_signs[ch].empty() )
       {
       // We are going to be mapping ch to a string in the final result:
       prior_ch = ch;
@@ -169,8 +160,9 @@ expand_picture(char *dest, const char *picture)
 
   if( currency_symbol )
     {
-    size_t sign_length = strlen(__gg__currency_signs[currency_symbol]) - 1;
-    if( sign_length )
+    size_t sign_length = __gg__currency_signs[currency_symbol].size();
+    assert(0 < sign_length);    
+    if( --sign_length )
       {
       char *pcurrency = strchr(dest, currency_symbol);
       assert(pcurrency);
@@ -227,15 +219,22 @@ __gg__string_to_numeric_edited( char * const dest,
                                 int is_negative,
                                 const char *picture)
   {
+  // This routine operates in ASCII space.  Life is hard enough without trying
+  // to do this in EBCDIC, too.  So, 'source' and 'picture' are assumed to be
+  // CP1252
+
   // We need to expand the picture string.  We assume that the caller left
   // enough room in dest to take the expanded picture string.
 
+  // Note that we do not put on a nul terminator, so if you need one, it's
+  // your job to put it there.
+
   int dlength = expand_picture(dest, picture);
 
-  // At the present time, I am taking a liberty. In principle, a 'V'
-  // character is supposed to be logical decimal place rather than a physical
-  // one.  In practice, I am not sure what that would mean in a numeric edited
-  // value.  So, I am treating V as a decimal point.
+  // We need to treat 'V' as a decimal point in order to handle
+  //    01 foo pic 999v999 BLANK WHEN ZERO.
+  // The "BLANK WHEN ZERO" turns the field into a numeric-edited type, but the
+  // 'V' is still in the picture string.
 
   for(int i=0; i<dlength; i++)
     {
@@ -284,10 +283,10 @@ __gg__string_to_numeric_edited( char * const dest,
   for(int i=0; i<dlength; i++)
     {
     int ch = (unsigned int)dest[i] & 0xFF;
-    if( __gg__currency_signs[ch] )
+    if( ! __gg__currency_signs[ch].empty() )
       {
       currency_picture = ch;
-      currency_sign = __gg__currency_signs[ch];
+      currency_sign = __gg__currency_signs[ch].c_str();
       break;
       }
     }
@@ -448,7 +447,6 @@ __gg__string_to_numeric_edited( char * const dest,
             dest[i] = ascii_space;
             }
           }
-
 
         if( index_s >= decimal_point_index )
           {
@@ -1214,24 +1212,29 @@ got_float:
         }
       }
     }
-  bool retval = false;
 
+  bool retval = false;
   return retval;
   }
 
 extern "C"
 void
 __gg__string_to_alpha_edited(   char *dest,
+                                cbl_encoding_t dest_encoding,
                                 const char *source,
                                 int slength,
                                 const char *picture)
   {
+  // 'source' is in 'dest' encoding
+
   // Put the PICTURE into the data area.  If the caller didn't leave enough
   // room, well, poo on them.  Said another way; if they specify disaster,
   // disaster is what they will get.
 
   // This routine expands picture into dest using ascii characters, but
-  // replaces them with internal characters
+  // replaces them with encoded characters
+
+  charmap_t *charmap_dest = __gg__get_charmap(dest_encoding);
 
   int destlength = expand_picture(dest, picture);
 
@@ -1246,15 +1249,15 @@ __gg__string_to_alpha_edited(   char *dest,
       {
       case ascii_b:   // Replaced with space
       case ascii_B:
-        dest[dindex] = internal_space;
+        dest[dindex] = charmap_dest->mapped_character(ascii_space);
         break;
 
       case ascii_zero:   // These are left alone:
-        dest[dindex] = ascii_to_internal(ascii_zero);
+        dest[dindex] = charmap_dest->mapped_character(ascii_0);
         break;
 
       case ascii_slash:
-        dest[dindex] = ascii_to_internal(ascii_slash);
+        dest[dindex] = charmap_dest->mapped_character(ascii_slash);
         break;
 
       default:
@@ -1267,33 +1270,28 @@ __gg__string_to_alpha_edited(   char *dest,
           }
         else
           {
-          sch = internal_space;
+          sch = charmap_dest->mapped_character(ascii_space);;
           }
         dest[dindex] = sch;
       }
     dindex += 1;
     }
   }
-
+  
 extern "C"
 void
-__gg__currency_sign_init()
+__gg__currency_sign_init() // This duplicates the constructor. 
   {
-  for(int symbol=0; symbol<256; symbol++)
-    {
-    if( __gg__currency_signs[symbol] )
-      {
-      free(__gg__currency_signs[symbol]);
-      __gg__currency_signs[symbol] = NULL;
-      }
-    }
+  for( auto str : __gg__currency_signs ) {
+    str.clear();
+  }
   }
 
 extern "C"
 void
 __gg__currency_sign(int symbol, const char *sign)
   {
-  __gg__currency_signs[symbol] = strdup(sign);
+  __gg__currency_signs[symbol] = sign;
   __gg__default_currency_sign = *sign;
   }
 
@@ -1323,7 +1321,7 @@ __gg__remove_trailing_zeroes(char *p)
 
   if( strchr(left, '.') )
     {
-    while(*right == '0' || *right == internal_space)
+    while( *right == '0' )
       {
       right -= 1;
       }

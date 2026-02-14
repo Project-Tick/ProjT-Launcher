@@ -1,5 +1,5 @@
 /* Deal with I/O statements & related stuff.
-   Copyright (C) 2000-2025 Free Software Foundation, Inc.
+   Copyright (C) 2000-2026 Free Software Foundation, Inc.
    Contributed by Andy Vaught
 
 This file is part of GCC.
@@ -29,7 +29,7 @@ along with GCC; see the file COPYING3.  If not see
 
 gfc_st_label
 format_asterisk = {0, NULL, NULL, -1, ST_LABEL_FORMAT, ST_LABEL_FORMAT, NULL,
-		   0, {NULL, NULL}, NULL, 0};
+		   0, {NULL, {NULL}}, NULL, 0};
 
 typedef struct
 {
@@ -1129,13 +1129,16 @@ data_desc:
       break;
 
     case FMT_H:
-      if (!(gfc_option.allow_std & GFC_STD_GNU) && !inhibit_warnings)
+      if (!(gfc_option.allow_std & GFC_STD_LEGACY))
 	{
-	  if (mode != MODE_FORMAT)
-	    format_locus.nextc += format_string_pos;
-	  gfc_warning (0, "The H format specifier at %L is"
-		       " a Fortran 95 deleted feature", &format_locus);
+	  error = G_("The H format specifier at %L is a Fortran 95 deleted"
+		     " feature");
+	  goto syntax;
 	}
+      if (mode != MODE_FORMAT)
+	format_locus.nextc += format_string_pos;
+      gfc_warning (0, "The H format specifier at %L is"
+		   " a Fortran 95 deleted feature", &format_locus);
       if (mode == MODE_STRING)
 	{
 	  format_string += value;
@@ -1144,7 +1147,7 @@ data_desc:
 	}
       else
 	{
-	  while (repeat >0)
+	  while (repeat > 0)
 	   {
 	     next_char (INSTRING_WARN);
 	     repeat -- ;
@@ -2244,10 +2247,6 @@ check_open_constraints (gfc_open *open, locus *where)
   /* Checks on the BLANK specifier.  */
   if (open->blank)
     {
-      if (!gfc_notify_std (GFC_STD_F2003, "BLANK= at %L "
-			   "not allowed in Fortran 95", &open->blank->where))
-	return false;
-
       if (open->blank->expr_type == EXPR_CONSTANT)
 	{
 	  static const char *blank[] = { "ZERO", "NULL", NULL };
@@ -4220,7 +4219,21 @@ match_io (io_kind k)
       if (gfc_current_form == FORM_FREE)
 	{
 	  char c = gfc_peek_ascii_char ();
-	  if (c != ' ' && c != '*' && c != '\'' && c != '"')
+
+	  /* Issue a warning for an invalid tab in 'print<tab>*'.  After
+	     the warning is issued, consume any other whitespace and check
+	     that the next char is an *, ', or ".  */
+	  if (c == '\t')
+	    {
+	      gfc_gobble_whitespace ();
+	      c = gfc_peek_ascii_char ();
+	      if (c != '*' && c != '\'' && c != '"')
+		{
+		  m = MATCH_NO;
+		  goto cleanup;
+		}
+	    }
+	  else if (c != ' ' && c != '*' && c != '\'' && c != '"')
 	    {
 	      m = MATCH_NO;
 	      goto cleanup;

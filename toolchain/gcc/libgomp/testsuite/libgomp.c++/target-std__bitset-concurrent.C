@@ -41,7 +41,7 @@ int main (void)
   init (data);
 
 #ifndef MEM_SHARED
-  #pragma omp target data map (to: data[:N]) map (alloc: _set)
+  #pragma omp target data map (to: data[ :N]) map (alloc: _set)
 #endif
     {
       #pragma omp target
@@ -58,6 +58,10 @@ int main (void)
 	  if (_set[i])
 	    sum += i;
 
+#ifdef OMP_USM
+	/* (By construction) we're not allocating memory during device
+	   execution, so have nothing to clean up.  */
+#endif
 #ifndef MEM_SHARED
       #pragma omp target
 	_set.~bitset ();

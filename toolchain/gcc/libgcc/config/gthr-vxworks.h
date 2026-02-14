@@ -1,6 +1,6 @@
 /* Threads compatibility routines for libgcc2 and libobjc for VxWorks.  */
 /* Compile this one with gcc.  */
-/* Copyright (C) 1997-2025 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2026 Free Software Foundation, Inc.
    Contributed by Mike Stump <mrs@wrs.com>.
 
 This file is part of GCC.
@@ -33,6 +33,19 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #include "gthr-posix.h"
 
 #else
+
+/* VxWorks provides its own version of the standard stdatomic.h, possibly
+   relying on non-gcc builtins, and our implementation of the gthr API resorts
+   to VxWorks specific functions for atomicity features.
+
+   When compiling libgcc (with gcc), make sure gcc's version of stdatomic.h
+   is used: #include it here, first, then define the macro used to guard the
+   system version so it doesn't get expanded when included indirectly by
+   other system headers.  */
+#if defined(IN_LIBGCC2)
+#include <../include/stdatomic.h>
+#define __INCstdatomich
+#endif
 
 #include <vxWorks.h>
 #include <_vxworks-versions.h>
@@ -276,7 +289,6 @@ extern int __gthread_cond_wait_recursive (__gthread_cond_t *cond,
 
 #include <limits.h>
 #include <time.h>
-#include <tickLib.h>
 #include <sysLib.h>
 #include <version.h>
 

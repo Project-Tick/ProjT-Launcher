@@ -1,6 +1,6 @@
 /* Breadth-first and depth-first routines for
    searching multiple-inheritance lattice for GNU C++.
-   Copyright (C) 1987-2025 Free Software Foundation, Inc.
+   Copyright (C) 1987-2026 Free Software Foundation, Inc.
    Contributed by Michael Tiemann (tiemann@cygnus.com)
 
 This file is part of GCC.
@@ -31,6 +31,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "stringpool.h"
 #include "attribs.h"
 #include "tree-inline.h"
+#include "contracts.h"
 
 static int is_subobject_of_p (tree, tree);
 static tree dfs_lookup_base (tree, void *);
@@ -1242,7 +1243,7 @@ lookup_member (tree xbasetype, tree name, int protect, bool want_type,
 	    {
 	      auto_diagnostic_group d;
 	      error ("request for member %qD is ambiguous", name);
-	      print_candidates (lfi.ambiguous);
+	      print_candidates (input_location, lfi.ambiguous);
 	    }
 	  return error_mark_node;
 	}
@@ -2122,11 +2123,15 @@ check_final_overrider (tree overrider, tree basefn)
       return 0;
     }
 
-  /* A consteval virtual function shall not override a virtual function that is
-     not consteval. A consteval virtual function shall not be overridden by a
-     virtual function that is not consteval.  */
-  if (DECL_IMMEDIATE_FUNCTION_P (overrider)
-      != DECL_IMMEDIATE_FUNCTION_P (basefn))
+  /* A class with a consteval virtual function that overrides a virtual
+     function that is not consteval shall have consteval-only type (CWG 3117).
+     A consteval virtual function shall not be overridden by a virtual
+     function that is not consteval.  */
+  if ((DECL_IMMEDIATE_FUNCTION_P (basefn)
+       && !DECL_IMMEDIATE_FUNCTION_P (overrider))
+      || (!DECL_IMMEDIATE_FUNCTION_P (basefn)
+	  && DECL_IMMEDIATE_FUNCTION_P (overrider)
+	  && !consteval_only_p (overrider)))
     {
       auto_diagnostic_group d;
       if (DECL_IMMEDIATE_FUNCTION_P (overrider))
@@ -2177,32 +2182,6 @@ check_final_overrider (tree overrider, tree basefn)
 		  "overridden function is %qD", basefn);
 	}
       return 0;
-    }
-
-  if (!DECL_HAS_CONTRACTS_P (basefn) && DECL_HAS_CONTRACTS_P (overrider))
-    {
-      auto_diagnostic_group d;
-      error ("function with contracts %q+D overriding contractless function",
-	     overrider);
-      inform (DECL_SOURCE_LOCATION (basefn),
-	      "overridden function is %qD", basefn);
-      return 0;
-    }
-  else if (DECL_HAS_CONTRACTS_P (basefn) && !DECL_HAS_CONTRACTS_P (overrider))
-    {
-      /* We're inheriting basefn's contracts; create a copy of them but
-	 replace references to their parms to our parms.  */
-      inherit_base_contracts (overrider, basefn);
-    }
-  else if (DECL_HAS_CONTRACTS_P (basefn) && DECL_HAS_CONTRACTS_P (overrider))
-    {
-      /* We're in the process of completing the overrider's class, which means
-	 our conditions definitely are not parsed so simply chain on the
-	 basefn for later checking.
-
-	 Note that OVERRIDER's contracts will have been fully parsed at the
-	 point the deferred match is run.  */
-      defer_guarded_contract_match (overrider, basefn, DECL_CONTRACTS (basefn));
     }
 
   if (DECL_FINAL_P (basefn))

@@ -1,7 +1,7 @@
 /* Bits of OpenMP and OpenACC handling that is specific to device offloading
    and a lowering pass for OpenACC device directives.
 
-   Copyright (C) 2005-2025 Free Software Foundation, Inc.
+   Copyright (C) 2005-2026 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -916,7 +916,7 @@ oacc_parse_default_dims (const char *dims)
 	      const char *eptr;
 
 	      errno = 0;
-	      val = strtol (pos, CONST_CAST (char **, &eptr), 10);
+	      val = strtol (pos, const_cast<char **> (&eptr), 10);
 	      if (errno || val <= 0 || (int) val != val)
 		goto malformed;
 	      pos = eptr;

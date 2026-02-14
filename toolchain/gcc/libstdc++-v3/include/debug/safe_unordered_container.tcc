@@ -1,6 +1,6 @@
 // Safe container implementation  -*- C++ -*-
 
-// Copyright (C) 2011-2025 Free Software Foundation, Inc.
+// Copyright (C) 2011-2026 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -40,7 +40,7 @@ namespace __gnu_debug
 	typedef typename _Container::iterator iterator;
 	typedef typename _Container::const_iterator const_iterator;
 
-	__gnu_cxx::__scoped_lock sentry(this->_M_get_mutex());
+	__gnu_cxx::__scoped_lock sentry(_M_self()->_M_get_mutex());
 	for (_Safe_iterator_base* __iter = _M_iterators; __iter;)
 	  {
 	    iterator* __victim = static_cast<iterator*>(__iter);
@@ -72,7 +72,7 @@ namespace __gnu_debug
 	typedef typename _Container::local_iterator local_iterator;
 	typedef typename _Container::const_local_iterator const_local_iterator;
 
-	__gnu_cxx::__scoped_lock sentry(this->_M_get_mutex());
+	__gnu_cxx::__scoped_lock sentry(_M_self()->_M_get_mutex());
 	for (_Safe_iterator_base* __iter = _M_local_iterators; __iter;)
 	  {
 	    local_iterator* __victim = static_cast<local_iterator*>(__iter);

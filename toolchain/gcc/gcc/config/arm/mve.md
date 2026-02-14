@@ -1,5 +1,5 @@
 ;; Arm M-profile Vector Extension Machine Description
-;; Copyright (C) 2019-2025 Free Software Foundation, Inc.
+;; Copyright (C) 2019-2026 Free Software Foundation, Inc.
 ;;
 ;; This file is part of GCC.
 ;;
@@ -18,8 +18,8 @@
 ;; <http://www.gnu.org/licenses/>.
 
 (define_insn "mve_mov<mode>"
-  [(set (match_operand:MVE_types 0 "nonimmediate_operand" "=w,w,r,w   , w,   r,Ux,w")
-	(match_operand:MVE_types 1 "general_operand"      " w,r,w,DnDm,UxUi,r,w, Ul"))]
+  [(set (match_operand:MVE_types 0 "nonimmediate_operand" "=w,w,r,w   ,w, r,Ux,w")
+	(match_operand:MVE_types 1 "general_operand"      " w,r,w,DnDm,Ux,r,w, UlUi"))]
   "TARGET_HAVE_MVE || TARGET_HAVE_MVE_FLOAT"
 {
   switch (which_alternative)
@@ -56,7 +56,7 @@
 	  }
       }
 
-    case 4:  /* [w,UxUi].  */
+    case 4:  /* [w,Ux].  */
       if (<MODE>mode == V2DFmode || <MODE>mode == V2DImode
 	  || <MODE>mode == TImode)
 	return "vldrw.u32\t%q0, %E1";
@@ -73,7 +73,7 @@
       else
 	return "vstr<V_sz_elem1>.<V_sz_elem>\t%q1, %E0";
 
-    case 7:  /* [w,Ul].  */
+    case 7:  /* [w,UlUi].  */
 	return output_move_neon (operands);
 
     default:
@@ -91,8 +91,8 @@
 						   (symbol_ref "CODE_FOR_nothing")])
    (set_attr "type" "mve_move,mve_move,mve_move,mve_move,mve_load,multiple,mve_store,mve_load")
    (set_attr "length" "4,8,8,4,4,8,4,8")
-   (set_attr "thumb2_pool_range" "*,*,*,*,1018,*,*,*")
-   (set_attr "neg_pool_range" "*,*,*,*,996,*,*,*")])
+   (set_attr "thumb2_pool_range" "*,*,*,*,*,*,*,1016")
+   (set_attr "thumb2_neg_pool_range" "*,*,*,*,*,*,*,996")])
 
 ;;
 ;; [vdupq_n_u, vdupq_n_s, vdupq_n_f]
@@ -4158,10 +4158,11 @@
    return "";
 }
   [(set_attr "length" "16")])
+
 ;;
 ;; [vgetq_lane_u, vgetq_lane_s, vgetq_lane_f])
 ;;
-(define_insn "mve_vec_extract<mode><V_elem_l>"
+(define_insn "@mve_vec_extract<mode><V_elem_l>"
  [(set (match_operand:<V_elem> 0 "nonimmediate_operand" "=r")
    (vec_select:<V_elem>
     (match_operand:MVE_VLD_ST 1 "s_register_operand" "w")
@@ -4236,7 +4237,7 @@
 ;;
 ;; [vsetq_lane_u, vsetq_lane_s, vsetq_lane_f])
 ;;
-(define_insn "mve_vec_set<mode>_internal"
+(define_insn "@mve_vec_set<mode>_internal"
  [(set (match_operand:VQ2 0 "s_register_operand" "=w")
        (vec_merge:VQ2
 	(vec_duplicate:VQ2
@@ -4278,7 +4279,7 @@
 ;;
 ;; [uqrshll_di]
 ;;
-(define_insn "mve_uqrshll_sat<supf>_di"
+(define_insn "@mve_uqrshll_sat<supf>_di"
   [(set (match_operand:DI 0 "arm_low_register_operand" "=l")
 	(unspec:DI [(match_operand:DI 1 "arm_low_register_operand" "0")
 		    (match_operand:SI 2 "register_operand" "r")]
@@ -4290,7 +4291,7 @@
 ;;
 ;; [sqrshrl_di]
 ;;
-(define_insn "mve_sqrshrl_sat<supf>_di"
+(define_insn "@mve_sqrshrl_sat<supf>_di"
   [(set (match_operand:DI 0 "arm_low_register_operand" "=l")
 	(unspec:DI [(match_operand:DI 1 "arm_low_register_operand" "0")
 		    (match_operand:SI 2 "register_operand" "r")]
@@ -4374,7 +4375,7 @@
 ;;
 (define_insn "mve_sqshl_si"
   [(set (match_operand:SI 0 "arm_general_register_operand" "=r")
-	(ss_ashift:SI (match_operand:DI 1 "arm_general_register_operand" "0")
+	(ss_ashift:SI (match_operand:SI 1 "arm_general_register_operand" "0")
 		      (match_operand:SI 2 "immediate_operand" "Pg")))]
   "TARGET_HAVE_MVE"
   "sqshl%?\\t%1, %2"
@@ -4385,7 +4386,7 @@
 ;;
 (define_insn "mve_srshr_si"
   [(set (match_operand:SI 0 "arm_general_register_operand" "=r")
-	(unspec:SI [(match_operand:DI 1 "arm_general_register_operand" "0")
+	(unspec:SI [(match_operand:SI 1 "arm_general_register_operand" "0")
 		    (match_operand:SI 2 "immediate_operand" "Pg")]
 	 SRSHR))]
   "TARGET_HAVE_MVE"

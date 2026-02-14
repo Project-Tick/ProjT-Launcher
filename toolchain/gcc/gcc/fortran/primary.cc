@@ -1,5 +1,5 @@
 /* Primary expression subroutines
-   Copyright (C) 2000-2025 Free Software Foundation, Inc.
+   Copyright (C) 2000-2026 Free Software Foundation, Inc.
    Contributed by Andy Vaught
 
 This file is part of GCC.
@@ -2071,6 +2071,23 @@ gfc_match_actual_arglist (int sub_flag, gfc_actual_arglist **argp, bool pdt)
 	    }
 	}
 
+    /* PDT kind expressions are acceptable as initialization expressions.
+       However, intrinsics with a KIND argument reject them. Convert the
+       expression now by use of the component initializer.  */
+    if (tail->expr
+	&& tail->expr->expr_type == EXPR_VARIABLE
+	&& gfc_expr_attr (tail->expr).pdt_kind)
+      {
+	gfc_ref *ref;
+	gfc_expr *tmp = NULL;
+	for (ref = tail->expr->ref; ref; ref = ref->next)
+	     if (!ref->next && ref->type == REF_COMPONENT
+		 && ref->u.c.component->attr.pdt_kind
+		 && ref->u.c.component->initializer)
+	  tmp = gfc_copy_expr (ref->u.c.component->initializer);
+	if (tmp)
+	  gfc_replace_expr (tail->expr, tmp);
+      }
 
     next:
       if (gfc_match_char (')') == MATCH_YES)
@@ -2243,6 +2260,32 @@ gfc_match_varspec (gfc_expr *primary, int equiv_flag, bool sub_flag,
       && sym->ns->assoc_name_inferred
       && !sym->attr.select_rank_temporary)
     inferred_type = true;
+
+  /* Try to resolve a typebound generic procedure so that the associate name
+     has a chance to get a type before being used in a second, nested associate
+     statement. Note that a copy is used for resolution so that failure does
+     not result in a mutilated selector expression further down the line.  */
+  if (tgt_expr && !sym->assoc->dangling
+      && tgt_expr->ts.type == BT_UNKNOWN
+      && tgt_expr->symtree
+      && tgt_expr->symtree->n.sym
+      && gfc_expr_attr (tgt_expr).generic
+      && ((sym->ts.type == BT_DERIVED && sym->ts.u.derived->attr.pdt_template)
+	  || (sym->ts.type == BT_CLASS
+	      && CLASS_DATA (sym)->ts.u.derived->attr.pdt_template)))
+    {
+	gfc_expr *cpy = gfc_copy_expr (tgt_expr);
+	if (gfc_resolve_expr (cpy)
+	    && cpy->ts.type != BT_UNKNOWN)
+	  {
+	    gfc_replace_expr (tgt_expr, cpy);
+	    sym->ts = tgt_expr->ts;
+	  }
+	else
+	  gfc_free_expr (cpy);
+	if (gfc_expr_attr (tgt_expr).generic)
+	  inferred_type = true;
+    }
 
   /* For associate names, we may not yet know whether they are arrays or not.
      If the selector expression is unambiguously an array; eg. a full array
@@ -2476,6 +2519,20 @@ gfc_match_varspec (gfc_expr *primary, int equiv_flag, bool sub_flag,
 	       && !gfc_find_derived_types (sym, gfc_current_ns, name))
 	primary->ts.type = BT_UNKNOWN;
 
+      /* Otherwise try resolving a copy of a component call. If it succeeds,
+	 use that for the selector expression.  */
+      else if (tgt_expr && tgt_expr->expr_type == EXPR_COMPCALL)
+	  {
+	     gfc_expr *cpy = gfc_copy_expr (tgt_expr);
+	     if (gfc_resolve_expr (cpy))
+		{
+		  gfc_replace_expr (tgt_expr, cpy);
+		  sym->ts = tgt_expr->ts;
+		}
+	      else
+		gfc_free_expr (cpy);
+	  }
+
       /* An inquiry reference might determine the type, otherwise we have an
 	 error.  */
       if (sym->ts.type == BT_UNKNOWN && !inquiry)
@@ -2672,6 +2729,14 @@ gfc_match_varspec (gfc_expr *primary, int equiv_flag, bool sub_flag,
 	component = gfc_find_component (sym, name, false, false, &tmp);
       else
 	component = NULL;
+
+      if (previous && inquiry
+	  && (previous->attr.pdt_kind || previous->attr.pdt_len))
+	{
+	  gfc_error_now ("R901: A type parameter ref is not a designtor and "
+		     "cannot be followed by the type inquiry ref at %C");
+	  return MATCH_ERROR;
+	}
 
       if (intrinsic && !inquiry)
 	{
@@ -3518,7 +3583,7 @@ gfc_convert_to_structure_constructor (gfc_expr *e, gfc_symbol *sym, gfc_expr **c
 	}
 
       /* Find the current component in the structure definition and check
-	     its access is not private.  */
+	 its access is not private.  */
       if (comp)
 	this_comp = gfc_find_component (sym, comp->name, false, false, NULL);
       else
@@ -3810,6 +3875,7 @@ gfc_match_rvalue (gfc_expr **result)
   gfc_typespec *ts;
   bool implicit_char;
   gfc_ref *ref;
+  gfc_symtree *pdt_st;
 
   m = gfc_match ("%%loc");
   if (m == MATCH_YES)
@@ -4055,6 +4121,114 @@ gfc_match_rvalue (gfc_expr **result)
 	{
 	  m = MATCH_ERROR;
 	  break;
+	}
+
+      /* Check to see if this is a PDT constructor.  The format of these
+	 constructors is rather unusual:
+		name [(type_params)](component_values)
+	 where, component_values excludes the type_params. With the present
+	 gfortran representation this is rather awkward because the two are not
+	 distinguished, other than by their attributes.
+
+	 Even if 'name' is that of a PDT template, priority has to be given to
+	 specific procedures, other than the constructor, in the generic
+	 interface.  */
+
+      gfc_gobble_whitespace ();
+      gfc_find_sym_tree (gfc_dt_upper_string (name), NULL, 1, &pdt_st);
+      if (sym->attr.generic && pdt_st != NULL
+	  && !(sym->generic->next && gfc_peek_ascii_char() != '('))
+	{
+	  gfc_symbol *pdt_sym;
+	  gfc_actual_arglist *ctr_arglist = NULL, *tmp;
+	  gfc_component *c;
+
+	  /* Use the template.  */
+	  if (pdt_st->n.sym && pdt_st->n.sym->attr.pdt_template)
+	    {
+	      bool type_spec_list = false;
+	      pdt_sym = pdt_st->n.sym;
+	      gfc_gobble_whitespace ();
+	      /* Look for a second actual arglist. If present, try the first
+		 for the type parameters. Otherwise, or if there is no match,
+		 depend on default values by setting the type parameters to
+		 NULL.  */
+	      if (gfc_peek_ascii_char() == '(')
+		type_spec_list = true;
+	      if (!actual_arglist && !type_spec_list)
+		{
+		  gfc_error_now ("F2023 R755: The empty type specification at %C "
+				 "is not allowed");
+		  m = MATCH_ERROR;
+		  break;
+		}
+	      /* Generate this instance using the type parameters from the
+		 first argument list and return the parameter list in
+		 ctr_arglist.  */
+	      m = gfc_get_pdt_instance (actual_arglist, &pdt_sym, &ctr_arglist);
+	      if (m != MATCH_YES || !ctr_arglist)
+		{
+		  if (ctr_arglist)
+		    gfc_free_actual_arglist (ctr_arglist);
+		  /* See if all the type parameters have default values.  */
+		  m = gfc_get_pdt_instance (NULL, &pdt_sym, &ctr_arglist);
+		  if (m != MATCH_YES)
+		    {
+		      m = MATCH_NO;
+		      break;
+		    }
+		}
+
+	      /* Now match the component_values if the type parameters were
+		 present.  */
+	      if (type_spec_list)
+		{
+		  m = gfc_match_actual_arglist (0, &actual_arglist);
+		  if (m != MATCH_YES)
+		    {
+		      m = MATCH_ERROR;
+		      break;
+		    }
+		}
+
+	      /* Make sure that the component names are in place so that this
+		 list can be safely appended to the type parameters.  */
+	      tmp = actual_arglist;
+	      for (c = pdt_sym->components; c && tmp; c = c->next)
+		{
+		  if (c->attr.pdt_kind || c->attr.pdt_len)
+		    continue;
+		  tmp->name = c->name;
+		  tmp = tmp->next;
+		}
+
+	      gfc_find_sym_tree (gfc_dt_lower_string (pdt_sym->name),
+				 NULL, 1, &symtree);
+	      if (!symtree)
+		{
+		  gfc_get_ha_sym_tree (gfc_dt_lower_string (pdt_sym->name) ,
+				       &symtree);
+		  symtree->n.sym = pdt_sym;
+		  symtree->n.sym->ts.u.derived = pdt_sym;
+		  symtree->n.sym->ts.type = BT_DERIVED;
+		}
+
+	      if (type_spec_list)
+		{
+		  /* Append the type_params and the component_values.  */
+		  for (tmp = ctr_arglist; tmp && tmp->next;)
+		    tmp = tmp->next;
+		  tmp->next = actual_arglist;
+		  actual_arglist = ctr_arglist;
+		  tmp = actual_arglist;
+		  /* Can now add all the component names.  */
+		  for (c = pdt_sym->components; c && tmp; c = c->next)
+		    {
+		      tmp->name = c->name;
+		      tmp = tmp->next;
+		    }
+		}
+	    }
 	}
 
       gfc_get_ha_sym_tree (name, &symtree);	/* Can't fail */

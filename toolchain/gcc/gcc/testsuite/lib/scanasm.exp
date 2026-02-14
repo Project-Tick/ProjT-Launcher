@@ -1,4 +1,4 @@
-# Copyright (C) 2000-2025 Free Software Foundation, Inc.
+# Copyright (C) 2000-2026 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -885,6 +885,8 @@ proc configure_check-function-bodies { config } {
 	set up_config(end) {^\}$}
     } elseif { [istarget *-*-darwin*] } {
 	set up_config(end) {^LFE[0-9]+}
+    } elseif { [istarget aarch64*-*-mingw32] } {
+	set up_config(end) {seh_endproc}
     } else {
 	set up_config(end) {^\s*\.size}
     }
@@ -896,6 +898,10 @@ proc configure_check-function-bodies { config } {
 	set up_config(fluff) {^\s*(?://)}
     } elseif { [istarget *-*-darwin*] } {
 	set up_config(fluff) {^\s*(?:\.|//|@)|^L[0-9ABCESV]}
+    } elseif { [istarget s390*-*-*] } {
+	# Additionally to the defaults skip lines beginning with a # resulting
+	# from inline asm.
+	set up_config(fluff) {^\s*(?:\.|//|@|$|#)}
     } else {
 	# Skip lines beginning with labels ('.L[...]:') or other directives
 	# ('.align', '.cfi_startproc', '.quad [...]', '.text', etc.), '//' or
@@ -977,8 +983,8 @@ proc check_function_body { functions name body_regexp } {
     }
     set fn_res [regexp "^$body_regexp\$" $up_functions($name)]
     if { !$fn_res } {
-      verbose -log "body: $body_regexp"
-      verbose -log "against: $up_functions($name)"
+      verbose -log "expected: $body_regexp"
+      verbose -log "found: $up_functions($name)"
     }
     return $fn_res
 }
@@ -1108,6 +1114,8 @@ proc check-function-bodies { args } {
 	    } elseif { [string equal $line "..."] } {
 		append function_regexp ".*"
 	    } elseif { [regexp {^\.L} $line] } {
+		append function_regexp $line "\n"
+	    } elseif { [regexp {^[0-9]+:} $line] } {
 		append function_regexp $line "\n"
 	    } else {
 		append function_regexp $config(line_prefix) $line "\n"

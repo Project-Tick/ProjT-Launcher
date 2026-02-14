@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2025 Free Software Foundation, Inc.
+// Copyright (C) 2020-2026 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -543,6 +543,13 @@ private:
   Node root;
 };
 
+enum class ResolutionMode
+{
+  Normal,
+  FromRoot,
+  FromExtern, // extern prelude
+};
+
 template <Namespace N> class ForeverStack
 {
 public:
@@ -661,6 +668,8 @@ public:
   tl::optional<Rib::Definition> get (const Identifier &name);
   tl::optional<Rib::Definition> get_lang_prelude (const Identifier &name);
   tl::optional<Rib::Definition> get_lang_prelude (const std::string &name);
+  tl::optional<Rib::Definition> get_from_prelude (NodeId prelude,
+						  const Identifier &name);
 
   /**
    * Resolve a path to its definition in the current `ForeverStack`
@@ -672,11 +681,14 @@ public:
    */
   template <typename S>
   tl::optional<Rib::Definition> resolve_path (
-    const std::vector<S> &segments, bool has_opening_scope_resolution,
-    std::function<void (const S &, NodeId)> insert_segment_resolution);
-
-  // FIXME: Documentation
-  tl::optional<Resolver::CanonicalPath> to_canonical_path (NodeId id) const;
+    const std::vector<S> &segments, ResolutionMode mode,
+    std::function<void (const S &, NodeId)> insert_segment_resolution,
+    std::vector<Error> &collect_errors);
+  template <typename S>
+  tl::optional<Rib::Definition> resolve_path (
+    const std::vector<S> &segments, ResolutionMode mode,
+    std::function<void (const S &, NodeId)> insert_segment_resolution,
+    std::vector<Error> &collect_errors, NodeId starting_point_id);
 
   // FIXME: Documentation
   tl::optional<Rib &> to_rib (NodeId rib_id);
@@ -738,6 +750,19 @@ private:
     tl::optional<Node &> parent; // `None` only if the node is a root
   };
 
+  /**
+   * Private overloads which allow specifying a starting point
+   */
+
+  tl::optional<Rib::Definition> get (Node &start, const Identifier &name);
+
+  template <typename S>
+  tl::optional<Rib::Definition> resolve_path (
+    const std::vector<S> &segments, ResolutionMode mode,
+    std::function<void (const S &, NodeId)> insert_segment_resolution,
+    std::vector<Error> &collect_errors,
+    std::reference_wrapper<Node> starting_point);
+
   /* Should we keep going upon seeing a Rib? */
   enum class KeepGoing
   {
@@ -769,6 +794,7 @@ private:
    * resolution
    */
   Node lang_prelude;
+
   /*
    * The extern prelude, used for resolving external crates
    */
@@ -779,7 +805,7 @@ private:
   void stream_rib (std::stringstream &stream, const Rib &rib,
 		   const std::string &next, const std::string &next_next) const;
   void stream_node (std::stringstream &stream, unsigned indentation,
-		    const Node &node) const;
+		    const Node &node, unsigned depth = 0) const;
 
   /* Helper types and functions for `resolve_path` */
 
@@ -792,13 +818,15 @@ private:
   tl::optional<SegIterator<S>> find_starting_point (
     const std::vector<S> &segments,
     std::reference_wrapper<Node> &starting_point,
-    std::function<void (const S &, NodeId)> insert_segment_resolution);
+    std::function<void (const S &, NodeId)> insert_segment_resolution,
+    std::vector<Error> &collect_errors);
 
   template <typename S>
   tl::optional<Node &> resolve_segments (
     Node &starting_point, const std::vector<S> &segments,
     SegIterator<S> iterator,
-    std::function<void (const S &, NodeId)> insert_segment_resolution);
+    std::function<void (const S &, NodeId)> insert_segment_resolution,
+    std::vector<Error> &collect_errors);
 
   tl::optional<Rib::Definition> resolve_final_segment (Node &final_node,
 						       std::string &seg_name,
@@ -828,6 +856,21 @@ private:
   tl::optional<Node &> dfs_node (Node &starting_point, NodeId to_find);
   tl::optional<const Node &> dfs_node (const Node &starting_point,
 				       NodeId to_find) const;
+
+public:
+  bool forward_declared (NodeId definition, NodeId usage)
+  {
+    if (peek ().kind != Rib::Kind::ForwardTypeParamBan)
+      return false;
+
+    const auto &definition_rib = dfs_rib (cursor (), definition);
+
+    if (!definition_rib)
+      return false;
+
+    return (definition_rib
+	    && definition_rib.value ().kind == Rib::Kind::ForwardTypeParamBan);
+  }
 };
 
 } // namespace Resolver2_0

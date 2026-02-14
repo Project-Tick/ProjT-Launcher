@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2025 Free Software Foundation, Inc.
+// Copyright (C) 2020-2026 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -417,6 +417,26 @@ ConstChecker::visit (BlockExpr &expr)
 }
 
 void
+ConstChecker::visit (AnonConst &expr)
+{
+  const_context.enter (expr.get_mappings ().get_hirid ());
+
+  expr.get_inner_expr ().accept_vis (*this);
+
+  const_context.exit ();
+}
+
+void
+ConstChecker::visit (ConstBlock &expr)
+{
+  const_context.enter (expr.get_mappings ().get_hirid ());
+
+  expr.get_const_expr ().accept_vis (*this);
+
+  const_context.exit ();
+}
+
+void
 ConstChecker::visit (ContinueExpr &)
 {}
 
@@ -534,6 +554,14 @@ ConstChecker::visit (AsyncBlockExpr &)
 
 void
 ConstChecker::visit (InlineAsm &)
+{}
+
+void
+ConstChecker::visit (LlvmInlineAsm &)
+{}
+
+void
+ConstChecker::visit (OffsetOf &)
 {}
 
 void
@@ -785,11 +813,11 @@ ConstChecker::visit (StructPattern &)
 {}
 
 void
-ConstChecker::visit (TupleStructItemsNoRange &)
+ConstChecker::visit (TupleStructItemsNoRest &)
 {}
 
 void
-ConstChecker::visit (TupleStructItemsRange &)
+ConstChecker::visit (TupleStructItemsHasRest &)
 {}
 
 void
@@ -797,15 +825,23 @@ ConstChecker::visit (TupleStructPattern &)
 {}
 
 void
-ConstChecker::visit (TuplePatternItemsMultiple &)
+ConstChecker::visit (TuplePatternItemsNoRest &)
 {}
 
 void
-ConstChecker::visit (TuplePatternItemsRanged &)
+ConstChecker::visit (TuplePatternItemsHasRest &)
 {}
 
 void
 ConstChecker::visit (TuplePattern &)
+{}
+
+void
+ConstChecker::visit (SlicePatternItemsNoRest &)
+{}
+
+void
+ConstChecker::visit (SlicePatternItemsHasRest &)
 {}
 
 void

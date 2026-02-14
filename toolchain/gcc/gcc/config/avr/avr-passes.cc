@@ -1,5 +1,5 @@
 /* Support for avr-passes.def for AVR 8-bit microcontrollers.
-   Copyright (C) 2024-2025 Free Software Foundation, Inc.
+   Copyright (C) 2024-2026 Free Software Foundation, Inc.
 
    This file is part of GCC.
 
@@ -3167,8 +3167,7 @@ bbinfo_t::optimize_one_block (bool &changed)
 		    || (bbinfo_t::try_split_any_p && od.try_split_any (this))
 		    || (bbinfo_t::try_mem0_p && od.try_mem0 (this)));
 
-      rtx_insn *new_insns = get_insns ();
-      end_sequence ();
+      rtx_insn *new_insns = end_sequence ();
 
       gcc_assert (found == (od.n_new_insns >= 0));
 
@@ -3943,10 +3942,7 @@ avr_parallel_insn_from_insns (rtx_insn *i[5])
 			 PATTERN (i[3]), PATTERN (i[4]));
   start_sequence ();
   emit (gen_rtx_PARALLEL (VOIDmode, vec));
-  rtx_insn *insn = get_insns ();
-  end_sequence ();
-
-  return insn;
+  return end_sequence ();
 }
 
 
@@ -4124,9 +4120,8 @@ avr_optimize_casesi (rtx_insn *insns[5], rtx *xop)
   JUMP_LABEL (cbranch) = xop[4];
   ++LABEL_NUSES (xop[4]);
 
-  rtx_insn *seq1 = get_insns ();
   rtx_insn *last1 = get_last_insn ();
-  end_sequence ();
+  rtx_insn *seq1 = end_sequence ();
 
   emit_insn_after (seq1, insns[2]);
 
@@ -4145,9 +4140,8 @@ avr_optimize_casesi (rtx_insn *insns[5], rtx *xop)
 
   emit_insn (pat_4);
 
-  rtx_insn *seq2 = get_insns ();
   rtx_insn *last2 = get_last_insn ();
-  end_sequence ();
+  rtx_insn *seq2 = end_sequence ();
 
   emit_insn_after (seq2, insns[3]);
 

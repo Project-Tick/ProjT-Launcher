@@ -1,5 +1,5 @@
 /* Read and write coverage files, and associated functionality.
-   Copyright (C) 1990-2025 Free Software Foundation, Inc.
+   Copyright (C) 1990-2026 Free Software Foundation, Inc.
    Contributed by James E. Wilson, UC Berkeley/Cygnus Support;
    based on some ideas from Dain Samples of UC Berkeley.
    Further mangling by Bob Manson, Cygnus Support.
@@ -235,9 +235,10 @@ read_counts_file (void)
 	}
       else if (tag == GCOV_TAG_OBJECT_SUMMARY)
 	{
-	  profile_info = XCNEW (gcov_summary);
+	  gcov_profile_info = profile_info = XCNEW (gcov_summary);
 	  profile_info->runs = gcov_read_unsigned ();
 	  profile_info->sum_max = gcov_read_unsigned ();
+	  profile_info->cutoff = 1;
 	}
       else if (GCOV_TAG_IS_COUNTER (tag) && fn_ident)
 	{
@@ -1253,6 +1254,9 @@ coverage_obj_finish (vec<constructor_elt, va_gc> *ctor,
 void
 coverage_init (const char *filename)
 {
+  /* If we are in LTO, the profile will be read from object files.  */
+  if (in_lto_p)
+    return;
   const char *original_filename = filename;
   int original_len = strlen (original_filename);
 #if HAVE_DOS_BASED_FILE_SYSTEM
@@ -1312,9 +1316,7 @@ coverage_init (const char *filename)
   strcpy (da_file_name + prefix_len + len, GCOV_DATA_SUFFIX);
 
   bbg_file_stamp = local_tick;
-  if (flag_auto_profile)
-    read_autofdo_file ();
-  else if (flag_branch_probabilities)
+  if (flag_branch_probabilities)
     read_counts_file ();
 
   /* Name of bbg file.  */

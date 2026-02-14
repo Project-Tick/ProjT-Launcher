@@ -1,3 +1,4 @@
+#![feature(lang_items)]
 #[lang = "sized"]
 pub trait Sized {}
 
@@ -13,7 +14,6 @@ impl Foo for Bar {
     // { dg-warning "unused name" "" { target *-*-* } .-1 }
 
     fn test(self) {}
-    // { dg-warning "unused name" "" { target *-*-* } .-1 }
 }
 
 fn main() {

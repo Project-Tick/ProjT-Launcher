@@ -1,5 +1,5 @@
 /* d-spec.c -- Specific flags and argument handling of the D front end.
-   Copyright (C) 2006-2025 Free Software Foundation, Inc.
+   Copyright (C) 2006-2026 Free Software Foundation, Inc.
 
 GCC is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -162,7 +162,7 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
 	  break;
 
 	case OPT_defaultlib_:
-	  free (CONST_CAST (char *, defaultlib));
+	  free (const_cast<char *> (defaultlib));
 	  if (arg != NULL)
 	    {
 	      args[i] |= SKIPOPT;
@@ -171,7 +171,7 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
 	  break;
 
 	case OPT_debuglib_:
-	  free (CONST_CAST (char *, debuglib));
+	  free (const_cast<char *> (debuglib));
 	  if (arg != NULL)
 	    {
 	      args[i] |= SKIPOPT;

@@ -1,6 +1,6 @@
 // Deque implementation (out of line) -*- C++ -*-
 
-// Copyright (C) 2001-2025 Free Software Foundation, Inc.
+// Copyright (C) 2001-2026 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -381,7 +381,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 
       const difference_type __back_capacity
 	= (this->_M_impl._M_finish._M_last - this->_M_impl._M_finish._M_cur);
-      if (__front_capacity + __back_capacity < _S_buffer_size())
+      if (size_type(__front_capacity + __back_capacity) < _S_buffer_size())
 	return false;
 
       return std::__shrink_to_fit_aux<deque>::_S_do_it(*this);
@@ -664,7 +664,10 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       deque<_Tp, _Alloc>::
       _M_emplace_aux(iterator __pos, _Args&&... __args)
       {
-	value_type __x_copy(std::forward<_Args>(__args)...); // XXX copy
+	// We should construct this temporary while the deque is
+	// in its current state in case something in __args...
+	// depends on that state before shuffling elements around.
+	_Temporary_value __tmp(this, std::forward<_Args>(__args)...);
 #else
     typename deque<_Tp, _Alloc>::iterator
       deque<_Tp, _Alloc>::
@@ -695,7 +698,11 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 	    __pos = this->_M_impl._M_start + __index;
 	    _GLIBCXX_MOVE_BACKWARD3(__pos, __back2, __back1);
 	  }
-	*__pos = _GLIBCXX_MOVE(__x_copy);
+#if __cplusplus >= 201103L
+	*__pos = std::move(__tmp._M_val());
+#else
+	*__pos = __x_copy;
+#endif
 	return __pos;
       }
 
@@ -1218,7 +1225,7 @@ _GLIBCXX_END_NAMESPACE_CONTAINER
 
   template<bool _IsMove, typename _II, typename _Tp>
     typename __gnu_cxx::__enable_if<
-      __is_random_access_iter<_II>::__value,
+      __is_any_random_access_iter<_II>::__value,
       _GLIBCXX_STD_C::_Deque_iterator<_Tp, _Tp&, _Tp*> >::__type
     __copy_move_a1(_II __first, _II __last,
 		   _GLIBCXX_STD_C::_Deque_iterator<_Tp, _Tp&, _Tp*> __result)
@@ -1340,7 +1347,7 @@ _GLIBCXX_END_NAMESPACE_CONTAINER
 
   template<bool _IsMove, typename _II, typename _Tp>
     typename __gnu_cxx::__enable_if<
-      __is_random_access_iter<_II>::__value,
+      __is_any_random_access_iter<_II>::__value,
       _GLIBCXX_STD_C::_Deque_iterator<_Tp, _Tp&, _Tp*> >::__type
     __copy_move_backward_a1(_II __first, _II __last,
 		_GLIBCXX_STD_C::_Deque_iterator<_Tp, _Tp&, _Tp*> __result)
@@ -1399,7 +1406,7 @@ _GLIBCXX_END_NAMESPACE_CONTAINER
 
   template<typename _Tp, typename _Ref, typename _Ptr, typename _II>
     typename __gnu_cxx::__enable_if<
-      __is_random_access_iter<_II>::__value, bool>::__type
+      __is_any_random_access_iter<_II>::__value, bool>::__type
     __equal_aux1(_GLIBCXX_STD_C::_Deque_iterator<_Tp, _Ref, _Ptr> __first1,
 		 _GLIBCXX_STD_C::_Deque_iterator<_Tp, _Ref, _Ptr> __last1,
 		 _II __first2)
@@ -1415,7 +1422,7 @@ _GLIBCXX_END_NAMESPACE_CONTAINER
 
   template<typename _II, typename _Tp, typename _Ref, typename _Ptr>
     typename __gnu_cxx::__enable_if<
-      __is_random_access_iter<_II>::__value, bool>::__type
+      __is_any_random_access_iter<_II>::__value, bool>::__type
     __equal_aux1(_II __first1, _II __last1,
 		_GLIBCXX_STD_C::_Deque_iterator<_Tp, _Ref, _Ptr> __first2)
     {

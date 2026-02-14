@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2025 Free Software Foundation, Inc.
+// Copyright (C) 2017-2026 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -248,6 +248,10 @@
 #undef r
 #undef x
 #undef y
+// <stdlib.h> defines drand48_data::a
+#undef a
+// <sys/localedef.h> defines _LC_weight_t::n
+#undef n
 // <sys/poll.h> defines pollfd_ext::u on AIX 7.3
 #undef u
 // <sys/var.h> defines vario::v
@@ -299,7 +303,7 @@
 #if defined (__linux__) || defined (__gnu_hurd__)
 #if __has_include(<features.h>)
 #include <features.h>
-#if __GLIBC__ == 2 && __GLIBC_MINOR__ < 19
+#if __GLIBC__ == 2 && (__GLIBC_MINOR__ < 19 || __GLIBC_MINOR__ == 43)
 // Glibc defines this prior to 2.19
 #undef __unused
 #endif
@@ -325,6 +329,7 @@
 
 #ifdef __sun__
 // <fenv.h> defines these as members of fex_numeric_t
+#undef i
 #undef l
 #undef f
 #undef d
@@ -334,8 +339,11 @@
 #undef ptr
 // <sys/timespec_util.h> uses this as parameter
 #undef r
-// <stdlib.h> uses this as member of drand48_data
+// <stdlib.h> uses these as members of drand48_data
+#undef a
 #undef x
+// <string.h> defines this as a parameter of timingsafe_memcmp
+#undef n
 #endif
 
 #ifdef __VXWORKS__
@@ -397,5 +405,9 @@
 #  undef sz
 # endif
 #endif
+
+// PR libstdc++/119496
+// _Temporary_buffer used to have a member with this name
+#define requested_size 1
 
 #include <bits/stdc++.h>

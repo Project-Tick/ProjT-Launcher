@@ -1,6 +1,6 @@
 ## Linker script for GNU versioning (GNU ld 2.13.91+ only.)
 ##
-## Copyright (C) 2002-2025 Free Software Foundation, Inc.
+## Copyright (C) 2002-2026 Free Software Foundation, Inc.
 ##
 ## This file is part of the GNU ISO C++ Library.  This library is free
 ## software; you can redistribute it and/or modify it under the
@@ -2544,7 +2544,55 @@ GLIBCXX_3.4.34 {
     # void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<bool>(char const*, size_t)
     # and wide char version
     _ZNSt7__cxx1112basic_stringI[cw]St11char_traitsI[cw]ESaI[cw]EE12_M_constructILb[01]EEEvPK[cw][jmy];
+
 } GLIBCXX_3.4.33;
+
+# GCC 16.1.0
+GLIBCXX_3.4.35 {
+
+    _ZNSt8__detail11__wait_implEPKvRNS_16__wait_args_baseE;
+    _ZNSt8__detail13__notify_implEPKvbRKNS_16__wait_args_baseE;
+    _ZNSt8__detail17__wait_until_implEPKvRNS_16__wait_args_baseERKNSt6chrono8durationI[lx]St5ratioIL[lx]1EL[lx]1000000000EEEE;
+    _ZNSt8__detail11__wait_args19_M_setup_proxy_waitEPKv;
+
+    # std::chrono::gps_clock::now, tai_clock::now
+    _ZNSt6chrono9gps_clock3nowEv;
+    _ZNSt6chrono9tai_clock3nowEv;
+
+    # mutex& __syncbuf_get_mutex(void*)
+    _ZSt19__syncbuf_get_mutexPv;
+
+    # __gnu_debug::_Safe_iterator_base and _Safe_sequence_base const
+    _ZN11__gnu_debug19_Safe_iterator_base9_M_attachEPKNS_19_Safe_sequence_baseEb;
+    _ZN11__gnu_debug19_Safe_iterator_base16_M_attach_singleEPKNS_19_Safe_sequence_baseEb;
+    _ZNK11__gnu_debug19_Safe_sequence_base13_M_detach_allEv;
+    _ZNK11__gnu_debug19_Safe_sequence_base18_M_detach_singularEv;
+    _ZNK11__gnu_debug19_Safe_sequence_base12_M_get_mutexEv;
+    _ZNK11__gnu_debug19_Safe_sequence_base22_M_revalidate_singularEv;
+    _ZNK11__gnu_debug19_Safe_sequence_base7_M_swapERKS0_;
+
+    # __gnu_debug::_Safe_local_iterator_base and _Safe_unordered_container_base const
+    _ZN11__gnu_debug25_Safe_local_iterator_base9_M_attachEPKNS_30_Safe_unordered_container_baseEb;
+    _ZN11__gnu_debug25_Safe_local_iterator_base16_M_attach_singleEPKNS_30_Safe_unordered_container_baseEb;
+    _ZNK11__gnu_debug30_Safe_unordered_container_base13_M_detach_allEv;
+    _ZNK11__gnu_debug30_Safe_unordered_container_base7_M_swapERKS0_;
+
+    # std::__cow_string
+    _ZNSt12__cow_stringC2EPKc;
+    _ZNSt12__cow_stringC2EPKc[jmy];
+    _ZNSt12__cow_stringC2ERKS_;
+    _ZNSt12__cow_stringC2EOS_;
+    _ZNSt12__cow_stringD2Ev;
+    _ZNSt12__cow_stringaSERKS_;
+    _ZNSt12__cow_stringaSEOS_;
+    _ZNKSt12__cow_string5c_strEv;
+
+#if defined (_WIN32) && !defined (__CYGWIN__)
+    _ZSt19__get_once_callablev;
+    _ZSt15__get_once_callv;
+#endif
+
+} GLIBCXX_3.4.34;
 
 # Symbols in the support library (libsupc++) have their own tag.
 CXXABI_1.3 {
@@ -2857,9 +2905,16 @@ CXXABI_1.3.14 {
 
     # typeinfo for _Float{16,32,64,128,32x,64x,128x} and
     # __bf16/bfloat16_t
+#ifndef __s390x__
     _ZTIDF[0-9]*[_x];
     _ZTIPDF[0-9]*[_x];
     _ZTIPKDF[0-9]*[_x];
+#else
+    # No _Float16 on s390x in GCC 13.
+    _ZTIDF[0-9]*[0-57-9][_x];
+    _ZTIPDF[0-9]*[0-57-9][_x];
+    _ZTIPKDF[0-9]*[0-57-9][_x];
+#endif
 #ifndef __riscv
     _ZTIDF16b;
     _ZTIPDF16b;
@@ -2885,6 +2940,22 @@ CXXABI_1.3.16 {
     _ZTIPDF16b;
     _ZTIPKDF16b;
 
+} CXXABI_1.3.15;
+#endif
+
+CXXABI_1.3.17 {
+    # std::exception_ptr::_M_exception_ptr_cast
+    _ZNKSt15__exception_ptr13exception_ptr21_M_exception_ptr_castERKSt9type_info;
+
+#ifdef __s390x__
+    _ZTIDF16_;
+    _ZTIPDF16_;
+    _ZTIPKDF16_;
+#endif
+
+#ifdef __riscv
+} CXXABI_1.3.16;
+#else
 } CXXABI_1.3.15;
 #endif
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -681,7 +681,8 @@ parse_replacing_term( const char *stmt, const char *estmt ) {
     }
     if( extraneous_replacing ) {
       update_yylloc( cm[0], cm[8] );
-      yywarn("syntax error: invalid '%.*s'", cm[8].length(), cm[8].first);
+      cbl_message(LexReplaceE, "syntax error: invalid '%.*s'",
+                  cm[8].length(), cm[8].first);
       output.matched = false;
       return output;
     }
@@ -797,11 +798,11 @@ parse_replacing_pair( const char *stmt, const char *estmt ) {
       }
     }
     if( pair.stmt.p ) {
-      yywarn("CDF syntax error '%.*s'", (int)pair.stmt.size(), pair.stmt.p);
+      cbl_message(LexReplaceE, "LEX syntax error '%.*s'", (int)pair.stmt.size(), pair.stmt.p);
     }
     else {
       // This eliminated a compiler warning about "format-overflow"
-      yywarn("CDF syntax error");
+      cbl_message(LexReplaceE, "LEX syntax error");
     }
     pair.stmt = span_t(size_t(0), stmt);
     pair.replace = replace_t();
@@ -898,7 +899,7 @@ parse_replace_pairs( const char *stmt, const char *estmt, bool is_copy_stmt ) {
     gcc_assert(!before.has_nul());
     pairs.push_back( replace_t( output.before, output.after ) );
 
-    // COPY REPLACING matches end-of-statment here
+    // COPY REPLACING matches end-of-statement here
     // REPLACE matched end-of-statement in caller, and estmt[-1] == '.'
     if( is_copy_stmt && parsed.stmt.pend[-1] == '.' ) break;
   }
@@ -907,7 +908,8 @@ parse_replace_pairs( const char *stmt, const char *estmt, bool is_copy_stmt ) {
     dbgmsg( "%s:%d: %s: " HOST_SIZE_T_PRINT_UNSIGNED " pairs parsed from  '%.*s'",
             __func__, __LINE__,
             parsed.done() ? "done" : "not done",
-            (fmt_size_t)pairs.size(), parsed.stmt.size(), parsed.stmt.p );
+            (fmt_size_t)pairs.size(), parsed.stmt.size(),
+            parsed.stmt.size() ? parsed.stmt.p : "" );
     int i = 0;
     for( const auto& replace : pairs ) {
       dbgmsg("%s:%d:%4d: '%s' => '%s'", __func__, __LINE__,
@@ -989,9 +991,9 @@ parse_copy_directive( filespan_t& mfile ) {
       if( yy_flex_debug ) {
         size_t nnl = 1 + count_newlines(mfile.data, copy_stmt.p);
         size_t nst = 1 + count_newlines(copy_stmt.p, copy_stmt.pend);
-        dbgmsg("%s:%d: line " HOST_SIZE_T_PRINT_UNSIGNED
+        dbgmsg("%s:%d: %s:" HOST_SIZE_T_PRINT_UNSIGNED
                ": COPY directive is " HOST_SIZE_T_PRINT_UNSIGNED " lines '%.*s'",
-               __func__, __LINE__,
+               __func__, __LINE__, cobol_filename(), 
                (fmt_size_t)nnl, (fmt_size_t)nst, copy_stmt.size(), copy_stmt.p);
       }
     }
@@ -1465,7 +1467,8 @@ preprocess_filter_add( const char input[] ) {
 
   auto filename = find_filter(filter.c_str());
   if( !filename ) {
-    yywarn("preprocessor '%s/%s' not found", getcwd(NULL, 0), filter.c_str());
+    cbl_message(LexPreprocessE, "preprocessor '%s/%s' not found",
+                getcwd(NULL, 0), filter.c_str());
     return false;
   }
   preprocessor_filters.push_back( std::make_pair(xstrdup(filename), options) );
@@ -1476,22 +1479,22 @@ void
 cdftext::echo_input( int input, const char filename[] ) {
   int fd;
   if( -1 == (fd = dup(input)) ) {
-      yywarn( "could not open preprocessed file %s to echo to standard output",
-               filename );
+      cbl_message(LexPreprocessE, "could not open preprocessed file "
+                                 "%s to echo to standard output", filename );
       return;
   }
 
   auto mfile = map_file(fd);
 
   if( -1 == write(STDOUT_FILENO, mfile.data, mfile.size()) ) {
-    yywarn( "could not write preprocessed file %s to standard output",
+    cbl_message(LexPreprocessE, "could not write preprocessed file %s to standard output",
           filename );
   }
   if( -1 == munmap(mfile.data, mfile.size()) ) {
-    yywarn( "could not release mapped file" );
+    cbl_message(LexPreprocessE, "could not release mapped file" );
   }
   if( -1 == close(fd) ) {
-    yywarn( "could not close mapped file" );
+    cbl_message(LexPreprocessE, "could not close mapped file" );
   }
 }
 
@@ -1514,7 +1517,7 @@ cdftext::lex_open( const char filename[] ) {
   // Process any files supplied by the -include command-line option.
   for( auto name : included_files ) {
     if( -1 == (input = open(name, O_RDONLY)) ) {
-      yyerrorvl(1, "", "cannot open -include file %s", name);
+      cbl_message(LexIncludeE, "cannot open %<-include%> file %qs", name);
       continue;
     }
     cobol_filename(name, inode_of(input));
@@ -1568,7 +1571,7 @@ cdftext::lex_open( const char filename[] ) {
       }
       int erc;
       if( -1 == (erc = execv(filter, argv.data())) ) {
-        yywarn("could not execute %s", filter);
+        cbl_message(LexPreprocessE, "could not execute %s", filter);
       }
       _exit(erc);
     }
@@ -1587,7 +1590,7 @@ cdftext::lex_open( const char filename[] ) {
              filter, status);
       }
     }
-    yywarn( "applied %s", filter );
+    cbl_message(LexIncludeOkN, "applied %s", filter );
   }
 
   return fdopen( output, "r");
@@ -1603,7 +1606,7 @@ cdftext::open_input( const char filename[] ) {
   verbose_file_reader = NULL != getenv("GCOBOL_TEMPDIR");
 
   if( verbose_file_reader ) {
-    yywarn("verbose: opening %s for input", filename);
+    cbl_message(LexInputN, "verbose: opening %s for input", filename);
   }
   return fd;
 }
@@ -1679,9 +1682,9 @@ cdftext::map_file( int fd ) {
 bool lexio_dialect_mf();
 
 /*
- * A valid sequence area is 6 digits or blanks at the begining of the line that
- * contains PROGRAM-ID. Return NULL if no valid sequence area, else return
- * pointer to BOL.
+ * A valid sequence area is 6 digits or blanks at the beginning of the line
+ * that contains PROGRAM-ID. Return NULL if no valid sequence area, else
+ * return pointer to BOL.
  */
 static const char *
 valid_sequence_area( const char *data, const char *eodata ) {
@@ -1861,7 +1864,7 @@ cdftext::free_form_reference_format( int input ) {
  * denoting the source filename.  As far as the lexer is concerned,
  * there's only ever one file: the name passed to lex_open() when we
  * kicked things off.  But messages and the debugger need to know
- * which file and line each statment appeared in.
+ * which file and line each statement appeared in.
  *
  * The lexer uses the input stack to keep track of names and
  * numbers. The top of the input file stack is the current file

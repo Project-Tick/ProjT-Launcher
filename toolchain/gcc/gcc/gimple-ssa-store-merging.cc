@@ -1,5 +1,5 @@
 /* GIMPLE store merging and byte swapping passes.
-   Copyright (C) 2009-2025 Free Software Foundation, Inc.
+   Copyright (C) 2009-2026 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of GCC.
@@ -644,9 +644,7 @@ find_bswap_or_nop_1 (gimple *stmt, struct symbolic_number *n, int limit)
 
 	  /* Mask.  */
 	  uint64_t mask = 0;
-	  uint64_t tmp = (1 << BITS_PER_UNIT) - 1;
-	  for (unsigned i = 0; i < bitsize / BITS_PER_UNIT;
-	       i++, tmp <<= BITS_PER_UNIT)
+	  for (unsigned i = 0; i < bitsize / BITS_PER_UNIT; i++)
 	    mask |= (uint64_t) MARKER_MASK << (i * BITS_PER_MARKER);
 	  n->n &= mask;
 
@@ -1035,7 +1033,7 @@ find_bswap_or_nop (gimple *stmt, struct symbolic_number *n, bool *bswap,
 	 source when rsize < range.  */
       if (n->range == orig_range
 	  /* There're case like 0x300000200 for uint32->uint64 cast,
-	     Don't hanlde this.  */
+	     Don't handle this.  */
 	  && n->range == TYPE_PRECISION (n->type)
 	  && ((orig_range == 32
 	       && optab_handler (rotl_optab, SImode) != CODE_FOR_nothing)
@@ -1045,7 +1043,7 @@ find_bswap_or_nop (gimple *stmt, struct symbolic_number *n, bool *bswap,
 	{
 	  uint64_t range = (orig_range / BITS_PER_UNIT) * BITS_PER_MARKER;
 	  uint64_t count = (tmp_n & MARKER_MASK) * BITS_PER_MARKER;
-	  /* .i.e. hanlde 0x203040506070800 when lower byte is zero.  */
+	  /* .i.e. handle 0x203040506070800 when lower byte is zero.  */
 	  if (!count)
 	    {
 	      for (uint64_t i = 1; i != range / BITS_PER_MARKER; i++)
@@ -1536,8 +1534,8 @@ maybe_optimize_vector_constructor (gimple *cur_stmt)
 }
 
 /* Find manual byte swap implementations as well as load in a given
-   endianness. Byte swaps are turned into a bswap builtin invokation
-   while endian loads are converted to bswap builtin invokation or
+   endianness.  Byte swaps are turned into a bswap builtin invocation
+   while endian loads are converted to bswap builtin invocation or
    simple load according to the target endianness.  */
 
 unsigned int

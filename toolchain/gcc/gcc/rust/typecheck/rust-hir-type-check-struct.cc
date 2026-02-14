@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2025 Free Software Foundation, Inc.
+// Copyright (C) 2020-2026 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -28,7 +28,7 @@ TypeCheckStructExpr::TypeCheckStructExpr (HIR::Expr &e)
   : TypeCheckBase (),
     resolved (new TyTy::ErrorType (e.get_mappings ().get_hirid ())),
     struct_path_resolved (nullptr),
-    variant (&TyTy::VariantDef::get_error_node ())
+    variant (&TyTy::VariantDef::get_error_node ()), parent (e)
 {}
 
 TyTy::BaseType *
@@ -65,7 +65,7 @@ TypeCheckStructExpr::resolve (HIR::StructExprStructFields &struct_expr)
 
       if (base_unify->get_kind () != struct_path_ty->get_kind ())
 	{
-	  rust_fatal_error (
+	  rust_error_at (
 	    struct_expr.get_struct_base ().get_base ().get_locus (),
 	    "incompatible types for base struct reference");
 	  return;
@@ -82,7 +82,16 @@ TypeCheckStructExpr::resolve (HIR::StructExprStructFields &struct_expr)
       bool ok = context->lookup_variant_definition (
 	struct_expr.get_struct_name ().get_mappings ().get_hirid (),
 	&variant_id);
-      rust_assert (ok);
+      if (!ok)
+	{
+	  rich_location r (line_table, struct_expr.get_locus ());
+	  r.add_range (struct_expr.get_struct_name ().get_locus ());
+	  rust_error_at (
+	    struct_expr.get_struct_name ().get_locus (), ErrorCode::E0574,
+	    "expected a struct, variant or union type, found enum %qs",
+	    struct_path_resolved->get_name ().c_str ());
+	  return;
+	}
 
       ok = struct_path_resolved->lookup_variant_by_id (variant_id, &variant);
       rust_assert (ok);
@@ -118,29 +127,14 @@ TypeCheckStructExpr::resolve (HIR::StructExprStructFields &struct_expr)
 	  break;
 	}
 
-      if (!ok)
-	{
-	  return;
-	}
-
-      if (resolved_field_value_expr == nullptr)
-	{
-	  rust_fatal_error (field->get_locus (),
-			    "failed to resolve type for field");
-	  ok = false;
-	  break;
-	}
-
-      context->insert_type (field->get_mappings (), resolved_field_value_expr);
+      if (ok)
+	context->insert_type (field->get_mappings (),
+			      resolved_field_value_expr);
     }
 
-  // something failed setting up the fields
+  // something failed setting up the fields and error's emitted
   if (!ok)
-    {
-      rust_error_at (struct_expr.get_locus (),
-		     "constructor type resolution failure");
-      return;
-    }
+    return;
 
   // check the arguments are all assigned and fix up the ordering
   std::vector<std::string> missing_field_names;
@@ -220,8 +214,7 @@ TypeCheckStructExpr::resolve (HIR::StructExprStructFields &struct_expr)
 	      rust_assert (ok);
 
 	      adtFieldIndexToField[field_index] = implicit_field;
-	      struct_expr.get_fields ().push_back (
-		std::unique_ptr<HIR::StructExprField> (implicit_field));
+	      struct_expr.get_fields ().emplace_back (implicit_field);
 	    }
 	}
     }
@@ -251,11 +244,11 @@ TypeCheckStructExpr::resolve (HIR::StructExprStructFields &struct_expr)
 	field.release ();
 
       std::vector<std::unique_ptr<HIR::StructExprField> > ordered_fields;
+      ordered_fields.reserve (adtFieldIndexToField.size ());
+
       for (size_t i = 0; i < adtFieldIndexToField.size (); i++)
-	{
-	  ordered_fields.push_back (
-	    std::unique_ptr<HIR::StructExprField> (adtFieldIndexToField[i]));
-	}
+	ordered_fields.emplace_back (adtFieldIndexToField[i]);
+
       struct_expr.set_fields_as_owner (std::move (ordered_fields));
     }
 
@@ -271,8 +264,11 @@ TypeCheckStructExpr::visit (HIR::StructExprFieldIdentifierValue &field)
 				   &field_index);
   if (!ok)
     {
-      rust_error_at (field.get_locus (), "unknown field");
-      return true;
+      rich_location r (line_table, parent.get_locus ());
+      r.add_range (field.get_locus ());
+      rust_error_at (r, ErrorCode::E0560, "unknown field %qs",
+		     field.field_name.as_string ().c_str ());
+      return false;
     }
 
   auto it = adtFieldIndexToField.find (field_index);
@@ -317,8 +313,11 @@ TypeCheckStructExpr::visit (HIR::StructExprFieldIndexValue &field)
   bool ok = variant->lookup_field (field_name, &field_type, &field_index);
   if (!ok)
     {
-      rust_error_at (field.get_locus (), "unknown field");
-      return true;
+      rich_location r (line_table, parent.get_locus ());
+      r.add_range (field.get_locus ());
+      rust_error_at (r, ErrorCode::E0560, "unknown field %qs",
+		     field_name.c_str ());
+      return false;
     }
 
   auto it = adtFieldIndexToField.find (field_index);
@@ -329,8 +328,7 @@ TypeCheckStructExpr::visit (HIR::StructExprFieldIndexValue &field)
       repeat_location.add_range (prev_field_locus);
 
       rust_error_at (repeat_location, ErrorCode::E0062,
-		     "field %qs specified more than once",
-		     field_name.c_str ());
+		     "field %qs specified more than once", field_name.c_str ());
       return false;
     }
 
@@ -363,7 +361,7 @@ TypeCheckStructExpr::visit (HIR::StructExprFieldIdentifier &field)
   if (!ok)
     {
       rust_error_at (field.get_locus (), "unknown field");
-      return true;
+      return false;
     }
 
   auto it = adtFieldIndexToField.find (field_index);

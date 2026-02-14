@@ -56,7 +56,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   // [format.formatter], formatter
   template<typename _Tp, typename _CharT = char> struct formatter;
 
-/// @cond undocumented
 namespace __format
 {
 #ifdef _GLIBCXX_USE_WCHAR_T
@@ -66,6 +65,20 @@ namespace __format
   template<typename _CharT>
     concept __char = same_as<_CharT, char>;
 #endif
+
+  enum class _Align : unsigned char {
+    _Align_default,
+    _Align_left,
+    _Align_right,
+    _Align_centre,
+  };
+  using enum _Align;
+
+  template<typename _CharT> struct _Spec;
+
+  template<__char _CharT> struct __formatter_str;
+  template<__char _CharT> struct __formatter_int;
+  template<__char _CharT> struct __formatter_ptr;
 
   template<typename _Tp, typename _Context,
 	   typename _Formatter
@@ -107,9 +120,6 @@ namespace __format
     {
       __f.set_debug_format();
     };
-
-  template<__char _CharT>
-    struct __formatter_int;
 } // namespace __format
 /// @endcond
 
@@ -131,6 +141,14 @@ namespace __format
       = ranges::input_range<const _Rg>
 	  && formattable<ranges::range_reference_t<const _Rg>, _CharT>;
 
+  // _Rg& and const _Rg& are both formattable and use same formatter
+  // specialization for their references.
+  template<typename _Rg, typename _CharT>
+    concept __simply_formattable_range
+      = __const_formattable_range<_Rg, _CharT>
+	  && same_as<remove_cvref_t<ranges::range_reference_t<_Rg>>,
+		     remove_cvref_t<ranges::range_reference_t<const _Rg>>>;
+
   template<typename _Rg, typename _CharT>
     using __maybe_const_range
       = __conditional_t<__const_formattable_range<_Rg, _CharT>, const _Rg, _Rg>;
@@ -139,8 +157,38 @@ namespace __format
     using __maybe_const
       = __conditional_t<formattable<const _Tp, _CharT>, const _Tp, _Tp>;
 }
+
+  // [format.range], formatting of ranges
+  // [format.range.fmtkind], variable template format_kind
+  enum class range_format {
+    disabled,
+    map,
+    set,
+    sequence,
+    string,
+    debug_string
+  };
+
+  /** @brief A constant determining how a range should be formatted.
+   *
+   * The primary template of `std::format_kind` cannot be instantiated.
+   * There is a partial specialization for input ranges and you can
+   * specialize the variable template for your own cv-unqualified types
+   * that satisfy the `ranges::input_range` concept.
+   *
+   * @since C++23
+   */
+  template<typename _Rg>
+    constexpr auto format_kind = []{
+      static_assert(false, "cannot use primary template of 'std::format_kind'");
+      return type_identity<_Rg>{};
+    }();
 #endif // format_ranges
 
+#if __glibcxx_print >= 202403L
+  template<typename>
+    constexpr bool enable_nonlocking_formatter_optimization = false;
+#endif
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std

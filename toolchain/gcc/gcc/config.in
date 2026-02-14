@@ -95,6 +95,12 @@
 #endif
 
 
+/* Define to enable the use of a default windres. */
+#ifndef USED_FOR_TARGET
+#undef DEFAULT_WINDRES
+#endif
+
+
 /* The default for -fdiagnostics-color option */
 #ifndef USED_FOR_TARGET
 #undef DIAGNOSTICS_COLOR_DEFAULT
@@ -318,6 +324,12 @@
 #endif
 
 
+/* Define to enable -mfentry by default on x86-64. */
+#ifndef USED_FOR_TARGET
+#undef ENABLE_X86_64_MFENTRY
+#endif
+
+
 /* Define to the name of a file containing a list of extra machine modes for
    this architecture. */
 #ifndef USED_FOR_TARGET
@@ -343,6 +355,12 @@
 #endif
 
 
+/* Define if you have a working <afunix.h> header file. */
+#ifndef USED_FOR_TARGET
+#undef HAVE_AFUNIX_H
+#endif
+
+
 /* Define if AF_INET6 supported. */
 #ifndef USED_FOR_TARGET
 #undef HAVE_AF_INET6
@@ -352,6 +370,18 @@
 /* Define if AF_UNIX supported. */
 #ifndef USED_FOR_TARGET
 #undef HAVE_AF_UNIX
+#endif
+
+
+/* Define if your assembler supports LSX and SCQ for 16B atomic. */
+#ifndef USED_FOR_TARGET
+#undef HAVE_AS_16B_ATOMIC
+#endif
+
+
+/* Define if your assembler supports AEABI build attributes. */
+#ifndef USED_FOR_TARGET
+#undef HAVE_AS_AEABI_BUILD_ATTRIBUTES
 #endif
 
 
@@ -780,20 +810,6 @@
 #endif
 
 
-/* Define if your assembler and linker support unaligned PC relative relocs.
-   */
-#ifndef USED_FOR_TARGET
-#undef HAVE_AS_SPARC_UA_PCREL
-#endif
-
-
-/* Define if your assembler and linker support unaligned PC relative relocs
-   against hidden symbols. */
-#ifndef USED_FOR_TARGET
-#undef HAVE_AS_SPARC_UA_PCREL_HIDDEN
-#endif
-
-
 /* Define if your assembler supports call36 relocation. */
 #ifndef USED_FOR_TARGET
 #undef HAVE_AS_SUPPORT_CALL36
@@ -836,12 +852,6 @@
    generated .debug_line. */
 #ifndef USED_FOR_TARGET
 #undef HAVE_AS_WORKING_DWARF_N_FLAG
-#endif
-
-
-/* Define if your assembler supports -xbrace_comment option. */
-#ifndef USED_FOR_TARGET
-#undef HAVE_AS_XBRACE_COMMENT_OPTION
 #endif
 
 
@@ -1779,6 +1789,12 @@
 #endif
 
 
+/* Define if your linker supports -z ctf. */
+#ifndef USED_FOR_TARGET
+#undef HAVE_LD_CTF
+#endif
+
+
 /* Define if your linker supports --demangle option. */
 #ifndef USED_FOR_TARGET
 #undef HAVE_LD_DEMANGLE
@@ -1867,12 +1883,6 @@
    a read-write section. */
 #ifndef USED_FOR_TARGET
 #undef HAVE_LD_RO_RW_SECTION_MIXING
-#endif
-
-
-/* Define if your linker supports the *_sol2 emulations. */
-#ifndef USED_FOR_TARGET
-#undef HAVE_LD_SOL2_EMULATION
 #endif
 
 
@@ -2054,12 +2064,6 @@
 /* Define if <sys/signal.h> defines sighandler_t */
 #ifndef USED_FOR_TARGET
 #undef HAVE_SIGHANDLER_T
-#endif
-
-
-/* Define if the system-provided CRTs are present on Solaris. */
-#ifndef USED_FOR_TARGET
-#undef HAVE_SOLARIS_CRTS
 #endif
 
 
@@ -2363,6 +2367,12 @@
 #endif
 
 
+/* Define to 1 if ld64 supports '-no_deduplicate'. */
+#ifndef USED_FOR_TARGET
+#undef LD64_HAS_NO_DEDUPLICATE
+#endif
+
+
 /* Define to 1 if ld64 supports '-platform_version'. */
 #ifndef USED_FOR_TARGET
 #undef LD64_HAS_PLATFORM_VERSION
@@ -2608,6 +2618,12 @@
 #endif
 
 
+/* Define if libatomic is built for the target. */
+#ifndef USED_FOR_TARGET
+#undef TARGET_PROVIDES_LIBATOMIC
+#endif
+
+
 /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
 #ifndef USED_FOR_TARGET
 #undef TIME_WITH_SYS_TIME
@@ -2631,6 +2647,12 @@
    DLL exports wrappers to support libstdc++ function replacement. */
 #ifndef USED_FOR_TARGET
 #undef USE_CYGWIN_LIBSTDCXX_WRAPPERS
+#endif
+
+
+/* Define if your linker supports AS_NEEDED in linker scripts. */
+#ifndef USED_FOR_TARGET
+#undef USE_LD_AS_NEEDED_LDSCRIPT
 #endif
 
 

@@ -1,5 +1,6 @@
 #![feature(lang_items)]
 
+#![feature(lang_items)]
 #[lang = "sized"]
 pub trait Sized {}
 
@@ -15,7 +16,6 @@ impl<B: Bar> Foo for B {
     type Ty = u32;
 
     fn foo(self) -> Self::Ty {
-        // { dg-warning "unused name" "" { target *-*-* } .-1 }
         14
     }
 }

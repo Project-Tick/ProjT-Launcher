@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -30,9 +30,11 @@
 %{
 
 #include "cobol-system.h"
-#include "coretypes.h"
-#include "tree.h"
+#include <coretypes.h>
+#include <tree.h>
+
 #undef yy_flex_debug
+
 #include "../../libgcobol/ec.h"
 #include "../../libgcobol/common-defs.h"
 #include "util.h"
@@ -151,6 +153,9 @@ void input_file_status_notify();
   cdfval_t operator/( const cdfval_base_t& lhs, const cdfval_base_t& rhs );
   cdfval_t negate( cdfval_base_t lhs );
 
+  cbl_field_t
+  cdf_literalize( const std::string& name, const cdfval_t& value );
+
 }
 
 %{
@@ -198,7 +203,7 @@ apply_cdf_turn( const exception_turn_t& turn ) {
 %type	<cdfarg>	namelit name_any name_one
 %type	<string>	name subscript subscripts inof
 %token <boolean>  BOOL
-%token <number>  FEATURE 365  NUMBER 303  EXCEPTION_NAME 280    "EXCEPTION NAME"
+%token <number>  FEATURE 367  NUMBER 304  EXCEPTION_NAME 280    "EXCEPTION NAME"
 
 %type	<cdfval>	cdf_expr
 %type	<cdfval>	cdf_relexpr cdf_reloper cdf_and cdf_bool_expr
@@ -210,55 +215,55 @@ apply_cdf_turn( const exception_turn_t& turn ) {
 
 %type   <number>        cdf_stackable
 
-%token BY 486
-%token COPY 362
-%token CDF_DISPLAY 384    ">>DISPLAY"
-%token IN 605
+%token BY 488
+%token COPY 364
+%token CDF_DISPLAY 386    ">>DISPLAY"
+%token IN 606
 %token NAME 286
-%token NUMSTR 305    "numeric literal"
-%token OF 686
-%token PSEUDOTEXT 721
-%token REPLACING 743
-%token LITERAL 298
-%token SUPPRESS 376
+%token NUMSTR 306    "numeric literal"
+%token OF 687
+%token PSEUDOTEXT 723
+%token REPLACING 745
+%token LITERAL 299
+%token SUPPRESS 378
 
-%token LSUB 367    "("
-%token SUBSCRIPT 375  RSUB 372    ")"
+%token LSUB 369    "("
+%token SUBSCRIPT 377  RSUB 374    ")"
 
-%token CDF_DEFINE 383    ">>DEFINE"
-%token CDF_IF 385    ">>IF"
-%token CDF_ELSE 386    ">>ELSE"
-%token CDF_END_IF 387    ">>END-IF"
-%token CDF_EVALUATE 388    ">>EVALUATE"
-%token CDF_WHEN 389    ">>WHEN"
-%token CDF_END_EVALUATE 390    ">>END-EVALUATE"
+%token CDF_DEFINE 385    ">>DEFINE"
+%token CDF_IF 387    ">>IF"
+%token CDF_ELSE 388    ">>ELSE"
+%token CDF_END_IF 389    ">>END-IF"
+%token CDF_EVALUATE 390    ">>EVALUATE"
+%token CDF_WHEN 391    ">>WHEN"
+%token CDF_END_EVALUATE 392    ">>END-EVALUATE"
 
-%token ALL 450
-%token CALL_CONVENTION 391    ">>CALL-CONVENTION"
-%token COBOL_WORDS 380    ">>COBOL-WORDS"
-%token CDF_PUSH 394    ">>PUSH"
-%token CDF_POP 395    ">>POP"
-%token SOURCE_FORMAT 396    ">>SOURCE FORMAT"
+%token ALL 452
+%token CALL_CONVENTION 393    ">>CALL-CONVENTION"
+%token COBOL_WORDS 382    ">>COBOL-WORDS"
+%token CDF_PUSH 396    ">>PUSH"
+%token CDF_POP 397    ">>POP"
+%token SOURCE_FORMAT 398    ">>SOURCE FORMAT"
 
-%token AS 468  CONSTANT 361  DEFINED 363
+%token AS 470  CONSTANT 363  DEFINED 365
 %type	<boolean>	     DEFINED
-%token OTHER 698  PARAMETER_kw 368    "PARAMETER"
-%token OFF 687  OVERRIDE 369
-%token THRU 939
-%token TRUE_kw 813    "True"
+%token OTHER 699  PARAMETER_kw 370    "PARAMETER"
+%token OFF 688  OVERRIDE 371
+%token THRU 950
+%token TRUE_kw 815    "True"
 
-%token CALL_COBOL 392    "CALL"
-%token CALL_VERBATIM 393    "CALL (as C)"
+%token CALL_COBOL 394    "CALL"
+%token CALL_VERBATIM 395    "CALL (as C)"
 
-%token TURN 815  CHECKING 496  LOCATION 649  ON 689  WITH 841
+%token TURN 817  CHECKING 498  LOCATION 650  ON 690  WITH 844
 
-%left OR 940
-%left AND 941
-%right NOT 942
-%left '<'  '>'  '='  NE 943  LE 944  GE 945
+%left OR 951
+%left AND 952
+%right NOT 953
+%left '<'  '>'  EQ 298    "EQUAL"  NE 954  LE 955  GE 956
 %left '-'  '+'
 %left '*'  '/'
-%right NEG 947
+%right NEG 958
 
 %define api.prefix {ydf}
 %define api.token.prefix{YDF_}
@@ -353,8 +358,13 @@ cdf_define:	CDF_DEFINE cdf_constant NAME as cdf_expr[value] override
 		    }
 		    YYERROR;
 		  }
+                  if( symbols_begin() < symbols_end() ) {
+                    cbl_field_t field = cdf_literalize($NAME, $value);
+                    symbol_field_add(current_program_index(), &field);                    
+                  }
+
 		}
-	|	CDF_DEFINE cdf_constant NAME '=' cdf_expr[value] override
+	|	CDF_DEFINE cdf_constant NAME EQ cdf_expr[value] override
 		{  /* accept, but as error */
 		  if( scanner_parsing() ) {
 		    error_msg(@NAME, "CDF error: %s = value invalid", $NAME);
@@ -374,8 +384,9 @@ cdf_define:	CDF_DEFINE cdf_constant NAME as cdf_expr[value] override
 		 */
 		{
 		  if( 0 == cdf_dictionary().count($NAME) ) {
-		    yywarn("CDF: '%s' is defined AS PARAMETER "
-			    "but was not defined", $NAME);
+                    cbl_message(@NAME, CdfParameterW,
+                                "CDF: '%s' is defined AS PARAMETER "
+                                "but was not defined", $NAME);
 		  }
 		}
 	|	CDF_DEFINE FEATURE as ON {
@@ -555,7 +566,7 @@ cdf_reloper:	    cdf_relexpr
 
 cdf_relexpr:	cdf_relexpr '<' cdf_expr { $$ = $1(@1) <  $3(@3); }
 	|	cdf_relexpr LE  cdf_expr { $$ = $1(@1) <= $3(@3); }
-	|	cdf_relexpr '=' cdf_expr {
+	|	cdf_relexpr EQ cdf_expr {
 		  $$ = cdfval_t(false);
 		  if( ( $1.string &&  $3.string) ||
 		      (!$1.string && !$3.string) )
@@ -604,7 +615,8 @@ cdf_factor:     NAME {
 		    $$ = that->second;
 		  } else {
 		    if( ! scanner_parsing() ) {
-		      yywarn("CDF skipping: no such variable '%s' (ignored)", $1);
+		      cbl_message(CdfNotFoundW,
+                                  "CDF skipping: no such variable '%s'", $1);
 		    } else {
 		      error_msg(@NAME, "CDF error: no such variable '%s'", $1);
 		    }
@@ -952,3 +964,5 @@ cdfval_base_t::operator()( const YDFLTYPE& loc ) {
   // cppcheck-suppress returnTempReference
   return verify_integer(loc, *this) ? *this : zero;
 }
+
+  

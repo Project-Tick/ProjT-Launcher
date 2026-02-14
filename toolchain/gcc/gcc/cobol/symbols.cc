@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -28,6 +28,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// cppcheck-suppress-file duplicateBreak
+
 #include "config.h"
 #include <fstream> // Before cobol-system because it uses poisoned functions
 #include "cobol-system.h"
@@ -45,6 +47,7 @@
 #include "inspect.h"
 #include "../../libgcobol/io.h"
 #include "genapi.h"
+#include "../../libgcobol/charmaps.h"
 
 #pragma GCC diagnostic ignored "-Wunused-result"
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
@@ -159,7 +162,7 @@ symbol_table_extend() {
 
   if( 0 != ftruncate(symbols.fd, len) ) {
     cbl_err( "%s:%d: could not extend symbol table to %lu elements",
-	     __func__, __LINE__, gb4(symbols.capacity));
+             __func__, __LINE__, gb4(symbols.capacity));
   }
 
   /*
@@ -260,6 +263,11 @@ cbl_ffi_arg_t( cbl_ffi_crv_t crv,
   error_msg(loc, __VA_ARGS__);                                \
  } while(0)
 
+#define WARNING_FIELD(F, ...)                                \
+ do{                                                        \
+  auto loc = symbol_field_location(field_index(F));        \
+  warn_msg(loc, __VA_ARGS__);                                \
+ } while(0)
 
 static const struct cbl_occurs_t nonarray = cbl_occurs_t();
 
@@ -275,13 +283,13 @@ class group_size_t {
  public:
   group_size_t() : size(0) {}
   group_size_t& operator+( const cbl_field_t& field ) {
-    size += field.data.capacity;
+    size += field.data.capacity();
     return *this;
   }
   size_t capacity() const { return size; }
 };
 
-enum  { constq = constant_e | quoted_e };
+#define constq (constant_e | quoted_e)
 
 static symbol_elem_t
 elementize( const cbl_field_t& field ) {
@@ -500,13 +508,16 @@ symbol_elem_cmp( const void *K, const void *E )
       }
       return strcasecmp(key.name, elem.name);
     }
-    // break; // This break not needed if all options do a return.
+    break;
   case SymSpecial:
     return special_pair_cmp(k->elem.special, e->elem.special)? 0 : 1;
-    // break; // This break not needed after return.
+    break;
+  case SymLocale:
+    return strcasecmp(k->elem.locale.name, e->elem.locale.name);
+    break;
   case SymAlphabet:
     return strcasecmp(k->elem.alphabet.name, e->elem.alphabet.name);
-    // break; // This break not needed after return.
+    break;
   case SymFile:
     // If the key is global, so must be the found element.
     if( (cbl_file_of(k)->attr & global_e) == global_e &&
@@ -514,7 +525,7 @@ symbol_elem_cmp( const void *K, const void *E )
       return 1;
     }
     return strcasecmp(k->elem.file.name, e->elem.file.name);
-    // break; // This break not needed after return.
+    break;
   }
   assert(k->type == SymField);
 
@@ -670,6 +681,22 @@ symbol_special( size_t program, const char name[] )
 }
 
 struct symbol_elem_t *
+symbol_locale( size_t program, const char name[] )
+{
+  cbl_locale_t locale(name);
+  assert(strlen(name) < sizeof locale.name);
+  strcpy(locale.name, name);
+
+  struct symbol_elem_t key(SymLocale, program), *e;
+  key.elem.locale = locale;
+
+  e = static_cast<struct symbol_elem_t *>(lfind( &key, symbols.elems,
+                                                 &symbols.nelem, sizeof(key),
+                                                 symbol_elem_cmp ) );
+  return e;
+}
+
+struct symbol_elem_t *
 symbol_alphabet( size_t program, const char name[] )
 {
   cbl_alphabet_t alphabet(YYLTYPE(), custom_encoding_e); // cppcheck-suppress syntaxError
@@ -721,7 +748,7 @@ symbol_explicitly_redefines( const cbl_field_t *field ) {
 static uint32_t
 field_size( const struct cbl_field_t *field ) {
   size_t n = field->occurs.ntimes();
-  return field->data.capacity * (n > 0? n : 1);
+  return field->data.capacity() * (n > 0? n : 1);
 }
 
 const char *
@@ -739,7 +766,7 @@ cbl_field_attr_str( cbl_field_attr_t attr ) {
   case function_e: return "function";
   case quoted_e: return "quoted";
   case filler_e: return "filler";
-  case _spare_e: return "temporary";
+  case register_e: return "register";
   case intermediate_e: return "intermediate";
   case embiggened_e: return "embiggened";
   case all_alpha_e: return "all_alpha";
@@ -758,7 +785,7 @@ cbl_field_attr_str( cbl_field_attr_t attr ) {
   case leading_e: return "leading";
   case separate_e: return "separate";
   case envar_e: return "envar";
-  case dnu_1_e: return "dnu_1";
+  case encoded_e: return "encoded";
   case bool_encoded_e: return "bool";
   case hex_encoded_e: return "hex";
   case depends_on_e: return "depends_on";
@@ -781,28 +808,52 @@ cbl_field_t::size() const {
 
 uint64_t
 cbl_field_t::set_attr( cbl_field_attr_t attr ) {
-  if( attr == signable_e ) {
-    if( ! has_attr(attr) && this->var_decl_node != NULL ) {
-      parser_field_attr_set(this, attr);
-    }
-  }
   return this->attr |= uint64_t(attr);
 }
 
 uint64_t
 cbl_field_t::clear_attr( cbl_field_attr_t attr ) {
-  if( attr == signable_e ) {
-    if( this->var_decl_node != nullptr && has_attr(attr) ) {
-      parser_field_attr_set(this, attr, false);
-    }
-  }
   return this->attr &= ~uint64_t(attr);
+}
+
+// Test various ways a Numeric Edited picture can describe a signed value.
+uint64_t 
+cbl_field_t::set_signable() {
+  gcc_assert(type == FldNumericEdited);
+  gcc_assert(data.picture);
+  char *p = xstrdup(data.picture);
+  char *pend;
+  // Look to see if this is a floating-point numeric-edited:
+  pend = strchr(p, ascii_e);
+  if( !pend ) {
+    pend = strchr(p, ascii_E);
+  }
+  if( pend ) {
+    // We end our inspection at the 'E'
+    *pend = '\0';
+  }
+  size_t len = strlen(p);
+  if( p[0] == ascii_plus || p[0] == ascii_minus ) {
+    // The very first character is plus or minus
+    set_attr(signable_e);
+  } else if( len >= 1 && (p[len-1] == ascii_plus || p[len-1] == ascii_minus)) {
+    // The very last character is plus or minus
+    set_attr(signable_e);
+  }
+  else if( len >= 2 &&
+     (   (TOUPPER(p[len-2]) == ascii_D && TOUPPER(p[len-1]) == ascii_B)
+      || (TOUPPER(p[len-2]) == ascii_C && TOUPPER(p[len-1]) == ascii_R) ) ) {
+    // The last two characters are DB or CR
+    set_attr(signable_e);
+  }
+  free(p);
+  return attr;
 }
 
 static uint32_t
 field_memsize( const struct cbl_field_t *field ) {
   uint32_t n = field->occurs.ntimes();
-  n = field->data.capacity * (n > 0? n : 1);
+  n = field->data.capacity() * (n > 0? n : 1);
   return std::max(n, field->data.memsize);
 }
 
@@ -1006,6 +1057,11 @@ symbol_find_odo( const cbl_field_t * field ) {
 static inline bool
 is_index( const cbl_field_type_t type ) { return type == FldIndex; }
 
+static inline const char *
+cbl_encoding_str( cbl_encoding_t encoding ) {
+  return __gg__encoding_iconv_name(encoding);
+}
+
 static size_t
 symbols_dump( size_t first, bool header ) {
   size_t ninvalid = 0;
@@ -1018,7 +1074,7 @@ symbols_dump( size_t first, bool header ) {
   }
 
   for( struct symbol_elem_t *e = symbols_begin(first); e < symbols_end(); e++ ) {
-    char *s;
+    char *s = nullptr;
 
     switch(e->type) {
     case SymFilename:
@@ -1089,7 +1145,15 @@ symbols_dump( size_t first, bool header ) {
         free(part);
       }
       break;
-    default:
+    case SymLocale:
+      s = xasprintf("%4" GCC_PRISZ "u %-18s %s %s collation %s", (fmt_size_t)e->program,
+                    "Locale",
+                    e->elem.locale.name,
+                    cbl_encoding_str(e->elem.locale.encoding),
+                    e->elem.locale.collation );
+      break;
+    }
+    if( ! s ) {
       dbgmsg("%s: cannot dump symbol type %d", __func__, e->type);
       continue;
     }
@@ -1155,9 +1219,9 @@ static struct symbol_elem_t *
 
   if( is_elementary(group->type) ) { // "group" is in fact just a field
     if( is_record_area(group) ) {
-      if( group->data.capacity == 0 ) {
+      if( group->data.capacity() == 0 ) {
         const auto& file = *cbl_file_of(symbol_at(group->file));
-        group->data.capacity = file.varying_size.max;
+        group->data.capacity(  file.varying_size.max );
       }
 
       // Find 01s for the file that is not a record area field.
@@ -1178,8 +1242,8 @@ static struct symbol_elem_t *
           assert(record->level == 1);
           e = calculate_capacity(p);
           auto record_size = std::max(record->data.memsize,
-                                      record->data.capacity);
-          group->data.capacity = std::max(group->data.capacity, record_size);
+                                      record->data.capacity());
+          group->data.capacity( std::max(group->data.capacity(), record_size) );
         }
       }
 
@@ -1187,8 +1251,8 @@ static struct symbol_elem_t *
       // Reach back to that symbol to set its capacity, if need be.
       auto area = symbol_redefines(group);
       if( area ) {
-        area->data.capacity = std::max(area->data.capacity,
-                                      group->data.capacity);
+        area->data.capacity(  std::max(area->data.capacity(),
+                                       group->data.capacity()) );
       }
 
       return e; // no 01, return self
@@ -1198,7 +1262,7 @@ static struct symbol_elem_t *
 
     if( redefined ) {
       redefined->data.memsize = std::max(field_memsize(redefined), field_size(group));
-      if( redefined->data.memsize == redefined->data.capacity ) {
+      if( redefined->data.memsize == redefined->data.capacity() ) {
         redefined->data.memsize = 0;
       }
     }
@@ -1214,7 +1278,7 @@ static struct symbol_elem_t *
 
   assert(group->type == FldGroup);
 
-  group->data.capacity = 0;
+  group->data.capacity(0);
 
   std::list<cbl_field_t*> members;
 
@@ -1252,20 +1316,20 @@ static struct symbol_elem_t *
 
       field->data.memsize = 0;
 
-      if( redefined->data.memsize == redefined->data.capacity ) {
+      if( redefined->data.memsize == redefined->data.capacity() ) {
         redefined->data.memsize = 0;
       }
       continue;
     }
-    group->data.capacity += field_size(field);
+    group->data.add_capacity( field_size(field) );
     group->data.memsize += field_memsize(field);
 
     // If group has a parent that is a record area, expand it, too.
     if( 0 < group->parent ) {
       redefined = symbol_redefines(group);
       if( redefined && is_record_area(redefined) ) {
-        if( redefined->data.capacity < group->data.memsize ) {
-          redefined->data.capacity = group->data.memsize;
+        if( redefined->data.capacity() < group->data.memsize ) {
+          redefined->data.capacity( group->data.memsize );
         }
       }
     }
@@ -1277,22 +1341,22 @@ static struct symbol_elem_t *
   }
 
   group->data.memsize = std::max(max_memsize, group->data.memsize);
-  if( group->data.memsize == group->data.capacity ) group->data.memsize = 0;
+  if( group->data.memsize == group->data.capacity() ) group->data.memsize = 0;
 
-  if( 0 < group->data.memsize && group->data.memsize < group->data.capacity ) {
+  if( 0 < group->data.memsize && group->data.memsize < group->data.capacity() ) {
     if( yydebug ) {
       dbgmsg( "%s:%d: small capacity?\n\t%s", __func__, __LINE__, field_str(group) );
     }
-    group->data.memsize = group->data.capacity;
+    group->data.memsize = group->data.capacity();
   }
 
-  if( group->data.capacity == 0 ) {
+  if( group->data.capacity() == 0 ) {
     dbgmsg( "%s:%d: zero capacity?\n\t%s", __func__, __LINE__, field_str(group) );
   }
 
   switch( group->level ) {
   case 1: case 77:
-    if( dialect_mf() && is_table(group) ) {
+    if( is_table(group) ) {
       size_t elem_size = std::max(group->data.memsize, group->data.memsize);
       group->data.memsize = elem_size * group->occurs.ntimes();
     }
@@ -1345,16 +1409,16 @@ bool
 is_variable_length( const cbl_field_t *field ) {
   // RENAMES may be included in end_of_group.
   size_t isym = field_index(field),  esym = end_of_group(isym);
-  bool odo = std::any_of( symbol_at(isym) + 1, symbol_at_impl(esym), 
-			  [field]( const auto& elem ) {
-			    if( elem.type == SymField ) {
-			      auto f = cbl_field_of(&elem);
-			      if( field->level < f->level ) { // exclude RENAMES
-				return 0 < f->occurs.depending_on;
-			      }
-			    }
-			    return false;
-			  } );
+  bool odo = std::any_of( symbol_at(isym) + 1, symbol_at_impl(esym),
+                          [field]( const auto& elem ) {
+                            if( elem.type == SymField ) {
+                              auto f = cbl_field_of(&elem);
+                              if( field->level < f->level ) { // exclude RENAMES
+                                return 0 < f->occurs.depending_on;
+                              }
+                            }
+                            return false;
+                          } );
   return odo;
 }
 
@@ -1449,7 +1513,7 @@ cbl_field_t::attr_str( const std::vector<cbl_field_attr_t>& attrs ) const
 
 char *
 field_str( const cbl_field_t *field ) {
-  static char string[3*sizeof(cbl_name_t)];
+  static char string[4*sizeof(cbl_name_t)];
   char *pend = string;
 
   char name[2*sizeof(cbl_name_t)] = "";
@@ -1466,6 +1530,12 @@ field_str( const cbl_field_t *field ) {
     }
   }
 
+  if( field->codeset.valid() ) {
+    strcat(name, " (");
+    strcat(name, field->codeset.name());
+    strcat(name, ") ");
+  }
+
   pend += snprintf(pend, string + sizeof(string) - pend,
                    "%02u %-20s ", field->level, name);
 
@@ -1479,58 +1549,45 @@ field_str( const cbl_field_t *field ) {
   if( 'r' == parredef && field->level == 0 ) parredef = 'p';
   if( field->has_attr(typedef_e) ) parredef = 'T';
 
-  const char *data = field->data.initial? field->data.initial : NULL;
-  if( data ) {
-    auto fig = cbl_figconst_of(data);
+  const char *init = field->data.original();
+  if( init ) {
+    auto fig = cbl_figconst_of(init);
     if( normal_value_e != fig ) {
-      data = cbl_figconst_str(fig);
+      init = cbl_figconst_str(fig);
     } else {
-      char *s;
-      auto n = asprintf(&s, "'%s'", data);
-      gcc_assert(n);
-      auto eodata = data + field->data.capacity;
-      // It is possible for data.initial to be shorter than capacity.
-      
-      // This whole thing needs to be reexamined.  There is an assumption for
-      // FldAlphanumeric values that the valid data in data.initial be the same
-      // length as data.capacity.  But that does not hold true for other types.
-      // For example, a PIC 9V9 has a capacity of two, but the initial
-      // string provided by the COBOL programmer might be "1.2".  Likewise, a
-      // PIC 999999 (capacity 5) might have a value of "1".
-      
-      for(size_t i = 0; i<field->data.capacity; i++)
-        {
-        if( data[i] == '\0' )
-          {
-          eodata = data + i;
-          break;
+      char *s = xasprintf("'%s'", init);
+
+      // No NUL within the initial data.
+      auto eoinit = init + strlen(init);
+      auto ok = std::none_of( init, eoinit,
+                              []( char ch ) { return ch == '\0'; } );
+      assert(ok);
+
+      // If any of the init are unprintable, provide a hex version.
+      if( ! std::all_of(init, eoinit, fisprint) ) {
+        if( is_elementary(field->type) && field->type != FldPointer ) {
+          const size_t len = strlen(s) + 8 + 2 * strlen(init);
+          s = reinterpret_cast<char*>(xrealloc(s, len));
+          strcat( s, " (0x" );
+          char *p = s + strlen(s);
+          for( auto d=init; d < eoinit; d++ ) {
+            p += sprintf(p, "%02x", static_cast<unsigned char>(*d));
           }
-        }
-      if( eodata != std::find_if_not(data, eodata, fisprint) ) {
-        char *p = reinterpret_cast<char*>(xrealloc(s, n + 8 + 2 * field->data.capacity));
-        if( is_elementary(field->type) &&
-                          field->type != FldPointer && p != NULL ) {
-          s = p;
-          p += n;
-          strcat( p, "(0x" );
-          p += 3;
-          for( auto d=data; d < eodata; d++ ) {
-            p += sprintf(p, "%02x", *d);
-          }
-          strcat( p++, ")" );
+          strcat( s, ")" );
+          assert(strlen(s) < len);
         }
       }
-      data = s;
+      init = s;
     }
   } else {
-    data = "NULL";
+    init = "NULL";
     if( field->type == FldSwitch ) {
-      data = xasprintf("0x%02x", field->data.upsi_mask_of()->value);
+      init = xasprintf("0x%02x", field->data.upsi_mask_of()->value);
     }
   }
   if( field->level == 88 ) {
     const auto& dom = *field->data.domain_of();
-    data = xasprintf("%s%s %s - %s%s",
+    init = xasprintf("%s%s %s - %s%s",
                      dom.first.all? "A" : "",
                      value_or_figconst_name(dom.first.name()) ,
                      dom.first.is_numeric? "(num)" : "",
@@ -1549,7 +1606,7 @@ field_str( const cbl_field_t *field ) {
     intermediate_e, embiggened_e, all_alpha_e, all_x_e,
     all_ax_e, prog_ptr_e, scaled_e, refmod_e, based_e, any_length_e,
     /* global_e, external_e, */ blank_zero_e, /* linkage_e, local_e, */ leading_e,
-    separate_e, envar_e, dnu_1_e, bool_encoded_e, hex_encoded_e,
+    separate_e, envar_e, encoded_e, bool_encoded_e, hex_encoded_e,
     depends_on_e, /* initialized_e, */ has_value_e, ieeedec_e, big_endian_e,
     same_as_e, record_key_e, typedef_e, strongdef_e,
   };
@@ -1561,8 +1618,8 @@ field_str( const cbl_field_t *field ) {
                    (field->attr & external_e)? 'E' : 0x20,
                    storage_type,
                    field->data.memsize,
-                   field->data.capacity, field->data.digits, field->data.rdigits,
-                   data, field->attr_str(attrs), field->line );
+                   field->data.capacity(), field->data.digits, field->data.rdigits,
+                   init, field->attr_str(attrs), field->line );
   return string;
 }
 
@@ -1591,12 +1648,14 @@ static void
 extend_66_capacity( cbl_field_t *alias ) {
   static_assert(sizeof(symbol_elem_t*) == sizeof(const char *),
                 "all pointers must be same size");
-  assert(alias->data.picture);
+  assert(alias->level == 66);
   assert(alias->type == FldGroup);
+  assert(alias->data.picture);
+  // If data.picture is not NULL, it is the THRU symbol, see symbol_field_alias2.
   symbol_elem_t *e = symbol_at(alias->parent);
   symbol_elem_t *e2 =
     reinterpret_cast<symbol_elem_t*>(const_cast<char*>(alias->data.picture));
-  assert(e < e2);
+  assert(symbol_index(e) < symbol_index(e2));
   alias->data.picture = NULL;
 
   capacity_of cap;
@@ -1605,12 +1664,16 @@ extend_66_capacity( cbl_field_t *alias ) {
   } else {
     ++e2;
   }
-  alias->data.capacity = std::for_each(e, e2, cap).capacity;
-  assert(alias->data.capacity > 0);
+  cap = std::for_each(e, e2, cap);
+  alias->data.capacity( cap.capacity );
+  assert(alias->data.capacity() > 0);
 }
 
 bool
 symbols_alphabet_set( size_t program, const char name[]) {
+
+////////
+// Older version
   struct alpha {
     void operator()( symbol_elem_t& elem ) const {
       if( elem.type == SymAlphabet ) {
@@ -1620,7 +1683,7 @@ symbols_alphabet_set( size_t program, const char name[]) {
   };
 
   // Define alphabets for codegen.
-  std::for_each(symbols_begin(), symbols_end(), alpha() );
+  std::for_each(symbols_begin(program), symbols_end(), alpha() );
 
   // Set collation sequence before parser_symbol_add.
   if( name ) {
@@ -1631,6 +1694,38 @@ symbols_alphabet_set( size_t program, const char name[]) {
     parser_alphabet_use(*cbl_alphabet_of(e));
   }
   return true;
+// End older version
+////////
+
+////  // Define alphabets for codegen.
+////  const cbl_alphabet_t *alphabet = nullptr;
+////  bool supported = true;
+////
+////  std::for_each( symbols_begin(program), symbols_end(),
+////                 [&alphabet, &supported]( const auto& sym ) {
+////                   if( sym.type == SymAlphabet ) {
+////                     alphabet = cbl_alphabet_of(&sym);
+////                     supported = __gg__encoding_iconv_valid(alphabet->encoding);
+////                     if( supported ) {
+////                       parser_alphabet( *alphabet );
+////                     }
+////                   }
+////                 } );
+////  if( ! supported ) {
+////    const char *encoding = __gg__encoding_iconv_name(alphabet->encoding);
+////    cbl_unimplemented("alphabet %qs (as %qs)", alphabet->name, encoding);
+////    return false;
+////  }
+////
+////  // Set collation sequence before parser_symbol_add.`
+////  if( name ) {
+////    symbol_elem_t *e = symbol_alphabet(program, name);
+////    if( !e ) {
+////      return false;
+////    }
+////    parser_alphabet_use(*cbl_alphabet_of(e));
+////  }
+////  return true;
 }
 
 static std::ostream&
@@ -1644,7 +1739,7 @@ operator<<( std::ostream& os, const cbl_occurs_bounds_t& bound ) {
 static std::ostream&
 operator<<( std::ostream& os, const cbl_field_data_t& field ) {
   return os << field.memsize << ','
-            << field.capacity << ','
+            << field.capacity() << ','
             << field.digits << ','
             << field.rdigits << ','
             << (field.picture? field.picture : "");
@@ -1706,7 +1801,7 @@ symbols_update( size_t first, bool parsed_ok ) {
       break;
     case 1:
       pend = calculate_capacity(p);
-      if( dialect_mf() && is_table(field) ) {
+      if( is_table(field) ) {
         if( field->data.memsize < field->size() ) {
           field->data.memsize = field->size();
         }
@@ -1780,11 +1875,11 @@ symbols_update( size_t first, bool parsed_ok ) {
                   field->line, field->level_str(), field->name);
 
         } else {
-          dbgmsg("%s: error: data item %s #" HOST_SIZE_T_PRINT_UNSIGNED
+          cbl_internal_error("%s: data item %s #" HOST_SIZE_T_PRINT_UNSIGNED
                  " '%s' capacity %u rejected",
                    __func__,
                    3 + cbl_field_type_str(field->type),
-                   (fmt_size_t)isym, field->name, field->data.capacity);
+                   (fmt_size_t)isym, field->name, field->data.capacity());
         }
       }
       return 0;
@@ -1801,7 +1896,7 @@ symbols_update( size_t first, bool parsed_ok ) {
   // A shared record area has no 01 child because that child redefines its parent.
   for( auto sharer : shared_record_areas ) {
     auto redefined = cbl_field_of(symbol_at(sharer->parent));
-    sharer->data.capacity = redefined->data.capacity;
+    sharer->data.capacity( redefined->data.capacity() );
   }
 
   for( p = symbols_begin(first); p < symbols_end(); p++ ) {
@@ -1812,15 +1907,15 @@ symbols_update( size_t first, bool parsed_ok ) {
     if( field->level == 0 && field->is_key_name() ) continue;
     if( is_literal(field) && field->var_decl_node != NULL ) continue;
 
-    // If the field is a constant for a figconstant, just use it. 
+    // If the field is a constant for a figconstant, just use it.
     if( field->level != 0 && field->has_attr(constant_e) ) {
       auto fig = cbl_figconst_field_of(field->data.initial);
       if( fig ) {
-	field->var_decl_node = fig->var_decl_node;
-	continue;
+        field->var_decl_node = fig->var_decl_node;
+        continue;
       }
     }
-    
+
     if( field->is_typedef() ) {
       auto isym = end_of_group( symbol_index(p) );
       p = symbol_at(--isym);
@@ -1840,6 +1935,52 @@ symbols_update( size_t first, bool parsed_ok ) {
       ERROR_FIELD(field, "line %d: %s %s requires PICTURE",
               field->line, field->level_str(), field->name);
       continue;
+    }
+    if( is_numeric(field) && ! field->has_attr(constant_e) ) {
+      if( field->data.capacity() == 0 ) {
+        ERROR_FIELD(field, "numeric %qs has USAGE that requires PICTURE %s",
+                    field->name, field->data.initial);
+      }
+    }
+
+    if( ! field->codeset.consistent() ) {
+      if( ! field->codeset.valid() ) {
+        switch(field->type) {
+        case FldForward:
+        case FldInvalid:
+          gcc_unreachable();
+        case FldAlphaEdited:
+        case FldAlphanumeric:
+        case FldDisplay:
+        case FldGroup:
+        case FldLiteralA:
+        case FldLiteralN:
+        case FldNumericDisplay:
+        case FldNumericEdited:
+          if( ! (field->has_attr(register_e) || field->has_attr(hex_encoded_e)) ) {
+            error_msg(symbol_field_location(field_index(field)),
+                      "internal: %qs encoding not defined", field->name);
+          }
+          break;
+        case FldClass:
+        case FldConditional:
+        case FldFloat:
+        case FldIndex:
+        case FldNumericBin5:
+        case FldNumericBinary:
+        case FldPacked:
+        case FldPointer:
+        case FldSwitch:
+          break;
+        }
+      } else {
+        if( ! (field->has_attr(register_e) || field->has_attr(hex_encoded_e)) ) {
+          error_msg(symbol_field_location(field_index(field)),
+                    "internal: %qs encoding %qs inconsistent",
+                    field->name,
+                    cbl_alphabet_t::encoding_str(field->codeset.encoding) );
+        }
+      }
     }
 
     assert( ! field->is_typedef() );
@@ -2064,7 +2205,10 @@ symbol_field_parent_set( cbl_field_t *field )
           return NULL;
         }
         prior->type = FldGroup;
-        field->attr |= numeric_group_attrs(prior);
+        if( ! prior->codeset.set() ) { // needs attention
+          dbgmsg("'%s' is already National", prior->name);
+        }
+        field->attr |= numeric_group_attrs(field);
       }
       // verify level 88 domain value
       if( is_numeric(prior) && field->level == 88 ) {
@@ -2121,12 +2265,15 @@ add_token( symbol_elem_t sym ) {
   return sym;
 }
 
+const std::list<cbl_field_t> cdf_literalize();
+
 /*
- * When adding registers, be sure to add a complementary cblc_field_t
+ * When adding special registers, be sure to create the actual cblc_field_t
  * in libgcobol/constants.cc.
  */
 void
 symbol_table_init(void) {
+  const static cbl_field_t::codeset_t cp1252(CP1252_e);
   assert(symbols.fd == -1);
   assert(symbols.nelem == 0);
 
@@ -2141,41 +2288,43 @@ symbol_table_init(void) {
 
   // These should match the definitions in libgcobol/constants.cc
   static cbl_field_t constants[] = {
-    { 0, FldAlphanumeric, FldInvalid, space_value_e | constq, 0, 0, 0, nonarray, 0,
-      "SPACE", 0, {}, {1,1,0,0, " \0\xFF"}, NULL },
-    { 0, FldAlphanumeric, FldInvalid, space_value_e | constq , 0, 0, 0, nonarray, 0,
-      "SPACES", 0, {}, {1,1,0,0, " \0\xFF"}, NULL },
-    { 0, FldAlphanumeric, FldInvalid, low_value_e | constq, 0, 0, 0, nonarray, 0,
-      "LOW_VALUES", 0, {}, {1,1,0,0, "L\0\xFF"}, NULL },
-    { 0, FldAlphanumeric, FldInvalid, zero_value_e | constq, 0, 0, 0, nonarray, 0,
-      "ZEROS", 0, {}, {1,1,0,0, "0"}, NULL },
-    { 0, FldAlphanumeric, FldInvalid, high_value_e | constq, 0, 0, 0, nonarray, 0,
-      "HIGH_VALUES", 0, {}, {1,1,0,0, "H\0\xFF"}, NULL },
+    { FldAlphanumeric, SPACE_VALUE_E | constq | register_e,
+      {1,1,0,0, " \0\xFF"}, 0, "SPACE", cp1252 },
+    { FldAlphanumeric, SPACE_VALUE_E | constq | register_e,
+      {1,1,0,0, " \0\xFF"}, 0, "SPACES", cp1252 },
+    { FldAlphanumeric, LOW_VALUE_E | constq | register_e,
+      {1,1,0,0, "L\0\xFF"}, 0, "LOW_VALUES", cp1252 },
+    { FldAlphanumeric, ZERO_VALUE_E | constq | register_e,
+      {1,1,0,0, "0"}, 0, "ZEROS", cp1252 },
+    { FldAlphanumeric, HIGH_VALUE_E | constq | register_e,
+      {1,1,0,0, "H\0\xFF"}, 0, "HIGH_VALUES", cp1252 },
     // IBM standard: QUOTE is a double-quote unless APOST compiler option
-    { 0, FldAlphanumeric, FldInvalid, quote_value_e | constq , 0, 0, 0, nonarray, 0,
-      "QUOTES", 0, {}, {1,1,0,0, "\"\0\xFF"}, NULL },
-    { 0, FldPointer, FldPointer, constq , 0, 0, 0, nonarray, 0,
-      "NULLS", 0, {}, {8,8,0,0, zeroes_for_null_pointer}, NULL },
+    { FldAlphanumeric, QUOTE_VALUE_E | constq | register_e ,
+      {1,1,0,0, "\"\0\xFF"}, 0, "QUOTES", cp1252 },
+    { FldPointer, constq | register_e ,
+      {8,8,0,0, zeroes_for_null_pointer}, 0, "NULLS", cp1252 },
     // IBM defines TALLY
     // 01  TALLY GLOBAL PICTURE 9(5) USAGE BINARY VALUE ZERO.
-    { 0, FldNumericBin5, FldInvalid, signable_e, 0, 0, 0, nonarray, 0,
-      "_TALLY", 0, {}, {16, 16, MAX_FIXED_POINT_DIGITS, 0, NULL}, NULL },
+    { FldNumericBin5, signable_e | register_e,
+      {16, 16, MAX_FIXED_POINT_DIGITS, 0, NULL}, 0, "_TALLY", cp1252 },
     // 01  ARGI is the current index into the argv array
-    { 0, FldNumericBin5, FldInvalid, signable_e, 0, 0, 0, nonarray, 0,
-      "_ARGI", 0, {}, {16, 16, MAX_FIXED_POINT_DIGITS, 0, NULL}, NULL },
+    { FldNumericBin5, signable_e | register_e,
+      {16, 16, MAX_FIXED_POINT_DIGITS, 0, NULL}, 0, "_ARGI", cp1252 },
 
     // These last two don't require actual storage; they get BOOL var_decl_node
     // in parser_symbol_add()
-    { 0, FldConditional, FldInvalid, constant_e , 0, 0, 0, nonarray, 0,
-      "_VERY_TRUE", 0, {}, {1,1,0,0, ""}, NULL },
-    { 0, FldConditional, FldInvalid, constant_e , 0, 0, 0, nonarray, 0,
-      "_VERY_FALSE", 0, {}, {1,1,0,0, ""}, NULL },
+    { FldConditional, constant_e | register_e , {1,1,0,0, ""}, 0, "_VERY_TRUE", cp1252 },
+    { FldConditional, constant_e | register_e , {1,1,0,0, ""}, 0, "_VERY_FALSE", cp1252 },
   };
   for( struct cbl_field_t *f = constants;
        f < constants + COUNT_OF(constants); f++ ) {
     f->our_index = table.nelem;
     struct symbol_elem_t sym(SymField, 0);
     sym.elem.field = *f;
+    // The following makes these constants match the definitions in
+    // constants.cc.  Consider expanding the constructor fo cbl_field_t to
+    // handle encoding.
+    sym.elem.field.codeset.encoding = iconv_CP1252_e;
     table.elems[table.nelem++] = sym;
   }
 
@@ -2241,30 +2390,30 @@ symbol_table_init(void) {
    **/
 
   static cbl_field_t debug_registers[] = {
-    { 0, FldGroup, FldInvalid, global_e, 0,0,1, nonarray, 0,
-      "DEBUG-ITEM", 0, {}, {132,132,0,0, NULL}, NULL },
-    { 0, FldAlphanumeric, FldInvalid, global_e, 0,0,2, nonarray, 0,
-      "DEBUG-LINE", 0, {}, {6,6,0,0, "      "}, NULL },
-    { 0, FldAlphanumeric, FldInvalid, 0, 0,0,2, nonarray, 0,
-      "FILLER", 0, {}, {1,1,0,0, " "}, NULL },
-    { 0, FldAlphanumeric, FldInvalid, global_e, 0,0,2, nonarray, 0,
-      "DEBUG-NAME", 0, {}, {30,30,0,0, NULL}, NULL },
-    { 0, FldAlphanumeric, FldInvalid, 0, 0,0,2, nonarray, 0,
-      "FILLER", 0, {}, {1,1,0,0, " "}, NULL },
-    { 0, FldNumericDisplay, FldInvalid, signable_e | global_e | leading_e | separate_e, 0,0,2, nonarray, 0,
-      "DEBUG-SUB-1", 0, {}, {5,5,3,0, NULL}, NULL },
-    { 0, FldAlphanumeric, FldInvalid, 0, 0,0,2, nonarray, 0,
-      "FILLER", 0, {}, {1,1,0,0, " "}, NULL },
-    { 0, FldNumericDisplay, FldInvalid, signable_e | global_e | leading_e | separate_e, 0,0,2, nonarray, 0,
-      "DEBUG-SUB-2", 0, {}, {5,5,3,0, NULL}, NULL },
-    { 0, FldAlphanumeric, FldInvalid, 0, 0,0,2, nonarray, 0,
-      "FILLER", 0, {}, {1,1,0,0, " "}, NULL },
-    { 0, FldNumericDisplay, FldInvalid, signable_e | global_e | leading_e | separate_e, 0,0,2, nonarray, 0,
-      "DEBUG-SUB-3", 0, {}, {5,5,3,0, NULL}, NULL },
-    { 0, FldAlphanumeric, FldInvalid, 0, 0,0,2, nonarray, 0,
-      "FILLER", 0, {}, {1,1,0,0, " "}, NULL },
-    { 0, FldAlphanumeric, FldInvalid, signable_e | global_e, 0,0,2, nonarray, 0,
-      "DEBUG-CONTENTS", 0, {}, {76,76,0,0, NULL}, NULL },
+    { FldGroup, register_e,
+      {132,132,0,0, NULL}, 1, "DEBUG-ITEM", cp1252 },
+    { FldAlphanumeric, register_e,
+      {6,6,0,0, "      "}, 2, "DEBUG-LINE", cp1252 },
+    { FldAlphanumeric, register_e|filler_e,
+      {1,1,0,0, " "},      2, "FILLER", cp1252 },
+    { FldAlphanumeric, register_e,
+      {30,30,0,0, NULL},   2, "DEBUG-NAME", cp1252 },
+    { FldAlphanumeric, register_e|filler_e,
+      {1,1,0,0, " "},      2, "FILLER", cp1252 },
+    { FldNumericDisplay, signable_e | register_e | leading_e | separate_e,
+      {5,5,4,0, NULL},     2, "DEBUG-SUB-1", cp1252 },
+    { FldAlphanumeric, register_e|filler_e,
+      {1,1,0,0, " "},      2, "FILLER", cp1252 },
+    { FldNumericDisplay, signable_e | register_e | leading_e | separate_e,
+      {5,5,4,0, NULL},     2, "DEBUG-SUB-2", cp1252 },
+    { FldAlphanumeric, register_e|filler_e,
+      {1,1,0,0, " "},      2, "FILLER", cp1252 },
+    { FldNumericDisplay, signable_e | register_e | leading_e | separate_e,
+      {5,5,4,0, NULL},     2, "DEBUG-SUB-3", cp1252 },
+    { FldAlphanumeric, register_e | filler_e,
+      {1,1,0,0, " "},      2, "FILLER", cp1252 },
+    { FldAlphanumeric, signable_e | register_e,
+      {76,76,0,0, NULL},   2, "DEBUG-CONTENTS", cp1252 },
   };
 
   // debug registers
@@ -2274,7 +2423,7 @@ symbol_table_init(void) {
     std::accumulate(debug_registers,
                     debug_registers + COUNT_OF(debug_registers), group_size_t());
   debug_registers[0].data.memsize =
-  debug_registers[0].data.capacity = group_size.capacity();
+  debug_registers[0].data.capacity( group_size.capacity() );
 
   auto debug_start = p = table.elems + table.nelem;
   p = std::transform(debug_registers,
@@ -2283,26 +2432,18 @@ symbol_table_init(void) {
   assert(table.nelem < table.capacity);
   std::for_each(debug_start+1, p, parent_elem_set(debug_start - table.elems));
 
+  // special registers
   static cbl_field_t special_registers[] = {
-    { 0, FldNumericDisplay, FldInvalid, 0, 0, 0, 0, nonarray, 0, "_FILE_STATUS",
-      0, {}, {2,2,2,0, NULL}, NULL },
-    { 0, FldNumericBin5, FldInvalid, 0, 0, 0, 0, nonarray, 0, "UPSI-0",
-      0, {}, {2,2,4,0, NULL}, NULL },
-    { 0, FldNumericBin5, FldInvalid, signable_e, 0, 0, 0, nonarray, 0, "RETURN-CODE",
-      0, {}, {2,2,4,0, NULL}, NULL },
-    { 0, FldNumericBin5, FldInvalid, 0, 0, 0, 0, nonarray, 0, "LINAGE-COUNTER",
-      0, {}, {2,2,4,0, NULL}, NULL },
-    { 0, FldLiteralA, FldInvalid, 0, 0, 0, 0, nonarray, 0, "_dev_stdin",
-      0, {}, {0,0,0,0, "/dev/stdin"}, NULL },
-    { 0, FldLiteralA, FldInvalid, constq, 0, 0, 0, nonarray, 0, "_dev_stdout",
-      0, {}, {0,0,0,0, "/dev/stdout"}, NULL },
-    { 0, FldLiteralA, FldInvalid, constq, 0, 0, 0, nonarray, 0, "_dev_stderr",
-      0, {}, {0,0,0,0, "/dev/stderr"}, NULL },
-    { 0, FldLiteralA, FldInvalid, constq, 0, 0, 0, nonarray, 0, "_dev_null",
-      0, {}, {0,0,0,0, "/dev/null"}, NULL },
+    { FldNumericDisplay, register_e, {2,2,2,0, NULL}, 0, "_FILE_STATUS", cp1252 },
+    { FldNumericBin5,    register_e, {2,2,4,0, NULL}, 0, "UPSI-0", cp1252 },
+    { FldNumericBin5,    signable_e|register_e, {2,2,4,0, NULL}, 0, "RETURN-CODE", cp1252 },
+    { FldNumericBin5,    register_e, {2,2,4,0, NULL}, 0, "LINAGE-COUNTER", cp1252 },
+    { FldLiteralA,        register_e, {0,0,0,0, "/dev/stdin"}, 0, "_dev_stdin", cp1252 },
+    { FldLiteralA, constq|register_e, {0,0,0,0, "/dev/stdout"}, 0, "_dev_stdout", cp1252 },
+    { FldLiteralA, constq|register_e, {0,0,0,0, "/dev/stderr"}, 0, "_dev_stderr", cp1252 },
+    { FldLiteralA, constq|register_e, {0,0,0,0, "/dev/null"},   0, "_dev_null", cp1252 },
   };
 
-  // special registers
   assert(table.nelem + COUNT_OF(special_registers) < table.capacity);
 
   p = table.elems + table.nelem;
@@ -2312,9 +2453,49 @@ symbol_table_init(void) {
   table.nelem = p - table.elems;
   assert(table.nelem < table.capacity);
 
+  const static auto reg_based_any = cbl_field_attr_t(register_e | based_e | any_length_e);
+  // xml registers
+  static cbl_field_t xml_registers[] = {
+    { FldNumericBin5,  register_e, {4,4,9,0, "0"}, 1, "XML-CODE", cp1252 },
+    { FldAlphanumeric, register_e, {30,30,0,0, " "}, 1, "XML-EVENT", cp1252 },
+    { FldNumericBin5,  register_e, {4,4,9,0, "0"}, 1, "XML-INFORMATION", cp1252 },
+    { FldAlphanumeric, reg_based_any, {1,1,0,0, nullptr}, 1, "XML-NAMESPACE", cp1252 },
+    { FldAlphanumeric, reg_based_any, {1,1,0,0, nullptr}, 1, "XML-NNAMESPACE", cp1252 },
+    { FldAlphanumeric, reg_based_any, {1,1,0,0, nullptr}, 1, "XML-NAMESPACE-PREFIX", cp1252 },
+    { FldAlphanumeric, reg_based_any, {1,1,0,0, nullptr}, 1, "XML-NNAMESPACE-PREFIX", cp1252 },
+    { FldAlphanumeric, reg_based_any, {1,1,0,0, nullptr}, 1, "XML-TEXT", cp1252 },
+    { FldAlphanumeric, reg_based_any, {1,1,0,0, nullptr}, 1, "XML-NTEXT", cp1252 },
+  }, * const eoxml = xml_registers + COUNT_OF(xml_registers);
+
+  assert(table.nelem + COUNT_OF(xml_registers) < table.capacity);
+
+  p = table.elems + table.nelem;
+  p = std::transform(xml_registers, eoxml, p, elementize);
+  table.nelem = p - table.elems;
+  assert(table.nelem < table.capacity);
+
+  // Add any CDF values defined on the command line. 
+  // After symbols are ready, the CDF adds them directly.
+  const std::list<cbl_field_t> cdf_values = cdf_literalize();
+  auto icdf = table.nelem;
+  table.nelem += cdf_values.size();
+  assert(table.nelem < table.capacity);
+  auto ecdf = table.nelem;
+
+  p = std::transform(cdf_values.begin(), cdf_values.end(), p, elementize);
+
   // Initialize symbol table.
   symbols = table;
 
+  // Encode CDF literals.  Could not be done previously because encoding checks
+  // against figurative constants in the symbol table.
+  for( auto i=icdf; i < ecdf; i++ ) {
+    auto& f = symbols.elems[i].elem.field;
+    if( f.type == FldLiteralA ) {
+      f.set_initial(cbl_loc_t());
+    }
+  }
+  
   for( auto e = symbols.elems; e < symbols.elems + symbols.nelem; e++ ) {
     if( e->type == SymField ) {
       update_symbol_map2(e);
@@ -2426,6 +2607,13 @@ symbol_file_add( size_t program, cbl_file_t *file ) {
 }
 
 symbol_elem_t *
+symbol_locale_add( size_t program, const cbl_locale_t *locale ) {
+  symbol_elem_t sym{ SymLocale, program };
+  sym.elem.locale = *locale;
+  return symbol_add(&sym);
+}
+
+symbol_elem_t *
 symbol_alphabet_add( size_t program, const cbl_alphabet_t *alphabet ) {
   symbol_elem_t sym{ SymAlphabet, program };
   sym.elem.alphabet = *alphabet;
@@ -2437,12 +2625,10 @@ numeric_group_attrs( const cbl_field_t *field ) {
   static const uint64_t inherit = signable_e | leading_e | separate_e | big_endian_e;
   static_assert(sizeof(cbl_field_t::type) < sizeof(inherit), "need bigger type");
   assert(field);
-  if( field->type == FldNumericDisplay || field->type == FldGroup ) {
-    if( field->parent > 0 && symbol_at(field->parent)->type == SymField ) {
-      cbl_field_t *parent = parent_of(field);
-      assert(parent);
-      return inherit & parent->attr;
-    }
+  if( field->parent > 0 && symbol_at(field->parent)->type == SymField ) {
+    cbl_field_t *parent = parent_of(field);
+    assert(parent);
+    return inherit & parent->attr;
   }
   return 0;
 }
@@ -2516,8 +2702,11 @@ symbol_field_add( size_t program, struct cbl_field_t *field )
     field->attr = inherit & parent->attr;
     field->attr |= numeric_group_attrs(parent);
     field->usage = parent->usage;
+    if( field->level == 66 || field->level == 88 ) {
+      field->codeset = parent->codeset;
+    }
     // BINARY-LONG, for example, sets capacity.
-    if( is_numeric(parent->usage) && parent->data.capacity > 0 ) {
+    if( is_numeric(parent->usage) && parent->data.capacity() > 0 ) {
       field->type = parent->usage;
       field->data = parent->data;
       field->data = 0;  // cppcheck-suppress redundantAssignment
@@ -2684,11 +2873,8 @@ symbol_field_forward_add( size_t program, size_t parent,
   auto e = symbol_field(program, parent, name);
   if( e ) return e;
 
-  struct cbl_field_t field = { 0,
-                               FldForward, FldInvalid, 0, parent, 0, 0,
-                               nonarray, line, "",
-                               0, cbl_field_t::linkage_t(),
-                               {0,0,0,0, " "}, NULL };
+  cbl_field_t field = { FldForward, 0, line };
+  field.parent = parent;
   if( sizeof(field.name) < strlen(name) ) {
     dbgmsg("%s:%d: logic error: name %s too long", __func__, __LINE__, name);
     return NULL;
@@ -2765,7 +2951,7 @@ struct symbol_elem_t *
 symbol_field_alias( struct symbol_elem_t *e, const char name[] )
 {
   cbl_field_t alias = *cbl_field_of(e);
-  cbl_field_data_t data = { alias.data.memsize, alias.data.capacity };
+  cbl_field_data_t data = { alias.data.memsize, alias.data.capacity() };
   alias.data = data;
   alias.data.memsize = 0;
 
@@ -2874,6 +3060,7 @@ symbol_field_same_as( cbl_field_t *tgt, const cbl_field_t *src ) {
   cbl_field_t dup = {};
   dup.parent = field_index(tgt);
   dup.line = tgt->line;
+  dup.codeset = tgt->codeset;
 
   elem_group_t group(++bog, eog);
 
@@ -2980,7 +3167,7 @@ class is_section {
 
 
 static bool fd_record_size_cmp( const symbol_elem_t& a, const symbol_elem_t& b ) {
-  return cbl_field_of(&a)->data.capacity < cbl_field_of(&b)->data.capacity;
+  return cbl_field_of(&a)->data.capacity() < cbl_field_of(&b)->data.capacity();
 }
 
 /*
@@ -3036,8 +3223,8 @@ symbol_file_record_sizes( struct cbl_file_t *file ) {
   // Make a copy, update the sizes, and return it.
   cbl_file_t::varying_t output = file->varying_size;
 
-  output.min = cbl_field_of(&*p.first)->data.capacity;
-  output.max = cbl_field_of(&*p.second)->data.capacity;
+  output.min = cbl_field_of(&*p.first)->data.capacity();
+  output.max = cbl_field_of(&*p.second)->data.capacity();
 
   assert(output.min > 0 && "min record size is 0");
   assert(output.min <= output.max);
@@ -3085,14 +3272,144 @@ constant_of( size_t isym )
   return field;
 }
 
+cbl_locale_t::cbl_locale_t( const cbl_name_t name, const char iconv_name[] ) {
+  gcc_assert(strlen(name) < sizeof this->name);
+  strcpy(this->name, name);
+
+  if( iconv_name ) {
+    encoding = __gg__encoding_iconv_type(iconv_name);
+
+    strcpy(collation, "C");
+    // If the iconv_name is prefixed by langauge_COUNTRY (e.g. en_US), capture that.
+    auto pend = iconv_name + strlen(iconv_name);
+    auto p = std::find(iconv_name, pend, '.');
+    if( p < pend ) {
+      auto pend2 = std::copy(iconv_name, p, collation);
+      std::fill(pend2, collation + sizeof(collation), '\0');
+      iconv_name = ++p;
+    }
+    encoding = __gg__encoding_iconv_type(iconv_name);
+  }
+}
+
+cbl_alphabet_t::cbl_alphabet_t(const YYLTYPE& loc, size_t locale, cbl_name_t name )
+  : loc(loc)
+  , locale(locale)
+  , low_index(0)
+  , high_index(255)
+  , last_index(0)
+{
+  if( locale >  0 ) {
+    encoding = cbl_locale_of(symbol_at(locale))->encoding;
+  }
+  memset(collation_sequence, 0xFF, sizeof(collation_sequence));
+  if( name ) { // from Special-Names collation_sequence
+    assert(strlen(name) < sizeof(cbl_name_t));
+    strcpy(this->name, name);
+  }
+}
+
+/*
+ * As parsed, the alphabet reflects the encoding of the source code.  If the
+ * program uses a different encoding for alphanumeric, convert the alphabet to
+ * that.
+ *
+ * Because a custom alphabet is rare and occurs at most only once per program,
+ * we don't attempt to avoid re-encoding.  "Conversion" of ASCII to ASCII is at
+ * most 256 calls to iconv(3).
+ */
+void
+cbl_alphabet_t::reencode()  {
+
+  const unsigned char * const pend = collation_sequence + sizeof(collation_sequence);
+  std::vector<char> tgt(256, (char)0xFF);
+
+  /*  Keep copies of low_index and last_index for use in run-time as LOW-VALUE
+      and HIGH-VALUE, which are kept as globals in the source-code codeset
+      and converted to the display encoding as necessary. */
+
+  low_char  = low_index;
+  high_char = last_index;
+
+  /*
+   * For now, assume CP1252 source-code encoding because we're not capturing it
+   * anywhere except in cbl_field_t::internalize().  The only known examples of
+   * a custom alphabet are from NIST, which of course are ASCII.
+   */
+  const char *fromcode = __gg__encoding_iconv_name(CP1252_e);
+  const char *tocode =
+              __gg__encoding_iconv_name(current_encoding(display_encoding_e));
+  iconv_t cd = iconv_open(tocode, fromcode);
+
+  const charmap_t *charmap_disp =
+              __gg__get_charmap(current_encoding(display_encoding_e));
+  size_t stride = charmap_disp->stride();
+
+#if optimal_reencode
+  if( fromcode == tocode ) { // semantically
+    tgt.resize(0);
+    return tgt; // Return empty vector; caller copies zero bytes.
+  }
+#endif
+
+  /*
+   * Each position in the alphabet array represents a letter in the source-code
+   * encoding.  The value at that position represents the letter's collation
+   * position, its sort order.  For each letter in alphabet, determine value of
+   * that letter in the alphanumeric encoding, and set its collation position
+   * in that alphabet.
+   */
+  for( const unsigned char *p = collation_sequence; p < pend; p++ ) {
+    if( *p == 0xFF ) continue;
+    unsigned char ch = p - collation_sequence;
+    unsigned char pos[8] = {};
+    size_t  inbytesleft = 1, outbytesleft = sizeof(pos);
+    char *inbuf = reinterpret_cast<char*>(&ch),
+        *outbuf = reinterpret_cast<char*>(pos);
+
+    size_t n = iconv(cd, &inbuf, &inbytesleft, &outbuf, &outbytesleft);
+
+    if( n == size_t(-1) ) {
+      error_msg(loc, "%s character '%c' (%x hex) cannot be converted to %s",
+                fromcode, ch, ch, tocode);
+      continue;
+    }
+    if( n != 0 ) {
+      dbgmsg("%s character '%c' (%x hex) irreversibly converted to %s",
+             fromcode, ch, ch, tocode);
+    }
+    assert(outbytesleft < sizeof(pos));
+    n = sizeof(pos) - outbytesleft;
+    if( stride < n ) {
+      error_msg(loc, "%s character '%c' (%x hex) requires %zu bytes as %s",
+                fromcode, ch, ch, n, tocode);
+      continue;
+    }
+
+    if( ch == low_index ) {
+      low_index = pos[0];
+    }
+    if( ch == last_index ) {
+      last_index = pos[0];
+    }
+    if( ch == high_index ) {
+     high_index = pos[0];
+    }
+
+    tgt.at(pos[0]) = *p;
+  }
+
+  std::copy(tgt.begin(), tgt.end(), collation_sequence);
+}
+
 bool
 cbl_alphabet_t::assign( const YYLTYPE& loc, unsigned char ch, unsigned char high_value ) {
-  if( alphabet[ch] == 0xFF || alphabet[ch] == high_value) {
-    alphabet[ch] = high_value;
+  if( collation_sequence[ch] == 0xFF || collation_sequence[ch] == high_value) {
+    collation_sequence[ch] = high_value;
     last_index = ch;
     return true;
   }
-  auto taken = alphabet[ch];
+  auto taken = collation_sequence[ch];
   error_msg(loc, "ALPHABET %s, character %<%c%> (X%'%x%') "
            "in position %d already defined at position %d",
            name,
@@ -3105,7 +3422,7 @@ cbl_alphabet_t::assign( const YYLTYPE& loc, unsigned char ch, unsigned char high
 void
 cbl_alphabet_t::also( const YYLTYPE& loc, size_t ch ) {
   if( ch < 256 ) {
-    alphabet[ch] = alphabet[last_index];
+    collation_sequence[ch] = collation_sequence[last_index];
     if( ch == high_index ) high_index--;
     return;
   } // else it's a figurative constant ...
@@ -3118,20 +3435,20 @@ cbl_alphabet_t::also( const YYLTYPE& loc, size_t ch ) {
 
   // last_index is already set; use it as the "last value before ALSO"
   if( attr & low_value_e ) {
-    alphabet[0] = alphabet[last_index];
+    collation_sequence[0] = collation_sequence[last_index];
     return;
   }
   if( attr & high_value_e ) {
-    alphabet[high_index--] = alphabet[last_index];
+    collation_sequence[high_index--] = collation_sequence[last_index];
     return;
   }
   if( attr & (space_value_e|quote_value_e) ) {
     ch = field->data.initial[0];
-    alphabet[ch] = alphabet[last_index];
+    collation_sequence[ch] = collation_sequence[last_index];
     return;
   }
   if( attr & (zero_value_e) ) {
-    alphabet[0] = alphabet[last_index];
+    collation_sequence[0] = collation_sequence[last_index];
     error_msg(loc, "ALSO value '%s' is unknown", field->name);
     return;
   }
@@ -3141,38 +3458,30 @@ cbl_alphabet_t::also( const YYLTYPE& loc, size_t ch ) {
 using std::deque;
 static deque<cbl_field_t*> stack;
 
+/*
+ * Allocate a temporary field. Assign the type and name, if supplied.  Caller
+ * deals with encoding and initial value.
+ */
 static cbl_field_t *
 new_temporary_impl( enum cbl_field_type_t type, const cbl_name_t name = nullptr )
 {
   extern int yylineno;
   static const struct cbl_field_t empty_alpha = {
-                                0, FldAlphanumeric, FldInvalid,
-                                intermediate_e, 0, 0, 0, nonarray, 0, "",
-                                0, cbl_field_t::linkage_t(),
-                                {MAXIMUM_ALPHA_LENGTH, MAXIMUM_ALPHA_LENGTH, 
-                                                            0, 0, NULL}, NULL };
+                                FldAlphanumeric, intermediate_e,
+                                {MAXIMUM_ALPHA_LENGTH,
+                                 MAXIMUM_ALPHA_LENGTH, 0, 0, NULL} };
   static const struct cbl_field_t empty_float = {
-                                0, FldFloat, FldInvalid,
-                                intermediate_e,
-                                0, 0, 0, nonarray, 0, "",
-                                0, cbl_field_t::linkage_t(),
-                                {16, 16, 32, 0, NULL}, NULL };
+                                FldFloat, intermediate_e,
+                                {16, 16, 32, 0, NULL} };
   static const struct cbl_field_t empty_comp5 = {
-                                0, FldNumericBin5, FldInvalid,
+                                FldNumericBin5,
                                 signable_e | intermediate_e,
-                                0, 0, 0, nonarray, 0, "",
-                                0, cbl_field_t::linkage_t(),
-                                {16, 16, MAX_FIXED_POINT_DIGITS, 0, NULL}, NULL };
+                                {16, 16, MAX_FIXED_POINT_DIGITS, 0, NULL} };
   static const struct cbl_field_t empty_conditional = {
-                                0, FldConditional, FldInvalid, intermediate_e,
-                                0, 0, 0, nonarray, 0, "",
-                                0, cbl_field_t::linkage_t(),
-                                {}, NULL };
+                                FldConditional, intermediate_e, cbl_field_data_t{} };
   static struct cbl_field_t empty_literal = {
-                                0, FldInvalid, FldInvalid, CONSTANT_E,
-                                0, 0, 0, nonarray, 0, "",
-                                0, cbl_field_t::linkage_t(),
-                                {}, NULL };
+                                FldInvalid, CONSTANT_E, cbl_field_data_t{} };
+
   struct cbl_field_t *f = new cbl_field_t;
   f->type = type;
 
@@ -3188,7 +3497,6 @@ new_temporary_impl( enum cbl_field_type_t type, const cbl_name_t name = nullptr 
   case FldSwitch:
   case FldDisplay:
   case FldPointer:
-  case FldBlob:
     break;
   case FldConditional:
     *f = empty_conditional;
@@ -3220,7 +3528,9 @@ new_temporary_impl( enum cbl_field_type_t type, const cbl_name_t name = nullptr 
     snprintf(f->name, sizeof(f->name), "_stack%d",++nstack);
   }
 
-  f->data.initial = name; // capture e.g. the function name 
+  f->data.initial = name; // capture e.g. the function name
+
+  f->codeset.set();
 
   return f;
 }
@@ -3234,12 +3544,17 @@ new_temporary_decl() {
 
 static inline cbl_field_t *
 parser_symbol_add2( cbl_field_t *field ) {
+  if( ! field->codeset.valid() ) {
+    dbgmsg( "%s:%d: %s (%s) has no encoding", __func__, __LINE__,
+            field->name, cbl_field_type_str(field->type) );
+  }
   parser_symbol_add(field);
   return field;
 }
 
 static cbl_field_t *
-new_literal_add( const char initial[], uint32_t len, enum cbl_field_attr_t attr ) {
+new_literal_add( const char initial[], uint32_t len,
+                 cbl_field_attr_t attr, cbl_encoding_t encoding ) {
   cbl_field_t *field = NULL;
   if( !(attr & quoted_e) )
     {
@@ -3249,47 +3564,85 @@ new_literal_add( const char initial[], uint32_t len, enum cbl_field_attr_t attr 
     }
   else
     {
-    static char empty[2] = "\0";
     field = new_temporary_impl(FldLiteralA);
     field->attr |= attr;
-    field->data.initial = len > 0? initial : empty;
-    field->data.capacity = len;
 
-    if( ! field->internalize() )
-      {
-        ERROR_FIELD(field, "inconsistent string literal encoding for '%s'", initial);
-      }
+    char *orig = static_cast<char *>(xmalloc(len+4));
+    
+    auto p = initial? std::copy(initial, initial + len, orig) : orig;
+    std::fill(p, p+4, 0);
+    field->data.original(orig);
+    field->data.capacity(len); // in case of Z-string
     }
 
-  static size_t literal_count = 1;
-  sprintf(field->name,
-          "%s%c_" HOST_SIZE_T_PRINT_DEC,
-          "_literal",
-          field->type == FldLiteralA ? 'a' : 'n',
-          (fmt_size_t)literal_count++);
+  assert(field->name[0] != '\0'); // new_temporary_impl sets literal names
+
+  if( ! field->has_attr(hex_encoded_e) ) {
+    // If the literal bore a prefix, set the encoding,
+    if( encoding != cbl_field_t::codeset_t::default_encodings.source->type ) {
+      field->codeset.set(encoding);
+    } else {
+      field->codeset.set();
+    }
+  }
+
+  if( field->type == FldLiteralN ) {
+    field->set_initial(cbl_loc_t());
+  } else {
+    field->set_initial(len);
+  }
 
   return parser_symbol_add2(field);
 }
 
 static temporaries_t temporaries;
 
-cbl_field_t *
-temporaries_t::literal( const char value[], uint32_t len, cbl_field_attr_t attr ) {
-  auto key = literal_an(value, quoted_e == (attr & quoted_e));
+void
+symbol_temporary_location( const cbl_field_t *field, const cbl_loc_t& loc ) {
+  temporaries.locs[field] = loc;
+}
 
-  if( 0 == (attr & hex_encoded_e) ) {
+cbl_loc_t
+symbol_temporary_location( const cbl_field_t *field ) {
+  extern YYLTYPE yylloc;
+  auto p = temporaries.locs.find(field);
+  return p == temporaries.locs.end()? cbl_loc_t(yylloc) : p->second;
+}
+
+cbl_field_t *
+temporaries_t::literal( uint32_t len, const char value[],
+                        cbl_field_attr_t attr, cbl_encoding_t encoding ) {
+  bool is_quoted2 = quoted_e == (attr & quoted_e);
+  bool is_verbatim = hex_encoded_e == (attr & hex_encoded_e);
+  auto key = literal_an(value, is_quoted2, is_verbatim);
+
+  if( ! is_verbatim ) { // TODO: try without this test once National is ready
     auto p = literals.find(key);
     if( p != literals.end() ) {
       cbl_field_t *field = p->second;
       return field;
     }
   }
-  return literals[key] = new_literal_add(value, len, attr);
+  return literals[key] = new_literal_add(value, len, attr, encoding);
 }
 
 cbl_field_t *
-new_literal( uint32_t len, const char initial[], enum cbl_field_attr_t attr ) {
-  return temporaries.literal(initial, len, attr);
+new_literal_2( uint32_t len, const char initial[],
+             cbl_field_attr_t attr, cbl_encoding_t encoding ) {
+  encoding = current_encoding('A');
+  const charmap_t *charmap = __gg__get_charmap(encoding);
+  cbl_field_t *retval = temporaries.literal(len*charmap->stride(),
+                                            initial,
+                                            attr,
+                                            encoding);
+  return retval;
+}
+
+
+cbl_field_t *
+new_literal( uint32_t len, const char initial[],
+             cbl_field_attr_t attr, cbl_encoding_t encoding ) {
+  return temporaries.literal(len, initial, attr, encoding);
 }
 
 void
@@ -3381,26 +3734,104 @@ symbol_temporaries_free() {
 }
 
 cbl_field_t *
-new_alphanumeric( size_t capacity, const cbl_name_t name = nullptr ) {
+new_alphanumeric( size_t capacity, const cbl_name_t name, cbl_encoding_t encoding ) {
   cbl_field_t * field = new_temporary_impl(FldAlphanumeric, name);
-  field->data.capacity = capacity;
+  field->set_capacity( capacity );
+  if( encoding != no_encoding_e ) {
+    field->codeset.set(encoding);
+  }
+  //// Dubner hacking away:  If name is non-null, then assume this is a
+  //// function definition, and force the codeset, which otherwise will have
+  //// defaulted to current_encoding('A'), and the valid() test in codeset.set
+  //// will have prevented it from being changed.
+  if( name && encoding != no_encoding_e ) {
+    field->codeset.set_explicit(encoding);
+  }
   temporaries.add(field);
   return parser_symbol_add2(field);
 }
 
+extern os_locale_t os_locale;
+
+
+uint8_t
+cbl_field_t::codeset_t::stride() const {
+  const charmap_t *charmap = __gg__get_charmap(encoding);
+  return charmap->stride();
+}
+
+cbl_field_t::codeset_t::default_encodings_t
+cbl_field_t::codeset_t::default_encodings
+  {
+  encodings_t {   true, iconv_CP1252_e, "CP1252" } ,  // encodings_t alpha & national
+    {
+      encodings_t{ false, iconv_UTF_8_e, "UTF-8" } ,
+      encodings_t { true,  iconv_CP1252_e, "CP1252" }    }
+  };
+
+bool
+cobol_alpha_encoding( const char name[] ) {
+  auto encoding = __gg__encoding_iconv_descr(name);
+  if( encoding ) {
+    cbl_field_t::codeset_t::default_encodings.alpha = *encoding;
+    const charmap_t *charmap = __gg__get_charmap(encoding->type);
+    if( charmap->is_like_ebcdic() ) {
+      cobol_gcobol_feature_set(feature_internal_ebcdic_e);
+    } else {
+      // This handles multiple occurrences of -fexec-charset on a command line
+      cobol_gcobol_feature_set(feature_internal_ebcdic_e, false);
+    }
+    // Let's handle the ordinary situation of just setting alpha, and make
+    // sure national is at least as wide.  (We shouldn't have to set national
+    // first, just so we can set alpha.)
+    auto enc_n = cbl_field_t::codeset_t::default_encodings.national;
+    const charmap_t *charmap_n = __gg__get_charmap(enc_n.type);
+    if( charmap_n->stride() < charmap->stride() ) {
+      // Default national is narrower than *encoding, so boost default national
+      // up:
+      cobol_national_encoding(encoding->name);
+    }
+    return true;
+  }
+  return false;
+}
+
+bool
+cobol_national_encoding( const char name[] ) {
+  auto encoding = __gg__encoding_iconv_descr(name);
+  if( encoding ) {
+    cbl_field_t::codeset_t::default_encodings.national = *encoding;
+    return true;
+  }
+  return false;
+}
+
+
 cbl_field_t *
-new_temporary( enum cbl_field_type_t type, const char *initial ) {
-  if( ! initial ) {
+new_temporary( enum cbl_field_type_t type, const char *initial, cbl_field_attr_t attr ) {
+  const bool is_signed = attr == signable_e;
+  const bool force_unsigned = type == FldNumericBin5 && ! is_signed;
+
+  if( ! initial && ! force_unsigned ) {
     assert( ! is_literal(type) ); // Literal type must have literal value.
     return temporaries.acquire(type, initial);
   }
   if( is_literal(type) ) {
-    auto field = temporaries.literal(initial,
-                                     type == FldLiteralA? quoted_e : none_e);
+    const auto& defaults( cbl_field_t::codeset_t::default_encodings );
+    auto field = temporaries.literal(strlen(initial), initial,
+                                     type == FldLiteralA? quoted_e : none_e,
+                                     defaults.source->type);
     return field;
   }
   cbl_field_t *field = new_temporary_impl(type, initial);
-  temporaries.add(field);
+
+  // don't reuse unsigned numeric
+  if( force_unsigned ) {
+    field->clear_attr(signable_e);
+  } else {
+    temporaries.add(field);
+  }
+
   parser_symbol_add(field);
 
   return field;
@@ -3439,16 +3870,54 @@ new_temporary_clone( const cbl_field_t *orig) {
     temporaries.add(field);
   }
   field->data = orig->data;
-  if( field->type == FldNumericBin5 ) field->type = orig->type;
+  if( field->type == FldNumericBin5 ) {
+    field->type = orig->type;
+    field->codeset = orig->codeset;
+  }
   field->attr = intermediate_e;
 
   return parser_symbol_add2(field);
 }
 
+cbl_field_t *
+new_literal_float( const cbl_loc_t& loc, const char initial[] ) {
+  auto field = new_temporary_impl(FldFloat);
+  field->attr = constant_e;
+  std::string init(initial);
+  std::replace( init.begin(), init.end(), ',', '.' );
+  field->encode_numeric(init.c_str(), loc);
+  field->data.original(initial);
+
+  return parser_symbol_add2(field);
+}
+
+/*
+ *  This set of ASCII-like encodings is incomplete and possibly wrong.  A
+ *  complete definition would better supported with a Boolean in encodings_t.
+ *  If it returns false pessimistically, the only consequence is inefficiency:
+ *  the string is processed by iconv(3).
+ */
+bool
+cbl_field_t::holds_ascii() const {
+  // True if the encoding is a superset of ASCII.
+  switch(codeset.encoding) {
+  case ASCII_e:
+  case CP1252_e:
+  case iso646_e:
+    return true;
+  default:
+    if( iconv_1026_e <= codeset.encoding &&
+                        codeset.encoding <= iconv_ANSI_X3_4_e ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool
 cbl_field_t::is_ascii() const {
   return std::all_of( data.initial,
-                      data.initial + data.capacity,
+                      data.initial + data.capacity(),
                       isascii );
 }
 
@@ -3470,106 +3939,271 @@ cbl_field_t::is_ascii() const {
  * compilation, if it moves off the default, it adjusts only once, and
  * never reverts.
  */
-static const char standard_internal[] = "CP1252";
-extern os_locale_t os_locale;
 
-static const char *
-guess_encoding() {
-  static const char *fromcode;
+size_t
+cbl_field_t::source_code_check(const void *initial, size_t length)
+  {
+  size_t retval;
 
-  if( ! fromcode ) {
-    return fromcode = os_locale.assumed;
-  }
+  size_t iconv_retval;
 
-  if( fromcode == os_locale.assumed ) {
-    fromcode = os_locale.codeset;
-    if( 0 != strcmp(fromcode, "C") ) { // anything but that
-      return fromcode;
+  try_again:
+
+  cbl_encoding_t fromcode = codeset.default_encodings.source->type;
+  cbl_encoding_t tocode   = codeset.encoding;
+  std::string toname      = __gg__encoding_iconv_name(tocode);
+
+  __gg__iconverter(fromcode,
+                   tocode,
+                   initial,
+                   length,
+                   &retval,
+                   &iconv_retval);
+  if( iconv_retval )
+    {
+    // something went wrong on conversion.
+    if( codeset.default_encodings.next_source_encoding() )
+      {
+      goto try_again;
+      }
+    // None of our valid "from" encodings worked
+    dbgmsg("%s:%d: iconv failed for %s: %s", __func__, __LINE__,
+           toname.c_str(), xstrerror(errno));
+    ERROR_FIELD(this, "iconv failed: %s", xstrerror(errno));
     }
+  return retval;
   }
 
-  return standard_internal;
+/*
+ * Look up the encoding handle for a given target based on the current source
+ * encoding.
+ */
+static iconv_t
+iconv_cd( cbl_encoding_t tgt ) {
+  struct iconv_key_t {
+    cbl_encoding_t to, from;
+    iconv_key_t() : to(no_encoding_e), from(no_encoding_e) {}
+    iconv_key_t( cbl_encoding_t to, cbl_encoding_t from ) : to(to), from(from) {}
+    bool operator<( const iconv_key_t& that ) const {
+      if( this->from == that.from ) {
+        return this->to < that.to;
+      }
+      return this->from < that.from;
+    }
+  };
+  static std::map<iconv_key_t, iconv_t> cds;
+
+  auto src = cbl_field_t::codeset_t::default_encodings.current_source_encoding()->type;
+  assert(src);
+
+  iconv_key_t key(tgt, src);
+  auto p = cds.find(key);
+  iconv_t cd;
+    
+  if( p == cds.end() ) {
+    const char *fromcode = __gg__encoding_iconv_name(src);
+    const char *tocode   = __gg__encoding_iconv_name(tgt);    
+    gcc_assert(fromcode && tocode);
+    
+    if( (cd = iconv_open(tocode, fromcode)) == iconv_t(-1) ) {
+      return cd;
+    }
+    cds[key] = cd;
+  } else {
+    cd = p->second;
+  }
+
+  return cd;
 }
 
+/*
+ * Precondition: data.nbyte is the length of the output, and encoding is set.
+ * The caller supplies the input length because the string may include embedded
+ * NULs.  If conversion succeeds, return NULL.  If it fails, return a pointer
+ * to the failed character in data.orig.
+ */
 const char *
-cbl_field_t::internalize() {
-  static const char *tocode = standard_internal;
-  static const char *fromcode = guess_encoding();
-  static  iconv_t cd = iconv_open(tocode, fromcode);
-  static const size_t noconv = size_t(-1);
+cbl_field_t::encode( size_t srclen, cbl_loc_t loc ) {
+  gcc_assert(data.capacity());
+  gcc_assert(data.initial);
+  gcc_assert(data.original());
+  gcc_assert(codeset.valid());
 
-  if (cd == (iconv_t)-1) {
-    yywarn("failed %<iconv_open%> tocode = %<%s%> fromcode = %s", tocode, fromcode);
-  }
-
-  bool using_assumed = fromcode == os_locale.assumed;
-
-  if( fromcode == tocode || has_attr(hex_encoded_e) ) {
-    return data.initial;
-  }
-
-  if( is_ascii() ) return data.initial;
-  assert(data.capacity > 0);
-
-  std::vector<char> output(data.capacity + 2, '\0');
-  char *out = output.data();
-  char *in = const_cast<char*>(data.initial);
-  size_t n, inbytesleft = data.capacity, outbytesleft = output.size();
-  if( !is_literal(this) && inbytesleft < strlen(data.initial) ) {
-    inbytesleft = strlen(data.initial);
-  }
-
-  assert(fromcode != tocode);
-
-  while( (n = iconv( cd, &in, &inbytesleft, &out, &outbytesleft)) == noconv ) {
-    if( !using_assumed ) break; // change only once
-    fromcode = guess_encoding();
-    cd = iconv_open(tocode, fromcode);
-    dbgmsg("%s: trying input encoding %s", __func__, fromcode);
-    if( fromcode == tocode ) break;
-  }
-
-  if( n == noconv ) {
-    if( !using_assumed ) {
-      yywarn("failed to decode '%s' as %s", data.initial, fromcode);
-      return NULL;
-    }
-    return data.initial;
-  }
-
-  if( 0 < inbytesleft ) {
-    // data.capacity + inbytesleft is not correct if the remaining portion has
-    // multibyte characters.  But the fact reamins that the VALUE is too big.
-    ERROR_FIELD(this, "%s %s VALUE '%s' requires %zu bytes for size %u",
-            cbl_field_t::level_str(level), name, data.initial,
-            data.capacity + inbytesleft, data.capacity );
-  }
-
-  // Replace data.initial only if iconv output differs.
-  if( 0 != memcmp(data.initial, output.data(), out - output.data()) ) {
-    assert(out <= output.data() + data.capacity);
-
-    dbgmsg("%s: converted '%.*s' to %s",
-                        __func__, data.capacity, data.initial, tocode);
-
-    int len = int(out - output.data());
-    char *mem = static_cast<char*>( xcalloc(1, output.size()) );
-
-    // Set the new memory to all blanks, tacking a '!' on the end.
-    memset(mem, 0x20, output.size() - 1);
-    mem[ output.size() - 2] = '!';
-
-    if( is_literal(this) ) {
-      data.capacity = len; // trailing '!' will be overwritten
+  if( this->type == FldLiteralN )
+    {
+    // DUBNER made this change; FldLiteralN doesn't get encoded.  This probably
+    // should have been nipped in the bud somewhere upstream.
+    return data.original();
     }
 
-    memcpy(mem, output.data(), len); // copy only as much as iconv converted
+  extern YYLTYPE yylloc;
+  const char *bad_boy = data.original();
+  if( 0 == loc.first_line )
+    loc = level == 0 ? yylloc : symbol_field_location(field_index(this));
 
-    free(const_cast<char*>(data.initial));
-    data.initial = mem;
+  /*
+   * Hex-encoded means we don't convert.  data.initial should be long enough to
+   * hold the encoded string.
+   */
+  if( has_attr(hex_encoded_e) ) {
+    if( data.capacity() < srclen ) {
+      const char *inbuf = data.original() + data.capacity();
+      error_msg( loc, "VALUE %qs is too long to initialize %qs, "
+                      "discarded %ld bytes at %qs",
+                 data.original(), name, long(srclen - data.capacity()), inbuf);
+      srclen = data.capacity();
+    }
+    std::copy(data.original(), data.original() + srclen,
+              const_cast<char*>(data.initial));
+    return nullptr; // may return "truncated success" with error.
   }
+  
+  auto figconst = cbl_figconst_of(data.original());
+  if( normal_value_e != figconst ) {
+    blank_initial( char_capacity(), figconst ); 
+    return nullptr;
+  }
+  
+  for( auto src = codeset.default_encodings.current_source_encoding();
+       src;
+       src = codeset.default_encodings.next_source_encoding() ) {
+    /*
+     * Get the iconv handle to convert the source-code encoding to the field's
+     * encoding.  If no such handle exists because iconv(3) can't do it
+     * (weird), try the next potential source-code encoding, which probably
+     * won't work either.
+     */
+    iconv_t cd = iconv_cd(codeset.encoding);
+    if( cd == iconv_t(-1) ) {
+      error_msg(loc, "cannot convert from %qs to %qs: %s",
+                cbl_encoding_str(src->type),
+                cbl_encoding_str(codeset.encoding),
+                xstrerror(errno));
+      continue;
+    }
+    
+    /*
+     * If conversion succeeds, return NULL.  
+     * If it fails, try the next potential encoding.
+     */
+    size_t inbytesleft = srclen, outbytesleft = data.capacity();
+    char *inbuf = const_cast<char*>(data.original());
+    char *outbuf = const_cast<char*>(data.initial);
 
-  return data.initial;
+    size_t erc = iconv(cd, &inbuf, &inbytesleft, &outbuf, &outbytesleft);
+
+    if( erc == size_t(-1) ) {
+      if( outbytesleft == 0 ) { // input doesn't fit
+        gcc_assert(0 < inbytesleft);
+        gcc_assert(0 < level);
+        if( loc.first_line == 0 )
+          loc = symbol_field_location(field_index(this));
+        if( type == FldNumericEdited ) {
+          // Tolerate trailing zeros for P-values
+          if( data.rdigits < 0 ) {
+            if( inbytesleft <= size_t(data.rdigits * -1) ) {
+             bool all_zeros = std::all_of(reinterpret_cast<const char*>(inbuf), 
+                                          data.original() + srclen,
+                                          [](char ch) {
+                                            return '0' == ch;
+                                          });
+              if( all_zeros ) return nullptr;
+            }
+          }
+        }
+        error_msg( loc, 
+                   "VALUE %qs is too long to initialize %qs, discarded %qs",
+                   data.original(), name, inbuf);
+        return nullptr; // success-ish
+      }
+      dbgmsg("'%c' of '%s'[%lu] could not be converted from %s to %s: %s",
+             *inbuf, data.original(), inbuf - data.original(), 
+             cbl_encoding_str(
+                   codeset.default_encodings.current_source_encoding()->type),
+             cbl_encoding_str(codeset.encoding),
+             xstrerror(errno) );
+      bad_boy = inbuf;
+      continue;
+    }
+
+    if( inbytesleft == 0 ) {
+      if( data.all() ) {
+        size_t len = outbuf - data.initial;
+        // We need to repeatedly append the first len bytes of data.initial to
+        // data.initial until it is full.  Thus ALL "ABC" becomes "ABCABC..."
+        char *d = const_cast<char*>(data.initial);
+        size_t source_i = 0;
+        size_t dest_i   = len;
+        while( dest_i < static_cast<size_t>(data.capacity()) ) {
+          d[dest_i++] = d[source_i++];
+          source_i %= len;
+        }
+      }
+      if( is_literal(this) ) {
+        data.capacity( outbuf - const_cast<char*>(data.initial) );
+      }
+      return nullptr; // success
+    }
+    // else try again
+  }
+  if( 0 == loc.first_line )
+    loc = level == 0 ? yylloc : symbol_field_location(field_index(this));
+  error_msg( loc, "%<%c%> of %qs could not be converted from %s to %s: %s",
+             *bad_boy, data.original(),
+             cbl_encoding_str(
+                    codeset.default_encodings.current_source_encoding()->type),
+             cbl_encoding_str(codeset.encoding),
+             xstrerror(errno) );
+  return data.original();
+}
+
+void
+cbl_field_t::set_capacity(size_t nchar) {
+  switch(this->type) {
+    case FldGroup:
+    case FldAlphanumeric:
+    case FldNumericDisplay:
+    case FldNumericEdited:
+    case FldAlphaEdited:
+    case FldLiteralA:
+    case FldInvalid:
+      if( codeset.valid() ) {
+        if( attr & hex_encoded_e ) {
+          data.capacity( capacity_cast(nchar) );
+        } else {
+          data.capacity( capacity_cast(nchar) * codeset.stride() );
+        }
+          
+      } else {
+        cbl_internal_error("%s: %s %s has invalid encoding",
+                           __func__, cbl_field_type_str(type), name);
+      }
+      break;
+    case FldNumericBinary:
+    case FldFloat:
+    case FldPacked:
+    case FldNumericBin5:
+    case FldLiteralN:
+    case FldClass:
+    case FldConditional:
+    case FldForward:
+    case FldIndex:
+    case FldSwitch:
+    case FldDisplay:
+    case FldPointer:
+      data.capacity( capacity_cast(nchar) );
+      break;
+  }
+}
+
+void
+cbl_field_t::add_capacity(size_t nchar) {
+  data.add_capacity( nchar * codeset.stride() );
+}
+
+uint32_t
+cbl_field_t::char_capacity() const {
+  return data.capacity() / codeset.stride();
 }
 
 const char *
@@ -3712,7 +4346,7 @@ symbol_label_add( size_t program, cbl_label_t *input )
     cbl_errx("%s:%d: could not add '%s'", __func__, __LINE__, label->name);
   }
   assert(e);
-  
+
   common_callables_update( symbol_index(e) );
 
   // restore munged line number unless symbol_add returned an existing label
@@ -3733,15 +4367,15 @@ symbol_label_section_exists( size_t eval_label_index ) {
   /*  cppcheck warns that the following statement depends on the order of
       evaluation of side effects.  Since this isn't my code, and since I don't
       think the warning can be eliminated without rewriting it, I am just
-      supprressing it.
+      suppressing it.
       -- Bob Dubner, 2025-07-14 */
   // cppcheck-suppress unknownEvaluationOrder
   bool has_section = std::any_of( ++eval, symbols_end(),
                                [program = eval->program]( const auto& sym ) {
                                  if( program == sym.program && sym.type == SymLabel ) {
                                    const auto& L(sym.elem.label);
-				   // true if the symbol is an explicit label.
-                                   return L.type == LblSection &&  L.name[0] != '_'; 
+                                   // true if the symbol is an explicit label.
+                                   return L.type == LblSection &&  L.name[0] != '_';
                                  }
                                  return false;
                                } );
@@ -3749,7 +4383,7 @@ symbol_label_section_exists( size_t eval_label_index ) {
     symbols_dump(eval_label_index, true);
   }
   // Return true if a user-defined SECTION was found after the Declaratives
-  // label section. 
+  // label section.
   return has_section;
 }
 
@@ -4362,7 +4996,7 @@ cbl_occurs_t::subscript_ok( const cbl_field_t *subscript ) const {
   return bounds.lower <= (size_t)sub && (size_t)sub <= bounds.upper;
 }
 
-const cbl_field_t * 
+const cbl_field_t *
 symbol_unresolved_file_key( const cbl_file_t * file,
                             const cbl_name_t key_field_name ) {
   const symbol_elem_t *file_sym = symbol_elem_of(file);
@@ -4449,7 +5083,7 @@ key_field_size( uint32_t sum, size_t ifield ) {
 uint32_t cbl_file_key_t::
 size() {
   if( leftmost != 0 ) {
-    return cbl_field_of(symbol_at(leftmost))->data.capacity;
+    return cbl_field_of(symbol_at(leftmost))->data.capacity();
   }
   return std::accumulate(fields, fields + nfield, 0, key_field_size);
 }
@@ -4585,6 +5219,8 @@ cbl_file_key_t::str() const {
  */
 void
 cbl_file_t::deforward() {
+  const size_t ifile( symbol_index(symbol_elem_of(this)) );
+
   if( user_status ) {
     user_status = symbol_forward_to(user_status);
 
@@ -4596,7 +5232,7 @@ cbl_file_t::deforward() {
   }
 
   for( auto p = keys; p < keys + nkey; p++ ) {
-    p->deforward( symbol_index(symbol_elem_of(this)) );
+    p->deforward(ifile);
   }
 }
 
@@ -4701,21 +5337,6 @@ ast_file_status_between( file_status_t lower, file_status_t upper ) {
 }
 
 bool
-is_register_field(const cbl_field_t *field)
-  {
-  // TRUE when the field is an executable-level global variable of the type we
-  // are calling a "register", like RETURN-CODE or UPSI or the like:
-  return
-    (    field->parent == 0
-      && field->level == 0
-      && !(field->attr & intermediate_e)
-      && !(field->attr & filler_e)
-      && field->type != FldClass
-      && field->type != FldBlob
-      );
-  }
-
-bool
 has_value( cbl_field_type_t type ) {
   // Indicates that the field type contains data that can be expressed as
   // a numeric value
@@ -4731,7 +5352,6 @@ has_value( cbl_field_type_t type ) {
   case FldForward:
   case FldSwitch:
   case FldDisplay:
-  case FldBlob:
     return false;
   case FldIndex:
   case FldPointer:
@@ -4746,3 +5366,140 @@ has_value( cbl_field_type_t type ) {
   dbgmsg( "%s:%d: invalid symbol_type_t %d", __func__, __LINE__, type );
   return false;
 }
+
+bool
+validate_numeric_edited(cbl_field_t *field)
+  {
+  // returns TRUE when data.initial is compatible with PICTURE
+  bool retval = true;
+  if( field->type == FldNumericEdited
+      && field->data.original()
+      && !(field->attr & quoted_e)
+      && !(field->attr & FIGCONST_MASK) )
+    {
+    char *expanded = expand_picture(field->data.picture);
+
+    unsigned int decimal_point_local = __gg__decimal_point;
+    const char *pleft   = expanded;
+    const char *pright  = pleft + strlen(pleft);
+    const char *pmiddle = strchr(pleft, decimal_point_local);
+    if( !pmiddle )
+      {
+      pmiddle = pright;
+      }
+
+    // Count up digit placeholders to the left of the the decimal point:
+    int currencies_local = 0;
+    int signs      = 0;
+    int pldigits   = 0;
+    while( pleft < pmiddle )
+      {
+      unsigned int ch = (unsigned char)*pleft++;
+      if( symbol_currency(ch) )
+        {
+        // The very first currency symbol is not a digit placeholder:
+        pldigits += currencies_local;
+        currencies_local = 1;
+        }
+      else if(   ch == (unsigned char)ascii_plus
+              || ch == (unsigned char)ascii_minus )
+        {
+        // The very first sign is not a digit placeholder
+        pldigits += signs;
+        signs = 1;
+        }
+      else if(   ch == (unsigned char)ascii_Z
+              || ch == (unsigned char)ascii_z
+              || ch == (unsigned char)ascii_P
+              || ch == (unsigned char)ascii_p
+              || ch == (unsigned char)ascii_9
+              || ch == (unsigned char)ascii_asterisk )
+        {
+        // 9 Z and * are digit placeholders:
+        pldigits += 1;
+        }
+      }
+
+    // Count up digit placeholders to the left of the the decimal point:
+    int prdigits   = 0;
+    while( pmiddle < pright )
+      {
+      unsigned int ch = (unsigned char)*pmiddle++;
+      if(   ch == (unsigned char)ascii_Z
+         || ch == (unsigned char)ascii_z
+         || ch == (unsigned char)ascii_P
+         || ch == (unsigned char)ascii_p
+         || ch == (unsigned char)ascii_9
+         || ch == (unsigned char)ascii_asterisk )
+        {
+        // 9 Z and * are digit placeholders:
+        prdigits += 1;
+        }
+      }
+
+    // We have established the number of left and right digit placeholders.
+    // We now need to do the same for the number that has to go into those
+    // placeholders.
+
+    const char *dleft   = field->data.original();
+    const char *dright  = dleft + strlen(dleft);
+    const char *dmiddle = strchr(dleft, decimal_point);
+    if( !dmiddle )
+      {
+      dmiddle = dright;
+      }
+
+    // Skip over leading zeros
+    int dldigits = 0;
+    int nonzero  = 0;
+    while(dleft < dmiddle)
+      {
+      unsigned int ch = (unsigned char)*dleft++;
+      if( ch == (unsigned char)ascii_0 )
+        {
+        // We are looking at a zero.  Ignore leading zeroes if we haven't
+        // already seen a digit
+        dldigits += nonzero;
+        }
+      else if(ch >= (unsigned char)ascii_1 && ch <= (unsigned char)ascii_9 )
+        {
+        nonzero = 1;
+        dldigits += nonzero;
+        }
+      }
+
+    // Now count up the digits to the right of the decimal point:
+    int drdigits = 0;
+    // Adjust dright to skip trailing spaces
+    while( dright > dmiddle )
+      {
+      if( (unsigned char)*(dright-1) != (unsigned char)ascii_space )
+        break;
+      dright -= 1;
+      }
+    // Adjust dright to skip trailing zeroes
+    while( dright > dmiddle )
+      {
+      if( (unsigned char)*(dright-1) != (unsigned char)ascii_0 )
+        break;
+      dright -= 1;
+      }
+    // And count up the remaining characters:
+    while( dmiddle < dright )
+      {
+      unsigned int ch = (unsigned char)*dmiddle++;
+      if(ch >= (unsigned char)ascii_0 && ch <= (unsigned char)ascii_9 )
+        {
+        drdigits += 1;
+        }
+      }
+
+    // After all that, the acceptance test is disturbingly simple:
+    if( dldigits > pldigits || drdigits > prdigits )
+      {
+      retval = false;
+      }
+    free(expanded);
+    }
+  return retval;
+  }

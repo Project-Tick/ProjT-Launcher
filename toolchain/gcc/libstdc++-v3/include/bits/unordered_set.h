@@ -1,6 +1,6 @@
 // unordered_set implementation -*- C++ -*-
 
-// Copyright (C) 2010-2025 Free Software Foundation, Inc.
+// Copyright (C) 2010-2026 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -245,6 +245,14 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       : unordered_set(__n, __hf, key_equal(), __a)
       { }
 
+      // _GLIBCXX_RESOLVE_LIB_DEFECTS
+      // 2713. More missing allocator-extended constructors for unordered container
+      template<typename _InputIterator>
+	unordered_set(_InputIterator __first, _InputIterator __last,
+		      const allocator_type& __a)
+	: unordered_set(__first, __last, 0, hasher(), key_equal(), __a)
+	{ }
+
       template<typename _InputIterator>
 	unordered_set(_InputIterator __first, _InputIterator __last,
 		      size_type __n,
@@ -258,6 +266,14 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 		      const allocator_type& __a)
 	: unordered_set(__first, __last, __n, __hf, key_equal(), __a)
 	{ }
+
+
+      // _GLIBCXX_RESOLVE_LIB_DEFECTS
+      // 2713. More missing allocator-extended constructors for unordered container
+      unordered_set(initializer_list<value_type> __l,
+		    const allocator_type& __a)
+      : unordered_set(__l, 0, hasher(), key_equal(), __a)
+      { }
 
       unordered_set(initializer_list<value_type> __l,
 		    size_type __n,
@@ -565,6 +581,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       extract(const key_type& __key)
       { return _M_h.extract(__key); }
 
+#ifdef __glibcxx_associative_heterogeneous_erasure // C++23
+      template <__heterogeneous_hash_key<unordered_set> _Kt>
+	node_type
+	extract(_Kt&& __key)
+	{ return _M_h._M_extract_tr(__key); }
+#endif
+
       /// Re-insert an extracted node.
       insert_return_type
       insert(node_type&& __nh)
@@ -615,6 +638,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       size_type
       erase(const key_type& __x)
       { return _M_h.erase(__x); }
+
+#ifdef __glibcxx_associative_heterogeneous_erasure // C++23
+      template <__heterogeneous_hash_key<unordered_set> _Kt>
+	size_type
+	erase(_Kt&& __key)
+	{ return _M_h._M_erase_tr(__key); }
+#endif
 
       /**
        *  @brief Erases a [__first,__last) range of elements from an
@@ -728,7 +758,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       find(const key_type& __x)
       { return _M_h.find(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	find(const _Kt& __k)
@@ -740,7 +770,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       find(const key_type& __x) const
       { return _M_h.find(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	find(const _Kt& __k) const
@@ -763,7 +793,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       count(const key_type& __x) const
       { return _M_h.count(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	count(const _Kt& __k) const
@@ -804,7 +834,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       equal_range(const key_type& __x)
       { return _M_h.equal_range(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	equal_range(const _Kt& __k)
@@ -816,7 +846,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       equal_range(const key_type& __x) const
       { return _M_h.equal_range(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	equal_range(const _Kt& __k) const
@@ -987,6 +1017,19 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 		       typename iterator_traits<_InputIterator>::value_type>,
 		     _Allocator>;
 
+  // _GLIBCXX_RESOLVE_LIB_DEFECTS
+  // 2713. More missing allocator-extended constructors for unordered container
+  template<typename _InputIterator, typename _Allocator,
+	   typename = _RequireInputIter<_InputIterator>,
+	   typename = _RequireAllocator<_Allocator>>
+    unordered_set(_InputIterator, _InputIterator, _Allocator)
+    -> unordered_set<typename iterator_traits<_InputIterator>::value_type,
+		     hash<
+		       typename iterator_traits<_InputIterator>::value_type>,
+		     equal_to<
+		       typename iterator_traits<_InputIterator>::value_type>,
+		     _Allocator>;
+
   template<typename _InputIterator, typename _Hash, typename _Allocator,
 	   typename = _RequireInputIter<_InputIterator>,
 	   typename = _RequireNotAllocatorOrIntegral<_Hash>,
@@ -1004,6 +1047,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 	   typename = _RequireAllocator<_Allocator>>
     unordered_set(initializer_list<_Tp>,
 		  unordered_set<int>::size_type, _Allocator)
+    -> unordered_set<_Tp, hash<_Tp>, equal_to<_Tp>, _Allocator>;
+
+  // _GLIBCXX_RESOLVE_LIB_DEFECTS
+  // 2713. More missing allocator-extended constructors for unordered container
+  template<typename _Tp, typename _Allocator,
+	   typename = _RequireAllocator<_Allocator>>
+    unordered_set(initializer_list<_Tp>, _Allocator)
     -> unordered_set<_Tp, hash<_Tp>, equal_to<_Tp>, _Allocator>;
 
   template<typename _Tp, typename _Hash, typename _Allocator,
@@ -1223,6 +1273,14 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       : unordered_multiset(__n, __hf, key_equal(), __a)
       { }
 
+      // _GLIBCXX_RESOLVE_LIB_DEFECTS
+      // 2713. More missing allocator-extended constructors for unordered container
+      template<typename _InputIterator>
+	unordered_multiset(_InputIterator __first, _InputIterator __last,
+			   const allocator_type& __a)
+	: unordered_multiset(__first, __last, 0, hasher(), key_equal(), __a)
+	{ }
+
       template<typename _InputIterator>
 	unordered_multiset(_InputIterator __first, _InputIterator __last,
 			   size_type __n,
@@ -1236,6 +1294,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 			   const allocator_type& __a)
 	: unordered_multiset(__first, __last, __n, __hf, key_equal(), __a)
 	{ }
+
+      // _GLIBCXX_RESOLVE_LIB_DEFECTS
+      // 2713. More missing allocator-extended constructors for unordered container
+      unordered_multiset(initializer_list<value_type> __l,
+			 const allocator_type& __a)
+      : unordered_multiset(__l, 0, hasher(), key_equal(), __a)
+      { }
 
       unordered_multiset(initializer_list<value_type> __l,
 			 size_type __n,
@@ -1523,6 +1588,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       extract(const key_type& __key)
       { return _M_h.extract(__key); }
 
+#ifdef __glibcxx_associative_heterogeneous_erasure // C++23
+      template <__heterogeneous_hash_key<unordered_multiset> _Kt>
+	node_type
+	extract(_Kt&& __key)
+	{ return _M_h._M_extract_tr(__key); }
+#endif
+
       /// Re-insert an extracted node.
       iterator
       insert(node_type&& __nh)
@@ -1575,6 +1647,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       size_type
       erase(const key_type& __x)
       { return _M_h.erase(__x); }
+
+#ifdef __glibcxx_associative_heterogeneous_erasure // C++23
+      template <__heterogeneous_hash_key<unordered_multiset> _Kt>
+	size_type
+	erase(_Kt&& __key)
+	{ return _M_h._M_erase_tr(__key); }
+#endif
 
       /**
        *  @brief Erases a [__first,__last) range of elements from an
@@ -1694,7 +1773,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       find(const key_type& __x)
       { return _M_h.find(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	find(const _Kt& __x)
@@ -1706,7 +1785,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       find(const key_type& __x) const
       { return _M_h.find(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	find(const _Kt& __x) const
@@ -1725,7 +1804,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       count(const key_type& __x) const
       { return _M_h.count(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	count(const _Kt& __x) const -> decltype(_M_h._M_count_tr(__x))
@@ -1763,7 +1842,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       equal_range(const key_type& __x)
       { return _M_h.equal_range(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	equal_range(const _Kt& __x)
@@ -1775,7 +1854,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       equal_range(const key_type& __x) const
       { return _M_h.equal_range(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	equal_range(const _Kt& __x) const
@@ -1949,6 +2028,19 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 				   iterator_traits<_InputIterator>::value_type>,
 			  _Allocator>;
 
+  // _GLIBCXX_RESOLVE_LIB_DEFECTS
+  // 2713. More missing allocator-extended constructors for unordered container
+  template<typename _InputIterator, typename _Allocator,
+	   typename = _RequireInputIter<_InputIterator>,
+	   typename = _RequireAllocator<_Allocator>>
+    unordered_multiset(_InputIterator, _InputIterator, _Allocator)
+    -> unordered_multiset<typename iterator_traits<_InputIterator>::value_type,
+			  hash<typename
+			       iterator_traits<_InputIterator>::value_type>,
+			  equal_to<typename
+				   iterator_traits<_InputIterator>::value_type>,
+			  _Allocator>;
+
   template<typename _InputIterator, typename _Hash, typename _Allocator,
 	   typename = _RequireInputIter<_InputIterator>,
 	   typename = _RequireNotAllocatorOrIntegral<_Hash>,
@@ -1968,6 +2060,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 	   typename = _RequireAllocator<_Allocator>>
     unordered_multiset(initializer_list<_Tp>,
 		       unordered_multiset<int>::size_type, _Allocator)
+    -> unordered_multiset<_Tp, hash<_Tp>, equal_to<_Tp>, _Allocator>;
+
+  // _GLIBCXX_RESOLVE_LIB_DEFECTS
+  // 2713. More missing allocator-extended constructors for unordered container
+  template<typename _Tp, typename _Allocator,
+	   typename = _RequireAllocator<_Allocator>>
+    unordered_multiset(initializer_list<_Tp>, _Allocator)
     -> unordered_multiset<_Tp, hash<_Tp>, equal_to<_Tp>, _Allocator>;
 
   template<typename _Tp, typename _Hash, typename _Allocator,

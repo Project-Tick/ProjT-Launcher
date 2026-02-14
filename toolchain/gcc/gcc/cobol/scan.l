@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -94,6 +94,14 @@ PICTURE   [^[:space:]]+
 DOTSEP    [.]+[[:space:]]
 DOTEOL    [[:blank:]]*[.]{BLANK_EOL}
 
+	  /*
+	   * "If the symbol ',' or the symbol '.' is the last symbol of
+	   *  character-string-1, the PICTURE clause shall be the last clause
+	   *  of the data description entry and shall be followed immediately
+	   *  (without an intervening separator space) by the separator period."
+	   */
+NONPIC	  [,]{DOTSEP} 
+
 SKIP	  [[:blank:]]*SKIP[123][[:blank:]]*[.]?{BLANK_EOL}
 TITLE	  [[:blank:]]*TITLE($|[.]|[^\n]*)
 
@@ -104,7 +112,9 @@ NP        P+|(P{COUNT})
 UNSIGNED  [[:space:]]+UNSIGNED
 SIGNED    [[:space:]]+SIGNED
 
-ALNUM     [AX9]+
+PREFIX 	  G|N|U|Z
+
+ALNUM     [AX9]+|N+|U+
 
 AX       [AX]{COUNT}?
 B0       [B0/]{COUNT}?
@@ -123,7 +133,7 @@ NUMEDCHAR  [BPVZ90/,]+{COUNT}?
 NUMEDCHARS {NUMEDCHAR}([.]?{NUMEDCHAR})*
 NUMED     ([+-]{NUMEDCHARS}+)|({NUMEDCHARS}+[+-])
 CURRENCY [A-Zfhijklmoqtuwy\x80-\xFF]{-}[ABCDEGNPRSVXZ]
-NUMEDCUR (([.]?[-$0B/Z*+,P9()V+–]|{CURRENCY}+|{COUNT})+([.][$0B/Z*+P9()V+\–])*)+
+NUMEDCUR (([.]?[$0B/Z*+,P9()V+-]|{CURRENCY}+|{COUNT})+([.][$0B/Z*+P9()V+-])*)+
 
 NUMEDITED         {NUMED}|{NUMEDCUR}
 EDITED   {ALPHED}|{NUMED}|{NUMEDCUR}
@@ -314,6 +324,7 @@ BACKGROUND-COLOR		{ return BACKGROUND_COLOR; }
 BELL				{ return BELL; }
 BINARY-ENCODING			{ return BINARY_ENCODING; }
 BLINK				{ return BLINK; }
+BYTE				{ return BYTE; }
 CAPACITY			{ return CAPACITY; }
 
 CENTER		{
@@ -452,16 +463,26 @@ COPY		{
                   myless(0);
                 }
 
-EXTEND		{ return EXTEND;}
-INITIALIZE	{ return INITIALIZE; }
-INSPECT		{ return INSPECT; }
-INVOKE		{ return INVOKE; }
-INTRINSIC	{ return INTRINSIC; }
-MERGE		{ return MERGE; }
-UNSTRING	{ return UNSTRING; }
-XML		{ return XML; }
-XMLGENERATE	{ return XMLGENERATE; }
-XMLPARSE	{ return XMLPARSE; }
+ATTRIBUTES		{ return ATTRIBUTES; }
+ELEMENT			{ return ELEMENT; }
+ENCODING		{ return ENCODING; }
+EXTEND			{ return EXTEND;}
+INITIALIZE		{ return INITIALIZE; }
+INSPECT			{ return INSPECT; }
+INTRINSIC		{ return INTRINSIC; }
+INVOKE			{ return INVOKE; }
+MERGE			{ return MERGE; }
+NAMESPACE		{ return NAMESPACE; }
+NAMESPACE-PREFIX	{ return NAMESPACE_PREFIX; }
+NONNUMERIC		{ return NONNUMERIC; }
+PROCESSING		{ return PROCESSING; }
+UNSTRING		{ return UNSTRING; }
+VALIDATING		{ return VALIDATING; }
+
+XML{SPC}GENERATE	{ return XMLGENERATE; }
+XML{SPC}PARSE		{ return XMLPARSE; }
+XML-DECLARATION		{ return XML_DECLARATION; }
+END-XML			{ return END_XML; }
 
 ZEROE?S?	{ return ZERO; }
 
@@ -505,7 +526,6 @@ THAN		{ return THAN; }
 TEST		{ return TEST; }
 TERMINATE	{ return TERMINATE; }
 TALLYING	{ return TALLYING; }
-TALLY		{ return TALLY; }
 SYSPUNCH	{ return SYSPUNCH; }
 SYSOUT		{ return SYSOUT; }
 SYSIN		{ return SYSIN; }
@@ -561,7 +581,7 @@ REVERSED	{ return REVERSED; }
 RETURN		{ return RETURN; }
 RESTRICTED	{ return RESTRICTED; }
 
-RESUME		{
+RESUME		{ // RESUME is ISO syntax, not IBM.  
 		  if( ! dialect_ibm() ) return RESUME;
 		  yylval.string = xstrdup(yytext);
 		  return typed_name(yytext);
@@ -751,7 +771,9 @@ EVERY		{ return EVERY; }
 ERROR		{ return ERROR; }
 EVALUATE	{ return EVALUATE; }
 
-EQUALS?         { return '='; }
+EQUALS?         { ydflval.string = yylval.string = xstrdup(yytext);
+		  return '='; }
+
 ENVIRONMENT[[:blank:]]+DIVISION	{ return ENVIRONMENT_DIV; }
 
 ENTRY		{ return ENTRY; }
@@ -802,7 +824,11 @@ DEPENDING	{ return DEPENDING; }
 
 DELIMITER	{ return DELIMITER; }
 DELETE		{ return DELETE; }
-DEFAULT		{ return DEFAULT; }
+
+DEFAULT		{ yylval.number = 'D'; return DEFAULT; }
+SYSTEM-DEFAULT	{ yylval.number = 'S'; return DEFAULT; }
+USER-DEFAULT	{ yylval.number = 'U'; return DEFAULT; }
+
 DECLARATIVES	{ return DECLARATIVES; }
 DECIMAL-POINT	{ return DECIMAL_POINT; }
 DEBUGGING	{ return DEBUGGING; }
@@ -885,11 +911,7 @@ ACCESS		{ return ACCESS; }
 ACCEPT		{ return ACCEPT; }
 
 DELETE		{ return DELETE; }
-EJECT{DOTEOL}? {
-		  if( ! dialect_ibm() ) {
-		    dialect_error(yylloc, "EJECT is not ISO syntax,", "ibm");
-		  }
-		}
+EJECT{DOTEOL}?  { dialect_ok(yylloc, IbmEjectE, "EJECT"); }
 INSERTT		{ return INSERTT; }
 LABEL		{ return LABEL; }
 PROCESS		{ return PROCESS; }
@@ -981,20 +1003,18 @@ USE({SPC}FOR)?		{ return USE; }
   COMP(UTATIONAL)?-X		{ return ucomputable(FldNumericBin5, 0xFF); }
   COMP(UTATIONAL)?-6		{ return ucomputable(FldPacked, 0); }
   COMP(UTATIONAL)?-5		{ return ucomputable(FldNumericBin5, 0); }
-  COMP(UTATIONAL)?-4		{ return scomputable(FldNumericBinary, 0); }
+  COMP(UTATIONAL)?-4		{ return ucomputable(FldNumericBinary, 0); }
   COMP(UTATIONAL)?-3		{ return PACKED_DECIMAL; }
   COMP(UTATIONAL)?-2		{ return ucomputable(FldFloat, 8); }
   COMP(UTATIONAL)?-1		{ return ucomputable(FldFloat, 4); }
   COMP(UTATIONAL)?		{ return ucomputable(FldNumericBinary, 0); }
-  BINARY            		{ return scomputable(FldNumericBinary, 0); }
+  BINARY            		{ return ucomputable(FldNumericBinary, 0); }
 
   BINARY-CHAR	   		{ return bcomputable(FldNumericBin5, 1); }
   BINARY-SHORT	  		{ return bcomputable(FldNumericBin5, 2); }
   BINARY-LONG	   		{ return bcomputable(FldNumericBin5, 4); }
   BINARY-DOUBLE			{ return bcomputable(FldNumericBin5, 8); }
-  BINARY-LONG-LONG		{ if( ! dialect_mf() ) {
-				    dialect_error(yylloc, yytext, "mf");
-				  }
+  BINARY-LONG-LONG		{ dialect_ok(yylloc, MfBinaryLongLong, "BINARY-LONG-LONG");
 				  return bcomputable(FldNumericBin5, 8);
 				}
 
@@ -1019,8 +1039,7 @@ USE({SPC}FOR)?		{ return USE; }
 
   INDEX				{ return INDEX; }
   MESSAGE-TAG			{ not_implemented("USAGE type: MESSAGE-TAG"); }
-  NATIONAL			{ not_implemented("USAGE type: NATIONAL");
-				  return NATIONAL; }
+  NATIONAL			{ return NATIONAL; }
   OBJECT{SPC}REFERENCE		{ not_implemented("USAGE type: OBJECT REFERENCE"); }
 
   PACKED-DECIMAL		{ return PACKED_DECIMAL; }
@@ -1029,9 +1048,8 @@ USE({SPC}FOR)?		{ return USE; }
   PROGRAM-POINTER      	{ yylval.field_attr = prog_ptr_e; return POINTER; }
   POINTER           	{ yylval.field_attr = none_e;     return POINTER; }
 
-  PROCEDURE-POINTER    	{ if( dialect_gcc() ) {
-			    dialect_error(yylloc, yytext, "ibm or mf");
-			  }
+  PROCEDURE-POINTER    	{ 
+			  dialect_ok(yylloc, IbmProcedurePointer, yytext);
 			  yylval.field_attr = prog_ptr_e;
 			  return POINTER;  // return it anyway
 			}
@@ -1071,13 +1089,11 @@ USE({SPC}FOR)?		{ return USE; }
   DEPENDING		{ return DEPENDING; }
   DESCENDING		{ return DESCENDING; }
   DISPLAY		{ return DISPLAY; }
-  EJECT{DOTEOL}?  {
-		  if( ! dialect_ibm() ) {
-		    dialect_error(yylloc, "EJECT is not ISO syntax,", "ibm");
-		  }
-                  auto len = yyleng - 1;
-                  if( yytext[len] == '\f' ) myless(--len);
-		}
+  EJECT{DOTEOL}?  	{
+			  dialect_ok(yylloc, IbmEjectE, "EJECT"); 
+			  auto len = yyleng - 1;
+			  if( yytext[len] == '\f' ) myless(--len);
+			}
   EXTERNAL		{ return EXTERNAL; }
   FALSE			{ return FALSE_kw; }
   FROM			{ return FROM; }
@@ -1091,6 +1107,7 @@ USE({SPC}FOR)?		{ return USE; }
   LEADING		{ return LEADING; }
   LEFT    		{ return LEFT; }
   MODE			{ return MODE; }
+  NO			{ return NO; }
   OCCURS/{SPC}{NAME} 	{ return OCCURS; }
   OCCURS		{ yy_push_state(integer_count);  return OCCURS; }
   OF			{ return OF; }
@@ -1122,6 +1139,7 @@ USE({SPC}FOR)?		{ return USE; }
   VARYING		{ return VARYING; }
   VOLATILE    		{ return VOLATILE; }
   WHEN    		{ return WHEN; }
+  WITH			{ return WITH; }
 
   COPY			{
                 	  yy_push_state(copy_state);
@@ -1142,9 +1160,9 @@ USE({SPC}FOR)?		{ return USE; }
 			  return token == NAME88? NAME : token;
  			}
 
-  Z?['']                { yylval.literal.set_prefix(yytext, yyleng-1);
+  {PREFIX}?['']                { yylval.literal.set_prefix(yytext, yyleng-1);
 			  yy_push_state(quoted1); }
-  Z?[""]                { yylval.literal.set_prefix(yytext, yyleng-1);
+  {PREFIX}?[""]                { yylval.literal.set_prefix(yytext, yyleng-1);
 			  yy_push_state(quoted2); }
   N?X/{hexseq}		{ yylval.literal.set_prefix(yytext, yyleng);
 	    		  yy_push_state(hex_state); }
@@ -1234,7 +1252,7 @@ USE({SPC}FOR)?		{ return USE; }
                          yylval.string = xstrdup(yytext); return picset(ALNUM); }
   {ALNUM}/[(]{NAME}[)] { yy_push_state(picture_count);
                          yylval.string = xstrdup(yytext); return picset(ALNUM); }
-  {ALNUM}              { yylval.string = xstrdup(yytext); return picset(ALNUM); }
+  {ALNUM}/{NONPIC}?    { yylval.string = xstrdup(yytext); return picset(ALNUM); }
 
   {ALPHED}             { yylval.string = xstrdup(yytext); return picset(ALPHED); }
   {NUMEDITED}          { yylval.string = xstrdup(yytext); return picset(NUMED); }
@@ -1289,12 +1307,12 @@ USE({SPC}FOR)?		{ return USE; }
 		}
 
   /* CDF REPLACING needs quotes to distinquish strings from identifiers. */
-  Z?['']{STRING1}['']   { auto *s = xstrdup(yytext);
+  {PREFIX}?['']{STRING1}['']   { auto *s = xstrdup(yytext);
 			  std::replace(s, s + strlen(s), '\'', '"');
 			  ydflval.string = s;
 			  update_location_col(s);
 			  return LITERAL; }
-  Z?[""]{STRING}[""]    { ydflval.string = xstrdup(yytext);
+  {PREFIX}?[""]{STRING}[""]    { ydflval.string = xstrdup(yytext);
 			  update_location_col(yytext);
 			  return LITERAL; }
   [=]{4}                { static char nullstring[] = "";
@@ -1403,9 +1421,9 @@ USE({SPC}FOR)?		{ return USE; }
 			  yylval.string = xstrdup(yytext);
 			  return NAME; 
 			}
-  Z?['']                { yylval.literal.set_prefix(yytext, yyleng-1);
+  {PREFIX}?['']                { yylval.literal.set_prefix(yytext, yyleng-1);
 			  BEGIN(quoted1); }
-  Z?[""]                { yylval.literal.set_prefix(yytext, yyleng-1);
+  {PREFIX}?[""]                { yylval.literal.set_prefix(yytext, yyleng-1);
 			  BEGIN(quoted2); }
 
   .             	{ myless(0); yy_pop_state();
@@ -1445,11 +1463,11 @@ USE({SPC}FOR)?		{ return USE; }
   BX/{hexseq}			{ yylval.numstr.radix = hexadecimal_e;
 			  	  yy_push_state(numstr_state); }
 
-  Z?['']                   { yylval.literal.set_prefix(yytext, yyleng-1);
+  {PREFIX}?['']                   { yylval.literal.set_prefix(yytext, yyleng-1);
 			     yy_push_state(quoted1); }
-  Z?[""]                   { yylval.literal.set_prefix(yytext, yyleng-1);
+  {PREFIX}?[""]                   { yylval.literal.set_prefix(yytext, yyleng-1);
 			     yy_push_state(quoted2); }
-  Z?[""]/{STRING}[""]      { yylval.literal.set_prefix(yytext, yyleng-1);
+  {PREFIX}?[""]/{STRING}[""]      { yylval.literal.set_prefix(yytext, yyleng-1);
 			     yy_push_state(quoted2); }
 
   {INTEGERZ}/[[:punct:]][[:space:]]{BLANK_OEOL} { return numstr_of(yytext); }
@@ -1491,16 +1509,21 @@ USE({SPC}FOR)?		{ return USE; }
 <cdf_state,procedure_div>{
   (IS{SPC})?"<"         { return '<'; }
   (IS{SPC})?"<="        { return LE;  }
-  (IS{SPC})?"="         { return '='; }
+  (IS{SPC})?"="         { static char eq[] = "=";
+			  ydflval.string = yylval.string = eq;
+  			  return EQ; }
   (IS{SPC})?"<>"        { return NE;  }
   (IS{SPC})?">="        { return GE;  }
   (IS{SPC})?">"         { return '>'; }
 
-  {LESS_THAN} 				{ return '<'; }
+  {LESS_THAN} 		{ return '<'; }
   {LESS_THAN}{SPC}{OR_EQUAL}/[[:space:]]	{ return LE; }
-  (IS{SPC})?EQUALS?({SPC}TO)?/[[:space:]]		{ return '='; }
+  (IS{SPC})?EQUALS?({SPC}TO)?/[[:space:]] {
+		  static char eq[] = "EQUAL";
+		  ydflval.string = yylval.string = eq;
+		  return EQ; }
   {GREATER_THAN}{SPC}{OR_EQUAL}/[[:space:]]	{ return GE; }
-  {GREATER_THAN}			{ return '>'; }
+  {GREATER_THAN}				{ return '>'; }
 
   {ISNT}{OSPC}">="        { verify_ws(yytext[yyleng - 3]); return '<'; }
   {ISNT}{OSPC}">"         { verify_ws(yytext[yyleng - 2]); return LE;  }
@@ -1673,16 +1696,17 @@ B-SHIFT-RC
 		    p += 2;
 		    while( ISSPACE(*p) ) p++;
 		    cbl_name_t name2;
-		    std::transform( p, p + sizeof(name2), name2,
-				    []( char ch ) {
-				      switch(ch) {
-				      case '-':
-				      case '_': return ch;
-				      default:
-					if( ISALNUM(ch) ) return ch;
-				      }
-				      return '\0';
-				    } );
+                    const char *pend = p + sizeof(name2);
+                    char *pout = name2;
+                    while( p < pend ) {
+                      char ch = *p++;
+                      if( ISALNUM(ch) || ch == '-' || ch == '_' )  {
+                        *pout++ = ch;
+                      } else {
+                        *pout++  = '\0';
+                        break;
+                      }
+                    }
 		    symbol_elem_t *e = symbol_file(PROGRAM, name2);
 		    /*
 		     * For NAME IN FILENAME, we want the parser to handle it.
@@ -1785,8 +1809,8 @@ B-SHIFT-RC
 				  if( elem->type == SymField ) {
 				    auto f = cbl_field_of(elem);
 				    if( f->type == FldLiteralA && f->has_attr(constant_e) ) {
-				      type = date_time_fmt(f->data.initial);
-				      yylval.string = xstrdup(f->data.initial);
+				      type = date_time_fmt(f->data.original());
+				      yylval.string = xstrdup(f->data.original());
 				    }
 				  } else {
 				    yylval.string = xstrdup(yytext);
@@ -1816,6 +1840,7 @@ B-SHIFT-RC
   BIT-OF/{NONWORD}			{ pop_return BIT_OF; }
   BIT-TO-CHAR/{NONWORD}			{ pop_return BIT_TO_CHAR; }
   BOOLEAN-OF-INTEGER/{NONWORD}		{ pop_return BOOLEAN_OF_INTEGER; }
+  BYTE/{NONWORD}			{ pop_return BYTE; }
   BYTE-LENGTH/{NONWORD}			{ pop_return BYTE_LENGTH; }
   CHAR-NATIONAL/{NONWORD}		{ pop_return CHAR_NATIONAL; }
   CHAR/{NONWORD}			{ pop_return CHAR; }
@@ -1976,7 +2001,8 @@ BASIS		{ yy_push_state(basis); return BASIS; }
   {STRING}      { yy_pop_state();
                   yypush_buffer_state( yy_create_buffer(yyin, YY_BUF_SIZE) );
                   if( (yyin = cdftext::lex_open(yytext)) == NULL ) {
-                    yywarn("could not open BASIS file '%s'", yytext);
+                    cbl_message(yylloc, LexIncludeE,
+                                "could not open BASIS file '%s'", yytext);
                     yyterminate();
                   }
                 }
@@ -1987,7 +2013,8 @@ BASIS		{ yy_push_state(basis); return BASIS; }
 }
 
 <procedure_div>{
-   EQUALS?{OSPC}/[(] { return '='; }
+   EQUALS?{OSPC}/[(]	{ ydflval.string = yylval.string = xstrdup(yytext);
+		  	  return EQ; }
 
    {NAME}{OSPC}/[(] { /* If /{OSPC}, "dangerous trailing context" "*/
                   if( is_integer_token() ) return numstr_of(yytext);
@@ -2068,21 +2095,15 @@ BASIS		{ yy_push_state(basis); return BASIS; }
   ^[ ]*>>{OBLANK}ELSE	 	{ return CDF_ELSE; }
   ^[ ]*>>{OBLANK}END-IF	 	{ return CDF_END_IF; }
 
-  ^[ ]*[$]{OBLANK}IF		{ if( ! dialect_mf() )  {
-				    dialect_error(yylloc,  yytext, "mf");
-				  }
+  ^[ ]*[$]{OBLANK}IF		{ dialect_ok(yylloc, MfCdfDollar, yytext); 
 				  yy_push_state(cdf_state); return CDF_IF; }
-  ^[ ]*[$]{OBLANK}ELSE	 	{ if( ! dialect_mf() )  {
-				    dialect_error(yylloc,  yytext, "mf");
-				  }
+  ^[ ]*[$]{OBLANK}ELSE	 	{ dialect_ok(yylloc, MfCdfDollar, yytext); 
 				  return CDF_ELSE; }
-  ^[ ]*[$]{OBLANK}END	 	{ if( ! dialect_mf() ) {
-				    dialect_error(yylloc,  yytext, "mf");
-				  }
+  ^[ ]*[$]{OBLANK}END	 	{ dialect_ok(yylloc, MfCdfDollar, yytext); 
 				  return CDF_END_IF; }
 
   ^[ ]*[$]{OBLANK}SET({SPC}CONSTANT)? {
-				  if( ! dialect_mf() ) dialect_error(yylloc, yytext, "mf");
+				  dialect_ok(yylloc, MfCdfDollar, yytext); 
 				  yy_push_state(cdf_state); return CDF_DEFINE; }
 
   ^[ ]*>>{OBLANK}EVALUATE		{ return CDF_EVALUATE; }
@@ -2245,7 +2266,7 @@ BASIS		{ yy_push_state(basis); return BASIS; }
   DE		{ return DE; }
   DECIMAL-POINT	{ return DECIMAL_POINT; }
   DECLARATIVES	{ return DECLARATIVES; }
-  DEFAULT	{ return DEFAULT; }
+  DEFAULT	{ yylval.number = 'D'; return DEFAULT; }
   DELETE	{ return DELETE; }
   DELIMITED	{ return DELIMITED; }
   DELIMITER	{ return DELIMITER; }
@@ -2277,7 +2298,8 @@ BASIS		{ yy_push_state(basis); return BASIS; }
   END-SUBTRACT	{ return END_SUBTRACT; }
   END-WRITE	{ return END_WRITE; }
   ENVIRONMENT	{ return ENVIRONMENT; }
-  EQUAL		{ return EQUAL; }
+  EQUAL		{ ydflval.string = yylval.string = xstrdup(yytext);
+		  return EQ; }
   ERROR		{ return ERROR; }
   EVALUATE	{ return EVALUATE; }
   EXCEPTION	{ return EXCEPTION; }

@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2025 Free Software Foundation, Inc.
+// Copyright (C) 2020-2026 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -64,11 +64,10 @@ DeriveClone::clone_fn (std::unique_ptr<Expr> &&clone_expr)
     new BlockExpr ({}, std::move (clone_expr), {}, {}, tl::nullopt, loc, loc));
   auto big_self_type = builder.single_type_path ("Self");
 
-  std::unique_ptr<SelfParam> self (new SelfParam (tl::nullopt,
-						  /* is_mut */ false, loc));
-
   std::vector<std::unique_ptr<Param>> params;
-  params.push_back (std::move (self));
+
+  params.emplace_back (new SelfParam (tl::nullopt,
+				      /* is_mut */ false, loc));
 
   return std::unique_ptr<AssociatedItem> (
     new Function ({"clone"}, builder.fn_qualifiers (), /* generics */ {},
@@ -211,7 +210,7 @@ DeriveClone::clone_enum_tuple (PathInExpression variant_path,
     }
 
   auto pattern_items = std::unique_ptr<TupleStructItems> (
-    new TupleStructItemsNoRange (std::move (patterns)));
+    new TupleStructItemsNoRest (std::move (patterns)));
 
   auto pattern = std::unique_ptr<Pattern> (new ReferencePattern (
     std::unique_ptr<Pattern> (new TupleStructPattern (
@@ -293,8 +292,14 @@ DeriveClone::clone_enum_struct (PathInExpression variant_path,
     new ReferencePattern (std::unique_ptr<Pattern> (new StructPattern (
 			    variant_path, loc, pattern_elts)),
 			  false, false, loc));
+
+  PathInExpression new_path (variant_path.get_segments (),
+			     variant_path.get_outer_attrs (),
+			     variant_path.get_locus (),
+			     variant_path.opening_scope_resolution ());
+
   auto expr = std::unique_ptr<Expr> (
-    new StructExprStructFields (variant_path, std::move (cloned_fields), loc));
+    new StructExprStructFields (new_path, std::move (cloned_fields), loc));
 
   return builder.match_case (std::move (pattern), std::move (expr));
 }

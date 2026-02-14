@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Symas Corporation
+ * Copyright (c) 2021-2026 Symas Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -117,7 +117,7 @@ extern bool cursor_at_sol;
                 fprintf(stderr, "%s", (b)->name); \
                 if( (b)->type == FldLiteralA || (b)->type == FldLiteralN ) \
                     { \
-                    fprintf(stderr, " \"%s\"", (b)->data.initial); \
+                    fprintf(stderr, " \"%s\"", (b)->data.original()); \
                     } \
                 else \
                     { \
@@ -140,7 +140,13 @@ extern bool cursor_at_sol;
                 fprintf(stderr, "%s", (b).field->name); \
                 if( (b).field->type == FldLiteralA || (b).field->type == FldLiteralN ) \
                     { \
-                    fprintf(stderr, " \"%s\"", (b).field->data.initial); \
+                    size_t nbytes; \
+                    const char *literal = __gg__iconverter((b).field->codeset.encoding, \
+                                                           DEFAULT_SOURCE_ENCODING, \
+                                                           (b).field->data.original(), \
+                                                           strlen((b).field->data.original()), \
+                                                           &nbytes); \
+                    fprintf(stderr, " \"%s\"", literal); \
                     } \
                 else \
                     { \
@@ -328,7 +334,7 @@ extern bool cursor_at_sol;
       else if( b->type == FldLiteralN ) \
         { \
         gg_fprintf(trace_handle, 1, " attr 0x%lx",  build_int_cst_type(SIZE_T, b->attr)); \
-        gg_fprintf(trace_handle, 1, " c:o:d:r %ld", build_int_cst_type(SIZE_T, b->data.capacity)); \
+        gg_fprintf(trace_handle, 1, " c:o:d:r %ld", build_int_cst_type(SIZE_T, b->data.capacity())); \
         gg_fprintf(trace_handle, 1, ":%ld",         build_int_cst_type(SIZE_T, b->offset)); \
         gg_fprintf(trace_handle, 1, ":%d",          build_int_cst_type(INT,    b->data.digits)); \
         gg_fprintf(trace_handle, 1, ":%d",         build_int_cst_type(INT,    b->data.rdigits)); \
@@ -394,7 +400,7 @@ extern bool cursor_at_sol;
       else if( (b).field->type == FldLiteralN ) \
         { \
         gg_fprintf(trace_handle, 1, " attr 0x%lx",  build_int_cst_type(SIZE_T, (b).field->attr)); \
-        gg_fprintf(trace_handle, 1, " c:o:d:r %ld", build_int_cst_type(SIZE_T, (b).field->data.capacity)); \
+        gg_fprintf(trace_handle, 1, " c:o:d:r %ld", build_int_cst_type(SIZE_T, (b).field->data.capacity())); \
         gg_fprintf(trace_handle, 1, ":%ld",         build_int_cst_type(SIZE_T, (b).field->offset)); \
         gg_fprintf(trace_handle, 1, ":%d",          build_int_cst_type(INT,    (b).field->data.digits)); \
         gg_fprintf(trace_handle, 1, ":%d)",         build_int_cst_type(INT,    (b).field->data.rdigits)); \
@@ -443,19 +449,15 @@ extern bool cursor_at_sol;
         do {                                                            \
         if(!a)                                                          \
             {                                                           \
-            yywarn("%s: parameter %<" #a "%> is NULL", __func__);       \
-            gcc_unreachable();                                          \
-            abort();                                                    \
+            cbl_internal_error("%s: parameter %<" #a "%> is NULL", __func__); \
             }                                                           \
         if( !a->var_decl_node )                                         \
             {                                                           \
-            yywarn("%s: parameter %<" #a "%> is variable "              \
+            cbl_internal_error("%s: parameter %<" #a "%> is variable "              \
                    "%s<%s> with NULL %<var_decl_node%>",                \
                 __func__,                                               \
                 a->name,                                                \
                 cbl_field_type_str(a->type) );                          \
-            gcc_unreachable();                                          \
-            abort();                                                    \
             }                                                           \
         } while(0);
 
@@ -464,19 +466,15 @@ extern bool cursor_at_sol;
         do {                                                            \
         if(!a)                                                          \
             {                                                           \
-            yywarn("%s: parameter %<" #a "%> is NULL", __func__);       \
-            gcc_unreachable();                                          \
-            abort();                                                    \
+            cbl_internal_error("%s: parameter %<" #a "%> is NULL", __func__);       \
             }                                                           \
         if( !a->var_decl_node && a->type != FldConditional && a->type != FldLiteralA) \
             {                                                           \
-            yywarn("%s: parameter %<" #a "%> is variable "               \
+            cbl_internal_error("%s: parameter %<" #a "%> is variable "               \
                    "%s<%s> with NULL %<var_decl_node%>",                \
                 __func__,                                               \
                 a->name,                                                \
                 cbl_field_type_str(a->type) );                          \
-            gcc_unreachable();                                          \
-            abort();                                                    \
             }                                                           \
         } while(0);
 
@@ -485,9 +483,7 @@ extern bool cursor_at_sol;
         do{                                                             \
         if(!a)                                                          \
             {                                                           \
-            yywarn("%s: parameter %<" #a "%> is NULL", __func__);       \
-            gcc_unreachable();                                          \
-            abort();                                                    \
+            cbl_internal_error("%s: parameter %<" #a "%> is NULL", __func__);       \
             }                                                           \
         }while(0);
 
@@ -500,7 +496,7 @@ class ANALYZE
     int level;
     inline static int analyze_level=1;
   public:
-    ANALYZE(const char *func_) : func(func_)
+    ANALYZE(const char *func_) : func(func_) // cppcheck-suppress noExplicitConstructor
       {
       level = 0;
       if( getenv("Analyze") )

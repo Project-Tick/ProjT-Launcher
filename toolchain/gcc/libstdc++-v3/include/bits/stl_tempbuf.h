@@ -1,6 +1,6 @@
 // Temporary buffer implementation -*- C++ -*-
 
-// Copyright (C) 2001-2025 Free Software Foundation, Inc.
+// Copyright (C) 2001-2026 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -227,7 +227,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       /// Returns the size requested by the constructor; may be >size().
       size_type
-      requested_size() const
+      _M_requested_size() const
       { return _M_original_len; }
 
       /// As per Table mumble.

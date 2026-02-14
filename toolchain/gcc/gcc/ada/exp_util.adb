@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2025, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2026, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -28,7 +28,6 @@ with Atree;          use Atree;
 with Casing;         use Casing;
 with Checks;         use Checks;
 with Debug;          use Debug;
-with Einfo;          use Einfo;
 with Einfo.Entities; use Einfo.Entities;
 with Elists;         use Elists;
 with Errout;         use Errout;
@@ -638,6 +637,23 @@ package body Exp_Util is
                end if;
 
             else
+               --  For GNAT objects with indefinite nominal subtypes will have
+               --  an itype constrained by their initialization expression
+               --  (except for class-wide type). For GNATprove, those objects
+               --  will keep their nominal subtype unconstrained, while
+               --  actually those objects are constrained; see call from
+               --  Analyze_Object_Declaration to Expand_Subtype_From_Expr.
+
+               if Ekind (Ent) in E_Constant | E_Variable
+                  and then not Is_Definite_Subtype (Etype (Ent))
+                  and then not Is_Class_Wide_Type (Etype (Ent))
+                  and then No (Renamed_Object (Ent))
+               then
+                  pragma Assert
+                    (GNATprove_Mode
+                     and then Present (Expression (Parent (Ent))));
+                  return True;
+               end if;
 
                --  If the prefix is not a variable or is aliased, then
                --  definitely true; if it's a formal parameter without an
@@ -971,23 +987,22 @@ package body Exp_Util is
          Size_Id : constant Entity_Id := Make_Temporary (Loc, 'S');
 
          Actuals      : List_Id;
-         Alloc_Expr   : Node_Id := Empty;
+         Alloc_Expr   : Node_Id;
          Fin_Coll_Id  : Entity_Id;
          Proc_To_Call : Entity_Id;
          Ptr_Coll_Id  : Entity_Id;
-         Subpool      : Node_Id := Empty;
+         Subpool      : Node_Id;
 
       begin
-         --  When we are building an allocator procedure, extract the allocator
-         --  node for later processing and calculation of alignment.
+         --  When we are building an allocator procedure, extract the qualified
+         --  expression from the allocator if there is one.
 
-         if Is_Allocate then
-            --  Extract the qualified expression if there is one from the
-            --  allocator.
-
-            if Nkind (Expression (Expr)) = N_Qualified_Expression then
-               Alloc_Expr := Expression (Expr);
-            end if;
+         if Is_Allocate
+           and then Nkind (Expression (Expr)) = N_Qualified_Expression
+         then
+            Alloc_Expr := Expression (Expr);
+         else
+            Alloc_Expr := Empty;
          end if;
 
          --  Step 1: Construct all the actuals for the call to library routine
@@ -1001,15 +1016,14 @@ package body Exp_Util is
 
             --  b) Subpool
 
-            if Nkind (Expr) = N_Allocator then
-               Subpool := Subpool_Handle_Name (Expr);
-            end if;
+            Subpool := Subpool_Handle_Name (Expr);
 
             --  If a subpool is present it can be an arbitrary name, so make
             --  the actual by copying the tree.
 
             if Present (Subpool) then
-               Append_To (Actuals, New_Copy_Tree (Subpool, New_Sloc => Loc));
+               Append_To
+                 (Actuals, New_Copy_Tree (Subpool, New_Scope => Proc_Id));
             else
                Append_To (Actuals, Make_Null (Loc));
             end if;
@@ -1531,32 +1545,137 @@ package body Exp_Util is
                   Ctrl_Type : constant Entity_Id
                     := Find_Dispatching_Type (Par_Subp);
 
-                  function Call_To_Parent_Dispatching_Op_Must_Be_Mapped
-                    (Call_Node : Node_Id) return Boolean;
+                  function Must_Map_Call_To_Parent_Primitive
+                    (Call_Node     : Node_Id;
+                     Check_Parents : Boolean := True) return Boolean;
                   --  If Call_Node is a call to a primitive function F of the
                   --  tagged type T associated with Par_Subp that either has
-                  --  any actuals that are controlling formals of Par_Subp,
+                  --  any actuals that involve controlling formals of Par_Subp,
                   --  or else the call to F is an actual parameter of an
                   --  enclosing call to a primitive of T that has any actuals
-                  --  that are controlling formals of Par_Subp (and recursively
-                  --  up the tree of enclosing function calls), returns True;
-                  --  otherwise returns False. Returning True implies that the
-                  --  call to F must be mapped to a call that instead targets
-                  --  the corresponding function F of the tagged type for which
-                  --  Subp is a primitive function.
+                  --  that involve controlling formals of Par_Subp (and
+                  --  recursively up the tree of enclosing function calls),
+                  --  returns True; otherwise returns False. Returning True
+                  --  implies that the call to F must be mapped to a call
+                  --  that instead targets the corresponding function F of
+                  --  the tagged type for which Subp is a primitive function.
+                  --  Checks_Parent specifies whether this function should
+                  --  recursively check enclosing calls.
 
-                  --------------------------------------------------
-                  -- Call_To_Parent_Dispatching_Op_Must_Be_Mapped --
-                  --------------------------------------------------
+                  ---------------------------------------
+                  -- Must_Map_Call_To_Parent_Primitive --
+                  ---------------------------------------
 
-                  function Call_To_Parent_Dispatching_Op_Must_Be_Mapped
-                    (Call_Node : Node_Id) return Boolean
+                  function Must_Map_Call_To_Parent_Primitive
+                    (Call_Node     : Node_Id;
+                     Check_Parents : Boolean := True) return Boolean
                   is
                      pragma Assert (Nkind (Call_Node) = N_Function_Call);
 
                      Actual           : Node_Id := First_Actual (Call_Node);
-                     Actual_Type      : Entity_Id;
-                     Actual_Or_Prefix : Node_Id;
+
+                     function Expr_Has_Ctrl_Formal_Ref
+                       (Expr : Node_Id) return Boolean;
+                     --  Determines whether Expr is or contains a reference
+                     --  to a controlling formal and returns True if so. More
+                     --  specifically, if Expr is not directly a reference
+                     --  to a formal, it can be an access attribute or Old
+                     --  attribute whose immediate object prefix is such
+                     --  a reference (possibly through a chain of multiple
+                     --  such attributes); or else it can be a dereference
+                     --  of a controlling formal; or else it can be either
+                     --  a dependent expression of a conditional expression,
+                     --  or the expression of a declare expression that
+                     --  qualifies as such. Returns True if the expression
+                     --  satisifies one of those requirements; otherwise
+                     --  returns False.
+
+                     ------------------------------
+                     -- Expr_Has_Ctrl_Formal_Ref --
+                     ------------------------------
+
+                     function Expr_Has_Ctrl_Formal_Ref
+                       (Expr : Node_Id) return Boolean
+                     is
+
+                        function Is_Controlling_Formal_Ref
+                          (N : Node_Id) return Boolean;
+                        --  Returns True if and only if N denotes a reference
+                        --  to a controlling formal declared for Par_Subp, or
+                        --  Subp as formals may have been rewritten before the
+                        --  test happens.
+
+                        -------------------------------
+                        -- Is_Controlling_Formal_Ref --
+                        -------------------------------
+
+                        function Is_Controlling_Formal_Ref
+                          (N : Node_Id) return Boolean
+                        is
+                        begin
+                           return Nkind (N) in N_Identifier | N_Expanded_Name
+                             and then Is_Formal (Entity (N))
+                             and then Is_Controlling_Formal (Entity (N))
+                             and then Scope (Entity (N)) in Par_Subp | Subp;
+                        end Is_Controlling_Formal_Ref;
+
+                     --  Start of processing for Expr_Has_Ctrl_Formal_Ref
+
+                     begin
+                        if (Nkind (Expr) = N_Attribute_Reference
+                             and then Attribute_Name (Expr)
+                                        in Name_Old
+                                         | Name_Access
+                                         | Name_Unchecked_Access
+                                         | Name_Unrestricted_Access)
+                          or else Nkind (Expr) = N_Explicit_Dereference
+                        then
+                           return Expr_Has_Ctrl_Formal_Ref (Prefix (Expr));
+
+                        elsif Nkind (Expr) = N_If_Expression then
+                           declare
+                              Then_Expr : constant Node_Id :=
+                                Pick (Expressions (Expr), 2);
+                              Else_Expr : constant Node_Id :=
+                                Pick (Expressions (Expr), 3);
+                           begin
+                              return Expr_Has_Ctrl_Formal_Ref (Then_Expr)
+                                or else Expr_Has_Ctrl_Formal_Ref (Else_Expr);
+                           end;
+
+                        elsif Nkind (Expr) = N_Case_Expression then
+                           declare
+                              Case_Expr_Alt : Node_Id :=
+                                First (Alternatives (Expr));
+                           begin
+                              while Present (Case_Expr_Alt) loop
+                                 if Expr_Has_Ctrl_Formal_Ref
+                                      (Expression (Case_Expr_Alt))
+                                 then
+                                    return True;
+                                 end if;
+
+                                 Next (Case_Expr_Alt);
+                              end loop;
+                           end;
+
+                           return False;
+
+                        --  Case of a declare_expression
+
+                        elsif Nkind (Expr) = N_Expression_With_Actions
+                          and then Comes_From_Source (Expr)
+                        then
+                           return Expr_Has_Ctrl_Formal_Ref (Expression (Expr));
+
+                        --  All other cases must be references to a formal
+
+                        else
+                           return Is_Controlling_Formal_Ref (Expr);
+                        end if;
+                     end Expr_Has_Ctrl_Formal_Ref;
+
+                  --  Start of processing for Must_Map_Call_To_Parent_Primitive
 
                   begin
                      if Is_Entity_Name (Name (Call_Node))
@@ -1570,46 +1689,52 @@ package body Exp_Util is
                      then
                         while Present (Actual) loop
 
-                           --  Account for 'Old and explicit dereferences,
-                           --  picking up the prefix object in those cases.
+                           --  If at least one actual references a controlling
+                           --  formal parameter of a class-wide Pre/Post
+                           --  aspect's associated subprogram (including
+                           --  a direct prefix of an access attribute or
+                           --  dereference), the rule in RM 6.1.1(7) applies,
+                           --  and we want to map the call to target the
+                           --  corresponding function of the derived type.
 
-                           if (Nkind (Actual) = N_Attribute_Reference
-                                and then Attribute_Name (Actual) = Name_Old)
-                             or else Nkind (Actual) = N_Explicit_Dereference
+                           if Expr_Has_Ctrl_Formal_Ref (Actual) then
+                              return True;
+
+                           --  RM 6.1.1(7) also applies to Result attributes
+                           --  of primitive functions with controlling results.
+
+                           elsif Is_Attribute_Result (Actual)
+                             and then Has_Controlling_Result (Subp)
                            then
-                              Actual_Or_Prefix := Prefix (Actual);
-                           else
-                              Actual_Or_Prefix := Actual;
-                           end if;
+                              return True;
 
-                           Actual_Type := Etype (Actual);
+                           --  Recursively check any actuals that are function
+                           --  calls with controlling results.
 
-                           if Is_Anonymous_Access_Type (Actual_Type) then
-                              Actual_Type := Designated_Type (Actual_Type);
-                           end if;
-
-                           if Nkind (Actual_Or_Prefix)
-                                in N_Identifier
-                                 | N_Expanded_Name
-                                 | N_Operator_Symbol
-
-                             and then Is_Formal (Entity (Actual_Or_Prefix))
-
-                             and then Covers (Ctrl_Type, Actual_Type)
+                           elsif Nkind (Actual) = N_Function_Call
+                             and then
+                               Has_Controlling_Result
+                                 (Entity (Name (Actual)))
+                             and then
+                               Must_Map_Call_To_Parent_Primitive
+                                 (Actual, Check_Parents => False)
                            then
-                              --  At least one actual is a formal parameter of
-                              --  Par_Subp with type Ctrl_Type.
-
                               return True;
                            end if;
 
                            Next_Actual (Actual);
                         end loop;
 
-                        if Nkind (Parent (Call_Node)) = N_Function_Call then
-                           return
-                             Call_To_Parent_Dispatching_Op_Must_Be_Mapped
-                               (Parent (Call_Node));
+                        --  Recursively check parents that are function calls,
+                        --  to handle cases like "F1 (F2, F3 (X))", where
+                        --  Call_Node is the call to F2, and we need to map
+                        --  F1, F2, and F3 due to the reference to formal X.
+
+                        if Check_Parents
+                          and then Nkind (Parent (Call_Node)) = N_Function_Call
+                        then
+                           return Must_Map_Call_To_Parent_Primitive
+                                    (Parent (Call_Node));
                         end if;
 
                         return False;
@@ -1617,7 +1742,7 @@ package body Exp_Util is
                      else
                         return False;
                      end if;
-                  end Call_To_Parent_Dispatching_Op_Must_Be_Mapped;
+                  end Must_Map_Call_To_Parent_Primitive;
 
                begin
                   --  If N's entity is in the map, then the entity is either
@@ -1632,8 +1757,7 @@ package body Exp_Util is
 
                   if not Is_Subprogram (Entity (N))
                     or else Nkind (Parent (N)) /= N_Function_Call
-                    or else
-                      Call_To_Parent_Dispatching_Op_Must_Be_Mapped (Parent (N))
+                    or else Must_Map_Call_To_Parent_Primitive (Parent (N))
                   then
                      Rewrite (N, New_Occurrence_Of (New_E, Sloc (N)));
                   end if;
@@ -1783,36 +1907,39 @@ package body Exp_Util is
       -------------------
 
       procedure Add_DIC_Check
-        (DIC_Prag : Node_Id;
-         DIC_Expr : Node_Id;
-         Stmts    : in out List_Id)
+        (DIC_Prag : Node_Id; DIC_Expr : Node_Id; Stmts : in out List_Id)
       is
-         Loc : constant Source_Ptr := Sloc (DIC_Prag);
-         Nam : constant Name_Id    := Original_Aspect_Pragma_Name (DIC_Prag);
+         Loc  : constant Source_Ptr := Sloc (DIC_Prag);
+         Nam  : constant Name_Id := Original_Aspect_Pragma_Name (DIC_Prag);
+         Prag : Node_Id;
 
       begin
          --  The DIC pragma is ignored, nothing left to do
 
-         if Is_Ignored (DIC_Prag) then
+         if Is_Ignored_In_Codegen (DIC_Prag) then
             null;
 
          --  Otherwise the DIC expression must be checked at run time.
          --  Generate:
-
+         --
          --    pragma Check (<Nam>, <DIC_Expr>);
 
          else
-            Append_New_To (Stmts,
-              Make_Pragma (Loc,
-                Pragma_Identifier            =>
-                  Make_Identifier (Loc, Name_Check),
+            Prag :=
+              Make_Pragma
+                (Loc,
+                 Pragma_Identifier            =>
+                   Make_Identifier (Loc, Name_Check),
+                 Pragma_Argument_Associations =>
+                   New_List
+                     (Make_Pragma_Argument_Association
+                        (Loc, Expression => Make_Identifier (Loc, Nam)),
+                      Make_Pragma_Argument_Association
+                        (Loc, Expression => DIC_Expr)));
 
-                Pragma_Argument_Associations => New_List (
-                  Make_Pragma_Argument_Association (Loc,
-                    Expression => Make_Identifier (Loc, Nam)),
+            Copy_Assertion_Policy_Attributes (Prag, DIC_Prag);
 
-                  Make_Pragma_Argument_Association (Loc,
-                    Expression => DIC_Expr))));
+            Append_New_To (Stmts, Prag);
          end if;
 
          --  Add the pragma to the list of processed pragmas
@@ -2076,7 +2203,7 @@ package body Exp_Util is
          --  time capture the visibility of the proper package part.
 
          Set_Parent (Expr, Typ_Decl);
-         Preanalyze_Assert_Expression (Expr, Any_Boolean);
+         Preanalyze_And_Resolve_Assert_Expression (Expr, Any_Boolean);
 
          --  Save a copy of the expression with all replacements and analysis
          --  already taken place in case a derived type inherits the pragma.
@@ -2089,8 +2216,8 @@ package body Exp_Util is
 
          --  If the pragma comes from an aspect specification, replace the
          --  saved expression because all type references must be substituted
-         --  for the call to Preanalyze_Spec_Expression in Check_Aspect_At_xxx
-         --  routines.
+         --  for the call to Preanalyze_And_Resolve_Spec_Expression in
+         --  Check_Aspect_At_xxx routines.
 
          if Present (DIC_Asp) then
             Set_Expression_Copy (DIC_Asp, New_Copy_Tree (Expr));
@@ -2201,14 +2328,14 @@ package body Exp_Util is
 
       Loc : constant Source_Ptr := Sloc (Typ);
 
-      Saved_GM  : constant Ghost_Mode_Type := Ghost_Mode;
-      Saved_IGR : constant Node_Id         := Ignored_Ghost_Region;
+      Saved_Ghost_Config : constant Ghost_Config_Type := Ghost_Config;
       --  Save the Ghost-related attributes to restore on exit
 
       DIC_Prag     : Node_Id;
       DIC_Typ      : Entity_Id;
       Dummy_1      : Entity_Id;
       Dummy_2      : Entity_Id;
+      Prag         : Node_Id;
       Proc_Body    : Node_Id;
       Proc_Body_Id : Entity_Id;
       Proc_Decl    : Node_Id;
@@ -2355,12 +2482,23 @@ package body Exp_Util is
       if Partial_DIC then
          pragma Assert (Present (Priv_Typ));
 
-         if Has_Own_DIC (Work_Typ) then  -- If we're testing this then maybe
-            Add_Own_DIC        -- we shouldn't be calling Find_DIC_Typ above???
-              (DIC_Prag => DIC_Prag,
-               DIC_Typ  => DIC_Typ,  -- Should this just be Work_Typ???
-               Obj_Id   => Obj_Id,
-               Stmts    => Stmts);
+         if Has_Own_DIC (Work_Typ) then
+            --  If we're testing this then maybe
+
+            Prag := DIC_Prag;
+            while Present (Prag)
+              and then Nkind (Prag) = N_Pragma
+              and then Pragma_Name (Prag) = Name_Default_Initial_Condition
+              and then (Prag = DIC_Prag
+                        or else From_Same_Pragma (Prag, DIC_Prag))
+            loop
+               Add_Own_DIC    -- we shouldn't be calling Find_DIC_Typ above???
+                 (DIC_Prag => Prag,
+                  DIC_Typ  => DIC_Typ,  -- Should this just be Work_Typ???
+                  Obj_Id   => Obj_Id,
+                  Stmts    => Stmts);
+               Next_Rep_Item (Prag);
+            end loop;
          end if;
 
       --  Otherwise, the "full" DIC procedure verifies the DICs inherited from
@@ -2448,7 +2586,7 @@ package body Exp_Util is
       end if;
 
    <<Leave>>
-      Restore_Ghost_Region (Saved_GM, Saved_IGR);
+      Restore_Ghost_Region (Saved_Ghost_Config);
    end Build_DIC_Procedure_Body;
 
    -------------------------------------
@@ -2465,8 +2603,7 @@ package body Exp_Util is
    is
       Loc : constant Source_Ptr := Sloc (Typ);
 
-      Saved_GM  : constant Ghost_Mode_Type := Ghost_Mode;
-      Saved_IGR : constant Node_Id         := Ignored_Ghost_Region;
+      Saved_Ghost_Config : constant Ghost_Config_Type := Ghost_Config;
       --  Save the Ghost-related attributes to restore on exit
 
       DIC_Prag  : Node_Id;
@@ -2673,7 +2810,7 @@ package body Exp_Util is
       end if;
 
    <<Leave>>
-      Restore_Ghost_Region (Saved_GM, Saved_IGR);
+      Restore_Ghost_Region (Saved_Ghost_Config);
    end Build_DIC_Procedure_Declaration;
 
    ------------------------------------
@@ -3121,13 +3258,14 @@ package body Exp_Util is
          Ploc    : constant Source_Ptr := Sloc (Prag);
          Str_Arg : constant Node_Id    := Next (Next (First (Args)));
 
-         Assoc : List_Id;
-         Str   : String_Id;
+         Assoc      : List_Id;
+         Check_Prag : Node_Id;
+         Str        : String_Id;
 
       begin
          --  The invariant is ignored, nothing left to do
 
-         if Is_Ignored (Prag) then
+         if Is_Ignored_In_Codegen (Prag) then
             null;
 
          --  Otherwise the invariant is checked. Build a pragma Check to verify
@@ -3165,10 +3303,14 @@ package body Exp_Util is
             --  Generate:
             --    pragma Check (<Nam>, <Expr>, <Str>);
 
-            Append_New_To (Checks,
+            Check_Prag :=
               Make_Pragma (Ploc,
-                Chars                        => Name_Check,
-                Pragma_Argument_Associations => Assoc));
+                 Chars                        => Name_Check,
+                 Pragma_Argument_Associations => Assoc);
+
+            Copy_Assertion_Policy_Attributes (Check_Prag, Prag);
+
+            Append_New_To (Checks, Check_Prag);
          end if;
 
          --  Output an info message when inheriting an invariant and the
@@ -3337,7 +3479,7 @@ package body Exp_Util is
                --  part.
 
                Set_Parent (Expr, Parent (Prag_Expr));
-               Preanalyze_Assert_Expression (Expr, Any_Boolean);
+               Preanalyze_And_Resolve_Assert_Expression (Expr, Any_Boolean);
 
                --  Save a copy of the expression when T is tagged to detect
                --  errors and capture the visibility of the proper package part
@@ -3349,8 +3491,8 @@ package body Exp_Util is
 
                --  If the pragma comes from an aspect specification, replace
                --  the saved expression because all type references must be
-               --  substituted for the call to Preanalyze_Spec_Expression in
-               --  Check_Aspect_At_xxx routines.
+               --  substituted for the call to Preanalyze_And_Resolve_Spec_
+               --  Expression in Check_Aspect_At_xxx routines.
 
                if Present (Prag_Asp) then
                   Set_Expression_Copy (Prag_Asp, New_Copy_Tree (Expr));
@@ -3599,8 +3741,7 @@ package body Exp_Util is
 
       --  Local variables
 
-      Saved_GM  : constant Ghost_Mode_Type := Ghost_Mode;
-      Saved_IGR : constant Node_Id         := Ignored_Ghost_Region;
+      Saved_Ghost_Config : constant Ghost_Config_Type := Ghost_Config;
       --  Save the Ghost-related attributes to restore on exit
 
       Dummy        : Entity_Id;
@@ -3948,7 +4089,7 @@ package body Exp_Util is
       end if;
 
    <<Leave>>
-      Restore_Ghost_Region (Saved_GM, Saved_IGR);
+      Restore_Ghost_Region (Saved_Ghost_Config);
    end Build_Invariant_Procedure_Body;
 
    -------------------------------------------
@@ -3965,8 +4106,7 @@ package body Exp_Util is
    is
       Loc : constant Source_Ptr := Sloc (Typ);
 
-      Saved_GM  : constant Ghost_Mode_Type := Ghost_Mode;
-      Saved_IGR : constant Node_Id         := Ignored_Ghost_Region;
+      Saved_Ghost_Config : constant Ghost_Config_Type := Ghost_Config;
       --  Save the Ghost-related attributes to restore on exit
 
       Proc_Decl : Node_Id;
@@ -4182,7 +4322,7 @@ package body Exp_Util is
       end if;
 
    <<Leave>>
-      Restore_Ghost_Region (Saved_GM, Saved_IGR);
+      Restore_Ghost_Region (Saved_Ghost_Config);
    end Build_Invariant_Procedure_Declaration;
 
    ------------------------
@@ -6628,6 +6768,153 @@ package body Exp_Util is
       return Last_Init;
    end Find_Last_Init;
 
+   -------------------------
+   -- Find_Master_Context --
+   -------------------------
+
+   function Find_Master_Context (N : Node_Id) return Node_Id is
+      Par : Node_Id;
+      Top : Node_Id;
+
+      Wrapped_Node : Node_Id;
+      --  Note: if we are in a transient scope, we want to reuse it as the
+      --  context for inserting actions, if possible. But if N is itself
+      --  part of the stored actions of the current transient scope, then
+      --  we need to insert at the appropriate (inner) location in the list.
+
+   begin
+      --  When the node is inside a case/if expression, the lifetime of any
+      --  temporary controlled object is extended. Find a suitable insertion
+      --  node by locating the topmost case or if expressions.
+
+      if Within_Conditional_Expression (N) then
+         Par := N;
+         Top := N;
+         while Present (Par) loop
+            if Nkind (Original_Node (Par)) in N_Case_Expression
+                                            | N_If_Expression
+            then
+               Top := Par;
+
+            elsif Nkind (Par) in N_Case_Statement
+                               | N_If_Statement
+              and then From_Conditional_Expression (Par)
+            then
+               Top := Par;
+
+            --  Prevent the search from going too far
+
+            elsif Is_Body_Or_Package_Declaration (Par) then
+               exit;
+            end if;
+
+            Par := Parent (Par);
+         end loop;
+
+         --  The topmost case or if expression is now recovered, but it may
+         --  still not be the correct place to add generated code. Climb to
+         --  find a parent that is part of a declarative or statement list,
+         --  and is not a list of actuals in a call.
+
+         Par := Top;
+         while Present (Par) loop
+            if Is_List_Member (Par)
+              and then Nkind (Par) not in N_Component_Association
+                                        | N_Discriminant_Association
+                                        | N_Parameter_Association
+                                        | N_Pragma_Argument_Association
+                                        | N_Aggregate
+                                        | N_Delta_Aggregate
+                                        | N_Extension_Aggregate
+                                        | N_Elsif_Part
+              and then Nkind (Parent (Par)) not in N_Function_Call
+                                                 | N_Procedure_Call_Statement
+                                                 | N_Entry_Call_Statement
+                                                 | N_Aggregate
+                                                 | N_Delta_Aggregate
+                                                 | N_Extension_Aggregate
+            then
+               return Par;
+
+            --  Prevent the search from going too far
+
+            elsif Is_Body_Or_Package_Declaration (Par) then
+               exit;
+            end if;
+
+            Par := Parent (Par);
+         end loop;
+
+         return Par;
+
+      else
+         Par := N;
+         while Present (Par) loop
+
+            --  Keep climbing past various operators
+
+            if Nkind (Parent (Par)) in N_Op
+              or else Nkind (Parent (Par)) in N_And_Then | N_Or_Else
+            then
+               Par := Parent (Par);
+            else
+               exit;
+            end if;
+         end loop;
+
+         Top := Par;
+
+         --  The node may be located in a pragma in which case return the
+         --  pragma itself:
+
+         --    pragma Precondition (... and then Ctrl_Func_Call ...);
+
+         --  Similar case occurs when the node is related to an object
+         --  declaration or assignment:
+
+         --    Obj [: Some_Typ] := ... and then Ctrl_Func_Call ...;
+
+         --  Another case to consider is when the node is part of a return
+         --  statement:
+
+         --    return ... and then Ctrl_Func_Call ...;
+
+         --  Another case is when the node acts as a formal in a procedure
+         --  call statement:
+
+         --    Proc (... and then Ctrl_Func_Call ...);
+
+         if Scope_Is_Transient then
+            Wrapped_Node := Node_To_Be_Wrapped;
+         else
+            Wrapped_Node := Empty;
+         end if;
+
+         while Present (Par) loop
+            if Par = Wrapped_Node
+              or else Nkind (Par) in N_Assignment_Statement
+                                   | N_Object_Declaration
+                                   | N_Pragma
+                                   | N_Procedure_Call_Statement
+                                   | N_Simple_Return_Statement
+            then
+               return Par;
+
+            --  Prevent the search from going too far
+
+            elsif Is_Body_Or_Package_Declaration (Par) then
+               exit;
+            end if;
+
+            Par := Parent (Par);
+         end loop;
+
+         --  Return the topmost short circuit operator
+
+         return Top;
+      end if;
+   end Find_Master_Context;
+
    ---------------------------
    -- Find_Optional_Prim_Op --
    ---------------------------
@@ -6834,155 +7121,16 @@ package body Exp_Util is
       end if;
    end Find_Storage_Op;
 
-   -----------------------
-   -- Find_Hook_Context --
-   -----------------------
+   -----------------------------------------
+   -- Flag_Interface_Pointer_Displacement --
+   -----------------------------------------
 
-   function Find_Hook_Context (N : Node_Id) return Node_Id is
-      Par : Node_Id;
-      Top : Node_Id;
-
-      Wrapped_Node : Node_Id;
-      --  Note: if we are in a transient scope, we want to reuse it as
-      --  the context for actions insertion, if possible. But if N is itself
-      --  part of the stored actions for the current transient scope,
-      --  then we need to insert at the appropriate (inner) location in
-      --  the not as an action on Node_To_Be_Wrapped.
-
-      In_Cond_Expr : constant Boolean := Within_Conditional_Expression (N);
-
+   procedure Flag_Interface_Pointer_Displacement (N : Node_Id) is
    begin
-      --  When the node is inside a case/if expression, the lifetime of any
-      --  temporary controlled object is extended. Find a suitable insertion
-      --  node by locating the topmost case or if expressions.
-
-      if In_Cond_Expr then
-         Par := N;
-         Top := N;
-         while Present (Par) loop
-            if Nkind (Original_Node (Par)) in N_Case_Expression
-                                            | N_If_Expression
-            then
-               Top := Par;
-
-            elsif Nkind (Par) in N_Case_Statement
-                               | N_If_Statement
-              and then From_Conditional_Expression (Par)
-            then
-               Top := Par;
-
-            --  Prevent the search from going too far
-
-            elsif Is_Body_Or_Package_Declaration (Par) then
-               exit;
-            end if;
-
-            Par := Parent (Par);
-         end loop;
-
-         --  The topmost case or if expression is now recovered, but it may
-         --  still not be the correct place to add generated code. Climb to
-         --  find a parent that is part of a declarative or statement list,
-         --  and is not a list of actuals in a call.
-
-         Par := Top;
-         while Present (Par) loop
-            if Is_List_Member (Par)
-              and then Nkind (Par) not in N_Component_Association
-                                        | N_Discriminant_Association
-                                        | N_Parameter_Association
-                                        | N_Pragma_Argument_Association
-                                        | N_Aggregate
-                                        | N_Delta_Aggregate
-                                        | N_Extension_Aggregate
-                                        | N_Elsif_Part
-              and then Nkind (Parent (Par)) not in N_Function_Call
-                                                 | N_Procedure_Call_Statement
-                                                 | N_Entry_Call_Statement
-                                                 | N_Aggregate
-                                                 | N_Delta_Aggregate
-                                                 | N_Extension_Aggregate
-            then
-               return Par;
-
-            --  Prevent the search from going too far
-
-            elsif Is_Body_Or_Package_Declaration (Par) then
-               exit;
-            end if;
-
-            Par := Parent (Par);
-         end loop;
-
-         return Par;
-
-      else
-         Par := N;
-         while Present (Par) loop
-
-            --  Keep climbing past various operators
-
-            if Nkind (Parent (Par)) in N_Op
-              or else Nkind (Parent (Par)) in N_And_Then | N_Or_Else
-            then
-               Par := Parent (Par);
-            else
-               exit;
-            end if;
-         end loop;
-
-         Top := Par;
-
-         --  The node may be located in a pragma in which case return the
-         --  pragma itself:
-
-         --    pragma Precondition (... and then Ctrl_Func_Call ...);
-
-         --  Similar case occurs when the node is related to an object
-         --  declaration or assignment:
-
-         --    Obj [: Some_Typ] := ... and then Ctrl_Func_Call ...;
-
-         --  Another case to consider is when the node is part of a return
-         --  statement:
-
-         --    return ... and then Ctrl_Func_Call ...;
-
-         --  Another case is when the node acts as a formal in a procedure
-         --  call statement:
-
-         --    Proc (... and then Ctrl_Func_Call ...);
-
-         if Scope_Is_Transient then
-            Wrapped_Node := Node_To_Be_Wrapped;
-         else
-            Wrapped_Node := Empty;
-         end if;
-
-         while Present (Par) loop
-            if Par = Wrapped_Node
-              or else Nkind (Par) in N_Assignment_Statement
-                                   | N_Object_Declaration
-                                   | N_Pragma
-                                   | N_Procedure_Call_Statement
-                                   | N_Simple_Return_Statement
-            then
-               return Par;
-
-            --  Prevent the search from going too far
-
-            elsif Is_Body_Or_Package_Declaration (Par) then
-               exit;
-            end if;
-
-            Par := Parent (Par);
-         end loop;
-
-         --  Return the topmost short circuit operator
-
-         return Top;
+      if Nkind (N) = N_Type_Conversion then
+         Set_Is_Interface_Pointer_Displacement (N);
       end if;
-   end Find_Hook_Context;
+   end Flag_Interface_Pointer_Displacement;
 
    ------------------------------
    -- Following_Address_Clause --
@@ -7174,6 +7322,146 @@ package body Exp_Util is
       Loc : constant Source_Ptr := Sloc (Var);
       Ent : constant Entity_Id  := Entity (Var);
 
+      procedure Find_In_Enclosing_Context
+        (Stmt : Node_Id; Current, Previous : in out Node_Id);
+      --  Locate an object reference inside a composite statement Stmt. On
+      --  entry, Previous and Current should be an object reference and its
+      --  parent, respectively. When search is successful, Current is Stmt and
+      --  Previous is its child node, so the caller can determine in which part
+      --  of the statement the original reference was. When search fails, both
+      --  Current and Previous are Empty.
+
+      function Is_Transient_Action (N : Node_Id) return Boolean;
+      --  Returns True for nodes that belong to a transient action and so they
+      --  have no parent, because they have not been inserted to the tree yet.
+
+      -------------------------------
+      -- Find_In_Enclosing_Context --
+      -------------------------------
+
+      procedure Find_In_Enclosing_Context
+        (Stmt : Node_Id; Current, Previous : in out Node_Id)
+      is
+      begin
+         loop
+            --  If we fall off the top of the tree, then that's odd, but
+            --  perhaps it could occur in some error situation, and the safest
+            --  response is simply to assume that the outcome of the condition
+            --  is unknown. No point in bombing during an attempt to optimize
+            --  things.
+
+            if No (Current) then
+
+               --  In particular, we expect to miss the enclosing conditional
+               --  statement for:
+               --  * references within a freezing action (because their
+               --    location is unrelated to the conditional statement),
+               --  * validity checks (becuase for references inside the
+               --    condition they are inserted before the conditional
+               --    statement itself),
+               --  * source locations before and after the conditionaal
+               --    statement.
+
+               pragma Assert
+                 (Inside_Freezing_Actions > 0
+                  or else
+                    (Ekind (Entity (Var)) = E_Variable
+                     and then Present (Validated_Object (Entity (Var))))
+                  or else
+                    Loc < Sloc (Stmt)
+                  or else
+                    Loc >= Sloc (Stmt) + Text_Ptr (UI_To_Int (End_Span (Stmt)))
+                  or else
+                    Serious_Errors_Detected > 0);
+
+               return;
+
+            --  We found the enclosing conditional statement
+
+            elsif Current = Stmt then
+               return;
+
+            --  For itype declarations follow their associated node
+
+            elsif Nkind (Current) = N_Subtype_Declaration
+              and then Is_Itype (Defining_Identifier (Current))
+            then
+               Previous := Current;
+               Current :=
+                 Associated_Node_For_Itype (Defining_Identifier (Previous));
+
+               --  If associated node has not been set yet, we can use the
+               --  related expression, which is set earlier.
+               --  ??? this should be investigated
+
+               if No (Current) then
+                  Current :=
+                    Related_Expression (Defining_Identifier (Previous));
+               end if;
+               pragma Assert (Present (Current));
+
+            --  For declarations of internal types we can't trace their origin
+            --  like we do for itypes, so give up. They might be coming from
+            --  condition of the current IF statement and will be prepended
+            --  before that statement itself.
+
+            elsif Nkind (Current) = N_Subtype_Declaration
+              and then Is_Internal (Defining_Identifier (Current))
+            then
+               pragma Assert (Is_Rewrite_Insertion (Current));
+               Current := Empty;
+               return;
+
+            --  Same for itypes that have no declaration
+
+            elsif Nkind (Current) = N_Defining_Identifier
+              and then Is_Itype (Current)
+            then
+               pragma Assert (No (Parent (Current)));
+               Previous := Current;
+               Current := Associated_Node_For_Itype (Previous);
+
+            --  For transient actions follow where they will be inserted
+
+            elsif Is_Transient_Action (Current) then
+               Previous := Current;
+               Current :=
+                 Scope_Stack.Table (Scope_Stack.Last).Node_To_Be_Wrapped;
+
+            --  Otherwise, continue climbing
+
+            else
+               Previous := Current;
+               Current := Parent (Current);
+            end if;
+         end loop;
+      end Find_In_Enclosing_Context;
+
+      -------------------------
+      -- Is_Transient_Action --
+      -------------------------
+
+      function Is_Transient_Action (N : Node_Id) return Boolean is
+      begin
+         if Scope_Stack.Last >= Scope_Stack.First
+           and then Scope_Is_Transient
+           and then Is_List_Member (N)
+         then
+            declare
+               Transient_Actions : Scope_Actions renames
+                 Scope_Stack.Table (Scope_Stack.Last).Actions_To_Be_Wrapped;
+            begin
+               for Action_Kind in Scope_Actions'Range loop
+                  if List_Containing (N) = Transient_Actions (Action_Kind) then
+                     return True;
+                  end if;
+               end loop;
+            end;
+         end if;
+
+         return False;
+      end Is_Transient_Action;
+
       procedure Process_Current_Value_Condition (N : Node_Id; S : Boolean);
       --  N is an expression which holds either True (S = True) or False (S =
       --  False) in the condition. This procedure digs out the expression and
@@ -7347,156 +7635,69 @@ package body Exp_Util is
       declare
          CV   : constant Node_Id := Current_Value (Ent);
          Sens : Boolean;
-         Stm  : Node_Id;
 
       begin
-         --  If statement. Condition is known true in THEN section, known False
-         --  in any ELSIF or ELSE part, and unknown outside the IF statement.
+         --  For IF statement the condition is known true in THEN section,
+         --  known False in any ELSIF or ELSE part, and unknown outside the
+         --  IF statement.
 
-         if Nkind (CV) = N_If_Statement then
+         if Nkind (CV) in N_If_Statement | N_Elsif_Part then
 
-            --  Before start of IF statement
-
-            if Loc < Sloc (CV) then
-               return;
-
-            --  In condition of IF statement
-
-            elsif In_Subtree (N => Var, Root => Condition (CV)) then
-               return;
-
-            --  After end of IF statement
-
-            elsif Loc >= Sloc (CV) + Text_Ptr (UI_To_Int (End_Span (CV))) then
-               return;
-            end if;
-
-            --  At this stage we know that we are within the IF statement, but
-            --  unfortunately, the tree does not record the SLOC of the ELSE so
-            --  we cannot use a simple SLOC comparison to distinguish between
-            --  the then/else statements, so we have to climb the tree.
+            --  At this stage we know that we are within the conditional
+            --  statement, but we have to climb the tree to know in which
+            --  part, e.g. in THEN or ELSE statements of an IF statement.
 
             declare
-               N : Node_Id;
+               If_Stmt : constant Node_Id :=
+                 (if Nkind (CV) = N_If_Statement
+                  then CV
+                  else Parent (CV));
+
+               Previous : Node_Id := Var;
+               Current  : Node_Id := Parent (Var);
 
             begin
-               N := Parent (Var);
-               while Parent (N) /= CV loop
-                  N := Parent (N);
+               --  An ELSIF part whose condition is false could have been
+               --  already rewritten and we are already past the statements
+               --  inside that ELSIF part.
 
-                  --  If we fall off the top of the tree, then that's odd, but
-                  --  perhaps it could occur in some error situation, and the
-                  --  safest response is simply to assume that the outcome of
-                  --  the condition is unknown. No point in bombing during an
-                  --  attempt to optimize things.
-
-                  if No (N) then
-                     return;
-                  end if;
-               end loop;
-
-               --  Now we have N pointing to a node whose parent is the IF
-               --  statement in question, so now we can tell if we are within
-               --  the THEN statements.
-
-               if Is_List_Member (N)
-                 and then List_Containing (N) = Then_Statements (CV)
-               then
-                  Sens := True;
-
-               --  If the variable reference does not come from source, we
-               --  cannot reliably tell whether it appears in the else part.
-               --  In particular, if it appears in generated code for a node
-               --  that requires finalization, it may be attached to a list
-               --  that has not been yet inserted into the code. For now,
-               --  treat it as unknown.
-
-               elsif not Comes_From_Source (N) then
+               if Nkind (If_Stmt) /= N_If_Statement then
+                  pragma Assert (Nkind (CV) = N_Elsif_Part);
                   return;
-
-               --  Otherwise we must be in ELSIF or ELSE part
-
-               else
-                  Sens := False;
                end if;
-            end;
 
-            --  ELSIF part. Condition is known true within the referenced
-            --  ELSIF, known False in any subsequent ELSIF or ELSE part,
-            --  and unknown before the ELSE part or after the IF statement.
+               Find_In_Enclosing_Context (If_Stmt, Current, Previous);
 
-         elsif Nkind (CV) = N_Elsif_Part then
+               --  Check whether the reference is in the IF, THEN or ELSE/ELSIF
+               --  part.
 
-            --  if the Elsif_Part had condition_actions, the elsif has been
-            --  rewritten as a nested if, and the original elsif_part is
-            --  detached from the tree, so there is no way to obtain useful
-            --  information on the current value of the variable.
-            --  Can this be improved ???
+               if Current = If_Stmt then
 
-            if No (Parent (CV)) then
-               return;
-            end if;
+                  --  Ignore references from within the IF condition itself
 
-            Stm := Parent (CV);
+                  if Previous = Condition (If_Stmt) then
+                     return;
 
-            --  If the tree has been otherwise rewritten there is nothing
-            --  else to be done either.
+                  --  Guard against if-statements coming from if-statements
+                  --  with broken chain of parents.
 
-            if Nkind (Stm) /= N_If_Statement then
-               return;
-            end if;
+                  elsif Is_List_Member (Previous) then
+                     pragma Assert (
+                       List_Containing (Previous)
+                          in Then_Statements (If_Stmt)
+                           | Elsif_Parts (If_Stmt)
+                           | Else_Statements (If_Stmt));
 
-            --  Before start of ELSIF part
-
-            if Loc < Sloc (CV) then
-               return;
-
-            --  In condition of ELSIF part
-
-            elsif In_Subtree (N => Var, Root => Condition (CV)) then
-               return;
-
-            --  After end of IF statement
-
-            elsif Loc >= Sloc (Stm) +
-              Text_Ptr (UI_To_Int (End_Span (Stm)))
-            then
-               return;
-            end if;
-
-            --  Again we lack the SLOC of the ELSE, so we need to climb the
-            --  tree to see if we are within the ELSIF part in question.
-
-            declare
-               N : Node_Id;
-
-            begin
-               N := Parent (Var);
-               while Parent (N) /= Stm loop
-                  N := Parent (N);
-
-                  --  If we fall off the top of the tree, then that's odd, but
-                  --  perhaps it could occur in some error situation, and the
-                  --  safest response is simply to assume that the outcome of
-                  --  the condition is unknown. No point in bombing during an
-                  --  attempt to optimize things.
-
-                  if No (N) then
+                     Sens :=
+                       (if CV = If_Stmt
+                        then List_Containing (Previous) = Then_Statements (CV)
+                        else Previous = CV);
+                  else
+                     pragma Assert (From_Conditional_Expression (If_Stmt));
                      return;
                   end if;
-               end loop;
-
-               --  Now we have N pointing to a node whose parent is the IF
-               --  statement in question, so see if is the ELSIF part we want.
-               --  the THEN statements.
-
-               if N = CV then
-                  Sens := True;
-
-                  --  Otherwise we must be in subsequent ELSIF or ELSE part
-
                else
-                  Sens := False;
+                  return;
                end if;
             end;
 
@@ -7507,26 +7708,31 @@ package body Exp_Util is
             declare
                Loop_Stmt : constant Node_Id := Parent (CV);
 
+               Previous : Node_Id := Var;
+               Current  : Node_Id := Parent (Var);
+
             begin
-               --  Before start of body of loop
+               pragma Assert (Nkind (Loop_Stmt) = N_Loop_Statement);
 
-               if Loc < Sloc (Loop_Stmt) then
-                  return;
+               Find_In_Enclosing_Context (Loop_Stmt, Current, Previous);
 
-               --  In condition of while loop
+               --  Check whether the reference is inside the WHILE loop
 
-               elsif In_Subtree (N => Var, Root => Condition (CV)) then
-                  return;
+               if Current = Loop_Stmt then
 
-               --  After end of LOOP statement
+                  --  Ignore references from within the WHILE condition itself
 
-               elsif Loc >= Sloc (End_Label (Loop_Stmt)) then
-                  return;
+                  if Previous = Iteration_Scheme (Loop_Stmt) then
+                     return;
 
-               --  We are within the body of the loop
+                  else
+                     pragma Assert
+                       (List_Containing (Previous) = Statements (Loop_Stmt));
 
+                     Sens := True;
+                  end if;
                else
-                  Sens := True;
+                  return;
                end if;
             end;
 
@@ -10535,8 +10741,7 @@ package body Exp_Util is
    is
       Loc : constant Source_Ptr := Sloc (Expr);
 
-      Saved_GM  : constant Ghost_Mode_Type := Ghost_Mode;
-      Saved_IGR : constant Node_Id         := Ignored_Ghost_Region;
+      Saved_Ghost_Config : constant Ghost_Config_Type := Ghost_Config;
       --  Save the Ghost-related attributes to restore on exit
 
       Call         : Node_Id;
@@ -10580,7 +10785,7 @@ package body Exp_Util is
           Name                   => New_Occurrence_Of (Func_Id, Loc),
           Parameter_Associations => Param_Assocs);
 
-      Restore_Ghost_Region (Saved_GM, Saved_IGR);
+      Restore_Ghost_Region (Saved_Ghost_Config);
 
       return Call;
    end Make_Predicate_Call;
@@ -10933,11 +11138,10 @@ package body Exp_Util is
          --  operator on private type might not be visible and won't be
          --  resolved.
 
-         else pragma Assert (Is_RTE (Base_Type (Typ), RE_Big_Integer)
-                               or else
-                             Is_RTE (Base_Type (Typ), RO_GH_Big_Integer)
-                               or else
-                             Is_RTE (Base_Type (Typ), RO_SP_Big_Integer));
+         else
+            pragma Assert
+              (Is_RTE (Base_Type (Typ), RE_Big_Integer)
+               or else Is_RTE (Base_Type (Typ), RO_SP_Big_Integer));
             return
               Make_Function_Call (Loc,
                 Name                   =>
@@ -12472,8 +12676,12 @@ package body Exp_Util is
       --  Local variables
 
       Loc          : constant Source_Ptr      := Sloc (Exp);
-      Exp_Type     : constant Entity_Id       := Etype (Exp);
       Svg_Suppress : constant Suppress_Record := Scope_Suppress;
+      Typ          : constant Entity_Id       := Etype (Exp);
+      Und_Typ      : constant Entity_Id       :=
+        (if Present (Typ) then Underlying_Type (Typ) else Typ);
+      --  The underlying type that drives part of the processing
+
       Def_Id       : Entity_Id;
       E            : Node_Id;
       New_Exp      : Node_Id;
@@ -12499,8 +12707,9 @@ package body Exp_Util is
       --  (this happens because routines Duplicate_Subexpr_XX implicitly invoke
       --  Remove_Side_Effects).
 
-      elsif No (Exp_Type)
-        or else Ekind (Exp_Type) = E_Access_Attribute_Type
+      elsif No (Typ)
+        or else No (Und_Typ)
+        or else Ekind (Und_Typ) = E_Access_Attribute_Type
       then
          return;
 
@@ -12549,12 +12758,12 @@ package body Exp_Util is
       --  anyway, see below). Also do it if we have a volatile reference and
       --  Name_Req is not set (see comments for Side_Effect_Free).
 
-      elsif (Is_Elementary_Type (Exp_Type)
-              or else (Is_Record_Type (Exp_Type)
-                        and then Known_Static_RM_Size (Exp_Type)
-                        and then RM_Size (Exp_Type) <= System_Max_Integer_Size
-                        and then not Has_Discriminants (Exp_Type)
-                        and then not Is_By_Reference_Type (Exp_Type)))
+      elsif (Is_Elementary_Type (Und_Typ)
+              or else (Is_Record_Type (Und_Typ)
+                        and then Known_Static_RM_Size (Und_Typ)
+                        and then RM_Size (Und_Typ) <= System_Max_Integer_Size
+                        and then not Has_Discriminants (Und_Typ)
+                        and then not Is_By_Reference_Type (Und_Typ)))
         and then (Variable_Ref
                    or else (not Is_Name_Reference (Exp)
                              and then Nkind (Exp) /= N_Type_Conversion)
@@ -12562,7 +12771,7 @@ package body Exp_Util is
                              and then Is_Volatile_Reference (Exp)))
       then
          Def_Id := Build_Temporary (Loc, 'R', Exp);
-         Set_Etype (Def_Id, Exp_Type);
+         Set_Etype (Def_Id, Typ);
          Res := New_Occurrence_Of (Def_Id, Loc);
 
          --  If the expression is a packed reference, it must be reanalyzed and
@@ -12578,7 +12787,7 @@ package body Exp_Util is
          end if;
 
          --  Generate:
-         --    Rnn : Exp_Type renames Expr;
+         --    Rnn : Typ renames Expr;
 
          --  In GNATprove mode, we prefer to use renamings for intermediate
          --  variables to definition of constants, due to the implicit move
@@ -12589,22 +12798,22 @@ package body Exp_Util is
          if Renaming_Req
            or else (GNATprove_Mode
                      and then Is_Object_Reference (Exp)
-                     and then not Is_Scalar_Type (Exp_Type))
+                     and then not Is_Scalar_Type (Und_Typ))
          then
             E :=
               Make_Object_Renaming_Declaration (Loc,
                 Defining_Identifier => Def_Id,
-                Subtype_Mark        => New_Occurrence_Of (Exp_Type, Loc),
+                Subtype_Mark        => New_Occurrence_Of (Typ, Loc),
                 Name                => Relocate_Node (Exp));
 
          --  Generate:
-         --    Rnn : constant Exp_Type := Expr;
+         --    Rnn : constant Typ := Expr;
 
          else
             E :=
               Make_Object_Declaration (Loc,
                 Defining_Identifier => Def_Id,
-                Object_Definition   => New_Occurrence_Of (Exp_Type, Loc),
+                Object_Definition   => New_Occurrence_Of (Typ, Loc),
                 Constant_Present    => True,
                 Expression          => Relocate_Node (Exp));
 
@@ -12660,7 +12869,7 @@ package body Exp_Util is
       elsif Nkind (Exp) = N_Unchecked_Type_Conversion
         and then not Safe_Unchecked_Type_Conversion (Exp)
       then
-         if CW_Or_Needs_Finalization (Exp_Type) then
+         if CW_Or_Needs_Finalization (Und_Typ) then
 
             --  Use a renaming to capture the expression, rather than create
             --  a controlled temporary.
@@ -12671,18 +12880,18 @@ package body Exp_Util is
             Insert_Action (Exp,
               Make_Object_Renaming_Declaration (Loc,
                 Defining_Identifier => Def_Id,
-                Subtype_Mark        => New_Occurrence_Of (Exp_Type, Loc),
+                Subtype_Mark        => New_Occurrence_Of (Typ, Loc),
                 Name                => Relocate_Node (Exp)));
 
          else
             Def_Id := Build_Temporary (Loc, 'R', Exp);
-            Set_Etype (Def_Id, Exp_Type);
+            Set_Etype (Def_Id, Typ);
             Res    := New_Occurrence_Of (Def_Id, Loc);
 
             E :=
               Make_Object_Declaration (Loc,
                 Defining_Identifier => Def_Id,
-                Object_Definition   => New_Occurrence_Of (Exp_Type, Loc),
+                Object_Definition   => New_Occurrence_Of (Typ, Loc),
                 Constant_Present    => not Is_Variable (Exp),
                 Expression          => Relocate_Node (Exp));
 
@@ -12712,7 +12921,7 @@ package body Exp_Util is
           --  type and we do not have Name_Req set true (see comments for
           --  Side_Effect_Free).
 
-          and then (Name_Req or else not Treat_As_Volatile (Exp_Type)))
+          and then (Name_Req or else not Treat_As_Volatile (Und_Typ)))
       then
          Def_Id := Build_Temporary (Loc, 'R', Exp);
          Res := New_Occurrence_Of (Def_Id, Loc);
@@ -12720,7 +12929,7 @@ package body Exp_Util is
          Insert_Action (Exp,
            Make_Object_Renaming_Declaration (Loc,
              Defining_Identifier => Def_Id,
-             Subtype_Mark        => New_Occurrence_Of (Exp_Type, Loc),
+             Subtype_Mark        => New_Occurrence_Of (Typ, Loc),
              Name                => Relocate_Node (Exp)));
 
       --  Avoid generating a variable-sized temporary, by generating the
@@ -12730,7 +12939,7 @@ package body Exp_Util is
 
       elsif Nkind (Exp) = N_Selected_Component
         and then Nkind (Prefix (Exp)) = N_Function_Call
-        and then Is_Array_Type (Exp_Type)
+        and then Is_Array_Type (Und_Typ)
       then
          Remove_Side_Effects (Prefix (Exp), Name_Req, Variable_Ref);
          goto Leave;
@@ -12749,9 +12958,9 @@ package body Exp_Util is
          --  to the object in the latter case.
 
          if Nkind (Exp) = N_Function_Call
-           and then (Is_Build_In_Place_Result_Type (Exp_Type)
+           and then (Is_Build_In_Place_Result_Type (Und_Typ)
                       or else
-                     Is_Constr_Array_Subt_Of_Unc_With_Controlled (Exp_Type))
+                     Is_Constr_Array_Subt_Of_Unc_With_Controlled (Und_Typ))
            and then Nkind (Parent (Exp)) /= N_Object_Declaration
            and then not Is_Expression_Of_Func_Return (Exp)
          then
@@ -12763,11 +12972,11 @@ package body Exp_Util is
                Decl :=
                  Make_Object_Declaration (Loc,
                    Defining_Identifier => Obj,
-                   Object_Definition   => New_Occurrence_Of (Exp_Type, Loc),
+                   Object_Definition   => New_Occurrence_Of (Typ, Loc),
                    Expression          => Relocate_Node (Exp));
 
                Insert_Action (Exp, Decl);
-               Set_Etype (Obj, Exp_Type);
+               Set_Etype (Obj, Typ);
                Rewrite (Exp, New_Occurrence_Of (Obj, Loc));
                goto Leave;
             end;
@@ -12783,7 +12992,7 @@ package body Exp_Util is
 
          if GNATprove_Mode then
             Res := New_Occurrence_Of (Def_Id, Loc);
-            Ref_Type := Exp_Type;
+            Ref_Type := Typ;
 
          --  Regular expansion utilizing an access type and 'reference
 
@@ -12793,7 +13002,7 @@ package body Exp_Util is
                 Prefix => New_Occurrence_Of (Def_Id, Loc));
 
             --  Generate:
-            --    type Ann is access all <Exp_Type>;
+            --    type Ann is access all Typ;
 
             Ref_Type := Make_Temporary (Loc, 'A');
 
@@ -12803,8 +13012,7 @@ package body Exp_Util is
                 Type_Definition     =>
                   Make_Access_To_Object_Definition (Loc,
                     All_Present        => True,
-                    Subtype_Indication =>
-                      New_Occurrence_Of (Exp_Type, Loc)));
+                    Subtype_Indication => New_Occurrence_Of (Typ, Loc)));
 
             Insert_Action (Exp, Ptr_Typ_Decl);
          end if;
@@ -12833,16 +13041,16 @@ package body Exp_Util is
 
                if not Analyzed (Exp)
                  and then Nkind (Exp) = N_Aggregate
-                 and then (Is_Array_Type (Exp_Type)
-                           or else Has_Discriminants (Exp_Type))
-                 and then Is_Constrained (Exp_Type)
+                 and then (Is_Array_Type (Und_Typ)
+                            or else Has_Discriminants (Und_Typ))
+                 and then Is_Constrained (Und_Typ)
                then
                   --  Do not suppress checks associated with the qualified
                   --  expression we are about to introduce (unless those
                   --  checks were already suppressed when Remove_Side_Effects
                   --  was called).
 
-                  if Is_Array_Type (Exp_Type) then
+                  if Is_Array_Type (Und_Typ) then
                      Scope_Suppress.Suppress (Length_Check) :=
                        Svg_Suppress.Suppress (Length_Check);
                   else
@@ -12850,9 +13058,10 @@ package body Exp_Util is
                        Svg_Suppress.Suppress (Discriminant_Check);
                   end if;
 
-                  E := Make_Qualified_Expression (Loc,
-                         Subtype_Mark => New_Occurrence_Of (Exp_Type, Loc),
-                         Expression => E);
+                  E :=
+                    Make_Qualified_Expression (Loc,
+                      Subtype_Mark => New_Occurrence_Of (Typ, Loc),
+                      Expression   => E);
                end if;
 
                New_Exp := Make_Reference (Loc, E);
@@ -12900,7 +13109,7 @@ package body Exp_Util is
       --  Finally rewrite the original expression and we are done
 
       Rewrite (Exp, Res);
-      Analyze_And_Resolve (Exp, Exp_Type);
+      Analyze_And_Resolve (Exp, Typ);
 
    <<Leave>>
       Scope_Suppress := Svg_Suppress;
@@ -13379,7 +13588,7 @@ package body Exp_Util is
             --  Ignored Ghost types do not need any cleanup actions because
             --  they will not appear in the final tree.
 
-            if Is_Ignored_Ghost_Entity (Typ) then
+            if Is_Ignored_Ghost_Entity_In_Codegen (Typ) then
                null;
 
             elsif Is_Tagged_Type (Typ)
@@ -13425,7 +13634,7 @@ package body Exp_Util is
             --  Ignored Ghost objects do not need any cleanup actions because
             --  they will not appear in the final tree.
 
-            elsif Is_Ignored_Ghost_Entity (Obj_Id) then
+            elsif Is_Ignored_Ghost_Entity_In_Codegen (Obj_Id) then
                null;
 
             --  Conversely, if one of the above cases created a Master_Node,
@@ -13521,7 +13730,7 @@ package body Exp_Util is
             --  Freeze nodes for ignored Ghost types do not need cleanup
             --  actions because they will never appear in the final tree.
 
-            if Is_Ignored_Ghost_Entity (Typ) then
+            if Is_Ignored_Ghost_Entity_In_Codegen (Typ) then
                null;
 
             elsif ((Is_Access_Object_Type (Typ)
@@ -13544,7 +13753,7 @@ package body Exp_Util is
             --  Do not inspect an ignored Ghost package because all code found
             --  within will not appear in the final tree.
 
-            if Is_Ignored_Ghost_Entity (Pack_Id) then
+            if Is_Ignored_Ghost_Entity_In_Codegen (Pack_Id) then
                null;
 
             elsif Ekind (Pack_Id) /= E_Generic_Package
@@ -13561,7 +13770,7 @@ package body Exp_Util is
             --  Do not inspect an ignored Ghost package body because all code
             --  found within will not appear in the final tree.
 
-            if Is_Ignored_Ghost_Entity (Defining_Entity (Decl)) then
+            if Is_Ignored_Ghost_Entity_In_Codegen (Defining_Entity (Decl)) then
                null;
 
             elsif Ekind (Corresponding_Spec (Decl)) /= E_Generic_Package
@@ -14484,7 +14693,16 @@ package body Exp_Util is
       else
          N := First (L);
          while Present (N) loop
-            if not Side_Effect_Free (N, Name_Req, Variable_Ref) then
+            if Nkind (N) = N_Parameter_Association then
+               if not
+                 Side_Effect_Free
+                  (Explicit_Actual_Parameter (N), Name_Req, Variable_Ref)
+               then
+                  return False;
+               end if;
+
+               Next (N);
+            elsif not Side_Effect_Free (N, Name_Req, Variable_Ref) then
                return False;
             else
                Next (N);
@@ -14787,6 +15005,37 @@ package body Exp_Util is
             when N_If_Expression =>
                exit when Node = First (Expressions (Parent_Node));
 
+            when others =>
+               exit;
+         end case;
+
+         Node        := Parent_Node;
+         Parent_Node := Parent (Node);
+      end loop;
+
+      return Parent_Node;
+   end Unconditional_Parent;
+
+   --------------------------------------
+   -- Unqualified_Unconditional_Parent --
+   --------------------------------------
+
+   function Unqualified_Unconditional_Parent (N : Node_Id) return Node_Id is
+      Node        : Node_Id := N;
+      Parent_Node : Node_Id := Parent (Node);
+
+   begin
+      loop
+         case Nkind (Parent_Node) is
+            when N_Case_Expression_Alternative =>
+               null;
+
+            when N_Case_Expression =>
+               exit when Node = Expression (Parent_Node);
+
+            when N_If_Expression =>
+               exit when Node = First (Expressions (Parent_Node));
+
             when N_Qualified_Expression =>
                null;
 
@@ -14799,7 +15048,7 @@ package body Exp_Util is
       end loop;
 
       return Parent_Node;
-   end Unconditional_Parent;
+   end Unqualified_Unconditional_Parent;
 
    -------------------------------
    -- Update_Primitives_Mapping --

@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2025 Free Software Foundation, Inc.
+// Copyright (C) 2020-2026 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -167,16 +167,10 @@ public:
    */
   enum class Kind
   {
-    Error,
     Const,  // A const value
     Type,   // A type argument (not discernable during parsing)
     Either, // Either a type or a const value, cleared up during resolving
   };
-
-  static GenericArg create_error ()
-  {
-    return GenericArg (nullptr, nullptr, {""}, Kind::Error, UNDEF_LOCATION);
-  }
 
   static GenericArg create_const (std::unique_ptr<Expr> expression)
   {
@@ -222,8 +216,6 @@ public:
   GenericArg (GenericArg &&other) = default;
   GenericArg &operator= (GenericArg &&other) = default;
 
-  bool is_error () const { return kind == Kind::Error; }
-
   Kind get_kind () const { return kind; }
   location_t get_locus () const { return locus; }
 
@@ -239,8 +231,6 @@ public:
 	break;
       case Kind::Either:
 	break;
-      case Kind::Error:
-	rust_unreachable ();
       }
   }
 
@@ -283,8 +273,6 @@ public:
   {
     switch (get_kind ())
       {
-      case Kind::Error:
-	rust_unreachable ();
       case Kind::Either:
 	return "Ambiguous: " + path.as_string ();
       case Kind::Const:
@@ -355,15 +343,15 @@ class ConstGenericParam : public GenericParam
   /**
    * Default value for the const generic parameter
    */
-  GenericArg default_value;
+  tl::optional<GenericArg> default_value;
 
   AST::AttrVec outer_attrs;
   location_t locus;
 
 public:
   ConstGenericParam (Identifier name, std::unique_ptr<AST::Type> type,
-		     GenericArg default_value, AST::AttrVec outer_attrs,
-		     location_t locus)
+		     tl::optional<GenericArg> default_value,
+		     AST::AttrVec outer_attrs, location_t locus)
     : name (name), type (std::move (type)),
       default_value (std::move (default_value)), outer_attrs (outer_attrs),
       locus (locus)
@@ -376,7 +364,7 @@ public:
   {}
 
   bool has_type () const { return type != nullptr; }
-  bool has_default_value () const { return !default_value.is_error (); }
+  bool has_default_value () const { return default_value.has_value (); }
 
   const Identifier &get_name () const { return name; }
 
@@ -389,17 +377,31 @@ public:
     return *type;
   }
 
-  GenericArg &get_default_value ()
+  std::unique_ptr<AST::Type> &get_type_ptr ()
   {
-    rust_assert (has_default_value ());
+    rust_assert (has_type ());
 
-    return default_value;
+    return type;
   }
 
-  const GenericArg &get_default_value () const
+  GenericArg &get_default_value_unchecked ()
   {
     rust_assert (has_default_value ());
 
+    return default_value.value ();
+  }
+
+  const GenericArg &get_default_value_unchecked () const
+  {
+    rust_assert (has_default_value ());
+
+    return default_value.value ();
+  }
+
+  tl::optional<GenericArg> &get_default_value () { return default_value; }
+
+  const tl::optional<GenericArg> &get_default_value () const
+  {
     return default_value;
   }
 
@@ -453,9 +455,7 @@ public:
     generic_args.clear ();
     generic_args.reserve (other.generic_args.size ());
     for (const auto &arg : other.generic_args)
-      {
-	generic_args.push_back (GenericArg (arg));
-      }
+      generic_args.emplace_back (arg);
   }
 
   ~GenericArgs () = default;
@@ -470,9 +470,7 @@ public:
     generic_args.clear ();
     generic_args.reserve (other.generic_args.size ());
     for (const auto &arg : other.generic_args)
-      {
-	generic_args.push_back (GenericArg (arg));
-      }
+      generic_args.emplace_back (arg);
 
     return *this;
   }
@@ -791,6 +789,11 @@ public:
   {
     return new TypePathSegment (*this);
   }
+  virtual TypePathSegment *reconstruct_impl () const
+  {
+    return new TypePathSegment (lang_item, ident_segment,
+				has_separating_scope_resolution, locus);
+  }
 
 public:
   virtual ~TypePathSegment () {}
@@ -801,6 +804,11 @@ public:
   std::unique_ptr<TypePathSegment> clone_type_path_segment () const
   {
     return std::unique_ptr<TypePathSegment> (clone_type_path_segment_impl ());
+  }
+  // Unique pointer custom reconstruct function
+  std::unique_ptr<TypePathSegment> reconstruct () const
+  {
+    return reconstruct_base (this);
   }
 
   TypePathSegment (PathIdentSegment ident_segment,
@@ -822,6 +830,15 @@ public:
     : lang_item (tl::nullopt),
       ident_segment (PathIdentSegment (std::move (segment_name), locus)),
       locus (locus),
+      has_separating_scope_resolution (has_separating_scope_resolution),
+      node_id (Analysis::Mappings::get ().get_next_node_id ())
+  {}
+
+  // General constructor
+  TypePathSegment (tl::optional<LangItem::Kind> lang_item,
+		   tl::optional<PathIdentSegment> ident_segment,
+		   bool has_separating_scope_resolution, location_t locus)
+    : lang_item (lang_item), ident_segment (ident_segment), locus (locus),
       has_separating_scope_resolution (has_separating_scope_resolution),
       node_id (Analysis::Mappings::get ().get_next_node_id ())
   {}
@@ -980,11 +997,7 @@ public:
   void accept_vis (ASTVisitor &vis) override;
 
   // TODO: is this better? Or is a "vis_pattern" better?
-  GenericArgs &get_generic_args ()
-  {
-    rust_assert (has_generic_args ());
-    return generic_args;
-  }
+  GenericArgs &get_generic_args () { return generic_args; }
 
   // Use covariance to override base class method
   TypePathSegmentGeneric *clone_type_path_segment_impl () const override
@@ -1161,6 +1174,11 @@ protected:
   {
     return new TypePath (*this);
   }
+  TypePath *reconstruct_impl () const override
+  {
+    return new TypePath (reconstruct_vec (segments), locus,
+			 has_opening_scope_resolution);
+  }
 
 public:
   /* Returns whether the TypePath has an opening scope resolution operator
@@ -1227,6 +1245,8 @@ public:
 
   std::string as_string () const override;
 
+  std::string make_debug_string () const;
+
   /* Converts TypePath to SimplePath if possible (i.e. no generic or function
    * arguments). Otherwise returns an empty SimplePath. */
   SimplePath as_simple_path () const;
@@ -1235,7 +1255,7 @@ public:
   TraitBound *to_trait_bound (bool in_parens) const override;
 
   location_t get_locus () const override final { return locus; }
-  NodeId get_node_id () const { return node_id; }
+  NodeId get_node_id () const override { return node_id; }
 
   void mark_for_strip () override {}
   bool is_marked_for_strip () const override { return false; }
@@ -1449,6 +1469,12 @@ protected:
   QualifiedPathInType *clone_type_no_bounds_impl () const override
   {
     return new QualifiedPathInType (*this);
+  }
+  QualifiedPathInType *reconstruct_impl () const override
+  {
+    return new QualifiedPathInType (path_type,
+				    associated_segment->reconstruct (),
+				    reconstruct_vec (segments), locus);
   }
 
 public:

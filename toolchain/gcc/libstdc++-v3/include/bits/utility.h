@@ -1,6 +1,6 @@
 // Utilities used throughout the library -*- C++ -*-
 
-// Copyright (C) 2004-2025 Free Software Foundation, Inc.
+// Copyright (C) 2004-2026 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -137,26 +137,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     using tuple_element_t = typename tuple_element<__i, _Tp>::type;
 #endif
 
-  // Stores a tuple of indices.  Used by tuple and pair, and by bind() to
-  // extract the elements in a tuple.
-  template<size_t... _Indexes> struct _Index_tuple { };
-
-  // Builds an _Index_tuple<0, 1, 2, ..., _Num-1>.
-  template<size_t _Num>
-    struct _Build_index_tuple
-    {
-#if __has_builtin(__make_integer_seq)
-      template<typename, size_t... _Indices>
-	using _IdxTuple = _Index_tuple<_Indices...>;
-
-      // Clang defines __make_integer_seq for this purpose.
-      using __type = __make_integer_seq<_IdxTuple, size_t, _Num>;
-#else
-      // For GCC and other compilers, use __integer_pack instead.
-      using __type = _Index_tuple<__integer_pack(_Num)...>;
-#endif
-    };
-
 #ifdef __glibcxx_integer_sequence // C++ >= 14
 
   /// Class template integer_sequence
@@ -191,6 +171,22 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   template<typename... _Types>
     using index_sequence_for = make_index_sequence<sizeof...(_Types)>;
 #endif // __glibcxx_integer_sequence
+
+#if __cpp_structured_bindings >= 202411L
+#if __has_builtin(__integer_pack)
+  template <auto _Num, typename _Tp = decltype(_Num)>
+    inline constexpr _Tp
+    _IotaArray[_Num] = {__integer_pack(_Tp(_Num))...};
+#elif defined __glibcxx_integer_sequence
+  template <auto _Num, typename _Tp = decltype(_Num), typename = make_integer_sequence<_Tp, _Num>>
+    inline constexpr _Tp
+    _IotaArray[_Num];
+
+  template <auto _Num, typename _Tp, _Tp... _Is>
+    inline constexpr _Tp
+    _IotaArray<_Num, _Tp, integer_sequence<_Tp, _Is...>>[_Num] = {_Is...};
+#endif // __integer_pack
+#endif // __cpp_structured_bindings >= 202411L
 
 #if __cplusplus >= 201703L
 
@@ -314,6 +310,23 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   struct sorted_equivalent_t { explicit sorted_equivalent_t() = default; };
   inline constexpr sorted_equivalent_t sorted_equivalent{};
+#endif
+
+#if __glibcxx_function_ref // >= C++26
+  template<auto>
+    struct nontype_t
+    {
+      explicit nontype_t() = default;
+    };
+
+  template<auto __val>
+    constexpr nontype_t<__val> nontype{};
+
+  template<typename>
+    inline constexpr bool __is_nontype_v = false;
+
+  template<auto __val>
+    inline constexpr bool __is_nontype_v<nontype_t<__val>> = true;
 #endif
 
 _GLIBCXX_END_NAMESPACE_VERSION

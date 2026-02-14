@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Free Software Foundation, Inc.
+# Copyright (C) 2026 Free Software Foundation, Inc.
 # Contributed by the Symas Corporation, 2025
 
 # This file is part of GCC.
@@ -19,7 +19,18 @@
 
 # Written de novo for libgcobol.
 
-AUTOMAKE_OPTIONS = 1.8 foreign
+# Standard autoconf-set variables.
+SHELL = @SHELL@
+srcdir = @srcdir@
+libdir = @libdir@
+build = @build@
+target = @target@
+prefix = @prefix@
+
+target_noncanonical = @target_noncanonical@
+version := $(shell @get_gcc_base_ver@ $(srcdir)/../gcc/BASE-VER)
+
+AUTOMAKE_OPTIONS = 1.8 foreign subdir-objects
 ACLOCAL_AMFLAGS = -I .. -I ../config
 
 # May be used by various substitution variables.
@@ -30,10 +41,14 @@ if BUILD_LIBGCOBOL
 toolexeclib_LTLIBRARIES  = libgcobol.la
 toolexeclib_DATA = libgcobol.spec
 
+libsubdir := $(libdir)/gcc/$(target_noncanonical)/$(version)$(MULTISUBDIR)/cobol
+libsubincludedir = $(libsubdir)
+
 ##
 ## 2.2.12 Automatic Dependency Tracking
 ## Automake generates code for automatic dependency tracking by default
 ##
+
 libgcobol_la_SOURCES =				\
 	charmaps.cc				\
 	constants.cc				\
@@ -42,16 +57,41 @@ libgcobol_la_SOURCES =				\
 	intrinsic.cc				\
 	io.cc					\
 	libgcobol.cc				\
-	valconv.cc
+	posix/shim/errno.cc			\
+	posix/shim/localtime.cc			\
+	posix/shim/open.cc			\
+	posix/shim/stat.cc			\
+	stringbin.cc				\
+	valconv.cc				\
+	xmlparse.cc
+
+libgcobol_la_LIBADD = -lxml2
+
+nobase_libsubinclude_HEADERS =			\
+	posix/cpy/posix-errno.cbl		\
+	posix/cpy/statbuf.cpy			\
+	posix/udf/posix-exit.cbl		\
+	posix/udf/posix-localtime.cbl		\
+	posix/udf/posix-mkdir.cbl		\
+	posix/udf/posix-open.cbl		\
+	posix/udf/posix-stat.cbl		\
+	posix/udf/posix-unlink.cbl		\
+	compat/gnu/lib/CBL_CHECK_FILE_EXIST.cbl	\
+	compat/gnu/lib/CBL_ALLOC_MEM.cbl	\
+	compat/gnu/lib/CBL_DELETE_FILE.cbl	\
+	compat/gnu/lib/CBL_FREE_MEM.cbl		\
+	compat/gnu/udf/stored-char-length.cbl
 
 WARN_CFLAGS = -W -Wall -Wwrite-strings
 
-AM_CPPFLAGS = -I. -I$(srcdir) $(LIBQUADINCLUDE)
+AM_CPPFLAGS = -I. -I posix/shim $(LIBQUADINCLUDE)
+AM_CPPFLAGS += -I /usr/include/libxml2
+
 AM_CFLAGS = $(XCFLAGS)
 AM_CXXFLAGS = $(XCFLAGS)
 AM_CXXFLAGS += $(WARN_CFLAGS)
 AM_CXXFLAGS += -DIN_TARGET_LIBS
-AM_CXXFLAGS += -fno-strict-aliasing
+AM_CXXFLAGS += -fstrict-aliasing -Wstrict-aliasing -Wstrict-aliasing=3
 
 if ENABLE_DARWIN_AT_RPATH
 # Handle embedded rpaths for Darwin.

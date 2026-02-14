@@ -1,6 +1,6 @@
 // Support for concurrent programing -*- C++ -*-
 
-// Copyright (C) 2003-2025 Free Software Foundation, Inc.
+// Copyright (C) 2003-2026 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -35,7 +35,7 @@
 
 #include <exception>
 #include <bits/gthr.h>
-#include <bits/functexcept.h>
+#include <bits/exception_defines.h>
 #include <bits/cpp_type_traits.h>
 #include <ext/type_traits.h>
 

@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 2015-2025, Free Software Foundation, Inc.         --
+--          Copyright (C) 2015-2026, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -25,7 +25,6 @@
 
 with Aspects;        use Aspects;
 with Atree;          use Atree;
-with Einfo;          use Einfo;
 with Einfo.Entities; use Einfo.Entities;
 with Einfo.Utils;    use Einfo.Utils;
 with Elists;         use Elists;
@@ -50,7 +49,6 @@ with Sem_Disp;       use Sem_Disp;
 with Sem_Prag;       use Sem_Prag;
 with Sem_Type;       use Sem_Type;
 with Sem_Util;       use Sem_Util;
-with Sinfo;          use Sinfo;
 with Sinfo.Nodes;    use Sinfo.Nodes;
 with Sinfo.Utils;    use Sinfo.Utils;
 with Sinput;         use Sinput;
@@ -110,8 +108,8 @@ package body Contracts is
    --  Expand the contracts of a subprogram body and its correspoding spec (if
    --  any). This routine processes all [refined] pre- and postconditions as
    --  well as Always_Terminates, Contract_Cases, Exceptional_Cases,
-   --  Subprogram_Variant, invariants and predicates. Body_Id denotes the
-   --  entity of the subprogram body.
+   --  Program_Exit, Subprogram_Variant, invariants and predicates. Body_Id
+   --  denotes the entity of the subprogram body.
 
    procedure Preanalyze_Condition
      (Subp : Entity_Id;
@@ -235,6 +233,7 @@ package body Contracts is
       --    Interrupt_Handler
       --    Postcondition
       --    Precondition
+      --    Program_Exit
       --    Side_Effects
       --    Subprogram_Variant
       --    Test_Case
@@ -267,6 +266,7 @@ package body Contracts is
                          | Name_Contract_Cases
                          | Name_Exceptional_Cases
                          | Name_Exit_Cases
+                         | Name_Program_Exit
                          | Name_Subprogram_Variant
                          | Name_Test_Case
          then
@@ -647,9 +647,9 @@ package body Contracts is
       end if;
 
       --  Deal with preconditions, [refined] postconditions, Always_Terminates,
-      --  Contract_Cases, Exceptional_Cases, Subprogram_Variant, invariants and
-      --  predicates associated with body and its spec. Do not expand the
-      --  contract of subprogram body stubs.
+      --  Contract_Cases, Exceptional_Cases, Program_Exit, Subprogram_Variant,
+      --  invariants and predicates associated with body and its spec. Do not
+      --  expand the contract of subprogram body stubs.
 
       if Nkind (Body_Decl) = N_Subprogram_Body then
          Expand_Subprogram_Contract (Body_Id);
@@ -796,6 +796,9 @@ package body Contracts is
 
             elsif Prag_Nam = Name_Exceptional_Cases then
                Analyze_Exceptional_Cases_In_Decl_Part (Prag);
+
+            elsif Prag_Nam = Name_Program_Exit then
+               Analyze_Program_Exit_In_Decl_Part (Prag);
 
             elsif Prag_Nam = Name_Subprogram_Variant then
                Analyze_Subprogram_Variant_In_Decl_Part (Prag);
@@ -1126,12 +1129,12 @@ package body Contracts is
       if Comes_From_Source (Obj_Id) and then Is_Ghost_Entity (Obj_Id) then
 
          --  A Ghost object cannot be of a type that yields a synchronized
-         --  object (SPARK RM 6.9(21)).
+         --  object (SPARK RM 6.9(22)).
 
          if Yields_Synchronized_Object (Obj_Typ) then
             Error_Msg_N ("ghost object & cannot be synchronized", Obj_Id);
 
-         --  A Ghost object cannot be imported or exported (SPARK RM 6.9(7)).
+         --  A Ghost object cannot be imported or exported (SPARK RM 6.9(9)).
          --  One exception to this is the object that represents the dispatch
          --  table of a Ghost tagged type, as the symbol needs to be exported.
 
@@ -1273,7 +1276,12 @@ package body Contracts is
          while Present (Prag) loop
             Prag_Nam := Pragma_Name (Prag);
 
-            if Prag_Nam = Name_Initial_Condition then
+            --  When Assertion_Levels are used then the pacakage can have
+            --  multiple consecutive Initial_Condition pragmas.
+            --  Find the first one here and then iterate over all of them
+            --  later.
+
+            if Prag_Nam = Name_Initial_Condition and then No (Init_Cond) then
                Init_Cond := Prag;
 
             elsif Prag_Nam = Name_Initializes then
@@ -1290,9 +1298,12 @@ package body Contracts is
             Analyze_Initializes_In_Decl_Part (Init);
          end if;
 
-         if Present (Init_Cond) then
+         while Present (Init_Cond)
+           and then Pragma_Name (Init_Cond) = Name_Initial_Condition
+         loop
             Analyze_Initial_Condition_In_Decl_Part (Init_Cond);
-         end if;
+            Init_Cond := Next_Pragma (Init_Cond);
+         end loop;
       end if;
 
       --  Restore the SPARK_Mode of the enclosing context after all delayed
@@ -1413,6 +1424,7 @@ package body Contracts is
       --    Global
       --    Postcondition
       --    Precondition
+      --    Program_Exit
       --    Subprogram_Variant
       --    Test_Case
 
@@ -2422,6 +2434,7 @@ package body Contracts is
             --  verify the return value.
 
             Result := Make_Defining_Identifier (Loc, Name_uResult);
+            Mutate_Ekind (Result, E_Constant);
             Set_Etype (Result, Typ);
 
             --  Add an invariant check when the return type has invariants and
@@ -2707,10 +2720,11 @@ package body Contracts is
 
       procedure Append_Enabled_Item (Item : Node_Id; List : in out List_Id) is
       begin
-         --  Do not chain ignored or disabled pragmas
+         --  Do not chain ignored or disabled pragmas. Note that disabled
+         --  pragmas are also considered ignored.
 
          if Nkind (Item) = N_Pragma
-           and then (Is_Ignored (Item) or else Is_Disabled (Item))
+           and then Is_Ignored_In_Codegen (Item)
          then
             null;
 
@@ -2760,6 +2774,9 @@ package body Contracts is
 
                      elsif Pragma_Name (Prag) = Name_Exit_Cases then
                         Expand_Pragma_Exit_Cases (Prag);
+
+                     elsif Pragma_Name (Prag) = Name_Program_Exit then
+                        Expand_Pragma_Program_Exit (Prag);
 
                      elsif Pragma_Name (Prag) = Name_Subprogram_Variant then
                         Expand_Pragma_Subprogram_Variant
@@ -3263,7 +3280,7 @@ package body Contracts is
       --  The contract of an ignored Ghost subprogram does not need expansion,
       --  because the subprogram and all calls to it will be removed.
 
-      elsif Is_Ignored_Ghost_Entity (Subp_Id) then
+      elsif Is_Ignored_Ghost_Entity_In_Codegen (Subp_Id) then
          return;
 
       --  No action needed for helpers and indirect-call wrapper built to
@@ -4824,7 +4841,7 @@ package body Contracts is
       Install_Formals (Subp);
       Inside_Class_Condition_Preanalysis := True;
 
-      Preanalyze_Spec_Expression (Expr, Standard_Boolean);
+      Preanalyze_And_Resolve_Spec_Expression (Expr, Standard_Boolean);
 
       Inside_Class_Condition_Preanalysis := False;
       End_Scope;
@@ -4860,9 +4877,34 @@ package body Contracts is
      (Templ  : Node_Id;
       Gen_Id : Entity_Id)
    is
+      procedure Save_Global_References_In_Aspects (N : Node_Id);
+      --  Save all global references found in the expressions of all aspects
+      --  that appear on node N.
+
       procedure Save_Global_References_In_List (First_Prag : Node_Id);
       --  Save all global references in contract-related source pragmas found
       --  in the list, starting with pragma First_Prag.
+
+      ---------------------------------------
+      -- Save_Global_References_In_Aspects --
+      ---------------------------------------
+
+      procedure Save_Global_References_In_Aspects (N : Node_Id) is
+         Asp  : Node_Id;
+         Expr : Node_Id;
+
+      begin
+         Asp := First (Aspect_Specifications (N));
+         while Present (Asp) loop
+            Expr := Expression (Asp);
+
+            if Present (Expr) then
+               Save_Global_References (Expr);
+            end if;
+
+            Next (Asp);
+         end loop;
+      end Save_Global_References_In_Aspects;
 
       ------------------------------------
       -- Save_Global_References_In_List --

@@ -1,5 +1,5 @@
 /* d-codegen.cc --  Code generation and routines for manipulation of GCC trees.
-   Copyright (C) 2006-2025 Free Software Foundation, Inc.
+   Copyright (C) 2006-2026 Free Software Foundation, Inc.
 
 GCC is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -78,6 +78,7 @@ d_decl_context (Dsymbol *dsym)
   Dsymbol *parent = dsym;
   Declaration *decl = dsym->isDeclaration ();
   AggregateDeclaration *ad = dsym->isAggregateDeclaration ();
+  FuncDeclaration *fd = dsym->isFuncDeclaration ();
 
   while ((parent = parent->toParent2 ()))
     {
@@ -98,18 +99,21 @@ d_decl_context (Dsymbol *dsym)
       if (decl != NULL && decl->isDataseg ())
 	continue;
 
+      /* Likewise generated functions are part of module context.  */
+      if (fd != NULL && fd->isGenerated ()
+	  && !(fd->isVirtual () && fd->vtblIndex != -1))
+	continue;
+
       /* Nested functions.  */
-      FuncDeclaration *fd = parent->isFuncDeclaration ();
-      if (fd != NULL)
-	return get_symbol_decl (fd);
+      if (FuncDeclaration *fdp = parent->isFuncDeclaration ())
+	return get_symbol_decl (fdp);
 
       /* Methods of classes or structs.  */
-      AggregateDeclaration *ad = parent->isAggregateDeclaration ();
-      if (ad != NULL)
+      if (AggregateDeclaration *adp = parent->isAggregateDeclaration ())
 	{
-	  tree context = build_ctype (ad->type);
+	  tree context = build_ctype (adp->type);
 	  /* Want the underlying RECORD_TYPE.  */
-	  if (ad->isClassDeclaration ())
+	  if (adp->isClassDeclaration ())
 	    context = TREE_TYPE (context);
 
 	  return context;
@@ -331,7 +335,7 @@ get_array_length (tree exp, Type *type)
   switch (tb->ty)
     {
     case TY::Tsarray:
-      return size_int (tb->isTypeSArray ()->dim->toUInteger ());
+      return size_int (dmd::toUInteger (tb->isTypeSArray ()->dim));
 
     case TY::Tarray:
       return d_array_length (exp);
@@ -722,10 +726,11 @@ build_address (tree exp)
       if (AGGREGATE_TYPE_P (TREE_TYPE (exp))
 	  && !aggregate_value_p (TREE_TYPE (exp), exp))
 	{
-	  tree tmp = build_local_temp (TREE_TYPE (exp));
-	  init = compound_expr (init, build_memset_call (tmp));
-	  init = compound_expr (init, modify_expr (tmp, exp));
-	  exp = tmp;
+	  tree target = force_target_expr (exp);
+	  tree ptr = build_address (TARGET_EXPR_SLOT (target));
+	  init = compound_expr (init, target);
+	  init = compound_expr (init, build_clear_padding_call (ptr));
+	  exp = TARGET_EXPR_SLOT (target);
 	}
       else
 	exp = force_target_expr (exp);
@@ -900,23 +905,31 @@ build_memset_call (tree ptr, tree num)
     }
 
   /* Use a zero constant to fill the destination if setting the entire object.
-     For CONSTRUCTORs, the memcpy() is lowered to a ref-all pointer assignment,
-     which can then be merged with other stores to the object.  */
+     For CONSTRUCTORs, also set CONSTRUCTOR_ZERO_PADDING_BITS.  */
   tree valtype = TREE_TYPE (TREE_TYPE (ptr));
   if (tree_int_cst_equal (TYPE_SIZE_UNIT (valtype), num))
     {
       tree cst = build_zero_cst (valtype);
       if (TREE_CODE (cst) == CONSTRUCTOR)
-	{
-	  CONSTRUCTOR_ZERO_PADDING_BITS (cst) = 1;
-	  return build_memcpy_call (ptr, build_address (cst), num);
-	}
+	CONSTRUCTOR_ZERO_PADDING_BITS (cst) = 1;
 
       return modify_expr (build_deref (ptr), cst);
     }
 
   return build_call_expr (builtin_decl_explicit (BUILT_IN_MEMSET), 3,
 			  ptr, integer_zero_node, num);
+}
+
+/* Build a call to built-in clear_padding(),  clears padding bits inside of the
+   object representation of object pointed by PTR.  */
+
+tree
+build_clear_padding_call (tree ptr)
+{
+  gcc_assert (POINTER_TYPE_P (TREE_TYPE (ptr)));
+
+  return build_call_expr (builtin_decl_explicit (BUILT_IN_CLEAR_PADDING), 1,
+			  ptr);
 }
 
 /* Return TRUE if the struct SD is suitable for comparison using memcmp.
@@ -1024,15 +1037,15 @@ lower_struct_comparison (tree_code code, StructDeclaration *sd,
 	  /* Compare inner data structures.  */
 	  tcmp = lower_struct_comparison (code, ts->sym, t1ref, t2ref);
 	}
-      else if (type->ty != TY::Tvector && type->isIntegral ())
+      else if (type->ty != TY::Tvector && dmd::isIntegral (type))
 	{
 	  /* Integer comparison, no special handling required.  */
 	  tcmp = build_boolop (code, t1ref, t2ref);
 	}
-      else if (type->ty != TY::Tvector && type->isFloating ())
+      else if (type->ty != TY::Tvector && dmd::isFloating (type))
 	{
 	  /* Floating-point comparison, don't compare padding in type.  */
-	  if (!type->isComplex ())
+	  if (!dmd::isComplex (type))
 	    tcmp = build_float_identity (code, t1ref, t2ref);
 	  else
 	    {
@@ -1866,7 +1879,7 @@ build_array_from_val (Type *type, tree val)
   if (TREE_CODE (etype) == ARRAY_TYPE && TREE_TYPE (val) != etype)
     val = build_array_from_val (type->nextOf (), val);
 
-  size_t dims = type->isTypeSArray ()->dim->toInteger ();
+  size_t dims = dmd::toInteger (type->isTypeSArray ()->dim);
   vec <constructor_elt, va_gc> *elms = NULL;
   vec_safe_reserve (elms, dims);
 
@@ -1902,15 +1915,13 @@ build_array_from_exprs (Type *type, Expressions *exps, bool const_p)
   /* Create a new temporary to store the array.  */
   tree var = build_local_temp (satype);
 
-  /* Fill any alignment holes with zeroes.  */
-  TypeStruct *ts = etype->baseElemOf ()->isTypeStruct ();
-  tree init = NULL;
-  if (ts && (!identity_compare_p (ts->sym) || ts->sym->isUnionDeclaration ()))
-    init = build_memset_call (var);
-
   /* Initialize the temporary.  */
   tree assign = modify_expr (var, build_padded_constructor (satype, elms));
-  return compound_expr (compound_expr (init, assign), var);
+
+  /* Fill any alignment holes with zeroes.  */
+  tree clear_padding = build_clear_padding_call (build_address (var));
+
+  return compound_expr (compound_expr (assign, clear_padding), var);
 }
 
 
@@ -1941,11 +1952,7 @@ build_filename_from_loc (const Loc &loc)
   if (filename == NULL)
     filename = d_function_chain->module->srcfile.toChars ();
 
-  unsigned length = strlen (filename);
-  tree str = build_string (length, filename);
-  TREE_TYPE (str) = make_array_type (Type::tchar, length + 1);
-
-  return build_address (str);
+  return build_string_literal (filename);
 }
 
 /* Builds a CALL_EXPR at location LOC in the source file to call LIBCALL when
@@ -1987,9 +1994,9 @@ build_assert_call (const Loc &loc, libcall_fn libcall, tree msg)
 
 
   if (msg != NULL_TREE)
-    return build_libcall (libcall, Type::tvoid, 3, msg, file, line);
+    return build_libcall (libcall, 3, msg, file, line);
   else
-    return build_libcall (libcall, Type::tvoid, 2, file, line);
+    return build_libcall (libcall, 2, file, line);
 }
 
 /* Builds a CALL_EXPR at location LOC in the source file to execute when an
@@ -2003,7 +2010,7 @@ build_array_bounds_call (const Loc &loc)
     return build_call_expr (builtin_decl_explicit (BUILT_IN_TRAP), 0);
   else
     {
-      return build_libcall (LIBCALL_ARRAYBOUNDSP, Type::tvoid, 2,
+      return build_libcall (LIBCALL_ARRAYBOUNDSP, 2,
 			    build_filename_from_loc (loc),
 			    size_int (loc.linnum ()));
     }
@@ -2032,7 +2039,7 @@ build_bounds_index_condition (IndexExp *ie, tree index, tree length)
     boundserr = build_call_expr (builtin_decl_explicit (BUILT_IN_TRAP), 0);
   else
     {
-      boundserr = build_libcall (LIBCALL_ARRAYBOUNDS_INDEXP, Type::tvoid, 4,
+      boundserr = build_libcall (LIBCALL_ARRAYBOUNDS_INDEXP, 4,
 				 build_filename_from_loc (ie->e2->loc),
 				 size_int (ie->e2->loc.linnum ()),
 				 index, length);
@@ -2081,8 +2088,7 @@ build_bounds_slice_condition (SliceExp *se, tree lower, tree upper, tree length)
 	    }
 	  else
 	    {
-	      boundserr = build_libcall (LIBCALL_ARRAYBOUNDS_SLICEP,
-					 Type::tvoid, 5,
+	      boundserr = build_libcall (LIBCALL_ARRAYBOUNDS_SLICEP, 5,
 					 build_filename_from_loc (se->loc),
 					 size_int (se->loc.linnum ()),
 					 lower, upper, length);
@@ -2151,7 +2157,7 @@ checkaction_trap_p (void)
 }
 
 /* Returns the TypeFunction class for Type T.
-   Assumes T is already ->toBasetype().  */
+   Assumes T is already the main variant type (toBasetype).  */
 
 TypeFunction *
 get_function_type (Type *t)
@@ -2917,7 +2923,7 @@ build_closure (FuncDeclaration *fd)
 
       /* Allocate memory for closure.  */
       tree arg = convert (build_ctype (Type::tsize_t), TYPE_SIZE_UNIT (type));
-      tree init = build_libcall (LIBCALL_ALLOCMEMORY, Type::tvoidptr, 1, arg);
+      tree init = build_libcall (LIBCALL_ALLOCMEMORY, 1, arg);
 
       tree init_exp = build_assign (INIT_EXPR, decl,
 				    build_nop (TREE_TYPE (decl), init));
@@ -2979,7 +2985,7 @@ get_frameinfo (FuncDeclaration *fd)
   DECL_LANG_FRAMEINFO (fds) = ffi;
 
   const bool requiresClosure = fd->requiresClosure;
-  if (fd->needsClosure ())
+  if (dmd::needsClosure (fd))
     {
       /* This can shift due to templates being expanded that access alias
          symbols, give it a decent error for now.  */

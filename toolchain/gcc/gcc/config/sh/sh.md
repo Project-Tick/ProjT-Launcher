@@ -1,5 +1,5 @@
 ;;- Machine description for Renesas / SuperH SH.
-;;  Copyright (C) 1993-2025 Free Software Foundation, Inc.
+;;  Copyright (C) 1993-2026 Free Software Foundation, Inc.
 ;;  Contributed by Steve Chamberlain (sac@cygnus.com).
 ;;  Improved by Jim Wilson (wilson@cygnus.com).
 
@@ -3268,6 +3268,25 @@
 	      (clobber (reg:SI T_REG))])]
 {
   sh_split_treg_set_expr (operands[3], curr_insn);
+  operands[3] = get_t_reg_rtx ();
+})
+
+(define_insn_and_split "*rotcl"
+  [(set (match_operand:SI 0 "arith_reg_dest")
+	(xor:SI (rotate:SI (match_operand:SI 1 "arith_reg_operand")
+			   (const_int 1))
+		(const_int 1)))
+   (clobber (reg:SI T_REG))]
+  "TARGET_SH1 && can_create_pseudo_p ()"
+  "#"
+  "&& 1"
+  [(parallel [(set (match_dup 0)
+		   (ior:SI (ashift:SI (match_dup 1) (const_int 1))
+			   (and:SI (match_dup 3) (const_int 1))))
+	      (clobber (reg:SI T_REG))])]
+{
+  rtx t = gen_rtx_GE (SImode, operands[1], const0_rtx);
+  sh_split_treg_set_expr (t, curr_insn);
   operands[3] = get_t_reg_rtx ();
 })
 

@@ -2,10 +2,6 @@
 // { dg-additional-options "-std=c++23" }
 // { dg-additional-options -DMEM_SHARED { target offload_device_shared_as } }
 
-/* { dg-ice {TODO PR120450} { offload_target_amdgcn && { ! offload_device_shared_as } } }
-   { dg-excess-errors {'mkoffload' failure etc.} { xfail { offload_target_amdgcn && { ! offload_device_shared_as } } } }
-   (For effective-target 'offload_device_shared_as', we've got '-DMEM_SHARED', and therefore don't invoke the constructor with placement new.)  */
-
 #include <stdlib.h>
 #include <time.h>
 #include <set>
@@ -43,7 +39,9 @@ int main (void)
   init (keys, true);
   init (data, false);
 
-  #pragma omp target enter data map (to: keys[:N], data[:N]) map (alloc: _map)
+#ifndef MEM_SHARED
+  #pragma omp target enter data map (to: keys[ :N], data[ :N]) map (alloc: _map)
+#endif
 
   #pragma omp target
     {
@@ -59,12 +57,22 @@ int main (void)
     for (int i = 0; i < N; ++i)
       sum += (long long) keys[i] * _map[keys[i]];
 
+#ifdef OMP_USM
+  #pragma omp target
+    /* Restore the object into pristine state.  In particular, deallocate
+       any memory allocated during device execution, which otherwise, back
+       on the host, we'd SIGSEGV on, when attempting to deallocate during
+       destruction of the object.  */
+    __typeof__ (_map){}.swap (_map);
+#endif
 #ifndef MEM_SHARED
   #pragma omp target
     _map.~flat_map ();
 #endif
 
+#ifndef MEM_SHARED
   #pragma omp target exit data map (release: _map)
+#endif
 
   bool ok = validate (sum, keys, data);
   return ok ? 0 : 1;

@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2025, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2026, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -27,7 +27,6 @@ with Aspects;        use Aspects;
 with Atree;          use Atree;
 with Alloc;
 with Debug;          use Debug;
-with Einfo;          use Einfo;
 with Einfo.Entities; use Einfo.Entities;
 with Einfo.Utils;    use Einfo.Utils;
 with Elists;         use Elists;
@@ -46,7 +45,6 @@ with Sem_Disp;       use Sem_Disp;
 with Sem_Dist;       use Sem_Dist;
 with Sem_Util;       use Sem_Util;
 with Stand;          use Stand;
-with Sinfo;          use Sinfo;
 with Sinfo.Nodes;    use Sinfo.Nodes;
 with Sinfo.Utils;    use Sinfo.Utils;
 with Snames;         use Snames;
@@ -610,14 +608,17 @@ package body Sem_Type is
       First_Interp := All_Interp.Last;
       Add_One_Interp (N, Ent, Etype (N));
 
-      --  For expanded name, pick up all additional entities from the
-      --  same scope, since these are obviously also visible. Note that
-      --  these are not necessarily contiguous on the homonym chain.
+      --  For an expanded name, pick up additional visible entities from
+      --  the same scope. Note that these are not necessarily contiguous
+      --  on the homonym chain.
 
       if Nkind (N) = N_Expanded_Name then
          H := Homonym (Ent);
          while Present (H) loop
-            if Scope (H) = Scope (Entity (N)) then
+            if Scope (H) = Scope (Entity (N))
+              and then (not Is_Hidden (H)
+                         or else Is_Immediately_Visible (H))
+            then
                Add_One_Interp (N, H, Etype (H));
             end if;
 
@@ -1141,7 +1142,7 @@ package body Sem_Type is
       --  A boolean operation on integer literals is compatible with modular
       --  context.
 
-      elsif T2 = Any_Modular and then Is_Modular_Integer_Type (T1) then
+      elsif T2 = Any_Modular and then Has_Modular_Operations (T1) then
          return True;
 
       --  The actual type may be the result of a previous error
@@ -2682,7 +2683,12 @@ package body Sem_Type is
       end if;
 
       if Is_Concurrent_Record_Type (Target_Typ) then
-         Target_Typ := Corresponding_Concurrent_Type (Target_Typ);
+         if Is_Class_Wide_Type (Target_Typ) then
+            Target_Typ :=
+              Corresponding_Concurrent_Type (Root_Type (Target_Typ));
+         else
+            Target_Typ := Corresponding_Concurrent_Type (Target_Typ);
+         end if;
       end if;
 
       Target_Typ := Base_Type (Target_Typ);
@@ -3367,7 +3373,7 @@ package body Sem_Type is
         or else (T1 = Universal_Real    and then Is_Real_Type (T2))
         or else (T1 = Universal_Fixed   and then Is_Fixed_Point_Type (T2))
         or else (T1 = Any_Fixed         and then Is_Fixed_Point_Type (T2))
-        or else (T1 = Any_Modular       and then Is_Modular_Integer_Type (T2))
+        or else (T1 = Any_Modular       and then Has_Modular_Operations (T2))
         or else (T1 = Any_Character     and then Is_Character_Type (T2))
         or else (T1 = Any_String        and then Is_String_Type (T2))
         or else (T1 = Any_Composite     and then Is_Aggregate_Type (T2))
@@ -3390,7 +3396,7 @@ package body Sem_Type is
         or else (T2 = Universal_Real    and then Is_Real_Type (T1))
         or else (T2 = Universal_Fixed   and then Is_Fixed_Point_Type (T1))
         or else (T2 = Any_Fixed         and then Is_Fixed_Point_Type (T1))
-        or else (T2 = Any_Modular       and then Is_Modular_Integer_Type (T1))
+        or else (T2 = Any_Modular       and then Has_Modular_Operations (T1))
         or else (T2 = Any_Character     and then Is_Character_Type (T1))
         or else (T2 = Any_String        and then Is_String_Type (T1))
         or else (T2 = Any_Composite     and then Is_Aggregate_Type (T1))
@@ -3560,7 +3566,7 @@ package body Sem_Type is
    function Valid_Boolean_Arg (T : Entity_Id) return Boolean is
    begin
       if Is_Boolean_Type (T)
-        or else Is_Modular_Integer_Type (T)
+        or else Has_Modular_Operations (T)
         or else T = Universal_Integer
         or else T = Any_Composite
         or else T = Raise_Type

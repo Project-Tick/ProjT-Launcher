@@ -1,6 +1,6 @@
 // Safe container implementation  -*- C++ -*-
 
-// Copyright (C) 2011-2025 Free Software Foundation, Inc.
+// Copyright (C) 2011-2026 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -61,6 +61,10 @@ namespace __gnu_debug
       _Container&
       _M_cont() noexcept
       { return *static_cast<_Container*>(this); }
+
+      const _Safe_unordered_container*
+      _M_self() const
+      { return this; }
 
     protected:
       void

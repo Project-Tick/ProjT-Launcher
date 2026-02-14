@@ -1,5 +1,5 @@
 /* Character scanner.
-   Copyright (C) 2000-2025 Free Software Foundation, Inc.
+   Copyright (C) 2000-2026 Free Software Foundation, Inc.
    Contributed by Andy Vaught
 
 This file is part of GCC.
@@ -173,9 +173,7 @@ wide_strchr (const gfc_char_t *s, gfc_char_t c)
 {
   do {
     if (*s == c)
-      {
-        return CONST_CAST(gfc_char_t *, s);
-      }
+      return const_cast<gfc_char_t *> (s);
   } while (*s++);
   return 0;
 }
@@ -2775,9 +2773,13 @@ gfc_new_file (void)
 
   if (gfc_cpp_enabled ())
     {
-      gfc_cpp_preprocess (gfc_source_file);
-      if (!gfc_cpp_preprocess_only ())
-	load_file (gfc_cpp_temporary_file (), gfc_source_file, true);
+      if (gfc_cpp_preprocess (gfc_source_file))
+	{
+	  if (!gfc_cpp_preprocess_only ())
+	    load_file (gfc_cpp_temporary_file (), gfc_source_file, true);
+	}
+      else
+	load_file (gfc_source_file, NULL, true);
     }
   else
     load_file (gfc_source_file, NULL, true);

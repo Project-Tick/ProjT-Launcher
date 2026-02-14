@@ -1,5 +1,5 @@
 /* Function splitting pass
-   Copyright (C) 2010-2025 Free Software Foundation, Inc.
+   Copyright (C) 2010-2026 Free Software Foundation, Inc.
    Contributed by Jan Hubicka  <jh@suse.cz>
 
 This file is part of GCC.
@@ -1400,6 +1400,15 @@ split_function (basic_block return_bb, class split_point *split_point,
   if (fndecl_built_in_p (node->decl))
     set_decl_built_in_function (node->decl, NOT_BUILT_IN, 0);
 
+  /* Drop "clobber *this" attribute from first argument of the split
+     function if any.  Code before that might be initializing the
+     members.  */
+  if (tree arg = DECL_ARGUMENTS (node->decl))
+    if (lookup_attribute ("clobber *this", DECL_ATTRIBUTES (arg)))
+      DECL_ATTRIBUTES (arg)
+	= remove_attribute ("clobber *this",
+			    copy_list (DECL_ATTRIBUTES (arg)));
+
   /* If return_bb contains any clobbers that refer to SSA_NAMEs
      set in the split part, remove them.  Also reset debug stmts that
      refer to SSA_NAMEs set in the split part.  */
@@ -1941,7 +1950,9 @@ pass_split_functions::gate (function *)
   /* When doing profile feedback, we want to execute the pass after profiling
      is read.  So disable one in early optimization.  */
   return (flag_partial_inlining
-      && !profile_arc_flag && !flag_branch_probabilities);
+      && !profile_arc_flag
+      && !flag_branch_probabilities
+      && !flag_auto_profile);
 }
 
 } // anon namespace
@@ -1992,6 +2003,10 @@ public:
       return execute_feedback_split_functions ();
     }
 
+  opt_pass * clone () final override
+  {
+    return new pass_feedback_split_functions (m_ctxt);
+  }
 }; // class pass_feedback_split_functions
 
 bool
@@ -2000,7 +2015,7 @@ pass_feedback_split_functions::gate (function *)
   /* We don't need to split when profiling at all, we are producing
      lousy code anyway.  */
   return (flag_partial_inlining
-	  && flag_branch_probabilities);
+	  && (flag_branch_probabilities || flag_auto_profile));
 }
 
 } // anon namespace

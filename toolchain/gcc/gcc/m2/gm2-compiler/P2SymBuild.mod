@@ -1,6 +1,6 @@
 (* P2SymBuild.mod pass 2 symbol creation.
 
-Copyright (C) 2001-2025 Free Software Foundation, Inc.
+Copyright (C) 2001-2026 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -1179,8 +1179,8 @@ BEGIN
    PopT (n) ;
    i := 1 ;
    WHILE i <= n DO
-      CheckVariableAgainstKeyword (OperandT (n+1-i)) ;
       tok := OperandTok (n+1-i) ;
+      CheckVariableAgainstKeyword (tok, OperandT (n+1-i)) ;
       Var := MakeVar (tok, OperandT (n+1-i)) ;
       AtAddress := OperandA (n+1-i) ;
       IF AtAddress # NulSym
@@ -1284,6 +1284,7 @@ BEGIN
             THEN
                IF isunknown
                THEN
+                  (* --fixme-- spellcheck.  *)      
                   MetaError2('attempting to declare a type {%1ad} to a type which is itself and also unknown {%2ad}',
                              Sym, Type)
                ELSE
@@ -2589,7 +2590,7 @@ BEGIN
          Field := PutFieldRecord(Record, OperandT(NoOfPragmas*2+NoOfFields+3-i), Type, Varient) ;
          HandleRecordFieldPragmas(Record, Field, NoOfPragmas)
       ELSE
-         MetaErrors2('record field {%1ad} has already been declared inside a {%2Dd} {%2a}',
+         MetaErrors2('record field {%1ad} has already been declared inside a {%2Ddv} {%2a}',
                      'attempting to declare a duplicate record field', fsym, Parent)
       END ;
       (* adjust the location of declaration to the one on the stack (rather than GetTokenNo).  *)

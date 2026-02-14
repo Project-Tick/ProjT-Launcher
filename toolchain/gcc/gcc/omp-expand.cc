@@ -2,7 +2,7 @@
    directives to separate functions, converts others into explicit calls to the
    runtime library (libgomp) and so forth
 
-Copyright (C) 2005-2025 Free Software Foundation, Inc.
+Copyright (C) 2005-2026 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -6245,9 +6245,10 @@ expand_omp_for_static_chunk (struct omp_region *region,
 	    t = fold_build_pointer_plus (vmain, step);
 	  else
 	    t = fold_build2 (PLUS_EXPR, type, vmain, step);
-	  if (DECL_P (vback) && TREE_ADDRESSABLE (vback))
-	    t = force_gimple_operand_gsi (&gsi, t, true, NULL_TREE,
-					  true, GSI_SAME_STMT);
+	  t = force_gimple_operand_gsi (&gsi, t,
+					DECL_P (vback)
+					 && TREE_ADDRESSABLE (vback), NULL_TREE,
+					true, GSI_SAME_STMT);
 	  assign_stmt = gimple_build_assign (vback, t);
 	  gsi_insert_before (&gsi, assign_stmt, GSI_SAME_STMT);
 

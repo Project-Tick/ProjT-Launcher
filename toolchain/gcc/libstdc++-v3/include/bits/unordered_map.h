@@ -1,6 +1,6 @@
 // unordered_map implementation -*- C++ -*-
 
-// Copyright (C) 2010-2025 Free Software Foundation, Inc.
+// Copyright (C) 2010-2026 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -91,9 +91,9 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
    *
    *  @tparam  _Key    Type of key objects.
    *  @tparam  _Tp     Type of mapped objects.
-   *  @tparam  _Hash   Hashing function object type, defaults to hash<_Value>.
+   *  @tparam  _Hash   Hashing function object type, defaults to hash<_Key>.
    *  @tparam  _Pred   Predicate function object type, defaults
-   *                   to equal_to<_Value>.
+   *                   to equal_to<_Key>.
    *  @tparam  _Alloc  Allocator type, defaults to
    *                   std::allocator<std::pair<const _Key, _Tp>>.
    *
@@ -251,6 +251,14 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       : unordered_map(__n, __hf, key_equal(), __a)
       { }
 
+      // _GLIBCXX_RESOLVE_LIB_DEFECTS
+      // 2713. More missing allocator-extended constructors for unordered containers
+      template<typename _InputIterator>
+	unordered_map(_InputIterator __first, _InputIterator __last,
+		      const allocator_type& __a)
+	: unordered_map(__first, __last, 0, hasher(), key_equal(), __a)
+	{ }
+
       template<typename _InputIterator>
 	unordered_map(_InputIterator __first, _InputIterator __last,
 		      size_type __n,
@@ -269,6 +277,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 		    size_type __n,
 		    const allocator_type& __a)
       : unordered_map(__l, __n, hasher(), key_equal(), __a)
+      { }
+
+      // _GLIBCXX_RESOLVE_LIB_DEFECTS
+      // 2713. More missing allocator-extended constructors for unordered containers
+      unordered_map(initializer_list<value_type> __l,
+		    const allocator_type& __a)
+      : unordered_map(__l, 0, hasher(), key_equal(), __a)
       { }
 
       unordered_map(initializer_list<value_type> __l,
@@ -485,6 +500,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       node_type
       extract(const key_type& __key)
       { return _M_h.extract(__key); }
+
+#ifdef __glibcxx_associative_heterogeneous_erasure // C++23
+      template <__heterogeneous_hash_key<unordered_map> _Kt>
+	node_type
+	extract(_Kt&& __key)
+	{ return _M_h._M_extract_tr(__key); }
+#endif
 
       /// Re-insert an extracted node.
       insert_return_type
@@ -833,6 +855,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       erase(const key_type& __x)
       { return _M_h.erase(__x); }
 
+#ifdef __glibcxx_associative_heterogeneous_erasure // C++23
+      template <__heterogeneous_hash_key<unordered_map> _Kt>
+	size_type
+	erase(_Kt&& __key)
+	{ return _M_h._M_erase_tr(__key); }
+#endif
+
       /**
        *  @brief Erases a [__first,__last) range of elements from an
        *  %unordered_map.
@@ -946,7 +975,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       find(const key_type& __x)
       { return _M_h.find(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	find(const _Kt& __x) -> decltype(_M_h._M_find_tr(__x))
@@ -957,7 +986,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       find(const key_type& __x) const
       { return _M_h.find(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	find(const _Kt& __x) const -> decltype(_M_h._M_find_tr(__x))
@@ -979,7 +1008,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       count(const key_type& __x) const
       { return _M_h.count(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	count(const _Kt& __x) const -> decltype(_M_h._M_count_tr(__x))
@@ -1019,7 +1048,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       equal_range(const key_type& __x)
       { return _M_h.equal_range(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	equal_range(const _Kt& __x)
@@ -1031,7 +1060,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       equal_range(const key_type& __x) const
       { return _M_h.equal_range(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	equal_range(const _Kt& __x) const
@@ -1345,9 +1374,9 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
    *
    *  @tparam  _Key    Type of key objects.
    *  @tparam  _Tp     Type of mapped objects.
-   *  @tparam  _Hash   Hashing function object type, defaults to hash<_Value>.
+   *  @tparam  _Hash   Hashing function object type, defaults to hash<_Key>.
    *  @tparam  _Pred   Predicate function object type, defaults
-   *                   to equal_to<_Value>.
+   *                   to equal_to<_Key>.
    *  @tparam  _Alloc  Allocator type, defaults to
    *                   std::allocator<std::pair<const _Key, _Tp>>.
    *
@@ -1504,6 +1533,14 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       : unordered_multimap(__n, __hf, key_equal(), __a)
       { }
 
+      // _GLIBCXX_RESOLVE_LIB_DEFECTS
+      // 2713. More missing allocator-extended constructors for unordered containers
+      template<typename _InputIterator>
+	unordered_multimap(_InputIterator __first, _InputIterator __last,
+			   const allocator_type& __a)
+	: unordered_multimap(__first, __last, 0, hasher(), key_equal(), __a)
+	{ }
+
       template<typename _InputIterator>
 	unordered_multimap(_InputIterator __first, _InputIterator __last,
 			   size_type __n,
@@ -1517,6 +1554,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 			   const allocator_type& __a)
 	: unordered_multimap(__first, __last, __n, __hf, key_equal(), __a)
 	{ }
+
+      // _GLIBCXX_RESOLVE_LIB_DEFECTS
+      // 2713. More missing allocator-extended constructors for unordered containers
+      unordered_multimap(initializer_list<value_type> __l,
+			 const allocator_type& __a)
+      : unordered_multimap(__l, 0, hasher(), key_equal(), __a)
+      { }
 
       unordered_multimap(initializer_list<value_type> __l,
 			 size_type __n,
@@ -1842,6 +1886,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       extract(const key_type& __key)
       { return _M_h.extract(__key); }
 
+#ifdef __glibcxx_associative_heterogeneous_erasure // C++23
+      template <__heterogeneous_hash_key<unordered_multimap> _Kt>
+	node_type
+	extract(_Kt&& __key)
+	{ return _M_h._M_extract_tr(__key); }
+#endif
+
       /// Re-insert an extracted node.
       iterator
       insert(node_type&& __nh)
@@ -1891,6 +1942,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       size_type
       erase(const key_type& __x)
       { return _M_h.erase(__x); }
+
+#ifdef __glibcxx_associative_heterogeneous_erasure // C++23
+      template <__heterogeneous_hash_key<unordered_multimap> _Kt>
+	size_type
+	erase(_Kt&& __key)
+	{ return _M_h._M_erase_tr(__key); }
+#endif
 
       /**
        *  @brief Erases a [__first,__last) range of elements from an
@@ -2009,7 +2067,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       find(const key_type& __x)
       { return _M_h.find(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	find(const _Kt& __x) -> decltype(_M_h._M_find_tr(__x))
@@ -2020,7 +2078,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       find(const key_type& __x) const
       { return _M_h.find(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	find(const _Kt& __x) const -> decltype(_M_h._M_find_tr(__x))
@@ -2038,7 +2096,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       count(const key_type& __x) const
       { return _M_h.count(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	count(const _Kt& __x) const -> decltype(_M_h._M_count_tr(__x))
@@ -2076,7 +2134,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       equal_range(const key_type& __x)
       { return _M_h.equal_range(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	equal_range(const _Kt& __x)
@@ -2088,7 +2146,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       equal_range(const key_type& __x) const
       { return _M_h.equal_range(__x); }
 
-#if __cplusplus > 201703L
+#ifdef __glibcxx_generic_unordered_lookup // C++ >= 20 && HOSTED
       template<typename _Kt>
 	auto
 	equal_range(const _Kt& __x) const

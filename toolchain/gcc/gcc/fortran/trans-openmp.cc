@@ -1,5 +1,5 @@
 /* OpenMP directive translation -- generate GCC trees from gfc_code.
-   Copyright (C) 2005-2025 Free Software Foundation, Inc.
+   Copyright (C) 2005-2026 Free Software Foundation, Inc.
    Contributed by Jakub Jelinek <jakub@redhat.com>
 
 This file is part of GCC.
@@ -2792,8 +2792,13 @@ gfc_trans_omp_variable_list (enum omp_clause_code code,
 			     gfc_omp_namelist *namelist, tree list,
 			     bool declare_simd)
 {
+  /* PARAMETER (named constants) are excluded as OpenACC 3.4 permits them now
+     as 'var' but permits compilers to ignore them.  In expressions, it should
+     have been replaced by the value (and this function should not be called
+     anyway) and for var-using clauses, they should just be skipped.  */
   for (; namelist != NULL; namelist = namelist->next)
-    if (namelist->sym->attr.referenced || declare_simd)
+    if ((namelist->sym->attr.referenced || declare_simd)
+	&& namelist->sym->attr.flavor != FL_PARAMETER)
       {
 	tree t = gfc_trans_omp_variable (namelist->sym, declare_simd);
 	if (t != error_mark_node)
@@ -4029,7 +4034,8 @@ gfc_trans_omp_clauses (stmtblock_t *block, gfc_omp_clauses *clauses,
 	case OMP_LIST_MAP:
 	  for (; n != NULL; n = n->next)
 	    {
-	      if (!n->sym->attr.referenced)
+	      if (!n->sym->attr.referenced
+		  || n->sym->attr.flavor == FL_PARAMETER)
 		continue;
 
 	      location_t map_loc = gfc_get_location (&n->where);
@@ -4174,7 +4180,9 @@ gfc_trans_omp_clauses (stmtblock_t *block, gfc_omp_clauses *clauses,
 		  tree type = TREE_TYPE (decl);
 		  if (n->sym->ts.type == BT_CHARACTER
 		      && n->sym->ts.deferred
-		      && n->sym->attr.omp_declare_target
+		      && (n->sym->attr.omp_declare_target
+			  || n->sym->attr.omp_declare_target_link
+			  || n->sym->attr.omp_declare_target_local)
 		      && (always_modifier || n->sym->attr.pointer)
 		      && op != EXEC_OMP_TARGET_EXIT_DATA
 		      && n->u.map.op != OMP_MAP_DELETE
@@ -4986,7 +4994,8 @@ gfc_trans_omp_clauses (stmtblock_t *block, gfc_omp_clauses *clauses,
 	case OMP_LIST_CACHE:
 	  for (; n != NULL; n = n->next)
 	    {
-	      if (!n->sym->attr.referenced)
+	      if (!n->sym->attr.referenced
+		  && n->sym->attr.flavor != FL_PARAMETER)
 		continue;
 
 	      switch (list)
@@ -5084,7 +5093,8 @@ gfc_trans_omp_clauses (stmtblock_t *block, gfc_omp_clauses *clauses,
 	    }
 	  break;
 	case OMP_LIST_USES_ALLOCATORS:
-	  /* Ignore pre-defined allocators as no special treatment is needed. */
+	  /* Ignore omp_null_allocator and pre-defined allocators as no
+	     special treatment is needed. */
 	  for (; n != NULL; n = n->next)
 	    if (n->sym->attr.flavor == FL_VARIABLE)
 	      break;
@@ -5253,6 +5263,60 @@ gfc_trans_omp_clauses (stmtblock_t *block, gfc_omp_clauses *clauses,
 
       c = build_omp_clause (gfc_get_location (&where), OMP_CLAUSE_NUM_THREADS);
       OMP_CLAUSE_NUM_THREADS_EXPR (c) = num_threads;
+      omp_clauses = gfc_trans_add_clause (c, omp_clauses);
+    }
+
+  if (clauses->device_type != OMP_DEVICE_TYPE_UNSET)
+    {
+      enum omp_clause_device_type_kind type;
+      switch (clauses->device_type)
+	{
+	case OMP_DEVICE_TYPE_HOST:
+	  type = OMP_CLAUSE_DEVICE_TYPE_HOST;
+	  break;
+	case OMP_DEVICE_TYPE_NOHOST:
+	  type = OMP_CLAUSE_DEVICE_TYPE_NOHOST;
+	  break;
+	case OMP_DEVICE_TYPE_ANY:
+	  type = OMP_CLAUSE_DEVICE_TYPE_ANY;
+	  break;
+	case OMP_DEVICE_TYPE_UNSET:
+	default:
+	  gcc_unreachable ();
+	}
+      c = build_omp_clause (gfc_get_location (&where), OMP_CLAUSE_DEVICE_TYPE);
+      OMP_CLAUSE_DEVICE_TYPE_KIND (c) = type;
+      omp_clauses = gfc_trans_add_clause (c, omp_clauses);
+    }
+
+  if (clauses->dyn_groupprivate)
+    {
+      gfc_init_se (&se, NULL);
+      gfc_conv_expr (&se, clauses->dyn_groupprivate);
+      gfc_add_block_to_block (block, &se.pre);
+      tree expr = (CONSTANT_CLASS_P (se.expr) || DECL_P (se.expr)
+		   ? se.expr : gfc_evaluate_now (se.expr, block));
+      gfc_add_block_to_block (block, &se.post);
+
+      enum omp_clause_fallback_kind kind = OMP_CLAUSE_FALLBACK_UNSPECIFIED;
+      switch (clauses->fallback)
+	{
+	case OMP_FALLBACK_ABORT:
+	  kind = OMP_CLAUSE_FALLBACK_ABORT;
+	  break;
+	case OMP_FALLBACK_DEFAULT_MEM:
+	  kind = OMP_CLAUSE_FALLBACK_DEFAULT_MEM;
+	  break;
+	case OMP_FALLBACK_NULL:
+	  kind = OMP_CLAUSE_FALLBACK_NULL;
+	  break;
+	case OMP_FALLBACK_NONE:
+	  break;
+	}
+      c = build_omp_clause (gfc_get_location (&where),
+			    OMP_CLAUSE_DYN_GROUPPRIVATE);
+      OMP_CLAUSE_DYN_GROUPPRIVATE_KIND (c) = kind;
+      OMP_CLAUSE_DYN_GROUPPRIVATE_EXPR (c) = expr;
       omp_clauses = gfc_trans_add_clause (c, omp_clauses);
     }
 
@@ -6048,6 +6112,10 @@ gfc_trans_oacc_wait_directive (gfc_code *code)
     args->quick_push (gfc_convert_expr_to_tree (&block, el->expr));
 
   stmt = build_call_expr_loc_vec (loc, stmt, args);
+  if (clauses->if_expr)
+    stmt = build3_loc (input_location, COND_EXPR, void_type_node,
+		       gfc_convert_expr_to_tree (&block, clauses->if_expr),
+		       stmt, NULL_TREE);
   gfc_add_expr_to_block (&block, stmt);
 
   vec_free (args);
@@ -8006,6 +8074,8 @@ gfc_split_omp_clauses (gfc_code *code,
 	    = code->ext.omp_clauses->if_expr;
 	  clausesa[GFC_OMP_SPLIT_TARGET].nowait
 	    = code->ext.omp_clauses->nowait;
+	  clausesa[GFC_OMP_SPLIT_TARGET].device_type
+	    = code->ext.omp_clauses->device_type;
 	}
       if (mask & GFC_OMP_MASK_TEAMS)
 	{
@@ -9721,6 +9791,12 @@ gfc_trans_omp_declare_variant (gfc_namespace *ns, gfc_namespace *parent_ns)
 	      && !variant_proc_sym->attr.function)
 	    {
 	      gfc_error ("variant %qs at %L is not a function or subroutine",
+			 variant_proc_name, &odv->where);
+	      variant_proc_sym = NULL;
+	    }
+	  else if (variant_proc_sym == ns->proc_name)
+	    {
+	      gfc_error ("variant %qs at %L is the same as base function",
 			 variant_proc_name, &odv->where);
 	      variant_proc_sym = NULL;
 	    }

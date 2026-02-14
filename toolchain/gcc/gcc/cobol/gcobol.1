@@ -1,4 +1,4 @@
-.ds lang COBOL
+ .ds lang COBOL
 .ds gcobol GCC\ \*[lang]\ Front-end
 .ds isostd ISO/IEC 1989:2023
 .Dd \& February 2025
@@ -25,18 +25,70 @@
 .Op Fl copyext Ar ext
 .Op Fl ffixed-form | Fl ffree-form
 .Op Fl findicator-column
-.Op Fl finternal-ebcdic
+.Op Fl fexec-charset= Ns Ar encoding
+.Op Fl fexec-national-charset= Ns Ar encoding
+.ig
+.Op Fl collseq Ar encoding Ns \/, Fl ncolseq Ar encoding
+..
 .Op Fl dialect Ar dialect-name
 .Op Fl include Ar filename
 .Op Fl preprocess Ar preprocess-filter
 .Op Fl fflex-debug
 .Op Fl fyacc-debug
+.\" warnings
+.Op Fl Wno-apply-commit
+.Op Fl Wno-file-code-set
+.Op Fl Wno-high-order-bit
+.Op Fl Wno-bad-line-directive
+.Op Fl Wno-bad-numeric
+.Op Fl Wno-binary-long-long
+.Op Fl Wno-call-giving
+.Op Fl Wno-call-literal
+.Op Fl Wno-cdf-dollar
+.Op Fl Wno-cdf-invalid-parameter
+.Op Fl Wno-cdf-name-not-found
+.Op Fl Wno-cobol-eject
+.Op Fl Wno-cobol-resume
+.Op Fl Wno-cobol-volatile
+.Op Fl Wno-comp-6
+.Op Fl Wno-comp-x
+.Op Fl Wno-copybook-found
+.Op Fl Wno-ec-unknown
+.Op Fl Wno-entry-convention
+.Op Fl Wno-iconv-error
+.Op Fl Wno-include-file-found
+.Op Fl Wno-include-file-not-found
+.Op Fl Wno-inspect-trailing
+.Op Fl Wno-length-of
+.Op Fl Wno-level-1-occurs
+.Op Fl Wno-level-78
+.Op Fl Wno-level-78-defined
+.Op Fl Wno-literal-concat
+.Op Fl Wno-locale-error
+.Op Fl Wno-move-corresponding
+.Op Fl Wno-move-index
+.Op Fl Wno-move-pointer
+.Op Fl Wno-nllanginfo-error
+.Op Fl Wno-operator-space
+.Op Fl Wno-preprocessor-error
+.Op Fl Wno-procedure-not-found
+.Op Fl Wno-procedure-pointer
+.Op Fl Wno-replace-error
+.Op Fl Wno-returning-number
+.Op Fl Wno-segment-error
+.Op Fl Wno-segment-negative
+.Op Fl Wno-stop-number
+.Op Fl Wno-stray-indicator
+.Op Fl Wno-usage-typename
+.Op Fl Wno-recording-mode
+.Op Fl Wno-set-locale-to
+.Op Fl Wno-set-to-locale
 .Ar filename Op ...
 .
 .Sh DESCRIPTION
 .Nm
-compiles \*[lang] source code to object code, and optionally produces an
-executable binary or shared object.  As a GCC component, it accepts
+compiles \*[lang] source code to object code, and optionally produces
+an executable binary or shared object.  As a GCC component, it accepts
 all options that affect code-generation and linking.  Options specific
 to \*[lang] are listed below.
 .Bl -tag -width "\0\0debug"
@@ -279,34 +331,99 @@ is a non-constant data item, it is always resolved using dynamic
 linking, with
 .Xr dlsym 3 Ns Li ,
 because its value is determined at run time.
+.
+.It Fl fexec-charset= Ns Ar encoding
+Set the default execution character set for alphanumeric data items
+and literals in the absence of
+.Sy "CHARACTER CLASSIFICATION"
+in
+.Sy "CONFIGURATION SECTION" .
+.Ar encoding
+is an encoding name as defined by
+.Xr iconv 3 .
+Unless otherwise specified, the runtime encoding for both alphanumeric
+and NATIONAL is
+.Sy CP1252
+as defined by
+.Xr iconv 3 .
+.
+.It Fl fexec-national-charset= Ns Ar encoding
+Set the default execution character set for NATIONAL data items
+and literals in the absence of
+.Sy "CHARACTER CLASSIFICATION"
+in
+.Sy "CONFIGURATION SECTION" .
+.Ar encoding
+is an encoding name as defined by
+.Xr iconv 3 .
+To use an EBCDIC encoding for data items, one might use
+.D1 Fl fexec-national-charset= Ns Li CP1140
+for example. 
+.
 .It Fl dialect Ar dialect-name
 By default,
 .Nm
 accepts \*[lang] syntax as defined by \*[isostd], with some
-extensions for backward compatibility with COBOL-85.  To make the
-compiler more generally useful, some additional syntax is supported by
-this option.
-.Pp
-The value of
+extensions for backward compatibility with COBOL-85.  Additional syntax is supported with this option. The value of
 .Ar dialect-name
 may be
-.Bl -tag -compact
+.Bl -tag
 .It ibm
-to indicate IBM COBOL 6.3 syntax, specifically
-.D1 STOP <number>.
-.It gnu
-to indicate GnuCOBOL syntax
-.It mf
-to indicate MicroFocus syntax, specifically
-.Sy LEVEL 78
-constants.
+to indicate IBM COBOL 6.4 syntax:
+.Bl -bullet -compact
+.It
+.Sy EJECT
+.It
+.Sy EQUAL
+as assignment operator
+.It
+.Sy "LENGTH OF"
+.It
+.Sy "PROCEDURE POINTER"
+.It
+.Sy SECTION
+segment
+.It
+.Sy STOP
+<number>
+.It
+.Sy VOLATILE
 .El
-.Pp
-Only a few such non-standard constructs are accepted, and
-.Nm
-makes no claim to emulate other compilers.  But to the extent that a
-feature is popular but nonstandard, this option provides a way to
-support it, or add it.
+.It gnu
+to indicate GnuCOBOL syntax, generally compatible with MicroFocus.
+.It mf
+to indicate MicroFocus syntax:
+.Bl -bullet -compact
+.It
+.Sy BINARY-LONG-LONG
+.It
+.Sy CALL ... GIVING
+.It
+.Sy CDF \[Do]IF
+.It
+.Sy COMPUTATIONAL-6
+.It
+.Sy COMPUTATIONAL
+used with
+.Sy PICTURE X
+.It
+.Sy INSPECT ... TRAILING
+.It
+.Sy OCCURS
+at
+.Sy "LEVEL 01"
+.It
+.Sy LEVEL 78
+constants
+.It
+.Sy MOVE POINTER
+.It
+.Sy RETURNING
+<number>
+.It
+.Sy USAGE IS TYPENAME
+.El
+.El
 .
 .It Fl include Ar filename
 Process
@@ -371,13 +488,121 @@ The
 should return a zero exit status, indicating success.  If it returns a
 nonzero exit status, an error is reported and the compiler is not
 invoked.
-.
 .It Fl fflex-debug Ns Li , Fl fyacc-debug
 produce messages useful for compiler development.  The
 .Fl fflex-debug
 option prints the tokenized input stream.  The
 .Fl fyacc-debug
 option shows the shift and reduce actions taken by the parser.
+.El
+.Ss Diagnostic Messages
+.Pp
+Many warning options can be used to convert error messages to
+warnings, or to suppress messages related to \*[lang] dialects. The
+user may mix and match. A group of features may be enabled by
+indicating a dialect (or more than one dialect) and individual
+features may be enabled as a warning, or error, or suppressed.
+.Bl -tag -width Wno-cdf-name-not-found\0\0 -compact
+.It Fl Wno-apply-commit
+Warn if APPLY COMMIT is used.
+.It Fl Wno-bad-line-directive
+Warn if malformed %<#line%> directive is encountered.
+.It Fl Wno-binary-long-long
+Warn if BINARY-LONG-LONG is used.
+.It Fl Wno-call_giving
+Warn if CALL ... GIVING is used.
+.It Fl Wno-call_literal
+Warn if CALL is used is used with a literal parameter by reference.
+.It Fl Wno-cdf-dollar
+Warn if CDF \[Do]IF is used.
+.It Fl Wno-comp-6
+Warn if COMPUTATIONAL-6 is used.
+.It Fl Wno-comp-x
+Warn if COMPUTATIONAL is used with PICTURE X.
+.It Fl Wno-file-code-set
+Warn if FILE CODE SET is used.
+.It Fl Wno-inspect-trailing
+Warn if INSPECT ... TRAILING is used.
+.It Fl Wno-level-1-occurs
+Warn if Level 01 is used with OCCURS.
+.It Fl Wno-level-78-defined
+Warn if CDF defines Level 78 constant.
+.It Fl Wno-move-index
+Warn if MOVE INDEX is used.
+.It Fl Wno-move-pointer
+Warn if MOVE POINTER is used.
+.It Fl Wno-returning-number
+Warn if RETURNING <number> is used.
+.It Fl Wno-usage-typename
+Warn if USAGE IS TYPENAME is used.
+.It Fl Wno-bad-numeric
+Warn if numeric string is invalid.
+.It Fl Wno-cdf-invalid-parameter
+Warn if referenced CDF PARAMETER is not defined.
+.It Fl Wno-cdf-name-not-found
+Warn if referenced CDF name is not defined.
+.It Fl Wno-cobol-eject
+Warn if IBM-style EJECT is used (instead of error).
+.It Fl Wno-cobol-resume
+Warn if ISO RESUME is used with \-dialect ibm (instead of error).
+.It Fl Wno-cobol-volatile
+Warn if VOLATILE is used (instead of error if -dialect ibm).
+.It Fl Wno-copybook-found
+Print message when copybook is processed.
+.It Fl Wno-ec-unknown
+Warn if unimplemented/unknown exception condition is referenced.
+.It Fl Wno-entry-convention
+Print message when ENTRY CONVENTION is specified.
+.It Fl Wno-high-order-bit
+Warn if HIGH-ORDER-LEFT HIGH-ORDER-RIGHT is used.
+.It Fl Wno-include-file-found
+Print message when include file is processed.
+.It Fl Wno-length-of
+Warn if LENGTH OF is used.
+.It Fl Wno-level-78
+Warn if Level 78 is used.
+.It Fl Wno-literal-concat
+Warn if concatenated literals use different encodings.
+.It Fl Wno-locale-error
+Warn if locale(3) fails.
+.It Fl Wno-move-corresponding
+Warn if COBOL MOVE has no corresponding fields.
+.It Fl Wno-nllanginfo-error
+Warn if nlanglanginfo(3) fails.
+.It Fl Wno-recording-mode
+Warn if RECORDING MODE is used.
+.It Fl Wno-segment
+Warn if SECTION segments are used.
+.It Fl Wno-set-locale-to
+Warn if SET LOCALE ... TO is used.
+.It Fl Wno-set-to-locale
+Warn if SET ... TO LOCALE is used.
+.
+`.\" convert errors to warnings
+Warn if a line directive is malformed (instead of error).
+.It Fl Wno-iconv-error
+Warn if iconv(3) cannot convert between encodings (instead of error).
+.It Fl Wno-include-file-not-found
+Warn if include file is not found (instead of error).
+.It Fl Wno-operator-space
+Warn if relational operator not followed by space (instead of error).
+.It Fl Wno-preprocessor-error
+Warn if a preprocessor fails  (instead of error).
+.It Fl Wno-procedure-pointer
+Warn if PROCEDURE POINTER is used.
+.It Fl Wno-procedure-not-found
+Warn if a referenced procedure is not found (instead of error).
+.It Fl Wno-replace-error
+Warn if REPLACE cannot be processed (instead of error).
+.It Fl Wno-segment-error
+Warn if a SEGMENT section is invalid (instead of error).
+.It Fl Wno-segment-negative
+Warn if a SEGMENT range is negative (instead of error).
+.It Fl Wno-stop-number
+Warn if IBM-style STOP <number> is used (instead of error).
+.It Fl Wno-stray-indicator
+Warn if indicator column has no recognized meaning (instead of error).
+
 .El
 .
 .Sh COMPILATION SCENARIOS
@@ -447,7 +672,7 @@ The fourth links the three .o files into an
 .
 .Sh EBCDIC
 The
-.Fl finternal-ebcdic
+.Fl fexec-charset=cp1140
 option is useful when working with mainframe \*[lang] programs intended
 for EBCDIC-encoded files.  With this option, while the \*[lang] text
 remains in ASCII, the character literals and field initial values
@@ -455,10 +680,13 @@ produce EBCDIC strings in the compiled binary, and any character data
 read from a file are interpreted as EBCDIC data.  The file data are
 not
 .Em converted ;
-rather, the file is assumed to use EBCDIC representation. String
+rather, the file is assumed to use EBCDIC representation.  String
 literals in the \*[lang] text
 .Em are
-converted, so that they can be compared meaningfully with data in the file.
+converted, so that they can be compared meaningfully with data in the
+file.  Code Page 1140 is one of a number of EBCDIC code pages; it is
+often useful because it closely parallels the commonly-used Code Page
+1252 that provides many Western European characters.
 .Pp
 Only file data and character literals are affected.  Data read from
 and written to the environment, or taken from the command line, are
@@ -778,6 +1006,30 @@ resolution of
 .Ar filename
 is deferred until runtime, when the name must appear in the program's
 environment.
+.Ss XML PARSE
+.Nm
+emulates the IBM
+.Sy "XML PARSE"
+statement.  The following values for
+.Sy XML-EVENT
+are defined:
+.Bl -tag -compact
+.It Sy COMMENT
+Text of a comment between "<!--" and "-->"
+.It Sy CONTENT-CHARACTERS
+Some or all of the character content of the element between start and end tags.
+.It Sy END-OF-ELEMENT
+End-element tag, with name if present in the input.
+.It Sy PROCESSING-INSTRUCTION-DATA
+Processing instruction (after the target name), excluding "?>".
+.It Sy PROCESSING-INSTRUCTION-TARGET
+The processing instruction target name appears in 
+.Sy XML-TEXT
+or
+.Sy XML-NTEXT .
+.It Sy START-OF-ELEMENT
+Name of the start element tag or empty element tag.
+.El
 .
 .Sh ISO \*[lang] Implementation Status
 .Ss USAGE Data Types
@@ -1177,7 +1429,8 @@ in the name, which is otherwise invalid in a \*[lang] identifier:
 .Bl -tag -compact
 .It Sy %EBCDIC-MODE
 is set by
-.Fl finternal-ebcdic .
+.Fl fexec-charset= Ns Ar <encoding>
+for all EBCDIC encodings.
 .It Sy %64-BIT-POINTER
 is implied by
 .Fl "dialect ibm" .
@@ -1417,6 +1670,15 @@ it may contain several directory names separated by a colon
 .Ev COBPATH
 is searched first, followed by
 .Ev LD_LIBRARY_PATH .
+Note that
+.Ev COBPATH does not change where the runtime linker looks for
+.Pa libgcobol.so
+itself.
+How the runtime linker searches for
+.Pa libgcobol.so
+when the executable loads is controlled by 
+.Xr ld.so 8 ,
+not libgcobol.
 .Pp
 Each directory is searched for files whose name ends in
 .Ql ".so" .
@@ -1469,6 +1731,18 @@ If the value is just
 the effect is different: each copybook read is reported on standard
 error.  This feature is meant to help diagnose mysterious copybook
 errors.
+.El
+.
+.Ss Variables for Developers
+.Bl -tag -compact
+.It Ev GCOBOL_SHOW
+produces a trace of the internal calls made by the parser to prepare
+the GENERIC tree.
+.It Ev GCOBOL_TRACE
+used at compile time, produces an executable that traces the
+execution, mapping it back the same code-creation functions as
+.Ev GCOBOL_SHOW ,
+as well as the values of data items and branch conditions.
 .El
 .
 .Sh FILES

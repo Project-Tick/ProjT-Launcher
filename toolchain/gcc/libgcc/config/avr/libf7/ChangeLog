@@ -1,8 +1,5 @@
 2025-10-09  Georg-Johann Lay  <avr@gjlay.de>
 
-	Backported from master:
-	2025-10-09  Georg-Johann Lay  <avr@gjlay.de>
-
 	PR target/122222
 	* libf7-asm.sx (D_floatsidf, D_floatunsidf): New modules.
 	* libf7-common.mk (F7_ASM_PARTS): Add D_floatsidf, D_floatunsidf.
@@ -14,16 +11,10 @@
 
 2025-10-09  Georg-Johann Lay  <avr@gjlay.de>
 
-	Backported from master:
-	2025-10-09  Georg-Johann Lay  <avr@gjlay.de>
-
 	PR target/122220
 	* libf7-asm.sx (to_integer): Return 0x80... on negative overflow.
 
 2025-10-09  Georg-Johann Lay  <avr@gjlay.de>
-
-	Backported from master:
-	2025-10-09  Georg-Johann Lay  <avr@gjlay.de>
 
 	PR target/122210
 	* libf7-common.mk (F7_ASM_PARTS): Add D2<fx> modules.
@@ -31,25 +22,16 @@
 
 2025-10-09  Georg-Johann Lay  <avr@gjlay.de>
 
-	Backported from master:
-	2025-10-09  Georg-Johann Lay  <avr@gjlay.de>
-
 	PR target/122210
 	* libf7-common.mk (F7_ASM_PARTS): Add <fx>2D modules.
 	* libf7-asm.sx: Implement the <fx>2D modules.
 
 2025-10-06  Georg-Johann Lay  <avr@gjlay.de>
 
-	Backported from master:
-	2025-10-06  Georg-Johann Lay  <avr@gjlay.de>
-
 	* libf7-common.mk (F7_ASM_PARTS): Add D_sincos.
 	* libf7-asm.sx: (D_sincos): New module implements sincos / sincosl.
 
 2025-10-06  Georg-Johann Lay  <avr@gjlay.de>
-
-	Backported from master:
-	2025-10-06  Georg-Johann Lay  <avr@gjlay.de>
 
 	PR target/122177
 	* libf7-common.mk (m_ddd): Remove: fmin, fmax.
@@ -59,23 +41,13 @@
 
 2025-10-06  Georg-Johann Lay  <avr@gjlay.de>
 
-	Backported from master:
-	2025-10-06  Georg-Johann Lay  <avr@gjlay.de>
-
 	* libf7-common.mk (g_xdd_cmp): Remove le, lt, ge, gt, ne, eq, unord.
 	(F7_ASM_PARTS): Add D_cmp, D_eq, D_ne, D_ge, D_gt, D_le, D_lt, D_unord.
 	* libf7-asm.sx (D_cmp, D_eq, D_ne, D_ge, D_gt, D_le, D_lt, D_unord):
 	New modules.
 	* f7-wraps.h: Rebuild.
 
-2025-08-08  Release Manager
-
-	* GCC 15.2.0 released.
-
 2025-05-27  Georg-Johann Lay  <avr@gjlay.de>
-
-	Backported from master:
-	2025-05-27  Georg-Johann Lay  <avr@gjlay.de>
 
 	PR target/120442
 	* libf7-common.mk (LIBF_C_PARTS, m_ddd): Add fdim.
@@ -87,15 +59,8 @@
 
 2025-05-27  Georg-Johann Lay  <avr@gjlay.de>
 
-	Backported from master:
-	2025-05-27  Georg-Johann Lay  <avr@gjlay.de>
-
 	PR target/120441
 	* libf7.c (f7_exp): Limit aa->expo to 10 (not to 9).
-
-2025-04-25  Release Manager
-
-	* GCC 15.1.0 released.
 
 2025-03-22  Georg-Johann Lay  <avr@gjlay.de>
 

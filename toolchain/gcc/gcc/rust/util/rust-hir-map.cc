@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2025 Free Software Foundation, Inc.
+// Copyright (C) 2020-2026 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -201,6 +201,8 @@ NodeId
 Mappings::get_next_node_id ()
 {
   auto it = nodeIdIter;
+  if (UNLIKELY (it > MAX_NODEID))
+    rust_fatal_error (UNKNOWN_LOCATION, "out of node ids");
   nodeIdIter++;
   return it;
 }
@@ -925,10 +927,10 @@ Mappings::lookup_macro_invocation (AST::MacroInvocation &invoc)
 void
 Mappings::insert_exported_macro (AST::MacroRulesDefinition &def)
 {
-  exportedMacros.emplace_back (def.get_node_id ());
+  exportedMacros.emplace_back (def);
 }
 
-std::vector<NodeId> &
+std::vector<AST::MacroRulesDefinition>
 Mappings::get_exported_macros ()
 {
   return exportedMacros;
@@ -1148,17 +1150,19 @@ Mappings::lookup_module_children (NodeId module)
 }
 
 void
-Mappings::insert_ast_module (AST::Module *module)
+Mappings::insert_glob_container (AST::Item *container)
 {
-  rust_assert (modules.find (module->get_node_id ()) == modules.end ());
-  modules[module->get_node_id ()] = module;
+  rust_assert (glob_containers.find (container->get_node_id ())
+	       == glob_containers.end ());
+
+  glob_containers[container->get_node_id ()] = container;
 }
 
-tl::optional<AST::Module *>
-Mappings::lookup_ast_module (NodeId id)
+tl::optional<AST::Item *>
+Mappings::lookup_glob_container (NodeId id)
 {
-  auto it = modules.find (id);
-  if (it == modules.end ())
+  auto it = glob_containers.find (id);
+  if (it == glob_containers.end ())
     return tl::nullopt;
 
   return {it->second};
@@ -1354,6 +1358,18 @@ Mappings::lookup_captures (NodeId closure)
     return tl::nullopt;
   else
     return cap->second;
+}
+
+void
+Mappings::add_derived_node (NodeId node_id)
+{
+  derived_nodes.insert (node_id);
+}
+
+bool
+Mappings::is_derived_node (NodeId node_id)
+{
+  return derived_nodes.find (node_id) != derived_nodes.end ();
 }
 
 } // namespace Analysis

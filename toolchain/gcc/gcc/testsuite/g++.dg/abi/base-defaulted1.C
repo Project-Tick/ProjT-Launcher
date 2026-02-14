@@ -2,9 +2,6 @@
 // { dg-do compile { target c++11 } }
 // { dg-additional-options "-fabi-version=21 -Wabi=20" }
 
-// The fix isn't implemented in this version.
-// { dg-bogus "-fabi-version=21" "" { xfail *-*-* } 0 }
-
 struct A
 {
    A(const A&) = default;
@@ -15,8 +12,8 @@ struct A
 };
 struct B: A
 {
-   unsigned char c;
+   unsigned char c;		// { dg-warning "offset" "" { target c++20 } }
 };
 
 static_assert(sizeof(A) == (2 * sizeof(unsigned int)), "");
-static_assert(sizeof(B) == (3 * sizeof(unsigned int)), ""); // { dg-bogus "failed" "" { xfail c++20 } }
+static_assert(sizeof(B) == (3 * sizeof(unsigned int)), "");

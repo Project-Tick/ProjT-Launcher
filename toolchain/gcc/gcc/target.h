@@ -1,5 +1,5 @@
 /* Data structure definitions for a generic GCC target.
-   Copyright (C) 2001-2025 Free Software Foundation, Inc.
+   Copyright (C) 2001-2026 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -169,7 +169,6 @@ class predefined_function_abi;
 struct store_fwd_info;
 
 /* These are defined in tree-vect-stmts.cc.  */
-extern tree stmt_vectype (class _stmt_vec_info *);
 extern bool stmt_in_inner_loop_p (class vec_info *, class _stmt_vec_info *);
 
 /* Assembler instructions for creating various kinds of integer object.  */

@@ -1,5 +1,5 @@
 /* Target-specific code for C family languages.
-   Copyright (C) 2015-2025 Free Software Foundation, Inc.
+   Copyright (C) 2015-2026 Free Software Foundation, Inc.
 
    This file is part of GCC.
 
@@ -65,6 +65,11 @@ aarch64_define_unconditional_macros (cpp_reader *pfile)
 
   builtin_define_with_int_value ("__ARM_ARCH_PROFILE",
       TARGET_V8R ? 'R' : 'A');
+
+#if HAVE_AS_AEABI_BUILD_ATTRIBUTES
+  builtin_define_with_int_value ("__ARM_BUILDATTR64_FV", 'A');
+#endif
+
   builtin_define ("__ARM_FEATURE_CLZ");
   builtin_define ("__ARM_FEATURE_IDIV");
   builtin_define ("__ARM_FEATURE_UNALIGNED");
@@ -194,6 +199,7 @@ aarch64_update_cpp_builtins (cpp_reader *pfile)
   aarch64_def_or_undef (TARGET_SVE, "__ARM_FEATURE_SVE", pfile);
   cpp_undef (pfile, "__ARM_FEATURE_SVE_BITS");
   cpp_undef (pfile, "__ARM_FEATURE_SVE_VECTOR_OPERATORS");
+  cpp_undef (pfile, "__ARM_FEATURE_SVE_PREDICATE_OPERATORS");
   if (TARGET_SVE)
     {
       int bits;
@@ -205,6 +211,8 @@ aarch64_update_cpp_builtins (cpp_reader *pfile)
 	}
       builtin_define_with_int_value ("__ARM_FEATURE_SVE_BITS", bits);
       builtin_define_with_int_value ("__ARM_FEATURE_SVE_VECTOR_OPERATORS", ops);
+      builtin_define_with_int_value ("__ARM_FEATURE_SVE_PREDICATE_OPERATORS",
+				     ops);
     }
   aarch64_def_or_undef (TARGET_SVE_I8MM,
 			"__ARM_FEATURE_SVE_MATMUL_INT8", pfile);
@@ -267,8 +275,11 @@ aarch64_update_cpp_builtins (cpp_reader *pfile)
 			"__ARM_FEATURE_BF16", pfile);
   aarch64_def_or_undef (TARGET_SVE_BF16,
 			"__ARM_FEATURE_SVE_BF16", pfile);
+  aarch64_def_or_undef (TARGET_SVE_BFSCALE,
+			"__ARM_FEATURE_SVE_BFSCALE", pfile);
 
   aarch64_def_or_undef (TARGET_LUT, "__ARM_FEATURE_LUT", pfile);
+  aarch64_def_or_undef (TARGET_SME_LUTv2, "__ARM_FEATURE_SME_LUTv2", pfile);
 
   aarch64_def_or_undef (TARGET_FP8, "__ARM_FEATURE_FP8", pfile);
 
@@ -285,6 +296,10 @@ aarch64_update_cpp_builtins (cpp_reader *pfile)
 
   aarch64_def_or_undef (TARGET_SME, "__ARM_FEATURE_SME", pfile);
   aarch64_def_or_undef (TARGET_SME_I16I64, "__ARM_FEATURE_SME_I16I64", pfile);
+  aarch64_def_or_undef (AARCH64_HAVE_ISA (SME_F8F16),
+			"__ARM_FEATURE_SME_F8F16", pfile);
+  aarch64_def_or_undef (AARCH64_HAVE_ISA (SME_F8F32),
+			"__ARM_FEATURE_SME_F8F32", pfile);
   aarch64_def_or_undef (AARCH64_HAVE_ISA (SME_B16B16),
 			"__ARM_FEATURE_SME_B16B16", pfile);
   aarch64_def_or_undef (AARCH64_HAVE_ISA (SME_F16F16),
@@ -294,6 +309,11 @@ aarch64_update_cpp_builtins (cpp_reader *pfile)
   aarch64_def_or_undef (AARCH64_HAVE_ISA (SME2p1),
 			"__ARM_FEATURE_SME2p1", pfile);
   aarch64_def_or_undef (TARGET_FAMINMAX, "__ARM_FEATURE_FAMINMAX", pfile);
+  aarch64_def_or_undef (TARGET_PCDPHINT, "__ARM_FEATURE_PCDPHINT", pfile);
+
+  // Function multi-versioning defines
+  aarch64_def_or_undef (targetm.has_ifunc_p (),
+			"__HAVE_FUNCTION_MULTI_VERSIONING", pfile);
 
   /* Not for ACLE, but required to keep "float.h" correct if we switch
      target between implementations that do or do not support ARMv8.2-A
@@ -304,6 +324,11 @@ aarch64_update_cpp_builtins (cpp_reader *pfile)
   cpp_undef (pfile, "__FLT_EVAL_METHOD_C99__");
   builtin_define_with_int_value ("__FLT_EVAL_METHOD_C99__",
 				 c_flt_eval_method (false));
+
+  aarch64_def_or_undef (TARGET_F8F16MM, "__ARM_FEATURE_F8F16MM", pfile);
+  aarch64_def_or_undef (TARGET_F8F32MM, "__ARM_FEATURE_F8F32MM", pfile);
+  aarch64_def_or_undef (TARGET_SVE_F16F32MM, "__ARM_FEATURE_SVE_F16F32MM",
+			pfile);
 }
 
 /* Implement TARGET_CPU_CPP_BUILTINS.  */
@@ -406,8 +431,9 @@ aarch64_resolve_overloaded_builtin (location_t location,
   switch (code & AARCH64_BUILTIN_CLASS)
     {
     case AARCH64_BUILTIN_GENERAL:
-      return aarch64_resolve_overloaded_builtin_general (location, fndecl,
+      new_fndecl = aarch64_resolve_overloaded_builtin_general (location, fndecl,
 							 uncast_arglist);
+      break;
     case AARCH64_BUILTIN_SVE:
       new_fndecl = aarch64_sve::resolve_overloaded_builtin (location, subcode,
 							    arglist);

@@ -1,5 +1,5 @@
 /* General AST-related method implementations for Rust frontend.
-   Copyright (C) 2009-2025 Free Software Foundation, Inc.
+   Copyright (C) 2009-2026 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -48,7 +48,7 @@ tokenid_to_rangekind (TokenId id)
 std::string
 LiteralPattern::as_string () const
 {
-  return lit.as_string ();
+  return (has_minus ? "-" : "") + lit.as_string ();
 }
 
 std::string
@@ -65,8 +65,8 @@ IdentifierPattern::as_string () const
 
   str += variable_ident.as_string ();
 
-  if (has_pattern_to_bind ())
-    str += " @ " + to_bind->as_string ();
+  if (has_subpattern ())
+    str += " @ " + subpattern->as_string ();
 
   return str;
 }
@@ -186,8 +186,8 @@ StructPatternElements::as_string () const
 	str += "\n   " + field->as_string ();
     }
 
-  str += "\n  Etc: ";
-  if (has_struct_pattern_etc)
+  str += "\n  Has rest: ";
+  if (has_rest_pattern)
     str += "true";
   else
     str += "false";
@@ -212,7 +212,7 @@ StructPattern::as_string () const
 }
 
 std::string
-TupleStructItemsNoRange::as_string () const
+TupleStructItemsNoRest::as_string () const
 {
   std::string str;
 
@@ -223,7 +223,7 @@ TupleStructItemsNoRange::as_string () const
 }
 
 std::string
-TupleStructItemsRange::as_string () const
+TupleStructItemsHasRest::as_string () const
 {
   std::string str ("\n  Lower patterns: ");
 
@@ -264,7 +264,7 @@ TupleStructPattern::as_string () const
 }
 
 std::string
-TuplePatternItemsMultiple::as_string () const
+TuplePatternItemsNoRest::as_string () const
 {
   std::string str;
 
@@ -275,7 +275,7 @@ TuplePatternItemsMultiple::as_string () const
 }
 
 std::string
-TuplePatternItemsRanged::as_string () const
+TuplePatternItemsHasRest::as_string () const
 {
   std::string str;
 
@@ -327,14 +327,50 @@ GroupedExpr::as_string () const
 }
 
 std::string
-SlicePattern::as_string () const
+SlicePatternItemsNoRest::as_string () const
 {
-  std::string str ("SlicePattern: ");
+  std::string str;
 
-  for (const auto &pattern : items)
+  for (const auto &pattern : patterns)
     str += "\n " + pattern->as_string ();
 
   return str;
+}
+
+std::string
+SlicePatternItemsHasRest::as_string () const
+{
+  std::string str;
+
+  str += "\n Lower patterns: ";
+  if (lower_patterns.empty ())
+    {
+      str += "none";
+    }
+  else
+    {
+      for (const auto &lower : lower_patterns)
+	str += "\n  " + lower->as_string ();
+    }
+
+  str += "\n Upper patterns: ";
+  if (upper_patterns.empty ())
+    {
+      str += "none";
+    }
+  else
+    {
+      for (const auto &upper : upper_patterns)
+	str += "\n  " + upper->as_string ();
+    }
+
+  return str;
+}
+
+std::string
+SlicePattern::as_string () const
+{
+  return "SlicePattern: " + items->as_string ();
 }
 
 std::string
@@ -367,13 +403,25 @@ GroupedExpr::accept_vis (ASTVisitor &vis)
 }
 
 void
+SlicePatternItemsNoRest::accept_vis (ASTVisitor &vis)
+{
+  vis.visit (*this);
+}
+
+void
+SlicePatternItemsHasRest::accept_vis (ASTVisitor &vis)
+{
+  vis.visit (*this);
+}
+
+void
 SlicePattern::accept_vis (ASTVisitor &vis)
 {
   vis.visit (*this);
 }
 
 void
-TuplePatternItemsRanged::accept_vis (ASTVisitor &vis)
+TuplePatternItemsHasRest::accept_vis (ASTVisitor &vis)
 {
   vis.visit (*this);
 }
@@ -385,7 +433,7 @@ TuplePattern::accept_vis (ASTVisitor &vis)
 }
 
 void
-TuplePatternItemsMultiple::accept_vis (ASTVisitor &vis)
+TuplePatternItemsNoRest::accept_vis (ASTVisitor &vis)
 {
   vis.visit (*this);
 }
@@ -469,13 +517,13 @@ StructPattern::accept_vis (ASTVisitor &vis)
 }
 
 void
-TupleStructItemsNoRange::accept_vis (ASTVisitor &vis)
+TupleStructItemsNoRest::accept_vis (ASTVisitor &vis)
 {
   vis.visit (*this);
 }
 
 void
-TupleStructItemsRange::accept_vis (ASTVisitor &vis)
+TupleStructItemsHasRest::accept_vis (ASTVisitor &vis)
 {
   vis.visit (*this);
 }
