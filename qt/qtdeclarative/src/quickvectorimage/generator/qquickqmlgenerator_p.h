@@ -170,7 +170,7 @@ private:
     QString m_topLevelIdString;
     QStringList m_extraImports;
     QMap<std::array<qreal, 4>, QString> m_easings;
-
+    quint32 m_nodeCounter = 0;
     QString m_defsSuffix;
 };
 

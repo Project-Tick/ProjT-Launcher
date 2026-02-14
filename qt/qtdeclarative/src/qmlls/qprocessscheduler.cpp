@@ -36,6 +36,8 @@ QProcessScheduler::~QProcessScheduler()
     m_process.waitForFinished();
 }
 
+QT_WARNING_PUSH
+QT_WARNING_DISABLE_GCC("-Wmaybe-uninitialized") // use of std::variant
 void QProcessScheduler::schedule(const QList<Command> &list, const Id &id)
 {
     m_queue.enqueue(StartMarker{ id });
@@ -48,6 +50,7 @@ void QProcessScheduler::schedule(const QList<Command> &list, const Id &id)
     if (!m_isRunning)
         processNext();
 }
+QT_WARNING_POP
 
 static bool isStartMarkerOf(const QProcessScheduler::QueueElement &e,
                             const QProcessScheduler::Id &id)

@@ -71,6 +71,7 @@ class tst_qqmljsscope : public QQmlDataTest
         logger.setCode(sourceCode);
         // some files shadow properties on purpose
         logger.setCategorySeverity(qmlShadow, QQmlSA::WarningSeverity::Disable);
+        logger.setCategorySeverity(qmlPropertyOverride, QQmlSA::WarningSeverity::Disable);
         logger.setSilent(expectErrorsOrWarnings);
         QQmlJSScope::Ptr target = QQmlJSScope::create();
         target->setOwnModuleName(u"HelloModule"_s);

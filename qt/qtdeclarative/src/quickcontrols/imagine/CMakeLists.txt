@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 #####################################################################
-## qtquickcontrols2imaginestyleplugin Plugin:
+## QuickControls2Imagine Module:
 #####################################################################
 
 set(qml_files

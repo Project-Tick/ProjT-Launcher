@@ -11,12 +11,15 @@ QtObject {
         ["vertical", "pressed"],
         ["horizontal"],
         ["horizontal", "disabled"],
-        ["horizontal", "pressed"]
+        ["horizontal", "pressed"],
+        ["crossing-enabled", "vertical"],
+        ["crossing-enabled", "horizontal"]
     ]
 
     property Component component: RangeSlider {
         enabled: !is("disabled")
         orientation: is("horizontal") ? Qt.Horizontal : Qt.Vertical
         second.value: 0.5
+        crossingEnabled: is("crossing-enabled")
     }
 }

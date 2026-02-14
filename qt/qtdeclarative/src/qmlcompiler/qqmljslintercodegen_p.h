@@ -27,6 +27,7 @@
 
 #include <QtQmlCompiler/private/qqmljstyperesolver_p.h>
 #include <QtQmlCompiler/private/qqmljstypepropagator_p.h>
+#include <QtQmlCompiler/private/qqmljslintertypepropagator_p.h>
 #include <QtQmlCompiler/private/qqmljslogger_p.h>
 #include <QtQmlCompiler/private/qqmljscompilepass_p.h>
 #include <QtQmlCompiler/private/qqmljscontextproperties_p.h>

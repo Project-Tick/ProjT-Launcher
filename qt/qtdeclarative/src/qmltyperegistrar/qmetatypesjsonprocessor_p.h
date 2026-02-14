@@ -1,5 +1,6 @@
 // Copyright (C) 2020 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
+// Qt-Security score:significant
 
 #ifndef METATYPESJSONPROCESSOR_P_H
 #define METATYPESJSONPROCESSOR_P_H
@@ -90,6 +91,8 @@ struct Property
     QTypeRevision revision;
 
     bool isFinal = false;
+    bool isVirtual = false;
+    bool isOverride = false;
     bool isConstant = false;
     bool isRequired = false;
 };

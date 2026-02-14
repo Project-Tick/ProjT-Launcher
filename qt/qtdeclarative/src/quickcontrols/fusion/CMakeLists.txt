@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 #####################################################################
-## qtquickcontrols2fusionstyleplugin Plugin:
+## QuickControls2Fusion Module:
 #####################################################################
 
 set(qml_files

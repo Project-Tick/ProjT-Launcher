@@ -53,6 +53,10 @@ QtObject {
         }
 
         BaseSearchField {
+            placeholderText: qsTr("Placeholder text")
+        }
+
+        BaseSearchField {
             text: "No search indicator"
             searchIndicator.indicator: null
         }

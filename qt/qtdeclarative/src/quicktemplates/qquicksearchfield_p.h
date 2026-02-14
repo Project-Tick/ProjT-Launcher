@@ -44,6 +44,8 @@ class Q_QUICKTEMPLATES2_EXPORT QQuickSearchField : public QQuickControl
     Q_PROPERTY(QQuickIndicatorButton *clearIndicator READ clearIndicator CONSTANT FINAL)
     Q_PROPERTY(QQuickPopup *popup READ popup WRITE setPopup NOTIFY popupChanged FINAL)
     Q_PROPERTY(QQmlComponent *delegate READ delegate WRITE setDelegate NOTIFY delegateChanged FINAL)
+    Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText
+                       NOTIFY placeholderTextChanged FINAL REVISION(6, 12))
 
     QML_NAMED_ELEMENT(SearchField)
     QML_ADDED_IN_VERSION(6, 10)
@@ -82,6 +84,9 @@ public:
     QQmlComponent *delegate() const;
     void setDelegate(QQmlComponent *delegate);
 
+    QString placeholderText() const;
+    void setPlaceholderText(const QString &text);
+
 Q_SIGNALS:
     void activated(int index);
     void highlighted(int index);
@@ -98,6 +103,7 @@ Q_SIGNALS:
     void liveChanged();
     void popupChanged();
     void delegateChanged();
+    Q_REVISION(6, 12) void placeholderTextChanged();
 
     void searchButtonPressed();
     void clearButtonPressed();

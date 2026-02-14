@@ -9,6 +9,8 @@
 #include "qquickpopup_p_p.h"
 #include "qquickdeferredexecute_p_p.h"
 
+#include <QtQuick/private/qquickattachedpropertypropagator_p.h>
+
 #if QT_CONFIG(accessibility)
 #include <QtQuick/private/qquickaccessibleattached_p.h>
 #endif
@@ -145,6 +147,58 @@ bool QQuickPopupItemPrivate::providesPalette() const
 QPalette QQuickPopupItemPrivate::parentPalette(const QPalette &fallbackPalette) const
 {
     return QQuickPopupPrivate::get(popup)->parentPalette(fallbackPalette);
+}
+
+/*!
+    \internal
+
+    This function is called as part of
+    QQuickAttachedPropertyPropagatorPrivate::findAttachedParent's parent item
+    lookup loop. E.g. if a Label in a Popup has an attached object, the lookup
+    will check the parent item of Label, which is a QQuickPopupItem. If the
+    Popup itself has an attached object, findAttachedParent will call
+    QQuickPopup::attachedParent since it's a
+    QQuickAttachedPropertyPropagatorTarget.
+
+    The reason we need this override:
+
+    In the Material ComboBox.qml, we have code like this:
+
+    \code
+    popup: T.Popup {
+        // ...
+        Material.theme: control.Material.theme
+        // ...
+
+        background: Rectangle {
+            //...
+            color: parent.Material.dialogColor
+    \endcode
+
+    The Material attached object has to be accessed this way due to
+    deferred execution limitations (see 3e87695fb4b1a5d503c744046e6d9f43a2ae18a6).
+    However, since parent here refers to QQuickPopupItem and not the popup,
+    the color will actually come from the window. If a dark theme was set on
+    the ComboBox, it will not be respected in the background if we don't
+    override this function.
+*/
+QtPrivate::QQuickAttachedPropertyPropagator *QQuickPopupItemPrivate::attachedPropertyPropagator_parent(
+    const QMetaObject *attachedType)
+{
+    qCDebug(lcAttachedPropertyPropagator).noquote() << "- attachee is a popup item" << q_func()
+        << "- checking if it has an attached object";
+    QtPrivate::QQuickAttachedPropertyPropagator *popupAttached
+        = QtPrivate::QQuickAttachedPropertyPropagator::attachedObject(attachedType, popup);
+    if (popupAttached) {
+        qCDebug(lcAttachedPropertyPropagator).noquote() << "- popup item has attached object"
+            << popupAttached << "- returning";
+        return popupAttached;
+    }
+
+    qCDebug(lcAttachedPropertyPropagator).noquote() << "- popup item does not have attached object";
+    // From here, findAttachedParent will check our parent item, which is the overlay,
+    // and then the overlay's window.
+    return nullptr;
 }
 
 void QQuickPopupItem::updatePolish()
@@ -290,6 +344,20 @@ void QQuickPopupItem::paddingChange(const QMarginsF &newPadding, const QMarginsF
     Q_D(QQuickPopupItem);
     QQuickPage::paddingChange(newPadding, oldPadding);
     d->popup->paddingChange(newPadding, oldPadding);
+}
+
+void QQuickPopupItem::insetChange(const QMarginsF &newInset, const QMarginsF &oldInset)
+{
+    Q_D(QQuickPopupItem);
+    QQuickPage::insetChange(newInset, oldInset);
+    d->popup->insetChange(newInset, oldInset);
+}
+
+void QQuickPopupItem::spacingChange(qreal newSpacing, qreal oldSpacing)
+{
+    Q_D(QQuickPopupItem);
+    QQuickPage::spacingChange(newSpacing, oldSpacing);
+    d->popup->spacingChange(newSpacing, oldSpacing);
 }
 
 void QQuickPopupItem::enabledChange()

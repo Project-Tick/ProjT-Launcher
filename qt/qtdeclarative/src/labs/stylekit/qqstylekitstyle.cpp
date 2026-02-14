@@ -118,7 +118,12 @@ QList<QQStyleKitCustomTheme *> QQStyleKitStyle::customThemes() const
 
 void QQStyleKitStyle::parseThemes()
 {
-    m_themeNames = QStringList({kSystem, kLight, kDark});
+    m_themeNames = QStringList({kSystem});
+
+    if (m_light)
+        m_themeNames << kLight;
+    if (m_dark)
+        m_themeNames << kDark;
 
     for (auto *customTheme : customThemes()) {
         const QString name = customTheme->name();
@@ -170,7 +175,7 @@ void QQStyleKitStyle::recreateTheme()
             effectiveThemeComponent = m_light;
         }
         else if (scheme == Qt::ColorScheme::Dark) {
-            effectiveThemeName =kDark;
+            effectiveThemeName = kDark;
             effectiveThemeComponent = m_dark;
         }
     } else if (QString::compare(m_themeName, kLight, Qt::CaseInsensitive) == 0) {
@@ -243,7 +248,8 @@ void QQStyleKitStyle::recreateTheme()
     if (m_theme->palettes())
         m_theme->palettes()->setFallbackPalette(palettes());
     if (this == current()) {
-        m_theme->updateThemePalette();
+        m_theme->updateThemePalettes();
+        m_theme->updateThemeFonts();
         QQStyleKitReader::resetAll();
     }
 
@@ -255,49 +261,14 @@ QQStyleKitStyle* QQStyleKitStyle::current()
     return QQStyleKit::qmlAttachedProperties()->style();
 }
 
-QFont QQStyleKitStyle::fontForControlType(QQStyleKitExtendableControlType type) const
-{
-    switch (type) {
-        case QQStyleKitReader::ControlType::AbstractButton:
-        case QQStyleKitReader::ControlType::Button:
-        case QQStyleKitReader::ControlType::FlatButton:
-            return m_theme->fonts()->button();
-        case QQStyleKitReader::ControlType::CheckBox:
-            return m_theme->fonts()->checkBox();
-        case QQStyleKitReader::ControlType::ComboBox:
-            return m_theme->fonts()->comboBox();
-        case QQStyleKitReader::ControlType::GroupBox:
-            return m_theme->fonts()->groupBox();
-        case QQStyleKitReader::ControlType::RadioButton:
-            return m_theme->fonts()->radioButton();
-        case QQStyleKitReader::ControlType::SpinBox:
-            return m_theme->fonts()->spinBox();
-        case QQStyleKitReader::ControlType::SwitchControl:
-            return m_theme->fonts()->switchControl();
-        case QQStyleKitReader::ControlType::TabBar:
-        case QQStyleKitReader::ControlType::TabButton:
-            return m_theme->fonts()->tabBar();
-        case QQStyleKitReader::ControlType::TextInput:
-        case QQStyleKitReader::ControlType::TextField:
-            return m_theme->fonts()->textField();
-        case QQStyleKitReader::ControlType::TextArea:
-            return m_theme->fonts()->textArea();
-        case QQStyleKitReader::ControlType::ToolBar:
-        case QQStyleKitReader::ControlType::ToolButton:
-        case QQStyleKitReader::ControlType::ToolSeparator:
-            return m_theme->fonts()->toolBar();
-        case QQStyleKitReader::ControlType::ItemDelegate:
-            return m_theme->fonts()->itemView();
-        case QQStyleKitReader::ControlType::Label:
-            return m_theme->fonts()->label();
-        default:
-            return m_theme->fonts()->system();
-    }
-}
-
 QPalette QQStyleKitStyle::paletteForControlType(QQStyleKitExtendableControlType type) const
 {
     return m_theme->paletteForControlType(type);
+}
+
+QFont QQStyleKitStyle::fontForControlType(QQStyleKitExtendableControlType type) const
+{
+    return m_theme->fontForControlType(type);
 }
 
 bool QQStyleKitStyle::loaded() const

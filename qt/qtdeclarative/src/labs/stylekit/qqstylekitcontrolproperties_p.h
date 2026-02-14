@@ -25,6 +25,7 @@
 
 #include "qqstylekitglobal_p.h"
 #include "qqstylekitpropertyresolver_p.h"
+#include <QtLabsStyleKit/qtlabsstylekitexports.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -42,6 +43,13 @@ class QQStyleKitPropertyGroup: public QObject
     Q_OBJECT
 
 public:
+    enum class EmitFlag {
+        AllProperties,
+        Colors
+    };
+    Q_DECLARE_FLAGS(EmitFlags, EmitFlag)
+    Q_FLAG(EmitFlag)
+
     QQStyleKitPropertyGroup(QQSK::PropertyGroup group, QObject *parent);
 
     PropertyPathId propertyPathId(QQSK::Property property, PropertyPathId::Flag flag) const;
@@ -93,7 +101,7 @@ public:
 
     QQStyleKitControlProperties *controlProperties() const;
     inline QQSK::PropertyPathFlags pathFlags() const { return m_pathFlags; }
-    void emitChangedForAllStylePropertiesRecursive();
+    void emitChangedForAllStylePropertiesRecursive(EmitFlags emitFlags);
 
 protected:
     QQStyleKitPropertyGroupSpace m_groupSpace;
@@ -167,7 +175,7 @@ signals:
 
 // ************* QQStyleKitShadowProperties ****************
 
-class QQStyleKitShadowProperties : public QQStyleKitPropertyGroup
+class Q_LABSSTYLEKIT_EXPORT QQStyleKitShadowProperties : public QQStyleKitPropertyGroup
 {
     Q_OBJECT
     Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged FINAL)
@@ -224,7 +232,7 @@ signals:
 
 // ************* QQStyleKitDelegateProperties ****************
 
-class QQStyleKitDelegateProperties : public QQStyleKitPropertyGroup
+class Q_LABSSTYLEKIT_EXPORT QQStyleKitDelegateProperties : public QQStyleKitPropertyGroup
 {
     Q_OBJECT
     Q_PROPERTY(qreal implicitWidth READ implicitWidth WRITE setImplicitWidth NOTIFY implicitWidthChanged FINAL)
@@ -558,7 +566,7 @@ class QQStyleKitControlProperties : public QQStyleKitPropertyGroup
 public:
     QQStyleKitControlProperties(QQSK::PropertyGroup group, QObject *parent = nullptr);
 
-    void emitChangedForAllStyleProperties();
+    void emitChangedForAllStyleProperties(EmitFlags emitFlags);;
     template <typename... CHANGED_SIGNALS>
     void emitGlobally(QQStyleKitExtendableControlType controlType, CHANGED_SIGNALS... changedSignals) const;
     void forEachUsedDelegate(

@@ -1,5 +1,6 @@
 // Copyright (C) 2018 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant
 
 #ifndef QQMLSCRIPTSTRING_P_H
 #define QQMLSCRIPTSTRING_P_H
@@ -21,7 +22,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class Q_AUTOTEST_EXPORT QQmlScriptStringPrivate : public QSharedData
+class Q_QML_EXPORT QQmlScriptStringPrivate : public QSharedData
 {
 public:
     QQmlScriptStringPrivate() : context(nullptr), scope(nullptr), bindingId(-1), lineNumber(0), columnNumber(0),
@@ -29,6 +30,8 @@ public:
 
     //for testing
     static const QQmlScriptStringPrivate* get(const QQmlScriptString &script);
+
+    static QQmlScriptString create(const QString &script, QQmlContext *context, QObject *scope);
 
     QQmlContext *context;
     QObject *scope;

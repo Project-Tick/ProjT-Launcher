@@ -12,6 +12,7 @@
 #include <private/qqmlpropertyvalueinterceptor_p.h>
 #include <private/qqmlengine_p.h>
 #include <private/qqmlanybinding_p.h>
+#include <private/qqmlcomponentattached_p.h>
 #include <QtQuickTestUtils/private/qmlutils_p.h>
 
 using namespace Qt::StringLiterals;
@@ -56,6 +57,14 @@ private slots:
     void builtins();
 
     void renameMetaType();
+
+    void firstQmlTypeForAttachmentMetaObject();
+
+    void findOrCreateSpeculativeInlineComponentType_icFoundInUrlToType();
+    void findOrCreateSpeculativeInlineComponentType_emptyBaseUrl();
+    void findOrCreateSpeculativeInlineComponentType_baseTypeNotRegistered();
+    void findOrCreateSpeculativeInlineComponentType_noCompilationUnit();
+    void findOrCreateSpeculativeInlineComponentType_icNotFound();
 };
 
 class TestType : public QObject
@@ -77,6 +86,18 @@ class TestType2 : public QObject
 class TestType3 : public QObject
 {
     Q_OBJECT
+};
+
+class WithAttachedAttached : public QObject {
+    Q_OBJECT
+
+};
+
+class WithAttached  : public QObject
+{
+    Q_OBJECT
+    QML_ATTACHED(WithAttachedAttached)
+    static WithAttachedAttached *qmlAttachedProperties(QObject *) { return new WithAttachedAttached; }
 };
 
 class ExternalEnums : public QObject
@@ -889,6 +910,156 @@ void tst_qqmlmetatype::renameMetaType()
         QCOMPARE(QMetaType::fromName(newTypeName), metaType);
         QVERIFY(!QMetaType::fromName(metaTypeName).isValid());
     }
+}
+
+void tst_qqmlmetatype::firstQmlTypeForAttachmentMetaObject()
+{
+    auto componentAttachedType = QQmlMetaType::firstQmlTypeForAttachmentMetaObject(&QQmlComponentAttached::staticMetaObject);
+    QVERIFY(componentAttachedType.isValid());
+    qmlRegisterType<WithAttached>("Test", 1, 0, "TestType");
+    auto withAttachedType = QQmlMetaType::firstQmlTypeForAttachmentMetaObject(&WithAttachedAttached::staticMetaObject);
+    QVERIFY(withAttachedType.isValid());
+}
+
+void tst_qqmlmetatype::findOrCreateSpeculativeInlineComponentType_icFoundInUrlToType()
+{
+    QQmlEngine engine;
+    const QUrl baseUrl = testFileUrl(QStringLiteral("InlineComponentBase.qml"));
+
+    // Load the component to register the CU with its inline components
+    QQmlComponent component(&engine, baseUrl);
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    QScopedPointer<QObject> obj(component.create());
+    QVERIFY(obj);
+
+    // Now try to get a speculative type for an IC that exists (IC1)
+    const QUrl icUrl = QQmlMetaType::inlineComponentUrl(baseUrl, QStringLiteral("IC1"));
+
+    const QQmlType type = QQmlMetaType::findOrCreateSpeculativeInlineComponentType(icUrl);
+    QVERIFY(type.isValid());
+    QCOMPARE(type.elementName(), QStringLiteral("IC1"));
+    QCOMPARE(type.sourceUrl(), icUrl);
+
+    // Also test IC2
+    const QUrl ic2Url = QQmlMetaType::inlineComponentUrl(baseUrl, QStringLiteral("IC2"));
+    const QQmlType type2 = QQmlMetaType::findOrCreateSpeculativeInlineComponentType(ic2Url);
+    QVERIFY(type2.isValid());
+    QCOMPARE(type2.elementName(), QStringLiteral("IC2"));
+}
+
+void tst_qqmlmetatype::findOrCreateSpeculativeInlineComponentType_emptyBaseUrl()
+{
+    QQmlEngine engine;
+
+    // Create the IC URL with empty base and fragment
+    QUrl icUrl;
+    icUrl.setFragment(QStringLiteral("TestIC"));
+
+    // Before instantiation: should create a speculative type for empty base URLs
+    const QQmlType typeBeforeInstantiation =
+            QQmlMetaType::findOrCreateSpeculativeInlineComponentType(icUrl);
+    QVERIFY(typeBeforeInstantiation.isValid());
+    QCOMPARE(typeBeforeInstantiation.elementName(), QStringLiteral("TestIC"));
+
+    // Use setData() with an empty URL - this creates a component with an anonymous/empty base URL
+    const QByteArray qmlData = R"(
+        import QtQml 2.0
+        QtObject {
+            component TestIC: QtObject {
+                property int value: 123
+            }
+            property TestIC t: TestIC {}
+        }
+    )";
+
+    QQmlComponent component(&engine);
+    component.setData(qmlData, QUrl());
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+    // The component's URL should be empty
+    QVERIFY(component.url().isEmpty());
+
+    // Verify baseUrl is indeed empty after clearing fragment
+    QUrl baseUrl = icUrl;
+    baseUrl.setFragment(QString());
+    QVERIFY(baseUrl.isEmpty());
+
+    // Instantiate the component to register the compilation unit
+    QScopedPointer<QObject> obj(component.create());
+    QVERIFY(obj);
+
+    // After instantiation: the IC type should still be retrievable
+    const QQmlType typeAfterInstantiation =
+            QQmlMetaType::findOrCreateSpeculativeInlineComponentType(icUrl);
+    QVERIFY(typeAfterInstantiation.isValid());
+    QCOMPARE(typeAfterInstantiation.elementName(), QStringLiteral("TestIC"));
+
+    // The type IDs should match (same type retrieved before and after)
+    QCOMPARE(typeBeforeInstantiation.typeId(), typeAfterInstantiation.typeId());
+}
+
+void tst_qqmlmetatype::findOrCreateSpeculativeInlineComponentType_baseTypeNotRegistered()
+{
+    // Use a URL for a type that is definitely not registered
+    const QUrl baseUrl(QStringLiteral("file:///nonexistent/path/UnregisteredType.qml"));
+    const QUrl icUrl = QQmlMetaType::inlineComponentUrl(baseUrl, QStringLiteral("SomeIC"));
+
+    // Verify base type is not registered
+    QVERIFY(!QQmlMetaType::qmlType(baseUrl).isValid());
+
+    // Should create a speculative type since base is not registered
+    const QQmlType type = QQmlMetaType::findOrCreateSpeculativeInlineComponentType(icUrl);
+    QVERIFY(type.isValid());
+    QCOMPARE(type.elementName(), QStringLiteral("SomeIC"));
+    QCOMPARE(type.sourceUrl(), icUrl);
+
+    // Calling again should return the same type
+    const QQmlType type2 = QQmlMetaType::findOrCreateSpeculativeInlineComponentType(icUrl);
+    QCOMPARE(type.typeId(), type2.typeId());
+}
+
+void tst_qqmlmetatype::findOrCreateSpeculativeInlineComponentType_noCompilationUnit()
+{
+    // Register a composite type without loading it (no CU yet)
+    const QUrl baseUrl = testFileUrl(QStringLiteral("InlineComponentBase.qml"));
+
+    // Register the type but don't instantiate it (so no CU is registered)
+    qmlRegisterType(baseUrl, "TestModule", 1, 0, "InlineComponentBase");
+
+    // Verify the type is registered
+    const QQmlType baseType = QQmlMetaType::qmlType(
+        QStringLiteral("InlineComponentBase"),
+        QStringLiteral("TestModule"),
+        QTypeRevision::fromVersion(1, 0));
+    QVERIFY(baseType.isValid());
+
+    // But no compilation unit should be registered yet
+    // (We haven't instantiated the component)
+    const QUrl icUrl = QQmlMetaType::inlineComponentUrl(baseUrl, QStringLiteral("NotYetCompiled"));
+
+    // Should create a speculative type since CU is not registered
+    const QQmlType type = QQmlMetaType::findOrCreateSpeculativeInlineComponentType(icUrl);
+    QVERIFY(type.isValid());
+    QCOMPARE(type.elementName(), QStringLiteral("NotYetCompiled"));
+}
+
+void tst_qqmlmetatype::findOrCreateSpeculativeInlineComponentType_icNotFound()
+{
+    QQmlEngine engine;
+    const QUrl baseUrl = testFileUrl(QStringLiteral("InlineComponentBase.qml"));
+
+    // Load the component to register the CU
+    QQmlComponent component(&engine, baseUrl);
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    QScopedPointer<QObject> obj(component.create());
+    QVERIFY(obj);
+
+    // Try to get a speculative type for an IC that does NOT exist
+    const QUrl icUrl = QQmlMetaType::inlineComponentUrl(baseUrl, QStringLiteral("NonExistentIC"));
+
+    const QQmlType type = QQmlMetaType::findOrCreateSpeculativeInlineComponentType(icUrl);
+    // Should return invalid type since IC doesn't exist in the registered CU
+    QVERIFY(!type.isValid());
 }
 
 QTEST_MAIN(tst_qqmlmetatype)

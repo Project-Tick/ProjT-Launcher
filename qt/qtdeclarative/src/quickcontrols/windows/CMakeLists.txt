@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 #####################################################################
-## qtquickcontrols2windowsstyleplugin Plugin:
+## QuickControls2Windows Module:
 #####################################################################
 
 add_subdirectory(impl)
@@ -44,7 +44,7 @@ set_source_files_properties(SearchField.qml PROPERTIES
     QT_QML_SOURCE_VERSIONS "6.10"
 )
 
-qt_internal_add_qml_module(qtquickcontrols2windowsstyleplugin
+qt_internal_add_qml_module(QuickControls2Windows
     URI "QtQuick.Controls.Windows"
     VERSION "${PROJECT_VERSION}"
     CLASS_NAME QtQuickControls2WindowsStylePlugin
@@ -54,8 +54,7 @@ qt_internal_add_qml_module(qtquickcontrols2windowsstyleplugin
     PLUGIN_TARGET qtquickcontrols2windowsstyleplugin
     NO_PLUGIN_OPTIONAL
     NO_GENERATE_PLUGIN_SOURCE
-    SOURCES
-        qtquickcontrols2windowsstyleplugin.cpp
+    NO_PRIVATE_MODULE
     QML_FILES
         ${qml_files}
     RESOURCES
@@ -78,16 +77,26 @@ qt_internal_add_qml_module(qtquickcontrols2windowsstyleplugin
         Qt::CorePrivate
         Qt::GuiPrivate
         Qt::QmlPrivate
-        Qt::QuickControls2Private
         Qt::QuickControls2WindowsStyleImpl
         Qt::QuickPrivate
         Qt::QuickTemplates2Private
         Qt::QuickControls2FusionPrivate
+        Qt::QuickNativeStylePrivate
+)
+
+target_sources(qtquickcontrols2windowsstyleplugin
+    PRIVATE
+        qtquickcontrols2windowsstyleplugin.cpp
+)
+
+qt_internal_extend_target(qtquickcontrols2windowsstyleplugin
+    LIBRARIES
+        Qt::QuickControls2Private
 )
 
 # Native style is a dependency of the Windows style.
 _qt_internal_add_qml_static_plugin_dependency(qtquickcontrols2windowsstyleplugin
-                                              qtquickcontrols2nativestyleplugin)
+                                              qtquicknativestyleplugin)
 # Fusion style is the required fallback style.
 _qt_internal_add_qml_static_plugin_dependency(qtquickcontrols2windowsstyleplugin
                                               qtquickcontrols2fusionstyleplugin)

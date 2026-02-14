@@ -8,6 +8,8 @@
 #include <QtQuickTestUtils/private/visualtestutils_p.h>
 #include <QtQuickShapesDesignHelpers/private/qquickregularpolygonshape_p.h>
 
+using namespace QQuickVisualTestUtils;
+
 class tst_QQuickRegularPolygonShape : public QQmlDataTest
 {
     Q_OBJECT
@@ -19,6 +21,7 @@ private slots:
     void basicShape();
     void changeSignals();
     void changeSignals_data();
+    void fillItem();
 
 private:
     QScopedPointer<QQuickView> window;
@@ -51,6 +54,7 @@ void tst_QQuickRegularPolygonShape::basicShape()
     QCOMPARE(shape->strokeStyle(), QQuickShapePath::SolidLine);
     QCOMPARE(shape->fillColor(), QColor(Qt::white));
     QCOMPARE(shape->strokeColor(), QColor(Qt::black));
+    QCOMPARE(shape->fillItem(), nullptr);
 }
 
 void tst_QQuickRegularPolygonShape::changeSignals_data()
@@ -100,6 +104,21 @@ void tst_QQuickRegularPolygonShape::changeSignals()
     QVERIFY(signalSpy.isValid());
     QVERIFY(shape->setProperty(QTest::currentDataTag(), propertyValue));
     QCOMPARE(signalSpy.count(), 1);
+}
+
+void tst_QQuickRegularPolygonShape::fillItem()
+{
+    QQuickApplicationHelper helper(this, "fillitem.qml");
+    QVERIFY2(helper.ready, helper.failureMessage());
+    QQuickWindow *window = helper.window;
+    window->show();
+    QVERIFY(QTest::qWaitForWindowExposed(window));
+
+    auto *theShape = window->property("theShape").value<QQuickRegularPolygonShape *>();
+    QVERIFY(theShape);
+
+    auto *fillItem = window->findChild<QQuickItem *>("fillItem");
+    QVERIFY(fillItem);
 }
 
 QTEST_MAIN(tst_QQuickRegularPolygonShape)

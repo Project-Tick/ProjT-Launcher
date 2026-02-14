@@ -60,6 +60,8 @@ protected:
     void mirrorChange() override;
     void itemChange(ItemChange change, const ItemChangeData &data) override;
     void paddingChange(const QMarginsF &newPadding, const QMarginsF &oldPadding) override;
+    void insetChange(const QMarginsF &newInset, const QMarginsF &oldInset) override;
+    void spacingChange(qreal newSpacing, qreal oldSpacing) override;
     void enabledChange() override;
 
     QFont defaultFont() const override;
@@ -105,6 +107,12 @@ public:
     bool providesPalette() const override;
 
     QPalette parentPalette(const QPalette &fallbackPalette) const override;
+
+    // Only used by QQuickContextMenuAttached for Qt 6.
+    // In Qt 7 this will obsolete Controls' copy of QQuickAttachedPropertyPropagator
+    // and its attached popup logic: QTBUG-138546
+    QtPrivate::QQuickAttachedPropertyPropagator *attachedPropertyPropagator_parent(
+        const QMetaObject *attachedType) override;
 
     int backId = 0;
     int escapeId = 0;

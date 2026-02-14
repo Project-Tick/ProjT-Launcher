@@ -6335,7 +6335,9 @@ void tst_qqmllanguage::nonExistingInlineComponent_data()
     QTest::newRow("Property type")  << testFileUrl("nonExistingICUser1.qml") << QString("Type InlineComponentProvider has no inline component type called NotExisting") << 4 << 58;
     QTest::newRow("Instantiation")  << testFileUrl("nonExistingICUser2.qml") << QString("Type InlineComponentProvider has no inline component type called NotExisting") << 4 << 5;
     QTest::newRow("Inheritance")    << testFileUrl("nonExistingICUser3.qml") << QString("Type InlineComponentProvider has no inline component type called NotExisting") << 3 << 1;
-    QTest::newRow("From singleton") << testFileUrl("nonExistingICUser4.qml") << QString("Type MySingleton.SingletonTypeWithIC has no inline component type called NonExisting") << 5 << 71;
+
+    // We detect this one earlier because we already have the outer type available when we try to resolve it.
+    QTest::newRow("From singleton") << testFileUrl("nonExistingICUser4.qml") << QString("MySingleton.SingletonTypeWithIC.NonExisting - NonExisting is not an inline component") << 5 << 71;
 
     QTest::newRow("Cannot access parent inline components from child")  << testFileUrl("nonExistingICUser5.qml") << QString("Type InlineComponentProviderChild has no inline component type called StyledRectangle") << 4 << 67;
 }
@@ -7063,12 +7065,12 @@ void tst_qqmllanguage::bareInlineComponent()
             QVERIFY(type.module().isEmpty());
             tab1Found = true;
 
-            const QQmlType leftTab = QQmlMetaType::inlineComponentType(type, "LeftTab");
+            const QQmlType leftTab = QQmlMetaType::findOrCreateSpeculativeInlineComponentType(type, "LeftTab");
             QUrl leftUrl = leftTab.sourceUrl();
             leftUrl.setFragment(QString());
             QCOMPARE(leftUrl, type.sourceUrl());
 
-            const QQmlType rightTab = QQmlMetaType::inlineComponentType(type, "RightTab");
+            const QQmlType rightTab = QQmlMetaType::findOrCreateSpeculativeInlineComponentType(type, "RightTab");
             QUrl rightUrl = rightTab.sourceUrl();
             rightUrl.setFragment(QString());
             QCOMPARE(rightUrl, type.sourceUrl());
@@ -10255,6 +10257,18 @@ void tst_qqmllanguage::multiTypeResolution()
     QScopedPointer<QObject> o2(c2.create());
     QVERIFY(o2);
     QCOMPARE(o2->objectName(), "blue");
+
+    QQmlComponent c3(&engine1, testFileUrl("MultiEngineICList.qml"));
+    QVERIFY2(c3.isReady(), qPrintable(c3.errorString()));
+    std::unique_ptr<QObject> o3(c3.create());
+    QVERIFY(o3);
+    QCOMPARE(o3->objectName(), "2 2");
+
+    QQmlComponent c4(&engine2, testFileUrl("MultiEngineICList.qml"));
+    QVERIFY2(c4.isReady(), qPrintable(c4.errorString()));
+    std::unique_ptr<QObject> o4(c4.create());
+    QVERIFY(o4);
+    QCOMPARE(o4->objectName(), "2 2");
 }
 
 QTEST_MAIN(tst_qqmllanguage)

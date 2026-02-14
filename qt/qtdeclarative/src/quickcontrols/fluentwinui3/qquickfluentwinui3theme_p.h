@@ -17,6 +17,7 @@
 //
 
 #include <QtCore/qglobal.h>
+#include <QtQuickControls2FluentWinUI3/qtquickcontrols2fluentwinui3exports.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -26,9 +27,9 @@ class QtQuickControls2FluentWinUI3StylePlugin;
 class QQuickFluentWinUI3Theme
 {
 public:
-    static void initialize(QQuickTheme *theme);
+    static Q_QUICKCONTROLS2FLUENTWINUI3_EXPORT void initialize(QQuickTheme *theme);
 private:
-    static QPalette initializeDefaultPalette();
+    static Q_QUICKCONTROLS2FLUENTWINUI3_EXPORT QPalette initializeDefaultPalette();
 
     friend class QtQuickControls2FluentWinUI3StylePlugin;
 };

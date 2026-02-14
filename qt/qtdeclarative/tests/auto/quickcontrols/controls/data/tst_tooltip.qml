@@ -13,6 +13,9 @@ TestCase {
     when: windowShown
     name: "ToolTip"
 
+    // The tests were written before policy was introduced.
+    ToolTip.policy: ToolTip.Manual
+
     Component {
         id: toolTip
         ToolTip { }
@@ -26,10 +29,6 @@ TestCase {
     Component {
         id: signalSpy
         SignalSpy { }
-    }
-
-    QtObject {
-        id: object
     }
 
     SignalSpy {
@@ -79,13 +78,16 @@ TestCase {
     function test_attached(data) {
         let item1 = createTemporaryObject(mouseArea, testCase)
         verify(item1)
+        item1.ToolTip.objectName = "item1ToolTipAttached"
 
         let item2 = createTemporaryObject(mouseArea, testCase)
         verify(item2)
+        item2.ToolTip.objectName = "item2ToolTipAttached"
 
         // Reset the properties to the expected default values, in case
         // we're not the first test that uses attached properties to be run.
         let sharedTip = ToolTip.toolTip
+        sharedTip.objectName = "sharedToolTipAttached"
         sharedTip[data.property] = data.defaultValue
 
         compare(item1.ToolTip[data.property], data.defaultValue)
@@ -179,8 +181,31 @@ TestCase {
         tryCompare(control, "visible", false)
     }
 
+    Component {
+        id: attachedToObjectComponent
+
+        QtObject {
+            ToolTip.visible: false
+            ToolTip.text: "Nope"
+            ToolTip.delay: 123
+            ToolTip.timeout: 456
+        }
+    }
+
+    function attacheeIsNotAnItemWarningRegExp(functionName) {
+        return new RegExp(".*QML QtObject: The attached function ToolTip::" + functionName
+            + " can only be called when the attachee derives from Item")
+    }
+
     function test_warning() {
-        ignoreWarning(new RegExp(".*QML QtObject: ToolTip attached property must be attached to an object deriving from Item"))
+        ignoreWarning(attacheeIsNotAnItemWarningRegExp("setVisible"))
+        ignoreWarning(attacheeIsNotAnItemWarningRegExp("setText"))
+        ignoreWarning(attacheeIsNotAnItemWarningRegExp("setDelay"))
+        ignoreWarning(attacheeIsNotAnItemWarningRegExp("setTimeout"))
+        let object = createTemporaryObject(attachedToObjectComponent, testCase)
+        verify(object)
+
+        ignoreWarning(attacheeIsNotAnItemWarningRegExp("show"))
         object.ToolTip.show("") // don't crash (QTBUG-56243)
     }
 
@@ -472,6 +497,7 @@ TestCase {
         id: initiallyVisibleComponent
 
         Item {
+            objectName: "toolTipItem"
             ToolTip.text: "Some text"
             ToolTip.visible: true
         }
@@ -481,6 +507,7 @@ TestCase {
     function test_initiallyVisible() {
         let item = createTemporaryObject(initiallyVisibleComponent, testCase)
         verify(item)
+        compare(item.ToolTip.policy, ToolTip.Manual)
         verify(item.ToolTip.visible)
     }
 }

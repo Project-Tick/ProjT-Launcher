@@ -24,6 +24,10 @@ RowLayout {
         text: "Type to search"
     }
 
+    SearchField {
+        placeholderText: qsTr("Enter text")
+    }
+
     SortFilterProxyModel {
         id: modelFilter
         model: ListModel {

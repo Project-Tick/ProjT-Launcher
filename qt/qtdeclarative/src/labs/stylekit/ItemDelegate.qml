@@ -27,6 +27,8 @@ T.ItemDelegate {
     icon.height: 16
     icon.color: styleReader.text.color
 
+    font: styleReader.font
+
     StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
@@ -46,7 +48,7 @@ T.ItemDelegate {
         display: control.display
         icon: control.icon
         text: control.text
-        font: styleReader.font
+        font: control.font
         color: styleReader.text.color
         alignment: styleReader.text.alignment
         topPadding: styleReader.text.topPadding
@@ -56,7 +58,7 @@ T.ItemDelegate {
     }
 
     background: BackgroundDelegate {
-        parentControl: control
+        quickControl: control
         backgroundProperties: styleReader.background
     }
 }

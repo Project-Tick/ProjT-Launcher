@@ -1,5 +1,6 @@
 // Copyright (C) 2019 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant
 
 #ifndef QQMLTYPE_P_P_H
 #define QQMLTYPE_P_P_H
@@ -323,17 +324,10 @@ public:
             const QQmlRefPointer<QV4::CompiledData::CompilationUnit> &unit,
             const QString &elementName, QQmlTypeLoader *typeLoader)
     {
-        const QQmlType qmltype = unit->typeNameCache->query<QQmlImport::AllowRecursion>(
+        // Invalid speculative inline component types are either rejected at creation time
+        // (if the base type is already registered) or pruned when the base type registers.
+        return unit->typeNameCache->query<QQmlImport::AllowRecursion>(
                                                             elementName, typeLoader).type;
-
-        if (qmltype.isValid() && qmltype.isInlineComponentType()
-                && !QQmlMetaType::obtainCompilationUnit(qmltype.typeId())) {
-            // If it seems to be an IC type, make sure there is an actual
-            // compilation unit for it. We create inline component types speculatively.
-            return QQmlType();
-        }
-
-        return qmltype;
     }
 
     // Tries the base unit's resolvedTypes first. If successful, that is cheap

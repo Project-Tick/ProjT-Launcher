@@ -1305,4 +1305,536 @@ TestCase {
         if (useMouse)
             mouseRelease(control)
     }
+
+    function test_crossingEnabled_default() {
+        let control = createTemporaryObject(sliderComponent, testCase)
+        verify(control)
+        compare(control.crossingEnabled, false)
+        compare(control.handlesCrossed, false)
+    }
+
+    function test_crossingEnabled_basic() {
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true,
+            from: 0,
+            to: 100
+        })
+        verify(control)
+
+        control.first.value = 30
+        control.second.value = 70
+        compare(control.handlesCrossed, false)
+        compare(control.first.value, 30)
+        compare(control.second.value, 70)
+
+        // Move first handle past second
+        control.first.value = 80
+        compare(control.handlesCrossed, true)
+        compare(control.first.value, 80)
+        compare(control.second.value, 70)
+    }
+
+    function test_crossingEnabled_mouse_data() {
+        return [
+            { tag: "horizontal", orientation: Qt.Horizontal },
+            { tag: "vertical", orientation: Qt.Vertical }
+        ]
+    }
+
+    function test_crossingEnabled_mouse(data) {
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            orientation: data.orientation,
+            crossingEnabled: true,
+            from: 0,
+            to: 100
+        })
+        verify(control)
+
+        control.first.value = 30
+        control.second.value = 70
+        compare(control.handlesCrossed, false)
+        compare(control.first.value, 30)
+        compare(control.second.value, 70)
+
+        let crossedSpy = signalSpy.createObject(control, {
+            target: control,
+            signalName: "handlesCrossedChanged"
+        })
+        verify(crossedSpy.valid)
+
+        let firstHandleItem = control.first.handle
+        let secondHandleItem = control.second.handle
+
+        // Store initial handle positions
+        let fromX = firstHandleItem.x + firstHandleItem.width / 2
+        let fromY = firstHandleItem.y + firstHandleItem.height / 2
+        mousePress(control, fromX, fromY)
+
+        // Drag first handle past second
+        let toX = data.orientation === Qt.Horizontal ? control.width - control.rightPadding : fromX
+        let toY = data.orientation === Qt.Vertical ? control.topPadding : fromY
+        mouseMove(control, toX, toY)
+
+        compare(crossedSpy.count, 1)
+        compare(control.handlesCrossed, true)
+        compare(control.first.value, 100)
+        compare(control.second.value, 70)
+
+        mouseRelease(control, toX, toY)
+        compare(control.first.value, 100)
+        compare(control.second.value, 70)
+    }
+
+    function test_crossingEnabled_invertedFromTo() {
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true,
+            from: 100,
+            to: 0
+        })
+        verify(control)
+
+        control.first.value = 70
+        control.second.value = 30
+        compare(control.handlesCrossed, false)
+
+        control.first.value = 20
+        compare(control.handlesCrossed, true)
+        compare(control.first.value, 20)
+        compare(control.second.value, 30)
+    }
+
+    function test_crossingEnabled_disable_while_crossed() {
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true,
+            from: 0,
+            to: 100
+        })
+        verify(control)
+
+        control.first.value = 30
+        control.second.value = 70
+        compare(control.handlesCrossed, false)
+
+        // Cross the handles
+        control.first.value = 80
+        compare(control.handlesCrossed, true)
+        compare(control.first.value, 80)
+        compare(control.second.value, 70)
+
+        // Disable crossing while crossed - should swap values and uncross
+        control.crossingEnabled = false
+        compare(control.handlesCrossed, false)
+        // Values should be swapped
+        compare(control.first.value, 70)
+        compare(control.second.value, 80)
+        // But the constraint should now prevent crossing again
+        control.first.value = 90
+        compare(control.first.value, 80)  // Clamped to second.value
+    }
+
+    function test_crossingEnabled_disable_while_crossed_inverted() {
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true,
+            from: 100,
+            to: 0
+        })
+        verify(control)
+
+        control.first.value = 70
+        control.second.value = 30
+        compare(control.handlesCrossed, false)
+
+        // Cross the handles
+        control.first.value = 20
+        compare(control.handlesCrossed, true)
+        compare(control.first.value, 20)
+        compare(control.second.value, 30)
+
+        // Disable crossing while crossed - should swap and uncross
+        control.crossingEnabled = false
+        compare(control.handlesCrossed, false)
+        compare(control.first.value, 30)
+        compare(control.second.value, 20)
+    }
+
+    function test_crossingEnabled_setValues() {
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true
+        })
+        verify(control)
+
+        // Set values in crossed order
+        control.setValues(0.8, 0.2)
+        compare(control.handlesCrossed, true)
+        compare(control.first.value, 0.8)
+        compare(control.second.value, 0.2)
+    }
+
+    function test_crossingEnabled_keyboard() {
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true,
+            stepSize: 0.1
+        })
+        verify(control)
+
+        control.first.value = 0.4
+        control.second.value = 0.6
+
+        let crossedSpy = signalSpy.createObject(control, {
+            target: control,
+            signalName: "handlesCrossedChanged"
+        })
+        verify(crossedSpy.valid)
+
+        control.first.handle.forceActiveFocus()
+
+        // Increase first handle past second
+        for (let i = 0; i < 5; i++) {
+            control.first.increase()
+        }
+
+        compare(crossedSpy.count, 1)
+        compare(control.handlesCrossed, true)
+    }
+
+    function test_crossingEnabled_liveMode() {
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true,
+            live: true
+        })
+        verify(control)
+
+        control.first.value = 0.3
+        control.second.value = 0.7
+
+        let crossedSpy = signalSpy.createObject(control, {
+            target: control,
+            signalName: "handlesCrossedChanged"
+        })
+        verify(crossedSpy.valid)
+
+        // Drag first handle past second in live mode
+        let firstHandleItem = control.first.handle
+        let fromX = firstHandleItem.x + firstHandleItem.width / 2
+        let fromY = firstHandleItem.y + firstHandleItem.height / 2
+        mousePress(control, fromX, fromY)
+
+        let toX = control.width - control.rightPadding
+        mouseMove(control, toX, fromY)
+
+        // In live mode, crossing should be detected during drag
+        compare(crossedSpy.count, 1)
+        compare(control.handlesCrossed, true)
+
+        mouseRelease(control, toX, fromY)
+    }
+
+    function test_effectiveValues_notCrossed() {
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true,
+            from: 0,
+            to: 100
+        })
+        verify(control)
+
+        control.first.value = 30
+        control.second.value = 70
+
+        // When not crossed, effective values match semantic values
+        compare(control.handlesCrossed, false)
+        compare(control.effectiveFirstValue, 30)   // Leftmost = first
+        compare(control.effectiveSecondValue, 70)  // Rightmost = second
+    }
+
+    function test_effectiveValues_crossed() {
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true,
+            from: 0,
+            to: 100
+        })
+        verify(control)
+
+        control.first.value = 30
+        control.second.value = 70
+
+        let firstSpy = signalSpy.createObject(control, {
+            target: control,
+            signalName: "effectiveFirstValueChanged"
+        })
+        let secondSpy = signalSpy.createObject(control, {
+            target: control,
+            signalName: "effectiveSecondValueChanged"
+        })
+        verify(firstSpy.valid)
+        verify(secondSpy.valid)
+
+        // Cross the handles
+        control.first.value = 80
+        compare(control.handlesCrossed, true)
+
+        // After crossing, effective values represent visual positions
+        // Visual left = second node (value 70)
+        // Visual right = first node (value 80)
+        compare(control.effectiveFirstValue, 70)   // Leftmost = second (after cross)
+        compare(control.effectiveSecondValue, 80)  // Rightmost = first (after cross)
+
+        // Signals should have been emitted
+        compare(firstSpy.count, 1) // Once for crossing
+        compare(secondSpy.count, 2) // Once for value change, once for crossing
+    }
+
+    function test_effectiveValues_invertedFromTo() {
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true,
+            from: 100,
+            to: 0
+        })
+        verify(control)
+
+        control.first.value = 70
+        control.second.value = 30
+        compare(control.handlesCrossed, false)
+
+        // In inverted range, visual positions are reversed
+        // But effective values still represent visual left/bottom and right/top
+        compare(control.effectiveFirstValue, 70)   // Bottommost = first
+        compare(control.effectiveSecondValue, 30)  // Topmost = second
+
+        // Cross the handles
+        control.first.value = 20
+        compare(control.handlesCrossed, true)
+
+        // After crossing
+        compare(control.effectiveFirstValue, 30)   // Bottommost = second (after cross)
+        compare(control.effectiveSecondValue, 20)  // Topmost = first (after cross)
+    }
+
+    function test_effectiveValues_signalEmission() {
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true,
+            from: 0,
+            to: 100
+        })
+        verify(control)
+
+        let firstSpy = signalSpy.createObject(control, {
+            target: control,
+            signalName: "effectiveFirstValueChanged"
+        })
+        let secondSpy = signalSpy.createObject(control, {
+            target: control,
+            signalName: "effectiveSecondValueChanged"
+        })
+
+        control.first.value = 30
+        control.second.value = 70
+        firstSpy.clear()
+        secondSpy.clear()
+
+        // Changing first value should emit effectiveFirstValue change (not crossed)
+        control.first.value = 40
+        compare(firstSpy.count, 1)
+        compare(secondSpy.count, 0)
+        firstSpy.clear()
+
+        // Changing second value should emit effectiveSecondValue change (not crossed)
+        control.second.value = 80
+        compare(firstSpy.count, 0)
+        compare(secondSpy.count, 1)
+        secondSpy.clear()
+
+        // Cross the handles - both effective values swap
+        control.first.value = 90
+        verify(control.handlesCrossed)
+        compare(firstSpy.count, 1) // Once for crossing
+        compare(secondSpy.count, 2) // Once for value change, once for crossing
+        firstSpy.clear()
+        secondSpy.clear()
+
+        // After crossing, first node changes affect effectiveSecondValue
+        control.first.value = 95
+        compare(firstSpy.count, 0)
+        compare(secondSpy.count, 1) // First node now maps to effectiveSecond
+    }
+
+    function test_effectiveValues_withoutCrossing() {
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: false,
+            from: 0,
+            to: 100
+        })
+        verify(control)
+
+        // Second value needs to be set first to avoid clamping with first handle default value 1.0
+        control.second.value = 70
+        control.first.value = 30
+
+        // Without crossing enabled, effective values are always same as semantic
+        compare(control.first.value, 30)
+        compare(control.second.value, 70)
+        compare(control.effectiveFirstValue, 30)
+        compare(control.effectiveSecondValue, 70)
+
+        // Try to cross (should fail)
+        control.first.value = 80
+        compare(control.first.value, 70)  // Clamped
+        compare(control.effectiveFirstValue, 70)
+        compare(control.effectiveSecondValue, 70)
+    }
+
+    function test_focus_tabNavigation() {
+        // Test tab navigation without crossing enabled
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: false,
+            from: 0,
+            to: 100
+        })
+        verify(control)
+
+        control.first.value = 30
+        control.second.value = 70
+
+        // Start with no focus
+        compare(control.activeFocus, false)
+        compare(control.first.handle.activeFocus, false)
+        compare(control.second.handle.activeFocus, false)
+
+        // Give focus to the control - should go to first handle
+        control.forceActiveFocus()
+        verify(control.activeFocus)
+        verify(control.first.handle.activeFocus)
+
+        // Tab to next handle (second)
+        keyPress(Qt.Key_Tab)
+        keyRelease(Qt.Key_Tab)
+        verify(control.activeFocus)
+        verify(control.second.handle.activeFocus)
+
+        // Shift+Tab back to first handle
+        keyPress(Qt.Key_Tab, Qt.ShiftModifier)
+        keyRelease(Qt.Key_Tab, Qt.ShiftModifier)
+        verify(control.activeFocus)
+        verify(control.first.handle.activeFocus)
+    }
+
+    function test_focus_tabNavigation_withCrossing() {
+        // Test tab navigation with crossing enabled
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true,
+            from: 0,
+            to: 100
+        })
+        verify(control)
+
+        control.first.value = 30
+        control.second.value = 70
+
+        // Give focus to first handle
+        control.first.handle.forceActiveFocus()
+        verify(control.first.handle.activeFocus)
+
+        // Tab to second handle
+        keyPress(Qt.Key_Tab)
+        keyRelease(Qt.Key_Tab)
+        verify(control.second.handle.activeFocus)
+
+        // Shift+Tab back to first
+        keyPress(Qt.Key_Tab, Qt.ShiftModifier)
+        keyRelease(Qt.Key_Tab, Qt.ShiftModifier)
+        verify(control.first.handle.activeFocus)
+    }
+
+    function test_focus_tabNavigation_afterCrossing() {
+        // Test tab navigation after handles have crossed
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true,
+            from: 0,
+            to: 100
+        })
+        verify(control)
+
+        control.first.value = 30
+        control.second.value = 70
+
+        // Cross the handles
+        control.first.value = 80
+        compare(control.handlesCrossed, true)
+        compare(control.first.value, 80)
+        compare(control.second.value, 70)
+
+        // Give focus to first handle (now visually on the right)
+        control.first.handle.forceActiveFocus()
+        verify(control.first.handle.activeFocus)
+
+        // Shift+Tab should move to second handle (visually on the left)
+        keyPress(Qt.Key_Tab, Qt.ShiftModifier)
+        keyRelease(Qt.Key_Tab, Qt.ShiftModifier)
+        verify(control.second.handle.activeFocus)
+
+        // Tab should move to first handle (visually on the right)
+        keyPress(Qt.Key_Tab)
+        keyRelease(Qt.Key_Tab)
+        verify(control.first.handle.activeFocus)
+
+        // Uncross the handles
+        control.first.value = 50
+        compare(control.handlesCrossed, false)
+
+        // Tab navigation should still work after uncrossing
+        verify(control.first.handle.activeFocus)
+        keyPress(Qt.Key_Tab)
+        keyRelease(Qt.Key_Tab)
+        verify(control.second.handle.activeFocus)
+    }
+
+    function test_focus_tabNavigation_multipleCrossings() {
+        // Test tab navigation through multiple crossing events
+        let control = createTemporaryObject(sliderComponent, testCase, {
+            crossingEnabled: true,
+            from: 0,
+            to: 100,
+            stepSize: 10
+        })
+        verify(control)
+
+        control.first.value = 40
+        control.second.value = 60
+
+        // Start with first handle focused
+        control.first.handle.forceActiveFocus()
+        verify(control.first.handle.activeFocus)
+
+        // Tab to second handle
+        keyPress(Qt.Key_Tab)
+        keyRelease(Qt.Key_Tab)
+        verify(control.second.handle.activeFocus)
+
+        // Move second handle to cross (move left past first)
+        control.second.value = 30
+        compare(control.handlesCrossed, true)
+        verify(control.second.handle.activeFocus) // Focus maintained
+
+        // Tab should still work after crossing
+        keyPress(Qt.Key_Tab)
+        keyRelease(Qt.Key_Tab)
+        verify(control.first.handle.activeFocus)
+
+        // Move first handle to uncross
+        control.first.value = 25
+        compare(control.handlesCrossed, false)
+
+        // Tab should still work after uncrossing
+        keyPress(Qt.Key_Tab)
+        keyRelease(Qt.Key_Tab)
+        verify(control.second.handle.activeFocus)
+
+        // Cross again by moving second past first
+        control.second.value = 20
+        compare(control.handlesCrossed, true)
+
+        // Tab navigation should remain consistent
+        keyPress(Qt.Key_Tab)
+        keyRelease(Qt.Key_Tab)
+        verify(control.first.handle.activeFocus)
+    }
 }

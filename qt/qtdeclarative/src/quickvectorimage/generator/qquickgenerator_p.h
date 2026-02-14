@@ -58,6 +58,7 @@ public:
     QQuickVectorImageGenerator::GeneratorFlags generatorFlags();
 
     bool generate();
+    QQuickVectorImageGenerator::ErrorState errorState() const { return m_errorState; }
 
     virtual QString generateNodeBase(const NodeInfo &info, const QString &idSuffix = QString{}) = 0;
     virtual bool generateDefsNode(const StructureNodeInfo &info) = 0;
@@ -77,7 +78,20 @@ public:
     bool isNodeVisible(const NodeInfo &info);
 
 protected:
+    void checkSanityLimit_helper(quint64 limit, QLatin1StringView limitObject);
+    bool checkSanityLimit(quint64 value, quint64 limit, QLatin1StringView limitObject)
+    {
+        if (Q_LIKELY(!errorState())) {
+            if (value <= limit || m_flags.testFlag(QQuickVectorImageGenerator::AssumeTrustedSource))
+                return true;
+            checkSanityLimit_helper(limit, limitObject);
+        }
+        return false;
+    }
+
     QQuickVectorImageGenerator::GeneratorFlags m_flags;
+    QQuickVectorImageGenerator::ErrorState m_errorState = QQuickVectorImageGenerator::NoError;
+
 
 private:
     QString m_fileName;

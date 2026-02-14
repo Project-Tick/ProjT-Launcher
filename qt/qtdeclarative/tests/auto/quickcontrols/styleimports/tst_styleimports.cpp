@@ -10,6 +10,7 @@
 #include <QtQml/qqmlcontext.h>
 #include <QtQml/qqmlapplicationengine.h>
 #include <QtQml/qqmlengine.h>
+#include <QtQml/private/qqmldata_p.h>
 #include <QtQuick/qquickwindow.h>
 #include <QtQuickTestUtils/private/qmlutils_p.h>
 #include <QtQuickControls2/qquickstyle.h>
@@ -48,6 +49,8 @@ private slots:
 
     void attachedTypesAvailable_data();
     void attachedTypesAvailable();
+
+    void nativeStyle();
 };
 
 tst_StyleImports::tst_StyleImports()
@@ -420,6 +423,37 @@ void tst_StyleImports::attachedTypesAvailable()
     QVERIFY2(c.isReady(), qPrintable(c.errorString()));
     QScopedPointer<QObject> o(c.create());
     QVERIFY(!o.isNull());
+}
+
+void tst_StyleImports::nativeStyle()
+{
+    QQmlEngine engine;
+    QQmlComponent c(&engine, testFileUrl("nativeStyle.qml"));
+    QVERIFY2(c.isReady(), qPrintable(c.errorString()));
+    std::unique_ptr<QObject> o(c.create());
+    QQmlData *ddata = QQmlData::get(o.get());
+
+#if defined(Q_OS_ANDROID)
+    const QByteArray defaultStyle = "Material";
+#elif defined(Q_OS_IOS)
+    const QByteArray defaultStyle = "iOS";
+#elif defined(Q_OS_LINUX)
+    const QByteArray defaultStyle = "Fusion";
+#elif defined(Q_OS_MACOS)
+    const QByteArray defaultStyle = "macOS";
+#elif defined(Q_OS_WINDOWS)
+    const QByteArray defaultStyle = "Windows";
+#else
+    const QByteArray defaultStyle = "Basic";
+#endif
+
+    // We have a separate Button.qml for each platform default style.
+    const QUrl url(QLatin1String("qrc:/qt-project.org/imports/QtQuick/Controls/%1/Button.qml")
+                           .arg(defaultStyle));
+
+    // nativeStyle.qml does not form its own QQmlType because it has no own members
+    // and isn't addresssible. Therefore we directly get the base QQmlType here.
+    QCOMPARE(ddata->compilationUnit->baseCompilationUnit()->qmlType.sourceUrl(), url);
 }
 
 QTEST_MAIN(tst_StyleImports)

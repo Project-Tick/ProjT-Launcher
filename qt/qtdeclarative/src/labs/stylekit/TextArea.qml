@@ -24,13 +24,7 @@ T.TextArea {
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
 
-    // FIXME: Should work when assigned to control.font directly
-    font.family: styleReader.font.family
-    font.pointSize: styleReader.font.pointSize
-    font.weight: styleReader.font.weight
-    font.italic: styleReader.font.italic
-    font.underline: styleReader.font.underline
-    font.bold: styleReader.font.bold
+    font: styleReader.font
 
     color: styleReader.text.color
     verticalAlignment: styleReader.text.alignment & Qt.AlignVertical_Mask
@@ -68,7 +62,7 @@ T.TextArea {
     }
 
     background: BackgroundDelegate {
-        parentControl: control
+        quickControl: control
         backgroundProperties: styleReader.background
     }
 }

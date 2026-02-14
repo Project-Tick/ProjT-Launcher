@@ -24,6 +24,8 @@ T.Page {
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
 
+    font: styleReader.font
+
     StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
@@ -34,7 +36,7 @@ T.Page {
     }
 
     background: BackgroundDelegate {
-        parentControl: control
+        quickControl: control
         backgroundProperties: styleReader.background
     }
 }

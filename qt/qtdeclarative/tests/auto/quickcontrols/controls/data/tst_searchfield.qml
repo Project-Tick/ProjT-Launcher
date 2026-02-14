@@ -45,6 +45,7 @@ TestCase {
         compare(control.currentIndex, -1)
         compare(control.highlightedIndex, -1)
         compare(control.text, "")
+        compare(control.placeholderText, "")
         compare(control.textRole, "")
         compare(control.live, true)
         verify(control.delegate)

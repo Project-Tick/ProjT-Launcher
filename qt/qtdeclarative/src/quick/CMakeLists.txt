@@ -191,6 +191,10 @@ qt_internal_add_qml_module(Quick
         util/qquickanimatorcontroller.cpp util/qquickanimatorcontroller_p.h
         util/qquickanimatorjob.cpp util/qquickanimatorjob_p.h
         util/qquickapplication.cpp util/qquickapplication_p.h
+        util/qquickattachedpropertypropagator.cpp
+        util/qquickattachedpropertypropagator_p.h
+        util/qquickattachedpropertypropagator_p_p.h
+        util/qquickattachedpropertypropagatortarget_p.h
         util/qquickcolor.cpp util/qquickcolor_p.h
         util/qquickbehavior.cpp util/qquickbehavior_p.h
         util/qquickdeliveryagent.cpp util/qquickdeliveryagent_p.h util/qquickdeliveryagent_p_p.h

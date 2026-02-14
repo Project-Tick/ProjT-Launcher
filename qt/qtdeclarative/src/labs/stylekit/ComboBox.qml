@@ -24,6 +24,8 @@ T.ComboBox {
 
     spacing: styleReader.spacing
 
+    font: styleReader.font
+
     StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
@@ -33,7 +35,6 @@ T.ComboBox {
         hovered: control.hovered || control.pressed
         pressed: control.down
         highlighted: control.highlighted
-        // variations: editable, flat
         palette: control.palette
     }
 
@@ -80,7 +81,7 @@ T.ComboBox {
     }
 
     indicator: IndicatorDelegate {
-        parentControl: control
+        quickControl: control
         indicatorProperties: styleReader.indicator
         x: indicatorItem.x
         y: indicatorItem.y
@@ -89,8 +90,8 @@ T.ComboBox {
     }
 
     contentItem: TextInput {
-        font: styleReader.font
         text: control.editable ? control.editText : control.displayText
+        font: control.font
         enabled: control.editable
         autoScroll: control.editable
         readOnly: control.down
@@ -110,7 +111,7 @@ T.ComboBox {
     }
 
     background: BackgroundDelegate {
-        parentControl: control
+        quickControl: control
         backgroundProperties: styleReader.background
     }
 

@@ -8,6 +8,7 @@ import QtQuick
 import QtQuick.Templates as T
 import QtQuick.NativeStyle as NativeStyle
 import QtQuick.Controls.macOS.impl
+import QtQuick.Controls.impl
 
 NativeStyle.DefaultSearchField {
     id: control
@@ -18,6 +19,21 @@ NativeStyle.DefaultSearchField {
 
     contentItem: T.TextField {
         text: control.text
+
+        PlaceholderText {
+            x: parent.leftPadding
+            y: parent.topPadding
+            width: parent.width - parent.leftPadding - parent.rightPadding
+            height: parent.height - parent.topPadding - parent.bottomPadding
+
+            text: control.placeholderText
+            font: parent.font
+            color: control.palette.placeholderText
+            visible: !parent.length && !parent.preeditText && (!parent.activeFocus || parent.horizontalAlignment !== Qt.AlignHCenter)
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+            renderType: parent.renderType
+        }
 
         color: control.palette.text
         selectionColor: control.palette.highlight

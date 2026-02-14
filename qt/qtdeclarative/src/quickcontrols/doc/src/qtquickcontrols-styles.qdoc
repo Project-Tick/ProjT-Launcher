@@ -100,7 +100,31 @@
     \section2 Compile-Time Style Selection
 
     Compile-time style selection is a way of specifying a style to use by
-    explicitly importing it in QML. For example, to import the Material style:
+    directly or indirectly importing it in QML. Since it is selected at compile
+    time, you cannot change the style at run time if you use compile-time style
+    selection.
+
+    The most convenient way to use comile-time style selection is to import the
+    \e{QtQuick.Controls.Native} style. \c{QtQuick.Controls.Native} in turn
+    imports the \l{Default Styles}{default style} for the target platform. If
+    you import \c{QtQuick.Controls.Native}, you should not import any specific
+    other styles, nor the (run-time selected) \c{QtQuick.Controls} module.
+    \c{QtQuick.Controls.Native} imports the platform-default style for you and
+    that style handles its fallback. You can't have more than one top-level
+    style at the same time. For example:
+
+    \qml
+    // Refrain from importing QtQuick.Controls or specific styles.
+    import QtQuick.Controls.Native
+
+    ApplicationWindow {
+        // ...
+    }
+    \endqml
+
+    However, you can also import one specific style at compile time,
+    disregarding the platform defaults. For example, to import the Material
+    style:
 
     \qml
     // The style must be imported before any other QtQuick.Controls imports
@@ -188,6 +212,14 @@
 
     See \l {Mixing Style Selection} for information about mixing
     run-time and compile-time style selection.
+
+    \section2 Style-specific APIs
+
+    Several styles expose APIs specific to that style, for example the
+    \l{Material Style} attached object or the \l{Universal Style} attached
+    object. These style-specific APIs are only available when their style is
+    actually selected, directly or indirectly, using either compile-time or
+    run-time style selection.
 
     \section2 Mixing Style Selection
 

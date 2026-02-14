@@ -3,6 +3,7 @@
 // Qt-Security score:significant reason:default
 
 #include "qquicktooltip_p.h"
+#include "qquicktooltip_p_p.h"
 #include "qquickpopup_p_p.h"
 #include "qquickpopupitem_p_p.h"
 #include "qquickcontrol_p_p.h"
@@ -92,11 +93,31 @@ QT_BEGIN_NAMESPACE
     {QtQuick.Controls::Popup::closePolicy}{closePolicy}
 */
 
+// These enable auto tests to test the default behaviour of delay and timeout when using
+// the automatic policy, while also shortening their execution time.
+#ifdef QT_BUILD_INTERNAL
+Q_CONSTINIT Q_AUTOTEST_EXPORT
+#else
+// Can't be constexpr because we set it in our constructor (which we have to do because
+// toolTipWakeUpDelay() is not constexpr).
+static
+#endif
+int qt_quicktooltipattachedprivate_delay = -1;
+
+#ifdef QT_BUILD_INTERNAL
+Q_CONSTINIT Q_AUTOTEST_EXPORT
+#else
+constexpr
+#endif
+bool qt_quicktooltipattachedprivate_short_timeout = false;
+
 class QQuickToolTipPrivate : public QQuickPopupPrivate
 {
     Q_DECLARE_PUBLIC(QQuickToolTip)
 
 public:
+    QQuickToolTipPrivate();
+
     void startDelay();
     void stopDelay();
 
@@ -115,6 +136,12 @@ public:
     QBasicTimer delayTimer;
     QBasicTimer timeoutTimer;
 };
+
+QQuickToolTipPrivate::QQuickToolTipPrivate()
+{
+    if (qt_quicktooltipattachedprivate_delay == -1)
+        qt_quicktooltipattachedprivate_delay = qGuiApp->styleHints()->toolTipWakeUpDelay();
+}
 
 void QQuickToolTipPrivate::startDelay()
 {
@@ -257,10 +284,6 @@ void QQuickToolTip::setVisible(bool visible)
 
 QQuickToolTipAttached *QQuickToolTip::qmlAttachedProperties(QObject *object)
 {
-    QQuickItem *item = qobject_cast<QQuickItem *>(object);
-    if (!item)
-        qmlWarning(object) << "ToolTip attached property must be attached to an object deriving from Item";
-
     return new QQuickToolTipAttached(object);
 }
 
@@ -341,31 +364,19 @@ void QQuickToolTip::accessibilityActiveChanged(bool active)
 }
 #endif
 
-class QQuickToolTipAttachedPrivate : public QObjectPrivate
-{
-    Q_DECLARE_PUBLIC(QQuickToolTipAttached)
-
-public:
-    QQuickToolTip *instance(bool create) const;
-
-    int delay = 0;
-    int timeout = -1;
-    QString text;
-};
-
 QQuickToolTip *QQuickToolTipAttachedPrivate::instance(bool create) const
 {
     QQmlEngine *engine = qmlEngine(parent);
     if (!engine)
         return nullptr;
 
-    static const char *name = "_q_QQuickToolTip";
+    // QQuickAttachedPropertyPropagator uses "_q_QQuickToolTip", so we add "shared_"
+    // to make this unique.
+    static const char *name = "_q_shared_QQuickToolTip";
 
     QQuickToolTip *tip = engine->property(name).value<QQuickToolTip *>();
     if (!tip && create) {
-        // TODO: a cleaner way to create the instance? QQml(Meta)Type?
-        QQmlComponent component(engine);
-        component.setData("import QtQuick.Controls; ToolTip { }", QUrl());
+        QQmlComponent component(engine, "QtQuick.Controls", "ToolTip");
 
         QObject *object = component.create();
         if (object)
@@ -380,9 +391,155 @@ QQuickToolTip *QQuickToolTipAttachedPrivate::instance(bool create) const
     return tip;
 }
 
-QQuickToolTipAttached::QQuickToolTipAttached(QObject *parent)
-    : QObject(*(new QQuickToolTipAttachedPrivate), parent)
+void QQuickToolTipAttachedPrivate::maybeSetVisibleImplicitly(
+    const QObject *attachee, bool visible)
 {
+    auto *toolTipAttached = qobject_cast<QQuickToolTipAttached *>(
+        qmlAttachedPropertiesObject<QQuickToolTip>(attachee, false));
+    // Not using an attached tool tip.
+    if (!toolTipAttached)
+        return;
+
+    auto *toolTipAttachedPrivate = toolTipAttached->d_func();
+    // Don't interfere if the user has set ToolTip.visible explicitly or if they've
+    // set a manual policy.
+    if (toolTipAttachedPrivate->isVisibleExplicitlySet()
+            || toolTipAttachedPrivate->policy == QQuickToolTip::Manual) {
+        return;
+    }
+
+    // Don't show ourselves if we have no text. We save calling code having to get our text and
+    // instead just test it here.
+    const bool effectiveVisible = visible ? visible && !toolTipAttachedPrivate->text.isEmpty() : false;
+    toolTipAttachedPrivate->setVisible(effectiveVisible, QQml::PropertyUtils::State::ImplicitlySet);
+}
+
+void QQuickToolTipAttachedPrivate::setVisible(bool visible, QQml::PropertyUtils::State propertyState)
+{
+    Q_Q(QQuickToolTipAttached);
+    if (warnIfAttacheeIsNotAnItem(QStringLiteral("setVisible")))
+        return;
+
+    explicitVisible = isExplicitlySet(propertyState);
+
+    if (!complete && visible) {
+        pendingShow = true;
+        return;
+    }
+
+    if (visible)
+        q->show(text);
+    else
+        q->hide();
+}
+
+bool QQuickToolTipAttachedPrivate::isVisibleExplicitlySet() const
+{
+    return explicitVisible;
+}
+
+void QQuickToolTipAttachedPrivate::setDelay(int delay, QQml::PropertyUtils::State propertyState)
+{
+    Q_Q(QQuickToolTipAttached);
+    if (warnIfAttacheeIsNotAnItem(QStringLiteral("setDelay")))
+        return;
+
+    explicitDelay = isExplicitlySet(propertyState);
+
+    if (this->delay == delay)
+        return;
+
+    this->delay = delay;
+    emit q->delayChanged();
+
+    if (q->isVisible())
+        instance(true)->setDelay(delay);
+}
+
+bool QQuickToolTipAttachedPrivate::isDelayExplicitlySet() const
+{
+    return explicitDelay;
+}
+
+void QQuickToolTipAttachedPrivate::setTimeout(int timeout, QQml::PropertyUtils::State propertyState)
+{
+    Q_Q(QQuickToolTipAttached);
+    if (warnIfAttacheeIsNotAnItem(QStringLiteral("setTimeout")))
+        return;
+
+    explicitTimeout = isExplicitlySet(propertyState);
+
+    if (this->timeout == timeout)
+        return;
+
+    this->timeout = timeout;
+    emit q->timeoutChanged();
+
+    if (q->isVisible())
+        instance(true)->setTimeout(timeout);
+}
+
+bool QQuickToolTipAttachedPrivate::isTimeoutExplicitlySet() const
+{
+    return explicitTimeout;
+}
+
+void QQuickToolTipAttachedPrivate::inheritPolicy(QQuickToolTip::Policy policy)
+{
+    Q_Q(QQuickToolTipAttached);
+    if (this->policy == policy)
+        return;
+
+    this->policy = policy;
+    propagatePolicy();
+    emit q->policyChanged();
+}
+
+void QQuickToolTipAttachedPrivate::propagatePolicy()
+{
+    Q_Q(QQuickToolTipAttached);
+    const auto attachedToolTipChildren = q->attachedChildren();
+    for (QtPrivate::QQuickAttachedPropertyPropagator *child : attachedToolTipChildren) {
+        auto *attachedToolTipChild = qobject_cast<QQuickToolTipAttached *>(child);
+        if (attachedToolTipChild)
+            attachedToolTipChild->d_func()->inheritPolicy(policy);
+    }
+}
+
+/*!
+    \internal
+
+    We used to warn that the ToolTip attached property must be attached to an object deriving
+    from Item. That made sense before the introduction of ToolTip.policy, but now we need to
+    be able to set a policy on e.g. ApplicationWindow and have it propagate down to the rest
+    of the scene. So instead of warning in the constructor, we warn in the individual functions.
+*/
+bool QQuickToolTipAttachedPrivate::warnIfAttacheeIsNotAnItem(const QString &functionName)
+{
+    QQuickItem *item = qobject_cast<QQuickItem *>(parent);
+    if (Q_LIKELY(item))
+        return false;
+
+    qmlWarning(parent).nospace().noquote() << "The attached function ToolTip::" << functionName
+        << " can only be called when the attachee derives from Item";
+    return true;
+}
+
+int QQuickToolTipAttachedPrivate::calculateTimeout(const QString &text)
+{
+    if (Q_UNLIKELY(qt_quicktooltipattachedprivate_short_timeout)) {
+        // For auto tests, to ensure that the default automatic timeout works.
+        return 123;
+    }
+
+    // Based on QTipLabel::restartExpireTimer.
+    return 10000 + 40 * qMax(0, text.length() - 100);
+}
+
+QQuickToolTipAttached::QQuickToolTipAttached(QObject *parent)
+    : QtPrivate::QQuickAttachedPropertyPropagator(*(new QQuickToolTipAttachedPrivate), parent)
+{
+    initialize();
 }
 
 /*!
@@ -402,6 +559,8 @@ QString QQuickToolTipAttached::text() const
 void QQuickToolTipAttached::setText(const QString &text)
 {
     Q_D(QQuickToolTipAttached);
+    if (d->warnIfAttacheeIsNotAnItem(QStringLiteral("setText")))
+        return;
     if (d->text == text)
         return;
 
@@ -418,25 +577,22 @@ void QQuickToolTipAttached::setText(const QString &text)
     This attached property holds the delay (milliseconds) of the shared tool tip.
     The property can be attached to any item.
 
+    The default value is \c 0 if \l policy is \c ToolTip.Manual, otherwise it
+    is \l QStyleHints::toolTipWakeUpDelay().
+
     \sa {Attached Tool Tips}, {Delay and Timeout}
 */
 int QQuickToolTipAttached::delay() const
 {
     Q_D(const QQuickToolTipAttached);
-    return d->delay;
+    return d->explicitDelay || d->policy == QQuickToolTip::Manual ? d->delay
+        : qt_quicktooltipattachedprivate_delay;
 }
 
 void QQuickToolTipAttached::setDelay(int delay)
 {
     Q_D(QQuickToolTipAttached);
-    if (d->delay == delay)
-        return;
-
-    d->delay = delay;
-    emit delayChanged();
-
-    if (isVisible())
-        d->instance(true)->setDelay(delay);
+    d->setDelay(delay, QQml::PropertyUtils::State::ExplicitlySet);
 }
 
 /*!
@@ -445,25 +601,22 @@ void QQuickToolTipAttached::setDelay(int delay)
     This attached property holds the timeout (milliseconds) of the shared tool tip.
     The property can be attached to any item.
 
+    The default value is based on the length of the text, and will always be
+    at least 10 seconds long.
+
     \sa {Attached Tool Tips}, {Delay and Timeout}
 */
 int QQuickToolTipAttached::timeout() const
 {
     Q_D(const QQuickToolTipAttached);
-    return d->timeout;
+    return d->explicitTimeout || d->policy == QQuickToolTip::Manual ? d->timeout
+        : d->calculateTimeout(d->text);
 }
 
 void QQuickToolTipAttached::setTimeout(int timeout)
 {
     Q_D(QQuickToolTipAttached);
-    if (d->timeout == timeout)
-        return;
-
-    d->timeout = timeout;
-    emit timeoutChanged();
-
-    if (isVisible())
-        d->instance(true)->setTimeout(timeout);
+    d->setTimeout(timeout, QQml::PropertyUtils::State::ExplicitlySet);
 }
 
 /*!
@@ -487,10 +640,7 @@ bool QQuickToolTipAttached::isVisible() const
 void QQuickToolTipAttached::setVisible(bool visible)
 {
     Q_D(QQuickToolTipAttached);
-    if (visible)
-        show(d->text);
-    else
-        hide();
+    d->setVisible(visible, QQml::PropertyUtils::State::ExplicitlySet);
 }
 
 /*!
@@ -508,6 +658,73 @@ QQuickToolTip *QQuickToolTipAttached::toolTip() const
 }
 
 /*!
+    \qmlattachedproperty enumeration QtQuick.Controls::ToolTip::policy
+    \since 6.12
+
+    This attached property controls whether the visibility of the
+    \l {shared tool tip instance}{toolTip} is handled automatically.
+    It only has an effect for items on which \c ToolTip.visible \e {has not}
+    been set. Only items that set \c ToolTip.text will be made visible. It only
+    has an effect for the following items and their derived types: \l Control,
+    \l TextArea and \l TextField. All other types require \l visible to be
+    manually set.
+
+    It also determines the default values for the delay and timeout properties
+    of the shared tool tip instance (regardless of whether \c ToolTip.visible
+    or \c ToolTip.text have been set).
+
+    This property is propagated to attached ToolTip children.
+
+    Available values:
+    \value ToolTip.Automatic The shared tool tip will be shown when the
+        attachee is hovered or long-pressed (if triggered by touch and the
+        attachee is an \l AbstractButton or one of its derived types). If
+        the visible property has been explicitly set, or the text property has
+        not been set, this value has no effect, and the behavior will be
+        equivalent to \c ToolTip.Manual.
+
+        The shared tool tip will also default to platform-specific values
+        for its delay and timeout properties.
+    \value ToolTip.Manual The shared tool tip will not be shown automatically,
+        and the developer is responsible for setting the visible property.
+
+        The shared tool tip will not default to platform-specific values
+        for its delay and timeout properties.
+
+    The default value is \c {ToolTip.Automatic}.
+
+    The property provides a way to opt-out of the default values for shared
+    tool tips introduced in Qt 6.12. This is particularly relevant for legacy
+    code that doesn't explicitly set the visible property before an item is
+    interacted with. For applications that declaratively set the visible
+    property and find the new default values for delay and timeout acceptable,
+    \c policy is not needed.
+
+    \sa {Attached Tool Tips}
+*/
+QQuickToolTip::Policy QQuickToolTipAttached::policy() const
+{
+    Q_D(const QQuickToolTipAttached);
+    return d->policy;
+}
+
+void QQuickToolTipAttached::setVisiblePolicy(QQuickToolTip::Policy policy)
+{
+    Q_D(QQuickToolTipAttached);
+    if (d->policy == policy)
+        return;
+
+    d->policy = policy;
+    d->propagatePolicy();
+    emit policyChanged();
+}
+
+void QQuickToolTipAttached::resetVisiblePolicy()
+{
+    setVisiblePolicy(QQuickToolTip::Automatic);
+}
+
+/*!
     \qmlattachedmethod void QtQuick.Controls::ToolTip::show(string text, int timeout = -1)
 
     This attached method shows the shared tooltip with \a text and \a timeout (milliseconds).
@@ -518,6 +735,9 @@ QQuickToolTip *QQuickToolTipAttached::toolTip() const
 void QQuickToolTipAttached::show(const QString &text, int ms)
 {
     Q_D(QQuickToolTipAttached);
+    if (d->warnIfAttacheeIsNotAnItem(QStringLiteral("show")))
+        return;
+
     QQuickToolTip *tip = d->instance(true);
     if (!tip)
         return;
@@ -525,8 +745,8 @@ void QQuickToolTipAttached::show(const QString &text, int ms)
     tip->resetWidth();
     tip->resetHeight();
     tip->setParentItem(qobject_cast<QQuickItem *>(parent()));
-    tip->setDelay(d->delay);
-    tip->setTimeout(ms >= 0 ? ms : d->timeout);
+    tip->setDelay(delay());
+    tip->setTimeout(ms >= 0 ? ms : timeout());
     tip->show(text);
 }
 
@@ -546,6 +766,34 @@ void QQuickToolTipAttached::hide()
     // check the parent item to prevent unexpectedly closing tooltip by new created invisible tooltip
     if (parent() == tip->parentItem())
         tip->close();
+}
+
+void QQuickToolTipAttached::attachedParentChange(QQuickAttachedPropertyPropagator *newParent,
+    QQuickAttachedPropertyPropagator */*oldParent*/)
+{
+    auto *attachedToolTipParent = qobject_cast<QQuickToolTipAttached *>(newParent);
+    if (!attachedToolTipParent)
+        return;
+
+    Q_D(QQuickToolTipAttached);
+    d->inheritPolicy(attachedToolTipParent->policy());
+}
+
+void QQuickToolTipAttached::classBegin()
+{
+    Q_D(QQuickToolTipAttached);
+    d->complete = false;
+}
+
+void QQuickToolTipAttached::componentComplete()
+{
+    Q_D(QQuickToolTipAttached);
+    d->complete = true;
+
+    if (d->pendingShow) {
+        d->pendingShow = false;
+        show(d->text);
+    }
 }
 
 QT_END_NAMESPACE

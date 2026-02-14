@@ -22,6 +22,7 @@
 #include <QtQmlCompiler/private/qqmljscontextproperties_p.h>
 #include <QtQmlCompiler/private/qqmljsusercontextproperties_p.h>
 #include <QtQmlCompiler/private/qqmljstypepropagator_p.h>
+#include <QtQmlCompiler/private/qqmljslintertypepropagator_p.h>
 
 #include <QtQmlToolingSettings/private/qqmltoolingsettings_p.h>
 

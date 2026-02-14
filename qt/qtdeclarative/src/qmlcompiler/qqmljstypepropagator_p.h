@@ -27,20 +27,9 @@ namespace QQmlSA {
 class PassManager;
 };
 
-struct ContextPropertyInfo
-{
-    QQmlJS::HeuristicContextProperties heuristicContextProperties;
-    QQmlJS::UserContextProperties userContextProperties;
-};
-
 struct Q_QMLCOMPILER_EXPORT QQmlJSTypePropagator : public QQmlJSCompilePass
 {
-    QQmlJSTypePropagator(const QV4::Compiler::JSUnitGenerator *unitGenerator,
-                         const QQmlJSTypeResolver *typeResolver, QQmlJSLogger *logger,
-                         const BasicBlocks &basicBlocks = {},
-                         const InstructionAnnotations &annotations = {},
-                         QQmlSA::PassManager *passManager = nullptr,
-                         const ContextPropertyInfo &contextPropertyInfo = {});
+    using QQmlJSCompilePass::QQmlJSCompilePass;
 
     BlocksAndAnnotations run(const Function *m_function);
 
@@ -68,7 +57,6 @@ struct Q_QMLCOMPILER_EXPORT QQmlJSTypePropagator : public QQmlJSCompilePass
     void generate_LoadName(int nameIndex) override;
     void generate_LoadGlobalLookup(int index) override;
     void generate_LoadQmlContextPropertyLookup(int index) override;
-    void generate_StoreNameCommon(int nameIndex);
     void generate_StoreNameSloppy(int nameIndex) override;
     void generate_StoreNameStrict(int name) override;
     void generate_LoadElement(int base) override;
@@ -180,12 +168,10 @@ struct Q_QMLCOMPILER_EXPORT QQmlJSTypePropagator : public QQmlJSCompilePass
     void generate_ThrowOnNullOrUndefined() override;
     void generate_GetTemplateObject(int index) override;
 
-    bool checkForEnumProblems(QQmlJSRegisterContent base, const QString &propertyName);
-
     Verdict startInstruction(QV4::Moth::Instr::Type instr) override;
     void endInstruction(QV4::Moth::Instr::Type instr) override;
 
-private:
+protected:
     struct ExpectedRegisterState
     {
         int originatingOffset = 0;
@@ -201,10 +187,15 @@ private:
         bool instructionHasError = false;
     };
 
-    void handleUnqualifiedAccess(const QString &name, bool isMethod) const;
-    void handleUnqualifiedAccessAndContextProperties(const QString &name, bool isMethod) const;
-    void checkDeprecated(QQmlJSScope::ConstPtr scope, const QString &name, bool isMethod) const;
-    bool isCallingProperty(QQmlJSScope::ConstPtr scope, const QString &name) const;
+    // Hooked for linting logic, some are stubs
+    virtual void handleUnqualifiedAccess(const QString &name, bool isMethod) const;
+    virtual void handleUnqualifiedAccessAndContextProperties(const QString &name, bool isMethod) const;
+    virtual void checkDeprecated(QQmlJSScope::ConstPtr scope, const QString &name, bool isMethod) const;
+    virtual bool isCallingProperty(QQmlJSScope::ConstPtr scope, const QString &name) const;
+    virtual bool handleImportNamespaceLookup(const QString &propertyName);
+    virtual void handleLookupError(const QString &propertyName);
+    virtual bool checkForEnumProblems(QQmlJSRegisterContent base, const QString &propertyName);
+    virtual void warnAboutTypeCoercion(int lhs);
 
     enum PropertyResolution {
         PropertyMissing,
@@ -221,14 +212,15 @@ private:
     void generateBinaryArithmeticOperation(QSOperator::Op op, int lhs);
     void generateBinaryConstArithmeticOperation(QSOperator::Op op);
 
-    void propagateCall(
+    virtual void generate_StoreNameCommon(int nameIndex);
+    virtual void propagateCall(
             const QList<QQmlJSMetaMethod> &methods, int argc, int argv,
             QQmlJSRegisterContent scope);
-    void propagateTranslationMethod_SAcheck(const QString &methodName);
+    virtual void propagateTranslationMethod_SAcheck(const QString &methodName);
     bool propagateTranslationMethod(const QList<QQmlJSMetaMethod> &methods, int argc, int argv);
     void propagateStringArgCall(QQmlJSRegisterContent base, int argv);
     bool propagateArrayMethod(const QString &name, int argc, int argv, QQmlJSRegisterContent valueType);
-    void propagatePropertyLookup(
+    virtual void propagatePropertyLookup(
             const QString &name, int lookupIndex = QQmlJSRegisterContent::InvalidLookupIndex);
     void propagateScopeLookupCall(const QString &functionName, int argc, int argv);
     void saveRegisterStateForJump(int offset);
@@ -278,20 +270,7 @@ private:
     void generate_Construct_SCDate(const QQmlJSMetaMethod &ctor, int argc, int argv);
     void generate_Construct_SCArray(const QQmlJSMetaMethod &ctor, int argc, int argv);
 
-    // helper functions to perform QQmlSA checks
-    void generate_ret_SAcheck();
-    void generate_LoadQmlContextPropertyLookup_SAcheck(const QString &name);
-    void generate_StoreNameCommon_SAcheck(QQmlJSRegisterContent in, const QString &name);
-    void propagatePropertyLookup_SAcheck(const QString &propertyName);
-    void generate_StoreProperty_SAcheck(const QString &propertyName, QQmlJSRegisterContent callBase);
-    void generate_callProperty_SAcheck(const QString &propertyName,
-                                       const QQmlJSScope::ConstPtr &callBase);
-    void propagateCall_SAcheck(const QQmlJSMetaMethod &method,
-                               const QQmlJSScope::ConstPtr &baseType);
-    void generate_GetOptionalLookup_SAcheck();
-
-    bool handleImportNamespaceLookup(const QString &propertyName);
-    void handleLookupError(const QString &propertyName);
+    static bool isLoggingMethod(const QString &consoleMethod);
 
     void addError(const QString &message)
     {
@@ -304,17 +283,14 @@ private:
         setAccumulator(m_typeResolver->syntheticType(m_typeResolver->varType()));
         m_state.instructionHasError = true;
     }
-    void warnAboutTypeCoercion(int lhs);
 
     QQmlJSRegisterContent m_returnType;
-    QQmlSA::PassManager *m_passManager = nullptr;
 
     // Not part of the state, as the back jumps are the reason for running multiple passes
     QMultiHash<int, ExpectedRegisterState> m_jumpOriginRegisterStateByTargetInstructionOffset;
 
     InstructionAnnotations m_prevStateAnnotations;
     PassState m_state;
-    ContextPropertyInfo m_contextPropertyInfo;
 };
 
 QT_END_NAMESPACE

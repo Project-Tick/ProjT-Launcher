@@ -1,5 +1,6 @@
 // Copyright (C) 2019 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant
 
 #ifndef QQMLMETATYPEDATA_P_H
 #define QQMLMETATYPEDATA_P_H
@@ -50,6 +51,10 @@ struct QQmlMetaTypeData
 
     typedef QHash<QUrl, const QQmlTypePrivate *> Files; //For file imported composite types only
     Files urlToType;
+
+    // Inline component types created speculatively before their base type's CU was registered.
+    // These need to be pruned when the CU registers if the IC doesn't actually exist.
+    QSet<QUrl> speculativeInlineComponentTypes;
 
     typedef QMultiHash<const QMetaObject *, const QQmlTypePrivate *> MetaObjects;
     MetaObjects metaObjectToType;

@@ -31,9 +31,10 @@ T.Popup {
     topPadding: __styleReader.topPadding
     rightPadding: __styleReader.rightPadding
     bottomPadding: __styleReader.bottomPadding
+    font: __styleReader.font
 
     background: BackgroundDelegate {
-        parentControl: control
+        quickControl: control
         backgroundProperties: control.__styleReader.background
     }
 }

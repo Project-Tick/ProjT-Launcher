@@ -26,6 +26,8 @@ T.Button {
     icon.height: 24
     icon.color: styleReader.text.color
 
+    font: styleReader.font
+
     StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
@@ -44,7 +46,7 @@ T.Button {
         display: control.display
         icon: control.icon
         text: control.text
-        font: styleReader.font // FIXME: should be inherited from control
+        font: control.font
         color: styleReader.text.color
         alignment: styleReader.text.alignment
         topPadding: styleReader.text.topPadding
@@ -54,7 +56,7 @@ T.Button {
     }
 
     background: BackgroundDelegate {
-        parentControl: control
+        quickControl: control
         backgroundProperties: styleReader.background
     }
 }

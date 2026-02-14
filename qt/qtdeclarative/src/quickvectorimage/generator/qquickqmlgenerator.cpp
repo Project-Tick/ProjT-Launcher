@@ -63,6 +63,9 @@ QQuickQmlGenerator::~QQuickQmlGenerator()
 
 bool QQuickQmlGenerator::save()
 {
+    if (Q_UNLIKELY(errorState()))
+        return false;
+
     bool res = true;
     if (!outputFileName.isEmpty()) {
         QFileInfo fileInfo(outputFileName);
@@ -110,6 +113,10 @@ QString QQuickQmlGenerator::commentString() const
 
 QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info, const QString &idSuffix)
 {
+    static qint64 maxNodes = qEnvironmentVariableIntegerValue("QT_QUICKVECTORIMAGE_MAX_NODES").value_or(10000);
+    if (Q_UNLIKELY(!checkSanityLimit(++m_nodeCounter, maxNodes, "nodes"_L1)))
+        return {};
+
     if (!info.nodeId.isEmpty())
         stream() << "objectName: \"" << info.nodeId << "\"";
 
@@ -139,6 +146,8 @@ QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info, const QString
 
 void QQuickQmlGenerator::generateNodeEnd(const NodeInfo &info)
 {
+    if (Q_UNLIKELY(errorState()))
+        return;
     m_indentLevel--;
     stream() << "}";
     generateShaderUse(info);
@@ -476,6 +485,9 @@ void QQuickQmlGenerator::generateShaderUse(const NodeInfo &info)
 
 bool QQuickQmlGenerator::generateDefsNode(const StructureNodeInfo &info)
 {
+    if (Q_UNLIKELY(errorState()))
+        return false;
+
     if (info.stage == StructureNodeStage::Start) {
         m_oldIndentLevel = m_indentLevel;
 
@@ -510,7 +522,7 @@ bool QQuickQmlGenerator::generateDefsNode(const StructureNodeInfo &info)
 
 void QQuickQmlGenerator::generateImageNode(const ImageNodeInfo &info)
 {
-    if (!isNodeVisible(info))
+    if (Q_UNLIKELY(errorState() || !isNodeVisible(info)))
         return;
 
     const QFileInfo outputFileInfo(outputFileName);
@@ -631,7 +643,7 @@ void QQuickQmlGenerator::generateMarkers(const PathNodeInfo &info)
 
 void QQuickQmlGenerator::generatePath(const PathNodeInfo &info, const QRectF &overrideBoundingRect)
 {
-    if (!isNodeVisible(info))
+    if (Q_UNLIKELY(errorState() || !isNodeVisible(info)))
         return;
 
     if (m_inShapeItemLevel > 0) {
@@ -881,6 +893,9 @@ void QQuickQmlGenerator::outputShapePath(const PathNodeInfo &info, const QPainte
     Q_UNUSED(pathSelector)
     Q_ASSERT(painterPath || quadPath);
 
+    if (Q_UNLIKELY(errorState()))
+        return;
+
     const QColor strokeColor = info.strokeStyle.color.defaultValue().value<QColor>();
     const bool noPen = strokeColor == QColorConstants::Transparent
                        && !info.strokeStyle.color.isAnimated()
@@ -1078,7 +1093,7 @@ void QQuickQmlGenerator::outputShapePath(const PathNodeInfo &info, const QPainte
 
 void QQuickQmlGenerator::generateNode(const NodeInfo &info)
 {
-    if (!isNodeVisible(info))
+    if (Q_UNLIKELY(errorState() || !isNodeVisible(info)))
         return;
 
     stream() << "// Missing Implementation for SVG Node: " << info.typeName;
@@ -1091,7 +1106,7 @@ void QQuickQmlGenerator::generateNode(const NodeInfo &info)
 
 void QQuickQmlGenerator::generateTextNode(const TextNodeInfo &info)
 {
-    if (!isNodeVisible(info))
+    if (Q_UNLIKELY(errorState() || !isNodeVisible(info)))
         return;
 
     static int counter = 0;
@@ -1187,7 +1202,7 @@ void QQuickQmlGenerator::generateTextNode(const TextNodeInfo &info)
 
 void QQuickQmlGenerator::generateUseNode(const UseNodeInfo &info)
 {
-    if (!isNodeVisible(info))
+    if (Q_UNLIKELY(errorState() || !isNodeVisible(info)))
         return;
 
     if (info.stage == StructureNodeStage::Start) {
@@ -1618,7 +1633,7 @@ void QQuickQmlGenerator::generateAnimateTransform(const QString &targetName, con
 
 bool QQuickQmlGenerator::generateStructureNode(const StructureNodeInfo &info)
 {
-    if (!isNodeVisible(info))
+    if (Q_UNLIKELY(errorState() || !isNodeVisible(info)))
         return false;
 
     const bool isPathContainer = !info.forceSeparatePaths && info.isPathContainer;
@@ -1669,6 +1684,9 @@ bool QQuickQmlGenerator::generateStructureNode(const StructureNodeInfo &info)
 
 bool QQuickQmlGenerator::generateMaskNode(const MaskNodeInfo &info)
 {
+    if (Q_UNLIKELY(errorState()))
+        return false;
+
     // Generate an invisible item subtree which can be used in ShaderEffectSource
     if (info.stage == StructureNodeStage::End) {
         // Generate code to add after defs block
@@ -1720,6 +1738,9 @@ bool QQuickQmlGenerator::generateMaskNode(const MaskNodeInfo &info)
 
 void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
 {
+    if (Q_UNLIKELY(errorState()))
+        return;
+
     stream() << "Item {";
     m_indentLevel++;
 
@@ -2292,6 +2313,9 @@ bool QQuickQmlGenerator::generateMarkerNode(const MarkerNodeInfo &info)
 
 bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)
 {
+    if (Q_UNLIKELY(errorState()))
+        return false;
+
     const QStringList comments = m_commentString.split(u'\n');
 
     if (!isNodeVisible(info)) {
@@ -2448,6 +2472,16 @@ QTextStream &QQuickQmlGenerator::stream(int flags)
         m_stream.setDevice(&m_result);
     else if (!(flags & StreamFlags::SameLine))
         m_stream << Qt::endl << indent();
+
+    static qint64 maxBufferSize = qEnvironmentVariableIntegerValue("QT_QUICKVECTORIMAGE_MAX_BUFFER").value_or(64 << 20); // 64MB
+    if (m_stream.device()) {
+        if (Q_UNLIKELY(!checkSanityLimit(m_stream.device()->size(), maxBufferSize, "buffer size"_L1)))
+            m_stream.device()->reset();
+    } else {
+        if (Q_UNLIKELY(!checkSanityLimit(m_stream.string()->size(), maxBufferSize, "buffer string size"_L1)))
+            m_stream.string()->clear();
+    }
+
     return m_stream;
 }
 

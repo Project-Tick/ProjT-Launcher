@@ -20,6 +20,8 @@
 #include "qquickapplicationwindow_p_p.h"
 #include "qquickdeferredexecute_p_p.h"
 #include "qquickcontentitem_p.h"
+#include "qquicktooltip_p.h"
+#include "qquicktooltip_p_p.h"
 
 #if QT_CONFIG(accessibility)
 #include <QtQuick/private/qquickaccessibleattached_p.h>
@@ -1043,14 +1045,16 @@ QFont QQuickControl::font() const
     Q_D(const QQuickControl);
     QFont font = d->resolvedFont;
     // The resolveMask should inherit from the requestedFont
-    font.setResolveMask(d->extra.value().requestedFont.resolveMask());
+    font.setResolveMask(d->extra.isAllocated() ? d->extra->requestedFont.resolveMask() : 0);
     return font;
 }
 
 void QQuickControl::setFont(const QFont &font)
 {
     Q_D(QQuickControl);
-    if (d->extra.value().requestedFont.resolveMask() == font.resolveMask() && d->extra.value().requestedFont == font)
+    if (d->extra.isAllocated()
+            && d->extra.value().requestedFont.resolveMask() == font.resolveMask()
+            && d->extra.value().requestedFont == font)
         return;
 
     d->extra.value().requestedFont = font;
@@ -2156,6 +2160,7 @@ void QQuickControl::fontChange(const QFont &newFont, const QFont &oldFont)
 #if QT_CONFIG(quicktemplates2_hover)
 void QQuickControl::hoverChange()
 {
+    QQuickToolTipAttachedPrivate::maybeSetVisibleImplicitly(this, isHovered());
 }
 #endif
 

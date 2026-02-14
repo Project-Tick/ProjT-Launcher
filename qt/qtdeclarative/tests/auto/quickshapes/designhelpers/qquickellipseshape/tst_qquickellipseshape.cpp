@@ -8,6 +8,8 @@
 #include <QtQuickTestUtils/private/visualtestutils_p.h>
 #include <QtQuickShapesDesignHelpers/private/qquickellipseshape_p.h>
 
+using namespace QQuickVisualTestUtils;
+
 class tst_QQuickEllipseShape : public QQmlDataTest
 {
     Q_OBJECT
@@ -19,6 +21,7 @@ private slots:
     void basicShape();
     void changeSignals();
     void changeSignals_data();
+    void fillItem();
 
 private:
     QScopedPointer<QQuickView> window;
@@ -53,6 +56,7 @@ void tst_QQuickEllipseShape::basicShape()
     QCOMPARE(ellipseShape->borderMode(), QQuickEllipseShape::BorderMode::Inside);
     QCOMPARE(ellipseShape->strokeColor(), QColor(Qt::black));
     QCOMPARE(ellipseShape->fillColor(), QColor(Qt::white));
+    QCOMPARE(ellipseShape->fillItem(), nullptr);
 }
 
 void tst_QQuickEllipseShape::changeSignals_data()
@@ -107,6 +111,21 @@ void tst_QQuickEllipseShape::changeSignals()
     QVERIFY(signalSpy.isValid());
     QVERIFY(ellipseShape->setProperty(QTest::currentDataTag(), propertyValue));
     QCOMPARE(signalSpy.count(), 1);
+}
+
+void tst_QQuickEllipseShape::fillItem()
+{
+    QQuickApplicationHelper helper(this, "fillitem.qml");
+    QVERIFY2(helper.ready, helper.failureMessage());
+    QQuickWindow *window = helper.window;
+    window->show();
+    QVERIFY(QTest::qWaitForWindowExposed(window));
+
+    auto *theShape = window->property("theShape").value<QQuickEllipseShape *>();
+    QVERIFY(theShape);
+
+    auto *fillItem = window->findChild<QQuickItem *>("fillItem");
+    QVERIFY(fillItem);
 }
 
 QTEST_MAIN(tst_QQuickEllipseShape)

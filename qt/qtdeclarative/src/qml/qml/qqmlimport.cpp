@@ -1,6 +1,7 @@
 // Copyright (C) 2017 Crimson AS <info@crimson.no>
 // Copyright (C) 2016 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant
 
 #include "qqmlimport_p.h"
 
@@ -562,7 +563,10 @@ bool QQmlImportInstance::resolveType(QQmlTypeLoader *typeLoader, const QHashedSt
         bool ret = uri == typeStr;
         if (ret) {
             Q_ASSERT(!type_return->isValid());
-            *type_return = QQmlMetaType::fetchOrCreateInlineComponentTypeForUrl(QUrl(url));
+            *type_return = QQmlMetaType::findOrCreateSpeculativeInlineComponentType(QUrl(url));
+            // If the IC doesn't exist in an already-registered CU, we get an invalid type
+            if (!type_return->isValid())
+                ret = false;
         }
         return ret;
     }
@@ -704,27 +708,30 @@ bool QQmlImports::resolveType(
         return resolveTypeInNamespace(type, &m_unqualifiedset, errors);
     }
     case 2: {
-        // either namespace + simple type OR simple type + inline component
+        // either namespace + simple type OR simple type + inline component OR failure
         QQmlImportNamespace *s = findQualifiedNamespace(splitName.at(0));
+
         if (s) {
             // namespace + simple type
             return resolveTypeInNamespace(splitName.at(1), s, errors);
-        } else {
-            if (resolveTypeInNamespace(splitName.at(0), &m_unqualifiedset, nullptr)) {
-                // either simple type + inline component
-                *type_return = QQmlMetaType::inlineComponentType(
-                        *type_return, splitName.at(1).toString());
-                return true;
-            } else {
-                // or a failure
-                if (errors) {
-                    QQmlError error;
-                    error.setDescription(QQmlImports::tr("- %1 is neither a type nor a namespace").arg(splitName.at(0).toString()));
-                    errors->prepend(error);
-                }
-                return false;
-            }
         }
+
+        if (resolveTypeInNamespace(splitName.at(0), &m_unqualifiedset, nullptr)) {
+            // simple type + inline component
+            *type_return = QQmlMetaType::findOrCreateSpeculativeInlineComponentType(
+                    *type_return, splitName.at(1).toString());
+            if (type_return->isValid())
+                return true;
+        }
+
+        if (errors) {
+            // failure
+            QQmlError error;
+            error.setDescription(QQmlImports::tr("- %1 is neither a type nor a namespace")
+                                         .arg(splitName.at(0).toString()));
+            errors->prepend(error);
+        }
+        return false;
     }
     case 3: {
         // must be namespace + simple type + inline component
@@ -734,9 +741,15 @@ bool QQmlImports::resolveType(
             error.setDescription(QQmlImports::tr("- %1 is not a namespace").arg(splitName.at(0).toString()));
         } else {
             if (resolveTypeInNamespace(splitName.at(1), s, nullptr)) {
-                *type_return = QQmlMetaType::inlineComponentType(
+                *type_return = QQmlMetaType::findOrCreateSpeculativeInlineComponentType(
                         *type_return, splitName.at(2).toString());
-                return true;
+                if (type_return->isValid())
+                    return true;
+
+                // IC doesn't exist in already-registered base type
+                error.setDescription(QQmlImports::tr(
+                        "- %1 is not an inline component")
+                        .arg(splitName.at(2).toString()));
             } else {
                 error.setDescription(QQmlImports::tr("- %1 is not a type").arg(splitName.at(1).toString()));
             }

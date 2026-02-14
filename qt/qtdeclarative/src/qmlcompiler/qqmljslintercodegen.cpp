@@ -10,6 +10,7 @@
 #include <QtQmlCompiler/private/qqmljsstorageinitializer_p.h>
 #include <QtQmlCompiler/private/qqmljsfunctioninitializer_p.h>
 #include <QtQmlCompiler/private/qqmljsbasicblocks_p.h>
+#include <QtQmlCompiler/private/qqmljslintertypepropagator_p.h>
 
 #include <QFileInfo>
 
@@ -100,7 +101,7 @@ void QQmlJSLinterCodegen::analyzeFunction(const QV4::Compiler::Context *context,
                     .run(function, ValidateBasicBlocks, dummy);
 
     blocksAndAnnotations =
-            QQmlJSTypePropagator(m_unitGenerator, &m_typeResolver, m_logger,
+            QQmlJSLinterTypePropagator(m_unitGenerator, &m_typeResolver, m_logger,
                                  blocksAndAnnotations.basicBlocks, blocksAndAnnotations.annotations,
                                  m_passManager, m_contextPropertyInfo)
                     .run(function);

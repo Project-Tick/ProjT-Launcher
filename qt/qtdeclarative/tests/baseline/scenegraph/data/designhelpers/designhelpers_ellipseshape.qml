@@ -221,5 +221,13 @@ Rectangle {
             strokeWidth: 3
             joinStyle: ShapePath.RoundJoin
         }
+        TestEllipseShape {
+            id: theShape
+            fillItem: Image {
+                source: "../shared/col320x480.jpg"
+                visible: false
+                parent: theShape
+            }
+        }
     }
 }

@@ -22,6 +22,8 @@ T.SpinBox {
     bottomPadding: spinBoxLayout.padding.bottom
     spacing: styleReader.spacing
 
+    font: styleReader.font
+
     StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
@@ -102,8 +104,7 @@ T.SpinBox {
     contentItem: TextInput {
         z: 2
         text: control.displayText
-
-        font: styleReader.font
+        font: control.font
         selectionColor: control.palette.highlight
         selectedTextColor: control.palette.highlightedText
         color: styleReader.text.color
@@ -122,7 +123,7 @@ T.SpinBox {
     }
 
     up.indicator: IndicatorDelegate {
-        parentControl: control
+        quickControl: control
         indicatorProperties: upProperties.indicator.up
         x: upIndicatorItem.x
         y: upIndicatorItem.y
@@ -131,7 +132,7 @@ T.SpinBox {
     }
 
     down.indicator: IndicatorDelegate {
-        parentControl: control
+        quickControl: control
         indicatorProperties: downProperties.indicator.down
         x: downIndicatorItem.x
         y: downIndicatorItem.y
@@ -140,7 +141,7 @@ T.SpinBox {
     }
 
     background: BackgroundDelegate {
-        parentControl: control
+        quickControl: control
         backgroundProperties: styleReader.background
     }
 }

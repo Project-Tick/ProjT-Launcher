@@ -10,8 +10,8 @@ import Qt.labs.StyleKit.impl
 DelegateContainer {
     id: root
 
-    implicitWidth: Math.max(_delegateImplicitWidth, indicatorLayout.implicitWidth)
-    implicitHeight: Math.max(_delegateImplicitHeight, indicatorLayout.implicitHeight)
+    implicitWidth: Math.max(delegateInstance ? delegateInstance.implicitWidth : 0, indicatorLayout.implicitWidth)
+    implicitHeight: Math.max(delegateInstance ? delegateInstance.implicitHeight : 0, indicatorLayout.implicitHeight)
 
     transformOrigin: Item.TopLeft
     rotation: vertical ? 90 : 0
@@ -20,22 +20,12 @@ DelegateContainer {
 
     required property StyleKitDelegateProperties indicatorProperties
     property bool vertical: false
+
     /* Some indicators (Slider, RangeSlider) should let the foreground delegate
      * only fill up a certain amount of the available foreground space (that is, the
      * track / progress). This amount be controlled with firstProgress and secondProgress. */
     property real firstProgress: 0.0
     property real secondProgress: 1.0
-
-    readonly property real _delegateImplicitWidth: root.indicatorProperties.implicitWidth > 0
-                    ? root.indicatorProperties.implicitWidth
-                    : delegateInstance
-                        ? delegateInstance.implicitWidth
-                        : 0
-    readonly property real _delegateImplicitHeight: root.indicatorProperties.implicitHeight > 0
-                    ? root.indicatorProperties.implicitHeight
-                    : delegateInstance
-                        ? delegateInstance.implicitHeight
-                        : 0
 
     StyleKitLayout {
         id: indicatorLayout
@@ -54,22 +44,42 @@ DelegateContainer {
                 fillHeight: indicatorProperties.foreground.implicitHeight === Style.Stretch
             }
         ]
-        mirrored: parentControl.mirrored
+        mirrored: quickControl.mirrored
     }
 
     DelegateContainer {
         id: foreground
         parent: root
-        parentControl: root.parentControl
+        quickControl: root.quickControl
         delegateProperties: root.indicatorProperties.foreground
-        x: fgItem.x + firstProgress * (fgItem.fillWidth
-                ? fgItem.width - indicatorProperties.foreground.minimumWidth
-                : fgItem.width)
+        x: fgItem.x
         y: fgItem.y
-        width: fgItem.fillWidth ? (indicatorProperties.foreground.minimumWidth
-                                    + ((secondProgress - firstProgress) * (fgItem.width
-                                        - indicatorProperties.foreground.minimumWidth)))
-                                : (secondProgress - firstProgress) * fgItem.width
+        z: 1
+        width: fgItem.width
         height: fgItem.height
+
+        states: State {
+            /* Set a width on the foreground that matches the progress. But only do so if the default
+             * delegate is being used. If a custom delegate is used, it is responsible for sizing
+             * itself based on the available space (which is given by the size of this container).
+             * (And ideally, resizing the container to match the progress should eventually be moved
+             * out of this file, and into StyleKitDelegate, or perhaps a new StyleKitIndicatorDelegate).
+             * Resizing the container to match the progress when a custom delegate is being used
+             * assumes too much about how the delegate implements the progress, and prevents custom
+             * delegates from implementing it by other means (e.g. a circular progress
+             * indicator that fills in a circle rather than stretching a rectangle etc). */
+            when: foreground.usingDefaultDelegate && (root.firstProgress !== 0.0 || root.secondProgress !== 1.0)
+            PropertyChanges {
+                target: foreground
+                x: fgItem.x + root.firstProgress * (fgItem.fillWidth
+                    ? fgItem.width - delegateProperties.minimumWidth : fgItem.width)
+                y: fgItem.y
+                width: fgItem.fillWidth ? (delegateProperties.minimumWidth
+                    + ((root.secondProgress - root.firstProgress) * (fgItem.width
+                    - delegateProperties.minimumWidth)))
+                        : (root.secondProgress - root.firstProgress) * fgItem.width
+                height: fgItem.height
+            }
+        }
     }
 }

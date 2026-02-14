@@ -22,18 +22,20 @@ T.ToolBar {
     bottomPadding: SafeArea.margins.bottom + styleReader.bottomPadding
     spacing: styleReader.spacing
 
+    font: styleReader.font
+
     StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
         type: StyleKitReader.ToolBar
         enabled: control.enabled
         focused: control.activeFocus
-        palette: control.palette
         hovered: control.hovered
+        palette: control.palette
     }
 
     background: BackgroundDelegate {
-        parentControl: control
+        quickControl: control
         backgroundProperties: styleReader.background
     }
 }

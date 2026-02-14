@@ -2579,7 +2579,8 @@ void QQmlDelegateModelItem::destroyObjectLater()
     QQmlData *data = QQmlData::get(m_object);
     Q_ASSERT(data);
     if (data->ownContext) {
-        data->ownContext->clearContext();
+        data->ownContext->emitDestruction();
+        data->ownContext->clearExpressions();
         data->ownContext->deepClearContextObject(m_object);
         data->ownContext.reset();
         data->context = nullptr;

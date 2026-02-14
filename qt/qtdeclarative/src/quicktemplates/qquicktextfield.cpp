@@ -7,6 +7,7 @@
 #include "qquickcontrol_p.h"
 #include "qquickcontrol_p_p.h"
 #include "qquickdeferredexecute_p_p.h"
+#include "qquicktooltip_p_p.h"
 
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquicktextinput_p.h>
@@ -380,14 +381,16 @@ QFont QQuickTextField::font() const
     Q_D(const QQuickTextField);
     QFont font = QQuickTextInput::font();
     // The resolve mask should inherit from the requestedFont
-    font.setResolveMask(d->extra.value().requestedFont.resolveMask());
+    font.setResolveMask(d->extra.isAllocated() ? d->extra->requestedFont.resolveMask() : 0);
     return font;
 }
 
 void QQuickTextField::setFont(const QFont &font)
 {
     Q_D(QQuickTextField);
-    if (d->extra.value().requestedFont.resolveMask() == font.resolveMask() && d->extra.value().requestedFont == font)
+    if (d->extra.isAllocated()
+            && d->extra.value().requestedFont.resolveMask() == font.resolveMask()
+            && d->extra.value().requestedFont == font)
         return;
 
     d->extra.value().requestedFont = font;
@@ -565,6 +568,7 @@ void QQuickTextField::setHovered(bool hovered)
 
     d->hovered = hovered;
     emit hoveredChanged();
+    QQuickToolTipAttachedPrivate::maybeSetVisibleImplicitly(this, hovered);
 #else
     Q_UNUSED(hovered);
 #endif

@@ -591,7 +591,6 @@ QQuickEllipseShape::QQuickEllipseShape(QQuickItem *parent)
 
     d->path = new QQuickShapePath(this);
     d->path->setParent(this);
-    d->path->setAsynchronous(true);
     d->path->setStrokeWidth(1);
     d->path->setStrokeColor(QColorConstants::Black);
     d->path->setFillColor(QColorConstants::White);
@@ -929,7 +928,7 @@ void QQuickEllipseShape::setFillGradient(QQuickShapeGradient *fillGradient)
     Q_D(QQuickEllipseShape);
     d->path->setFillGradient(fillGradient);
     d->updatePath();
-    emit gradientChanged();
+    emit fillGradientChanged();
 }
 
 void QQuickEllipseShape::resetFillGradient()
@@ -976,6 +975,20 @@ void QQuickEllipseShape::setBorderMode(BorderMode borderMode)
 void QQuickEllipseShape::resetBorderMode()
 {
     setBorderMode(BorderMode::Inside);
+}
+
+QQuickItem *QQuickEllipseShape::fillItem() const
+{
+    Q_D(const QQuickEllipseShape);
+    return d->path->fillItem();
+}
+
+void QQuickEllipseShape::setFillItem(QQuickItem *newFillItem)
+{
+    Q_D(QQuickEllipseShape);
+    d->path->setFillItem(newFillItem);
+
+    emit fillItemChanged();
 }
 
 void QQuickEllipseShape::itemChange(ItemChange change, const ItemChangeData &value)

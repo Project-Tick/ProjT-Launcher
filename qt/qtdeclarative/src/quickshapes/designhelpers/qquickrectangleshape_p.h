@@ -50,6 +50,7 @@ class Q_QUICKSHAPESDESIGNHELPERS_EXPORT QQuickRectangleShape : public QQuickShap
     Q_PROPERTY(QList<qreal> dashPattern READ dashPattern WRITE setDashPattern NOTIFY dashPatternChanged FINAL)
     Q_PROPERTY(QQuickShapeGradient *fillGradient READ fillGradient WRITE setFillGradient RESET resetFillGradient FINAL)
     Q_PROPERTY(BorderMode borderMode READ borderMode WRITE setBorderMode RESET resetBorderMode FINAL)
+    Q_PROPERTY(QQuickItem *fillItem READ fillItem WRITE setFillItem NOTIFY fillItemChanged FINAL REVISION(6, 12))
 
     QML_NAMED_ELEMENT(RectangleShape)
     QML_ADDED_IN_VERSION(6, 10)
@@ -158,6 +159,9 @@ public:
     void setBorderMode(BorderMode borderMode);
     void resetBorderMode();
 
+    QQuickItem *fillItem() const;
+    void setFillItem(QQuickItem *newFillItem);
+
 Q_SIGNALS:
     Q_REVISION(6, 11) void drawTopChanged();
     Q_REVISION(6, 11) void drawRightChanged();
@@ -185,6 +189,7 @@ Q_SIGNALS:
     void dashOffsetChanged();
     void dashPatternChanged();
     void borderModeChanged();
+    Q_REVISION(6, 12) void fillItemChanged();
 
 protected:
     void componentComplete() override;

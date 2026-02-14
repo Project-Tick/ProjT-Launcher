@@ -28,6 +28,8 @@ T.GroupBox {
     rightInset: styleReader.background.rightMargin
     leftInset: styleReader.background.leftMargin
 
+    font: styleReader.font
+
     StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
@@ -44,17 +46,17 @@ T.GroupBox {
         rightPadding: styleReader.text.rightPadding
         bottomPadding: styleReader.text.bottomPadding
         topPadding: styleReader.text.topPadding
-        width: control.width
         verticalAlignment: styleReader.text.alignment
         horizontalAlignment: styleReader.text.alignment
-        text: control.title
         color: styleReader.text.color
+        font: control.font
+        width: control.width
+        text: control.title
         elide: Text.ElideRight
-        font: styleReader.font
     }
 
     background: BackgroundDelegate {
-        parentControl: control
+        quickControl: control
         backgroundProperties: styleReader.background
     }
 }

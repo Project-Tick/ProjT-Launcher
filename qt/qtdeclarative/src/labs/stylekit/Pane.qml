@@ -21,6 +21,8 @@ T.Pane {
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
 
+    font: styleReader.font
+
     StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
@@ -31,7 +33,7 @@ T.Pane {
     }
 
     background: BackgroundDelegate {
-        parentControl: control
+        quickControl: control
         backgroundProperties: styleReader.background
     }
 }

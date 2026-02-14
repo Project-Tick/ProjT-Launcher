@@ -126,7 +126,6 @@ public:
     void setHighlighted(bool highlighted);
 
     QFont font() const;
-    void setFont(const QFont &font);
 
     QQStyleKitControlProperties *global() const;
 
@@ -139,8 +138,6 @@ public:
     static void setTransitionEnabled(bool enabled);
     static bool transitionEnabled();
     static void resetAll();
-
-    void updateFontFromTheme();
 
     static QList<QQStyleKitReader *> s_allReaders;
 
@@ -173,6 +170,7 @@ private:
     void maybeTrackDelegates();
 
     bool rebuildEffectivePalette();
+    bool rebuildEffectiveFont();
 
 private:
     Q_DISABLE_COPY(QQStyleKitReader)
@@ -190,6 +188,8 @@ private:
     QPointer<QQuickPalette> m_palette;
     QPalette m_effectivePalette;
     QFont m_font;
+    bool m_fontDirty = true;
+    quint64 m_lastTextFontOverridesSignature = 0;
     mutable QQStyleKitPropertyStorage m_storage;
     AlternateState m_alternateState = AlternateState::Alternate1;
     QQSK::State m_state = QQSK::StateFlag::Unspecified;

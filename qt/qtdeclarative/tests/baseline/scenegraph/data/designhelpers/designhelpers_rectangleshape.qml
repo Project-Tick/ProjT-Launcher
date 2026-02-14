@@ -220,6 +220,14 @@ Rectangle {
         RectangleShapeBase {
             borderMode: RectangleShape.Outside
         }
+        RectangleShapeBase {
+            id: theShape
+            fillItem: Image {
+                source: "../shared/col320x480.jpg"
+                visible: false
+                parent: theShape
+            }
+        }
 
         // width, height
         RectangleShapeBase {

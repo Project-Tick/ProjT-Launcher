@@ -1,5 +1,6 @@
 // Copyright (C) 2016 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant
 
 #include "qqmlscriptstring.h"
 #include "qqmlscriptstring_p.h"
@@ -38,6 +39,12 @@ expr.evaluate();
 const QQmlScriptStringPrivate* QQmlScriptStringPrivate::get(const QQmlScriptString &script)
 {
     return script.d.constData();
+}
+
+QQmlScriptString QQmlScriptStringPrivate::create(const QString &script, QQmlContext *context,
+    QObject *scope)
+{
+    return QQmlScriptString(script, context, scope);
 }
 
 /*!

@@ -441,6 +441,7 @@ QQuickRectangleShape::QQuickRectangleShape(QQuickItem *parent)
     connect(d->shapePath, &QQuickShapePath::strokeStyleChanged, this, &QQuickRectangleShape::strokeStyleChanged);
     connect(d->shapePath, &QQuickShapePath::dashOffsetChanged, this, &QQuickRectangleShape::dashOffsetChanged);
     connect(d->shapePath, &QQuickShapePath::dashPatternChanged, this, &QQuickRectangleShape::dashPatternChanged);
+    connect(d->shapePath, &QQuickShapePath::fillItemChanged, this, &QQuickRectangleShape::fillItemChanged);
     // QQuickShapePath has no change signal for fillGradient.
 
     // Add the path as a child of us.
@@ -1088,6 +1089,18 @@ void QQuickRectangleShape::componentComplete()
     // present in order for the connections to them to be made.
     d->maybeUpdateElements();
     QQuickShape::componentComplete();
+}
+
+QQuickItem *QQuickRectangleShape::fillItem() const
+{
+    Q_D(const QQuickRectangleShape);
+    return d->shapePath->fillItem();
+}
+
+void QQuickRectangleShape::setFillItem(QQuickItem *newFillItem)
+{
+    Q_D(QQuickRectangleShape);
+    d->shapePath->setFillItem(newFillItem);
 }
 
 void QQuickRectangleShape::itemChange(ItemChange change, const ItemChangeData &value)

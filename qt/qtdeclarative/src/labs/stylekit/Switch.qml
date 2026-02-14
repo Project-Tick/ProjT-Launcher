@@ -22,6 +22,8 @@ T.Switch {
     bottomPadding: switchLayout.padding.bottom
     spacing: styleReader.spacing
 
+    font: styleReader.font
+
     StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
@@ -63,7 +65,7 @@ T.Switch {
     }
 
     indicator: IndicatorDelegate {
-        parentControl: control
+        quickControl: control
         indicatorProperties: styleReader.indicator
         x: indicatorItem.x
         y: indicatorItem.y
@@ -71,7 +73,7 @@ T.Switch {
         height: indicatorItem.height
 
         HandleDelegate {
-            parentControl: control
+            quickControl: control
             handleProperties: styleReader.handle
             x: control.checked
                ? indicator.width - width - styleReader.handle.rightMargin
@@ -85,7 +87,7 @@ T.Switch {
 
     contentItem: CheckLabel {
         text: control.text
-        font: styleReader.font
+        font: control.font
         color: styleReader.text.color
         horizontalAlignment: styleReader.text.alignment & Qt.AlignHorizontal_Mask
         verticalAlignment: styleReader.text.alignment & Qt.AlignVertical_Mask
@@ -97,7 +99,7 @@ T.Switch {
     }
 
     background: BackgroundDelegate {
-        parentControl: control
+        quickControl: control
         backgroundProperties: styleReader.background
     }
 }

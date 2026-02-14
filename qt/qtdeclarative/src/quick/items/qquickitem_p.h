@@ -62,6 +62,10 @@ class QQuickEnterKeyAttached;
 class QQuickScreenAttached;
 class QQuickPointerHandler;
 
+namespace QtPrivate {
+class QQuickAttachedPropertyPropagator;
+}
+
 class QQuickContents : public QSafeQuickItemChangeListener<QQuickContents>
 {
     Q_DISABLE_COPY(QQuickContents)
@@ -275,6 +279,9 @@ public:
     virtual void removePointerHandler(QQuickPointerHandler *h);
 
     QObject *setContextMenu(QObject *menu);
+
+    virtual QtPrivate::QQuickAttachedPropertyPropagator *attachedPropertyPropagator_parent(
+        const QMetaObject *attachedType);
 
     // data property
     static void data_append(QQmlListProperty<QObject> *, QObject *);

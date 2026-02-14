@@ -36,6 +36,7 @@
 #include <QtQuick/private/qquickstate_p.h>
 #include <private/qquickitem_p.h>
 #include <QtQuick/private/qquickaccessibleattached_p.h>
+#include <QtQuick/private/qquickattachedpropertypropagator_p.h>
 #include <QtQuick/private/qquickhoverhandler_p.h>
 #include <QtQuick/private/qquickpointerhandler_p.h>
 #include <QtQuick/private/qquickpointerhandler_p_p.h>
@@ -9705,6 +9706,23 @@ QObject *QQuickItemPrivate::setContextMenu(QObject *menu)
     QObject *ret = (extra.isAllocated() ? extra->contextMenu : nullptr);
     extra.value().contextMenu = menu;
     return ret;
+}
+
+QtPrivate::QQuickAttachedPropertyPropagator *QQuickItemPrivate::attachedPropertyPropagator_parent(
+    const QMetaObject *attachedType)
+{
+    Q_Q(QQuickItem);
+    qCDebug(lcAttachedPropertyPropagator).noquote() << "- attachedPropertyPropagator_parent called on"
+        << q << "with attachedType" << attachedType->metaType().name();
+
+    QQuickItem *parent = q->parentItem();
+    if (auto *attached = QtPrivate::QQuickAttachedPropertyPropagator::attachedObject(attachedType, parent)) {
+        qCDebug(lcAttachedPropertyPropagator).noquote() << "  - parent item has attached object"
+            << attached << "- returning";
+        return attached;
+    }
+
+    return nullptr;
 }
 
 #if QT_CONFIG(quick_shadereffect)

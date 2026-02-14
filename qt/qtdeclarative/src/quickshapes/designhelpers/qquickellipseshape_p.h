@@ -49,9 +49,10 @@ public:
     Q_PROPERTY(QList<qreal> dashPattern READ dashPattern WRITE setDashPattern NOTIFY
                        dashPatternChanged FINAL)
     Q_PROPERTY(QQuickShapeGradient *fillGradient READ fillGradient WRITE setFillGradient NOTIFY
-                       gradientChanged RESET resetFillGradient FINAL)
+                       fillGradientChanged RESET resetFillGradient FINAL)
     Q_PROPERTY(BorderMode borderMode READ borderMode WRITE setBorderMode NOTIFY borderModeChanged
                        RESET resetBorderMode FINAL)
+    Q_PROPERTY(QQuickItem *fillItem READ fillItem WRITE setFillItem NOTIFY fillItemChanged FINAL REVISION(6, 12))
 
     QML_NAMED_ELEMENT(EllipseShape)
     QML_ADDED_IN_VERSION(6, 11)
@@ -109,6 +110,9 @@ public:
     void setBorderMode(BorderMode borderMode);
     void resetBorderMode();
 
+    QQuickItem *fillItem() const;
+    void setFillItem(QQuickItem *newFillItem);
+
 Q_SIGNALS:
     void innerArcRatioChanged();
     void cornerRadiusChanged();
@@ -123,8 +127,9 @@ Q_SIGNALS:
     void strokeStyleChanged();
     void dashOffsetChanged();
     void dashPatternChanged();
-    void gradientChanged();
+    void fillGradientChanged();
     void borderModeChanged();
+    Q_REVISION(6, 12) void fillItemChanged();
 
 protected:
     void itemChange(ItemChange change, const ItemChangeData &value) override;

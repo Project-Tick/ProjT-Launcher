@@ -1,5 +1,6 @@
 // Copyright (C) 2019 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
+// Qt-Security score:significant
 
 #include "qanystringviewutils_p.h"
 #include "qqmltyperegistrarconstants_p.h"
@@ -233,6 +234,10 @@ void QmlTypesCreator::writeProperties(const Property::Container &properties)
 
         if (obj.isFinal)
             m_qml.writeBooleanBinding(S_IS_FINAL, true);
+        if (obj.isVirtual)
+            m_qml.writeBooleanBinding(S_IS_VIRTUAL, true);
+        if (obj.isOverride)
+            m_qml.writeBooleanBinding(S_IS_OVERRIDE, true);
 
         if (obj.isConstant)
             m_qml.writeBooleanBinding(S_IS_PROPERTY_CONSTANT, true);

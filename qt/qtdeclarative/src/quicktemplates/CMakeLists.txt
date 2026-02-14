@@ -113,7 +113,9 @@ qt_internal_add_qml_module(QuickTemplates2
         qquicktoolbar.cpp qquicktoolbar_p.h
         qquicktoolbutton.cpp qquicktoolbutton_p.h
         qquicktoolseparator.cpp qquicktoolseparator_p.h
-        qquicktooltip.cpp qquicktooltip_p.h
+        qquicktooltip.cpp
+        qquicktooltip_p.h
+        qquicktooltip_p_p.h
         qquickvelocitycalculator.cpp
         qquickvelocitycalculator_p_p.h
         qtquicktemplates2global.cpp qtquicktemplates2global_p.h

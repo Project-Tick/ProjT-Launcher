@@ -126,6 +126,8 @@ warning levels.
       "Warn about non-list properties", Warning, NonEssential)                                     \
     X(qmlNonRootEnums, "non-root-enum", "NonRootEnum",                                             \
       "Warn about enums defined outside the root component", Warning, NonEssential)                \
+    X(qmlPropertyOverride, "property-override", "PropertyOverride",                                \
+      "Warn about wrongly overriding properties from a base class", Warning, NonEssential)         \
     X(qmlUnterminatedCase, "unterminated-case", "UnterminatedCase", "Warn about non-empty case "   \
       "blocks that are not terminated by control flow or by a fallthrough comment", Warning,       \
       NonEssential)                                                                                \

@@ -16,6 +16,7 @@
 // We mean it.
 //
 
+#include <QtQuickControls2IOS/qtquickcontrols2iosexports.h>
 #include <QtCore/qglobal.h>
 
 QT_BEGIN_NAMESPACE
@@ -25,7 +26,7 @@ class QQuickTheme;
 class QQuickIOSTheme
 {
 public:
-    static void initialize(QQuickTheme *theme);
+    static Q_QUICKCONTROLS2IOS_EXPORT void initialize(QQuickTheme *theme);
 };
 
 QT_END_NAMESPACE

@@ -117,5 +117,13 @@ Rectangle {
             joinStyle: ShapePath.RoundJoin
             strokeStyle: ShapePath.DashLine
         }
+        TestRegularPolygonShape {
+            id: theShape
+            fillItem: Image {
+                source: "../shared/col320x480.jpg"
+                visible: false
+                parent: theShape
+            }
+        }
     }
 }

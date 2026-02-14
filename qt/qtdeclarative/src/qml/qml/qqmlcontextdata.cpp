@@ -1,5 +1,6 @@
 // Copyright (C) 2020 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant
 
 #include "qqmlcontextdata_p.h"
 
@@ -87,6 +88,26 @@ void QQmlContextData::invalidate()
 {
     emitDestruction();
 
+    clearChildrenAndSiblings();
+    clearImportedScripts();
+
+    m_engine = nullptr;
+    clearParent();
+}
+
+void QQmlContextData::clearContextRecursively()
+{
+    emitDestruction();
+    clearExpressions();
+
+    for (auto ctxIt = m_childContexts; ctxIt; ctxIt = ctxIt->m_nextChild)
+        ctxIt->clearContextRecursively();
+
+    m_engine = nullptr;
+}
+
+void QQmlContextData::clearChildrenAndSiblings()
+{
     while (m_childContexts) {
         Q_ASSERT(m_childContexts != this);
         m_childContexts->invalidate();
@@ -98,8 +119,11 @@ void QQmlContextData::invalidate()
         m_nextChild = nullptr;
         m_prevChild = nullptr;
     }
+}
 
-    if (!m_hasWeakImportedScripts) { // invalidate might be called multiple times
+void QQmlContextData::clearImportedScripts()
+{
+    if (!m_hasWeakImportedScripts) { // might be called multiple times
         if (m_engine && !m_importedScripts.isNullOrUndefined()) {
             QV4::Scope scope(m_engine->handle());
             QV4::ScopedValue val(scope, m_importedScripts.value());
@@ -112,25 +136,41 @@ void QQmlContextData::invalidate()
             m_importedScripts.clear();
         }
     }
-
-    m_engine = nullptr;
-    clearParent();
 }
 
-void QQmlContextData::clearContextRecursively()
+void QQmlContextData::clearOwnedObjects()
 {
-    clearContext();
+    while (m_ownedObjects) {
+        QQmlData *co = m_ownedObjects;
+        m_ownedObjects = m_ownedObjects->nextContextObject;
 
-    for (auto ctxIt = m_childContexts; ctxIt; ctxIt = ctxIt->m_nextChild)
-        ctxIt->clearContextRecursively();
-
-    m_engine = nullptr;
+        if (co->context == this)
+            co->context = nullptr;
+        co->outerContext = nullptr;
+        co->nextContextObject = nullptr;
+        co->prevContextObject = nullptr;
+    }
 }
 
-void QQmlContextData::clearContext()
+void QQmlContextData::clearContextGuards()
 {
-    emitDestruction();
+    for (QQmlGuardedContextData *contextGuard = m_contextGuards; contextGuard;) {
+        // TODO: Is this dead code? Why?
+        QQmlGuardedContextData *next = contextGuard->next();
+        contextGuard->setContextData({});
+        contextGuard = next;
+    }
+    m_contextGuards = nullptr;
+}
 
+void QQmlContextData::clearIdValues()
+{
+    delete[] std::exchange(m_idValues, nullptr);
+    m_idValueCount = 0;
+}
+
+void QQmlContextData::clearExpressions()
+{
     QQmlJavaScriptExpression *expression = m_expressions;
     while (expression) {
         QQmlJavaScriptExpression *nextExpression = expression->m_nextExpression;
@@ -164,33 +204,17 @@ QQmlContextData::~QQmlContextData()
     m_linkedContext.reset();
 
     Q_ASSERT(refCount() == 1);
-    clearContext();
+    emitDestruction();
+    clearExpressions();
     Q_ASSERT(refCount() == 1);
 
-    while (m_ownedObjects) {
-        QQmlData *co = m_ownedObjects;
-        m_ownedObjects = m_ownedObjects->nextContextObject;
-
-        if (co->context == this)
-            co->context = nullptr;
-        co->outerContext = nullptr;
-        co->nextContextObject = nullptr;
-        co->prevContextObject = nullptr;
-    }
+    clearOwnedObjects();
     Q_ASSERT(refCount() == 1);
 
-    QQmlGuardedContextData *contextGuard = m_contextGuards;
-    while (contextGuard) {
-        // TODO: Is this dead code? Why?
-        QQmlGuardedContextData *next = contextGuard->next();
-        contextGuard->setContextData({});
-        contextGuard = next;
-    }
-    m_contextGuards = nullptr;
+    clearContextGuards();
     Q_ASSERT(refCount() == 1);
 
-    delete [] m_idValues;
-    m_idValues = nullptr;
+    clearIdValues();
 
     Q_ASSERT(refCount() == 1);
     if (m_publicContext)

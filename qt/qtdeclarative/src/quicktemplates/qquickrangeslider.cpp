@@ -102,14 +102,25 @@ void QQuickRangeSliderNodePrivate::setPosition(qreal position, bool ignoreOtherP
 {
     Q_Q(QQuickRangeSliderNode);
 
-    const qreal min = isFirst() || ignoreOtherPosition ? 0.0 : qMax<qreal>(0.0, slider->first()->position());
-    const qreal max = !isFirst() || ignoreOtherPosition ? 1.0 : qMin<qreal>(1.0, slider->second()->position());
+    qreal min = 0.0;
+    qreal max = 1.0;
+
+    // Only apply constraints if crossing is disabled
+    if (!slider->isCrossingEnabled() && !ignoreOtherPosition) {
+        min = isFirst() ? 0.0 : qMax<qreal>(0.0, slider->first()->position());
+        max = !isFirst() ? 1.0 : qMin<qreal>(1.0, slider->second()->position());
+    }
+
     position = qBound(min, position, max);
     if (!qFuzzyCompare(this->position, position)) {
         this->position = position;
         emit q->positionChanged();
         emit q->visualPositionChanged();
     }
+
+    // Check for crossing after position update
+    if (!ignoreOtherPosition)
+        q->updateHandleCrossing();
 }
 
 void QQuickRangeSliderNodePrivate::updatePosition(bool ignoreOtherPosition)
@@ -174,22 +185,25 @@ void QQuickRangeSliderNode::setValue(qreal value)
 
     // Then, ensure that it doesn't go past the other value,
     // a check that depends on whether or not the range is inverted.
-    const bool invertedRange = d->slider->from() > d->slider->to();
-    if (d->isFirst()) {
-        if (invertedRange) {
-            if (value < d->slider->second()->value())
-                value = d->slider->second()->value();
+    // Only apply this constraint if crossing is disabled.
+    if (!d->slider->isCrossingEnabled()) {
+        const bool invertedRange = d->slider->from() > d->slider->to();
+        if (d->isFirst()) {
+            if (invertedRange) {
+                if (value < d->slider->second()->value())
+                    value = d->slider->second()->value();
+            } else {
+                if (value > d->slider->second()->value())
+                    value = d->slider->second()->value();
+            }
         } else {
-            if (value > d->slider->second()->value())
-                value = d->slider->second()->value();
-        }
-    } else {
-        if (invertedRange) {
-            if (value > d->slider->first()->value())
-                value = d->slider->first()->value();
-        } else {
-            if (value < d->slider->first()->value())
-                value = d->slider->first()->value();
+            if (invertedRange) {
+                if (value > d->slider->first()->value())
+                    value = d->slider->first()->value();
+            } else {
+                if (value < d->slider->first()->value())
+                    value = d->slider->first()->value();
+            }
         }
     }
 
@@ -197,7 +211,12 @@ void QQuickRangeSliderNode::setValue(qreal value)
         d->value = value;
         d->updatePosition();
         emit valueChanged();
+        d->slider->effectiveValueChange(this);
+        d->slider->updateFocusOrder();
     }
+
+    // Check for crossing after value update
+    updateHandleCrossing();
 }
 
 qreal QQuickRangeSliderNode::position() const
@@ -244,23 +263,7 @@ void QQuickRangeSliderNode::setHandle(QQuickItem *handle)
         if (!handle->parentItem())
             handle->setParentItem(d->slider);
 
-        QQuickItem *firstHandle = QQuickRangeSliderNodePrivate::get(d->slider->first())->handle;
-        QQuickItem *secondHandle = QQuickRangeSliderNodePrivate::get(d->slider->second())->handle;
-        if (firstHandle && secondHandle) {
-            // The order of property assignments in QML is undefined,
-            // but we need the first handle to be before the second due
-            // to focus order constraints, so check for that here.
-            const QList<QQuickItem *> childItems = d->slider->childItems();
-            const int firstIndex = childItems.indexOf(firstHandle);
-            const int secondIndex = childItems.indexOf(secondHandle);
-            if (firstIndex != -1 && secondIndex != -1 && firstIndex > secondIndex) {
-                firstHandle->stackBefore(secondHandle);
-                // Ensure we have some way of knowing which handle is above
-                // the other when it comes to mouse presses, and also that
-                // they are rendered in the correct order.
-                secondHandle->setZ(secondHandle->z() + 1);
-            }
-        }
+        d->slider->updateFocusOrder();
 
         handle->setActiveFocusOnTab(true);
         QQuickControlPrivate::get(d->slider)->addImplicitSizeListener(handle);
@@ -337,6 +340,12 @@ void QQuickRangeSliderNode::decrease()
     setValue(d->value - step);
 }
 
+void QQuickRangeSliderNode::updateHandleCrossing()
+{
+    Q_D(QQuickRangeSliderNode);
+    d->slider->updateHandleCrossing();
+}
+
 static const qreal defaultFrom = 0.0;
 static const qreal defaultTo = 1.0;
 
@@ -365,6 +374,11 @@ public:
 
     void updateAllValuesAreInteger();
 
+    // Crossing detection and swap helpers
+    bool shouldHandlesCross() const;
+    void updateHandleCrossing();
+    void swapHandles();
+
     qreal from = defaultFrom;
     qreal to = defaultTo;
     qreal stepSize = 0;
@@ -376,6 +390,8 @@ public:
     QQuickRangeSlider::SnapMode snapMode = QQuickRangeSlider::NoSnap;
     bool live = true;
     bool allValuesAreInteger = false;
+    bool crossingEnabled = false;
+    bool handlesCrossed = false;
 };
 
 static qreal valueAt(const QQuickRangeSlider *slider, qreal position)
@@ -437,6 +453,42 @@ QQuickRangeSliderNode *QQuickRangeSliderPrivate::pressedNode(int touchId) const
     if (QQuickRangeSliderNodePrivate::get(second)->touchId == touchId)
         return second;
     return nullptr;
+}
+
+bool QQuickRangeSliderPrivate::shouldHandlesCross() const
+{
+    const bool invertedRange = from > to;
+    const qreal firstValue = first->value();
+    const qreal secondValue = second->value();
+
+    if (invertedRange) {
+        return firstValue < secondValue;
+    } else {
+        return firstValue > secondValue;
+    }
+}
+
+void QQuickRangeSliderPrivate::updateHandleCrossing()
+{
+    if (!crossingEnabled)
+        return;
+
+    const bool shouldCross = shouldHandlesCross();
+
+    if (shouldCross != handlesCrossed)
+        swapHandles();
+}
+
+void QQuickRangeSliderPrivate::swapHandles()
+{
+    Q_Q(QQuickRangeSlider);
+
+    handlesCrossed = !handlesCrossed;
+    emit q->handlesCrossedChanged();
+
+    // When crossing state changes, effective values swap
+    emit q->effectiveFirstValueChanged();
+    emit q->effectiveSecondValueChanged();
 }
 
 #if QT_CONFIG(quicktemplates2_multitouch)
@@ -782,6 +834,180 @@ qreal QQuickRangeSlider::valueAt(qreal position) const
 }
 
 /*!
+    \since QtQuick.Controls 6.12
+    \qmlproperty bool QtQuick.Controls::RangeSlider::crossingEnabled
+
+    This property determines whether the slider handles can cross each other.
+
+    When \c false (the default), the first handle cannot be moved past the
+    second handle, and vice versa. The values are constrained such that
+    \c {first.value} <= \c {second.value} for normal ranges, or
+    \c {first.value} >= \c {second.value} for inverted ranges.
+
+    Use the \l handlesCrossed property to detect when handles have swapped.
+
+    The default value is \c false.
+
+    When crossing is disabled, if handles were crossed then handles values will be exchanged.
+
+    \sa handlesCrossed, first.value, second.value
+*/
+bool QQuickRangeSlider::isCrossingEnabled() const
+{
+    Q_D(const QQuickRangeSlider);
+    return d->crossingEnabled;
+}
+
+void QQuickRangeSlider::setCrossingEnabled(bool enabled)
+{
+    Q_D(QQuickRangeSlider);
+    if (d->crossingEnabled == enabled)
+        return;
+
+    d->crossingEnabled = enabled;
+
+    // If disabling crossing while handles are crossed, uncross them
+    if (!enabled && d->handlesCrossed) {
+        if (d->shouldHandlesCross()) {
+            qreal temp = d->first->value();
+            d->first->setValue(d->second->value());
+            d->second->setValue(temp);
+        }
+
+        d->swapHandles();
+    }
+
+    emit crossingEnabledChanged();
+}
+
+/*!
+    \since QtQuick.Controls 6.12
+    \qmlproperty bool QtQuick.Controls::RangeSlider::handlesCrossed
+    \readonly
+
+    This property holds whether the handles have crossed each other.
+
+    This property is only relevant when \l crossingEnabled is \c true.
+    When handles cross, their internal roles swap to maintain the semantic
+    meaning of first and second as lower and upper bounds respectively.
+
+    This property can be used to provide visual feedback when handles are
+    in a crossed state.
+
+    \sa crossingEnabled, handlesCrossedChanged()
+*/
+bool QQuickRangeSlider::handlesCrossed() const
+{
+    Q_D(const QQuickRangeSlider);
+    return d->handlesCrossed;
+}
+
+void QQuickRangeSlider::updateHandleCrossing()
+{
+    Q_D(QQuickRangeSlider);
+    if (d->crossingEnabled)
+        d->updateHandleCrossing();
+}
+
+void QQuickRangeSlider::effectiveValueChange(QQuickRangeSliderNode* node)
+{
+    Q_D(QQuickRangeSlider);
+    if (node == d->first) {
+        // First node's value affects effectiveFirstValue when not crossed,
+        // or effectiveSecondValue when crossed
+        if (d->handlesCrossed)
+            emit effectiveSecondValueChanged();
+        else
+            emit effectiveFirstValueChanged();
+    } else if (node == d->second) {
+        // Second node's value affects effectiveSecondValue when not crossed,
+        // or effectiveFirstValue when crossed
+        if (d->handlesCrossed)
+            emit effectiveFirstValueChanged();
+        else
+            emit effectiveSecondValueChanged();
+    }
+}
+
+void QQuickRangeSlider::updateFocusOrder()
+{
+    Q_D(QQuickRangeSlider);
+    QQuickItem *firstHandle = QQuickRangeSliderNodePrivate::get(d->first)->handle;
+    QQuickItem *secondHandle = QQuickRangeSliderNodePrivate::get(d->second)->handle;
+    if (firstHandle && secondHandle) {
+        // The order of property assignments in QML is undefined,
+        // but we need the first handle to be before the second due
+        // to focus order constraints, so check for that here.
+        const QList<QQuickItem *> childItems = this->childItems();
+        const int firstIndex = childItems.indexOf(firstHandle);
+        const int secondIndex = childItems.indexOf(secondHandle);
+        if (firstIndex != -1 && secondIndex != -1) {
+            if (!d->handlesCrossed && firstIndex > secondIndex) {
+                firstHandle->stackBefore(secondHandle);
+                // Ensure we have some way of knowing which handle is above
+                // the other when it comes to mouse presses, and also that
+                // they are rendered in the correct order.
+                secondHandle->setZ(firstHandle->z() + 1);
+            } else if (d->handlesCrossed && firstIndex < secondIndex) {
+                secondHandle->stackBefore(firstHandle);
+                // Ensure we have some way of knowing which handle is above
+                // the other when it comes to mouse presses, and also that
+                // they are rendered in the correct order.
+                firstHandle->setZ(secondHandle->z() + 1);
+            }
+        }
+    }
+}
+
+/*!
+    \since QtQuick.Controls 6.12
+    \qmlproperty real QtQuick.Controls::RangeSlider::effectiveFirstValue
+    \readonly
+
+    This property holds the value of the handle that was originally created as
+    the "first" handle, regardless of whether handles have crossed.
+
+    When \l crossingEnabled is \c false or handles haven't crossed, this is
+    equal to \c first.value. When handles have crossed, this represents the
+    value of the handle in the visual "first" position (leftmost in horizontal,
+    bottommost in vertical orientation).
+
+    \sa effectiveSecondValue, first.value, handlesCrossed, crossingEnabled
+*/
+qreal QQuickRangeSlider::effectiveFirstValue() const
+{
+    Q_D(const QQuickRangeSlider);
+    // Return the value of the leftmost/bottommost handle visually
+    // When crossed, the "second" handle is visually on the left/bottom
+    return d->handlesCrossed ? (d->second ? d->second->value() : 1.0)
+                              : (d->first ? d->first->value() : 0.0);
+}
+
+/*!
+    \since QtQuick.Controls 6.12
+    \qmlproperty real QtQuick.Controls::RangeSlider::effectiveSecondValue
+    \readonly
+
+    This property holds the value of the handle in the visual "second" position
+    (rightmost in horizontal, topmost in vertical orientation).
+
+    When \l crossingEnabled is \c false or handles haven't crossed, this is
+    equal to \c second.value. When handles have crossed, this represents the
+    value of the handle in the visual "second" position (rightmost in horizontal,
+    topmost in vertical orientation).
+
+    \sa effectiveFirstValue, second.value, handlesCrossed, crossingEnabled
+*/
+qreal QQuickRangeSlider::effectiveSecondValue() const
+{
+    Q_D(const QQuickRangeSlider);
+    // Return the value of the rightmost/topmost handle visually
+    // When crossed, the "first" handle is visually on the right/top
+    return d->handlesCrossed ? (d->first ? d->first->value() : 0.0)
+                              : (d->second ? d->second->value() : 1.0);
+}
+
+/*!
     \qmlproperty real QtQuick.Controls::RangeSlider::first.value
     \qmlproperty real QtQuick.Controls::RangeSlider::first.position
     \qmlproperty real QtQuick.Controls::RangeSlider::first.visualPosition
@@ -857,6 +1083,16 @@ QQuickRangeSliderNode *QQuickRangeSlider::first() const
     interactively moved by the user by either touch, mouse, or keys.
 
     \sa first, second
+*/
+
+/*!
+    \qmlsignal void QtQuick.Controls::RangeSlider::handlesCrossedChanged()
+    \since QtQuick.Controls 6.12
+
+    This signal is emitted when the handles cross each other, changing
+    the \l handlesCrossed property.
+
+    \sa crossingEnabled
 */
 
 /*!
@@ -1043,15 +1279,18 @@ void QQuickRangeSlider::setValues(qreal firstValue, qreal secondValue)
     firstValue = qBound(smaller, firstValue, larger);
     secondValue = qBound(smaller, secondValue, larger);
 
-    if (d->from > d->to) {
-        // If the from and to values are reversed, the secondValue
-        // might be less than the first value, which is not allowed.
-        if (secondValue > firstValue)
-            secondValue = firstValue;
-    } else {
-        // Otherwise, clamp first to second if it's too large.
-        if (firstValue > secondValue)
-            firstValue = secondValue;
+    // Only apply crossing prevention if crossing is disabled
+    if (!d->crossingEnabled) {
+        if (d->from > d->to) {
+            // If the from and to values are reversed, the secondValue
+            // might be less than the first value, which is not allowed.
+            if (secondValue > firstValue)
+                secondValue = firstValue;
+        } else {
+            // Otherwise, clamp first to second if it's too large.
+            if (firstValue > secondValue)
+                firstValue = secondValue;
+        }
     }
 
     // Then set both values. If they didn't change, no change signal will be emitted.
@@ -1071,6 +1310,10 @@ void QQuickRangeSlider::setValues(qreal firstValue, qreal secondValue)
     // If we don't do this last, the positions may be incorrect.
     firstPrivate->updatePosition(true);
     secondPrivate->updatePosition();
+
+    // Check for crossing after values are set
+    if (d->crossingEnabled)
+        d->updateHandleCrossing();
 }
 
 /*!
@@ -1143,7 +1386,7 @@ void QQuickRangeSlider::focusInEvent(QFocusEvent *event)
     // QQuickItem::nextItemInFocusChain() only works as desired with
     // Qt::TabFocusAllControls. otherwise pick the first handle
     if (!handle || handle == this)
-        handle = d->first->handle();
+        handle = !d->handlesCrossed ? d->first->handle() : d->second->handle();
     if (handle)
         handle->forceActiveFocus(event->reason());
 }

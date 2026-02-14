@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 #####################################################################
-## qtquickcontrols2iosstyleplugin Plugin:
+## QuickControls2IOS Module:
 #####################################################################
 
 add_subdirectory(impl)
@@ -73,7 +73,7 @@ set_source_files_properties(SearchField.qml PROPERTIES
     QT_QML_SOURCE_VERSIONS "6.10"
 )
 
-qt_internal_add_qml_module(qtquickcontrols2iosstyleplugin
+qt_internal_add_qml_module(QuickControls2IOS
     URI "QtQuick.Controls.iOS"
     VERSION "${PROJECT_VERSION}"
     CLASS_NAME QtQuickControls2IOSStylePlugin
@@ -84,7 +84,6 @@ qt_internal_add_qml_module(qtquickcontrols2iosstyleplugin
     NO_PLUGIN_OPTIONAL
     NO_GENERATE_PLUGIN_SOURCE
     SOURCES
-        qtquickcontrols2iosstyleplugin.cpp
         qquickiostheme_p.h qquickiostheme.mm
     QML_FILES
         ${qml_files}
@@ -103,7 +102,7 @@ qt_internal_add_qml_module(qtquickcontrols2iosstyleplugin
         Qt::QuickControls2BasicPrivate
 )
 
-qt_internal_extend_target(qtquickcontrols2iosstyleplugin CONDITION APPLE AND IOS
+qt_internal_extend_target(QuickControls2IOS CONDITION APPLE AND IOS
     LIBRARIES
         ${FWUIKit}
 )
@@ -114,15 +113,26 @@ foreach(file IN LISTS resource_glob_0)
 endforeach()
 
 # Resources:
-set(qmake_qtquickcontrols2iosstyleplugin_resource_files
+set(qmake_qtquickcontrols2ios_resource_files
     ${resource_glob}
 )
 
-qt_internal_add_resource(qtquickcontrols2iosstyleplugin "qmake_qtquickcontrols2iosstyleplugin"
+qt_internal_add_resource(QuickControls2IOS "qmake_qtquickcontrols2ios"
     PREFIX
         "/qt-project.org/imports/QtQuick/Controls/iOS"
     FILES
-        ${qmake_qtquickcontrols2iosstyleplugin_resource_files}
+        ${qmake_qtquickcontrols2ios_resource_files}
+)
+
+target_sources(qtquickcontrols2iosstyleplugin
+    PRIVATE
+        qtquickcontrols2iosstyleplugin.cpp
+)
+
+qt_internal_extend_target(qtquickcontrols2iosstyleplugin
+    LIBRARIES
+        Qt::QuickControls2Private
+        Qt::QuickTemplates2Private
 )
 
 _qt_internal_add_qml_static_plugin_dependency(qtquickcontrols2iosstyleplugin

@@ -193,7 +193,6 @@ QQuickStarShape::QQuickStarShape(QQuickItem *parent)
     setHeight(200);
 
     d->path = new QQuickShapePath(this);
-    d->path->setAsynchronous(true);
     d->path->setStrokeWidth(1);
     d->path->setStrokeColor(QColorConstants::Black);
     d->path->setFillColor(QColorConstants::White);
@@ -481,12 +480,26 @@ void QQuickStarShape::setFillGradient(QQuickShapeGradient *fillGradient)
 {
     Q_D(QQuickStarShape);
     d->path->setFillGradient(fillGradient);
-    emit gradientChanged();
+    emit fillGradientChanged();
 }
 
 void QQuickStarShape::resetFillGradient()
 {
     setFillGradient(nullptr);
+}
+
+QQuickItem *QQuickStarShape::fillItem() const
+{
+    Q_D(const QQuickStarShape);
+    return d->path->fillItem();
+}
+
+void QQuickStarShape::setFillItem(QQuickItem *newFillItem)
+{
+    Q_D(QQuickStarShape);
+    d->path->setFillItem(newFillItem);
+
+    emit fillItemChanged();
 }
 
 void QQuickStarShape::itemChange(ItemChange change, const ItemChangeData &value)

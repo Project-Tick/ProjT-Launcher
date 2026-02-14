@@ -76,6 +76,21 @@ T.SearchField {
 
         text: control.text
 
+        PlaceholderText {
+            x: parent.leftPadding
+            y: parent.topPadding
+            width: parent.width - parent.leftPadding - parent.rightPadding
+            height: parent.height - parent.topPadding - parent.bottomPadding
+
+            text: control.placeholderText
+            font: parent.font
+            color: parent.enabled && parent.activeFocus ? Material.accentColor : Material.hintTextColor
+            visible: !parent.length && !parent.preeditText && (!parent.activeFocus || parent.horizontalAlignment !== Qt.AlignHCenter)
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+            renderType: parent.renderType
+        }
+
         color: control.enabled ? control.Material.foreground : control.Material.hintTextColor
         selectionColor: control.Material.accentColor
         selectedTextColor: control.Material.primaryHighlightedTextColor

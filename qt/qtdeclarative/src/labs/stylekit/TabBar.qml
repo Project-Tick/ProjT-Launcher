@@ -22,14 +22,16 @@ T.TabBar {
     bottomPadding: styleReader.bottomPadding
     spacing: styleReader.spacing
 
+    font: styleReader.font
+
     StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
         type: StyleKitReader.TabBar
         enabled: control.enabled
         focused: control.activeFocus
-        palette: control.palette
         hovered: control.hovered
+        palette: control.palette
     }
 
     contentItem: ListView {
@@ -49,7 +51,7 @@ T.TabBar {
     }
 
     background: BackgroundDelegate {
-        parentControl: control
+        quickControl: control
         backgroundProperties: styleReader.background
     }
 }

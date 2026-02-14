@@ -22,6 +22,7 @@ private slots:
     void changeSignals();
     void radii();
     void bevel();
+    void fillItem();
 
 private:
     // If we load the QML from scratch every test, each row takes ~350ms.
@@ -299,6 +300,21 @@ void tst_QQuickRectangleShape::bevel()
     rectangleShape->resetBottomRightBevel();
     QCOMPARE(rectangleShape->hasBottomRightBevel(), true);
     QCOMPARE(bottomRightBevelSignalSpy.count(), 3);
+}
+
+void tst_QQuickRectangleShape::fillItem()
+{
+    QQuickApplicationHelper helper(this, "fillitem.qml");
+    QVERIFY2(helper.ready, helper.failureMessage());
+    QQuickWindow *window = helper.window;
+    window->show();
+    QVERIFY(QTest::qWaitForWindowExposed(window));
+
+    auto *theShape = window->property("theShape").value<QQuickRectangleShape *>();
+    QVERIFY(theShape);
+
+    auto *fillItem = window->findChild<QQuickItem *>("fillItem");
+    QVERIFY(fillItem);
 }
 
 QTEST_MAIN(tst_QQuickRectangleShape)
