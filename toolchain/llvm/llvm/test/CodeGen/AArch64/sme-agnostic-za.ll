@@ -365,7 +365,7 @@ define void @agnostic_za_buffer_alloc_with_stack_probes() nounwind "aarch64_za_s
 ; CHECK-COMMON-NEXT:    cmp sp, x19
 ; CHECK-COMMON-NEXT:    b.le .LBB7_3
 ; CHECK-COMMON-NEXT:  // %bb.2: // in Loop: Header=BB7_1 Depth=1
-; CHECK-COMMON-NEXT:    str xzr, [sp]
+; CHECK-COMMON-NEXT:    ldr xzr, [sp]
 ; CHECK-COMMON-NEXT:    b .LBB7_1
 ; CHECK-COMMON-NEXT:  .LBB7_3:
 ; CHECK-COMMON-NEXT:    mov sp, x19

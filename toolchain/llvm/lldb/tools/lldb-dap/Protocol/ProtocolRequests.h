@@ -318,10 +318,10 @@ using LaunchResponse = VoidResponse;
 #define LLDB_DAP_INVALID_FRAME_ID UINT64_MAX
 
 struct DAPSession {
-  /// Unique ID of an existing target to attach to.
+  /// A unique ID of an existing target to attach to.
   lldb::user_id_t targetId;
 
-  /// ID of an existing debugger instance to use.
+  /// A unique ID of an existing debugger instance to use.
   lldb::user_id_t debuggerId;
 };
 bool fromJSON(const llvm::json::Value &, DAPSession &, llvm::json::Path);
@@ -360,7 +360,7 @@ struct AttachRequestArguments {
   /// Path to the core file to debug.
   std::string coreFile;
 
-  /// An Existing session that consist of a target and debugger.
+  /// An existing session that consist of a target and debugger.
   std::optional<DAPSession> session;
 
   /// @}
@@ -1311,6 +1311,11 @@ struct StackTraceResponseBody {
   uint32_t totalFrames = 0;
 };
 llvm::json::Value toJSON(const StackTraceResponseBody &);
+
+/// Arguments for unknown request.
+using UnknownArguments = EmptyArguments;
+/// Response to unknowns request.
+using UnknownResponseBody = VoidResponse;
 
 } // namespace lldb_dap::protocol
 
