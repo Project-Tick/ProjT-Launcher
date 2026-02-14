@@ -155,7 +155,7 @@ endif(WIN32)
 if(PTLIBZIPPY_BUILD_SHARED)
     add_library(
         ptlibzippy SHARED ${PTLIBZIPPY_SRCS} ${PTLIBZIPPY_PUBLIC_HDRS} ${PTLIBZIPPY_PRIVATE_HDRS}
-                    $<$<OR:$<BOOL:${WIN32}>,$<BOOL:${CYGWIN}>>:win32/ptlibzippy1.rc>)
+                    $<$<OR:$<BOOL:${WIN32}>,$<BOOL:${CYGWIN}>>:win32/zlib1.rc>)
     add_library(PTlibzippy::PTlibzippy ALIAS ptlibzippy)
     target_include_directories(
         ptlibzippy
