@@ -23,7 +23,7 @@
    This code support the "Traditional PKWARE Encryption".
 
    The new AES encryption added on Zip format by Winzip (see the page
-   http://www.winzip.com/aes_info.htm ) and PKWare PKZip 5.x Strong
+   https://www.winzip.com/aes_info.htm ) and PKWare PKZip 5.x Strong
    Encryption is not supported.
 */
 
@@ -50,7 +50,7 @@ static int update_keys(unsigned long* pkeys, const z_crc_t* pcrc_32_tab, int c) 
     (*(pkeys+1)) += (*(pkeys+0)) & 0xff;
     (*(pkeys+1)) = (*(pkeys+1)) * 134775813L + 1;
     {
-      register int keyshift = (int)((*(pkeys+1)) >> 24);
+      int keyshift = (int)((*(pkeys+1)) >> 24);
       (*(pkeys+2)) = CRC32((*(pkeys+2)), keyshift);
     }
     return c;
@@ -106,7 +106,7 @@ static unsigned crypthead(const char* passwd,       /* password string */
      */
     if (++calls == 1)
     {
-        srand((unsigned)(time(NULL) ^ ZCR_SEED2));
+        srand((unsigned)time(NULL) ^ ZCR_SEED2);
     }
     init_keys(passwd, pkeys, pcrc_32_tab);
     for (n = 0; n < RAND_HEAD_LEN-2; n++)

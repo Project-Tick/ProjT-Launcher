@@ -3,8 +3,8 @@ PTLIBZIPPY DATA COMPRESSION LIBRARY
 PTlibzippy 0.0.5.1 is a general purpose data compression library.  All the code is
 thread safe.  The data format used by the PTlibzippy library is described by RFCs
 (Request for Comments) 1950 to 1952 in the files
-http://www.ietf.org/rfc/rfc1950.txt (PTlibzippy format), rfc1951.txt (deflate format)
-and rfc1952.txt (gzip format).
+https://datatracker.ietf.org/doc/html/rfc1951 (PTlibzippy format), rfc1951.txt
+(deflate format), and rfc1952.txt (gzip format).
 
 All functions of the compression library are documented in the file ptlibzippy.h
 (volunteer to write man pages welcome, contact ptlibzippy@gzip.org).  Two compiled

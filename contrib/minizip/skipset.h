@@ -185,7 +185,8 @@ void set_grow(set_t *set, set_node_t *node, int want, int fill) {
         int more = node->size ? node->size : 1;
         while (more < want)
             more <<= 1;
-        node->right = set_alloc(set, node->right, more * sizeof(set_node_t *));
+        node->right = set_alloc(set, node->right,
+                                (size_t)more * sizeof(set_node_t *));
         node->size = (i16_t)more;
     }
     int i;
