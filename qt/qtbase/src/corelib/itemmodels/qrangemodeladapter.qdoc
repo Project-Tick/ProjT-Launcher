@@ -42,16 +42,14 @@
     If the adapter was created from an lvalue or rvalue reference, then the
     adapter and model will operate on a copy of the original range object.
     Otherwise, modifications made through the adapter or model will be written
-    to the original range object. To get the updated range, use the range()
-    function explicitly, or use the implicit conversion of the adapter to a
-    the range.
+    to the original range object. To access the updated range, use range():
 
     \snippet qrangemodeladapter/main.cpp get-range
 
     To replace the entire range data with data from another (compatible) range,
-    use the setRange() function or the assignment operator.
+    use the assign() function, or the assignment operator.
 
-    \snippet qrangemodeladapter/main.cpp set-range
+    \snippet qrangemodeladapter/main.cpp assign
 
     \section1 Accessing item data
 
@@ -286,6 +284,12 @@
 
     Constructs a QRangeModelAdapter that operates on \a range. For tree ranges,
     the optional \a protocol will be used for tree traversal.
+
+    See the \l{QRangeModel::}{QRangeModel} constructor documentation for details
+    on the requirements to \a Range, and how the value category of \a range
+    changes the interaction between adapter, model, and range.
+
+    \sa QRangeModel
 */
 
 /*!
@@ -312,15 +316,14 @@
 
 /*!
     \fn template <typename Range, typename Protocol, typename Model> const QRangeModelAdapter<Range, Protocol, Model>::range_type &QRangeModelAdapter<Range, Protocol, Model>::range() const
-    \fn template <typename Range, typename Protocol, typename Model> QRangeModelAdapter<Range, Protocol, Model>::operator const QRangeModelAdapter<Range, Protocol, Model>::range_type &() const
 
     \return a const reference to the range that the model adapter operates on.
 
-    \sa setRange(), at(), model()
+    \sa assign(), at(), model()
 */
 
 /*!
-    \fn template <typename Range, typename Protocol, typename Model> template <typename NewRange, QRangeModelAdapter<Range, Protocol, Model>::if_assignable_range<NewRange>> void QRangeModelAdapter<Range, Protocol, Model>::setRange(NewRange &&newRange)
+    \fn template <typename Range, typename Protocol, typename Model> template <typename NewRange, QRangeModelAdapter<Range, Protocol, Model>::if_assignable_range<NewRange>> void QRangeModelAdapter<Range, Protocol, Model>::assign(NewRange &&newRange)
     \fn template <typename Range, typename Protocol, typename Model> template <typename NewRange, QRangeModelAdapter<Range, Protocol, Model>::if_assignable_range<NewRange>, QRangeModelAdapter<Range, Protocol, Model>::unless_adapter<NewRange>> QRangeModelAdapter &QRangeModelAdapter<Range, Protocol, Model>::operator=(NewRange &&newRange)
 
     Replaces the contents of the model with the rows in \a newRange, possibly
@@ -336,7 +339,6 @@
 */
 
 /*!
-    \fn template <typename Range, typename Protocol, typename Model> template <typename Row, QRangeModelAdapter<Range, Protocol, Model>::if_assignable_range<std::initializer_list<Row>>> void QRangeModelAdapter<Range, Protocol, Model>::setRange(std::initializer_list<Row> newRange)
     \fn template <typename Range, typename Protocol, typename Model> template <typename Row, QRangeModelAdapter<Range, Protocol, Model>::if_assignable_range<std::initializer_list<Row>>> QRangeModelAdapter &QRangeModelAdapter<Range, Protocol, Model>::assign(std::initializer_list<Row> newRange)
     \fn template <typename Range, typename Protocol, typename Model> template <typename Row, QRangeModelAdapter<Range, Protocol, Model>::if_assignable_range<std::initializer_list<Row>>> QRangeModelAdapter &QRangeModelAdapter<Range, Protocol, Model>::operator=(std::initializer_list<Row> newRange)
 
@@ -348,7 +350,6 @@
 */
 
 /*!
-    \fn template <typename Range, typename Protocol, typename Model> template <typename InputIterator, typename Sentinel, typename I = Impl, QRangeModelAdapter<Range, Protocol, Model>::if_writable<I>> void QRangeModelAdapter<Range, Protocol, Model>::setRange(InputIterator first, Sentinel last)
     \fn template <typename Range, typename Protocol, typename Model> template <typename InputIterator, typename Sentinel, typename I = Impl, QRangeModelAdapter<Range, Protocol, Model>::if_writable<I>> void QRangeModelAdapter<Range, Protocol, Model>::assign(InputIterator first, Sentinel last)
 
     Replaces the contents of the models with the rows in the range [\a first, \a last).

@@ -2809,7 +2809,7 @@ bool QApplication::notify(QObject *receiver, QEvent *e)
             }
 
             const Qt::ScrollPhase phase = wheel->phase();
-            QPoint relpos = wheel->position().toPoint();
+            QPointF relpos = wheel->position();
 
             // Ideally, we should lock on a widget when it starts receiving wheel
             // events. This avoids other widgets to start receiving those events
@@ -2835,7 +2835,7 @@ bool QApplication::notify(QObject *receiver, QEvent *e)
             if (QApplicationPrivate::wheel_widget) {
                 Q_ASSERT(phase != Qt::NoScrollPhase);
                 w = QApplicationPrivate::wheel_widget;
-                relpos = w->mapFromGlobal(wheel->globalPosition().toPoint());
+                relpos = w->mapFromGlobal(wheel->globalPosition());
             }
             /*
                 Start or finish a scrolling sequence by grabbing/releasing the wheel via
@@ -2855,7 +2855,7 @@ bool QApplication::notify(QObject *receiver, QEvent *e)
                     QApplicationPrivate::wheel_widget = w;
                 Q_FALLTHROUGH();
             case Qt::NoScrollPhase:
-                QApplicationPrivate::giveFocusAccordingToFocusPolicy(w, e, relpos);
+                QApplicationPrivate::giveFocusAccordingToFocusPolicy(w, e, relpos.toPoint());
                 break;
             // no default: - we want warnings if we don't handle all phases explicitly
             }
@@ -3758,7 +3758,7 @@ QWidget *QApplicationPrivate::findClosestTouchPointTarget(const QPointingDevice 
     const QPointingDevicePrivate *devPriv = QPointingDevicePrivate::get(device);
     for (auto &epd : devPriv->activePoints.values()) {
         const auto &pt = epd.eventPoint;
-        if (pt.id() != touchPoint.id()) {
+        if (pt.id() != touchPoint.id() && QMutableEventPoint::target(pt)) {
             qreal dx = globalPos.x() - pt.globalPosition().x();
             qreal dy = globalPos.y() - pt.globalPosition().y();
             qreal distance = dx * dx + dy * dy;

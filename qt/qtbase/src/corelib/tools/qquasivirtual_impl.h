@@ -15,6 +15,7 @@
 #include <QtCore/qtclasshelpermacros.h>
 
 #include <algorithm>
+#include <QtCore/q20memory.h>
 #include <type_traits>
 #include <tuple>
 
@@ -39,7 +40,8 @@ void applyIndexSwitch(size_t index, Applier&& applier, std::index_sequence<Is...
 template <size_t IndexCount, typename Applier>
 void applyIndexSwitch(size_t index, Applier&& applier)
 {
-    applyIndexSwitch(index, std::forward<Applier>(applier), std::make_index_sequence<IndexCount>());
+    QtPrivate::applyIndexSwitch(index, std::forward<Applier>(applier),
+                                std::make_index_sequence<IndexCount>());
 }
 
 template <typename Interface>
@@ -49,6 +51,8 @@ private:
     template <typename Arg>
     static constexpr bool passArgAsValue = sizeof(Arg) <= sizeof(size_t)
                                         && std::is_trivially_destructible_v<Arg>;
+
+    template <typename C = Interface> using Methods = typename C::template MethodTemplates<C>;
 
     template <typename ...>
     struct MethodImpl;
@@ -113,8 +117,6 @@ private:
         using Overridden = R(Subclass::*)(Args...) const;
     };
 
-    template <typename C = Interface> using Methods = typename C::template MethodTemplates<C>;
-
 public:
     template <auto prototype>
     struct Method : MethodImpl<Method<prototype>, decltype(prototype)> {};
@@ -177,7 +179,8 @@ private:
         auto doInvoke = [&](auto idxConstant) {
             std::tuple_element_t<idxConstant.value, Methods<>>::doInvoke(subclass, ret, args);
         };
-        applyIndexSwitch(index, doInvoke, std::index_sequence<interfaceMethodIndex<Is>()...>{});
+        QtPrivate::applyIndexSwitch(index, doInvoke,
+                                    std::index_sequence<interfaceMethodIndex<Is>()...>{});
     }
 
     static void callImpl(size_t index, typename Interface::base_interface &intf, void *ret, void *args)
@@ -218,14 +221,9 @@ public:
             if constexpr (std::is_void_v<Return>) {
                 std::apply(invoke, std::move(*static_cast<PackedArgs *>(args)));
             } else {
-                // Note, that ::new (*) Return(...) fails on Integrity.
-                // TODO: use std::construct_at for c++20
-                using Alloc = std::allocator<Return>;
-                Alloc alloc;
-                std::allocator_traits<Alloc>::construct(alloc, static_cast<Return *>(ret),
-                               std::apply(invoke, std::move(*static_cast<PackedArgs *>(args))));
+                q20::construct_at(static_cast<Return *>(ret),
+                                  std::apply(invoke, std::move(*static_cast<PackedArgs *>(args))));
             }
-
         }
 
         friend class QQuasiVirtualSubclass<Subclass, Interface>;

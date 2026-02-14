@@ -199,7 +199,7 @@ const QAccessibilityHints *QStyleHints::accessibility() const
     \property QStyleHints::toolTipWakeUpDelay
     \brief The delay in milliseconds before tool tips should be shown.
     \since 6.12
-    \sa QWidget::toolTip, [QML]{ToolTip::delay}
+    \sa QWidget::toolTip, {QtQuick.Controls::ToolTip::delay}
 */
 int QStyleHints::toolTipWakeUpDelay() const
 {
@@ -752,7 +752,9 @@ void QStyleHintsPrivate::update(const QPlatformTheme *theme)
 {
     Q_ASSERT(theme);
     updateColorScheme(theme->colorScheme());
-    QAccessibilityHintsPrivate::get(accessibilityHints())->updateContrastPreference(theme->contrastPreference());
+    auto *accessibilityHintsPrivate = QAccessibilityHintsPrivate::get(accessibilityHints());
+    accessibilityHintsPrivate->updateContrastPreference(theme->contrastPreference());
+    accessibilityHintsPrivate->updateMotionPreference(theme->motionPreference());
 }
 
 QAccessibilityHints *QStyleHintsPrivate::accessibilityHints() const

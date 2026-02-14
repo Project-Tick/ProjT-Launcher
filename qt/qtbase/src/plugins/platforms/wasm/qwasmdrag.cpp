@@ -1,5 +1,6 @@
 // Copyright (C) 2023 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #include "qwasmdrag.h"
 
@@ -265,7 +266,7 @@ void QWasmDrag::onNativeDragEnter(DragEvent *event)
 
     m_isInEnterDrag = true;
     QDrag *drag = new QDrag(this);
-    drag->setMimeData(new QMimeData());
+    drag->setMimeData(event->dataTransfer.toMimeDataPreview());
     drag->exec(Qt::CopyAction | Qt::MoveAction, Qt::CopyAction);
     m_isInEnterDrag = false;
 }
@@ -336,17 +337,21 @@ void QWasmDrag::DragState::DragImage::generateDragImageFromText(const QMimeData 
 
     QRect bounds;
     {
-        QPixmap image(QSize(1000,1000));
-        QPainter painter(&image);
-        bounds = painter.boundingRect(0, 0, 1000, 1000, 0, text);
+        QPixmap image(QSize(200,200));
+        if (!image.isNull()) {
+            QPainter painter(&image);
+            bounds = painter.boundingRect(0, 0, 200, 200, 0, text);
+        }
     }
     QImage image(bounds.size(), QImage::Format_RGBA8888);
-    QPainter painter(&image);
-    painter.fillRect(bounds, QColor(255,255,255, 255)); // Transparency does not work very well :-(
-    painter.setPen(Qt::black);
-    painter.drawText(bounds, text);
+    if (!image.isNull()) {
+        QPainter painter(&image);
+        painter.fillRect(bounds, QColor(255,255,255, 255)); // Transparency does not work very well :-(
+        painter.setPen(Qt::black);
+        painter.drawText(bounds, text);
 
-    m_pixmap = QPixmap::fromImage(image);
+        m_pixmap = QPixmap::fromImage(image);
+    }
     m_imageDomElement = dragImageElement;
 }
 

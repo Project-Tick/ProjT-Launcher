@@ -861,6 +861,16 @@ void tst_QDockWidget::dockLocationChanged()
     QMainWindow mw;
     QDockWidget dw;
     dw.setObjectName("dock1");
+    QDockWidget dw2;
+    dw2.setObjectName("dock2");
+
+    {
+        // Ensure tabify is a no-op before QMainWindow::addDockWidget()
+        QSignalSpy noopSpy(&dw2, &QDockWidget::dockLocationChanged);
+        mw.tabifyDockWidget(&dw, &dw2);
+        QCOMPARE(noopSpy.size(), 0);
+    }
+
     QSignalSpy spy(&dw, &QDockWidget::dockLocationChanged);
 
     mw.addDockWidget(Qt::LeftDockWidgetArea, &dw);
@@ -893,14 +903,11 @@ void tst_QDockWidget::dockLocationChanged()
         }
     }
 
+    // Dock area doesn't change => no signal emission
     spy.clear();
-    QDockWidget dw2;
-    dw2.setObjectName("dock2");
     mw.addDockWidget(Qt::TopDockWidgetArea, &dw2);
     mw.tabifyDockWidget(&dw2, &dw);
-    QCOMPARE(spy.size(), 1);
-    QCOMPARE(dockLocation(&spy), Qt::TopDockWidgetArea);
-    spy.clear();
+    QCOMPARE(spy.size(), 0);
 
     mw.splitDockWidget(&dw2, &dw, Qt::Horizontal);
     QCOMPARE(spy.size(), 1);
@@ -917,7 +924,7 @@ void tst_QDockWidget::dockLocationChanged()
     QCOMPARE(dockLocation(&spy), Qt::TopDockWidgetArea);
     spy.clear();
 
-    QByteArray ba = mw.saveState();
+    const QByteArray &ba = mw.saveState();
     mw.restoreState(ba);
     QCOMPARE(spy.size(), 1);
     QCOMPARE(dockLocation(&spy), Qt::TopDockWidgetArea);
@@ -1771,6 +1778,12 @@ void tst_QDockWidget::hoverWithoutDrop()
     QCOMPARE(d1->size(), sizeD1);
     QCOMPARE(d2->size(), sizeD2);
 
+    qCDebug(lcTestDockWidget) << "*** tabify d1 and d2 programmatically ***";
+    mainWindow->tabifyDockWidget(d1, d2);
+    QCOMPARE(mainWindow->tabifiedDockWidgets(d1), {d2});
+    QCOMPARE(mainWindow->tabifiedDockWidgets(d2), {d1});
+    groupWindow = mainWindow->findChild<QDockWidgetGroupWindow *>();
+    QVERIFY(groupWindow);
 
 #else
     QSKIP("test requires -developer-build option");

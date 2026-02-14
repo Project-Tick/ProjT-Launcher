@@ -21,6 +21,7 @@
 #if QT_CONFIG(temporaryfile)
 
 #include "private/qfiledevice_p.h"
+#include <optional>
 
 QT_BEGIN_NAMESPACE
 
@@ -34,11 +35,16 @@ protected:
 
     QString fileName;
     QString finalFileName; // fileName with symbolic links resolved
+    // Optional permissions to set on eventual commit():
+    std::optional<QFileDevice::Permissions> finalPermissions;
 
     QFileDevice::FileError writeError;
 
     bool useTemporaryFile;
     bool directWriteFallback;
+
+public:
+    bool open(QIODevice::OpenMode mode);
 };
 
 QT_END_NAMESPACE

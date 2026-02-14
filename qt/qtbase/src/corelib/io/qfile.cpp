@@ -674,7 +674,7 @@ QFile::rename(const QString &newName)
 
 #if QT_CONFIG(temporaryfile)
         // copy the file to the destination first
-        if (d->copy(newName)) {
+        if (d->copy(newName, permissions())) {
             // succeeded, remove the original
             if (!remove()) {
                 d->setError(QFile::RenameError, tr("Cannot remove source file: %1").arg(errorString()));
@@ -774,7 +774,7 @@ QFile::link(const QString &fileName, const QString &linkName)
 }
 
 #if QT_CONFIG(temporaryfile)    // dangerous without QTemporaryFile
-bool QFilePrivate::copy(const QString &newName)
+bool QFilePrivate::copy(const QString &newName, QFileDevice::Permissions permissions)
 {
     Q_Q(QFile);
     Q_ASSERT(error == QFile::NoError);
@@ -833,7 +833,7 @@ bool QFilePrivate::copy(const QString &newName)
     }
 
     // copy the permissions
-    out.setPermissions(q->permissions());
+    out.setPermissions(permissions);
     q->close();
 
     // final step: commit the copy
@@ -846,16 +846,15 @@ bool QFilePrivate::copy(const QString &newName)
 /*!
     Copies the file named fileName() to \a newName.
 
-    \include qfile-copy.qdocinc
+    This file is closed before it is copied.
 
-    \note On Android, this operation is not yet supported for \c content
-    scheme URIs.
+    \include qfile-copy.qdocinc
 
     \sa setFileName()
 */
 
 bool
-QFile::copy(const QString &newName)
+QFile::copy(const QString &newName, std::optional<QFileDevice::Permissions> perm)
 {
     Q_D(QFile);
     if (fileName().isEmpty()) {
@@ -872,7 +871,7 @@ QFile::copy(const QString &newName)
     unsetError();
     close();
     if (error() == QFile::NoError)
-        return d->copy(newName);
+        return d->copy(newName, perm ? *perm : permissions());
     return false;
 }
 
@@ -883,16 +882,14 @@ QFile::copy(const QString &newName)
 
     \include qfile-copy.qdocinc
 
-    \note On Android, this operation is not yet supported for \c content
-    scheme URIs.
-
     \sa rename()
 */
 
 bool
-QFile::copy(const QString &fileName, const QString &newName)
+QFile::copy(const QString &fileName, const QString &newName,
+            std::optional<QFileDevice::Permissions> perm)
 {
-    return QFile(fileName).copy(newName);
+    return QFile(fileName).copy(newName, perm);
 }
 #endif // QT_CONFIG(temporaryfile)
 

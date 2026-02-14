@@ -17,7 +17,8 @@ class Q_CORE_EXPORT QRangeModel : public QAbstractItemModel
     Q_PROPERTY(QHash<int, QByteArray> roleNames READ roleNames WRITE setRoleNames RESET resetRoleNames
                                                 NOTIFY roleNamesChanged FINAL)
     Q_PROPERTY(AutoConnectPolicy autoConnectPolicy READ autoConnectPolicy WRITE setAutoConnectPolicy
-                                                NOTIFY autoConnectPolicyChanged FINAL REVISION(6, 11))
+                                                NOTIFY autoConnectPolicyChanged REVISION(6, 11))
+    Q_CLASSINFO("RegisterEnumClassesUnscoped", "false")
 
 public:
     enum class AutoConnectPolicy {
@@ -114,7 +115,7 @@ public:
 
 Q_SIGNALS:
     void roleNamesChanged();
-    Q_REVISION(6, 11) void autoConnectPolicyChanged();
+    Q_REVISION(6, 11) void autoConnectPolicyChanged(AutoConnectPolicy policy);
 
 protected Q_SLOTS:
     void resetInternalData() override;

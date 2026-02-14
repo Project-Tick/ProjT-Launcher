@@ -60,6 +60,7 @@ template <template <typename> class P, typename T> class QSharedDataPointerBase
 
 protected:
     constexpr QSharedDataPointerBase(T *ptr = nullptr) noexcept : d(ptr) {}
+    QT_DECLARE_RO5_SMF_AS_DEFAULTED(QSharedDataPointerBase)
 
 public:
     // When adding anything public to this class, make sure to add the doc version to
@@ -69,14 +70,14 @@ public:
     using pointer = T *;
 
     void detach() { if (d && d->ref.loadRelaxed() != 1) detach_helper(); }
-    T &operator*() { implicitlyDetach(); return *(d.get()); }
+    T &operator*() { detachIfImplicit(); return *(d.get()); }
     constT &operator*() const { return *(d.get()); }
-    T *operator->() { implicitlyDetach(); return d.get(); }
+    T *operator->() { detachIfImplicit(); return d.get(); }
     constT *operator->() const noexcept { return d.get(); }
-    operator T *() { implicitlyDetach(); return d.get(); }
+    operator T *() { detachIfImplicit(); return d.get(); }
     operator const T *() const noexcept { return d.get(); }
-    T *data() { implicitlyDetach(); return d.get(); }
-    T *get() { implicitlyDetach(); return d.get(); }
+    T *data() { detachIfImplicit(); return d.get(); }
+    T *get() { detachIfImplicit(); return d.get(); }
     const T *data() const noexcept { return d.get(); }
     const T *get() const noexcept { return d.get(); }
     const T *constData() const noexcept { return d.get(); }
@@ -107,7 +108,7 @@ private:
     { return Self::create(std::forward(args)...); }
     static void destroy(T *ptr) { Self::destroy(ptr); }
 
-    void implicitlyDetach()
+    void detachIfImplicit()
     {
         if constexpr (Traits::ImplicitlyDetaches)
             static_cast<Self *>(this)->detach();
@@ -337,7 +338,7 @@ QSharedDataPointerBase<P, T>::detach_helper()
     T *x = clone();
     x->ref.ref();
     if (!d->ref.deref())
-        delete d.get();
+        destroy(d.get());
     d.reset(x);
 }
 

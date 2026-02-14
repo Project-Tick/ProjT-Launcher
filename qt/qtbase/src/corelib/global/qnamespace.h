@@ -59,6 +59,11 @@ namespace Qt {
         HighContrast,
     };
 
+    enum class MotionPreference {
+        NoPreference,
+        ReducedMotion,
+    };
+
     enum MouseButton {
         NoButton         = 0x00000000,
         LeftButton       = 0x00000001,
@@ -1442,6 +1447,7 @@ namespace Qt {
         ImhEmailCharactersOnly = 0x200000,
         ImhUrlCharactersOnly = 0x400000,
         ImhLatinOnly = 0x800000,
+        ImhDecimaNumbersOnly = 0x1000000,
 
         ImhExclusiveInputMask = 0xffff0000
     };
@@ -1805,6 +1811,7 @@ namespace Qt {
     Q_ENUM_NS(GlobalColor)
     Q_ENUM_NS(ColorScheme)
     Q_ENUM_NS(ContrastPreference)
+    Q_ENUM_NS(MotionPreference)
     Q_ENUM_NS(AspectRatioMode)
     Q_ENUM_NS(TransformationMode)
     Q_FLAG_NS(ImageConversionFlags)
@@ -1891,6 +1898,16 @@ public:
         TopDock,
         BottomDock,
         DockCount
+    };
+
+    enum CallMode {
+        Testing,
+        Live,
+    };
+
+    enum SaveStateRule {
+        KeepSavedState,
+        ClearSavedState,
     };
 
     enum Callback {

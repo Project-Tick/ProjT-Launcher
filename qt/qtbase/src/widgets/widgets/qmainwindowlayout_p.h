@@ -622,7 +622,7 @@ public:
     void revert(QLayoutItem *widgetItem);
     void applyState(QMainWindowLayoutState &newState, bool animate = true);
     void applyRestoredState();
-    void restore(bool keepSavedState = false);
+    void restore(QInternal::SaveStateRule rule);
     void animationFinished(QWidget *widget);
 
 #if QT_CONFIG(draganddrop)
@@ -640,6 +640,7 @@ private Q_SLOTS:
 #if QT_CONFIG(tabbar)
     void tabChanged();
     void tabMoved(int from, int to);
+    void tabifyWhileFloating(QDockWidget *first, QDockWidget *second);
 #endif
 #endif
 private:

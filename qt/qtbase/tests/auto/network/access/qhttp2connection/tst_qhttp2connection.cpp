@@ -647,6 +647,12 @@ void tst_QHttp2Connection::testBadFrameSize_data()
             << uchar(Http2::FrameType::PRIORITY) << 6 << false << 1 << false;
     QTest::newRow("ping_correct") << uchar(Http2::FrameType::PING) << 8 << false << 0 << false;
     QTest::newRow("ping_bad") << uchar(Http2::FrameType::PING) << 13 << false << 1 << false;
+    QHttp2Configuration configuration;
+    const int longerThanMaxFrameSize = (int)configuration.maxFrameSize() + 1;
+    QTest::newRow("data_too_long")
+            << uchar(Http2::FrameType::DATA) << longerThanMaxFrameSize << true << 0 << true;
+    QTest::newRow("headers_too_long")
+            << uchar(Http2::FrameType::HEADERS) << longerThanMaxFrameSize << false << 1 << true;
 }
 
 void tst_QHttp2Connection::testBadFrameSize()

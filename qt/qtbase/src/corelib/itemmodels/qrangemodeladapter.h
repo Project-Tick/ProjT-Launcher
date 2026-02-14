@@ -7,6 +7,8 @@
 
 #include <QtCore/qrangemodeladapter_impl.h>
 
+#include <QtCore/q26numeric.h>
+
 QT_BEGIN_NAMESPACE
 
 template <typename Range, typename Protocol = void, typename Model = QRangeModel>
@@ -151,9 +153,7 @@ public:
 
         explicit DataReference(const QModelIndex &index) noexcept
             : m_index(index)
-        {
-            Q_ASSERT_X(m_index.isValid(), "QRangeModelAdapter::at", "Index at position is invalid");
-        }
+        {}
 
         DataReference(const DataReference &other) = default;
         DataReference(DataReference &&other) = default;
@@ -268,7 +268,7 @@ public:
         {
             value_type value;
             ds >> value;
-            ref = value;
+            ref = std::move(value);
             return ds;
         }
 #endif
@@ -292,62 +292,62 @@ public:
 
         void swap(ColumnIteratorBase &other) noexcept
         {
-            qSwap(m_rowIndex, other.m_rowIndex);
-            qSwap(m_column, other.m_column);
+            std::swap(m_rowIndex, other.m_rowIndex);
+            std::swap(m_column, other.m_column);
             q_ptr_swap(m_adapter, other.m_adapter);
         }
 
-        friend Iterator &operator++(Iterator &that) noexcept
+        friend Iterator &operator++(Iterator &that)
         {
             ++that.m_column;
             return that;
         }
-        friend Iterator operator++(Iterator &that, int) noexcept
+        friend Iterator operator++(Iterator &that, int)
         {
             auto copy = that;
             ++that;
             return copy;
         }
-        friend Iterator operator+(const Iterator &that, difference_type n) noexcept
+        friend Iterator operator+(const Iterator &that, difference_type n)
         {
             return {that.m_rowIndex, that.m_column + n, that.m_adapter};
         }
-        friend Iterator operator+(difference_type n, const Iterator &that) noexcept
+        friend Iterator operator+(difference_type n, const Iterator &that)
         {
             return that + n;
         }
-        friend Iterator &operator+=(Iterator &that, difference_type n) noexcept
+        friend Iterator &operator+=(Iterator &that, difference_type n)
         {
             that.m_column += n;
             return that;
         }
 
-        friend Iterator &operator--(Iterator &that) noexcept
+        friend Iterator &operator--(Iterator &that)
         {
             --that.m_column;
             return that;
         }
-        friend Iterator operator--(Iterator &that, int) noexcept
+        friend Iterator operator--(Iterator &that, int)
         {
             auto copy = that;
             --that;
             return copy;
         }
-        friend Iterator operator-(const Iterator &that, difference_type n) noexcept
+        friend Iterator operator-(const Iterator &that, difference_type n)
         {
             return {that.m_rowIndex, that.m_column - n, that.m_adapter};
         }
-        friend Iterator operator-(difference_type n, const Iterator &that) noexcept
+        friend Iterator operator-(difference_type n, const Iterator &that)
         {
             return that - n;
         }
-        friend Iterator &operator-=(Iterator &that, difference_type n) noexcept
+        friend Iterator &operator-=(Iterator &that, difference_type n)
         {
             that.m_column -= n;
             return that;
         }
 
-        friend difference_type operator-(const Iterator &lhs, const Iterator &rhs) noexcept
+        friend difference_type operator-(const Iterator &lhs, const Iterator &rhs)
         {
             Q_PRE(lhs.m_rowIndex == rhs.m_rowIndex);
             Q_PRE(lhs.m_adapter == rhs.m_adapter);
@@ -386,7 +386,9 @@ public:
 
     struct ConstColumnIterator : ColumnIteratorBase<ConstColumnIterator, const QRangeModelAdapter>
     {
+    private:
         using Base = ColumnIteratorBase<ConstColumnIterator, const QRangeModelAdapter>;
+    public:
         using difference_type = typename Base::difference_type;
         using value_type = data_type;
         using reference = const_data_type;
@@ -414,7 +416,9 @@ public:
 
     struct ColumnIterator : ColumnIteratorBase<ColumnIterator, QRangeModelAdapter>
     {
+    private:
         using Base = ColumnIteratorBase<ColumnIterator, QRangeModelAdapter>;
+    public:
         using difference_type = typename Base::difference_type;
         using value_type = DataReference;
         using reference = DataReference;
@@ -620,7 +624,9 @@ public:
 
     struct ConstRowReference : RowReferenceBase<ConstRowReference, const QRangeModelAdapter>
     {
+    private:
         using Base = RowReferenceBase<ConstRowReference, const QRangeModelAdapter>;
+    public:
         using Base::Base;
 
         ConstRowReference() = default;
@@ -633,7 +639,9 @@ public:
 
     struct RowReference : RowReferenceBase<RowReference, QRangeModelAdapter>
     {
+    private:
         using Base = RowReferenceBase<RowReference, QRangeModelAdapter>;
+    public:
         using iterator = ColumnIterator;
         using const_iterator = typename Base::const_iterator;
         using size_type = typename Base::size_type;
@@ -838,57 +846,57 @@ public:
             q_ptr_swap(m_adapter, other.m_adapter);
         }
 
-        friend Iterator &operator++(Iterator &that) noexcept
+        friend Iterator &operator++(Iterator &that)
         {
             ++that.m_row;
             return that;
         }
-        friend Iterator operator++(Iterator &that, int) noexcept
+        friend Iterator operator++(Iterator &that, int)
         {
             auto copy = that;
             ++that;
             return copy;
         }
-        friend Iterator operator+(const Iterator &that, difference_type n) noexcept
+        friend Iterator operator+(const Iterator &that, difference_type n)
         {
             return {that.m_row + n, that.root(), that.m_adapter};
         }
-        friend Iterator operator+(difference_type n, const Iterator &that) noexcept
+        friend Iterator operator+(difference_type n, const Iterator &that)
         {
             return that + n;
         }
-        friend Iterator &operator+=(Iterator &that, difference_type n) noexcept
+        friend Iterator &operator+=(Iterator &that, difference_type n)
         {
             that.m_row += n;
             return that;
         }
 
-        friend Iterator &operator--(Iterator &that) noexcept
+        friend Iterator &operator--(Iterator &that)
         {
             --that.m_row;
             return that;
         }
-        friend Iterator operator--(Iterator &that, int) noexcept
+        friend Iterator operator--(Iterator &that, int)
         {
             auto copy = that;
             --that;
             return copy;
         }
-        friend Iterator operator-(const Iterator &that, difference_type n) noexcept
+        friend Iterator operator-(const Iterator &that, difference_type n)
         {
             return {that.m_row - n, that.root(), that.m_adapter};
         }
-        friend Iterator operator-(difference_type n, const Iterator &that) noexcept
+        friend Iterator operator-(difference_type n, const Iterator &that)
         {
             return that - n;
         }
-        friend Iterator &operator-=(Iterator &that, difference_type n) noexcept
+        friend Iterator &operator-=(Iterator &that, difference_type n)
         {
             that.m_row -= n;
             return that;
         }
 
-        friend difference_type operator-(const Iterator &lhs, const Iterator &rhs) noexcept
+        friend difference_type operator-(const Iterator &lhs, const Iterator &rhs)
         {
             return lhs.m_row - rhs.m_row;
         }
@@ -925,7 +933,9 @@ public:
 public:
     struct ConstRowIterator : public RowIteratorBase<ConstRowIterator, const QRangeModelAdapter>
     {
+    private:
         using Base = RowIteratorBase<ConstRowIterator, const QRangeModelAdapter>;
+    public:
         using Base::Base;
 
         using difference_type = typename Base::difference_type;
@@ -969,7 +979,9 @@ public:
 
     struct RowIterator : public RowIteratorBase<RowIterator, QRangeModelAdapter>
     {
+    private:
         using Base = RowIteratorBase<RowIterator, QRangeModelAdapter>;
+    public:
         using Base::Base;
 
         using difference_type = typename Base::difference_type;
@@ -1046,15 +1058,10 @@ public:
         return QRangeModelDetails::refTo(storage.implementation()->childRange(storage.root()));
     }
 
-    Q_IMPLICIT operator const range_type &() const
-    {
-        return range();
-    }
-
     template <typename NewRange = range_type, if_assignable_range<NewRange> = true>
-    void setRange(NewRange &&newRange)
+    void assign(NewRange &&newRange)
     {
-        setRangeImpl(qsizetype(Impl::size(QRangeModelDetails::refTo(newRange))) - 1,
+        assignImpl(qsizetype(Impl::size(QRangeModelDetails::refTo(newRange))),
             [&newRange](auto &oldRange) {
             oldRange = std::forward<NewRange>(newRange);
         });
@@ -1064,14 +1071,14 @@ public:
               unless_adapter<NewRange> = true>
     QRangeModelAdapter &operator=(NewRange &&newRange)
     {
-        setRange(std::forward<NewRange>(newRange));
+        assign(std::forward<NewRange>(newRange));
         return *this;
     }
 
     template <typename Row, if_assignable_range<std::initializer_list<Row>> = true>
-    void setRange(std::initializer_list<Row> newRange)
+    void assign(std::initializer_list<Row> newRange)
     {
-        setRangeImpl(qsizetype(newRange.size() - 1), [&newRange](auto &oldRange) {
+        assignImpl(newRange.size(), [&newRange](auto &oldRange) {
             oldRange = newRange;
         });
     }
@@ -1079,28 +1086,16 @@ public:
     template <typename Row, if_assignable_range<std::initializer_list<Row>> = true>
     QRangeModelAdapter &operator=(std::initializer_list<Row> newRange)
     {
-        setRange(newRange);
+        assign(newRange);
         return *this;
-    }
-
-    template <typename Row, if_assignable_range<std::initializer_list<Row>> = true>
-    void assign(std::initializer_list<Row> newRange)
-    {
-        setRange(newRange);
-    }
-
-    template <typename InputIterator, typename Sentinel, typename I = Impl, if_writable<I> = true>
-    void setRange(InputIterator first, Sentinel last)
-    {
-        setRangeImpl(qsizetype(std::distance(first, last) - 1), [first, last](auto &oldRange) {
-            oldRange.assign(first, last);
-        });
     }
 
     template <typename InputIterator, typename Sentinel, typename I = Impl, if_writable<I> = true>
     void assign(InputIterator first, Sentinel last)
     {
-        setRange(first, last);
+        assignImpl(size_t(std::distance(first, last)), [first, last](auto &oldRange) {
+            oldRange.assign(first, last);
+        });
     }
 
     // iterator API
@@ -1260,9 +1255,17 @@ public:
     const_data_type operator[](int row) const { return at(row); }
 
     template <typename I= Impl, if_list<I> = true, if_writable<I> = true>
-    auto at(int row) { return DataReference{this->index(row)}; }
+    auto at(int row) {
+        const QModelIndex idx = this->index(row);
+        Q_ASSERT_X(idx.isValid(), "QRangeModelAdapter::at", "Index at row is invalid");
+        return DataReference{idx};
+    }
     template <typename I = Impl, if_list<I> = true, if_writable<I> = true>
-    auto operator[](int row) { return DataReference{this->index(row)}; }
+    auto operator[](int row) {
+        const QModelIndex idx = this->index(row);
+        Q_ASSERT_X(idx.isValid(), "QRangeModelAdapter::operator[]", "Index at row is invalid");
+        return DataReference{idx};
+    }
 
     // at/operator[int] for table or tree: a reference or view of the row
     template <typename I = Impl, unless_list<I> = true>
@@ -1296,11 +1299,18 @@ public:
     template <typename I = Impl, unless_list<I> = true, if_writable<I> = true>
     auto at(int row, int column)
     {
-        return DataReference{this->index(row, column)};
+        const QModelIndex idx = this->index(row, column);
+        Q_ASSERT_X(idx.isValid(), "QRangeModelAdapter::at", "Index at cell is invalid");
+        return DataReference{idx};
     }
 #ifdef __cpp_multidimensional_subscript
     template <typename I = Impl, unless_list<I> = true, if_writable<I> = true>
-    auto operator[](int row, int column) { return at(row, column); }
+    auto operator[](int row, int column)
+    {
+        const QModelIndex idx = this->index(row, column);
+        Q_ASSERT_X(idx.isValid(), "QRangeModelAdapter::operator[]", "Index at cell is invalid");
+        return DataReference{idx};
+    }
 #endif
 
     // at/operator[int] for tree: return a wrapper that maintains reference to
@@ -1347,11 +1357,18 @@ public:
     auto at(QSpan<const int> path, int column)
     {
         Q_PRE(path.size());
-        return DataReference{this->index(path, column)};
+        const QModelIndex idx = this->index(path, column);
+        Q_ASSERT_X(idx.isValid(), "QRangeModelAdapter::at", "Index at path is invalid");
+        return DataReference{idx};
     }
 #ifdef __cpp_multidimensional_subscript
     template <typename I = Impl, if_tree<I> = true, if_writable<I> = true>
-    auto operator[](QSpan<const int> path, int column) { return at(path, column); }
+    auto operator[](QSpan<const int> path, int column)
+    {
+        const QModelIndex idx = this->index(path, column);
+        Q_ASSERT_X(idx.isValid(), "QRangeModelAdapter::operator[]", "Index at path is invalid");
+        return DataReference{idx};
+    }
 #endif
 
     template <typename I = Impl, if_canInsertRows<I> = true>
@@ -1532,7 +1549,7 @@ private:
         Q_EMIT storage.implementation()->dataChanged(topLeft, bottomRight, {});
     }
 
-    void beginSetRangeImpl(Impl *impl, range_type *oldRange, qsizetype newLastRow)
+    void beginAssignImpl(Impl *impl, range_type *oldRange, int newLastRow)
     {
         const QModelIndex root = storage.root();
         const qsizetype oldLastRow = qsizetype(Impl::size(oldRange)) - 1;
@@ -1541,26 +1558,26 @@ private:
             impl->beginResetModel();
             impl->deleteOwnedRows();
         } else if constexpr (is_tree<Impl>) {
-            if (oldLastRow > 0) {
+            if (oldLastRow >= 0) {
                 impl->beginRemoveRows(root, 0, model()->rowCount(root) - 1);
                 impl->deleteRemovedRows(QRangeModelDetails::refTo(oldRange));
                 impl->endRemoveRows();
             }
-            if (newLastRow > 0)
+            if (newLastRow >= 0)
                 impl->beginInsertRows(root, 0, newLastRow);
         } else {
-            Q_ASSERT_X(false, "QRangeModelAdapter::setRange",
+            Q_ASSERT_X(false, "QRangeModelAdapter::assign",
                        "Internal error: The root index in a table or list must be invalid.");
         }
     }
 
-    void endSetRangeImpl(Impl *impl, qsizetype newLastRow)
+    void endAssignImpl(Impl *impl, int newLastRow)
     {
         const QModelIndex root = storage.root();
         if (!root.isValid()) {
             impl->endResetModel();
         } else if constexpr (is_tree<Impl>) {
-            if (newLastRow > 0) {
+            if (newLastRow >= 0) {
                 Q_ASSERT(model()->hasChildren(root));
                 // if it was moved, then newRange is now likely to be empty. Get
                 // the inserted row.
@@ -1572,13 +1589,18 @@ private:
     }
 
     template <typename Assigner>
-    void setRangeImpl(qsizetype newLastRow, Assigner &&assigner)
+    void assignImpl(std::size_t newSize, Assigner &&assigner)
     {
+        const auto sz = q26::saturate_cast<int>(newSize);
+        Q_ASSERT_X(q20::cmp_equal(sz, newSize),
+                   "QRangeModelAdapter::assign", "New range is too large");
+        const int newLastRow = sz - 1;
+
         auto *impl = storage.implementation();
         auto *oldRange = impl->childRange(storage.root());
-        beginSetRangeImpl(impl, oldRange, newLastRow);
+        beginAssignImpl(impl, oldRange, newLastRow);
         assigner(QRangeModelDetails::refTo(oldRange));
-        endSetRangeImpl(impl, newLastRow);
+        endAssignImpl(impl, newLastRow);
 
         if constexpr (Impl::itemsAreQObjects) {
             if (model()->autoConnectPolicy() == QRangeModel::AutoConnectPolicy::Full) {
@@ -1748,6 +1770,9 @@ private:
     }
 };
 
+// Deduction guides are needed to correctly map single-parameter construction
+// to the void-protocol case, and to disable construction from incompatible
+// ranges.
 template <typename Range, typename Protocol,
           QRangeModelDetails::if_can_construct<Range, Protocol> = true>
 QRangeModelAdapter(Range &&, Protocol &&) -> QRangeModelAdapter<Range, Protocol>;
