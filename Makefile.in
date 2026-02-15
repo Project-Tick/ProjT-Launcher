@@ -51,7 +51,7 @@ libdir = ${exec_prefix}/lib
 sharedlibdir = ${libdir}
 includedir = ${prefix}/include
 mandir = ${prefix}/share/man
-man3dir = ${mandir}/man3
+man5dir = ${mandir}/man5
 pkgconfigdir = ${libdir}/pkgconfig
 SRCDIR=
 ZINC=
@@ -319,7 +319,7 @@ install-libs: $(LIBS)
 	-@if [ ! -d $(DESTDIR)$(exec_prefix)  ]; then mkdir -p $(DESTDIR)$(exec_prefix); fi
 	-@if [ ! -d $(DESTDIR)$(libdir)       ]; then mkdir -p $(DESTDIR)$(libdir); fi
 	-@if [ ! -d $(DESTDIR)$(sharedlibdir) ]; then mkdir -p $(DESTDIR)$(sharedlibdir); fi
-	-@if [ ! -d $(DESTDIR)$(man3dir)      ]; then mkdir -p $(DESTDIR)$(man3dir); fi
+	-@if [ ! -d $(DESTDIR)$(man5dir)      ]; then mkdir -p $(DESTDIR)$(man5dir); fi
 	-@if [ ! -d $(DESTDIR)$(pkgconfigdir) ]; then mkdir -p $(DESTDIR)$(pkgconfigdir); fi
 	rm -f $(DESTDIR)$(libdir)/$(STATICLIB)
 	cp $(STATICLIB) $(DESTDIR)$(libdir)
@@ -336,9 +336,9 @@ install-libs: $(LIBS)
 	  ln -s $(SHAREDLIBV) $(DESTDIR)$(sharedlibdir)/$(SHAREDLIBM); \
 	  ($(LDCONFIG) || true)  >/dev/null 2>&1; \
 	fi
-	rm -f $(DESTDIR)$(man3dir)/zlib.5
+	rm -f $(DESTDIR)$(man5dir)/zlib.5
 	cp $(SRCDIR)zlib.5 $(DESTDIR)$(man5dir)
-	chmod 644 $(DESTDIR)$(man3dir)/zlib.5
+	chmod 644 $(DESTDIR)$(man5dir)/zlib.5
 	rm -f $(DESTDIR)$(pkgconfigdir)/ptlibzippy.pc
 	cp ptlibzippy.pc $(DESTDIR)$(pkgconfigdir)
 	chmod 644 $(DESTDIR)$(pkgconfigdir)/ptlibzippy.pc
@@ -357,7 +357,7 @@ uninstall:
 	if test -n "$(SHAREDLIBV)" -a -f $(SHAREDLIBV); then \
 	  rm -f $(SHAREDLIBV) $(SHAREDLIB) $(SHAREDLIBM); \
 	fi
-	cd $(DESTDIR)$(man3dir) && rm -f zlib.5
+	cd $(DESTDIR)$(man5dir) && rm -f zlib.5
 	cd $(DESTDIR)$(pkgconfigdir) && rm -f ptlibzippy.pc
 
 docs: zlib.5.pdf
