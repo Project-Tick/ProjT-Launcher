@@ -136,6 +136,11 @@ ctest --output-on-failure
 - Failing tests block merge
 - Must pass on all platforms
 
+## Launcher Coverage
+
+- UI is excluded from core coverage requirements
+- See the launcher subsystem test matrix: [Launcher Test Matrix](./LAUNCHER_TEST_MATRIX.md)
+
 ---
 
 ## Related

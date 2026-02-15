@@ -32,4 +32,8 @@ if(TARGET Qt6::Core)
     else()
         target_link_libraries(fuzz_gzip PRIVATE Qt6::Core PTlibzippy::PTlibzippy)
     endif()
+
+    add_fuzzer(fuzz_separator_prefix_tree fuzz_separator_prefix_tree.cpp)
+    target_include_directories(fuzz_separator_prefix_tree PRIVATE ${PROJECT_SOURCE_DIR}/launcher)
+    target_link_libraries(fuzz_separator_prefix_tree PRIVATE Qt6::Core)
 endif()
