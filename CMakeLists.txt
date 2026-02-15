@@ -82,7 +82,13 @@ endmacro()
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 set(CMAKE_C_STANDARD_REQUIRED true)
 set(CMAKE_CXX_STANDARD 23)
+
+if(MSVC)
 set(CMAKE_C_STANDARD 11)
+else()
+set(CMAKE_C_STANDARD 23)
+endif()
+
 include(GenerateExportHeader)
 if(MSVC)
     # /GS Adds buffer security checks, default on but incuded anyway to mirror gcc's fstack-protector flag
@@ -698,6 +704,11 @@ endif()
 if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND NOT APPLE)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libpng/CMakeLists.txt")
         message(STATUS "Using bundled libpng")
+        # Use the prebuilt libpng configuration header to avoid mismatched
+        # zlib version checks during generation.
+        set(PNG_LIBCONF_HEADER
+            "${CMAKE_CURRENT_SOURCE_DIR}/libpng/scripts/pnglibconf.h.prebuilt"
+            CACHE FILEPATH "" FORCE)
         # Ensure libpng install rules are enabled even if other deps toggled them.
         set(SKIP_INSTALL_ALL OFF CACHE BOOL "" FORCE)
         set(SKIP_INSTALL_LIBRARIES OFF CACHE BOOL "" FORCE)
