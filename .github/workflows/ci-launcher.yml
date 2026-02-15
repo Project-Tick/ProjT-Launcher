@@ -324,7 +324,7 @@ jobs:
 
       - name: Run tests
         run: |
-          ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE"
+          ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --output-on-failure --no-tests=error
 
       - name: Upload build
         uses: actions/upload-artifact@v6
