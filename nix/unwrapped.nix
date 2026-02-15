@@ -38,7 +38,7 @@ in
 
 stdenv.mkDerivation {
   pname = "projtlauncher-unwrapped";
-  version = "0.0.3-unstable-${date}";
+  version = "0.0.5-1-unstable-${date}";
 
   src = lib.fileset.toSource {
     root = ../.;
