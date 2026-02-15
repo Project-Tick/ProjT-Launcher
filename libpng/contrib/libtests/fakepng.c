@@ -8,7 +8,7 @@
  */
 
 #include <stdio.h>
-#include <zlib.h> /* for crc32 */
+#include "ptlibzippy.h" /* for crc32 */
 
 void
 put_uLong(uLong val)

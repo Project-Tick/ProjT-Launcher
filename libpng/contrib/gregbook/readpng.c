@@ -55,7 +55,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <zlib.h>
+#include "ptlibzippy.h"
 
 #include "png.h"        /* libpng header */
 #include "readpng.h"    /* typedefs, common macros, public prototypes */
@@ -79,7 +79,7 @@ void readpng_version_info(void)
     fprintf(stderr, "   Compiled with libpng %s; using libpng %s.\n",
       PNG_LIBPNG_VER_STRING, png_libpng_ver);
     fprintf(stderr, "   Compiled with zlib %s; using zlib %s.\n",
-      ZLIB_VERSION, zlib_version);
+      PTLIBZIPPY_VERSION, ptlibzippyVersion());
 }
 
 

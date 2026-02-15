@@ -28,7 +28,7 @@
  */
 
 #include <stdio.h>
-#include <zlib.h>
+#include "ptlibzippy.h"
 
 #define MAX_LENGTH 500000
 

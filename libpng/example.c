@@ -41,7 +41,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <png.h>
-#include <zlib.h>
+#include "ptlibzippy.h"
 
 int main(int argc, const char **argv)
 {

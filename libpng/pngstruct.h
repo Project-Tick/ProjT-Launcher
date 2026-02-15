@@ -20,15 +20,16 @@
  * in this structure and is required for decompressing the LZ compressed
  * data in PNG files.
  */
-#ifndef ZLIB_CONST
-   /* We must ensure that zlib uses 'const' in declarations. */
-#  define ZLIB_CONST
+#ifndef PTLIBZIPPY_CONST
+   /* We must ensure that PTlibzippy uses 'const' in declarations. */
+#  define PTLIBZIPPY_CONST
 #endif
-#include "zlib.h"
+#include "ptlibzippy.h"
 #ifdef const
    /* zlib.h sometimes #defines const to nothing, undo this. */
 #  undef const
 #endif
+
 
 #define PNGZ_MSG_CAST(s) (s)
 #define PNGZ_INPUT_CAST(b) (b)
@@ -239,7 +240,7 @@ struct png_struct_def
                               /* pixel depth used for the row buffers */
    png_byte transformed_pixel_depth;
                               /* pixel depth after read/write transforms */
-#if ZLIB_VERNUM >= 0x0051
+#if PTLIBZIPPY_VERNUM >= 0x0051
    png_byte zstream_start;    /* at start of an input zlib stream */
 #endif /* Zlib >= 1.2.4 */
 #if defined(PNG_READ_FILLER_SUPPORTED) || defined(PNG_WRITE_FILLER_SUPPORTED)

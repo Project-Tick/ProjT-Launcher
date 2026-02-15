@@ -39,10 +39,11 @@
 #ifdef PNG_ZLIB_HEADER
 #  include PNG_ZLIB_HEADER /* defined by pnglibconf.h from 1.7 */
 #else
-#  include <zlib.h>
+#  include "ptlibzippy.h"
 #endif
 
 #include "png.h"
+
 
 /* This hack was introduced for historical reasons, and we are
  * still keeping it in libpng-1.6.x for compatibility reasons.
@@ -1759,7 +1760,7 @@ test_one_file(const char *inname, const char *outname)
                    "\n   filtering heuristic (libpng default), compression");
                fprintf(STDERR,
                    " level (zlib default),\n   and zlib version (%s)?\n\n",
-                   ZLIB_VERSION);
+                   PTLIBZIPPY_VERSION);
                wrote_question = 1;
             }
 
@@ -1791,7 +1792,7 @@ test_one_file(const char *inname, const char *outname)
                    "\n   filtering heuristic (libpng default), compression");
                fprintf(STDERR,
                    " level (zlib default),\n   and zlib version (%s)?\n\n",
-                 ZLIB_VERSION);
+                 PTLIBZIPPY_VERSION);
                wrote_question = 1;
             }
 
@@ -1837,7 +1838,7 @@ main(int argc, char *argv[])
    png_structp dummy_ptr;
 
    fprintf(STDERR, "\n Testing libpng version %s\n", PNG_LIBPNG_VER_STRING);
-   fprintf(STDERR, "   with zlib   version %s\n", ZLIB_VERSION);
+   fprintf(STDERR, "   with zlib   version %s\n", PTLIBZIPPY_VERSION);
    fprintf(STDERR, "%s", png_get_copyright(NULL));
    /* Show the version of libpng used in building the library */
    fprintf(STDERR, " library (%lu):%s",

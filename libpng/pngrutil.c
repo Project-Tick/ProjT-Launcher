@@ -447,7 +447,7 @@ png_inflate_claim(png_structrp png_ptr, png_uint_32 owner)
     */
    {
       int ret; /* zlib return code */
-#if ZLIB_VERNUM >= 0x0051
+#if PTLIBZIPPY_VERNUM >= 0x0051
       int window_bits = 0;
 
 # if defined(PNG_SET_OPTION_SUPPORTED) && defined(PNG_MAXIMUM_INFLATE_WINDOW)
@@ -464,7 +464,7 @@ png_inflate_claim(png_structrp png_ptr, png_uint_32 owner)
       }
 # endif
 
-#endif /* ZLIB_VERNUM >= 0x0051 */
+#endif /* PTLIBZIPPY_VERNUM >= 0x0051 */
 
       /* Set this for safety, just in case the previous owner left pointers to
        * memory allocations.
@@ -476,7 +476,7 @@ png_inflate_claim(png_structrp png_ptr, png_uint_32 owner)
 
       if ((png_ptr->flags & PNG_FLAG_ZSTREAM_INITIALIZED) != 0)
       {
-#if ZLIB_VERNUM >= 0x0051
+#if PTLIBZIPPY_VERNUM >= 0x0051
          ret = inflateReset2(&png_ptr->zstream, window_bits);
 #else
          ret = inflateReset(&png_ptr->zstream);
@@ -485,19 +485,19 @@ png_inflate_claim(png_structrp png_ptr, png_uint_32 owner)
 
       else
       {
-#if ZLIB_VERNUM >= 0x0051
+#if PTLIBZIPPY_VERNUM >= 0x0051
          {
-            const char *zver = zlibVersion();
+            const char *zver = ptlibzippyVersion();
             if (zver == NULL || zver[0] == 0)
-               zver = ZLIB_VERSION;
+               zver = PTLIBZIPPY_VERSION;
             ret = inflateInit2_(&png_ptr->zstream, window_bits, zver,
                (int)sizeof(z_stream));
          }
 #else
          {
-            const char *zver = zlibVersion();
+            const char *zver = ptlibzippyVersion();
             if (zver == NULL || zver[0] == 0)
-               zver = ZLIB_VERSION;
+               zver = PTLIBZIPPY_VERSION;
             ret = inflateInit_(&png_ptr->zstream, zver, (int)sizeof(z_stream));
          }
 #endif
@@ -519,12 +519,12 @@ png_inflate_claim(png_structrp png_ptr, png_uint_32 owner)
       {
          if (ret == Z_VERSION_ERROR)
          {
-            const char *zver = zlibVersion();
+            const char *zver = ptlibzippyVersion();
             if (zver == NULL || zver[0] == 0)
                zver = "(null)";
             fprintf(stderr,
-               "libpng zlib mismatch: zlibVersion=%s ZLIB_VERSION=%s\n",
-               zver, ZLIB_VERSION);
+               "libpng zlib mismatch: zlibVersion=%s PTLIBZIPPY_VERSION=%s\n",
+               zver, PTLIBZIPPY_VERSION);
          }
          png_zstream_error(png_ptr, ret);
       }
@@ -537,7 +537,7 @@ png_inflate_claim(png_structrp png_ptr, png_uint_32 owner)
 #endif
 }
 
-#if ZLIB_VERNUM >= 0x0051
+#if PTLIBZIPPY_VERNUM >= 0x0051
 /* Handle the start of the inflate stream if we called inflateInit2(strm,0);
  * in this case some zlib versions skip validation of the CINFO field and, in
  * certain circumstances, libpng may end up displaying an invalid image, in

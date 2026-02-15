@@ -1023,8 +1023,8 @@
 /* Validate the include paths - the include path used to generate pnglibconf.h
  * must match that used in the build, or we must be using pnglibconf.h.prebuilt:
  */
-#if PNG_ZLIB_VERNUM != 0 && PNG_ZLIB_VERNUM != ZLIB_VERNUM
-#  error The include path of <zlib.h> is incorrect
+#if PNG_ZLIB_VERNUM != 0 && PNG_ZLIB_VERNUM != PTLIBZIPPY_VERNUM
+#  error The include path of <ptlibzippy.h> is incorrect
    /* When pnglibconf.h was built, the copy of zlib.h that it used was not the
     * same as the one being used here.  Considering how libpng makes decisions
     * to use the zlib API based on the zlib version number, the -I options must
@@ -1722,7 +1722,7 @@ PNG_INTERNAL_FUNCTION(void, png_read_start_row,
    (png_structrp png_ptr),
    PNG_EMPTY);
 
-#if ZLIB_VERNUM >= 0x1240
+#if PTLIBZIPPY_VERNUM >= 0x1240
 PNG_INTERNAL_FUNCTION(int, png_zlib_inflate,
    (png_structrp png_ptr, int flush),
    PNG_EMPTY);

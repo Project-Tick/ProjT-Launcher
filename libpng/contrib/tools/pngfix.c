@@ -50,7 +50,7 @@
    /* We must ensure that zlib uses 'const' in declarations. */
 #  define ZLIB_CONST
 #endif
-#include <zlib.h>
+#include "ptlibzippy.h"
 #ifdef const
    /* zlib.h sometimes #defines const to nothing, undo this. */
 #  undef const
@@ -64,7 +64,7 @@
 #  error pngfix requires libpng with PNG_MAXIMUM_INFLATE_WINDOW supported
 #endif
 
-#if ZLIB_VERNUM >= 0x0051
+#if PTLIBZIPPY_VERNUM >= 0x0051
 
 /* Copied from pngpriv.h */
 #ifdef __cplusplus
@@ -4008,16 +4008,16 @@ main(int argc, const char **argv)
    return global_end(&global);
 }
 
-#else /* ZLIB_VERNUM < 0x0051 */
+#else /* PTLIBZIPPY_VERNUM < 0x0051 */
 int
 main(void)
 {
    fprintf(stderr,
       "pngfix needs libpng with a zlib >=0.0.5.1 (not 0x%x)\n",
-      ZLIB_VERNUM);
+      PTLIBZIPPY_VERNUM);
    return 77;
 }
-#endif /* ZLIB_VERNUM */
+#endif /* PTLIBZIPPY_VERNUM */
 
 #else /* No read support */
 

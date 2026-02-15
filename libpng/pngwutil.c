@@ -432,9 +432,9 @@ png_deflate_claim(png_structrp png_ptr, png_uint_32 owner,
       else
       {
          {
-            const char *zver = zlibVersion();
+            const char *zver = ptlibzippyVersion();
             if (zver == NULL || zver[0] == 0)
-               zver = ZLIB_VERSION;
+               zver = PTLIBZIPPY_VERSION;
             ret = deflateInit2_(&png_ptr->zstream, level, method, windowBits,
                memLevel, strategy, zver, (int)sizeof(z_stream));
          }

@@ -56,7 +56,7 @@
 #ifdef PNG_ZLIB_HEADER
 #  include PNG_ZLIB_HEADER
 #else
-#  include <zlib.h>   /* For crc32 */
+#  include "ptlibzippy.h"   /* For crc32 */
 #endif
 
 /* 1.6.1 added support for the configure test harness, which uses 77 to indicate
