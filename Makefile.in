@@ -336,9 +336,9 @@ install-libs: $(LIBS)
 	  ln -s $(SHAREDLIBV) $(DESTDIR)$(sharedlibdir)/$(SHAREDLIBM); \
 	  ($(LDCONFIG) || true)  >/dev/null 2>&1; \
 	fi
-	rm -f $(DESTDIR)$(man5dir)/zlib.5
-	cp $(SRCDIR)zlib.5 $(DESTDIR)$(man5dir)
-	chmod 644 $(DESTDIR)$(man5dir)/zlib.5
+	rm -f $(DESTDIR)$(man5dir)/ptlibzippy.5
+	cp $(SRCDIR)ptlibzippy.5 $(DESTDIR)$(man5dir)
+	chmod 644 $(DESTDIR)$(man5dir)/ptlibzippy.5
 	rm -f $(DESTDIR)$(pkgconfigdir)/ptlibzippy.pc
 	cp ptlibzippy.pc $(DESTDIR)$(pkgconfigdir)
 	chmod 644 $(DESTDIR)$(pkgconfigdir)/ptlibzippy.pc
@@ -357,13 +357,13 @@ uninstall:
 	if test -n "$(SHAREDLIBV)" -a -f $(SHAREDLIBV); then \
 	  rm -f $(SHAREDLIBV) $(SHAREDLIB) $(SHAREDLIBM); \
 	fi
-	cd $(DESTDIR)$(man5dir) && rm -f zlib.5
+	cd $(DESTDIR)$(man5dir) && rm -f ptlibzippy.5
 	cd $(DESTDIR)$(pkgconfigdir) && rm -f ptlibzippy.pc
 
-docs: zlib.5.pdf
+docs: ptlibzippy.5.pdf
 
-zlib.5.pdf: $(SRCDIR)zlib.5
-	groff -mandoc -f H -T ps $(SRCDIR)zlib.5 | ps2pdf - $@
+ptlibzippy.5.pdf: $(SRCDIR)ptlibzippy.5
+	groff -mandoc -f H -T ps $(SRCDIR)ptlibzippy.5 | ps2pdf - $@
 
 # ptzippyconf.h.cmakein: $(SRCDIR)ptzippyconf.h.in
 # 	-@ TEMPFILE=zconfh_$$; \
