@@ -1,0 +1,59 @@
+version: 2
+
+updates:
+  # Keep GitHub Actions up to date
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: cron
+      cronjob: "0 3 * * *"
+      timezone: "UTC"
+    labels: ["11.dependencies", "1.main-ci-changes"]
+    open-pull-requests-limit: 10
+    rebase-strategy: "disabled"
+    commit-message:
+      prefix: "deps"
+      include: scope
+    groups:
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      actions-major:
+        patterns: ["*"]
+        update-types: ["major"]
+
+  # Update CI helper scripts (npm) in ci/github-script
+  - package-ecosystem: npm
+    directory: "/ci/github-script"
+    schedule:
+      interval: cron
+      cronjob: "0 3 * * *"
+      timezone: "UTC"
+    labels: ["11.dependencies", "1.main-ci-changes", "12.npm"]
+    open-pull-requests-limit: 10
+    rebase-strategy: "disabled"
+    versioning-strategy: increase
+    commit-message:
+      prefix: "deps"
+      include: scope
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      npm-major:
+        patterns: ["*"]
+        update-types: ["major"]
+
+  # Keep vcpkg manifest in sync
+  - package-ecosystem: vcpkg
+    directory: "/"
+    schedule:
+      interval: cron
+      cronjob: "0 3 * * *"
+      timezone: "UTC"
+    labels: ["11.dependencies", "15.vcpkg"]
+    open-pull-requests-limit: 10
+    rebase-strategy: "disabled"
+    commit-message:
+      prefix: "deps"
+      include: scope
