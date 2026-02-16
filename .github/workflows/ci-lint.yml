@@ -5,30 +5,10 @@ name: CI Lint
 on:
   workflow_call:
     inputs:
-      should-test:
-        required: true
-        type: string
-      is-schedule:
-        required: true
-        type: string
-      is-release:
-        required: true
-        type: string
-      is-pr-closed:
-        required: true
-        type: string
-      run-bot:
-        required: true
-        type: string
-      run-meta:
-        required: true
-        type: string
-      run-branding:
-        required: true
-        type: string
       head-ref:
-        required: true
+        required: false
         type: string
+        default: ""
 
 jobs:
   clang-lint:
@@ -40,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
         with:
-          ref: ${{ inputs.head-ref }}
+          ref: ${{ inputs.head-ref || github.sha }}
 
       - name: Check C++ formatting
         run: |

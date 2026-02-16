@@ -8,6 +8,9 @@ name: Project Tick Infra
 # ═══════════════════════════════════════════════════════════════════════════════
 
 on:
+  pull_request:
+    branches:
+      - "main"
   push:
     tags:
       - "*"
@@ -26,11 +29,7 @@ on:
     - cron: "0 */5 * * *" # Every 5 hours
   release:
     types: [released]
-  workflow_run:
-    workflows:
-      - Reviewed
-    types: [completed]
-  branch_protection_rule:
+  # Note: release workflow is handled separately.
 
 concurrency:
   group: ${{ (github.event_name == 'schedule' || github.event_name == 'merge_group')
@@ -43,37 +42,21 @@ env:
 
 jobs:
   # ═══════════════════════════════════════════════════════════════════════════
-  # PREPARATION - Determine what to run based on context
-  # ═══════════════════════════════════════════════════════════════════════════
-  prepare:
-    name: Prepare
-    uses: ./.github/workflows/ci-prepare.yml
-
-  # ═══════════════════════════════════════════════════════════════════════════
   # LINT & QUALITY CHECKS
   # ═══════════════════════════════════════════════════════════════════════════
   lint:
     name: Lint & Quality
-    needs: prepare
-    if: needs.prepare.outputs.should-test == 'true' && needs.prepare.outputs.is-schedule != 'true' && needs.prepare.outputs.is-release != 'true' && needs.prepare.outputs.is-pr-closed != 'true'
+    if: github.event_name != 'schedule' && github.event_name != 'release'
     uses: ./.github/workflows/ci-lint.yml
     with:
-      should-test: ${{ needs.prepare.outputs.should-test }}
-      is-schedule: ${{ needs.prepare.outputs.is-schedule }}
-      is-release: ${{ needs.prepare.outputs.is-release }}
-      is-pr-closed: ${{ needs.prepare.outputs.is-pr-closed }}
-      run-bot: ${{ needs.prepare.outputs.run-bot }}
-      run-meta: ${{ needs.prepare.outputs.run-meta }}
-      run-branding: ${{ needs.prepare.outputs.run-branding }}
-      head-ref: ${{ needs.prepare.outputs.head-ref }}
+      head-ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
   # ═══════════════════════════════════════════════════════════════════════════
   # META UPDATE (Scheduled)
   # ═══════════════════════════════════════════════════════════════════════════
   meta-update:
     name: Update Meta Files
-    needs: prepare
-    if: needs.prepare.outputs.schedule-cron == '0 * * * *'
+    if: github.event_name == 'schedule' && github.event.schedule == '0 * * * *'
     uses: ./.github/workflows/meta-update.yml
     secrets: inherit
     permissions:
@@ -86,8 +69,7 @@ jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   build-projt-launcher-debug:
     name: Build ProjT Launcher ( DEBUG )
-    needs: prepare
-    if: needs.prepare.outputs.run-regular-build == 'true'
+    if: github.event_name != 'schedule' && github.event_name != 'release' && !(github.event_name == 'push' && github.ref_type == 'tag')
     uses: ./.github/workflows/ci-launcher.yml
     permissions:
       contents: read
@@ -102,8 +84,7 @@ jobs:
 
   build-projt-launcher-release:
     name: Build ProjT Launcher ( RELEASE )
-    needs: prepare
-    if: needs.prepare.outputs.run-release-build == 'true'
+    if: github.event_name == 'release' || (github.event_name == 'push' && github.ref_type == 'tag')
     uses: ./.github/workflows/ci-launcher.yml
     permissions:
       contents: read
@@ -118,8 +99,7 @@ jobs:
 
   build-javacheck:
     name: Build javacheck
-    needs: prepare
-    if: needs.prepare.outputs.run-javacheck == 'true'
+    if: github.event_name != 'schedule' && github.event_name != 'release'
     uses: ./.github/workflows/ci-javacheck.yml
     permissions:
       contents: read
@@ -128,7 +108,7 @@ jobs:
       id-token: write
     with:
       ref: ${{ github.sha }}
-      run-javacheck: ${{ needs.prepare.outputs.run-javacheck }}
+      run-javacheck: "true"
     secrets: inherit
 
   # ═══════════════════════════════════════════════════════════════════════════
@@ -136,18 +116,18 @@ jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   release:
     name: Release
-    needs: [prepare, build-projt-launcher-release]
-    if: needs.prepare.outputs.run-release-build == 'true'
+    needs: [build-projt-launcher-release]
+    if: github.event_name == 'release' || (github.event_name == 'push' && github.ref_type == 'tag')
     uses: ./.github/workflows/ci-release.yml
     with:
-      run-release-build: ${{ needs.prepare.outputs.run-release-build }}
-      is-release: ${{ needs.prepare.outputs.is-release }}
+      run-release-build: "true"
+      is-release: ${{ github.event_name == 'release' }}
     secrets: inherit
 
   winget:
     name: Winget
-    needs: [prepare]
-    if: needs.prepare.outputs.is-release == 'true'
+    needs: [build-projt-launcher-release]
+    if: github.event_name == 'release'
     uses: ./.github/workflows/ci-winget.yml
     with:
       ref: ${{ github.sha }}
@@ -159,9 +139,8 @@ jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   quazip:
     name: Quazip
-    needs: prepare
-    if: needs.prepare.outputs.run-quazip == 'true'
+    if: github.event_name != 'schedule' && github.event_name != 'release'
     uses: ./.github/workflows/ci-quazip.yml
     with:
       ref: ${{ github.sha }}
-      run-quazip: ${{ needs.prepare.outputs.run-quazip }}
+      run-quazip: "true"

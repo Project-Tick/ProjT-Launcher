@@ -31,10 +31,6 @@ on:
         description: Type of build (Debug or Release)
         type: string
         default: Debug
-      force-prepare-yes:
-        description: Force prepare job to enable tests/builds (used by release workflow)
-        type: boolean
-        default: false
       version:
         description: Launcher version
         required: true
