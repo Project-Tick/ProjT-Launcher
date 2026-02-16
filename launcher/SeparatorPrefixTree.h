@@ -69,7 +69,7 @@ class SeparatorPrefixTree
 	bool contains(QString path) const
 	{
 		auto node = find(path);
-		return node != nullptr;
+		return node != nullptr && node->contained();
 	}
 
 	/// does the tree cover a path? That means the prefix of the path is contained in the tree

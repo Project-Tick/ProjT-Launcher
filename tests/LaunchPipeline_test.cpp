@@ -34,7 +34,7 @@ class LaunchPipelineTest : public QObject
 		projt::launch::LaunchPipeline pipeline(nullptr);
 		QSignalSpy failedSpy(&pipeline, &Task::failed);
 
-		pipeline.executeTask();
+		pipeline.start();
 		QCOMPARE(failedSpy.count(), 1);
 		QCOMPARE(failedSpy.takeFirst().at(0).toString(), QString("Missing instance for launch."));
 	}

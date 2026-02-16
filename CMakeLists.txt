@@ -701,14 +701,16 @@ else()
     message(FATAL_ERROR "Bundled ptlibzippy not found in ${CMAKE_CURRENT_SOURCE_DIR}/zlib/")
 endif()
 
+if(PTLIBZIPPY_INCLUDE_DIRS)
+    # Make PTlibzippy headers available to libpng config generation.
+    set(ZLIB_INCLUDE_DIRS "${PTLIBZIPPY_INCLUDE_DIRS}")
+elseif(DEFINED PTlibzippy_SOURCE_DIR AND DEFINED PTlibzippy_BINARY_DIR)
+    set(ZLIB_INCLUDE_DIRS "${PTlibzippy_SOURCE_DIR};${PTlibzippy_BINARY_DIR}")
+endif()
+
 if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND NOT APPLE)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libpng/CMakeLists.txt")
         message(STATUS "Using bundled libpng")
-        # Use the prebuilt libpng configuration header to avoid mismatched
-        # zlib version checks during generation.
-        set(PNG_LIBCONF_HEADER
-            "${CMAKE_CURRENT_SOURCE_DIR}/libpng/scripts/pnglibconf.h.prebuilt"
-            CACHE FILEPATH "" FORCE)
         # Ensure libpng install rules are enabled even if other deps toggled them.
         set(SKIP_INSTALL_ALL OFF CACHE BOOL "" FORCE)
         set(SKIP_INSTALL_LIBRARIES OFF CACHE BOOL "" FORCE)
