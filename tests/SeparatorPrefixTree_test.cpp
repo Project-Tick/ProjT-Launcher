@@ -49,6 +49,21 @@ QString randomPath(QRandomGenerator& rng)
 
 	return parts.join('/');
 }
+
+QString shortestContainedPrefix(const SeparatorPrefixTree<'/'> &tree, const QString& path)
+{
+	const auto parts = path.split('/');
+	QString prefix;
+	for (int i = 0; i < parts.size(); ++i) {
+		if (i == 0)
+			prefix = parts.at(i);
+		else
+			prefix = prefix + '/' + parts.at(i);
+		if (tree.contains(prefix))
+			return prefix;
+	}
+	return QString();
+}
 } // namespace
 
 class SeparatorPrefixTreeTest : public QObject
@@ -118,15 +133,20 @@ class SeparatorPrefixTreeTest : public QObject
 			tree.insert(path);
 			QVERIFY(tree.contains(path));
 			QVERIFY(tree.covers(path));
-			QCOMPARE(tree.cover(path), path);
+			QCOMPARE(tree.cover(path), shortestContainedPrefix(tree, path));
 		}
 
 		for (int i = 0; i < 200; ++i) {
 			const auto probe = randomPath(rng);
-			const auto covers = tree.covers(probe);
 			const auto cover = tree.cover(probe);
-			if (covers)
-				QVERIFY(!cover.isNull());
+			const auto expected = shortestContainedPrefix(tree, probe);
+			if (expected.isNull()) {
+				QVERIFY(!tree.covers(probe));
+				QVERIFY(cover.isNull());
+			} else {
+				QVERIFY(tree.covers(probe));
+				QCOMPARE(cover, expected);
+			}
 		}
 
 		QStringList list = tree.toStringList();
