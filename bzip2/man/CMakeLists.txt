@@ -4,5 +4,5 @@ foreach(m IN LISTS MAN_FILES)
         FILES
             ${CMAKE_CURRENT_SOURCE_DIR}/${m}
         DESTINATION
-            ${CMAKE_INSTALL_PREFIX}/man/man1)
+            ${CMAKE_INSTALL_MANDIR}/man1)
 endforeach()

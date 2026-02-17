@@ -17,5 +17,5 @@ foreach(t IN LISTS DOC_TYPES)
         FILES
             ${CMAKE_CURRENT_BINARY_DIR}/manual.${t}
         DESTINATION
-            ${CMAKE_INSTALL_PREFIX}/docs)
+            ${CMAKE_INSTALL_DOCDIR})
 endforeach()

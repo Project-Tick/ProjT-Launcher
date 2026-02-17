@@ -263,7 +263,8 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/bzip2.pc
     @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/bzip2.pc
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+    COMPONENT Development)
 
 #
 # The build targets.
@@ -322,7 +323,7 @@ if(ENABLE_SHARED_LIB)
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    install(FILES bzlib.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    install(FILES bzlib.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT Development)
 
     if(USE_OLD_SONAME)
         # Hack to support the old libbz2.so.1.0 version by including an extra copy.
@@ -370,8 +371,9 @@ if(ENABLE_STATIC_LIB)
         ARCHIVE_OUTPUT_NAME bz2_static)
     target_compile_definitions(bz2_static PUBLIC BZ2_STATICLIB)
     install(TARGETS bz2_static
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    install(FILES bzlib.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        COMPONENT Development)
+    install(FILES bzlib.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT Development)
 endif()
 
 if(ENABLE_APP)
