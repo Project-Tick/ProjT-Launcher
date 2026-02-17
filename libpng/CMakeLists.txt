@@ -1080,16 +1080,20 @@ endif()
 
 if(NOT SKIP_INSTALL_HEADERS AND NOT SKIP_INSTALL_ALL)
   install(FILES ${libpng_public_hdrs}
-          DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+          DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+          COMPONENT Development)
   install(FILES ${libpng_public_hdrs}
-          DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/libpng${PNGLIB_ABI_VERSION}")
+          DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/libpng${PNGLIB_ABI_VERSION}"
+          COMPONENT Development)
 endif()
 if(NOT SKIP_INSTALL_EXECUTABLES AND NOT SKIP_INSTALL_ALL)
   if(NOT WIN32 OR CYGWIN OR MINGW)
     install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/libpng-config"
-            DESTINATION "${CMAKE_INSTALL_BINDIR}")
+            DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            COMPONENT Development)
     install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/libpng${PNGLIB_ABI_VERSION}-config"
-            DESTINATION "${CMAKE_INSTALL_BINDIR}")
+            DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            COMPONENT Development)
   endif()
 endif()
 
@@ -1107,13 +1111,17 @@ if(NOT SKIP_INSTALL_FILES AND NOT SKIP_INSTALL_ALL)
   # Install the pkg-config files.
   if(NOT CMAKE_HOST_WIN32 OR CYGWIN OR MINGW)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libpng.pc"
-            DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+            DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+            COMPONENT Development)
     install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/libpng-config"
-            DESTINATION "${CMAKE_INSTALL_BINDIR}")
+            DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            COMPONENT Development)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libpng${PNGLIB_ABI_VERSION}.pc"
-            DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+            DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+            COMPONENT Development)
     install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/libpng${PNGLIB_ABI_VERSION}-config"
-            DESTINATION "${CMAKE_INSTALL_BINDIR}")
+            DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            COMPONENT Development)
   endif()
 endif()
 
@@ -1121,7 +1129,8 @@ endif()
 if(NOT SKIP_INSTALL_EXPORT AND NOT SKIP_INSTALL_ALL)
   install(EXPORT libpng
           DESTINATION "${CMAKE_INSTALL_LIBDIR}/libpng"
-          FILE libpng${PNGLIB_ABI_VERSION}.cmake)
+          FILE libpng${PNGLIB_ABI_VERSION}.cmake
+          COMPONENT Development)
 endif()
 
 # Create a CMake Config File that can be used via find_package(PNG CONFIG)
@@ -1141,11 +1150,13 @@ if(NOT SKIP_INSTALL_CONFIG_FILE AND NOT SKIP_INSTALL_ALL)
   install(EXPORT PNGTargets
           FILE PNGTargets.cmake
           NAMESPACE PNG::
-          DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/PNG")
+          DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/PNG"
+          COMPONENT Development)
 
   install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/scripts/cmake/PNGConfig.cmake"
                 "${CMAKE_CURRENT_BINARY_DIR}/PNGConfigVersion.cmake"
-          DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/PNG")
+          DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/PNG"
+          COMPONENT Development)
 endif()
 
 # TODO: Create MSVC import lib for MinGW-compiled shared lib.
