@@ -1525,6 +1525,7 @@ namespace
 		int y = -1;
 		int z = -1;
 		int t = -1;
+		bool is_rc = false;
 	};
 
 	std::optional<LineVersion> parseLineVersion(QString ver)
@@ -1547,7 +1548,18 @@ namespace
 			const auto t_part	 = dash_parts.at(1);
 
 			bool ok_t	 = false;
-			const auto t = t_part.toInt(&ok_t);
+			bool is_rc	 = false;
+			int t		 = -1;
+			if (t_part.startsWith("rc", Qt::CaseInsensitive))
+			{
+				const auto rc_part = t_part.mid(2);
+				t				  = rc_part.toInt(&ok_t);
+				is_rc			  = ok_t;
+			}
+			else
+			{
+				t = t_part.toInt(&ok_t);
+			}
 			if (!ok_t)
 				return std::nullopt;
 
@@ -1564,7 +1576,7 @@ namespace
 			if (!ok_x || !ok_y || !ok_z)
 				return std::nullopt;
 
-			return LineVersion{ x, y, z, t };
+			return LineVersion{ x, y, z, t, is_rc };
 		}
 
 		const auto dot_parts = ver.split(QLatin1Char('.'), Qt::KeepEmptyParts);
@@ -1582,7 +1594,7 @@ namespace
 		if (!ok_x || !ok_y || !ok_z || !ok_t)
 			return std::nullopt;
 
-		return LineVersion{ x, y, z, t };
+		return LineVersion{ x, y, z, t, false };
 	}
 
 	int compareLine(const LineVersion& a, const LineVersion& b)
@@ -1593,6 +1605,15 @@ namespace
 			return a.y < b.y ? -1 : 1;
 		if (a.z != b.z)
 			return a.z < b.z ? -1 : 1;
+		return 0;
+	}
+
+	int compareLinePatch(const LineVersion& a, const LineVersion& b)
+	{
+		if (a.is_rc != b.is_rc)
+			return a.is_rc ? -1 : 1;
+		if (a.t != b.t)
+			return a.t < b.t ? -1 : 1;
 		return 0;
 	}
 } // namespace
@@ -1677,7 +1698,7 @@ ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
 		auto line_cmp = compareLine(rel, current);
 		if (line_cmp == 0)
 		{
-			if (rel.t > current.t && (!has_same_line || rel.t > best_line.t))
+			if (compareLinePatch(rel, current) > 0 && (!has_same_line || compareLinePatch(rel, best_line) > 0))
 			{
 				best_line		  = rel;
 				best_same_release = release;
@@ -1695,7 +1716,7 @@ ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
 				continue;
 			}
 			auto best_cmp = compareLine(rel, best_migration_line);
-			if (best_cmp > 0 || (best_cmp == 0 && rel.t > best_migration_line.t))
+			if (best_cmp > 0 || (best_cmp == 0 && compareLinePatch(rel, best_migration_line) > 0))
 			{
 				best_migration_line	   = rel;
 				best_migration_release = release;

@@ -141,6 +141,25 @@ class Version
 			return m_stringPart.startsWith('-') && m_stringPart.length() > 1;
 		}
 
+		inline bool isReleaseCandidate(int* out_rc = nullptr) const
+		{
+			if (!isPreRelease())
+				return false;
+			const auto lower = m_stringPart.toLower();
+			if (!lower.startsWith("-rc"))
+				return false;
+			const auto suffix = lower.mid(3);
+			if (suffix.isEmpty())
+				return false;
+			bool ok = false;
+			const auto rc = suffix.toInt(&ok);
+			if (!ok)
+				return false;
+			if (out_rc)
+				*out_rc = rc;
+			return true;
+		}
+
 		inline bool operator==(const Section& other) const
 		{
 			if (m_isNull && !other.m_isNull)
@@ -172,6 +191,13 @@ class Version
 
 			if (!m_isNull && !other.m_isNull)
 			{
+				int rc_a = 0;
+				int rc_b = 0;
+				const auto is_rc_a = isReleaseCandidate(&rc_a);
+				const auto is_rc_b = other.isReleaseCandidate(&rc_b);
+				if (is_rc_a && is_rc_b && rc_a != rc_b)
+					return rc_a < rc_b;
+
 				if (m_numPart < other.m_numPart)
 					return true;
 				if (m_numPart == other.m_numPart && m_stringPart < other.m_stringPart)
