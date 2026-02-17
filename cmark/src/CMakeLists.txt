@@ -68,13 +68,15 @@ install(TARGETS cmark_exe cmark
   )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcmark.pc
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+  COMPONENT Development)
 
 install(FILES
   cmark.h
   ${CMAKE_CURRENT_BINARY_DIR}/cmark_export.h
   ${CMAKE_CURRENT_BINARY_DIR}/cmark_version.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  COMPONENT Development
   )
 
 # generate cmark-config.cmake and cmark-config-version.cmake files
@@ -91,10 +93,12 @@ install(
   FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/cmark-config.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/generated/cmark-config-version.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cmark"
+  COMPONENT Development
 )
 # install targets file
 install(
   EXPORT "cmark-targets"
   NAMESPACE "cmark::"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cmark"
+  COMPONENT Development
 )
