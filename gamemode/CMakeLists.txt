@@ -12,7 +12,7 @@ endif()
 
 # Non-Linux: only install headers
 if(NOT GAMEMODE_IS_LINUX)
-    install(FILES lib/gamemode_client.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    install(FILES lib/gamemode_client.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT Development)
     return()
 endif()
 
@@ -59,7 +59,14 @@ check_symbol_exists(pidfd_open "sys/syscall.h;unistd.h" HAVE_FN_PIDFD_OPEN)
 
 # Config header
 set(LIBEXECDIR "${CMAKE_INSTALL_FULL_LIBEXECDIR}")
-set(SYSCONFDIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
+set(_GAMEMODE_SYSCONFDIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
+if(NOT _GAMEMODE_SYSCONFDIR MATCHES "/$")
+    set(_GAMEMODE_SYSCONFDIR "${_GAMEMODE_SYSCONFDIR}/ptgamemode")
+else()
+    set(_GAMEMODE_SYSCONFDIR "${_GAMEMODE_SYSCONFDIR}ptgamemode")
+endif()
+set(SYSCONFDIR "${_GAMEMODE_SYSCONFDIR}")
+unset(_GAMEMODE_SYSCONFDIR)
 set(GAMEMODE_VERSION "${PROJECT_VERSION}")
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/build-config.h.in
@@ -140,7 +147,7 @@ install(TARGETS gamemode gamemodeauto
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-install(FILES lib/gamemode_client.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES lib/gamemode_client.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT Development)
 
 # Daemon
 set(GAMEMODE_BUILD_DAEMON ON)
@@ -213,26 +220,38 @@ if(GAMEMODE_WITH_EXAMPLES)
     target_include_directories(gamemode-simulate-game PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib)
     target_link_libraries(gamemode-simulate-game PRIVATE gamemode)
     install(TARGETS gamemode-simulate-game RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    install(FILES example/gamemode.ini DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/gamemode)
+    install(FILES example/gamemode.ini DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/ptgamemode)
 endif()
 
 # Data and configuration installs (daemon-only, matching meson)
 if(GAMEMODE_BUILD_DAEMON)
-    set(GAMEMODE_PREFIX "${CMAKE_INSTALL_PREFIX}")
+    set(GAMEMODE_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Prefix used for gamemode config files")
+
     if(GAMEMODE_WITH_DBUS_SERVICE_DIR STREQUAL "")
-        set(GAMEMODE_DBUS_SERVICE_DIR "${CMAKE_INSTALL_FULL_DATADIR}/dbus-1/services")
+        set(GAMEMODE_DBUS_SERVICE_DIR "${CMAKE_INSTALL_DATAROOTDIR}/dbus-1/services")
     else()
         set(GAMEMODE_DBUS_SERVICE_DIR "${GAMEMODE_WITH_DBUS_SERVICE_DIR}")
     endif()
 
-    set(GAMEMODE_POLKIT_ACTION_DIR "${CMAKE_INSTALL_FULL_DATADIR}/polkit-1/actions")
-    set(GAMEMODE_POLKIT_RULE_DIR "${CMAKE_INSTALL_FULL_DATADIR}/polkit-1/rules.d")
-    set(GAMEMODE_METAINFO_DIR "${CMAKE_INSTALL_FULL_DATADIR}/metainfo")
+    set(GAMEMODE_POLKIT_ACTION_DIR "${CMAKE_INSTALL_DATAROOTDIR}/polkit-1/actions")
+    set(GAMEMODE_POLKIT_RULE_DIR "${CMAKE_INSTALL_DATAROOTDIR}/polkit-1/rules.d")
+    set(GAMEMODE_METAINFO_DIR "${CMAKE_INSTALL_DATAROOTDIR}/metainfo")
 
     # Configure files
-    set(BINDIR "${CMAKE_INSTALL_FULL_BINDIR}")
-    set(LIBEXECDIR "${CMAKE_INSTALL_FULL_LIBEXECDIR}")
-    set(SYSCONFDIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
+    set(BINDIR "${CMAKE_INSTALL_BINDIR}")
+    if(NOT IS_ABSOLUTE "${BINDIR}")
+        set(BINDIR "${GAMEMODE_PREFIX}/${BINDIR}")
+    endif()
+
+    set(LIBEXECDIR "${CMAKE_INSTALL_LIBEXECDIR}")
+    if(NOT IS_ABSOLUTE "${LIBEXECDIR}")
+        set(LIBEXECDIR "${GAMEMODE_PREFIX}/${LIBEXECDIR}")
+    endif()
+
+    set(SYSCONFDIR "${CMAKE_INSTALL_SYSCONFDIR}/ptgamemode")
+    if(NOT IS_ABSOLUTE "${SYSCONFDIR}")
+        set(SYSCONFDIR "${GAMEMODE_PREFIX}/${SYSCONFDIR}")
+    endif()
     set(GAMEMODE_VERSION "${PROJECT_VERSION}")
     set(GAMEMODE_PRIVILEGED_GROUP "${GAMEMODE_WITH_PRIVILEGED_GROUP}")
     file(READ "${CMAKE_CURRENT_SOURCE_DIR}/example/gamemode.ini" GAMEMODE_EXAMPLE_CONFIG)
@@ -252,9 +271,9 @@ if(GAMEMODE_BUILD_DAEMON)
             DESTINATION ${GAMEMODE_POLKIT_ACTION_DIR})
 
         configure_file(data/polkit/rules.d/gamemode.rules.in
-            ${CMAKE_CURRENT_BINARY_DIR}/gamemode.rules
+            ${CMAKE_CURRENT_BINARY_DIR}/ptgamemode.rules
             @ONLY)
-        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gamemode.rules
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ptgamemode.rules
             DESTINATION ${GAMEMODE_POLKIT_RULE_DIR})
     endif()
 
@@ -300,9 +319,9 @@ if(GAMEMODE_BUILD_DAEMON)
         endif()
         if(GAMEMODE_WITH_SYSTEMD_USER_UNIT_DIR)
             configure_file(data/systemd/user/gamemoded.service.in
-                ${CMAKE_CURRENT_BINARY_DIR}/gamemoded.service
+                ${CMAKE_CURRENT_BINARY_DIR}/ptgamemoded.service
                 @ONLY)
-            install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gamemoded.service
+            install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ptgamemoded.service
                 DESTINATION ${GAMEMODE_WITH_SYSTEMD_USER_UNIT_DIR})
         endif()
     endif()
@@ -314,18 +333,18 @@ if(GAMEMODE_BUILD_DAEMON)
         endif()
         if(GAMEMODE_WITH_SYSTEMD_GROUP_DIR)
             configure_file(data/systemd/sysusers.d/gamemode.conf.in
-                ${CMAKE_CURRENT_BINARY_DIR}/gamemode.conf
+                ${CMAKE_CURRENT_BINARY_DIR}/ptgamemode.conf
                 @ONLY)
-            install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gamemode.conf
+            install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ptgamemode.conf
                 DESTINATION ${GAMEMODE_WITH_SYSTEMD_GROUP_DIR})
         endif()
     endif()
 
     if(GAMEMODE_WITH_PRIVILEGED_GROUP AND GAMEMODE_WITH_PAM_RENICING)
         configure_file(data/pam_limits/10-gamemode.conf.in
-            ${CMAKE_CURRENT_BINARY_DIR}/10-gamemode.conf
+            ${CMAKE_CURRENT_BINARY_DIR}/10-ptgamemode.conf
             @ONLY)
-        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/10-gamemode.conf
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/10-ptgamemode.conf
             DESTINATION ${GAMEMODE_WITH_PAM_LIMITS_DIR})
     endif()
 endif()
