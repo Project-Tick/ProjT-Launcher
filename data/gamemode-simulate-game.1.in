@@ -27,7 +27,7 @@ Note that this might output to stderr, even if it exits with zero.
 gamemoded(8), gamemoderun(1), dbus-run-session(1)
 
 .SH ABOUT
-GameMode source can be found at \fIhttps://git.projecttick.org/pub/scm/Project-Tick/gamemode.git\fR
+GameMode source can be found at \fIhttps://github.com/Project-Tick/gamemode\fR
 
 .SH AUTHOR
 Feral Interactive (linux-contact@feralinteractive.com)

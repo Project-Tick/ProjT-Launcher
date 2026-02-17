@@ -40,7 +40,7 @@ LD_PRELOAD="$LD_PRELOAD:/usr/\$LIB/libgamemodeauto.so.0"
 ---
 ## Configuration
 
-The daemon is configured with a `gamemode.ini` file. [example/gamemode.ini](https://git.projecttick.org/pub/scm/Project-Tick/gamemode.git/blob/main/gamemode/example/gamemode.ini) is an example of what this file would look like, with explanations for all the variables.
+The daemon is configured with a `gamemode.ini` file. [example/gamemode.ini](https://github.com/Project-Tick/gamemode/blob/master/example/gamemode.ini) is an example of what this file would look like, with explanations for all the variables.
 
 Configuration files are loaded and merged from the following directories, from highest to lowest priority:
 
@@ -134,7 +134,7 @@ nix-shell -p pkgs.gamemode.buildInputs pkgs.gamemode.nativeBuildInputs
 Then clone, build and install a release version of GameMode at 0.0.5-1:
 
 ```bash
-git clone https://git.projecttick.org/pub/scm/Project-Tick/gamemode.git
+git clone https://github.com/Project-Tick/gamemode
 cd gamemode
 git checkout 0.0.5-1 # omit to build the master branch
 ./bootstrap.sh
