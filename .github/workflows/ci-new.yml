@@ -24,7 +24,6 @@ on:
     - cron: "0 * * * *" # Every hour
   release:
     types: [released]
-  # Note: release workflow is handled separately.
 
 concurrency:
   group: ${{ (github.event_name == 'schedule' || github.event_name == 'merge_group')

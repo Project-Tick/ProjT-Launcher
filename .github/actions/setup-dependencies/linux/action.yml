@@ -26,8 +26,10 @@ runs:
         fi
         $SUDO rm -rf /usr/local/share/boost /usr/local/share/powershell || true
 
-        $SUDO apt-get clean || true
-        $SUDO rm -rf /var/lib/apt/lists/* || true
+        if command -v apt-get >/dev/null 2>&1; then
+          $SUDO apt-get clean || true
+          $SUDO rm -rf /var/lib/apt/lists/* || true
+        fi
 
         echo "Disk usage after cleanup:"
         df -h
@@ -35,37 +37,72 @@ runs:
     - name: Install host dependencies
       shell: bash
       run: |
-        sudo apt-get -y update
-        sudo apt-get -y install \
-          dpkg-dev \
-          ninja-build scdoc \
-          appstream libxcb-cursor-dev \
-          openjdk-21-jdk \
-          lcov \
-          libdbus-1-dev \
-          libinih-dev \
-          libsystemd-dev
-        if apt-cache show libtiff6 >/dev/null 2>&1; then
-          sudo apt-get -y install libtiff6
-          archdir="$(dpkg-architecture -q DEB_HOST_MULTIARCH)"
-          if [ -e "/usr/lib/$archdir/libtiff.so.6" ] && [ ! -e "/usr/lib/$archdir/libtiff.so.5" ]; then
-            sudo ln -sf /usr/lib/$archdir/libtiff.so.6 /usr/lib/$archdir/libtiff.so.5
-            sudo ldconfig
-            echo ":warning: libtiff6 installed; created libtiff.so.5 compat symlink to libtiff6" >> "$GITHUB_STEP_SUMMARY"
+        SUDO=""
+        if command -v sudo >/dev/null 2>&1; then
+          SUDO="sudo"
+        fi
+        if command -v apt-get >/dev/null 2>&1; then
+          $SUDO apt-get -y update
+          $SUDO apt-get -y install \
+            dpkg-dev \
+            ninja-build scdoc \
+            appstream libxcb-cursor-dev \
+            openjdk-21-jdk \
+            lcov \
+            libdbus-1-dev \
+            libinih-dev \
+            libsystemd-dev
+          if apt-cache show libtiff6 >/dev/null 2>&1; then
+            $SUDO apt-get -y install libtiff6
+            archdir="$(dpkg-architecture -q DEB_HOST_MULTIARCH)"
+            if [ -e "/usr/lib/$archdir/libtiff.so.6" ] && [ ! -e "/usr/lib/$archdir/libtiff.so.5" ]; then
+              $SUDO ln -sf /usr/lib/$archdir/libtiff.so.6 /usr/lib/$archdir/libtiff.so.5
+              $SUDO ldconfig
+              echo ":warning: libtiff6 installed; created libtiff.so.5 compat symlink to libtiff6" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            $SUDO apt-get -y install libtiff5
           fi
-        else
-          sudo apt-get -y install libtiff5
+        elif command -v dnf >/dev/null 2>&1; then
+          $SUDO dnf -y install \
+            ninja-build scdoc \
+            appstream libxcb-devel \
+            java-21-openjdk-devel \
+            lcov \
+            dbus-devel \
+            inih-devel \
+            systemd-devel \
+            libtiff
+        elif command -v zypper >/dev/null 2>&1; then
+          $SUDO zypper --non-interactive refresh
+          $SUDO zypper --non-interactive install \
+            ninja scdoc \
+            appstream libxcb-devel \
+            java-21-openjdk-devel \
+            lcov \
+            dbus-1-devel \
+            inih-devel \
+            systemd-devel \
+            libtiff
         fi
 
     - name: Set JAVA_HOME
       shell: bash
       run: |
-        echo "JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64" >> "$GITHUB_ENV"
-        echo "PATH=$JAVA_HOME/bin:$PATH" >> "$GITHUB_ENV"
+        if command -v javac >/dev/null 2>&1; then
+          java_home="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
+          echo "JAVA_HOME=$java_home" >> "$GITHUB_ENV"
+          echo "PATH=$JAVA_HOME/bin:$PATH" >> "$GITHUB_ENV"
+        fi
 
     - name: Setup AppImage tooling
       shell: bash
       run: |
+        if ! command -v dpkg-architecture >/dev/null 2>&1; then
+          echo ":warning: Skipping AppImage tooling (dpkg-architecture not available)." >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+        fi
+
         declare -A appimage_deps
 
         deb_arch="$(dpkg-architecture -q DEB_HOST_ARCH)"
@@ -99,4 +136,6 @@ runs:
           sha256sum -c - <<< "${appimage_deps[$url]}"
         done
 
-        sudo apt -y install libopengl0
+        if command -v apt-get >/dev/null 2>&1; then
+          sudo apt -y install libopengl0
+        fi
