@@ -549,3 +549,4 @@ memory-bank/
 compile_commands.json
 ci-old.yml
 openssl-*
+_CPack_Packages/

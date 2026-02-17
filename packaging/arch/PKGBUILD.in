@@ -1,0 +1,57 @@
+# Maintainer: @Launcher_ARCH_MAINTAINER@
+
+pkgname=@Launcher_PackageName@
+pkgver=@Launcher_VERSION_NAME@
+pkgrel=@Launcher_ARCH_PKGREL@
+pkgdesc='@Launcher_ARCH_PKGDESC@'
+url='@Launcher_ARCH_URL@'
+arch=(@Launcher_ARCH_ARCHS@)
+license=('@Launcher_ARCH_LICENSES@')
+depends=(
+  @Launcher_ARCH_DEPENDS@
+)
+makedepends=(
+  @Launcher_ARCH_MAKEDEPENDS@
+)
+optdepends=(
+  @Launcher_ARCH_OPTDEPENDS@
+)
+source=(
+  "git+https://github.com/Project-Tick/ProjT-Launcher.git#tag=${pkgver}-${pkgrel}?submodules"
+  {lionshead,batch,mdi}.license
+)
+sha256sums=(@Launcher_ARCH_SHA256SUMS@)
+
+prepare() {
+  cd "$srcdir/ProjT-Launcher"
+  git submodule update --init --recursive
+}
+
+build() {
+  cd "$srcdir/ProjT-Launcher"
+
+  export PATH="/usr/lib/jvm/java-17-openjdk/bin:$PATH"
+
+  cmake -S . -B build \
+    -DCMAKE_BUILD_TYPE='None' \
+    -DCMAKE_INSTALL_PREFIX='/usr' \
+    -DLauncher_BUILD_PLATFORM="archlinux" \
+    -DLauncher_APP_BINARY_NAME="${pkgname}" \
+    -Wno-dev
+  cmake --build build
+}
+
+check() {
+  cd "$srcdir/ProjT-Launcher"
+  ctest --test-dir build --output-on-failure
+}
+
+package() {
+  cd "$srcdir/ProjT-Launcher"
+  DESTDIR="${pkgdir}" cmake --install build
+
+  # licenses
+  install -Dm644 "$srcdir/lionshead.license" "$pkgdir/usr/share/licenses/$pkgname/lionshead.license"
+  install -Dm644 "$srcdir/batch.license"     "$pkgdir/usr/share/licenses/$pkgname/batch.license"
+  install -Dm644 "$srcdir/mdi.license"       "$pkgdir/usr/share/licenses/$pkgname/mdi.license"
+}
