@@ -21,6 +21,17 @@ updates:
       actions-major:
         patterns: ["*"]
         update-types: ["major"]
+    ignore:
+      - dependency-name: "toolchains"
+      - dependency-name: "qt"
+      - dependency-name: "zlib"
+      - dependency-name: "bzip2"
+      - dependency-name: "javacheck"
+      - dependency-name: "cmark"
+      - dependency-name: "gamemode"
+      - dependency-name: "json"
+      - dependency-name: "libqrencode"
+      - dependency-name: "tomlplusplus"
 
   # Update CI helper scripts (npm) in ci/github-script
   - package-ecosystem: npm
@@ -43,6 +54,17 @@ updates:
       npm-major:
         patterns: ["*"]
         update-types: ["major"]
+    ignore:
+      - dependency-name: "toolchains"
+      - dependency-name: "qt"
+      - dependency-name: "zlib"
+      - dependency-name: "bzip2"
+      - dependency-name: "javacheck"
+      - dependency-name: "cmark"
+      - dependency-name: "gamemode"
+      - dependency-name: "json"
+      - dependency-name: "libqrencode"
+      - dependency-name: "tomlplusplus"
 
   # Keep vcpkg manifest in sync
   - package-ecosystem: vcpkg
@@ -57,3 +79,14 @@ updates:
     commit-message:
       prefix: "deps"
       include: scope
+    ignore:
+      - dependency-name: "toolchains"
+      - dependency-name: "qt"
+      - dependency-name: "zlib"
+      - dependency-name: "bzip2"
+      - dependency-name: "javacheck"
+      - dependency-name: "cmark"
+      - dependency-name: "gamemode"
+      - dependency-name: "json"
+      - dependency-name: "libqrencode"
+      - dependency-name: "tomlplusplus"

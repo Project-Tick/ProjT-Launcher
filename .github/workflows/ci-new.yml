@@ -9,13 +9,11 @@ name: Project Tick Infra
 
 on:
   pull_request:
-    branches:
-      - "main"
   push:
     tags:
       - "*"
     branches:
-      - "main"
+      - "*"
   workflow_dispatch:
     inputs:
       cache-repository:
@@ -24,9 +22,6 @@ on:
         default: false
   schedule:
     - cron: "0 * * * *" # Every hour
-    - cron: "0 3 * * *" # Daily at 03:00 UTC
-    - cron: "0 3 * * 0" # Every Sunday at 03:00 UTC
-    - cron: "0 */5 * * *" # Every 5 hours
   release:
     types: [released]
   # Note: release workflow is handled separately.
