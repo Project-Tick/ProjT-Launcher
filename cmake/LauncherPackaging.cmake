@@ -54,10 +54,12 @@ set(CPACK_RPM_MAIN_COMPONENT Runtime)
 set(CPACK_RPM_DEVELOPMENT_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-devel")
 set(CPACK_RPM_DEVELOPMENT_PACKAGE_SUMMARY "${CPACK_PACKAGE_NAME} development files")
 set(CPACK_RPM_DEVELOPMENT_PACKAGE_REQUIRES "${CPACK_PACKAGE_NAME} = ${CPACK_PACKAGE_VERSION}")
-set(CPACK_RPM_PACKAGE_SOURCES ON)
 if(DEFINED Launcher_RPM_REQUIRES AND NOT Launcher_RPM_REQUIRES STREQUAL "")
     set(CPACK_RPM_PACKAGE_REQUIRES "${Launcher_RPM_REQUIRES}")
 endif()
+
+# Source RPMs are generated via CPackSourceConfig.cmake (cpack -G RPM --config CPackSourceConfig.cmake)
+set(CPACK_SOURCE_RPM ON)
 
 # Generate PKGBUILD template for Arch
 set(_arch_pkgbuild_in "${CMAKE_CURRENT_SOURCE_DIR}/packaging/arch/PKGBUILD.in")
