@@ -131,8 +131,12 @@ configure_file(qrencode.1.in qrencode.1 @ONLY)
 configure_file(libqrencode.pc.in libqrencode.pc @ONLY)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qrencode.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libqrencode.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-install(FILES qrencode.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libqrencode.pc
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+        COMPONENT Development)
+install(FILES qrencode.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        COMPONENT Development)
 install(TARGETS qrencode DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 ## Build utility tools
@@ -183,16 +187,16 @@ message(STATUS " .. C++ compiler ................ = ${CMAKE_CXX_COMPILER}"    )
 message(STATUS " .. C compiler .................. = ${CMAKE_C_COMPILER}"      )
 message(STATUS " .. size(void*) ................. = ${CMAKE_SIZEOF_VOID_P}"   )
 message(STATUS " Dependencies:"                                               )
-#message(STATUS " .. Doxygen ..................... = ${DOXYGEN_EXECUTABLE}"    )
+#message(STATUS " .. Doxygen ..................... = ${DOXYGEN_EXECUTABLE}"   )
 message(STATUS " .. Thread library of the system  = ${CMAKE_THREAD_LIBS_INIT}")
 message(STATUS " .. Iconv ....................... = ${ICONV_FOUND}"           )
 message(STATUS " .... Iconv includes ............ = ${ICONV_INCLUDE_DIR}"     )
 message(STATUS " .... Iconv library ............. = ${ICONV_LIBRARIES}"       )
-message(STATUS " .. PTlibzippy .................. = ${PTLIBZIPPY_FOUND}"            )
+message(STATUS " .. PTlibzippy .................. = ${PTLIBZIPPY_FOUND}"      )
 message(STATUS " .. PNG ......................... = ${PNG_FOUND}"             )
 message(STATUS " .... PNG includes .............. = ${PNG_INCLUDE_DIR}"       )
 message(STATUS " .... PNG library ............... = ${PNG_LIBRARIES}"         )
-#message(STATUS " .. Memory checker .............. = ${MEMORYCHECK_COMMAND}"   )
+#message(STATUS " .. Memory checker .............. = ${MEMORYCHECK_COMMAND}"  )
 message(STATUS " Project configuration:"                                      )
 message(STATUS " .. Build test programs  ........ = ${WITH_TESTS}"            )
 message(STATUS " .. Build utility tools  ........ = ${WITH_TOOLS}"            )
