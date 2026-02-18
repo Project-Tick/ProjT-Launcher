@@ -27,7 +27,7 @@ The package ptlibzippy-0.0.5.1-win32-x86.zip will contain the following files:
   README-WIN32.txt This document
   ChangeLog        Changes since previous PTlibzippy packages
   DLL_FAQ.txt      Frequently asked questions about ptlibzippy1.dll
-  ptlibzippy.5.pdf       Documentation of this library in Adobe Acrobat format
+  ptlibzippy.3.pdf       Documentation of this library in Adobe Acrobat format
 
   example.exe      A statically-bound example (using PTlibzippy.lib, not the dll)
   example.pdb      Symbolic information for debugging example.exe

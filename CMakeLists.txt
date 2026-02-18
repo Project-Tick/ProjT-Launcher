@@ -293,9 +293,9 @@ if(PTLIBZIPPY_INSTALL)
         COMPONENT Development
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
     install(
-        FILES ptlibzippy.5
+        FILES ptlibzippy.3
         COMPONENT Docs
-        DESTINATION "${CMAKE_INSTALL_MANDIR}/man5")
+        DESTINATION "${CMAKE_INSTALL_MANDIR}/man3")
     install(
         FILES LICENSE
               doc/algorithm.txt
