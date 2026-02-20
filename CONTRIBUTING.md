@@ -148,11 +148,11 @@ This adds:
 Signed-off-by: Your Name <your.email@example.com>
 ```
 
-The bot enforces DCO compliance and labels PRs missing sign-off.
+The bot enforces DCO compliance and labels MRs missing sign-off.
 
 ---
 
-## Pull Request Process
+## Merge Request Process
 
 ### Before Submitting
 
@@ -162,14 +162,14 @@ The bot enforces DCO compliance and labels PRs missing sign-off.
 - Sign off all commits
 - Update documentation if needed
 
-### PR Requirements
+### MR Requirements
 
 - Clear description of what and why
 - Reference related issues
 - Pass all CI checks
-- One logical change per PR
-- **Do not mix**: refactors, features, and third-party updates must be in separate PRs
-- Third-party library updates require standalone PRs with documented rationale
+- One logical change per MR
+- **Do not mix**: refactors, features, and third-party updates must be in separate MRs
+- Third-party library updates require standalone MRs with documented rationale
 
 ### Review Process
 
@@ -241,7 +241,7 @@ Include in bug reports:
 
 ## FAQ
 
-Q: Why is my PR failing CI?
+Q: Why is my MR failing CI?
 
 - Run clang-format
 - Sign off commits (`git commit -s`)
@@ -255,7 +255,7 @@ Q: How do I update a fork library?
 
 - Document changes thoroughly
 - Test all dependent code
-- Submit separate PR for library update
+- Submit separate MR for library update
 
 ---
 
