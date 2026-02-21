@@ -30,7 +30,9 @@ default:
 
 launcher_linux_image:
   stage: prepare
-  image: gcr.io/kaniko-project/executor:v1.23.2-debug
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
   tags:
     - pt-rhel-runner-01
   variables:
