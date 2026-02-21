@@ -1,0 +1,372 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - when: never
+
+stages:
+  - lint
+  - build
+
+variables:
+  GIT_DEPTH: "1"
+  ARM64_LINUX_RUNNER_TAG: "saas-linux-small-arm64"
+
+.launcher_rules:
+  rules: &launcher_rules
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: manual
+      allow_failure: false
+      variables:
+        BUILD_TYPE: Debug
+    - if: '$CI_COMMIT_TAG'
+      variables:
+        BUILD_TYPE: Release
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: false
+      variables:
+        BUILD_TYPE: Debug
+
+clang_lint:
+  stage: lint
+  image: ubuntu:24.04
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: manual
+      allow_failure: false
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: false
+  script:
+    - apt-get -y update
+    - apt-get -y install clang-format findutils
+    - |
+      set -eu
+      failed=0
+      find launcher libraries \( -name "*.cpp" -o -name "*.h" \) | sed -n '1,100p' > /tmp/clang_lint_files.txt
+      while IFS= read -r file; do
+        [ -z "$file" ] && continue
+        if ! clang-format --dry-run --Werror "$file"; then
+          echo "Format issue: $file"
+          failed=1
+        fi
+      done < /tmp/clang_lint_files.txt
+      exit "$failed"
+
+markdown_lint:
+  stage: lint
+  image: node:20-bookworm
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: manual
+      allow_failure: false
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: false
+  script:
+    - npm install --global markdownlint-cli
+    - markdownlint . --config .markdownlint.yaml --ignore-path .markdownlintignore
+
+bot_smoke:
+  stage: lint
+  image: node:20-bookworm
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: manual
+      allow_failure: false
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: false
+  script:
+    - node -c bot/index.js
+
+meta_smoke:
+  stage: lint
+  image: python:3.11-bookworm
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: manual
+      allow_failure: false
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: false
+  script:
+    - python -m compileall meta
+
+branding_check:
+  stage: lint
+  image: python:3.11-bookworm
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: manual
+      allow_failure: false
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: false
+  script:
+    - |
+      python - <<'PY'
+      import glob
+      import sys
+      import xml.etree.ElementTree as ET
+
+      paths = []
+      paths.extend(glob.glob("program_info/**/*.svg", recursive=True))
+      paths.extend(glob.glob("website/img/**/*.svg", recursive=True))
+      paths.extend(glob.glob("public/**/*.svg", recursive=True))
+
+      if not paths:
+          print("No SVG assets found to validate.")
+          sys.exit(0)
+
+      failures = []
+      for path in paths:
+          try:
+              ET.parse(path)
+          except Exception as exc:  # noqa: BLE001
+              failures.append((path, str(exc)))
+
+      if failures:
+          for path, err in failures:
+              print(f"Invalid SVG: {path}: {err}")
+          sys.exit(1)
+
+      print(f"Validated {len(paths)} SVG assets.")
+      PY
+
+javacheck_build:
+  stage: build
+  image: ubuntu:24.04
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: manual
+      allow_failure: false
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: false
+  script:
+    - apt-get -y update
+    - >
+      apt-get -y install
+      dpkg-dev
+      ninja-build
+      scdoc
+      appstream
+      libxcb-cursor-dev
+      openjdk-21-jdk
+      libtiff6
+      lcov
+      cmake
+      build-essential
+    - cmake -S javacheck -B javacheck/build -G Ninja
+    - cmake --build javacheck/build --parallel
+  artifacts:
+    when: always
+    paths:
+      - javacheck/build/*.jar
+    expire_in: 1 week
+
+.launcher_linux_template:
+  stage: build
+  image: rockylinux:9
+  tags:
+    - $RUNNER_TAG
+  rules: *launcher_rules
+  variables:
+    BUILD_TYPE: Debug
+    BUILD_PLATFORM: official
+    CMAKE_PRESET: linux
+    RUNNER_TAG: pt-rhel-runner-01
+  script:
+    - |
+      set -eu
+      SUDO=""
+      if command -v sudo >/dev/null 2>&1; then
+        SUDO="sudo"
+      fi
+
+      if command -v dnf >/dev/null 2>&1; then
+        $SUDO dnf -y install \
+          cmake \
+          ninja-build \
+          scdoc \
+          appstream \
+          libxcb-devel \
+          java-21-openjdk-devel \
+          lcov \
+          dbus-devel \
+          inih-devel \
+          systemd-devel \
+          libtiff
+      elif command -v apt-get >/dev/null 2>&1; then
+        $SUDO apt-get -y update
+        $SUDO apt-get -y install \
+          cmake \
+          ninja-build \
+          scdoc \
+          appstream \
+          libxcb-cursor-dev \
+          openjdk-21-jdk \
+          lcov \
+          libdbus-1-dev \
+          libinih-dev \
+          libsystemd-dev \
+          libtiff6
+      elif command -v zypper >/dev/null 2>&1; then
+        $SUDO zypper --non-interactive refresh
+        $SUDO zypper --non-interactive install \
+          cmake \
+          ninja \
+          scdoc \
+          appstream \
+          libxcb-devel \
+          java-21-openjdk-devel \
+          lcov \
+          dbus-1-devel \
+          inih-devel \
+          systemd-devel \
+          libtiff
+      fi
+
+      if command -v javac >/dev/null 2>&1; then
+        JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
+        export JAVA_HOME
+        export PATH="$JAVA_HOME/bin:$PATH"
+      fi
+
+      rm -rf build
+      cmake --preset "$CMAKE_PRESET" \
+        -Uqrencode_repo* \
+        -UWITH_TESTS \
+        -UWITH_TOOLS \
+        -UWITH_PNG \
+        -UBUILD_TESTING \
+        -DLauncher_OUTPUT_ROOT="$CI_PROJECT_DIR/build/out"
+      cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+      ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --output-on-failure --no-tests=error
+  artifacts:
+    when: always
+    name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - build/
+    expire_in: 1 week
+
+.launcher_macos_template:
+  stage: build
+  rules: *launcher_rules
+  variables:
+    BUILD_TYPE: Debug
+    BUILD_PLATFORM: official
+    CMAKE_PRESET: macos_universal
+  script:
+    - |
+      set -eu
+      if command -v javac >/dev/null 2>&1; then
+        JAVA_HOME="$(dirname "$(dirname "$(readlink "$(command -v javac)")")")"
+        export JAVA_HOME
+        export PATH="$JAVA_HOME/bin:$PATH"
+      fi
+
+      rm -rf build
+      cmake --preset "$CMAKE_PRESET" \
+        -Uqrencode_repo* \
+        -UWITH_TESTS \
+        -UWITH_TOOLS \
+        -UWITH_PNG \
+        -UBUILD_TESTING \
+        -DLauncher_OUTPUT_ROOT="$CI_PROJECT_DIR/build/out"
+      cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+      ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --output-on-failure --no-tests=error
+  artifacts:
+    when: always
+    name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - build/
+    expire_in: 1 week
+
+.launcher_windows_template:
+  stage: build
+  rules: *launcher_rules
+  variables:
+    BUILD_TYPE: Debug
+    BUILD_PLATFORM: official
+  script:
+    - '$ErrorActionPreference = "Stop"'
+    - 'if (Test-Path "build") { Remove-Item -Path "build" -Recurse -Force }'
+    - |
+      if ($env:VCVARS_ARCH) {
+        $candidates = @(
+          "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat",
+          "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Professional\Common7\Tools\VsDevCmd.bat",
+          "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat"
+        )
+        $vsdev = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+        if (-not $vsdev) {
+          throw "VsDevCmd.bat not found for VCVARS_ARCH=$env:VCVARS_ARCH"
+        }
+
+        $configure = "cmake --preset `"$env:CMAKE_PRESET`" -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING -DLauncher_OUTPUT_ROOT=`"$env:CI_PROJECT_DIR/build/out`""
+        $build = "cmake --build --preset `"$env:CMAKE_PRESET`" --config `"$env:BUILD_TYPE`""
+        $tests = "ctest --preset `"$env:CMAKE_PRESET`" --build-config `"$env:BUILD_TYPE`" --output-on-failure --no-tests=error"
+        cmd /c "`"$vsdev`" -arch=$env:VCVARS_ARCH -host_arch=amd64 && $configure && $build && $tests"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      }
+      else {
+        cmake --preset "$env:CMAKE_PRESET" -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING -DLauncher_OUTPUT_ROOT="$env:CI_PROJECT_DIR/build/out"
+        cmake --build --preset "$env:CMAKE_PRESET" --config "$env:BUILD_TYPE"
+        ctest --preset "$env:CMAKE_PRESET" --build-config "$env:BUILD_TYPE" --output-on-failure --no-tests=error
+      }
+  artifacts:
+    when: always
+    name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - build/
+    expire_in: 1 week
+
+launcher_macos_universal:
+  extends: .launcher_macos_template
+  variables:
+    ARTIFACT_NAME: macOS-universal
+    CMAKE_PRESET: macos_universal
+
+launcher_windows:
+  extends: .launcher_windows_template
+  parallel:
+    matrix:
+      - ARTIFACT_NAME: Windows-MSVC-amd64
+        CMAKE_PRESET: windows_msvc
+        VCVARS_ARCH: amd64
+      - ARTIFACT_NAME: Windows-MSVC-arm64
+        CMAKE_PRESET: windows_msvc
+        VCVARS_ARCH: arm64
+      - ARTIFACT_NAME: Windows-MinGW-amd64
+        CMAKE_PRESET: windows_mingw
+      - ARTIFACT_NAME: Windows-MinGW-arm64
+        CMAKE_PRESET: windows_mingw
+
+launcher_linux:
+  extends: .launcher_linux_template
+  parallel:
+    matrix:
+      - ARTIFACT_NAME: Linux-amd64
+        RUNNER_TAG: pt-rhel-runner-01
+        TARGET_ARCH: amd64
+        CMAKE_PRESET: linux
+      - ARTIFACT_NAME: Linux-arm64
+        RUNNER_TAG: $ARM64_LINUX_RUNNER_TAG
+        TARGET_ARCH: arm64
+        CMAKE_PRESET: linux
