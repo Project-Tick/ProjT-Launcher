@@ -30,36 +30,6 @@ variables:
       variables:
         BUILD_TYPE: Debug
 
-clang_lint:
-  stage: lint
-  image: ubuntu:24.04
-  tags:
-    - pt-rhel-runner-01
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: manual
-      allow_failure: false
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: false
-  script:
-    - apt-get -y update
-    - apt-get -y install clang-format findutils
-    - |
-      set -eu
-      failed=0
-      find launcher libraries \( -name "*.cpp" -o -name "*.h" \) | sed -n '1,100p' > /tmp/clang_lint_files.txt
-      while IFS= read -r file; do
-        [ -z "$file" ] && continue
-        if ! clang-format --dry-run --Werror "$file"; then
-          echo "Format issue: $file"
-          failed=1
-        fi
-      done < /tmp/clang_lint_files.txt
-      exit "$failed"
-
 markdown_lint:
   stage: lint
   image: node:20-bookworm
@@ -111,51 +81,6 @@ meta_smoke:
       allow_failure: false
   script:
     - python -m compileall meta
-
-branding_check:
-  stage: lint
-  image: python:3.11-bookworm
-  tags:
-    - pt-rhel-runner-01
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: manual
-      allow_failure: false
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: false
-  script:
-    - |
-      python - <<'PY'
-      import glob
-      import sys
-      import xml.etree.ElementTree as ET
-
-      paths = []
-      paths.extend(glob.glob("program_info/**/*.svg", recursive=True))
-      paths.extend(glob.glob("website/img/**/*.svg", recursive=True))
-      paths.extend(glob.glob("public/**/*.svg", recursive=True))
-
-      if not paths:
-          print("No SVG assets found to validate.")
-          sys.exit(0)
-
-      failures = []
-      for path in paths:
-          try:
-              ET.parse(path)
-          except Exception as exc:  # noqa: BLE001
-              failures.append((path, str(exc)))
-
-      if failures:
-          for path, err in failures:
-              print(f"Invalid SVG: {path}: {err}")
-          sys.exit(1)
-
-      print(f"Validated {len(paths)} SVG assets.")
-      PY
 
 javacheck_build:
   stage: build

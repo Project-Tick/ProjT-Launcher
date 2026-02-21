@@ -26,7 +26,7 @@ configuration files.
 
 The full text of the current CLA is available at:
 
-- https://projecttick.org/licenses/PT-CLA-2.0.txt
+- <https://projecttick.org/licenses/PT-CLA-2.0.txt>
 
 If you do not agree to the CLA, please do not submit contributions.
 

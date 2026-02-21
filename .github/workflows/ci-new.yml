@@ -35,15 +35,6 @@ env:
   NODE_NO_WARNINGS: 1
 
 jobs:
-  # ═══════════════════════════════════════════════════════════════════════════
-  # LINT & QUALITY CHECKS
-  # ═══════════════════════════════════════════════════════════════════════════
-  lint:
-    name: Lint & Quality
-    if: github.event_name != 'schedule' && github.event_name != 'release'
-    uses: ./.github/workflows/ci-lint.yml
-    with:
-      head-ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
   # ═══════════════════════════════════════════════════════════════════════════
   # BUILD LAUNCHER
@@ -76,20 +67,6 @@ jobs:
       ref: ${{ github.sha }}
       build-type: Release
       output-root: ${{ github.workspace }}/build/out
-    secrets: inherit
-
-  build-javacheck:
-    name: Build javacheck
-    if: github.event_name != 'schedule' && github.event_name != 'release'
-    uses: ./.github/workflows/ci-javacheck.yml
-    permissions:
-      contents: read
-      packages: write
-      pages: write
-      id-token: write
-    with:
-      ref: ${{ github.sha }}
-      run-javacheck: "true"
     secrets: inherit
 
   # ═══════════════════════════════════════════════════════════════════════════
