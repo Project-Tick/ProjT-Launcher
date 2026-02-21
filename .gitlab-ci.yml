@@ -180,6 +180,10 @@ javacheck_build:
       set -eu
       if ! command -v cmake >/dev/null 2>&1; then
         apt-get -y update
+        JAVA_PKG="openjdk-21-jdk"
+        if ! apt-cache show "$JAVA_PKG" >/dev/null 2>&1; then
+          JAVA_PKG="openjdk-17-jdk"
+        fi
         apt-get -y install \
           build-essential \
           ccache \
@@ -188,7 +192,7 @@ javacheck_build:
           ninja-build \
           scdoc \
           appstream \
-          openjdk-21-jdk \
+          "$JAVA_PKG" \
           lcov \
           libxcb-cursor-dev \
           libdbus-1-dev \

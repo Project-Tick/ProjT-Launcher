@@ -17,7 +17,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ninja-build \
     scdoc \
     appstream \
-    openjdk-21-jdk \
     lcov \
     libxcb-cursor-dev \
     libdbus-1-dev \
@@ -25,4 +24,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsystemd-dev \
     libtiff6 \
     pkg-config \
+  && if apt-cache show openjdk-21-jdk >/dev/null 2>&1; then \
+       apt-get install -y --no-install-recommends openjdk-21-jdk; \
+     else \
+       apt-get install -y --no-install-recommends openjdk-17-jdk; \
+     fi \
   && rm -rf /var/lib/apt/lists/*
