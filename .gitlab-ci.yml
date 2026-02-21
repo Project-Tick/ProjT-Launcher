@@ -6,6 +6,7 @@ workflow:
     - when: never
 
 stages:
+  - prepare
   - lint
   - build
 
@@ -13,6 +14,52 @@ variables:
   GIT_DEPTH: "1"
   GIT_SUBMODULE_DEPTH: "1"
   ARM64_LINUX_RUNNER_TAG: "saas-linux-small-arm64"
+  LAUNCHER_LINUX_IMAGE: "$CI_REGISTRY_IMAGE/ci/launcher-linux:bookworm"
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.cache/npm"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  CCACHE_DIR: "$CI_PROJECT_DIR/.cache/ccache"
+
+default:
+  cache:
+    key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    policy: pull-push
+    paths:
+      - .cache/npm/
+      - .cache/pip/
+      - .cache/ccache/
+
+launcher_linux_image:
+  stage: prepare
+  image: gcr.io/kaniko-project/executor:v1.23.2-debug
+  tags:
+    - pt-rhel-runner-01
+  variables:
+    DOCKER_CONFIG: /kaniko/.docker
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - .gitlab/docker/launcher-linux/Dockerfile
+      when: manual
+      allow_failure: false
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - .gitlab/docker/launcher-linux/Dockerfile
+      when: manual
+      allow_failure: false
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      cat > /kaniko/.docker/config.json <<EOF
+      {"auths":{"$CI_REGISTRY":{"username":"$CI_REGISTRY_USER","password":"$CI_REGISTRY_PASSWORD"}}}
+      EOF
+    - >
+      /kaniko/executor
+      --context "$CI_PROJECT_DIR"
+      --dockerfile "$CI_PROJECT_DIR/.gitlab/docker/launcher-linux/Dockerfile"
+      --destination "$LAUNCHER_LINUX_IMAGE"
+      --destination "$CI_REGISTRY_IMAGE/ci/launcher-linux:$CI_COMMIT_SHORT_SHA"
 
 .launcher_rules:
   rules: &launcher_rules
@@ -116,11 +163,11 @@ javacheck_build:
     when: always
     paths:
       - javacheck/build/*.jar
-    expire_in: 1 week
+    expire_in: 3 days
 
 .launcher_linux_template:
   stage: build
-  image: rockylinux:9
+  image: $LAUNCHER_LINUX_IMAGE_JOB
   tags:
     - $RUNNER_TAG
   rules: *launcher_rules
@@ -129,55 +176,38 @@ javacheck_build:
     BUILD_PLATFORM: official
     CMAKE_PRESET: linux
     RUNNER_TAG: pt-rhel-runner-01
+    LAUNCHER_LINUX_IMAGE_JOB: $LAUNCHER_LINUX_IMAGE
   script:
     - |
       set -eu
-      SUDO=""
-      if command -v sudo >/dev/null 2>&1; then
-        SUDO="sudo"
-      fi
-
-      if command -v dnf >/dev/null 2>&1; then
-        $SUDO dnf -y install \
+      if ! command -v cmake >/dev/null 2>&1; then
+        apt-get -y update
+        apt-get -y install \
+          build-essential \
+          ccache \
           cmake \
+          dpkg-dev \
           ninja-build \
           scdoc \
           appstream \
-          libxcb-devel \
-          java-21-openjdk-devel \
-          lcov \
-          dbus-devel \
-          inih-devel \
-          systemd-devel \
-          libtiff
-      elif command -v apt-get >/dev/null 2>&1; then
-        $SUDO apt-get -y update
-        $SUDO apt-get -y install \
-          cmake \
-          ninja-build \
-          scdoc \
-          appstream \
-          libxcb-cursor-dev \
           openjdk-21-jdk \
           lcov \
+          libxcb-cursor-dev \
           libdbus-1-dev \
           libinih-dev \
           libsystemd-dev \
-          libtiff6
-      elif command -v zypper >/dev/null 2>&1; then
-        $SUDO zypper --non-interactive refresh
-        $SUDO zypper --non-interactive install \
-          cmake \
-          ninja \
-          scdoc \
-          appstream \
-          libxcb-devel \
-          java-21-openjdk-devel \
-          lcov \
-          dbus-1-devel \
-          inih-devel \
-          systemd-devel \
-          libtiff
+          libtiff6 \
+          pkg-config
+      fi
+
+      CMAKE_CCACHE_ARGS=""
+      if command -v ccache >/dev/null 2>&1; then
+        export CCACHE_DIR="${CCACHE_DIR:-$CI_PROJECT_DIR/.cache/ccache}"
+        export CCACHE_BASEDIR="$CI_PROJECT_DIR"
+        export CCACHE_COMPRESS=1
+        export CCACHE_MAXSIZE=2G
+        ccache -z || true
+        CMAKE_CCACHE_ARGS="-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
       fi
 
       if command -v javac >/dev/null 2>&1; then
@@ -187,21 +217,24 @@ javacheck_build:
       fi
 
       rm -rf build
+      # shellcheck disable=SC2086
       cmake --preset "$CMAKE_PRESET" \
         -Uqrencode_repo* \
         -UWITH_TESTS \
         -UWITH_TOOLS \
         -UWITH_PNG \
         -UBUILD_TESTING \
-        -DLauncher_OUTPUT_ROOT="$CI_PROJECT_DIR/build/out"
+        -DLauncher_OUTPUT_ROOT="$CI_PROJECT_DIR/build/out" \
+        $CMAKE_CCACHE_ARGS
       cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
       ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --output-on-failure --no-tests=error
+      ccache -s || true
   artifacts:
     when: always
     name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
     paths:
       - build/
-    expire_in: 1 week
+    expire_in: 3 days
 
 .launcher_macos_template:
   stage: build
@@ -234,10 +267,12 @@ javacheck_build:
     name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
     paths:
       - build/
-    expire_in: 1 week
+    expire_in: 3 days
 
 .launcher_windows_template:
   stage: build
+  tags:
+    - pt-windows-02
   rules: *launcher_rules
   variables:
     BUILD_TYPE: Debug
@@ -273,7 +308,7 @@ javacheck_build:
     name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
     paths:
       - build/
-    expire_in: 1 week
+    expire_in: 3 days
 
 launcher_macos_universal:
   extends: .launcher_macos_template
@@ -307,4 +342,5 @@ launcher_linux:
       - ARTIFACT_NAME: Linux-arm64
         RUNNER_TAG: $ARM64_LINUX_RUNNER_TAG
         TARGET_ARCH: arm64
+        LAUNCHER_LINUX_IMAGE_JOB: debian:bookworm-slim
         CMAKE_PRESET: linux
