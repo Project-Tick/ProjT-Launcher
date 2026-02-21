@@ -2,6 +2,7 @@
 // Copyright (C) 2016 Intel Corporation.
 // Copyright (C) 2013 Olivier Goffart <ogoffart@woboq.com>
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #include "qobject.h"
 #include "qobject_p.h"
@@ -1418,12 +1419,11 @@ QBindable<QString> QObject::bindableObjectName()
 */
 
 /*!
-    \fn bool QObject::isQmlObjectType() const
     Returns whether the object has been created by the QML engine or
     ownership has been explicitly set via QJSEngine::setObjectOwnership().
     \since 6.11
 */
-bool QObject::isQmlObjectType() const
+bool QObject::isQmlExposed() const noexcept
 {
     Q_D(const QObject);
     return !d->isDeletingChildren && d->declarativeData;

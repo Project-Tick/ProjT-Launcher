@@ -4405,7 +4405,7 @@ QByteArray QByteArray::number(qulonglong n, int base)
 
     Returns a byte array containing a string representing \a n, with a given \a
     format and \a precision, with the same meanings as for \l
-    {QString::number(double, char, int)}. For example:
+    {QLocale::toString(double, char, int)}. For example:
 
     \snippet code/src_corelib_text_qbytearray.cpp 42
 
@@ -4848,6 +4848,7 @@ std::string QByteArray::toStdString() const
 
 /*!
     \fn QByteArray::operator std::string_view() const noexcept
+    \target qbytearray-operator-std-string_view
     \since 6.10
 
     Converts this QByteArray object to a \c{std::string_view} object.

@@ -1,6 +1,7 @@
 // Copyright (C) 2020 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Giuseppe D'Angelo <giuseppe.dangelo@kdab.com>
 // Copyright (C) 2023 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #include "qcompare.h"
 
@@ -238,6 +239,7 @@ CHECK(strong, equivalent);
 
 /*!
     \fn Qt::strong_ordering::operator std::strong_ordering() const
+    \target qt-strong_ordering-operator-std-strong_ordering
 
     Converts this Qt::strong_ordering value to a std::strong_ordering object using
     the following rules:
@@ -408,6 +410,7 @@ CHECK(strong, equivalent);
 
 /*!
     \fn Qt::weak_ordering::operator std::weak_ordering() const
+    \target qt-weak_ordering-operator-std-weak_ordering
 
     Converts this Qt::weak_ordering value to a std::weak_ordering object using
     the following rules:
@@ -552,6 +555,7 @@ CHECK(strong, equivalent);
 
 /*!
     \fn Qt::partial_ordering::operator std::partial_ordering() const
+    \target qt-partial_ordering-operator-std-partial_ordering
 
     Converts this Qt::partial_ordering value to a std::partial_ordering object using
     the following rules:
@@ -702,6 +706,7 @@ CHECK(strong, equivalent);
 
 /*!
     \fn QPartialOrdering::operator std::partial_ordering() const
+    \target qpartialordering-operator-std-partial_ordering
 
     Converts this QPartialOrdering value to a std::partial_ordering object using
     the following rules:

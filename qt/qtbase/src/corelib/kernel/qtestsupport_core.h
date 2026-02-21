@@ -1,5 +1,6 @@
 // Copyright (C) 2018 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #ifndef QTESTSUPPORT_CORE_H
 #define QTESTSUPPORT_CORE_H
@@ -37,8 +38,8 @@ template <typename Functor>
 qWaitFor(Functor predicate, QDeadlineTimer deadline = QDeadlineTimer(
     defaultTryTimeout.load(std::memory_order_relaxed)))
 {
-    using Internal::waitForMore;
-    using Internal::waitForSucceeded;
+    using Internal::waitForMore; // customization point
+    using Internal::waitForSucceeded; // customization point
 
     // We should not spin the event loop in case the predicate is already true,
     // otherwise we might send new events that invalidate the predicate.

@@ -1,5 +1,6 @@
 // Copyright (C) 2016 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #ifndef QGUIAPPLICATION_H
 #define QGUIAPPLICATION_H
@@ -175,6 +176,7 @@ private:
     Q_DECLARE_PRIVATE(QGuiApplication)
 
     Q_PRIVATE_SLOT(d_func(), void _q_updateFocusObject(QObject *object))
+    Q_PRIVATE_SLOT(d_func(), void _q_updatePrimaryScreenDpis())
 
 #ifndef QT_NO_GESTURES
     friend class QGestureManager;

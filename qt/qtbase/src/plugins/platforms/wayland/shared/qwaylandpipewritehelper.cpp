@@ -6,7 +6,12 @@
 
 QT_BEGIN_NAMESPACE
 
-QWaylandPipeWriteHelper::SafeWriteResult QWaylandPipeWriteHelper::safeWriteWithTimeout(int fd, const char *data, qsizetype len, qsizetype chunkSize, std::chrono::nanoseconds timeout)
+QWaylandPipeWriteHelper::SafeWriteResult
+QWaylandPipeWriteHelper::safeWriteWithTimeout(int fd,
+                                              const char *data,
+                                              qsizetype len,
+                                              qsizetype chunkSize,
+                                              std::chrono::nanoseconds timeout)
 {
     if (len == 0)
         return SafeWriteResult::Ok;
@@ -20,8 +25,6 @@ QWaylandPipeWriteHelper::SafeWriteResult QWaylandPipeWriteHelper::safeWriteWithT
     while (offset < len) {
         int ready = qt_safe_poll(&pfd, 1, deadline);
         if (ready < 0) {
-            if (errno == EINTR)
-                continue;
             return SafeWriteResult::Error;
         } else if (ready == 0 || deadline.hasExpired()) {
             return SafeWriteResult::Timeout;
@@ -32,8 +35,6 @@ QWaylandPipeWriteHelper::SafeWriteResult QWaylandPipeWriteHelper::safeWriteWithT
                 offset += n;
                 continue;
             } else if (n < 0) {
-                if (errno == EINTR)
-                    continue;
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
                     continue;
                 if (errno == EPIPE)

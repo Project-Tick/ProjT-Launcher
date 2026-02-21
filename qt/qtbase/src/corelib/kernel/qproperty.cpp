@@ -1,5 +1,6 @@
 // Copyright (C) 2020 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #include "qproperty.h"
 #include "qproperty_p.h"
@@ -2519,6 +2520,14 @@ void printMetaTypeMismatch(QMetaType actual, QMetaType expected)
     qCWarning(lcQPropertyBinding) << "setBinding: Could not set binding as the property expects it to be of type"
                                   << actual.name()
                                   << "but got" << expected.name() << "instead.";
+}
+
+void printSignalArgumentsWithCustomGetter()
+{
+    qCWarning(lcQPropertyBinding)
+            << "Property has a custom getter and also a change signal with arguments."
+            << "This requires the getter to be called to retrieve the argument,"
+            << "possibly creating spurious binding dependencies";
 }
 
 } // namespace BindableWarnings end
