@@ -46,19 +46,6 @@ jobs:
       head-ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # META UPDATE (Scheduled)
-  # ═══════════════════════════════════════════════════════════════════════════
-  meta-update:
-    name: Update Meta Files
-    if: github.event_name == 'schedule' && github.event.schedule == '0 * * * *'
-    uses: ./.github/workflows/meta-update.yml
-    secrets: inherit
-    permissions:
-      contents: write
-    with:
-      ref: ${{ github.sha }}
-
-  # ═══════════════════════════════════════════════════════════════════════════
   # BUILD LAUNCHER
   # ═══════════════════════════════════════════════════════════════════════════
   build-projt-launcher-debug:
