@@ -1,3 +1,555 @@
+2026-02-20  Gonzalo Silvalde Blanco  <gonzalo.silvalde@gmail.com>
+
+	PR fortran/80012
+	* gfortran.dg/pr80012.f90: New test.
+
+2026-02-20  Jerry DeLisle  <jvdelisle@gcc.gnu.org>
+
+	PR fortran/123949
+	* gfortran.dg/pdt_85.f03: New test.
+	* gfortran.dg/pr123949.f90: New test.
+
+2026-02-20  Kwok Cheung Yeung  <kcyeung@baylibre.com>
+
+	PR middle-end/113436
+	* g++.dg/gomp/pr113436-2.C: New.
+
+2026-02-20  Richard Biener  <rguenther@suse.de>
+
+	PR tree-optimization/124068
+	* gcc.target/i386/vect-shift-1.c: New testcase.
+
+2026-02-20  Martin Jambor  <mjambor@suse.cz>
+
+	PR ipa/122856
+	* g++.dg/ipa/pr122856.C: New test.
+
+2026-02-20  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	PR tree-optimization/121103
+	* gcc.dg/torture/pr121103-1.c: New test.
+
+2026-02-20  Robert Dubner  <rdubner@symas.com>
+
+	* cobol.dg/group2/ALLOCATE_Rule_8_OPTION_INITIALIZE_with_figconst.cob: Updated.
+	* cobol.dg/group2/ALLOCATE_Rule_8_OPTION_INITIALIZE_with_figconst.out: Updated.
+	* cobol.dg/group2/ALPHABETIC-LOWER_test.cob: Updated.
+	* cobol.dg/group2/ALPHABETIC-UPPER_test.cob: Updated.
+	* cobol.dg/group2/ALPHABETIC_test.cob: Updated.
+	* cobol.dg/group2/Context_sensitive_words__1_.cob: Updated.
+	* cobol.dg/group2/DEBUG_Line.cob: Updated.
+	* cobol.dg/group2/DISPLAY__Sign_ASCII.cob: Updated.
+	* cobol.dg/group2/DISPLAY__Sign_ASCII.out: Updated.
+	* cobol.dg/group2/DISPLAY__Sign_ASCII__2_.cob: Updated.
+	* cobol.dg/group2/DISPLAY__Sign_ASCII__2_.out: Updated.
+	* cobol.dg/group2/EC-BOUND-REF-MOD_checking_process_termination.cob: Updated.
+	* cobol.dg/group2/FUNCTION_BIGGER-POINTER.cob: Updated.
+	* cobol.dg/group2/FUNCTION_BYTE-LENGTH.cob: Updated.
+	* cobol.dg/group2/FUNCTION_BYTE-LENGTH.out: Updated.
+	* cobol.dg/group2/FUNCTION_CHAR.cob: Updated.
+	* cobol.dg/group2/FUNCTION_DATE___TIME_OMNIBUS.cob: Updated.
+	* cobol.dg/group2/FUNCTION_HEX-OF.cob: Updated.
+	* cobol.dg/group2/FUNCTION_HEX-OF.out: Updated.
+	* cobol.dg/group2/FUNCTION_ORD.cob: Updated.
+	* cobol.dg/group2/FUNCTION_ORD.out: Updated.
+	* cobol.dg/group2/FUNCTION_TEST-DAY-YYYYDDD__2_.cob: Updated.
+	* cobol.dg/group2/FUNCTION_TEST-FORMATTED-DATETIME_additional.cob: Updated.
+	* cobol.dg/group2/FUNCTION_as_CALL_parameter_BY_CONTENT.cob: Updated.
+	* cobol.dg/group2/Hexadecimal_literal.cob: Updated.
+	* cobol.dg/group2/INSPECT_CONVERTING_TO_figurative_constants.cob: Updated.
+	* cobol.dg/group2/INSPECT_CONVERTING_TO_figurative_constants.out: Updated.
+	* cobol.dg/group2/LENGTH_OF_omnibus.cob: Updated.
+	* cobol.dg/group2/Non-numeric_data_in_numeric_items__2_.cob: Updated.
+	* cobol.dg/group2/PACKED-DECIMAL_dump.cob: Updated.
+	* cobol.dg/group2/PACKED-DECIMAL_dump.out: Updated.
+	* cobol.dg/group2/Refmod__comparisons_inside_numeric-display.cob: Updated.
+	* cobol.dg/group2/Refmod_sources_are_figurative_constants.cob: Updated.
+	* cobol.dg/group2/Refmod_sources_are_figurative_constants.out: Updated.
+	* cobol.dg/group2/debugging_lines__not_active_.cob: Updated.
+	* cobol.dg/group2/floating-point_SUBTRACT_FORMAT_2.out: Updated.
+	* cobol.dg/group2/floating-point_literals.out: Updated.
+	* cobol.dg/group2/37-digit_Initialization_of_fundamental_types.cob: New test.
+	* cobol.dg/group2/37-digit_Initialization_of_fundamental_types.out: New test.
+	* cobol.dg/group2/ACCEPT_FROM_ENVIRONMENT-NAME.cob: New test.
+	* cobol.dg/group2/ACCEPT_FROM_ENVIRONMENT-NAME.out: New test.
+	* cobol.dg/group2/ACCEPT_foo_FROM_COMMAND-LINE_1_.cob: New test.
+	* cobol.dg/group2/ADD_1_2_TO_3_GIVING_B.cob: New test.
+	* cobol.dg/group2/ALLOCATE_Rules_6_-_9._Without_OPTION_INITIALIZE_Without_-fdefaultbyte___ASCII_.cob:
+	New test.
+	* cobol.dg/group2/ALLOCATE_Rules_6_-_9._Without_OPTION_INITIALIZE_Without_-fdefaultbyte___ASCII_.out:
+	New test.
+	* cobol.dg/group2/ALLOCATE_Rules_6_-_9._Without_OPTION_INITIALIZE_Without_-fdefaultbyte___EBCDIC_.cob:
+	New test.
+	* cobol.dg/group2/ALLOCATE_Rules_6_-_9._Without_OPTION_INITIALIZE_Without_-fdefaultbyte___EBCDIC_.out:
+	New test.
+	* cobol.dg/group2/ALLOCATE_Rules_6_-_9_Without_OPTION_INITIALIZE_With_-fdefaultbyte___UTF16_.cob:
+	New test.
+	* cobol.dg/group2/ALLOCATE_Rules_6_-_9_Without_OPTION_INITIALIZE_With_-fdefaultbyte___UTF16_.out:
+	New test.
+	* cobol.dg/group2/ANY_LENGTH__7_.cob: New test.
+	* cobol.dg/group2/ANY_LENGTH__7_.out: New test.
+	* cobol.dg/group2/Assorted_SPECIAL-NAMES_CLASS.cob: New test.
+	* cobol.dg/group2/Assorted_SPECIAL-NAMES_CLASS.out: New test.
+	* cobol.dg/group2/BINARY_and_COMP-5.cob: New test.
+	* cobol.dg/group2/BINARY_and_COMP-5.out: New test.
+	* cobol.dg/group2/CDF2_-_DEFINE_FOO_AS_literal-1.cob: New test.
+	* cobol.dg/group2/CDF2_-_DEFINE_FOO_AS_literal-1.out: New test.
+	* cobol.dg/group2/CDF2_Trouble_with___IF__1_.cob: New test.
+	* cobol.dg/group2/CDF2_Trouble_with___IF__2_.cob: New test.
+	* cobol.dg/group2/CDF2_Trouble_with___IF__2_.out: New test.
+	* cobol.dg/group2/CDF4_.cob: New test.
+	* cobol.dg/group2/CDF4_.out: New test.
+	* cobol.dg/group2/CDF_Feature_.cob: New test.
+	* cobol.dg/group2/CDF_Feature_.out: New test.
+	* cobol.dg/group2/CDF_IS_NOT_DEFINED.cob: New test.
+	* cobol.dg/group2/CDF_IS_NOT_DEFINED.out: New test.
+	* cobol.dg/group2/CDF__1__IF____text_.cob: New test.
+	* cobol.dg/group2/CDF__1__IF____text_.out: New test.
+	* cobol.dg/group2/CDF__2__IF____number_.cob: New test.
+	* cobol.dg/group2/CDF__2__IF____number_.out: New test.
+	* cobol.dg/group2/CDF__3__ALL_NUMERIC_COMPARISONS.cob: New test.
+	* cobol.dg/group2/CDF__3__ALL_NUMERIC_COMPARISONS.out: New test.
+	* cobol.dg/group2/COMP-5_Sanity_Check_.cob: New test.
+	* cobol.dg/group2/Complex_HEX__VALUE_and_MOVE_-_ASCII_EBCDIC.cob: New test.
+	* cobol.dg/group2/Complex_HEX__VALUE_and_MOVE_-_ASCII_EBCDIC.out: New test.
+	* cobol.dg/group2/Complex_INITIALIZE_with_nested_tables__1_.cob: New test.
+	* cobol.dg/group2/Complex_INITIALIZE_with_nested_tables__1_.out: New test.
+	* cobol.dg/group2/Complex_INITIALIZE_with_nested_tables__2_.cob: New test.
+	* cobol.dg/group2/Complex_INITIALIZE_with_nested_tables__2_.out: New test.
+	* cobol.dg/group2/Default_Arithmetic__1_.cob: New test.
+	* cobol.dg/group2/Default_Arithmetic__1_.out: New test.
+	* cobol.dg/group2/ENTRY_statement.cob: New test.
+	* cobol.dg/group2/ENTRY_statement.out: New test.
+	* cobol.dg/group2/EVALUATE__A__OR__a_.cob: New test.
+	* cobol.dg/group2/EVALUATE__A__OR__a_.out: New test.
+	* cobol.dg/group2/EVALUATE_condition__1_.cob: New test.
+	* cobol.dg/group2/EVALUATE_condition__1_.out: New test.
+	* cobol.dg/group2/FIND-STRING__forward_.cob: New test.
+	* cobol.dg/group2/FIND-STRING__forward_.out: New test.
+	* cobol.dg/group2/FIND-STRING__reverse_.cob: New test.
+	* cobol.dg/group2/FIND-STRING__reverse_.out: New test.
+	* cobol.dg/group2/FIXED_FORMAT_data_in_cols_73_and_beyond.cob: New test.
+	* cobol.dg/group2/FIXED_FORMAT_data_in_cols_73_and_beyond.out: New test.
+	* cobol.dg/group2/FIXED_FORMAT_data_misplaced_asterisk.cob: New test.
+	* cobol.dg/group2/FUNCTION_CONVERT.cob: New test.
+	* cobol.dg/group2/FUNCTION_CONVERT.out: New test.
+	* cobol.dg/group2/Fundamental_INSPECT_BACKWARD_REPLACING.cob: New test.
+	* cobol.dg/group2/Fundamental_INSPECT_BACKWARD_REPLACING.out: New test.
+	* cobol.dg/group2/Fundamental_INSPECT_BACKWARD_TALLYING.cob: New test.
+	* cobol.dg/group2/Fundamental_INSPECT_BACKWARD_TALLYING.out: New test.
+	* cobol.dg/group2/Fundamental_INSPECT_REPLACING.cob: New test.
+	* cobol.dg/group2/Fundamental_INSPECT_REPLACING.out: New test.
+	* cobol.dg/group2/Fundamental_INSPECT_TALLYING.cob: New test.
+	* cobol.dg/group2/Fundamental_INSPECT_TALLYING.out: New test.
+	* cobol.dg/group2/INITIALIZE_OCCURS_with_SIGN_LEADING___TRAILING.cob: New test.
+	* cobol.dg/group2/INITIALIZE_OCCURS_with_SIGN_LEADING___TRAILING.out: New test.
+	* cobol.dg/group2/INITIALIZE_OCCURS_with_numeric_edited.cob: New test.
+	* cobol.dg/group2/INITIALIZE_complex_group__1_.cob: New test.
+	* cobol.dg/group2/INITIALIZE_complex_group__2_.cob: New test.
+	* cobol.dg/group2/INITIALIZE_complex_group__2_.out: New test.
+	* cobol.dg/group2/INITIALIZE_group_entry_with_OCCURS.cob: New test.
+	* cobol.dg/group2/INITIALIZE_of_EXTERNAL_data_items.cob: New test.
+	* cobol.dg/group2/INITIALIZE_with_-defaultbyte__ASCII_.cob: New test.
+	* cobol.dg/group2/INITIALIZE_with_-defaultbyte__ASCII_.out: New test.
+	* cobol.dg/group2/INITIALIZE_with_-defaultbyte__EBCDIC_.cob: New test.
+	* cobol.dg/group2/INITIALIZE_with_-defaultbyte__EBCDIC_.out: New test.
+	* cobol.dg/group2/INITIALIZE_with_FILLER.cob: New test.
+	* cobol.dg/group2/INITIALIZE_with_REDEFINES.cob: New test.
+	* cobol.dg/group2/INITIALIZE_with_reference_modification.cob: New test.
+	* cobol.dg/group2/Intrinsic_Function_ABS.cob: New test.
+	* cobol.dg/group2/Intrinsic_Function_ACOS.cob: New test.
+	* cobol.dg/group2/Intrinsic_Function_ANNUITY.cob: New test.
+	* cobol.dg/group2/Intrinsic_Function_DATE-YYYYMMDD.cob: New test.
+	* cobol.dg/group2/Intrinsic_Function_NUMVAL.cob: New test.
+	* cobol.dg/group2/Intrinsic_Function_NUMVAL.out: New test.
+	* cobol.dg/group2/Long_Division.cob: New test.
+	* cobol.dg/group2/Long_Division.out: New test.
+	* cobol.dg/group2/MOVE_X_000203_.cob: New test.
+	* cobol.dg/group2/MOVE_X_000203_.out: New test.
+	* cobol.dg/group2/MOVE_to_JUSTIFIED_items.cob: New test.
+	* cobol.dg/group2/MOVE_to_JUSTIFIED_items.out: New test.
+	* cobol.dg/group2/N-Queens_algorithm.cob: New test.
+	* cobol.dg/group2/N-Queens_algorithm.out: New test.
+	* cobol.dg/group2/Numeric_operations__6_.cob: New test.
+	* cobol.dg/group2/Numeric_operations__6_.out: New test.
+	* cobol.dg/group2/Preserve_collation_past_a_CALL.cob: New test.
+	* cobol.dg/group2/Preserve_collation_past_a_CALL.out: New test.
+	* cobol.dg/group2/RETURN-CODE_moving.cob: New test.
+	* cobol.dg/group2/RETURN-CODE_nested.cob: New test.
+	* cobol.dg/group2/SORT__table_sort__2___ASCII_.cob: New test.
+	* cobol.dg/group2/SORT__table_sort__2___ASCII_.out: New test.
+	* cobol.dg/group2/SORT__table_sort__2___EBCDIC_.cob: New test.
+	* cobol.dg/group2/SORT__table_sort__2___EBCDIC_.out: New test.
+	* cobol.dg/group2/Simple_DEBUG-ITEM.cob: New test.
+	* cobol.dg/group2/Simple_DEBUG-ITEM.out: New test.
+	* cobol.dg/group2/Simple_ENVIRONMENT-NAME_with_exception.cob: New test.
+	* cobol.dg/group2/Simple_ENVIRONMENT-NAME_with_exception.out: New test.
+	* cobol.dg/group2/UNSTRING_with_refmods.cob: New test.
+	* cobol.dg/group2/UNSTRING_with_refmods.out: New test.
+	* cobol.dg/group2/command-line.cob: New test.
+	* cobol.dg/group2/command-line.out: New test.
+	* cobol.dg/group2/floating-point_FORMAT_1.cob: New test.
+	* cobol.dg/group2/floating-point_FORMAT_1.out: New test.
+	* cobol.dg/group2/floating-point_FORMAT_2.cob: New test.
+	* cobol.dg/group2/floating-point_FORMAT_2.out: New test.
+	* cobol.dg/group2/procedure_division_using_by.cob: New test.
+	* cobol.dg/group2/repository.cob: New test.
+	* cobol.dg/group2/skipping_at_the_top.cob: New test.
+	* cobol.dg/group2/source-computer_object-computer_repository__2_.cob: New test.
+
+2026-02-19  Jeff Law  <jeffrey.law@oss.qualcomm.com>
+
+	* gcc.dg/torture/pr124108.c: Fix typo.
+
+2026-02-19  jlaw  <jeffreyalaw@gmail.com>
+
+	PR tree-optimization/124108
+	* gcc.dg/torture/pr124108.c: New test.
+
+2026-02-19  Thomas Schwinge  <tschwinge@baylibre.com>
+
+	* lib/target-supports.exp
+	(check_effective_target_no_fsanitize_address): Check 'assembly'
+	instead of 'executable'.
+
+2026-02-19  Thomas Schwinge  <tschwinge@baylibre.com>
+
+	PR rtl-optimization/116053
+	* gcc.dg/pr116053-1.c: 'dg-require-effective-target int128'.
+
+2026-02-19  Avinash Jayakar  <avinashd@linux.ibm.com>
+
+	PR target/123195
+	* gcc.dg/vect/pr104116-ceil-div-2.c: Add space.
+	* gcc.dg/vect/pr104116-ceil-div-pow2.c: Likewise.
+	* gcc.dg/vect/pr104116-ceil-div.c: Likewise.
+	* gcc.dg/vect/pr104116-ceil-mod-2.c: Likewise.
+	* gcc.dg/vect/pr104116-ceil-mod-pow2.c: Likewise.
+	* gcc.dg/vect/pr104116-ceil-mod.c: Likewise.
+	* gcc.dg/vect/pr104116-ceil-udiv-2.c: Likewise.
+	* gcc.dg/vect/pr104116-ceil-udiv-pow2.c: Likewise.
+	* gcc.dg/vect/pr104116-ceil-udiv.c: Likewise.
+	* gcc.dg/vect/pr104116-ceil-umod-2.c: Likewise.
+	* gcc.dg/vect/pr104116-ceil-umod-pow2.c: Likewise.
+	* gcc.dg/vect/pr104116-ceil-umod.c: Likewise.
+	* gcc.dg/vect/pr104116-floor-div-2.c: Likewise.
+	* gcc.dg/vect/pr104116-floor-div-pow2.c: Likewise.
+	* gcc.dg/vect/pr104116-floor-div.c: Likewise.
+	* gcc.dg/vect/pr104116-floor-mod-2.c: Likewise.
+	* gcc.dg/vect/pr104116-floor-mod-pow2.c: Likewise.
+	* gcc.dg/vect/pr104116-floor-mod.c: Likewise.
+	* gcc.dg/vect/pr104116-round-div-2.c: Likewise.
+	* gcc.dg/vect/pr104116-round-div-pow2.c: Likewise.
+	* gcc.dg/vect/pr104116-round-div.c: Likewise.
+	* gcc.dg/vect/pr104116-round-mod-2.c: Likewise.
+	* gcc.dg/vect/pr104116-round-mod-pow2.c: Likewise.
+	* gcc.dg/vect/pr104116-round-mod.c: Likewise.
+	* gcc.dg/vect/pr104116-round-udiv-2.c: Likewise.
+	* gcc.dg/vect/pr104116-round-udiv-pow2.c: Likewise.
+	* gcc.dg/vect/pr104116-round-udiv.c: Likewise.
+	* gcc.dg/vect/pr104116-round-umod-2.c: Likewise.
+	* gcc.dg/vect/pr104116-round-umod-pow2.c: Likewise.
+	* gcc.dg/vect/pr104116-round-umod.c: Likewise.
+
+2026-02-19  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/124070
+	* g++.dg/cpp26/pr124070.C: New test.
+	* g++.dg/reflect/parameters_of4.C: Expect different diagnostics.
+	* g++.dg/reflect/define_aggregate7.C: New test.
+	* g++.dg/reflect/define_aggregate8.C: New test.
+
+2026-02-19  Jakub Jelinek  <jakub@redhat.com>
+
+	* g++.dg/cpp26/expansion-stmt29.C: New test.
+	* g++.dg/cpp26/expansion-stmt30.C: New test.
+
+2026-02-19  David Malcolm  <dmalcolm@redhat.com>
+
+	PR analyzer/108400
+	PR analyzer/124116
+	* c-c++-common/analyzer/null-deref-pr108400-SoftEtherVPN-WebUi.c:
+	Remove xfails; these false positives appears to have been fixed by
+	r16-7365-g498fb8a24516b1.
+
+2026-02-19  H.J. Lu  <hjl.tools@gmail.com>
+
+	PR target/120233
+	* gcc.target/i386/pr108938-3.c: Also scan 3 bswaps for x86-64.
+
+2026-02-18  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/123440
+	* g++.dg/reflect/extract10.C: New test.
+
+2026-02-18  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	PR rtl-optimization/116053
+	* gcc.dg/pr116053-1.c: New test.
+
+2026-02-18  Vladimir N. Makarov  <vmakarov@redhat.com>
+
+	PR rtl-optimization/120169
+	* gcc.target/m68k/pr120169.c: New.
+
+2026-02-18  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c/123365
+	* gcc.c-torture/compile/pr123365.c: New test.
+
+2026-02-18  Torbjörn SVENSSON  <torbjorn.svensson@foss.st.com>
+
+	* gcc.target/arm/aes-fuse-1.c: Use effective-target
+	arm_cpu_cortex_a53.
+	* gcc.target/arm/aes-fuse-2.c: Likewise.
+	* lib/target-supports.exp: Define effective-target
+	arm_cpu_cortex_a53.
+
+2026-02-18  Richard Biener  <rguenther@suse.de>
+
+	PR target/123137
+	* g++.dg/torture/pr124137.C: New testcase.
+
+2026-02-18  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/124096
+	* g++.dg/reflect/bit_cast.C: New test.
+
+2026-02-18  Victor Do Nascimento  <victor.donascimento@arm.com>
+
+	* gcc.dg/vect/vect-fncall-mask-math.c: Fix test.
+
+2026-02-18  Jakub Jelinek  <jakub@redhat.com>
+
+	PR target/124138
+	* gcc.dg/pr124138.c: New test.
+	* gcc.target/i386/avx512f-pr124138-1.c: New test.
+	* gcc.target/i386/avx512f-pr124138-2.c: New test.
+
+2026-02-18  Tobias Burnus  <tburnus@baylibre.com>
+
+	* gfortran.dg/gomp/groupprivate-1.f90: Update test.
+	* gfortran.dg/gomp/groupprivate-4.f90: Likewise.
+	* gfortran.dg/gomp/groupprivate-6.f90: Likewise.
+	* gfortran.dg/gomp/groupprivate-7.f90: Extend test.
+
+2026-02-18  H.J. Lu  <hjl.tools@gmail.com>
+
+	PR target/124098
+	* gcc.target/i386/pr124098.c: New test.
+
+2026-02-17  H.J. Lu  <hjl.tools@gmail.com>
+
+	PR target/124136
+	* g++.target/i386/pr124136.C: New file.
+
+2026-02-17  David Malcolm  <dmalcolm@redhat.com>
+
+	PR analyzer/124104
+	* c-c++-common/analyzer/casts-3.c: New test.
+	* gcc.dg/analyzer/ice-pr124104.c: New test.
+
+2026-02-17  David Malcolm  <dmalcolm@redhat.com>
+
+	PR analyzer/124139
+	* g++.dg/analyzer/exception-ice-pr124139.C: New test.
+
+2026-02-17  Richard Earnshaw  <rearnsha@arm.com>
+
+	PR target/124134
+	* gcc.target/arm/pr124134.c: New test.
+
+2026-02-17  Jakub Jelinek  <jakub@redhat.com>
+
+	PR rtl-optimization/123048
+	* gcc.dg/pr123048.c: New test.
+
+2026-02-17  Patrick Palka  <ppalka@redhat.com>
+
+	PR c++/121822
+	* g++.dg/cpp2a/concepts-decltype6.C: New test.
+
+2026-02-17  Patrick Palka  <ppalka@redhat.com>
+
+	PR c++/122318
+	PR c++/101670
+	* g++.dg/cpp2a/lambda-targ20.C: New test.
+	* g++.dg/cpp2a/lambda-targ21.C: New test.
+
+2026-02-17  Jakub Jelinek  <jakub@redhat.com>
+
+	* g++.dg/ext/constexpr-diag1.C: New test.
+	* g++.dg/ext/constexpr-diag2.C: New test.
+	* g++.dg/ext/constexpr-diag3.C: New test.
+	* g++.dg/ext/constexpr-diag4.C: New test.
+	* g++.dg/ext/constexpr-diag5.C: New test.
+	* g++.dg/ext/constexpr-diag6.C: New test.
+
+2026-02-17  Richard Biener  <rguenther@suse.de>
+
+	* gfortran.dg/vect/vect.exp: Remove special options
+	handling.  Glob all *.\[fF\]{,90,95,03,08} files.
+	* gfortran.dg/vect/O3-bb-slp-1.f: Add dg-additional-options.
+	* gfortran.dg/vect/O3-bb-slp-2.f: Likewise.
+	* gfortran.dg/vect/O3-pr36119.f90: Likewise.
+	* gfortran.dg/vect/O3-pr39595.f: Likewise.
+	* gfortran.dg/vect/O3-pr49957.f: Likewise.
+	* gfortran.dg/vect/Ofast-pr50414.f90: Likewise.
+	* gfortran.dg/vect/cost-model-pr34445.f: Likewise.
+	* gfortran.dg/vect/cost-model-pr34445a.f: Likewise.
+	* gfortran.dg/vect/fast-math-mgrid-resid.f: Likewise.
+	* gfortran.dg/vect/fast-math-pr33299.f90: Likewise.
+	* gfortran.dg/vect/fast-math-pr37021.f90: Likewise.
+	* gfortran.dg/vect/fast-math-pr38968.f90: Likewise.
+	* gfortran.dg/vect/fast-math-real8-pr40801.f90: Likewise.
+	* gfortran.dg/vect/fast-math-rnflow-trs2a2.f90: Likewise.
+	* gfortran.dg/vect/fast-math-vect-8.f90: Likewise.
+	* gfortran.dg/vect/no-fre-no-copy-prop-O3-pr51704.f90: Likewise.
+	* gfortran.dg/vect/no-vfa-pr32377.f90: Likewise.
+	* gfortran.dg/vect/no-vfa-pr32457.f90: Likewise.
+	* gfortran.dg/vect/mask-store-1.f90: Add missing dg-do.
+
+2026-02-17  Richard Biener  <rguenther@suse.de>
+
+	PR tree-optimization/124130
+	* g++.dg/torture/pr124130.C: New testcase.
+
+2026-02-17  Richard Biener  <rguenther@suse.de>
+
+	PR tree-optimization/124132
+	* gcc.dg/torture/pr124132.c: New testcase.
+
+2026-02-17  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+
+	* gcc.dg/hierarchical-discriminator-loop-version.c
+	(scan-assembler): Require gas.
+	* gcc.dg/hierarchical-discriminator-unroll.c: Likewise.
+	* gcc.dg/hierarchical-discriminator-vect-version.c: Likewise.
+
+2026-02-17  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+
+	* gcc.dg/asm-hard-reg-1.c: Simplify x86 target selectors.  Remove
+	duplicates.
+
+2026-02-17  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+
+	* gcc.dg/tree-ssa/ldexp.c (dg-additional-options): Add -std=c99.
+
+2026-02-17  Richard Biener  <rguenther@suse.de>
+
+	* gcc.dg/torture/ssa-fre-7.c: Properly use __SIZETYPE__
+	where required.
+
+2026-02-17  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+
+	* gcc.dg/ipa/pr122458.c: xfail without gas.
+
+2026-02-17  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/124119
+	* g++.dg/reflect/is_type_alias2.C (W): New type alias.
+	Assert is_type_alias (^^W).  Don't assert is_type_alias (^^size_t).
+
+2026-02-17  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/120685
+	* g++.dg/cpp23/auto-fncast19.C: New test.
+
+2026-02-17  Jakub Jelinek  <jakub@redhat.com>
+
+	* gcc.dg/tree-ssa/copy-prop-aggregate-return-1.c: Fix up target
+	selector.
+
+2026-02-17  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/123612
+	* g++.dg/reflect/pr123612.C: New test.
+
+2026-02-17  David Malcolm  <dmalcolm@redhat.com>
+
+	PR diagnostics/122001
+	* g++.dg/diagnostic/instantiation-context-pr122001-1.C: New test.
+	* g++.dg/diagnostic/instantiation-context-pr122001-2.C: New test.
+
+2026-02-17  David Malcolm  <dmalcolm@redhat.com>
+
+	PR analyzer/121928
+	* g++.dg/analyzer/fanalyzer-show-events-in-system-headers-default.C:
+	Add -Wno-analyzer-too-complex.
+	* g++.dg/analyzer/fanalyzer-show-events-in-system-headers-no.C:
+	Likewise.
+	* g++.dg/analyzer/fanalyzer-show-events-in-system-headers.C:
+	Likewise.
+
+2026-02-16  Jose E. Marchesi  <jemarch@gnu.org>
+
+	PR algol68/124115
+	* algol68/compile/formal-hole-2.a68: New test.
+
+2026-02-16  Richard Biener  <rguenther@suse.de>
+
+	PR testsuite/103515
+	* gcc.target/powerpc/pr103515.c: Mark the loop in foo1
+	with #pramga GCC novector.
+
+2026-02-16  Eric Botcazou  <ebotcazou@adacore.com>
+
+	* gnat.dg/subpools2.adb: New test.
+
+2026-02-15  Patrick Palka  <ppalka@redhat.com>
+
+	PR c++/121500
+	* g++.dg/cpp23/explicit-obj-lambda20.C: New test.
+
+2026-02-15  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	PR tree-optimization/124099
+	* gcc.dg/torture/tls-return-1.c: New test.
+
+2026-02-15  Paul Thomas  <pault@gcc.gnu.org>
+
+	PR fortran/108663
+	* gfortran.dg/pdt_15.f03: Modify tree dump test for new prefix.
+	* gfortran.dg/pdt_71.f03: Ditto.
+	* gfortran.dg/pdt_79.f03: Ditto.
+	* gfortran.dg/pdt_84.f03: New test.
+
+2026-02-15  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	* c-c++-common/torture/pr124086-1.c: Only enable
+	for power of 2 long double.
+
+2026-02-14  Kalvis Duckmanton  <kalvisd@gmail.com>
+
+	PR target/112400
+	* g++.dg/torture/pr112400.C: New file.
+
+2026-02-14  Christopher Albert  <albert@tugraz.at>
+	    Harald Anlauf  <anlauf@gcc.gnu.org>
+
+	PR fortran/123943
+	* gfortran.dg/pr123943.f90: New test.
+
+2026-02-14  Paul Thomas  <pault@gcc.gnu.org>
+
+	PR fortran/99250
+	* gfortran.dg/coshape_1.f90: New test.
+
+2026-02-14  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	PR tree-optimization/124086
+	* c-c++-common/torture/pr124086-1.c: New test.
+	* g++.dg/torture/pr124086-1.C: New test.
+
+2026-02-14  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	* gcc.dg/tree-ssa/copy-prop-aggregate-return-1.c: Limit check to x86_64
+	and aarch64.
+
+2026-02-14  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	* g++.dg/warn/uninit-pr95825-1.C: Skip if no address sanitizer.
+
 2026-02-13  Vladimir N. Makarov  <vmakarov@redhat.com>
 
 	PR rtl-optimization/124079

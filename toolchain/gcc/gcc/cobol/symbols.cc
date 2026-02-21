@@ -2295,7 +2295,8 @@ symbol_table_init(void) {
     { FldAlphanumeric, LOW_VALUE_E | constq | register_e,
       {1,1,0,0, "L\0\xFF"}, 0, "LOW_VALUES", cp1252 },
     { FldAlphanumeric, ZERO_VALUE_E | constq | register_e,
-      {1,1,0,0, "0"}, 0, "ZEROS", cp1252 },
+      {1,1,0,0, "0"}, 0, "ZEROS", cp1252 }, // Don't change "ZEROS"; there are
+                                            // things that depend on it.
     { FldAlphanumeric, HIGH_VALUE_E | constq | register_e,
       {1,1,0,0, "H\0\xFF"}, 0, "HIGH_VALUES", cp1252 },
     // IBM standard: QUOTE is a double-quote unless APOST compiler option

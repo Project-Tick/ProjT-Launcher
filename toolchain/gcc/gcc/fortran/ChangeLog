@@ -1,3 +1,73 @@
+2026-02-20  Gonzalo Silvalde Blanco  <gonzalo.silvalde@gmail.com>
+
+	PR fortran/80012
+	* symbol.cc (gfc_add_procedure): Split error into gfc_error and
+	inform using auto_diagnostic_group.
+
+2026-02-20  Jerry DeLisle  <jvdelisle@gcc.gnu.org>
+
+	PR fortran/123949
+	* decl.cc (gfc_get_pdt_instance): Use full integer string encoding
+	for PDT instance naming rather than 32-bit extraction, which caused
+	ICEs for valid large KIND values.
+
+2026-02-19  Jerry DeLisle  <jvdelisle@gcc.gnu.org>
+
+	PR fortran/122491
+	* decl.cc (gfc_match_end): Do not free current BLOCK namespace
+	during malformed END cleanup.
+
+2026-02-18  Tobias Burnus  <tburnus@baylibre.com>
+
+	* symbol.cc (gfc_check_conflict): Reject mixing OpenMP threadprivate
+	with groupprivate.
+	* trans-common.cc (build_common_decl): Remove warning when mixing
+	threadprivate with groupprivate.
+	* trans-decl.cc (add_attributes_to_decl): Likewise.
+
+2026-02-15  Paul Thomas  <pault@gcc.gnu.org>
+
+	PR fortran/108663
+	* decl.cc (gfc_get_pdt_instance): Use PDT_PREFIX and
+	PDT_PREFIX_LEN.
+	* gfortran.h : Define PDT_PREFIX and PDT_PREFIX_LEN. Note that
+	PDT_PREFIX must have at least two upper case letters.
+	* module.cc (read_module): Use PDT_PREFIX and PDT_PREFIX_LEN.
+	* resolve.cc (resolve_typebound_procedure): Both pdt_template
+	and pdt_type resolve_bindings_derived dummies should be tested
+	for LEN type parameters being assumed.
+	* symbol.cc (gfc_pdt_is_instance_of): Update preceding comment
+	and use PDT_PREFIX_LEN.
+
+2026-02-14  Christopher Albert  <albert@tugraz.at>
+	    Harald Anlauf  <anlauf@gcc.gnu.org>
+
+	PR fortran/123943
+	* resolve.cc (gfc_max_forall_iterators_in_chain): New helper
+	function for factorization of iterator-depth counting.
+	(gfc_count_forall_iterators): Use it.
+
+2026-02-14  Paul Thomas  <pault@gcc.gnu.org>
+
+	PR fortran/99250
+	* check.cc (gfc_check_coshape): New function.
+	* gfortran.h: Add GFC_ISYM_COSHAPE to gfc_isym_id.
+	* intrinsic.cc (add_functions): Add the coshape prototype and
+	its 'make_generic'.
+	* intrinsic.h: Add prototypes for gfc_check_coshape and
+	gfc_resolve_coshape.
+	* intrinsic.texi : Add entries for coshape.
+	* iresolve.cc (gfc_resolve_coshape): New function.
+	* trans-array.cc (gfc_conv_ss_startstride): Add 'case
+	GFC_ISYM_COSHAPE' in two places.
+	* trans-intrinsic.cc (conv_intrinsic_cobound): Modify assert in
+	scalarized section for lbound. Set bound to zero for scalar
+	case of coshape. Keep the lbound and use it together with the
+	scalarized ubound to obtain the coshape.
+	(gfc_conv_intrinsic_function, gfc_add_intrinsic_ss_code and
+	gfc_walk_intrinsic_function): Add 'case GFC_ISYM_COSHAPE' as
+	appropriate.
+
 2026-02-08  Harald Anlauf  <anlauf@gmx.de>
 
 	PR fortran/85547

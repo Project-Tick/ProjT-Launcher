@@ -1,3 +1,31 @@
+2026-02-19  Robert Dubner  <rdubner@symas.com>
+
+	* genapi.cc (tree_type_from_field_type): Move static code.
+	(compare_binary_binary): Identify little-endian compares.
+	(psa_FldLiteralN): Eliminate obsolete development code; make the
+	initialized variables TREE_CONSTANT.
+	(parser_symbol_add): Adjust for modified FldLiteralN.
+	* genmath.cc (all_results_binary): Renamed. Modified for fastness.
+	(all_results_integer): Likewise.
+	(all_refers_integer): Likewise.
+	(largest_binary_term): Likewise.
+	(fast_add): Expand conditions.  Use get_binary_value_tree.
+	(fast_subtract): Likewise.
+	(fast_multiply): Expand conditions.
+	(fast_divide): Expand conditions.
+	(parser_add): Avoid fast_add when error or not-error are specified.
+	(parser_multiply): Likewise.
+	(parser_divide): Likewise.
+	(parser_subtract): Likewise.
+	* genutil.cc (tree_type_from_field): Disable; flagged for removal.
+	(get_binary_value): Use get_binary_value_tree.
+	(get_binary_value_tree): Avoid intermediate variables when possible.
+	(refer_is_clean): Formatting.
+	(is_pure_integer): Refine test for little-endian binary.
+	* genutil.h (get_binary_value_tree): New declaration.
+	(is_pure_integer): New declaration.
+	* symbols.cc (symbol_table_init): Explanatory ZEROS comment.
+
 2026-02-13  Robert Dubner  <rdubner@symas.com>
 
 	PR cobol/119455

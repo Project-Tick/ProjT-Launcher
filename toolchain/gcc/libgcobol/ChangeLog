@@ -1,3 +1,24 @@
+2026-02-19  Robert Dubner  <rdubner@symas.com>
+
+	* gfileio.cc (__gg__file_reopen): Raise exception on failed OPEN
+	* gmath.cc (__gg__fixed_phase2_assign_to_c): Let pointer arithmetic
+	go negative.
+	(__gg__subtractf2_fixed_phase1): Edit a comment.
+
+2026-02-14  Jakub Jelinek  <jakub@redhat.com>
+
+	PR cobol/122839
+	* configure.ac (--with-target-libxml2, --with-target-libxml2-include,
+	--with-target-libxml2-lib): New configure options, use those to find
+	libxml2.
+	(LIBXML2_CPPFLAGS, LIBXML2_LIBS): New AC_SUBSTs.
+	* Makefile.am (AM_CPPFLAGS): Add $(LIBXML2_CPPFLAGS) rather than
+	-I /usr/include/libxml2.
+	(libgcobol_la_LDFLAGS): Add $(LIBXML2_LIBS).
+	* configure: Regenerate.
+	* config.h.in: Regenerate.
+	* Makefile.in: Regenerate.
+
 2026-02-12  Robert Dubner  <rdubner@symas.com>
 
 	PR cobol/121499

@@ -49,9 +49,11 @@ along with GCC; see the file COPYING3.  If not see
 
 #define SIG_ATOMIC_TYPE "int"
 
-/* ??? This definition of int8_t follows the system header but does
-   not conform to C99.  Likewise int_fast8_t, int_least8_t.  */
-#define INT8_TYPE "char"
+/* <sys/int_types.h> uses char (which is signed) to define int8_t, which does
+   not conform to C99, 7.18.1.1 Exact-width integer types.  Likewise
+   int_fast8_t, int_least8_t.  Until this is fixed, it's handled by
+   fixincludes.  */
+#define INT8_TYPE "signed char"
 #define INT16_TYPE "short int"
 #define INT32_TYPE "int"
 #define INT64_TYPE (LONG_TYPE_SIZE == 64 ? "long int" : "long long int")
@@ -60,7 +62,7 @@ along with GCC; see the file COPYING3.  If not see
 #define UINT32_TYPE "unsigned int"
 #define UINT64_TYPE (LONG_TYPE_SIZE == 64 ? "long unsigned int" : "long long unsigned int")
 
-#define INT_LEAST8_TYPE "char"
+#define INT_LEAST8_TYPE "signed char"
 #define INT_LEAST16_TYPE "short int"
 #define INT_LEAST32_TYPE "int"
 #define INT_LEAST64_TYPE (LONG_TYPE_SIZE == 64 ? "long int" : "long long int")
@@ -69,7 +71,7 @@ along with GCC; see the file COPYING3.  If not see
 #define UINT_LEAST32_TYPE "unsigned int"
 #define UINT_LEAST64_TYPE (LONG_TYPE_SIZE == 64 ? "long unsigned int" : "long long unsigned int")
 
-#define INT_FAST8_TYPE "char"
+#define INT_FAST8_TYPE "signed char"
 #define INT_FAST16_TYPE "int"
 #define INT_FAST32_TYPE "int"
 #define INT_FAST64_TYPE (LONG_TYPE_SIZE == 64 ? "long int" : "long long int")

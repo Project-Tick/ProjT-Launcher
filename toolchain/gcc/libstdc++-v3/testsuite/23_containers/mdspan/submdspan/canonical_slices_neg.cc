@@ -17,7 +17,7 @@ constexpr bool
 test_rank_mismatch()
 {
   auto exts = std::extents(1);
-  std::submdspan_canonicalize_slices(exts, 0, 0); // { dg-error "no matching" }
+  std::canonical_slices(exts, 0, 0); // { dg-error "no matching" }
   return true;
 }
 
@@ -25,7 +25,7 @@ template<typename Int, typename Extents>
 constexpr bool
 test_under1(Int i1, Extents exts)
 {
-  auto [s1] = std::submdspan_canonicalize_slices(exts, i1);
+  auto [s1] = std::canonical_slices(exts, i1);
   return true;
 }
 
@@ -43,7 +43,7 @@ template<typename Int, typename Extents>
 constexpr bool
 test_over1(Int i1, Extents exts)
 {
-  auto [s1] = std::submdspan_canonicalize_slices(exts, i1);
+  auto [s1] = std::canonical_slices(exts, i1);
   return true;
 }
 
@@ -65,7 +65,7 @@ template<typename Offset, typename Extent, typename Stride, typename Extents>
   constexpr bool
   test_under2(Offset o, Extent e, Stride s, Extents exts)
   {
-    std::submdspan_canonicalize_slices(exts, std::strided_slice{o, e, s});
+    std::canonical_slices(exts, std::strided_slice{o, e, s});
     return true;
   }
 
@@ -105,7 +105,7 @@ template<typename Offset, typename Extent, typename Stride, typename Extents>
   constexpr bool
   test_over2(Offset o, Extent e, Stride s, Extents exts)
   {
-    std::submdspan_canonicalize_slices(exts, std::strided_slice{o, e, s});
+    std::canonical_slices(exts, std::strided_slice{o, e, s});
     return true;
   }
 
@@ -157,7 +157,7 @@ test_overflow1(auto o, auto e)
 {
   auto exts = std::extents<uint8_t, dyn>{255};
   auto slice = std::strided_slice{o, e, 1};
-  std::submdspan_canonicalize_slices(exts, slice);
+  std::canonical_slices(exts, slice);
   return true;
 }
 
@@ -171,7 +171,7 @@ test_overflow2(auto b, auto e)
 {
   auto exts = std::extents<uint8_t, dyn>{255};
   auto slice = std::pair{b, e};
-  std::submdspan_canonicalize_slices(exts, slice);
+  std::canonical_slices(exts, slice);
   return true;
 }
 
@@ -192,7 +192,7 @@ test_invalid(auto e, auto s)
 {
   auto exts = std::extents(5);
   auto slice = std::strided_slice(0, e, s);
-  std::submdspan_canonicalize_slices(exts, slice);
+  std::canonical_slices(exts, slice);
   return true;
 }
 

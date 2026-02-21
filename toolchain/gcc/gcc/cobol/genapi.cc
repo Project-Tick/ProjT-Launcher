@@ -2028,6 +2028,102 @@ normal_normal_compare(bool debugging,
     }
   }
 
+static
+tree
+tree_type_from_field_type(cbl_field_t *field, size_t &nbytes)
+  {
+  /*  This routine is used to determine what action is taken with type of a
+      CALL ... USING <var> and the matching PROCEDURE DIVISION USING <var> of
+      a PROGRAM-ID or FUNCTION-ID
+      */
+  tree retval = COBOL_FUNCTION_RETURN_TYPE;
+  nbytes = 8;
+  if( field )
+    {
+    // This maps a Fldxxx to a C-style variable type:
+    switch(field->type)
+      {
+      case FldGroup:
+      case FldAlphanumeric:
+      case FldAlphaEdited:
+      case FldNumericEdited:
+        retval = CHAR_P;
+        nbytes = field->data.capacity();
+        break;
+
+      case FldNumericDisplay:
+      case FldNumericBinary:
+      case FldPacked:
+      if( field->data.digits > 18 )
+          {
+          retval = UINT128;
+          nbytes = 16;
+          }
+        else
+          {
+          retval = SIZE_T;
+          nbytes = 8;
+          }
+        break;
+
+      case FldNumericBin5:
+      case FldIndex:
+      case FldPointer:
+        if( field->data.capacity() > 8 )
+          {
+          retval = UINT128;
+          nbytes = 16;
+          }
+        else
+          {
+          retval = SIZE_T;
+          nbytes = 8;
+          }
+        break;
+
+      case FldFloat:
+        if( field->data.capacity() == 8 )
+          {
+          retval = DOUBLE;
+          nbytes = 8;
+          }
+        else if( field->data.capacity() == 4 )
+          {
+          retval = FLOAT;
+          nbytes = 4;
+          }
+        else
+          {
+          retval = FLOAT128;
+          nbytes = 16;
+          }
+        break;
+
+      case FldLiteralN:
+        // Assume a 64-bit signed integer.  This happens for GOBACK STATUS 101,
+        // the like
+        retval = LONG;
+        nbytes = 8;
+        break;
+
+      default:
+        cbl_internal_error(  "%s: Invalid field type %s:",
+                __func__,
+                cbl_field_type_str(field->type));
+        break;
+      }
+    if( retval == SIZE_T && field->attr & signable_e )
+      {
+      retval = SSIZE_T;
+      }
+    if( retval == UINT128 && field->attr & signable_e )
+      {
+      retval = INT128;
+      }
+    }
+  return retval;
+  }
+
 static void
 compare_binary_binary(tree return_int,
                       cbl_refer_t *left_side_ref,
@@ -2039,6 +2135,54 @@ compare_binary_binary(tree return_int,
   // We know the two sides have binary values that can be extracted.
   tree left_side;
   tree right_side;
+
+  // Let's check for the simplified case where both left and right sides are
+  // little-endian binary values:
+  
+  if(   is_pure_integer(left_side_ref->field)
+     && is_pure_integer(right_side_ref->field) )
+    {
+    size_t left_bytes;
+    tree left_type = tree_type_from_field_type(left_side_ref->field,
+                                               left_bytes);
+    size_t right_bytes;
+    tree right_type = tree_type_from_field_type(right_side_ref->field,
+                                                right_bytes);
+    tree larger;
+    if(    TREE_INT_CST_LOW(TYPE_SIZE(left_type))
+         > TREE_INT_CST_LOW(TYPE_SIZE(right_type)) )
+      {
+      larger = left_type;
+      }
+    else
+      {
+      larger = right_type;
+      }
+    left_side  = get_binary_value_tree(larger,
+                                       NULL,
+                                       *left_side_ref);
+    right_side = get_binary_value_tree(larger,
+                                       NULL,
+                                       *right_side_ref);
+    IF( left_side, eq_op, right_side )
+      {
+      gg_assign(return_int, integer_zero_node);
+      }
+    ELSE
+      {
+      IF( left_side, lt_op, right_side )
+        {
+        gg_assign(return_int, integer_minusone_node);
+        }
+      ELSE
+        {
+        gg_assign(return_int, integer_one_node);
+        }
+      ENDIF
+      }
+    ENDIF
+    return;
+    }
 
   // Use SIZE128 when we need two 64-bit registers to hold the value.  All
   // others fit into 64-bit LONG with pretty much the same efficiency.
@@ -4133,11 +4277,7 @@ psa_FldLiteralN(struct cbl_field_t *field )
   uint32_t digits;
   int32_t  rdigits;
   uint64_t attr;
-  //// DUBNERHACK.  Necessary to prevent UAT lockup:
-  const char *source_text = field->data.original()
-                          ? field->data.original()
-                          : field->data.initial;
-  FIXED_WIDE_INT(128) value = dirty_to_binary(source_text,
+  FIXED_WIDE_INT(128) value = dirty_to_binary(field->data.original(),
                                               capacity,
                                               digits,
                                               rdigits,
@@ -4167,7 +4307,9 @@ psa_FldLiteralN(struct cbl_field_t *field )
   tree new_var_decl = gg_define_variable( var_type,
                                           base_name,
                                           vs_static);
-  DECL_INITIAL(new_var_decl) = wide_int_to_tree(var_type, value);
+  DECL_INITIAL(new_var_decl)  = wide_int_to_tree(var_type, value);
+  TREE_CONSTANT(new_var_decl) = 1;
+
   field->data_decl_node = new_var_decl;
 
   // Note that during compilation, the integer value, assuming it can be
@@ -6146,102 +6288,6 @@ vs_file_static);
 
   gg_free(tspans);
   gg_free(ttbls);
-  }
-
-static
-tree
-tree_type_from_field_type(cbl_field_t *field, size_t &nbytes)
-  {
-  /*  This routine is used to determine what action is taken with type of a
-      CALL ... USING <var> and the matching PROCEDURE DIVISION USING <var> of
-      a PROGRAM-ID or FUNCTION-ID
-      */
-  tree retval = COBOL_FUNCTION_RETURN_TYPE;
-  nbytes = 8;
-  if( field )
-    {
-    // This maps a Fldxxx to a C-style variable type:
-    switch(field->type)
-      {
-      case FldGroup:
-      case FldAlphanumeric:
-      case FldAlphaEdited:
-      case FldNumericEdited:
-        retval = CHAR_P;
-        nbytes = field->data.capacity();
-        break;
-
-      case FldNumericDisplay:
-      case FldNumericBinary:
-      case FldPacked:
-      if( field->data.digits > 18 )
-          {
-          retval = UINT128;
-          nbytes = 16;
-          }
-        else
-          {
-          retval = SIZE_T;
-          nbytes = 8;
-          }
-        break;
-
-      case FldNumericBin5:
-      case FldIndex:
-      case FldPointer:
-        if( field->data.capacity() > 8 )
-          {
-          retval = UINT128;
-          nbytes = 16;
-          }
-        else
-          {
-          retval = SIZE_T;
-          nbytes = 8;
-          }
-        break;
-
-      case FldFloat:
-        if( field->data.capacity() == 8 )
-          {
-          retval = DOUBLE;
-          nbytes = 8;
-          }
-        else if( field->data.capacity() == 4 )
-          {
-          retval = FLOAT;
-          nbytes = 4;
-          }
-        else
-          {
-          retval = FLOAT128;
-          nbytes = 16;
-          }
-        break;
-
-      case FldLiteralN:
-        // Assume a 64-bit signed integer.  This happens for GOBACK STATUS 101,
-        // the like
-        retval = LONG;
-        nbytes = 8;
-        break;
-
-      default:
-        cbl_internal_error(  "%s: Invalid field type %s:",
-                __func__,
-                cbl_field_type_str(field->type));
-        break;
-      }
-    if( retval == SIZE_T && field->attr & signable_e )
-      {
-      retval = SSIZE_T;
-      }
-    if( retval == UINT128 && field->attr & signable_e )
-      {
-      retval = INT128;
-      }
-    }
-  return retval;
   }
 
 static void
@@ -17428,7 +17474,8 @@ parser_symbol_add(struct cbl_field_t *new_var )
     free(level_88_string);
     free(class_string);
 
-    if(  !(new_var->attr & ( linkage_e | based_e)) )
+    if(    !(new_var->attr & ( linkage_e | based_e))
+        && !(new_var->type == FldLiteralN) )
       {
       static const bool explicitly = false;
       static const bool just_once = true;

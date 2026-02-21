@@ -1,3 +1,10 @@
+2026-02-16  Jose E. Marchesi  <jemarch@gnu.org>
+
+	PR algol68/124115
+	* a68-low-holes.cc (get_hole_symbol): Always set *addrp to avoid
+	uninitialized memory.
+	* a68-low.cc (a68_make_formal_hole_decl): Remove assert.
+
 2026-02-12  James Bohl  <bohlj47@gmail.com>
 
 	PR algol68/124049

@@ -57,12 +57,15 @@ get_hole_symbol (NODE_T *p, bool *addrp)
   gcc_assert (IS (str, ROW_CHAR_DENOTATION));
 
   const char *cstr = NSYMBOL (str);
-  if (strlen (cstr) > 0 && cstr[0] == '&' && addrp != NULL)
+  bool isaddr = false;
+  if (strlen (cstr) > 0 && cstr[0] == '&')
     {
-      *addrp = true;
+      isaddr = true;
       cstr = cstr + 1;
     }
 
+  if (addrp != NULL)
+    *addrp = isaddr;
   return a68_string_process_breaks (p, cstr);
 }
 

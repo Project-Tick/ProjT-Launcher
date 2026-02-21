@@ -10,7 +10,7 @@ constexpr bool
 test_unrelated_stride_type()
 {
   auto exts = std::extents(3, 5, 7);
-  auto sub_exts = submdspan_extents(exts, 1, NotASlice{}, 2);  // { dg-error "required from" }
+  auto sub_exts = subextents(exts, 1, NotASlice{}, 2);  // { dg-error "required from" }
   return true;
 }
 static_assert(test_unrelated_stride_type());
@@ -20,7 +20,7 @@ test_invalid_stride_zero()
 {
   auto exts = std::extents(3, 5, 7);
   auto s = std::strided_slice{0, 1, 0};
-  auto sub_exts = submdspan_extents(exts, 1, s, 2);  // { dg-error "expansion of" }
+  auto sub_exts = std::subextents(exts, 1, s, 2);  // { dg-error "expansion of" }
   return true;
 }
 static_assert(test_invalid_stride_zero());
@@ -30,7 +30,7 @@ constexpr bool
 test_out_of_bounds(const Slice& slice)
 {
   auto exts = std::extents<uint16_t, 3, 5, 7>{};
-  auto sub_exts = submdspan_extents(exts, 1, slice, 2);  // { dg-error "expansion of" }
+  auto sub_exts = std::subextents(exts, 1, slice, 2);  // { dg-error "expansion of" }
   return true;
 }
 static_assert(test_out_of_bounds(std::strided_slice{0, 6, 1}));  // { dg-error "expansion of" }

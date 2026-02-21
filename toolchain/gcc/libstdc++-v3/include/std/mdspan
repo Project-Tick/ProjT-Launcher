@@ -3348,8 +3348,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   template<typename _IndexType, size_t... _Extents, typename... _RawSlices>
     requires (sizeof...(_RawSlices) == sizeof...(_Extents))
     constexpr auto
-    submdspan_extents(const extents<_IndexType, _Extents...>& __exts,
-		      _RawSlices... __raw_slices)
+    subextents(const extents<_IndexType, _Extents...>& __exts,
+	       _RawSlices... __raw_slices)
     {
       auto __impl = [&__exts](auto... __slices)
       {
@@ -3362,8 +3362,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   template<typename _IndexType, size_t... _Extents, typename... _RawSlices>
     requires (sizeof...(_Extents) == sizeof...(_RawSlices))
     constexpr auto
-    submdspan_canonicalize_slices(const extents<_IndexType, _Extents...>& __exts,
-				  _RawSlices... __raw_slices)
+    canonical_slices(const extents<_IndexType, _Extents...>& __exts,
+		     _RawSlices... __raw_slices)
     {
       auto __impl = [&__exts](auto... __slices)
       {

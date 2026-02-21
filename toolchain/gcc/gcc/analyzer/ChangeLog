@@ -1,3 +1,15 @@
+2026-02-17  David Malcolm  <dmalcolm@redhat.com>
+
+	PR analyzer/124104
+	* svalue.cc (unaryop_svalue::maybe_get_value_range): Bail out for
+	incompatible types.
+
+2026-02-17  David Malcolm  <dmalcolm@redhat.com>
+
+	PR analyzer/124139
+	* engine.cc (exploded_node::on_throw): Bail out if we can't get
+	the fndecl for the call.
+
 2026-02-12  David Malcolm  <dmalcolm@redhat.com>
 
 	PR analyzer/117369

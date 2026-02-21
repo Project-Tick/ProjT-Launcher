@@ -1,3 +1,208 @@
+2026-02-20  Kwok Cheung Yeung  <kcyeung@baylibre.com>
+
+	PR middle-end/113436
+	* omp-low.cc (omp_lower_target):  Do not check for variable-length
+	variables in private clauses by reference when allocating memory.
+
+2026-02-20  Richard Biener  <rguenther@suse.de>
+
+	PR tree-optimization/124068
+	* tree-vect-patterns.cc (target_has_vecop_for_code): Move
+	earlier, add defaulted optab_subtype parameter.
+	(vect_recog_over_widening_pattern): Check that the target
+	supports the narrowed operation before committing to the
+	pattern.
+
+2026-02-20  Martin Jambor  <mjambor@suse.cz>
+
+	PR ipa/122856
+	* ipa-cp.cc (self_recursive_pass_through_p): Test jump function type first.
+	(self_recursive_ancestor_p): New function.
+	(find_scalar_values_for_callers_subset): Test also for self-recursive
+	ancestor jump functions.
+	(push_agg_values_for_index_from_edge): Likewise.
+
+2026-02-20  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	PR tree-optimization/121103
+	* gimple-fold.cc (gimple_fold_call): Don't simplify
+	noreturn functions.
+	* tree-ssa-dse.cc (dse_optimize_stmt): Don't handle
+	calls to noreturn functions.
+
+2026-02-19  jlaw  <jeffreyalaw@gmail.com>
+
+	PR tree-optimization/124108
+	* match.pd (reassociating XOR to expose rotations): Check
+	type_has_mode_precision_p before simplifying.
+
+2026-02-19  Jakub Jelinek  <jakub@redhat.com>
+
+	* config/i386/i386.cc (avx_vpermilp_parallel): Use IN_RANGE
+	macro.
+
+2026-02-19  Pan Li  <pan2.li@intel.com>
+
+	* config/riscv/autovec-opt.md (*literal_v<ieee_fmaxmin_op>_vf_<mode>):
+	Add new pattern for vfmax/min combine to fx.
+
+2026-02-18  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	PR rtl-optimization/116053
+	* regcprop.cc (copyprop_hardreg_forward_1): Use delete_insn_and_edges
+	instead of delete_insn.
+
+2026-02-18  Vladimir N. Makarov  <vmakarov@redhat.com>
+
+	PR rtl-optimization/120169
+	* lra-int.h (lra_process_new_insns): Modify the prototype.
+	* lra.cc (lra_process_new_insns): Add arg fixup_reg_args_size with
+	implicit value.  Move REG_ARGS_SIZE note if necessary.
+	* lra-constraints.cc (curr_insn_transform): Pass the new arg value.
+
+2026-02-18  Richard Biener  <rguenther@suse.de>
+
+	PR target/123137
+	* config/i386/i386-features.cc (ix86_emit_tls_call): Improve
+	local FLAGS_REG liveness calculation.
+
+2026-02-18  Jakub Jelinek  <jakub@redhat.com>
+
+	PR target/124138
+	* config/i386/i386.cc (avx_vpermilp_parallel): Verify
+	ipar[2] and ipar[3] aren't larger than 3.
+
+2026-02-18  H.J. Lu  <hjl.tools@gmail.com>
+
+	PR target/124098
+	* config/i386/i386.cc (ix86_access_stack_p): New.
+	(ix86_find_max_used_stack_alignment): Update stack alignment only
+	if stack is used.
+
+2026-02-17  H.J. Lu  <hjl.tools@gmail.com>
+
+	PR target/124136
+	* config/i386/i386-features.cc (ix86_check_flags_reg): Don't
+	mark clobbered FLAGS_REG as live.
+
+2026-02-17  Richard Earnshaw  <rearnsha@arm.com>
+
+	PR target/124134
+	* config/arm/arm.md (movsfcc): FAIL if using restricted IT
+	blocks and we lack VSEL.
+	(movdfcc): Likewise.
+
+2026-02-17  Jeff Law  <jeffrey.law@oss.qualcomm.com>
+
+	PR target/124048
+	* config/riscv/zicond.md (conditional AND patterns): Fix missed
+	flipping the condition's test in RTL output.
+
+2026-02-17  Richard Biener  <rguenther@suse.de>
+
+	PR tree-optimization/124130
+	* tree-inline.cc (copy_edges_for_bb): Fixup noreturn calls
+	with abnormal edge source.
+
+2026-02-17  Richard Biener  <rguenther@suse.de>
+
+	PR tree-optimization/124132
+	* tree-ssa-loop-split.cc (compute_new_first_bound): Fix
+	bound difference computation.
+
+2026-02-17  Jakub Jelinek  <jakub@redhat.com>
+
+	PR target/120233
+	* gimple-ssa-store-merging.cc (find_bswap_or_nop_2): New function.
+	(find_bswap_or_nop): Move CONSTRUCTOR handling to above function,
+	call it instead of find_bswap_or_nop_1.
+	(bswap_replace): Handle VEC_PACK_TRUNC_EXPR like CONSTRUCTOR.
+	(maybe_optimize_vector_constructor): Likewise.
+	(pass_optimize_bswap::execute): Likewise.
+	(get_status_for_store_merging): Likewise.
+	(pass_store_merging::execute): Likewise.
+
+2026-02-15  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+
+	PR libstdc++/113450
+	PR libstdc++/123176
+	* config/sol2.h (INT8_TYPE): Change to signed char.
+	(INT_LEAST8_TYPE): Likewise.
+	(INT_FAST8_TYPE): Likewise.
+
+2026-02-15  Iain Sandoe  <iain@sandoe.co.uk>
+
+	* json.cc (pointer::token::print): Cast the value to pp_scalar
+	with (fmt_size_t).
+
+2026-02-15  Jan Hubicka  <hubicka@ucw.cz>
+
+	* ipa-devirt.cc (ipa_devirt): Improve statistics for multi-target
+	devirtualization; do not simple-call devirtualize already devirtualized calls.
+
+2026-02-15  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+
+	* configure.ac <sparc*-*-*> (gcc_cv_as_sparc_fmaf): Remove.
+	(gcc_cv_as_sparc_sparc4): Remove.
+	(gcc_cv_as_sparc_sparc): Remove.
+	(gcc_cv_as_sparc_sparc6): Remove.
+	* configure: Regenerate.
+	* config.in: Regenerate.
+	* config/sparc/sparc.h (AS_NIAGARA3_FLAG) Remove.  Replace uses by
+	definition.
+	(AS_NIAGARA4_FLAG): Likewise.
+	(AS_NIAGARA7_FLAG): Likewise.
+	(AS_M8_FLAG): Likewise.
+	* config/sparc/sol2.h [!HAVE_AS_SPARC4]: Remove.
+	(AS_SPARC32_FLAG): Remove.
+	(AS_SPARC64_FLAG): Remove.
+	(AS_NIAGARA3_FLAG) Replace uses by definition.
+	(AS_NIAGARA4_FLAG): Likewise.
+	(AS_NIAGARA7_FLAG): Likewise.
+	(AS_M8_FLAG): Likewise.
+	* config/sparc/sparc.cc (sparc_option_override):
+	[!HAVE_AS_FMAF_HPC_VIS3]: Remove.
+	[!HAVE_AS_SPARC4]: Likewise.
+	[!HAVE_AS_SPARC5_VIS4]: Likewise.
+	[!HAVE_AS_SPARC6]: Likewise.
+
+2026-02-15  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	PR tree-optimization/124099
+	* tree-ssa-forwprop.cc (optimize_agr_copyprop_return): Don't do anything
+	if the return is already result decl or a deference of result decl.
+	Also reject non local var decls.
+
+2026-02-14  Jakub Jelinek  <jakub@redhat.com>
+
+	PR cobol/122839
+	* doc/install.texi (COBOL-Specific Options): New.
+
+2026-02-14  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+
+	* configure.ac <sparc*-*-*> (gcc_cv_as_sparc_gotdata_op): Remove.
+	* configure: Regenerate.
+	* config.in: Regenerate.
+	* config/sparc/sparc.md [!HAVE_AS_SPARC_GOTDATA_OP]: Remove.
+
+2026-02-14  Kalvis Duckmanton  <kalvisd@gmail.com>
+
+	PR target/112400
+	* config/vax/vax.md (casesi1): Wrap naked operand 1 with a USE
+	where used with the insn split to.
+	(*casesi1): Likewise naked incoming operand 1.
+
+2026-02-14  Maciej W. Rozycki  <macro@orcam.me.uk>
+
+	* config/vax/vax.cc (nonindexed_address_p): Move incoming RTX's
+	operand 0 access to the actual use places.
+
+2026-02-14  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	PR tree-optimization/124086
+	* tree-complex.cc (extract_component): Extend the check
+	for ssa names for VCE to include invariants.
+
 2026-02-13  David Malcolm  <dmalcolm@redhat.com>
 
 	* json-parsing.cc (selftest::assert_json_pointer_eq): New.

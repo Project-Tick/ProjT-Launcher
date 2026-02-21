@@ -11,7 +11,7 @@ constexpr bool
 test_from_full_extent()
 {
   auto exts = std::extents<int, 3, dyn, 7>{};
-  auto sub_exts = submdspan_extents(exts, 1, all, all);
+  auto sub_exts = std::subextents(exts, 1, all, all);
   VERIFY(sub_exts.rank() == 2);
   VERIFY(sub_exts.static_extent(0) == dyn);
   VERIFY(sub_exts.extent(0) == exts.extent(1));
@@ -27,7 +27,7 @@ template<template<typename, typename> typename Pair, template<int> typename Cw>
     auto s0 = Cw<1>{};
     auto s1 = Pair{Cw<1>{}, Cw<2>{}};
     auto s2 = Pair{Cw<1>{}, 4};
-    auto sub_exts = submdspan_extents(exts, s0, s1, s2);
+    auto sub_exts = std::subextents(exts, s0, s1, s2);
     VERIFY(sub_exts.rank() == 2);
     VERIFY(sub_exts.static_extent(0) == size_t(get<1>(s1) - get<0>(s1)));
     VERIFY(sub_exts.static_extent(1) == dyn);
@@ -50,7 +50,7 @@ template<typename Int>
   test_from_int_like_as_scalar()
   {
     auto exts = std::extents<int, 3, 5>{};
-    auto sub_exts = submdspan_extents(exts, Int(1), std::tuple{1, 3});
+    auto sub_exts = std::subextents(exts, Int(1), std::tuple{1, 3});
     VERIFY(sub_exts.rank() == 1);
     VERIFY(sub_exts.static_extent(0) == dyn);
     VERIFY(sub_exts.extent(0) == 2);
@@ -61,7 +61,7 @@ template<template<int> typename Cw>
   test_from_const_int()
   {
     auto exts = std::extents<int, 3, 5>{};
-    auto sub_exts = submdspan_extents(exts, Cw<1>{}, std::tuple{1, 3});
+    auto sub_exts = std::subextents(exts, Cw<1>{}, std::tuple{1, 3});
     VERIFY(sub_exts.rank() == 1);
     VERIFY(sub_exts.static_extent(0) == dyn);
     VERIFY(sub_exts.extent(0) == 2);
@@ -73,7 +73,7 @@ template<typename Int>
   test_from_int_like_in_tuple()
   {
     auto exts = std::extents<int, 3, 5>{};
-    auto sub_exts = submdspan_extents(exts, Int(1), std::tuple{Int(1), Int(3)});
+    auto sub_exts = std::subextents(exts, Int(1), std::tuple{Int(1), Int(3)});
     VERIFY(sub_exts.rank() == 1);
     VERIFY(sub_exts.static_extent(0) == dyn);
     VERIFY(sub_exts.extent(0) == 2);
@@ -89,7 +89,7 @@ template<template<int> typename Cw>
       auto s0 = 1;
       auto s1 = std::strided_slice{0, 0, 0};
       auto s2 = std::strided_slice{1, Cw<0>{}, 0};
-      auto sub_exts = submdspan_extents(exts, s0, s1, s2);
+      auto sub_exts = std::subextents(exts, s0, s1, s2);
       VERIFY(sub_exts.rank() == 2);
       VERIFY(sub_exts.static_extent(0) == dyn);
       VERIFY(sub_exts.extent(0) == 0);
@@ -100,7 +100,7 @@ template<template<int> typename Cw>
       auto s0 = 1;
       auto s1 = std::strided_slice{0, 2, Cw<1>{}};
       auto s2 = std::strided_slice{1, Cw<2>{}, 1};
-      auto sub_exts = submdspan_extents(exts, s0, s1, s2);
+      auto sub_exts = std::subextents(exts, s0, s1, s2);
       VERIFY(sub_exts.rank() == 2);
       VERIFY(sub_exts.static_extent(0) == dyn);
       VERIFY(sub_exts.extent(0) == 2);
@@ -113,7 +113,7 @@ template<template<int> typename Cw>
       auto s0 = 1;
       auto s1 = std::strided_slice{1, Cw<4>{}, 2};
       auto s2 = std::strided_slice{1, Cw<10>{}, Cw<3>{}};
-      auto sub_exts = submdspan_extents(exts, s0, s1, s2);
+      auto sub_exts = std::subextents(exts, s0, s1, s2);
       VERIFY(sub_exts.rank() == 2);
       VERIFY(sub_exts.static_extent(0) == dyn);
       VERIFY(sub_exts.extent(0) == 2);
@@ -125,7 +125,7 @@ template<template<int> typename Cw>
       auto s0 = std::strided_slice(0, 3, 2);
       auto s1 = std::strided_slice(1, 4, 2);
       auto s2 = std::strided_slice(0, 7, 3);
-      auto sub_exts = submdspan_extents(exts, s0, s1, s2);
+      auto sub_exts = std::subextents(exts, s0, s1, s2);
       VERIFY(sub_exts.rank() == 3);
       VERIFY(sub_exts.extent(0) == 2);
       VERIFY(sub_exts.extent(1) == 2);

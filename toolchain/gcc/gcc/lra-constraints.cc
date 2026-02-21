@@ -5082,7 +5082,8 @@ curr_insn_transform (bool check_only_p)
 	  const_insn = prev;
 	}
     }
-  lra_process_new_insns (curr_insn, before, after, "Inserting insn reload");
+  lra_process_new_insns (curr_insn, before, after,
+			 "Inserting insn reload", true);
   if (const_regno >= 0) {
     bool move_p = true;
     for (rtx_insn *insn = before; insn != curr_insn; insn = NEXT_INSN (insn))

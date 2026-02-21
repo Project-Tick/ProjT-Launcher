@@ -73,12 +73,11 @@ def skip_warning(filename, message):
             # Rust peopel promised to clean these warnings too
             'rust/': ['-Wunused-private-field'],
                  'libiberty/sha1.c': ['-Wc23-extensions'],
-            'avr-mmcu.texi': [''],
-            'gfortran.texi': [''],
-            'install.texi': [''],
-            'libgccjit.texi': [''],
             'libtool': ['']
     }
+
+    if ".texi" in filename:
+        return True
 
     for name, ignore in ignores.items():
         for i in ignore:

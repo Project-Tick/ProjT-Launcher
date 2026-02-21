@@ -2644,7 +2644,7 @@ static tree cp_parser_range_for
 static void do_range_for_auto_deduction
   (tree, tree, cp_decomp *, bool);
 static tree cp_range_for_member_function
-  (tree, tree);
+  (tree, tree, tsubst_flags_t);
 static tree cp_parser_expansion_statement
   (cp_parser *, bool *);
 static tree cp_parser_jump_statement
@@ -16229,8 +16229,8 @@ cp_perform_range_for_lookup (tree range, tree *begin, tree *end,
       if (member_begin != NULL_TREE && member_end != NULL_TREE)
 	{
 	  /* Use the member functions.  */
-	  *begin = cp_range_for_member_function (range, id_begin);
-	  *end = cp_range_for_member_function (range, id_end);
+	  *begin = cp_range_for_member_function (range, id_begin, complain);
+	  *end = cp_range_for_member_function (range, id_end, complain);
 	}
       else
 	{
@@ -16239,14 +16239,12 @@ cp_perform_range_for_lookup (tree range, tree *begin, tree *end,
 
 	  vec_safe_push (vec, range);
 
-	  member_begin = perform_koenig_lookup (id_begin, vec,
-						complain);
+	  member_begin = perform_koenig_lookup (id_begin, vec, complain);
 	  if ((complain & tf_error) == 0 && member_begin == id_begin)
 	    return error_mark_node;
 	  *begin = finish_call_expr (member_begin, &vec, false, true,
 				     complain);
-	  member_end = perform_koenig_lookup (id_end, vec,
-					      tf_warning_or_error);
+	  member_end = perform_koenig_lookup (id_end, vec, complain);
 	  if ((complain & tf_error) == 0 && member_end == id_end)
 	    {
 	      *begin = error_mark_node;
@@ -16254,6 +16252,29 @@ cp_perform_range_for_lookup (tree range, tree *begin, tree *end,
 	    }
 	  *end = finish_call_expr (member_end, &vec, false, true,
 				   complain);
+	  if ((complain & tf_error) == 0
+	      && (*begin == error_mark_node || *end == error_mark_node))
+	    {
+	      /* Expansion stmt should be iterating if there are any
+		 viable candidates for begin and end.  If both finish_call_expr
+		 with tf_none succeeded, there certainly are, if not,
+		 retry with tf_any_viable to check if there were any viable
+		 candidates.  */
+	      if (*begin == error_mark_node
+		  && finish_call_expr (member_begin, &vec, false, true,
+				       tf_any_viable) == error_mark_node)
+		{
+		  *end = error_mark_node;
+		  return error_mark_node;
+		}
+	      if (*end == error_mark_node
+		  && finish_call_expr (member_end, &vec, false, true,
+				       tf_any_viable) == error_mark_node)
+		{
+		  *begin = error_mark_node;
+		  return error_mark_node;
+		}
+	    }
 	}
 
       /* Last common checks.  */
@@ -16261,6 +16282,13 @@ cp_perform_range_for_lookup (tree range, tree *begin, tree *end,
 	{
 	  /* If one of the expressions is an error do no more checks.  */
 	  *begin = *end = error_mark_node;
+	  /* But signal to finish_expansion_stmt whether this is
+	     destructuring (error_mark_node returned) or iterating
+	     (something else returned).  If we got here, range.begin and
+	     range.end members were found or begin (range) and end (range)
+	     found any viable candidates.  */
+	  if ((complain & tf_error) == 0)
+	    return NULL_TREE;
 	  return error_mark_node;
 	}
       else if (type_dependent_expression_p (*begin)
@@ -16298,20 +16326,20 @@ cp_perform_range_for_lookup (tree range, tree *begin, tree *end,
    Builds a tree for RANGE.IDENTIFIER().  */
 
 static tree
-cp_range_for_member_function (tree range, tree identifier)
+cp_range_for_member_function (tree range, tree identifier,
+			      tsubst_flags_t complain)
 {
   tree member, res;
 
   member = finish_class_member_access_expr (range, identifier,
-					    false, tf_warning_or_error);
+					    false, complain);
   if (member == error_mark_node)
     return error_mark_node;
 
   releasing_vec vec;
   res = finish_call_expr (member, &vec,
 			  /*disallow_virtual=*/false,
-			  /*koenig_p=*/false,
-			  tf_warning_or_error);
+			  /*koenig_p=*/false, complain);
   return res;
 }
 

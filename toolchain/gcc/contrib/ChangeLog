@@ -1,3 +1,8 @@
+2026-02-19  Filip Kastl  <fkastl@suse.cz>
+
+	* filter-clang-warnings.py: Filter out all warnings comming from
+	files with ".texi" in their name.
+
 2026-02-05  Torbjörn SVENSSON  <torbjorn.svensson@foss.st.com>
 
 	* download_prerequisites: Switch gcc.gnu.org link to https

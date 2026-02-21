@@ -532,6 +532,7 @@ extern GTY(()) tree cp_global_trees[CPTI_MAX];
       FNDECL_MANIFESTLY_CONST_EVALUATED (in FUNCTION_DECL)
       TARGET_EXPR_INTERNAL_P (in TARGET_EXPR)
       CONTRACT_CONST (in ASSERTION_, PRECONDITION_, POSTCONDITION_STMT)
+      DECL_HAS_DEFAULT_ARGUMENT_P (in PARM_DECL)
    5: IDENTIFIER_VIRTUAL_P (in IDENTIFIER_NODE)
       FUNCTION_RVALUE_QUALIFIED (in FUNCTION_TYPE, METHOD_TYPE)
       CALL_EXPR_REVERSE_ARGS (in CALL_EXPR, AGGR_INIT_EXPR)
@@ -5329,6 +5330,12 @@ get_vec_init_expr (tree t)
 #define MULTIPLE_NAMES_PARM_P(NODE) \
   TREE_LANG_FLAG_2 (PARM_DECL_CHECK (NODE))
 
+/* Nonzero for PARM_DECL node means that at least one block scope extern
+   for the corresponding FUNCTION_DECL provided default argument for this
+   parameter.  */
+#define DECL_HAS_DEFAULT_ARGUMENT_P(NODE) \
+  TREE_LANG_FLAG_4 (PARM_DECL_CHECK (NODE))
+
 /* Nonzero for a FIELD_DECL who's NSMDI is currently being
    instantiated.  */
 #define DECL_INSTANTIATING_NSDMI_P(NODE) \
@@ -6107,20 +6114,24 @@ enum tsubst_flags {
 				    for calls in decltype (5.2.2/11).  */
   tf_partial = 1 << 8,		 /* Doing initial explicit argument
 				    substitution in fn_type_unification.  */
-  tf_fndecl_type = 1 << 9,   /* Substituting the type of a function
-				declaration.  */
-  tf_no_cleanup = 1 << 10,   /* Do not build a cleanup
-				(build_target_expr and friends) */
-  /* 1 << 11 is available.  */
+  tf_fndecl_type = 1 << 9,	 /* Substituting the type of a function
+				    declaration.  */
+  tf_no_cleanup = 1 << 10,	 /* Do not build a cleanup
+				    (build_target_expr and friends) */
+  tf_any_viable = 1 << 11,	 /* Return void_node if there are any viable
+				    candidates.  Currently only supported on
+				    finish_call_expr on perform_koenig_lookup
+				    result.  */
   tf_tst_ok = 1 << 12,		 /* Allow a typename-specifier to name
 				    a template (C++17 or later).  */
-  tf_dguide = 1 << 13,		/* Building a deduction guide from a ctor.  */
+  tf_dguide = 1 << 13,		 /* Building a deduction guide from a ctor.  */
   tf_qualifying_scope = 1 << 14, /* Substituting the LHS of the :: operator.
 				    Affects TYPENAME_TYPE resolution from
 				    make_typename_type.  */
-  tf_no_name_lookup = 1 << 15, /* Don't look up the terminal name of an
-				  outermost id-expression, or resolve its
-				  constituent template-ids or qualified-ids.  */
+  tf_no_name_lookup = 1 << 15,	 /* Don't look up the terminal name of an
+				    outermost id-expression, or resolve its
+				    constituent template-ids or
+				    qualified-ids.  */
   /* Convenient substitution flags combinations.  */
   tf_warning_or_error = tf_warning | tf_error
 };
@@ -7105,6 +7116,7 @@ enum cp_built_in_function {
   CP_BUILT_IN_SOURCE_LOCATION,
   CP_BUILT_IN_EH_PTR_ADJUST_REF,
   CP_BUILT_IN_IS_STRING_LITERAL,
+  CP_BUILT_IN_CONSTEXPR_DIAG,
   CP_BUILT_IN_LAST
 };
 
@@ -9542,12 +9554,15 @@ struct push_access_scope_guard
 class cexpr_str
 {
 public:
+  cexpr_str () : message (NULL_TREE) {}
   cexpr_str (tree message) : message (message) {}
   cexpr_str (const cexpr_str &) = delete;
   ~cexpr_str () { XDELETEVEC (buf); }
 
-  bool type_check (location_t location);
-  bool extract (location_t location, const char * & msg, int &len);
+  bool type_check (location_t location, bool allow_char8_t = false);
+  bool extract (location_t location, const char * &msg, int &len,
+		const constexpr_ctx * = NULL,  bool * = NULL,
+		bool * = NULL, tree * = NULL);
   bool extract (location_t location, tree &str);
   tree message;
 private:

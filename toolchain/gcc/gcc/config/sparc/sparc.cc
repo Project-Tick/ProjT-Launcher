@@ -1891,18 +1891,6 @@ sparc_option_override (void)
 
   target_flags &= ~cpu->disable;
   target_flags |= (cpu->enable
-#ifndef HAVE_AS_FMAF_HPC_VIS3
-		   & ~(MASK_FMAF | MASK_VIS3)
-#endif
-#ifndef HAVE_AS_SPARC4
-		   & ~MASK_CBCOND
-#endif
-#ifndef HAVE_AS_SPARC5_VIS4
-		   & ~(MASK_VIS4 | MASK_SUBXC)
-#endif
-#ifndef HAVE_AS_SPARC6
-		   & ~(MASK_VIS4B)
-#endif
 #ifndef HAVE_AS_LEON
 		   & ~(MASK_LEON | MASK_LEON3)
 #endif

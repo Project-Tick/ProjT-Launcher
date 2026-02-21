@@ -13,11 +13,11 @@ template<typename Extents, typename CInt>
   {
     using IndexType = typename Extents::index_type;
     auto ci_expected = std::cw<IndexType{ci_raw.value}>;
-    auto [ci] = std::submdspan_canonicalize_slices(exts, ci_raw);
+    auto [ci] = std::canonical_slices(exts, ci_raw);
     static_assert(std::same_as<decltype(ci), decltype(ci_expected)>);
     VERIFY(std::cmp_equal(ci.value, ci_raw.value));
 
-    auto [i] = std::submdspan_canonicalize_slices(exts, ci_raw.value);
+    auto [i] = std::canonical_slices(exts, ci_raw.value);
     static_assert(std::same_as<decltype(i), IndexType>);
     VERIFY(std::cmp_equal(i, ci_raw.value));
     return true;
@@ -62,25 +62,25 @@ template<template<typename, typename> typename Pair>
     auto c1 = std::cw<IndexType{1}>;
 
     auto raw_cc = Pair{cbegin, cend};
-    auto [cc] = std::submdspan_canonicalize_slices(exts, raw_cc);
+    auto [cc] = std::canonical_slices(exts, raw_cc);
     assert_same(cc.offset, coffset);
     assert_same(cc.extent, cextent);
     assert_same(cc.stride, c1);
 
     auto raw_cd = Pair{cbegin, cend.value};
-    auto [cd] = std::submdspan_canonicalize_slices(exts, raw_cd);
+    auto [cd] = std::canonical_slices(exts, raw_cd);
     assert_same(cd.offset, coffset);
     assert_same(cd.extent, cextent.value);
     assert_same(cd.stride, c1);
 
     auto raw_dc = Pair{cbegin.value, cend};
-    auto [dc] = std::submdspan_canonicalize_slices(exts, raw_dc);
+    auto [dc] = std::canonical_slices(exts, raw_dc);
     assert_same(dc.offset, coffset.value);
     assert_same(dc.extent, cextent.value);
     assert_same(dc.stride, c1);
 
     auto raw_dd = Pair{cbegin.value, cend.value};
-    auto [dd] = std::submdspan_canonicalize_slices(exts, raw_dd);
+    auto [dd] = std::canonical_slices(exts, raw_dd);
     assert_same(dd.offset, coffset.value);
     assert_same(dd.extent, cextent.value);
     assert_same(dd.stride, c1);
@@ -128,25 +128,25 @@ test_strided_slice(auto exts, auto co, auto ce, auto cs)
   auto cstride = std::cw<IndexType{cs.value}>;
 
   auto raw_ccc = std::strided_slice{co, ce, cs};
-  auto [ccc] = std::submdspan_canonicalize_slices(exts, raw_ccc);
+  auto [ccc] = std::canonical_slices(exts, raw_ccc);
   assert_same(ccc.offset, coffset);
   assert_same(ccc.extent, cextent);
   assert_same(ccc.stride, cstride);
 
   auto raw_dcc = std::strided_slice{co.value, ce, cs};
-  auto [dcc] = std::submdspan_canonicalize_slices(exts, raw_dcc);
+  auto [dcc] = std::canonical_slices(exts, raw_dcc);
   assert_same(dcc.offset, coffset.value);
   assert_same(dcc.extent, cextent);
   assert_same(dcc.stride, cstride);
 
   auto raw_cdc = std::strided_slice{co, ce.value, cs};
-  auto [cdc] = std::submdspan_canonicalize_slices(exts, raw_cdc);
+  auto [cdc] = std::canonical_slices(exts, raw_cdc);
   assert_same(cdc.offset, coffset);
   assert_same(cdc.extent, cextent.value);
   assert_same(cdc.stride, cstride);
 
   auto raw_ccd = std::strided_slice{co, ce, cs.value};
-  auto [ccd] = std::submdspan_canonicalize_slices(exts, raw_ccd);
+  auto [ccd] = std::canonical_slices(exts, raw_ccd);
   assert_same(ccd.offset, coffset);
   assert_same(ccd.extent, cextent);
   assert_same(ccd.stride, cstride.value);
@@ -174,11 +174,11 @@ test_strided_slice_zero_extent(auto exts, auto cs)
   using IndexType = typename decltype(exts)::index_type;
   auto c0 = std::cw<uint8_t{0}>;
   auto raw_ccc = std::strided_slice{c0, c0, cs};
-  auto [ccc] = std::submdspan_canonicalize_slices(exts, raw_ccc);
+  auto [ccc] = std::canonical_slices(exts, raw_ccc);
   assert_same(ccc.stride, std::cw<IndexType{1}>);
 
   auto raw_ccd = std::strided_slice{c0, c0, cs.value};
-  auto [ccd] = std::submdspan_canonicalize_slices(exts, raw_ccd);
+  auto [ccd] = std::canonical_slices(exts, raw_ccd);
   assert_same(ccd.stride, std::cw<IndexType{1}>);
   return true;
 }

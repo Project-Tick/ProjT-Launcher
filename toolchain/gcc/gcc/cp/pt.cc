@@ -7576,10 +7576,11 @@ tparm_object_argument (tree var)
    indicated TYPE.  If the conversion is successful, return the
    converted value.  If the conversion is unsuccessful, return
    NULL_TREE if we issued an error message, or error_mark_node if we
-   did not.  We issue error messages for out-and-out bad template
-   parameters, but not simply because the conversion failed, since we
-   might be just trying to do argument deduction.  Both TYPE and EXPR
-   must be non-dependent.
+   did not.  If tf_error is not set in COMPLAIN, whether NULL_TREE
+   or error_mark_node is returned doesn't matter.  We issue error
+   messages for out-and-out bad template parameters, but not simply
+   because the conversion failed, since we might be just trying to
+   do argument deduction.  Both TYPE and EXPR must be non-dependent.
 
    The conversion follows the special rules described in
    [temp.arg.nontype], and it is much more strict than an implicit
@@ -8017,6 +8018,18 @@ convert_nontype_argument (tree type, tree expr, tsubst_flags_t complain)
 		   "because it is of type %qT", expr, type, TREE_TYPE (expr));
 	  return NULL_TREE;
 	}
+      if (!integer_zerop (expr) && !val_dep_p)
+	{
+	  if (complain & tf_error)
+	    {
+	      expr = cxx_constant_value (expr);
+	      if (expr == error_mark_node)
+		return NULL_TREE;
+	      gcc_assert (integer_zerop (expr));
+	    }
+	  else
+	    return NULL_TREE;
+	}
       return expr;
     }
   else if (CLASS_TYPE_P (type))
@@ -8036,6 +8049,18 @@ convert_nontype_argument (tree type, tree expr, tsubst_flags_t complain)
 	    error ("%qE is not a valid template argument for type %qT "
 		   "because it is of type %qT", expr, type, TREE_TYPE (expr));
 	  return NULL_TREE;
+	}
+      if (!REFLECT_EXPR_P (expr) && !val_dep_p)
+	{
+	  if (complain & tf_error)
+	    {
+	      expr = cxx_constant_value (expr);
+	      if (expr == error_mark_node)
+		return NULL_TREE;
+	      gcc_assert (REFLECT_EXPR_P (expr));
+	    }
+	  else
+	    return NULL_TREE;
 	}
       return expr;
     }
@@ -26650,6 +26675,7 @@ unify (tree tparms, tree targs, tree parm, tree arg, int strict,
 	return unify_success (explain_p);
       gcc_assert (EXPR_P (parm)
 		  || TREE_CODE (parm) == CONSTRUCTOR
+		  || TREE_CODE (parm) == LAMBDA_EXPR
 		  || TREE_CODE (parm) == TRAIT_EXPR);
     expr:
       /* We must be looking at an expression.  This can happen with
@@ -33199,11 +33225,9 @@ finish_expansion_stmt (tree expansion_stmt, tree args,
       range_temp = convert_from_reference (build_range_temp (expansion_init));
       iter_type = cp_perform_range_for_lookup (range_temp, &begin_expr,
 					       &end_expr, tf_none);
-      if (begin_expr != error_mark_node && end_expr != error_mark_node)
-	{
-	  kind = esk_iterating;
-	  gcc_assert (iter_type);
-	}
+      if (iter_type != error_mark_node
+	  || (begin_expr != error_mark_node && (end_expr != error_mark_node)))
+	kind = esk_iterating;
     }
   if (kind == esk_iterating)
     {

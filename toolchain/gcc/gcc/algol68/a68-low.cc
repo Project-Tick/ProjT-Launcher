@@ -642,8 +642,7 @@ a68_make_formal_hole_decl (NODE_T *p, const char *extern_symbol)
 	       ? TREE_TYPE (CTYPE (MOID (p)))
 	       : CTYPE (MOID (p)));
 
-  gcc_assert (strlen (extern_symbol) > 0);
-  const char *sym = (extern_symbol[0] == '&'
+  const char *sym = (strlen (extern_symbol) > 0 && extern_symbol[0] == '&'
 		     ? extern_symbol + 1
 		     : extern_symbol);
 

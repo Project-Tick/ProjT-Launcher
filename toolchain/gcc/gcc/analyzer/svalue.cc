@@ -1585,7 +1585,8 @@ unaryop_svalue::maybe_get_value_range (value_range &out) const
   if (m_arg->maybe_get_value_range (arg_vr))
     {
       range_op_handler handler (m_op);
-      if (handler)
+      if (handler
+	  && handler.operand_check_p (type, arg_vr.type (), type))
 	{
 	  /* For unary ops, range_op_hander::fold_range expects
 	     a VARYING of the unknown value as the 2nd operand.  */
