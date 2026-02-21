@@ -11,6 +11,7 @@ stages:
 
 variables:
   GIT_DEPTH: "1"
+  GIT_SUBMODULE_DEPTH: "1"
   ARM64_LINUX_RUNNER_TAG: "saas-linux-small-arm64"
 
 .launcher_rules:
@@ -32,6 +33,8 @@ variables:
 clang_lint:
   stage: lint
   image: ubuntu:24.04
+  tags:
+    - pt-rhel-runner-01
   rules:
     - if: '$CI_COMMIT_TAG'
       when: never
@@ -60,6 +63,8 @@ clang_lint:
 markdown_lint:
   stage: lint
   image: node:20-bookworm
+  tags:
+    - pt-rhel-runner-01
   rules:
     - if: '$CI_COMMIT_TAG'
       when: never
@@ -76,6 +81,8 @@ markdown_lint:
 bot_smoke:
   stage: lint
   image: node:20-bookworm
+  tags:
+    - pt-rhel-runner-01
   rules:
     - if: '$CI_COMMIT_TAG'
       when: never
@@ -91,6 +98,8 @@ bot_smoke:
 meta_smoke:
   stage: lint
   image: python:3.11-bookworm
+  tags:
+    - pt-rhel-runner-01
   rules:
     - if: '$CI_COMMIT_TAG'
       when: never
@@ -106,6 +115,8 @@ meta_smoke:
 branding_check:
   stage: lint
   image: python:3.11-bookworm
+  tags:
+    - pt-rhel-runner-01
   rules:
     - if: '$CI_COMMIT_TAG'
       when: never
@@ -149,6 +160,8 @@ branding_check:
 javacheck_build:
   stage: build
   image: ubuntu:24.04
+  tags:
+    - pt-rhel-runner-01
   rules:
     - if: '$CI_COMMIT_TAG'
       when: never
