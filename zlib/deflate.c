@@ -1,5 +1,5 @@
 /* deflate.c -- compress data using the deflation algorithm
- * Copyright (C) 1995-2025 Jean-loup Gailly and Mark Adler
+ * Copyright (C) 1995-2026 Jean-loup Gailly and Mark Adler
  * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
@@ -53,7 +53,7 @@
 #include "deflate.h"
 
 const char deflate_copyright[] =
-   " deflate 0.0.5.1 Copyright 1995-2025 Jean-loup Gailly and Mark Adler; Copyright (C) 2026 Project Tick ";
+   " deflate 0.0.5.1 Copyright 1995-2026 Jean-loup Gailly and Mark Adler; Copyright (C) 2026 Project Tick ";
 /*
   If you use the zlib library in a product, an acknowledgment is welcome
   in the documentation of your product. If for some reason you cannot
@@ -171,8 +171,7 @@ local const config configuration_table[10] = {
 #define CLEAR_HASH(s) \
     do { \
         s->head[s->hash_size - 1] = NIL; \
-        zmemzero((Bytef *)s->head, \
-                 (unsigned)(s->hash_size - 1)*sizeof(*s->head)); \
+        zmemzero(s->head, (unsigned)(s->hash_size - 1)*sizeof(*s->head)); \
         s->slid = 0; \
     } while (0)
 
@@ -1332,13 +1331,13 @@ int ZEXPORT deflateCopy(z_streamp dest, z_streamp source) {
 
     ss = source->state;
 
-    zmemcpy((voidpf)dest, (voidpf)source, sizeof(z_stream));
+    zmemcpy(dest, source, sizeof(z_stream));
 
     ds = (deflate_state *) ZALLOC(dest, 1, sizeof(deflate_state));
     if (ds == Z_NULL) return Z_MEM_ERROR;
     zmemzero((Bytef *)ds, sizeof(deflate_state));
     dest->state = (struct internal_state FAR *) ds;
-    zmemcpy((voidpf)ds, (voidpf)ss, sizeof(deflate_state));
+    zmemcpy(ds, ss, sizeof(deflate_state));
     ds->strm = dest;
 
     ds->window = (Bytef *) ZALLOC(dest, ds->w_size, 2*sizeof(Byte));
@@ -1353,10 +1352,10 @@ int ZEXPORT deflateCopy(z_streamp dest, z_streamp source) {
     }
     /* following zmemcpy's do not work for 16-bit MSDOS */
     zmemcpy(ds->window, ss->window, ss->high_water);
-    zmemcpy((voidpf)ds->prev, (voidpf)ss->prev,
+    zmemcpy(ds->prev, ss->prev,
             (ss->slid || ss->strstart - ss->insert > ds->w_size ? ds->w_size :
                 ss->strstart - ss->insert) * sizeof(Pos));
-    zmemcpy((voidpf)ds->head, (voidpf)ss->head, ds->hash_size * sizeof(Pos));
+    zmemcpy(ds->head, ss->head, ds->hash_size * sizeof(Pos));
 
     ds->pending_out = ds->pending_buf + (ss->pending_out - ss->pending_buf);
     zmemcpy(ds->pending_out, ss->pending_out, ss->pending);

@@ -1,5 +1,5 @@
 /* crc32.c -- compute the CRC-32 of a data stream
- * Copyright (C) 1995-2022 Mark Adler
+ * Copyright (C) 1995-2026 Mark Adler
  * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  *
@@ -107,7 +107,8 @@
 #endif
 
 /* If available, use the ARM processor CRC32 instruction. */
-#if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32) && W == 8
+#if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32) && \
+    defined(W) && W == 8
 #  define ARMCRC32
 #endif
 

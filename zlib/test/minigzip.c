@@ -1,5 +1,5 @@
 /* minigzip.c -- simulate gzip using the PTlibzippy compression library
- * Copyright (C) 1995-2006, 2010, 2011, 2016 Jean-loup Gailly
+ * Copyright (C) 1995-2026 Jean-loup Gailly
  * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
@@ -253,7 +253,7 @@ static int gzwrite(gzFile gz, const void *buf, unsigned len) {
         (void)deflate(strm, Z_NO_FLUSH);
         fwrite(out, 1, BUFLEN - strm->avail_out, gz->file);
     } while (strm->avail_out == 0);
-    return len;
+    return (int)len;
 }
 
 static int gzread(gzFile gz, void *buf, unsigned len) {
@@ -270,7 +270,7 @@ static int gzread(gzFile gz, void *buf, unsigned len) {
     strm->next_out = (void *)buf;
     strm->avail_out = len;
     do {
-        got = fread(in, 1, 1, gz->file);
+        got = (unsigned)fread(in, 1, 1, gz->file);
         if (got == 0)
             break;
         strm->next_in = in;
@@ -284,7 +284,7 @@ static int gzread(gzFile gz, void *buf, unsigned len) {
         if (ret == Z_STREAM_END)
             inflateReset(strm);
     } while (strm->avail_out);
-    return len - strm->avail_out;
+    return (int)(len - strm->avail_out);
 }
 
 static int gzclose(gzFile gz) {

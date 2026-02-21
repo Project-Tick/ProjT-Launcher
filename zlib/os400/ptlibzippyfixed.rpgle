@@ -24,12 +24,12 @@
       *
      D PTLIBZIPPY_VERSION    C                   '0.0.5.1'
      D PTLIBZIPPY_VERNUM     C                   X'12a0'
-     D PTLIBZIPPY_VER_MAJOR  C                   1
-     D PTLIBZIPPY_VER_MINOR  C                   3
+     D PTLIBZIPPY_VER_MAJOR  C                   0
+     D PTLIBZIPPY_VER_MINOR  C                   0
      D PTLIBZIPPY_VER_REVISION...
-     D                 C                   1
+     D                 C                   5
      D PTLIBZIPPY_VER_SUBREVISION...
-     D                 C                   2
+     D                 C                   1
       *
       *  Other equates.
       *
@@ -534,6 +534,20 @@
      D  crc                          10U 0 value                                Old checksum
      D  buf                       65535    const options(*varsize)              Bytes to accumulate
      D  len                          20U 0 value                                Buffer length
+      *
+     D crc32_combine_gen...
+     D                 PR            10U 0 extproc('crc32_combine_gen')         Operator
+     D  len2                         20U 0 value                                Buffer length
+      *
+     D crc32_combine_gen64...
+     D                 PR            10U 0 extproc('crc32_combine_gen64')       Operator
+     D  len2                         20U 0 value                                Buffer length
+      *
+     D crc32_combine_op...
+     D                 PR            10U 0 extproc('crc32_combine_op')          New Checksum
+     D  crc1                         10U 0 value                                Old checksum
+     D  crc2                         10U 0 value                                Old checksum
+     D  op                           10U 0 value                                Operator
       *
       **************************************************************************
       *                     Miscellaneous function prototypes

@@ -14,8 +14,10 @@ iowin32.o: iowin32.c iowin32.h ioapi.h
 mztools.o: mztools.c unzip.h
 
 miniunz: $(UNZ_OBJS)
+	${CC} ${LDFLAGS} -o $@ $(UNZ_OBJS)
 
 minizip: $(ZIP_OBJS)
+	${CC} ${LDFLAGS} -o $@ $(ZIP_OBJS)
 
 test: miniunz minizip
 	@rm -f test.*

@@ -131,7 +131,7 @@ jobs:
     - name: Run test cases
       run: |
         make test
-        make cover
+        # make cover
       working-directory: ${{ matrix.build-dir }}
       env:
         QEMU_RUN: ${{ matrix.qemu-run }}

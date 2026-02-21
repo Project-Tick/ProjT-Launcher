@@ -213,7 +213,7 @@ esac
 if test $cover -eq 1; then
   if test "$clang" -eq 1; then
     if test "$cc" = "clang"; then
-	  if which -s llvm-cov; then
+	  if command -v llvm-cov >/dev/null 2>&1; then
 	    GCOV="llvm-cov"
 	    LLVM_GCOV_FLAG="gcov"
 	    GCOV="llvm-cov"
@@ -227,7 +227,7 @@ if test $cover -eq 1; then
 	  fi
     else
 	  clangV=`echo "$cc" | sed -e 's/^.*-//'`
-	  if which -s llvm-cov-${clangV}; then
+	  if command -v llvm-cov-${clangV} >/dev/null 2>&1; then
 	    GCOV="llvm-cov-${clangV}"
 	    LLVM_GCOV_FLAG="gcov"
 	    echo "Using ${GCOV} for coverage"
@@ -279,6 +279,7 @@ if test "$gcc" -eq 1 && ($cc -c $test.c) >> configure.log 2>&1; then
   fi
   if test $insecure -eq 1; then
     CFLAGS="${CFLAGS} -DPTLIBZIPPY_INSECURE"
+    SFLAGS="${SFLAGS} -DPTLIBZIPPY_INSECURE"
   fi
   if test $debug -eq 1; then
     CFLAGS="${CFLAGS} -DPTLIBZIPPY_DEBUG"

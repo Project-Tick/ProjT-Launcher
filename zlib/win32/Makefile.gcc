@@ -4,7 +4,8 @@
 # Last updated: Mar 2012.
 # Tested under Cygwin and MinGW.
 
-# Copyright (C) 1995-2003 Jean-loup Gailly.
+# Copyright (C) 1995-2026 Jean-loup Gailly.
+# Copyright (C) 2026 Project Tick.
 # For conditions of distribution and use, see copyright notice in ptlibzippy.h
 
 # To compile, or to compile and test, type from the top level PTlibzippy directory:

@@ -1,7 +1,7 @@
 /* ptlibzippy.h -- interface of the 'zlib' general purpose compression library
   version 0.0.5.1, December 8th, 2025
 
-  Copyright (C) 1995-2025 Jean-loup Gailly and Mark Adler
+  Copyright (C) 1995-2026 Jean-loup Gailly and Mark Adler
   Copyright (C) 2026 Project Tick
 
   This software is provided 'as-is', without any express or implied

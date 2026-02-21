@@ -1,5 +1,5 @@
 /* skipset.h -- set operations using a skiplist
-// Copyright (C) 2024 Mark Adler
+// Copyright (C) 2024-2026 Mark Adler
 // Copyright (C) 2026 Project Tick
 // See MiniZip_info.txt for the license.
 
@@ -84,6 +84,11 @@ typedef struct {
 void set_seed(set_rand_t *gen, ui64_t seed, ui64_t seq) {
     gen->inc = (seq << 1) | 1;
     gen->state = (seed + gen->inc) * 6364136223846793005ULL + gen->inc;
+}
+/* Start a unique random number sequence using bits from noise sources. */
+void set_uniq(set_rand_t *gen, const void *ptr) {
+    set_seed(gen, ((ui64_t)(ptrdiff_t)ptr << 32) ^
+                  ((ui64_t)time(NULL) << 12) ^ clock(), 0);
 }
 /* Return 32 random bits, advancing the state *gen. */
 ui32_t set_rand(set_rand_t *gen) {
@@ -234,8 +239,7 @@ void set_start(set_t *set) {
     set_grow(set, set->head, 1, 1); /* one link back to head for an empty set */
     *(unsigned char *)&set->head->key = 137;    /* set id */
     set->depth = 0;
-    set_seed(&set->gen, ((ui64_t)(ptrdiff_t)set << 32) ^
-                        ((ui64_t)time(NULL) << 12) ^ clock(), 0);
+    set_uniq(&set->gen, set);
     set->ran = 1;
 }
 
