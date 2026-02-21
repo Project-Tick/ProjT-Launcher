@@ -1,8 +1,7 @@
 /* zip.c -- IO on .zip files using PTlibzippy
-   Version 1.1, February 14h, 2010
    part of the MiniZip project - ( https://www.winimage.com/zLibDll/minizip.html )
 
-         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( https://www.winimage.com/zLibDll/minizip.html )
+         Copyright (C) 1998-2026 Gilles Vollant (minizip) ( https://www.winimage.com/zLibDll/minizip.html )
 
          Modifications for Zip64 support
          Copyright (C) 2009-2010 Mathias Svensson ( https://result42.com )
@@ -28,6 +27,9 @@
 #include <time.h>
 #ifndef PTLIBZIPPY_CONST
 #  define PTLIBZIPPY_CONST
+#endif
+#ifdef ZLIB_DLL
+#  undef ZLIB_DLL
 #endif
 #include "ptlibzippy.h"
 #include "zip.h"
@@ -501,7 +503,7 @@ extern int ZEXPORT zipAlreadyThere(zipFile file, char const *name) {
     /* Return true if name is in the central directory. */
     size_t len = strlen(name);
     char *copy = set_alloc(&zip->set, NULL, len + 1);
-    strcpy(copy, name);
+    memcpy(copy, name, len + 1);
     int found = set_found(&zip->set, copy);
     set_free(&zip->set, copy);
     return found;

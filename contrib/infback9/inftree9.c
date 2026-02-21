@@ -1,5 +1,5 @@
 /* inftree9.c -- generate Huffman trees for efficient decoding
- * Copyright (C) 1995-2025 Mark Adler
+ * Copyright (C) 1995-2026 Mark Adler
  * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
@@ -10,7 +10,7 @@
 #define MAXBITS 15
 
 const char inflate9_copyright[] =
-   " inflate9 0.0.5.1 Copyright 1995-2025 Mark Adler; Copyright (C) 2026 Project Tick ";
+   " inflate9 0.0.5.1 Copyright 1995-2026 Mark Adler; Copyright (C) 2026 Project Tick ";
 /*
   If you use the PTlibzippy library in a product, an acknowledgment is welcome
   in the documentation of your product. If for some reason you cannot
@@ -60,7 +60,7 @@ int inflate_table9(codetype type, unsigned short FAR *lens, unsigned codes,
     static const unsigned short lext[31] = { /* Length codes 257..285 extra */
         128, 128, 128, 128, 128, 128, 128, 128, 129, 129, 129, 129,
         130, 130, 130, 130, 131, 131, 131, 131, 132, 132, 132, 132,
-        133, 133, 133, 133, 144, 64, 204};
+        133, 133, 133, 133, 144, 199, 75};
     static const unsigned short dbase[32] = { /* Distance codes 0..31 base */
         1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49,
         65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073,

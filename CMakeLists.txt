@@ -27,10 +27,6 @@ option(PTLIBZIPPY_PREFIX "prefix for all types and library functions, see ptzipp
        OFF)
 mark_as_advanced(PTLIBZIPPY_PREFIX)
 
-if(WIN32)
-    option(PTLIBZIPPY_INSTALL_COMPAT_DLL "Install a copy as ptlibzippy1.dll" ON)
-endif(WIN32)
-
 get_property(IS_MULTI GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 if(NOT DEFINED CMAKE_BUILD_TYPE AND NOT IS_MULTI)

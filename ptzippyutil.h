@@ -1,5 +1,5 @@
 /* ptzippyutil.h -- internal interface and configuration of the compression library
- * Copyright (C) 1995-2024 Jean-loup Gailly, Mark Adler
+ * Copyright (C) 1995-2026 Jean-loup Gailly, Mark Adler
  * Copyright (C) 2026 Project Tick
  * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
@@ -219,9 +219,9 @@ extern z_const char * const z_errmsg[10]; /* indexed by 2-zlib_error */
 #    define zmemzero(dest, len) memset(dest, 0, len)
 #  endif
 #else
-   void PTLIBZIPPY_INTERNAL zmemcpy(Bytef* dest, const Bytef* source, uInt len);
-   int PTLIBZIPPY_INTERNAL zmemcmp(const Bytef* s1, const Bytef* s2, uInt len);
-   void PTLIBZIPPY_INTERNAL zmemzero(Bytef* dest, uInt len);
+   void PTLIBZIPPY_INTERNAL zmemcpy(void FAR *, const void FAR *, z_size_t);
+   int PTLIBZIPPY_INTERNAL zmemcmp(const void FAR *, const void FAR *, z_size_t);
+   void PTLIBZIPPY_INTERNAL zmemzero(void FAR *, z_size_t);
 #endif
 
 /* Diagnostic functions */

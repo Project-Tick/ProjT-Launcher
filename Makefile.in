@@ -1,5 +1,5 @@
 # Makefile for PTlibzippy
-# Copyright (C) 1995-2024 Jean-loup Gailly, Mark Adler
+# Copyright (C) 1995-2026 Jean-loup Gailly, Mark Adler
 # Copyright (C) 2026 Project Tick
 # For conditions of distribution and use, see copyright notice in ptlibzippy.h
 
@@ -123,13 +123,9 @@ infcover: infcover.o libptlibzippy.a
 	$(CC) $(CFLAGS) -coverage -o $@ infcover.o libptlibzippy.a
 
 cover: infcover
-ifdef $(GCOV)
 	rm -f *.gcda
 	${QEMU_RUN} ./infcover
 	${GCOV} ${LLVM_GCOV_FLAG} inf*.c -o ./infcover.gcda
-else
-	@echo 'cover disabled as no suitable gcov was found'
-endif
 
 libptlibzippy.a: $(OBJS)
 	$(AR) $(ARFLAGS) $@ $(OBJS)
