@@ -13,7 +13,6 @@ stages:
 variables:
   GIT_DEPTH: "1"
   GIT_SUBMODULE_DEPTH: "1"
-  ARM64_LINUX_RUNNER_TAG: "saas-linux-small-arm64"
   LAUNCHER_LINUX_IMAGE: "$CI_REGISTRY_IMAGE/ci/launcher-linux:bookworm"
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.cache/npm"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
@@ -41,13 +40,9 @@ launcher_linux_image:
     - if: '$CI_COMMIT_TAG'
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      changes:
-        - .gitlab/docker/launcher-linux/Dockerfile
       when: manual
       allow_failure: false
     - if: '$CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - .gitlab/docker/launcher-linux/Dockerfile
       when: manual
       allow_failure: false
   script:
@@ -240,6 +235,8 @@ javacheck_build:
 
 .launcher_macos_template:
   stage: build
+  tags:
+    - saas-macos-medium-m1
   rules: *launcher_rules
   variables:
     BUILD_TYPE: Debug
@@ -342,7 +339,7 @@ launcher_linux:
         TARGET_ARCH: amd64
         CMAKE_PRESET: linux
       - ARTIFACT_NAME: Linux-arm64
-        RUNNER_TAG: $ARM64_LINUX_RUNNER_TAG
+        RUNNER_TAG: saas-linux-small-arm64
         TARGET_ARCH: arm64
         LAUNCHER_LINUX_IMAGE_JOB: debian:bookworm-slim
         CMAKE_PRESET: linux
