@@ -47,10 +47,11 @@ launcher_linux_image:
       allow_failure: false
   script:
     - mkdir -p /kaniko/.docker
-    - >
-      cat > /kaniko/.docker/config.json <<EOF
-      {"auths":{"$CI_REGISTRY":{"username":"$CI_REGISTRY_USER","password":"$CI_REGISTRY_PASSWORD"}}}
-      EOF
+    - |
+      printf '{"auths":{"%s":{"username":"%s","password":"%s"}}}\n' \
+        "$CI_REGISTRY" \
+        "$CI_REGISTRY_USER" \
+        "$CI_REGISTRY_PASSWORD" > /kaniko/.docker/config.json
     - >
       /kaniko/executor
       --context "$CI_PROJECT_DIR"
