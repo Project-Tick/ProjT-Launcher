@@ -5250,11 +5250,6 @@ public:
     /// The ValueType for the operand value.
     MVT ConstraintVT = MVT::Other;
 
-    /// The register may be folded. This is used if the constraint is "rm",
-    /// where we prefer using a register, but can fall back to a memory slot
-    /// under register pressure.
-    bool MayFoldRegister = false;
-
     /// Copy constructor for copying from a ConstraintInfo.
     AsmOperandInfo(InlineAsm::ConstraintInfo Info)
         : InlineAsm::ConstraintInfo(std::move(Info)) {}
@@ -5614,6 +5609,12 @@ public:
   /// \param N Node to expand
   /// \returns The expansion result or SDValue() if it fails.
   SDValue expandVPCTLZ(SDNode *N, SelectionDAG &DAG) const;
+
+  /// Expand CTLS (count leading sign bits) nodes.
+  /// CTLS(x) = CTLZ(OR(SHL(XOR(x, SRA(x, BW-1)), 1), 1))
+  /// \param N Node to expand
+  /// \returns The expansion result or SDValue() if it fails.
+  SDValue expandCTLS(SDNode *N, SelectionDAG &DAG) const;
 
   /// Expand CTTZ via Table Lookup.
   /// \param N Node to expand
