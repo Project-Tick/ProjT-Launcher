@@ -32,7 +32,9 @@ QT_BEGIN_NAMESPACE
 
     Each \l QWebEngineProfile has its own \l QWebEngineExtensionManager, so every page that shares
     the same profile will share the same extensions too.
-    Extensions can't be loaded into off-the-record profiles.
+    Extensions can't be loaded into off-the-record profiles. However, all profiles, including
+    off-the-record ones, contain two built-in and enabled by default extensions: Google Hangouts and
+    Chromium PDF. These can be disabled and/or unloaded if desired.
 
     \note Only ManifestV3 extensions are supported, other versions won't be loaded nor installed
 
@@ -106,7 +108,8 @@ void QWebEngineExtensionManager::installExtension(const QString &path)
 */
 void QWebEngineExtensionManager::unloadExtension(const QWebEngineExtensionInfo &extension)
 {
-    d_ptr->unloadExtension(extension.d_ptr->id());
+    if (extension.d_ptr)
+        d_ptr->unloadExtension(extension.d_ptr->id());
 }
 
 /*!
@@ -120,7 +123,8 @@ void QWebEngineExtensionManager::unloadExtension(const QWebEngineExtensionInfo &
 */
 void QWebEngineExtensionManager::uninstallExtension(const QWebEngineExtensionInfo &extension)
 {
-    d_ptr->uninstallExtension(extension.d_ptr->id());
+    if (extension.d_ptr)
+        d_ptr->uninstallExtension(extension.d_ptr->id());
 }
 
 /*!
@@ -134,7 +138,8 @@ void QWebEngineExtensionManager::uninstallExtension(const QWebEngineExtensionInf
 void QWebEngineExtensionManager::setExtensionEnabled(const QWebEngineExtensionInfo &extension,
                                                      bool enabled)
 {
-    d_ptr->setExtensionEnabled(extension.d_ptr->id(), enabled);
+    if (extension.d_ptr)
+        d_ptr->setExtensionEnabled(extension.d_ptr->id(), enabled);
 }
 
 /*!

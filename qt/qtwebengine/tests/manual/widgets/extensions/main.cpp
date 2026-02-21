@@ -10,6 +10,7 @@
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QTabWidget>
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QWebEngineProfileBuilder>
@@ -22,6 +23,8 @@
 
 // Test for extension management APIs using QWebEngineExtensionManager
 // and QWebEngineExtensionInfo
+
+using namespace Qt::StringLiterals;
 
 class ExtensionsListModel : public QAbstractListModel
 {
@@ -172,24 +175,32 @@ private:
             delete oldModel;
     }
 
-    QWebEngineExtensionInfo getSelectedExtension()
+    template<typename Functor>
+    void doWithCurrentExtension(Functor &&f)
     {
         QModelIndex idx = m_extensionsView.currentIndex();
         QVariant var = m_extensionsView.model()->data(idx, Qt::UserRole);
-        QWebEngineExtensionInfo extension = var.value<QWebEngineExtensionInfo>();
-        return extension;
+        auto *maybeExtension = get_if<QWebEngineExtensionInfo>(&var);
+        if (maybeExtension) {
+            f(*maybeExtension);
+            update();
+        } else {
+            showInfoDialog("No extension is selected");
+        }
     }
 
     void enable()
     {
-        m_extensionManager->setExtensionEnabled(getSelectedExtension(), true);
-        update();
+        doWithCurrentExtension([this](QWebEngineExtensionInfo info) {
+            m_extensionManager->setExtensionEnabled(info, true);
+        });
     }
 
     void disable()
     {
-        m_extensionManager->setExtensionEnabled(getSelectedExtension(), false);
-        update();
+        doWithCurrentExtension([this](QWebEngineExtensionInfo info) {
+            m_extensionManager->setExtensionEnabled(info, false);
+        });
     }
 
     void loadUnpacked()
@@ -215,28 +226,32 @@ private:
 
     void unload()
     {
-        m_extensionManager->unloadExtension(getSelectedExtension());
-        update();
+        doWithCurrentExtension([this](QWebEngineExtensionInfo info) {
+            m_extensionManager->unloadExtension(info);
+        });
     }
 
     void uninstall()
     {
-        m_extensionManager->uninstallExtension(getSelectedExtension());
-        update();
+        doWithCurrentExtension([this](QWebEngineExtensionInfo info) {
+            m_extensionManager->uninstallExtension(info);
+        });
     }
 
     void openActionsMenu()
     {
-        const auto url = getSelectedExtension().actionPopupUrl();
-        if (url.isEmpty()) {
-            showInfoDialog("No popup page set for this extension");
-            return;
-        }
+        doWithCurrentExtension([this](QWebEngineExtensionInfo info) {
+            const auto url = info.actionPopupUrl();
+            if (url.isEmpty()) {
+                showInfoDialog("No popup page set for this extension");
+                return;
+            }
 
-        auto *view = new QWebEngineView(m_profile);
-        view->setAttribute(Qt::WA_DeleteOnClose, true);
-        view->load(url);
-        view->show();
+            auto *view = new QWebEngineView(m_profile);
+            view->setAttribute(Qt::WA_DeleteOnClose, true);
+            view->load(url);
+            view->show();
+        });
     }
 
     void showInfoDialog(const QString &msg)
@@ -256,31 +271,36 @@ private:
     QListView m_extensionsView;
 };
 
+QWidget *createTabPage(QWebEngineProfile *profile)
+{
+    auto *tabPage = new QWidget();
+    auto *layout = new QHBoxLayout(tabPage);
+    auto *extensionManager = profile->extensionManager();
+    auto *view = new QWebEngineView(profile);
+    view->setUrl(QUrl("https://www.google.com"_L1));
+    layout->addWidget(view);
+    layout->addWidget(new ExtensionsWidget(profile, extensionManager));
+    return tabPage;
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication::setOrganizationName("QtExamples");
     QApplication app(argc, argv);
-    QMainWindow window;
-    window.setCentralWidget(new QWidget);
 
-    auto *layout = new QHBoxLayout;
-    window.centralWidget()->setLayout(layout);
-
-    QTemporaryDir tempDir;
     QWebEngineProfileBuilder profileBuilder;
-    QWebEngineProfile *profile = profileBuilder.createProfile("ExtensionsManualTest");
+    std::unique_ptr<QWebEngineProfile> normalProfile{ profileBuilder.createProfile(
+            "ExtensionsManualTest") };
+    std::unique_ptr<QWebEngineProfile> otrProfile{ profileBuilder.createOffTheRecordProfile() };
 
-    auto *extensionManager = profile->extensionManager();
-    qDebug() << "installPath" << extensionManager->installPath();
+    QMainWindow window;
+    auto *tabWidget = new QTabWidget();
+    window.setCentralWidget(tabWidget);
 
-    QWebEngineView view(profile);
-    view.setUrl(QUrl(QStringLiteral("https://www.google.com")));
-    view.resize(1024, 750);
+    tabWidget->addTab(createTabPage(normalProfile.get()), u"Normal Profile"_s);
+    tabWidget->addTab(createTabPage(otrProfile.get()), u"Off-the-Record Profile"_s);
 
-    window.centralWidget()->layout()->addWidget(&view);
-    window.centralWidget()->layout()->addWidget(
-            new ExtensionsWidget(profile, extensionManager));
-
+    window.resize(1024, 750);
     window.show();
 
     return app.exec();

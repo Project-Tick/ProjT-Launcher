@@ -22,9 +22,7 @@ class tst_QWebEngineExtension : public QObject
 
 public Q_SLOTS:
     void cleanup();
-    void cleanupTestCase();
     void init();
-    void initTestCase();
 
 private Q_SLOTS:
     void installExtension();
@@ -37,6 +35,8 @@ private Q_SLOTS:
     void uninstallOutsideFromProfileDir();
     void loadFailures();
     void actionPopupUrl();
+    void usingDefaultConstructedExtensionInfo();
+    void listExtensionsOffTheRecord();
     void loadOffTheRecord();
     void installOffTheRecord();
     void loadInstalledExtensions();
@@ -56,6 +56,7 @@ private:
     QWebEngineProfile *m_profile;
     QWebEngineExtensionManager *m_manager;
     QString m_resourcesPath;
+    QTemporaryDir m_tempDir;
 };
 
 int tst_QWebEngineExtension::installedFiles()
@@ -123,25 +124,23 @@ void tst_QWebEngineExtension::cleanup()
 {
     QVERIFY(QDir(m_manager->installPath()).removeRecursively());
     QCOMPARE(installedFiles(), 0);
-    for (auto extension : m_manager->extensions())
-        m_manager->unloadExtension(extension);
-}
-
-void tst_QWebEngineExtension::cleanupTestCase()
-{
     delete m_page;
+    delete m_profile;
+
+    // Workaround for temp dir failing to cleanup with early deletion.
+    QTRY_VERIFY(m_tempDir.remove());
 }
 
-void tst_QWebEngineExtension::init() { }
-
-void tst_QWebEngineExtension::initTestCase()
+void tst_QWebEngineExtension::init()
 {
-    QTemporaryDir tempDir(QDir::tempPath() + u"tst_QWebEngineExtension-XXXXXX");
+    m_tempDir = QTemporaryDir(QDir::tempPath() + u"/tst_QWebEngineExtension-XXXXXX");
+    m_tempDir.setAutoRemove(false);
     QWebEngineProfileBuilder profileBuilder;
-    profileBuilder.setPersistentStoragePath(tempDir.path());
+    profileBuilder.setPersistentStoragePath(m_tempDir.path());
     m_profile = profileBuilder.createProfile("Test");
     m_page = new QWebEnginePage(m_profile);
     m_manager = m_profile->extensionManager();
+    QCOMPARE(m_manager->extensions().size(), 2);
 
     m_resourcesPath = QDir(QT_TESTCASE_SOURCEDIR).canonicalPath()
             + u"/resources/"_s;
@@ -307,6 +306,34 @@ void tst_QWebEngineExtension::actionPopupUrl()
     QVERIFY(!extension.actionPopupUrl().isEmpty());
 }
 
+void tst_QWebEngineExtension::usingDefaultConstructedExtensionInfo()
+{
+    QSignalSpy unloadSpy(m_manager, SIGNAL(unloadFinished(QWebEngineExtensionInfo)));
+    QSignalSpy uninstallSpy(m_manager, SIGNAL(uninstallFinished(QWebEngineExtensionInfo)));
+
+    QWebEngineExtensionInfo nullInfo;
+    m_manager->unloadExtension(nullInfo);
+    m_manager->uninstallExtension(nullInfo);
+    m_manager->setExtensionEnabled(nullInfo, false);
+    m_manager->setExtensionEnabled(nullInfo, true);
+    int lastExtensionCount = extensionCount();
+    QWebEngineExtensionInfo packedExtension =
+            installExtensionSync(resourcesPath() + u"packed_ext.zip");
+    uninstallExtensionSync(packedExtension);
+    QCOMPARE(extensionCount(), lastExtensionCount);
+    QCOMPARE(unloadSpy.size(), 0);
+    QCOMPARE(uninstallSpy.size(), 1);
+}
+
+void tst_QWebEngineExtension::listExtensionsOffTheRecord()
+{
+    QWebEngineProfile profile;
+    QWebEnginePage page(&profile);
+    QWebEngineExtensionManager *manager = profile.extensionManager();
+    // Should not crash - QTBUG-142247
+    QVERIFY(!manager->extensions().isEmpty());
+}
+
 void tst_QWebEngineExtension::loadOffTheRecord()
 {
     QWebEngineProfile profile;
@@ -370,6 +397,11 @@ void tst_QWebEngineExtension::serviceWorkerMessaging()
     m_page->load(QUrl("qrc:///resources/index.html"));
     QTRY_COMPARE(loadSpy.size(), 1);
     QTRY_COMPARE(evaluateJavaScriptSync(m_page, "document.body.childElementCount"), 1);
+
+    // Shouldn't crash
+    QSignalSpy clearCacheSpy(m_profile, SIGNAL(clearHttpCacheCompleted()));
+    m_profile->clearHttpCache();
+    QTRY_COMPARE(clearCacheSpy.size(), 1);
 }
 
 QTEST_MAIN(tst_QWebEngineExtension)

@@ -117,7 +117,8 @@ void MainWindow::bookmarkSelected(const QModelIndex &index)
 void MainWindow::pageSelected(int page)
 {
     auto nav = ui->pdfView->pageNavigator();
-    nav->jump(page, {}, nav->currentZoom());
+    if (nav->currentPage() != page)
+        nav->jump(page, {}, nav->currentZoom());
     const auto documentTitle = m_document->metaData(QPdfDocument::MetaDataField::Title).toString();
     setWindowTitle(!documentTitle.isEmpty() ? documentTitle : QStringLiteral("PDF Viewer"));
     setWindowTitle(tr("%1: page %2 (%3 of %4)")
@@ -198,11 +199,16 @@ void MainWindow::on_thumbnailsView_activated(const QModelIndex &index)
     nav->jump(index.row(), {}, nav->currentZoom());
 }
 
+void MainWindow::setContinuousMode(bool c)
+{
+    ui->actionContinuous->setChecked(c);
+    ui->pdfView->setPageMode(c ? QPdfView::PageMode::MultiPage
+                               : QPdfView::PageMode::SinglePage);
+}
+
 void MainWindow::on_actionContinuous_triggered()
 {
-    ui->pdfView->setPageMode(ui->actionContinuous->isChecked() ?
-                                 QPdfView::PageMode::MultiPage :
-                                 QPdfView::PageMode::SinglePage);
+    setContinuousMode(ui->actionContinuous->isChecked());
 }
 
 void MainWindow::on_actionBack_triggered()
