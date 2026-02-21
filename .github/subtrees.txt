@@ -1,7 +1,7 @@
 # name  path        repo_url                                   branch
-zlib    zlib        https://git.projecttick.org/pub/scm/Project-Tick/zlib.git        develop
-tomlplusplus tomlplusplus https://git.projecttick.org/pub/scm/Project-Tick/tomlplusplus.git master
-json    json        https://git.projecttick.org/pub/scm/Project-Tick/json.git        develop
+zlib    zlib        https://gitlab.com/Project-Tick/libraries/zlib.git        develop
+tomlplusplus tomlplusplus https://gitlab.com/Project-Tick/core/tomlplusplus.git master
+json    json        https://gitlab.com/Project-Tick/libraries/json.git        develop
 qtbase  qt/qtbase   https://github.com/qt/qtbase.git      dev
 qtnetworkauth qt/qtnetworkauth https://github.com/qt/qtnetworkauth.git dev
 qtimageformats qt/qtimageformats https://github.com/qt/qtimageformats.git dev
@@ -11,8 +11,8 @@ qtwebchannel qt/qtwebchannel https://github.com/qt/qtwebchannel.git dev
 qtwebengine qt/qtwebengine https://github.com/qt/qtwebengine.git dev
 gcc toolchain/gcc https://gcc.gnu.org/git/gcc.git releases/gcc-15
 llvm toolchain/llvm https://github.com/llvm/llvm-project.git release/20.x
-extra-cmake-modules extra-cmake-modules https://git.projecttick.org/pub/scm/Project-Tick/extra-cmake-modules.git master
-cmark cmark https://git.projecttick.org/pub/scm/Project-Tick/cmark.git master
-bzip2 bzip2 https://git.projecttick.org/pub/scm/Project-Tick/bzip2.git master
-gamemode gamemode https://git.projecttick.org/pub/scm/Project-Tick/gamemode.git master
-libqrencode libqrencode https://git.projecttick.org/pub/scm/Project-Tick/libqrencode.git develop
+extra-cmake-modules extra-cmake-modules https://gitlab.com/Project-Tick/libraries/extra-cmake-modules.git master
+cmark cmark https://gitlab.com/Project-Tick/libraries/cmark.git master
+bzip2 bzip2 https://gitlab.com/Project-Tick/libraries/bzip2.git master
+gamemode gamemode https://gitlab.com/Project-Tick/core/gamemode.git master
+libqrencode libqrencode https://gitlab.com/Project-Tick/libraries/libqrencode.git develop
