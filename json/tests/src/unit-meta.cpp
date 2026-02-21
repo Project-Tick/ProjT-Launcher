@@ -24,9 +24,10 @@ TEST_CASE("version information")
         CHECK(j["version"] == json(
         {
             {"string", "0.0.5-1"},
-            {"major", 3},
-            {"minor", 12},
-            {"patch", 0}
+            {"major", 0},
+            {"minor", 0},
+            {"patch", 5},
+            {"tweak", 1}
         }));
 
         CHECK(j.find("platform") != j.end());
