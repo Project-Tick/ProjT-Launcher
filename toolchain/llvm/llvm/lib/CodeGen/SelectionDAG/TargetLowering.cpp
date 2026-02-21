@@ -2256,11 +2256,31 @@ bool TargetLowering::SimplifyDemandedBits(
       }
     }
 
-    // For pow-2 bitwidths we only demand the bottom modulo amt bits.
     if (isPowerOf2_32(BitWidth)) {
+      // Fold FSHR(Op0,Op1,Op2) -> SRL(Op1,Op2)
+      // iff we're guaranteed not to use Op0.
+      // TODO: Add FSHL equivalent?
+      if (!IsFSHL && !DemandedBits.isAllOnes() &&
+          (!TLO.LegalOperations() || isOperationLegal(ISD::SRL, VT))) {
+        KnownBits KnownAmt =
+            TLO.DAG.computeKnownBits(Op2, DemandedElts, Depth + 1);
+        unsigned MaxShiftAmt =
+            KnownAmt.getMaxValue().getLimitedValue(BitWidth - 1);
+        // Check we don't demand any shifted bits outside Op1.
+        if (DemandedBits.countl_zero() >= MaxShiftAmt) {
+          EVT AmtVT = Op2.getValueType();
+          SDValue NewAmt =
+              TLO.DAG.getNode(ISD::AND, dl, AmtVT, Op2,
+                              TLO.DAG.getConstant(BitWidth - 1, dl, AmtVT));
+          SDValue NewOp = TLO.DAG.getNode(ISD::SRL, dl, VT, Op1, NewAmt);
+          return TLO.CombineTo(Op, NewOp);
+        }
+      }
+
+      // For pow-2 bitwidths we only demand the bottom modulo amt bits.
       APInt DemandedAmtBits(Op2.getScalarValueSizeInBits(), BitWidth - 1);
-      if (SimplifyDemandedBits(Op2, DemandedAmtBits, DemandedElts,
-                               Known2, TLO, Depth + 1))
+      if (SimplifyDemandedBits(Op2, DemandedAmtBits, DemandedElts, Known2, TLO,
+                               Depth + 1))
         return true;
     }
     break;
@@ -5989,16 +6009,6 @@ TargetLowering::ParseConstraints(const DataLayout &DL,
 
     OpInfo.ConstraintVT = MVT::Other;
 
-    // Special treatment for all platforms that can fold a register into a
-    // spill. This is used for the "rm" constraint, where we would vastly
-    // prefer to use 'r' over 'm'. The non-fast register allocators are able to
-    // handle the 'r' default by folding. The fast register allocator needs
-    // special handling to convert the instruction to use 'm' instead.
-    if (!OpInfo.hasMatchingInput() && OpInfo.Codes.size() == 2 &&
-        llvm::is_contained(OpInfo.Codes, "r") &&
-        llvm::is_contained(OpInfo.Codes, "m"))
-      OpInfo.MayFoldRegister = true;
-
     // Compute the value type for each operand.
     switch (OpInfo.Type) {
     case InlineAsm::isOutput: {
@@ -6279,12 +6289,7 @@ TargetLowering::ConstraintWeight
 ///  1) If there is an 'other' constraint, and if the operand is valid for
 ///     that constraint, use it.  This makes us take advantage of 'i'
 ///     constraints when available.
-///  2) Special processing is done for the "rm" constraint. If specified, we
-///     opt for the 'r' constraint, but mark the operand as being "foldable."
-///     In the face of register exhaustion, the register allocator is free to
-///     choose to use a stack slot. The fast register allocator is handled
-///     separately via the InlineAsmPrepare pass.
-///  3) Otherwise, pick the most general constraint present.  This prefers
+///  2) Otherwise, pick the most general constraint present.  This prefers
 ///     'm' over 'r', for example.
 ///
 TargetLowering::ConstraintGroup TargetLowering::getConstraintPreferences(
@@ -6292,20 +6297,6 @@ TargetLowering::ConstraintGroup TargetLowering::getConstraintPreferences(
   ConstraintGroup Ret;
 
   Ret.reserve(OpInfo.Codes.size());
-
-  // If we can fold the register (i.e. it has an "rm" constraint), opt for the
-  // 'r' constraint, and allow the register allocator to spill if need be.
-  //
-  // Note: This code is a holdover from when the Clang front-end defaulted to
-  // using the memory constriaint. This should be reviewed at some point to
-  // remove that assumption from the back-end.
-  const TargetMachine &TM = getTargetMachine();
-  if (TM.getOptLevel() != CodeGenOptLevel::None && OpInfo.MayFoldRegister) {
-    Ret.emplace_back(ConstraintPair("r", getConstraintType("r")));
-    Ret.emplace_back(ConstraintPair("m", getConstraintType("m")));
-    return Ret;
-  }
-
   for (StringRef Code : OpInfo.Codes) {
     TargetLowering::ConstraintType CType = getConstraintType(Code);
 
@@ -8468,6 +8459,10 @@ SDValue TargetLowering::expandCLMUL(SDNode *Node, SelectionDAG &DAG) const {
   unsigned BW = VT.getScalarSizeInBits();
   unsigned Opcode = Node->getOpcode();
 
+  // Scalarize if the vector multiplication is unlikely to work.
+  if (VT.isVector() && !isOperationLegalOrCustom(ISD::MUL, VT))
+    return DAG.UnrollVectorOp(Node);
+
   switch (Opcode) {
   case ISD::CLMUL: {
     // NOTE: If you change this expansion, please update the cost model
@@ -9645,6 +9640,23 @@ SDValue TargetLowering::expandVPCTLZ(SDNode *Node, SelectionDAG &DAG) const {
   Op = DAG.getNode(ISD::VP_XOR, dl, VT, Op, DAG.getAllOnesConstant(dl, VT),
                    Mask, VL);
   return DAG.getNode(ISD::VP_CTPOP, dl, VT, Op, Mask, VL);
+}
+
+SDValue TargetLowering::expandCTLS(SDNode *Node, SelectionDAG &DAG) const {
+  SDLoc dl(Node);
+  EVT VT = Node->getValueType(0);
+  SDValue Op = DAG.getFreeze(Node->getOperand(0));
+  unsigned NumBitsPerElt = VT.getScalarSizeInBits();
+
+  // CTLS(x) = CTLZ(OR(SHL(XOR(x, SRA(x, BW-1)), 1), 1))
+  // This transforms the sign bits into leading zeros that can be counted.
+  SDValue ShiftAmt = DAG.getShiftAmountConstant(NumBitsPerElt - 1, VT, dl);
+  SDValue SignBit = DAG.getNode(ISD::SRA, dl, VT, Op, ShiftAmt);
+  SDValue Xor = DAG.getNode(ISD::XOR, dl, VT, Op, SignBit);
+  SDValue Shl =
+      DAG.getNode(ISD::SHL, dl, VT, Xor, DAG.getShiftAmountConstant(1, VT, dl));
+  SDValue Or = DAG.getNode(ISD::OR, dl, VT, Shl, DAG.getConstant(1, dl, VT));
+  return DAG.getNode(ISD::CTLZ_ZERO_UNDEF, dl, VT, Or);
 }
 
 SDValue TargetLowering::CTTZTableLookup(SDNode *Node, SelectionDAG &DAG,

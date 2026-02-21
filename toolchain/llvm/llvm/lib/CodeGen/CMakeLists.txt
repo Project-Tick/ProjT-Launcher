@@ -76,8 +76,8 @@ add_llvm_component_library(LLVMCodeGen
   IfConversion.cpp
   ImplicitNullChecks.cpp
   IndirectBrExpandPass.cpp
-  InlineAsmPrepare.cpp
   InitUndef.cpp
+  InlineAsmPrepare.cpp
   InlineSpiller.cpp
   InsertCodePrefetch.cpp
   InterferenceCache.cpp
@@ -197,6 +197,7 @@ add_llvm_component_library(LLVMCodeGen
   RegisterPressure.cpp
   RegisterScavenging.cpp
   GCEmptyBasicBlocks.cpp
+  Rematerializer.cpp
   RemoveRedundantDebugValues.cpp
   RenameIndependentSubregs.cpp
   MachineStableHash.cpp
