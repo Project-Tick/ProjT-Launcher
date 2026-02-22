@@ -111,7 +111,6 @@ schedule_flatpak_update:
 flatpak_build:
   stage: build
   image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
-  privileged: true
   tags:
     - $RUNNER_TAG
   rules:
@@ -204,7 +203,6 @@ schedule_flatpak_deploy:
   stage: scheduled
   image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
   resource_group: flatpak-deploy
-  privileged: true
   tags:
     - $RUNNER_TAG
   rules:
@@ -277,7 +275,6 @@ schedule_flatpak_deploy_arm64:
   stage: scheduled
   image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
   resource_group: flatpak-deploy
-  privileged: true
   tags:
     - saas-linux-medium-arm64
   rules:
