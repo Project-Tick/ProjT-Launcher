@@ -1,9 +1,13 @@
+include:
+  - local: .gitlab/ci/github-workflow-parity.yml
+
 workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_TAG'
     - if: '$CI_PIPELINE_SOURCE == "push"'
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
     - when: never
 
 stages:
@@ -11,6 +15,7 @@ stages:
   - scheduled
   - lint
   - build
+  - release
 
 variables:
   GIT_DEPTH: "1"
@@ -36,6 +41,8 @@ schedule_js_fuzz:
     - pt-rhel-runner-01
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release-/)'
   script:
     - cd bot
     - npm install
@@ -49,6 +56,8 @@ schedule_python_fuzz:
     - pt-rhel-runner-01
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release-/)'
   script:
     - python -m pip install --upgrade pip
     - python -m pip install -r requirements.txt atheris
@@ -60,7 +69,8 @@ schedule_flatpak_update:
   tags:
     - pt-rhel-runner-01
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULE_FLATPAK == "weekly"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
   script:
     - |
       if ! command -v git >/dev/null 2>&1; then
@@ -97,6 +107,67 @@ schedule_flatpak_update:
         echo "GITLAB_BOT_TOKEN not set; updated branch not pushed."
       fi
 
+flatpak_build:
+  stage: build
+  image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+  privileged: true
+  tags:
+    - $RUNNER_TAG
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - flatpak/**/*.yml
+        - flatpak/**/*.json
+        - flatpak/scripts/**/*
+        - flatpak/shared-modules/**/*
+        - flatpak/static/projtlauncher.flatpakrepo
+        - flatpak/static/projtlauncher-nightly.flatpakref
+        - flatpak/static/index.html
+        - .gitlab-ci.yml
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+  parallel:
+    matrix:
+      - FLATPAK_ARCH: x86_64
+        RUNNER_TAG: pt-rhel-runner-01
+      - FLATPAK_ARCH: aarch64
+        RUNNER_TAG: saas-linux-medium-arm64
+  script:
+    - |
+      if command -v apt-get >/dev/null 2>&1; then
+        apt-get update
+        apt-get install -y git rsync dbus-user-session
+      fi
+    - |
+      flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    - |
+      if [ -n "${FLATPAK_GPG_KEY:-}" ] && [ -n "${FLATPAK_GPG_KEY_ID:-}" ]; then
+        echo -n "$FLATPAK_GPG_KEY" | base64 -d | gpg --import
+      fi
+    - |
+      REPO_DIR="$CI_PROJECT_DIR/flatpak-repo"
+      BUILD_DIR="$CI_PROJECT_DIR/flatpak-build"
+      rm -rf "$REPO_DIR" "$BUILD_DIR"
+      mkdir -p "$REPO_DIR" "$BUILD_DIR"
+    - |
+      build_cmd="flatpak-builder --force-clean --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
+      if command -v dbus-run-session >/dev/null 2>&1; then
+        dbus-run-session -- bash -lc "$build_cmd"
+      else
+        bash -lc "$build_cmd"
+      fi
+    - |
+      flatpak build-update-repo \
+        ${FLATPAK_GPG_KEY_ID:+--gpg-sign="$FLATPAK_GPG_KEY_ID"} \
+        --generate-static-deltas \
+        --prune \
+        "$REPO_DIR"
+    - cp -r flatpak/static/. "$REPO_DIR"/
+  artifacts:
+    when: always
+    paths:
+      - flatpak-repo/
+    expire_in: 3 days
+
 schedule_cfl:
   stage: scheduled
   image: ubuntu:24.04
@@ -104,18 +175,29 @@ schedule_cfl:
     - pt-rhel-runner-01
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  parallel:
+    matrix:
+      - SANITIZER: address
+      - SANITIZER: undefined
   script:
     - apt-get update
     - apt-get install -y clang cmake ninja-build build-essential
+    - export CFLAGS="-fsanitize=$SANITIZER -fno-omit-frame-pointer"
+    - export CXXFLAGS="-fsanitize=$SANITIZER -fno-omit-frame-pointer"
+    - export LDFLAGS="-fsanitize=$SANITIZER"
     - >
       cmake -S . -B build-fuzz -G Ninja
       -DCMAKE_BUILD_TYPE=RelWithDebInfo
       -DBUILD_TESTING=OFF
       -DBUILD_FUZZERS=ON
+      -DLAUNCHER_FUZZ_ONLY=ON
       -DCMAKE_C_COMPILER=clang
       -DCMAKE_CXX_COMPILER=clang++
     - cmake --build build-fuzz --target fuzz_nbt_reader
-    - ./build-fuzz/fuzz_nbt_reader -runs=2000
+    - ./build-fuzz/fuzz_nbt_reader -max_total_time=3600
 
 schedule_flatpak_deploy:
   stage: scheduled
@@ -125,7 +207,18 @@ schedule_flatpak_deploy:
   tags:
     - $RUNNER_TAG
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULE_FLATPAK == "weekly"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+      changes:
+        - flatpak/**/*.yml
+        - flatpak/**/*.json
+        - flatpak/scripts/**/*
+        - flatpak/shared-modules/**/*
+        - flatpak/static/projtlauncher.flatpakrepo
+        - flatpak/static/projtlauncher-nightly.flatpakref
+        - flatpak/static/index.html
+        - .gitlab-ci.yml
+    - if: '$CI_PIPELINE_SOURCE == "web"'
   script:
     - |
       if [ -z "${FLATPAK_SITE_REPO:-}" ] || [ -z "${FLATPAK_SITE_TOKEN:-}" ]; then
@@ -187,7 +280,18 @@ schedule_flatpak_deploy_arm64:
   tags:
     - saas-linux-medium-arm64
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULE_FLATPAK == "weekly"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+      changes:
+        - flatpak/**/*.yml
+        - flatpak/**/*.json
+        - flatpak/scripts/**/*
+        - flatpak/shared-modules/**/*
+        - flatpak/static/projtlauncher.flatpakrepo
+        - flatpak/static/projtlauncher-nightly.flatpakref
+        - flatpak/static/index.html
+        - .gitlab-ci.yml
+    - if: '$CI_PIPELINE_SOURCE == "web"'
   variables:
     FLATPAK_ARCH: aarch64
   script:

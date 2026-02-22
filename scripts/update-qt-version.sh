@@ -6,6 +6,8 @@ cd "$root_dir"
 
 action_file=".github/actions/setup-dependencies/action.yml"
 workflow_files=(
+  ".gitlab-ci.yml"
+  ".gitlab/ci/github-workflow-parity.yml"
   ".github/workflows/ci-launcher.yml"
 )
 
@@ -36,7 +38,7 @@ if [[ "$latest_version" != "$current_version" ]]; then
 
   for file in "${workflow_files[@]}"; do
     if [[ -f "$file" ]]; then
-      perl -i -pe "s/(qt-version:\\s*)\Q$current_version\E/\\1$latest_version/g" "$file"
+      perl -i -pe "s/(qt-version:\\s*)\\Q$current_version\\E/\\1$latest_version/g; s/(QT_VERSION:\\s*\\\")\\Q$current_version\\E(\\\")/\\1$latest_version\\2/g; s/(qt_version:\\s*\\\")\\Q$current_version\\E(\\\")/\\1$latest_version\\2/g" "$file"
     fi
   done
 

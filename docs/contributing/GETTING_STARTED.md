@@ -193,7 +193,7 @@ Qt kit must match your compiler. Use MSVC kit with Visual Studio, MinGW kit with
 
 ### clang-format version mismatch
 
-Use the version specified in CI. Different versions produce different output. Check `.github/workflows/` for the expected version.
+Use the version specified in CI. Different versions produce different output. Check `.gitlab-ci.yml` and `.gitlab/ci/` for the expected version.
 
 ### Ninja not found
 

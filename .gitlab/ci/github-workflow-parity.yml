@@ -1,0 +1,575 @@
+# GitHub workflow parity layer
+# Source workflows mirrored here:
+# - .github/workflows/ci-nix.yml
+# - .github/workflows/ci-quazip.yml
+# - .github/workflows/ci-release.yml
+# - .github/workflows/ci-winget.yml
+
+.parity_non_schedule_rules:
+  rules: &parity_non_schedule_rules
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_COMMIT_TAG'
+
+nix_flake_check:
+  stage: lint
+  image: nixos/nix:2.24.14
+  tags:
+    - pt-rhel-runner-01
+  rules: *parity_non_schedule_rules
+  variables:
+    NIX_CONFIG: experimental-features = nix-command flakes
+  script:
+    - nix --version
+    - nix flake show --all-systems
+    - nix flake check --show-trace || true
+
+nix_system_build_linux:
+  stage: build
+  image: nixos/nix:2.24.14
+  tags:
+    - $RUNNER_TAG
+  needs:
+    - job: nix_flake_check
+  rules: *parity_non_schedule_rules
+  variables:
+    NIX_CONFIG: experimental-features = nix-command flakes
+  parallel:
+    matrix:
+      - NIX_SYSTEM: x86_64-linux
+        RUNNER_TAG: pt-rhel-runner-01
+      - NIX_SYSTEM: aarch64-linux
+        RUNNER_TAG: saas-linux-medium-arm64
+  script:
+    - |
+      set -eu
+      ATTR="packages.${NIX_SYSTEM}.projtlauncher-debug"
+      if [ -n "${CI_COMMIT_TAG:-}" ]; then
+        ATTR="packages.${NIX_SYSTEM}.projtlauncher"
+      fi
+
+      nix build --no-link --print-build-logs ".#$ATTR" || nix build --no-link --print-build-logs .#projtlauncher
+      nix profile install ".#$ATTR" || nix profile install .#projtlauncher || echo "Package installation skipped"
+      nix build --no-link --print-build-logs ".#checks.${NIX_SYSTEM}.default" || echo "No checks defined for ${NIX_SYSTEM}"
+
+      nix build --print-build-logs ".#$ATTR" -o result || nix build --print-build-logs .#projtlauncher -o result
+  artifacts:
+    when: always
+    paths:
+      - result/
+    expire_in: 7 days
+
+nix_system_build_darwin:
+  stage: build
+  tags:
+    - saas-macos-medium-m1
+  needs:
+    - job: nix_flake_check
+  rules: *parity_non_schedule_rules
+  variables:
+    NIX_CONFIG: experimental-features = nix-command flakes
+    NIX_SYSTEM: aarch64-darwin
+  script:
+    - |
+      set -eu
+      if ! command -v nix >/dev/null 2>&1; then
+        curl -L https://nixos.org/nix/install | sh -s -- --no-daemon
+      fi
+      if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+      elif [ -f "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
+        . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+      fi
+
+      ATTR="packages.${NIX_SYSTEM}.projtlauncher-debug"
+      if [ -n "${CI_COMMIT_TAG:-}" ]; then
+        ATTR="packages.${NIX_SYSTEM}.projtlauncher"
+      fi
+
+      nix build --no-link --print-build-logs ".#$ATTR" || nix build --no-link --print-build-logs .#projtlauncher
+      nix profile install ".#$ATTR" || nix profile install .#projtlauncher || echo "Package installation skipped"
+      nix build --no-link --print-build-logs ".#checks.${NIX_SYSTEM}.default" || echo "No checks defined for ${NIX_SYSTEM}"
+
+      nix build --print-build-logs ".#$ATTR" -o result || nix build --print-build-logs .#projtlauncher -o result
+  artifacts:
+    when: always
+    paths:
+      - result/
+    expire_in: 7 days
+
+.quazip_rules:
+  rules: &quazip_rules
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_COMMIT_TAG'
+
+.quazip_linux_template:
+  stage: build
+  image: ubuntu:$OS_VERSION
+  tags:
+    - pt-rhel-runner-01
+  rules: *quazip_rules
+  script:
+    - |
+      set -eu
+      apt-get update
+
+      QT_PKG="qt6-base-dev qt6-5compat-dev"
+      if echo "$QT_VERSION" | grep -q '^5\.'; then
+        QT_PKG="qtbase5-dev"
+      fi
+
+      apt-get install -y --no-install-recommends \
+        ca-certificates cmake ninja-build g++ make pkg-config \
+        zlib1g-dev libbz2-dev zip unzip $QT_PKG
+
+      cmake -S quazip -B quazip/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=${BUILD_SHARED:-ON} \
+        -DQUAZIP_ENABLE_TESTS=ON \
+        -DZLIB_CONST=${ZLIB_CONST:-OFF} \
+        -DQUAZIP_ENABLE_QTEXTCODEC=${QUAZIP_ENABLE_QTEXTCODEC:-ON}
+
+      cmake --build quazip/build --config Release --parallel
+
+      if [ "${RUN_TESTS:-1}" = "1" ] && [ "${CROSS_EXTRACT:-0}" != "1" ]; then
+        TEST_CR_COMPRESS=true ctest --test-dir quazip/build --verbose
+      fi
+
+      if [ "${CROSS_EXTRACT:-0}" = "1" ]; then
+        zip_file="$(find "$CI_PROJECT_DIR" -maxdepth 2 -type f -name 'cp-*.zip' | head -n 1 || true)"
+        if [ -n "$zip_file" ]; then
+          cp "$zip_file" quazip/build/quazip/cp.zip
+        fi
+        TEST_CR_DECOMPRESS=true ctest --test-dir quazip/build --verbose
+      fi
+
+      if [ -f quazip/build/quazip/cp.zip ]; then
+        cp quazip/build/quazip/cp.zip "$CI_PROJECT_DIR/cp-${CI_JOB_ID}.zip"
+      fi
+  artifacts:
+    when: always
+    paths:
+      - cp-*.zip
+      - quazip/build/Testing/
+    expire_in: 7 days
+
+quazip_ubuntu:
+  extends: .quazip_linux_template
+  parallel:
+    matrix:
+      - OS_VERSION: "22.04"
+        QT_VERSION: "5.15.2"
+        BUILD_SHARED: "ON"
+      - OS_VERSION: "22.04"
+        QT_VERSION: "5.15.2"
+        BUILD_SHARED: "OFF"
+      - OS_VERSION: "22.04"
+        QT_VERSION: "6.8.2"
+        BUILD_SHARED: "ON"
+      - OS_VERSION: "22.04"
+        QT_VERSION: "6.8.2"
+        BUILD_SHARED: "OFF"
+      - OS_VERSION: "24.04"
+        QT_VERSION: "5.15.2"
+        BUILD_SHARED: "ON"
+      - OS_VERSION: "24.04"
+        QT_VERSION: "5.15.2"
+        BUILD_SHARED: "OFF"
+      - OS_VERSION: "24.04"
+        QT_VERSION: "6.8.2"
+        BUILD_SHARED: "ON"
+      - OS_VERSION: "24.04"
+        QT_VERSION: "6.8.2"
+        BUILD_SHARED: "OFF"
+
+quazip_ubuntu_zlibconst:
+  extends: .quazip_linux_template
+  variables:
+    OS_VERSION: "24.04"
+    QT_VERSION: "6.8.2"
+    BUILD_SHARED: "ON"
+    ZLIB_CONST: "ON"
+
+quazip_ubuntu_no_qtextcodec:
+  extends: .quazip_linux_template
+  variables:
+    OS_VERSION: "24.04"
+    QT_VERSION: "6.8.2"
+    BUILD_SHARED: "ON"
+    QUAZIP_ENABLE_QTEXTCODEC: "OFF"
+
+quazip_alpine:
+  stage: build
+  image: alpine:3.21
+  tags:
+    - pt-rhel-runner-01
+  rules: *quazip_rules
+  parallel:
+    matrix:
+      - QT_FLAVOR: qt5
+      - QT_FLAVOR: qt6
+  script:
+    - |
+      set -eu
+      apk add --no-cache g++ make cmake zlib-dev bzip2-dev "$QT_FLAVOR"-qtbase-dev
+      if [ "$QT_FLAVOR" = "qt6" ]; then
+        apk add --no-cache qt6-qt5compat-dev
+      fi
+
+      cmake -S quazip -B quazip/build -DQUAZIP_ENABLE_TESTS=ON
+      cmake --build quazip/build --parallel
+      ctest --test-dir quazip/build --verbose
+
+quazip_fedora:
+  stage: build
+  image: fedora:42
+  tags:
+    - pt-rhel-runner-01
+  rules: *quazip_rules
+  script:
+    - |
+      set -eu
+      dnf -y install g++ make cmake qt6-qtbase-devel qt6-qt5compat-devel zlib-ng-devel zlib-ng-compat-devel
+      cmake -S quazip -B quazip/build -DQUAZIP_ENABLE_TESTS=ON
+      cmake --build quazip/build --parallel
+      ctest --test-dir quazip/build --verbose
+
+quazip_use_qt_zlib_ubuntu:
+  stage: build
+  image: ghcr.io/cen1/qt:$QT_VERSION
+  tags:
+    - pt-rhel-runner-01
+  rules: *quazip_rules
+  parallel:
+    matrix:
+      - QT_VERSION: "5.15.12"
+      - QT_VERSION: "6.4.3"
+      - QT_VERSION: "6.8.2"
+  script:
+    - |
+      set -eu
+      cmake -S quazip -B quazip/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DQUAZIP_ENABLE_TESTS=ON \
+        -DQUAZIP_USE_QT_ZLIB=ON \
+        -DCMAKE_PREFIX_PATH="/usr/local/Qt-${QT_VERSION}"
+      cmake --build quazip/build --config Release --parallel
+      ctest --test-dir quazip/build --verbose -C Release
+
+.quazip_macos_template:
+  stage: build
+  tags:
+    - saas-macos-medium-m1
+  rules: *quazip_rules
+  script:
+    - |
+      set -eu
+      brew update || true
+      if echo "$QT_VERSION" | grep -q '^5\.'; then
+        brew install qt@5 || true
+        QT_PREFIX="$(brew --prefix qt@5 || true)"
+      else
+        brew install qt || true
+        QT_PREFIX="$(brew --prefix qt || true)"
+      fi
+      if [ -n "$QT_PREFIX" ]; then
+        export CMAKE_PREFIX_PATH="$QT_PREFIX"
+      fi
+
+      cmake -S quazip -B quazip/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=${BUILD_SHARED:-ON} \
+        -DQUAZIP_ENABLE_TESTS=ON
+      cmake --build quazip/build --config Release --parallel
+
+      if [ "${RUN_TESTS:-1}" = "1" ] && [ "${CROSS_EXTRACT:-0}" != "1" ]; then
+        TEST_CR_COMPRESS=true ctest --test-dir quazip/build --verbose -C Release
+      fi
+
+      if [ "${CROSS_EXTRACT:-0}" = "1" ]; then
+        zip_file="$(find "$CI_PROJECT_DIR" -maxdepth 2 -type f -name 'cp-*.zip' | head -n 1 || true)"
+        if [ -n "$zip_file" ]; then
+          cp "$zip_file" quazip/build/quazip/cp.zip
+        fi
+        TEST_CR_DECOMPRESS=true ctest --test-dir quazip/build --verbose -C Release
+      fi
+
+      if [ -f quazip/build/quazip/cp.zip ]; then
+        cp quazip/build/quazip/cp.zip "$CI_PROJECT_DIR/cp-${CI_JOB_ID}.zip"
+      fi
+  artifacts:
+    when: always
+    paths:
+      - cp-*.zip
+      - quazip/build/Testing/
+    expire_in: 7 days
+
+quazip_macos:
+  extends: .quazip_macos_template
+  parallel:
+    matrix:
+      - QT_VERSION: "6.8.2"
+        BUILD_SHARED: "ON"
+      - QT_VERSION: "6.8.2"
+        BUILD_SHARED: "OFF"
+      - QT_VERSION: "5.15.2"
+        BUILD_SHARED: "ON"
+      - QT_VERSION: "5.15.2"
+        BUILD_SHARED: "OFF"
+
+.quazip_windows_template:
+  stage: build
+  tags:
+    - pt-windows-02
+  rules: *quazip_rules
+  script:
+    - '$ErrorActionPreference = "Stop"'
+    - 'Set-Location quazip'
+    - |
+      if ($env:PRESET -like "conan*") {
+        python -m pip install --upgrade pip
+        python -m pip install conan
+        conan profile detect --force
+        if ($env:ARCH -eq "x86") {
+          conan install . -of build -s build_type=Release -o *:shared=False --build=missing -s:h arch=x86
+        }
+        else {
+          conan install . -of build -s build_type=Release -o *:shared=False --build=missing
+        }
+      }
+      cmake --preset "$env:PRESET" -DQUAZIP_ENABLE_TESTS=ON
+      cmake --build build --config Release
+      cmake --build build --config Release
+
+      if ($env:CROSS_EXTRACT -ne "1") {
+        $env:TEST_CR_COMPRESS = "true"
+        ctest --test-dir build --verbose -C Release
+      }
+      else {
+        $cp = Get-ChildItem "$env:CI_PROJECT_DIR" -Filter "cp-*.zip" -File -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($cp) {
+          Copy-Item $cp.FullName "build/quazip/cp.zip" -Force
+        }
+        $env:TEST_CR_DECOMPRESS = "true"
+        ctest --test-dir build --verbose -C Release
+      }
+
+      if (Test-Path "build/quazip/cp.zip") {
+        Copy-Item "build/quazip/cp.zip" "$env:CI_PROJECT_DIR/cp-$env:CI_JOB_ID.zip" -Force
+      }
+  artifacts:
+    when: always
+    paths:
+      - cp-*.zip
+      - quazip/build/Testing/
+    expire_in: 7 days
+
+quazip_windows_x64:
+  extends: .quazip_windows_template
+  parallel:
+    matrix:
+      - PRESET: conan
+        QT_VERSION: "5.15.2"
+        ARCH: x64
+      - PRESET: conan
+        QT_VERSION: "6.8.2"
+        ARCH: x64
+      - PRESET: vcpkg
+        QT_VERSION: "5.15.2"
+        ARCH: x64
+      - PRESET: vcpkg
+        QT_VERSION: "6.8.2"
+        ARCH: x64
+
+quazip_windows_x86:
+  extends: .quazip_windows_template
+  parallel:
+    matrix:
+      - PRESET: conan_x86
+        QT_VERSION: "5.15.2"
+        ARCH: x86
+      - PRESET: vcpkg_x86
+        QT_VERSION: "5.15.2"
+        ARCH: x86
+
+quazip_ubuntu_ci_extract:
+  extends: .quazip_linux_template
+  needs:
+    - job: quazip_ubuntu
+      artifacts: true
+    - job: quazip_macos
+      artifacts: true
+    - job: quazip_windows_x64
+      artifacts: true
+    - job: quazip_windows_x86
+      artifacts: true
+  variables:
+    OS_VERSION: "24.04"
+    QT_VERSION: "6.8.2"
+    BUILD_SHARED: "ON"
+    CROSS_EXTRACT: "1"
+
+quazip_macos_ci_extract:
+  extends: .quazip_macos_template
+  needs:
+    - job: quazip_ubuntu
+      artifacts: true
+    - job: quazip_macos
+      artifacts: true
+    - job: quazip_windows_x64
+      artifacts: true
+    - job: quazip_windows_x86
+      artifacts: true
+  variables:
+    QT_VERSION: "6.8.2"
+    BUILD_SHARED: "ON"
+    CROSS_EXTRACT: "1"
+
+quazip_windows_x64_ci_extract:
+  extends: .quazip_windows_template
+  needs:
+    - job: quazip_ubuntu
+      artifacts: true
+    - job: quazip_macos
+      artifacts: true
+    - job: quazip_windows_x64
+      artifacts: true
+    - job: quazip_windows_x86
+      artifacts: true
+  variables:
+    PRESET: vcpkg
+    QT_VERSION: "6.8.2"
+    ARCH: x64
+    CROSS_EXTRACT: "1"
+
+release_prepare:
+  stage: release
+  image: ubuntu:24.04
+  tags:
+    - pt-rhel-runner-01
+  needs:
+    - job: javacheck_build
+      artifacts: true
+    - job: launcher_linux
+      artifacts: true
+    - job: launcher_windows
+      artifacts: true
+    - job: launcher_macos_universal
+      artifacts: true
+  rules:
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RELEASE_TAG'
+  script:
+    - |
+      set -eu
+      apt-get update
+      apt-get install -y --no-install-recommends ca-certificates git zip xz-utils gnupg
+
+      VERSION="${CI_COMMIT_TAG:-$RELEASE_TAG}"
+      SRC_DIR="$CI_PROJECT_DIR"
+      OUT_DIR="$CI_PROJECT_DIR/release-assets"
+      mkdir -p "$OUT_DIR"
+
+      libs="libnbtplusplus zlib quazip bzip2 launcherjava tomlplusplus libqrencode extra-cmake-modules cmark javacheck"
+
+      sign_file() {
+        local path="$1"
+        if [ -n "${LINUX_GPG_KEY:-}" ]; then
+          echo -n "$LINUX_GPG_KEY" | base64 -d | gpg --batch --yes --import
+          if [ -n "${LINUX_GPG_ID:-}" ]; then
+            gpg --batch --yes --armor --default-key "$LINUX_GPG_ID" --output "${path}.asc" --detach-sign "$path"
+          else
+            gpg --batch --yes --armor --output "${path}.asc" --detach-sign "$path"
+          fi
+        fi
+      }
+
+      for d in $libs; do
+        base="${d}-${VERSION}"
+        tar -C "$SRC_DIR" -czf "$OUT_DIR/${base}.tar.gz" "$d"
+        tar -C "$SRC_DIR" -cJf "$OUT_DIR/${base}.tar.xz" "$d"
+        (cd "$SRC_DIR" && zip -r "$OUT_DIR/${base}.zip" "$d")
+
+        sign_file "$OUT_DIR/${base}.tar.gz"
+        sign_file "$OUT_DIR/${base}.tar.xz"
+        sign_file "$OUT_DIR/${base}.zip"
+      done
+
+      tar --exclude='.git' -czf "$OUT_DIR/ProjTLauncher-${VERSION}.tar.gz" -C "$SRC_DIR" .
+
+      # Collect binary artifacts produced by build jobs when available.
+      if [ -d "$CI_PROJECT_DIR/package" ]; then
+        find "$CI_PROJECT_DIR/package" -maxdepth 1 -type f -exec cp {} "$OUT_DIR"/ \;
+      fi
+      find "$CI_PROJECT_DIR" -type f -path '*/package/*' -exec cp {} "$OUT_DIR"/ \; || true
+      find "$CI_PROJECT_DIR" -type f -path '*/javacheck/build/*.jar' -exec cp {} "$OUT_DIR"/ \; || true
+  artifacts:
+    when: always
+    paths:
+      - release-assets/
+    expire_in: 14 days
+
+release_publish:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/cli:latest
+  tags:
+    - pt-rhel-runner-01
+  needs:
+    - job: release_prepare
+      artifacts: true
+  rules:
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RELEASE_TAG'
+  script:
+    - |
+      set -eu
+      TAG="${CI_COMMIT_TAG:-$RELEASE_TAG}"
+      glab auth login --hostname "$CI_SERVER_HOST" --job-token "$CI_JOB_TOKEN"
+      glab release create "$TAG" --name "ProjTLauncher $TAG" --notes "Automated release from GitLab CI" || true
+
+      for file in release-assets/*; do
+        [ -f "$file" ] || continue
+        glab release upload "$TAG" "$file#$(basename "$file")" || true
+      done
+
+winget_release:
+  stage: release
+  image: python:3.11-bookworm
+  tags:
+    - pt-rhel-runner-01
+  rules:
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $WINGET_TAG_NAME'
+  script:
+    - |
+      set -eu
+      VERSION="${CI_COMMIT_TAG:-$WINGET_TAG_NAME}"
+      if [ -z "${WINGET_TOKEN:-}" ]; then
+        echo "WINGET_TOKEN is required for winget publish."
+        exit 1
+      fi
+
+      python -m pip install --upgrade pip
+      python -m pip install winget-releaser
+
+      if command -v winget-releaser >/dev/null 2>&1; then
+        winget-releaser \
+          --identifier ProjectTick.ProjTLauncher \
+          --version "$VERSION" \
+          --installers-regex 'ProjTLauncher-Windows-MSVC(:?-arm64|-Legacy)?-Setup-.+\\.exe$' \
+          --token "$WINGET_TOKEN"
+      else
+        python -m winget_releaser \
+          --identifier ProjectTick.ProjTLauncher \
+          --version "$VERSION" \
+          --installers-regex 'ProjTLauncher-Windows-MSVC(:?-arm64|-Legacy)?-Setup-.+\\.exe$' \
+          --token "$WINGET_TOKEN"
+      fi
