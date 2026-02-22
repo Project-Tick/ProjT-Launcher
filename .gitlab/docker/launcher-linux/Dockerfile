@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     dpkg-dev \
     ninja-build \
+    clang \
+    wget \
     scdoc \
     appstream \
     lcov \
@@ -22,11 +24,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdbus-1-dev \
     libinih-dev \
     libsystemd-dev \
+    libssl-dev \
     libtiff6 \
     pkg-config \
-  && if apt-cache show openjdk-21-jdk >/dev/null 2>&1; then \
-       apt-get install -y --no-install-recommends openjdk-21-jdk; \
-     else \
-       apt-get install -y --no-install-recommends openjdk-17-jdk; \
-     fi \
+    openjdk-21-jdk \
+    nodejs \
+    npm \
+    perl \
   && rm -rf /var/lib/apt/lists/*
