@@ -202,14 +202,12 @@ javacheck_build:
           pkg-config
       fi
 
-      CMAKE_CCACHE_ARGS=""
       if command -v ccache >/dev/null 2>&1; then
         export CCACHE_DIR="${CCACHE_DIR:-$CI_PROJECT_DIR/.cache/ccache}"
         export CCACHE_BASEDIR="$CI_PROJECT_DIR"
         export CCACHE_COMPRESS=1
         export CCACHE_MAXSIZE=2G
         ccache -z || true
-        CMAKE_CCACHE_ARGS="-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
       fi
 
       if command -v javac >/dev/null 2>&1; then
@@ -219,24 +217,40 @@ javacheck_build:
       fi
 
       rm -rf build
-      # shellcheck disable=SC2086
-      cmake --preset "$CMAKE_PRESET" \
-        -Uqrencode_repo* \
-        -UWITH_TESTS \
-        -UWITH_TOOLS \
-        -UWITH_PNG \
-        -UBUILD_TESTING \
-        -DLauncher_OUTPUT_ROOT="$CI_PROJECT_DIR/build/out" \
-        $CMAKE_CCACHE_ARGS
+      if command -v ccache >/dev/null 2>&1; then
+        cmake --preset "$CMAKE_PRESET" \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      else
+        cmake --preset "$CMAKE_PRESET"
+      fi
       cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
       ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --output-on-failure --no-tests=error
+      PACKAGE_DIR="$CI_PROJECT_DIR/package"
+      INSTALL_DIR="$CI_PROJECT_DIR/install"
+      PORTABLE_DIR="$CI_PROJECT_DIR/install-portable"
+      mkdir -p "$PACKAGE_DIR" "$INSTALL_DIR" "$PORTABLE_DIR"
+
+      cmake --install build --config "$BUILD_TYPE" --prefix "$INSTALL_DIR"
+      cmake --install build --config "$BUILD_TYPE" --prefix "$PORTABLE_DIR" --component portable || true
+
+      tar -czf "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.tar.gz" -C "$INSTALL_DIR" .
+      if find "$PORTABLE_DIR" -mindepth 1 -print -quit | grep -q .; then
+        tar -czf "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-Portable-${BUILD_TYPE}.tar.gz" -C "$PORTABLE_DIR" .
+      fi
+
+      if [ -f build/CPackConfig.cmake ]; then
+        cpack --config build/CPackConfig.cmake -G DEB -C "$BUILD_TYPE" -B "$PACKAGE_DIR" || true
+      fi
+
       ccache -s || true
   artifacts:
     when: always
     name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
     paths:
       - build/
-    expire_in: 3 days
+      - package/
+    expire_in: 1 days
 
 .launcher_macos_template:
   stage: build
@@ -257,21 +271,35 @@ javacheck_build:
       fi
 
       rm -rf build
-      cmake --preset "$CMAKE_PRESET" \
-        -Uqrencode_repo* \
-        -UWITH_TESTS \
-        -UWITH_TOOLS \
-        -UWITH_PNG \
-        -UBUILD_TESTING \
-        -DLauncher_OUTPUT_ROOT="$CI_PROJECT_DIR/build/out"
+      cmake --preset "$CMAKE_PRESET"
       cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
       ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --output-on-failure --no-tests=error
+
+      PACKAGE_DIR="$CI_PROJECT_DIR/package"
+      INSTALL_DIR="$CI_PROJECT_DIR/install"
+      PORTABLE_DIR="$CI_PROJECT_DIR/install-portable"
+      mkdir -p "$PACKAGE_DIR" "$INSTALL_DIR" "$PORTABLE_DIR"
+
+      cmake --install build --config "$BUILD_TYPE" --prefix "$INSTALL_DIR"
+      cmake --install build --config "$BUILD_TYPE" --prefix "$PORTABLE_DIR" --component portable || true
+
+      tar -czf "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.tar.gz" -C "$INSTALL_DIR" .
+      if find "$PORTABLE_DIR" -mindepth 1 -print -quit | grep -q .; then
+        tar -czf "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-Portable-${BUILD_TYPE}.tar.gz" -C "$PORTABLE_DIR" .
+      fi
+
+      if [ -d "$INSTALL_DIR/ProjT Launcher.app" ]; then
+        ditto -c -k --sequesterRsrc --keepParent "$INSTALL_DIR/ProjT Launcher.app" "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.zip"
+      elif [ -d "$INSTALL_DIR/ProjTLauncher.app" ]; then
+        ditto -c -k --sequesterRsrc --keepParent "$INSTALL_DIR/ProjTLauncher.app" "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.zip"
+      fi
   artifacts:
     when: always
     name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
     paths:
       - build/
-    expire_in: 3 days
+      - package/
+    expire_in: 1 days
 
 .launcher_windows_template:
   stage: build
@@ -307,11 +335,31 @@ javacheck_build:
         cmake --build --preset "$env:CMAKE_PRESET" --config "$env:BUILD_TYPE"
         ctest --preset "$env:CMAKE_PRESET" --build-config "$env:BUILD_TYPE" --output-on-failure --no-tests=error
       }
+
+      $packageDir = Join-Path $env:CI_PROJECT_DIR "package"
+      $installDir = Join-Path $env:CI_PROJECT_DIR "install"
+      $portableDir = Join-Path $env:CI_PROJECT_DIR "install-portable"
+      New-Item -Path $packageDir -ItemType Directory -Force | Out-Null
+      New-Item -Path $installDir -ItemType Directory -Force | Out-Null
+      New-Item -Path $portableDir -ItemType Directory -Force | Out-Null
+
+      cmake --install build --config "$env:BUILD_TYPE" --prefix "$installDir"
+      try {
+        cmake --install build --config "$env:BUILD_TYPE" --prefix "$portableDir" --component portable
+      } catch {
+        Write-Host "Portable component packaging skipped: $($_.Exception.Message)"
+      }
+
+      Compress-Archive -Path "$installDir\\*" -DestinationPath "$packageDir\\ProjTLauncher-$($env:ARTIFACT_NAME)-$($env:BUILD_TYPE).zip" -Force
+      if ((Get-ChildItem -Path $portableDir -Recurse -File | Measure-Object).Count -gt 0) {
+        Compress-Archive -Path "$portableDir\\*" -DestinationPath "$packageDir\\ProjTLauncher-$($env:ARTIFACT_NAME)-Portable-$($env:BUILD_TYPE).zip" -Force
+      }
   artifacts:
     when: always
     name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
     paths:
       - build/
+      - package/
     expire_in: 3 days
 
 launcher_macos_universal:
@@ -344,7 +392,7 @@ launcher_linux:
         TARGET_ARCH: amd64
         CMAKE_PRESET: linux
       - ARTIFACT_NAME: Linux-arm64
-        RUNNER_TAG: saas-linux-small-arm64
+        RUNNER_TAG: saas-linux-medium-arm64
         TARGET_ARCH: arm64
-        LAUNCHER_LINUX_IMAGE_JOB: debian:bookworm-slim
+        LAUNCHER_LINUX_IMAGE_JOB: debian:trixie
         CMAKE_PRESET: linux
