@@ -64,6 +64,7 @@
 #include <QPair>
 #include <QSet>
 #include <QStack>
+#include <QTimer>
 
 #include "BaseInstance.h"
 
@@ -235,6 +236,7 @@ class InstanceList : public QAbstractListModel
 	void propertiesChanged(BaseInstance* inst);
 	void providerUpdated();
 	void instanceDirContentsChanged(const QString& path);
+	void performDebouncedReload();
 
   private:
 	int getInstIndex(BaseInstance* inst) const;
@@ -272,6 +274,7 @@ class InstanceList : public QAbstractListModel
 	QHash<InstanceId, InstancePtr> m_instanceMap;
 	bool m_groupsLoaded	   = false;
 	bool m_instancesProbed = false;
+	QTimer m_reloadDebounceTimer;
 
 	QStack<TrashHistoryItem> m_trashHistory;
 };
