@@ -1,8 +1,7 @@
 # =================================================
 # ProjT Launcher - Global defaults
 # =================================================
-# Let Git decide what is text, do not force LF globally
-* text=auto
+* text=auto eol=lf
 
 # =================================================
 # Binary / never-touch files
