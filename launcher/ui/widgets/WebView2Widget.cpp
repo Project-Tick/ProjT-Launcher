@@ -23,6 +23,7 @@
 
 #include <QDir>
 #include <QResizeEvent>
+#include <QShowEvent>
 #include <QStandardPaths>
 #include <QTimer>
 
@@ -133,6 +134,19 @@ void WebView2Widget::resizeEvent(QResizeEvent* event)
 {
 	QWidget::resizeEvent(event);
 	updateBounds();
+}
+
+void WebView2Widget::showEvent(QShowEvent* event)
+{
+	QWidget::showEvent(event);
+	updateBounds();
+#if defined(PROJT_USE_WEBVIEW2) && defined(_WIN32)
+	if (m_impl && m_impl->webview && m_url.isValid())
+	{
+		const auto wide = m_url.toString().toStdWString();
+		m_impl->webview->Navigate(wide.c_str());
+	}
+#endif
 }
 
 void WebView2Widget::initialize()

@@ -66,7 +66,9 @@ class LauncherHubWidget : public QWidget
   private:
 	HubView* currentView() const;
 	HubView* createTab(const QUrl& url, const QString& label = QString(), bool switchTo = true);
+	void activatePendingForIndex(int index);
 	void updateNavigationState();
+	void updateTabPerformanceState();
 
 	QTabBar* m_tabBar			 = nullptr;
 	QWidget* m_tabsBarContainer	 = nullptr;

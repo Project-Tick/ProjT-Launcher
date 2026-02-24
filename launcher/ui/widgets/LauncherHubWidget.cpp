@@ -21,14 +21,12 @@
 
 #include "LauncherHubWidget.h"
 
+#include <QApplication>
 #include <QDesktopServices>
 #include <QDir>
-#include <QGraphicsDropShadowEffect>
-#include <QGraphicsOpacityEffect>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
-#include <QPropertyAnimation>
 #include <QStandardPaths>
 #include <QStackedWidget>
 #include <QTabBar>
@@ -235,13 +233,20 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 	toolbar->addWidget(m_goButton);
 
 #if defined(PROJT_USE_WEBENGINE)
-	m_profile = new QWebEngineProfile(QStringLiteral("LauncherHub"), this);
-	m_profile->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
-	const QString storageRoot =
-		QDir::cleanPath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/webengine");
-	QDir().mkpath(storageRoot);
-	m_profile->setPersistentStoragePath(storageRoot + "/storage");
-	m_profile->setCachePath(storageRoot + "/cache");
+	static QWebEngineProfile* sharedProfile = nullptr;
+	if (!sharedProfile)
+	{
+		sharedProfile = new QWebEngineProfile(QStringLiteral("LauncherHub"), qApp);
+		sharedProfile->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
+		sharedProfile->setHttpCacheType(QWebEngineProfile::DiskHttpCache);
+		sharedProfile->setHttpCacheMaximumSize(256 * 1024 * 1024);
+		const QString storageRoot =
+			QDir::cleanPath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/webengine");
+		QDir().mkpath(storageRoot);
+		sharedProfile->setPersistentStoragePath(storageRoot + "/storage");
+		sharedProfile->setCachePath(storageRoot + "/cache");
+	}
+	m_profile = sharedProfile;
 #endif
 
 	m_stack = new QStackedWidget(this);
@@ -250,59 +255,47 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 	layout->addWidget(m_toolbarContainer);
 	layout->addWidget(m_stack);
 
-	auto* toolbarShadow = new QGraphicsDropShadowEffect(this);
-	toolbarShadow->setBlurRadius(22);
-	toolbarShadow->setOffset(0, 6);
-	toolbarShadow->setColor(QColor(0, 0, 0, 90));
-	m_toolbarContainer->setGraphicsEffect(toolbarShadow);
-
-	auto* tabsShadow = new QGraphicsDropShadowEffect(this);
-	tabsShadow->setBlurRadius(16);
-	tabsShadow->setOffset(0, 4);
-	tabsShadow->setColor(QColor(0, 0, 0, 60));
-	m_tabsBarContainer->setGraphicsEffect(tabsShadow);
-
 	setStyleSheet(QStringLiteral(R"PROJT_HUB(
 		LauncherHubWidget {
-			background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-				stop:0 #0f141b, stop:1 #141a24);
+			background: #0f1420;
 		}
 		#hubTabsBar, #hubToolbar {
-			background: rgba(20, 26, 36, 210);
-			border: 1px solid rgba(255, 255, 255, 18);
-			border-radius: 10px;
+			background: #171f2e;
+			border: 1px solid #2b3951;
+			border-radius: 12px;
 		}
 		QTabBar::tab {
 			background: transparent;
-			color: rgba(220, 228, 240, 180);
-			padding: 6px 12px;
-			margin-right: 6px;
-			border-radius: 8px;
+			color: #afbdd3;
+			padding: 7px 13px;
+			margin-right: 5px;
+			border-radius: 9px;
 		}
 		QTabBar::tab:selected {
-			background: rgba(88, 140, 255, 180);
+			background: #2f4f85;
+			border: 1px solid #4a6ea9;
 			color: #ffffff;
 		}
 		QTabBar::tab:hover {
-			background: rgba(255, 255, 255, 24);
+			background: #253147;
 			color: #ffffff;
 		}
 		QToolButton {
-			background: rgba(255, 255, 255, 10);
-			border: 1px solid rgba(255, 255, 255, 18);
-			border-radius: 8px;
+			background: #202b3f;
+			border: 1px solid #334764;
+			border-radius: 9px;
 			padding: 6px;
 		}
 		QToolButton:hover {
-			background: rgba(255, 255, 255, 22);
+			background: #2b3a54;
 		}
 		QLineEdit {
-			background: rgba(14, 18, 26, 210);
+			background: #0d1422;
 			color: #e6eefc;
-			border: 1px solid rgba(255, 255, 255, 20);
+			border: 1px solid #3a4c69;
 			border-radius: 10px;
 			padding: 8px 12px;
-			selection-background-color: rgba(88, 140, 255, 190);
+			selection-background-color: #42629a;
 		}
 	)PROJT_HUB"));
 
@@ -341,10 +334,6 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 	connect(m_goButton, &QToolButton::clicked, this, [this]() { openUrl(resolveInput(m_addressBar->text())); });
 	connect(m_addressBar, &QLineEdit::returnPressed, this, [this]() { openUrl(resolveInput(m_addressBar->text())); });
 
-	auto* stackFade = new QGraphicsOpacityEffect(m_stack);
-	stackFade->setOpacity(1.0);
-	m_stack->setGraphicsEffect(stackFade);
-
 	connect(m_newTabButton, &QToolButton::clicked, this, [this]() { newTab(m_homeUrl); });
 	connect(m_tabBar,
 			&QTabBar::currentChanged,
@@ -353,17 +342,9 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 			{
 				if (index >= 0 && index < m_stack->count())
 				{
-					auto* effect = qobject_cast<QGraphicsOpacityEffect*>(m_stack->graphicsEffect());
-					if (effect)
-					{
-						auto* anim = new QPropertyAnimation(effect, "opacity", this);
-						anim->setDuration(180);
-						anim->setStartValue(0.85);
-						anim->setEndValue(1.0);
-						anim->setEasingCurve(QEasingCurve::OutCubic);
-						anim->start(QAbstractAnimation::DeleteWhenStopped);
-					}
 					m_stack->setCurrentIndex(index);
+					activatePendingForIndex(index);
+					updateTabPerformanceState();
 					updateNavigationState();
 				}
 			});
@@ -380,8 +361,10 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 				{
 					if (auto* view = qobject_cast<HubView*>(m_stack->widget(index)))
 					{
+						view->setProperty("hubPendingUrl", QUrl());
 						view->setUrl(m_homeUrl);
 						m_tabBar->setTabText(index, tr("Home"));
+						updateTabPerformanceState();
 						updateNavigationState();
 					}
 					return;
@@ -394,6 +377,8 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 				const int newIndex = qMin(index, m_tabBar->count() - 1);
 				m_tabBar->setCurrentIndex(newIndex);
 				m_stack->setCurrentIndex(newIndex);
+				activatePendingForIndex(newIndex);
+				updateTabPerformanceState();
 				updateNavigationState();
 			});
 
@@ -428,9 +413,17 @@ HubView* LauncherHubWidget::createTab(const QUrl& url, const QString& label, boo
 #if defined(PROJT_USE_WEBENGINE)
 	auto* page = new LauncherHubPage(m_profile, view);
 	view->setPage(page);
+	view->setAttribute(Qt::WA_OpaquePaintEvent, true);
+	view->setStyleSheet(QStringLiteral("background: #121822;"));
+	page->setBackgroundColor(QColor(QStringLiteral("#121822")));
 	view->settings()->setAttribute(QWebEngineSettings::JavascriptEnabled, true);
 	view->settings()->setAttribute(QWebEngineSettings::LocalContentCanAccessRemoteUrls, false);
 	view->settings()->setAttribute(QWebEngineSettings::LocalContentCanAccessFileUrls, false);
+	view->settings()->setAttribute(QWebEngineSettings::PluginsEnabled, false);
+	view->settings()->setAttribute(QWebEngineSettings::HyperlinkAuditingEnabled, false);
+	view->settings()->setAttribute(QWebEngineSettings::ScrollAnimatorEnabled, false);
+	view->settings()->setAttribute(QWebEngineSettings::WebGLEnabled, false);
+	view->settings()->setAttribute(QWebEngineSettings::Accelerated2dCanvasEnabled, false);
 
 	auto* channel = new QWebChannel(view);
 	auto* bridge  = new LauncherHubBridge(channel);
@@ -508,10 +501,36 @@ HubView* LauncherHubWidget::createTab(const QUrl& url, const QString& label, boo
 
 	if (url.isValid())
 	{
-		view->setUrl(url);
+		const bool shouldLoadNow = switchTo || stackIndex == 0;
+		if (shouldLoadNow)
+		{
+			view->setUrl(url);
+		}
+		else
+		{
+			view->setProperty("hubPendingUrl", url);
+		}
 	}
+	updateTabPerformanceState();
 
 	return view;
+}
+
+void LauncherHubWidget::activatePendingForIndex(int index)
+{
+	if (!m_stack || index < 0 || index >= m_stack->count())
+	{
+		return;
+	}
+	if (auto* view = qobject_cast<HubView*>(m_stack->widget(index)))
+	{
+		const QUrl pendingUrl = view->property("hubPendingUrl").toUrl();
+		if (pendingUrl.isValid())
+		{
+			view->setProperty("hubPendingUrl", QUrl());
+			view->setUrl(pendingUrl);
+		}
+	}
 }
 
 void LauncherHubWidget::updateNavigationState()
@@ -532,6 +551,28 @@ void LauncherHubWidget::updateNavigationState()
 	m_forwardButton->setEnabled(view->canGoForward());
 #endif
 	m_addressBar->setText(view->url().toString());
+}
+
+void LauncherHubWidget::updateTabPerformanceState()
+{
+#if defined(PROJT_USE_WEBENGINE)
+	if (!m_stack)
+	{
+		return;
+	}
+
+	const int activeIndex = m_stack->currentIndex();
+	for (int i = 0; i < m_stack->count(); ++i)
+	{
+		auto* view = qobject_cast<QWebEngineView*>(m_stack->widget(i));
+		if (!view || !view->page())
+		{
+			continue;
+		}
+		view->page()->setLifecycleState(i == activeIndex ? QWebEnginePage::LifecycleState::Active
+														  : QWebEnginePage::LifecycleState::Frozen);
+	}
+#endif
 }
 
 void LauncherHubWidget::ensureLoaded()
@@ -567,6 +608,7 @@ void LauncherHubWidget::openUrl(const QUrl& url)
 		return;
 	}
 	view->setUrl(url);
+	updateTabPerformanceState();
 	m_loaded = true;
 }
 

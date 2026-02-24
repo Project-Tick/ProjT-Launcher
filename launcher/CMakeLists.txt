@@ -1368,7 +1368,7 @@ endif()
 if(UNIX AND NOT APPLE)
     set(LAUNCHER_DISABLE_HUB ON)
 endif()
-if(MSVC AND (CMAKE_VS_PLATFORM_NAME STREQUAL "ARM64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64|aarch64"))
+if(MSVC AND WIN32)
     set(LAUNCHER_USE_WEBENGINE OFF)
     set(LAUNCHER_USE_WEBVIEW2 ON)
 endif()
@@ -1733,24 +1733,24 @@ if(WIN32 OR (UNIX AND APPLE))
         list(REMOVE_DUPLICATES QT_RUNTIME_DIRS)
     endif()
 
-    qt_generate_deploy_script(
-        TARGET ${Launcher_Name}
-        OUTPUT_SCRIPT QT_DEPLOY_SCRIPT
-        CONTENT [=[
-        qt_deploy_runtime_dependencies(
-            EXECUTABLE ${BINARY_DEST_DIR}/$<TARGET_FILE_NAME:${Launcher_Name}>
-            BIN_DIR ${BINARY_DEST_DIR}
-            LIBEXEC_DIR ${LIBRARY_DEST_DIR}
-            LIB_DIR ${LIBRARY_DEST_DIR}
-            PLUGINS_DIR ${PLUGIN_DEST_DIR}
-            NO_OVERWRITE
-            NO_TRANSLATIONS
-            NO_COMPILER_RUNTIME
-            DEPLOY_TOOL_OPTIONS ${QT_DEPLOY_TOOL_OPTIONS}
-            POST_EXCLUDE_REGEXES "^/opt/homebrew/.*" "^/usr/lib/.*"
+        qt_generate_deploy_script(
+            TARGET ${Launcher_Name}
+            OUTPUT_SCRIPT QT_DEPLOY_SCRIPT
+            CONTENT [=[
+            qt_deploy_runtime_dependencies(
+                EXECUTABLE ${BINARY_DEST_DIR}/$<TARGET_FILE_NAME:${Launcher_Name}>
+                BIN_DIR ${BINARY_DEST_DIR}
+                LIBEXEC_DIR ${LIBRARY_DEST_DIR}
+                LIB_DIR ${LIBRARY_DEST_DIR}
+                PLUGINS_DIR ${PLUGIN_DEST_DIR}
+                NO_OVERWRITE
+                NO_TRANSLATIONS
+                NO_COMPILER_RUNTIME
+                DEPLOY_TOOL_OPTIONS ${QT_DEPLOY_TOOL_OPTIONS}
+                POST_EXCLUDE_REGEXES "^/opt/homebrew/.*" "^/usr/lib/.*"
+            )
+            ]=]
         )
-        ]=]
-    )
 
     # Bundle our linked dependencies
     install(
@@ -1784,10 +1784,10 @@ if(WIN32 OR (UNIX AND APPLE))
         FRAMEWORK DESTINATION ${FRAMEWORK_DEST_DIR}
     )
     # Deploy Qt plugins
-    install(
-        SCRIPT ${QT_DEPLOY_SCRIPT}
-        COMPONENT bundle
-    )
+        install(
+            SCRIPT ${QT_DEPLOY_SCRIPT}
+            COMPONENT bundle
+        )
 
     # Add qt.conf - this makes Qt stop looking for things outside the bundle
     install(
