@@ -35,6 +35,32 @@ default:
       - .cache/pip/
       - .cache/ccache/
 
+.manual_non_tag_rules: &manual_non_tag_rules
+  - if: '$CI_COMMIT_TAG'
+    when: never
+  - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    when: manual
+    allow_failure: false
+  - if: '$CI_PIPELINE_SOURCE == "push"'
+    when: manual
+    allow_failure: false
+
+.flatpak_change_paths: &flatpak_change_paths
+  - flatpak/**/*.yml
+  - flatpak/**/*.json
+  - flatpak/scripts/**/*
+  - flatpak/shared-modules/**/*
+  - flatpak/static/projtlauncher.flatpakrepo
+  - flatpak/static/projtlauncher-nightly.flatpakref
+  - flatpak/static/index.html
+  - .gitlab-ci.yml
+
+.flatpak_deploy_rules: &flatpak_deploy_rules
+  - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+    changes: *flatpak_change_paths
+  - if: '$CI_PIPELINE_SOURCE == "web"'
+
 schedule_js_fuzz:
   stage: scheduled
   image: node:20-bookworm
@@ -115,15 +141,7 @@ flatpak_build:
     - $RUNNER_TAG
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      changes:
-        - flatpak/**/*.yml
-        - flatpak/**/*.json
-        - flatpak/scripts/**/*
-        - flatpak/shared-modules/**/*
-        - flatpak/static/projtlauncher.flatpakrepo
-        - flatpak/static/projtlauncher-nightly.flatpakref
-        - flatpak/static/index.html
-        - .gitlab-ci.yml
+      changes: *flatpak_change_paths
     - if: '$CI_PIPELINE_SOURCE == "web"'
   parallel:
     matrix:
@@ -199,25 +217,13 @@ schedule_cfl:
     - cmake --build build-fuzz --target fuzz_nbt_reader
     - ./build-fuzz/fuzz_nbt_reader -max_total_time=3600
 
-schedule_flatpak_deploy:
+.schedule_flatpak_deploy_template:
   stage: scheduled
   image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
   resource_group: flatpak-deploy
   tags:
     - $RUNNER_TAG
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
-      changes:
-        - flatpak/**/*.yml
-        - flatpak/**/*.json
-        - flatpak/scripts/**/*
-        - flatpak/shared-modules/**/*
-        - flatpak/static/projtlauncher.flatpakrepo
-        - flatpak/static/projtlauncher-nightly.flatpakref
-        - flatpak/static/index.html
-        - .gitlab-ci.yml
-    - if: '$CI_PIPELINE_SOURCE == "web"'
+  rules: *flatpak_deploy_rules
   script:
     - |
       if [ -z "${FLATPAK_SITE_REPO:-}" ] || [ -z "${FLATPAK_SITE_TOKEN:-}" ]; then
@@ -267,79 +273,18 @@ schedule_flatpak_deploy:
       git config user.email "gitlab-bot@projecttick.org"
       git commit -m "chore: update flatpak repository ($FLATPAK_ARCH)"
       git push
+
+schedule_flatpak_deploy:
+  extends: .schedule_flatpak_deploy_template
   variables:
     RUNNER_TAG: pt-rhel-runner-01
     FLATPAK_ARCH: x86_64
 
 schedule_flatpak_deploy_arm64:
-  stage: scheduled
-  image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
-  resource_group: flatpak-deploy
-  tags:
-    - saas-linux-medium-arm64
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
-      changes:
-        - flatpak/**/*.yml
-        - flatpak/**/*.json
-        - flatpak/scripts/**/*
-        - flatpak/shared-modules/**/*
-        - flatpak/static/projtlauncher.flatpakrepo
-        - flatpak/static/projtlauncher-nightly.flatpakref
-        - flatpak/static/index.html
-        - .gitlab-ci.yml
-    - if: '$CI_PIPELINE_SOURCE == "web"'
+  extends: .schedule_flatpak_deploy_template
   variables:
+    RUNNER_TAG: saas-linux-medium-arm64
     FLATPAK_ARCH: aarch64
-  script:
-    - |
-      if [ -z "${FLATPAK_SITE_REPO:-}" ] || [ -z "${FLATPAK_SITE_TOKEN:-}" ]; then
-        echo "FLATPAK_SITE_REPO / FLATPAK_SITE_TOKEN required."
-        exit 1
-      fi
-    - |
-      if command -v apt-get >/dev/null 2>&1; then
-        apt-get update
-        apt-get install -y git rsync dbus-user-session
-      fi
-    - flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    - |
-      if [ -n "${FLATPAK_GPG_KEY:-}" ] && [ -n "${FLATPAK_GPG_KEY_ID:-}" ]; then
-        echo -n "$FLATPAK_GPG_KEY" | base64 -d | gpg --import
-      fi
-    - |
-      REPO_DIR="$CI_PROJECT_DIR/flatpak-repo"
-      BUILD_DIR="$CI_PROJECT_DIR/flatpak-build"
-      rm -rf "$REPO_DIR" "$BUILD_DIR"
-      mkdir -p "$REPO_DIR" "$BUILD_DIR"
-    - |
-      build_cmd="flatpak-builder --force-clean --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
-      if command -v dbus-run-session >/dev/null 2>&1; then
-        dbus-run-session -- bash -lc "$build_cmd"
-      else
-        bash -lc "$build_cmd"
-      fi
-    - |
-      flatpak build-update-repo \
-        ${FLATPAK_GPG_KEY_ID:+--gpg-sign="$FLATPAK_GPG_KEY_ID"} \
-        --generate-static-deltas \
-        --prune \
-        "$REPO_DIR"
-    - |
-      git clone "https://oauth2:${FLATPAK_SITE_TOKEN}@${FLATPAK_SITE_REPO}" flatpak-site
-      rsync -a --delete "$REPO_DIR"/ flatpak-site/
-      cp -r flatpak/static/. flatpak-site/
-      cd flatpak-site
-      git add -A
-      if git diff --cached --quiet; then
-        echo "No changes to push."
-        exit 0
-      fi
-      git config user.name "Project Tick Bot"
-      git config user.email "gitlab-bot@projecttick.org"
-      git commit -m "chore: update flatpak repository ($FLATPAK_ARCH)"
-      git push
 
 launcher_linux_image:
   stage: prepare
@@ -394,15 +339,7 @@ markdown_lint:
   image: node:20-bookworm
   tags:
     - pt-rhel-runner-01
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: manual
-      allow_failure: false
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: false
+  rules: *manual_non_tag_rules
   script:
     - npm install --global markdownlint-cli
     - markdownlint . --config .markdownlint.yaml --ignore-path .markdownlintignore
@@ -412,15 +349,7 @@ bot_smoke:
   image: node:20-bookworm
   tags:
     - pt-rhel-runner-01
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: manual
-      allow_failure: false
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: false
+  rules: *manual_non_tag_rules
   script:
     - node -c bot/index.js
 
@@ -429,15 +358,7 @@ meta_smoke:
   image: python:3.11-bookworm
   tags:
     - pt-rhel-runner-01
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: manual
-      allow_failure: false
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: false
+  rules: *manual_non_tag_rules
   script:
     - python -m compileall meta
 
@@ -446,15 +367,7 @@ javacheck_build:
   image: ubuntu:24.04
   tags:
     - pt-rhel-runner-01
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: manual
-      allow_failure: false
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: false
+  rules: *manual_non_tag_rules
   script:
     - apt-get -y update
     - >
@@ -492,13 +405,20 @@ javacheck_build:
   script:
     - |
       set -eu
-      if ! command -v cmake >/dev/null 2>&1; then
+      if ! command -v cmake >/dev/null 2>&1 || ! command -v ctest >/dev/null 2>&1; then
         apt-get -y update
         JAVA_PKG="openjdk-21-jdk"
         if ! apt-cache show "$JAVA_PKG" >/dev/null 2>&1; then
           JAVA_PKG="openjdk-17-jdk"
         fi
         apt-get -y install \
+          ca-certificates \
+          curl \
+          git \
+          tar \
+          xz-utils \
+          gzip \
+          bzip2 \
           build-essential \
           ccache \
           cmake \
@@ -511,10 +431,19 @@ javacheck_build:
           libxcb-cursor-dev \
           libdbus-1-dev \
           libinih-dev \
+          libopengl0 \
           libsystemd-dev \
           libssl-dev \
           libtiff6 \
           pkg-config
+
+        if dpkg -s libtiff6 >/dev/null 2>&1 && command -v dpkg-architecture >/dev/null 2>&1; then
+          ARCH_DIR="$(dpkg-architecture -q DEB_HOST_MULTIARCH)"
+          if [ -e "/usr/lib/${ARCH_DIR}/libtiff.so.6" ] && [ ! -e "/usr/lib/${ARCH_DIR}/libtiff.so.5" ]; then
+            ln -sf "/usr/lib/${ARCH_DIR}/libtiff.so.6" "/usr/lib/${ARCH_DIR}/libtiff.so.5" || true
+            ldconfig || true
+          fi
+        fi
       fi
 
       if command -v ccache >/dev/null 2>&1; then
@@ -541,10 +470,12 @@ javacheck_build:
       fi
       cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
       ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --output-on-failure --no-tests=error
+
       PACKAGE_DIR="$CI_PROJECT_DIR/package"
       INSTALL_DIR="$CI_PROJECT_DIR/install"
       PORTABLE_DIR="$CI_PROJECT_DIR/install-portable"
-      mkdir -p "$PACKAGE_DIR" "$INSTALL_DIR" "$PORTABLE_DIR"
+      APPDIR="$CI_PROJECT_DIR/install-appdir"
+      mkdir -p "$PACKAGE_DIR" "$INSTALL_DIR" "$PORTABLE_DIR" "$APPDIR"
 
       cmake --install build --config "$BUILD_TYPE" --prefix "$INSTALL_DIR"
       cmake --install build --config "$BUILD_TYPE" --prefix "$PORTABLE_DIR" --component portable || true
@@ -556,6 +487,98 @@ javacheck_build:
 
       if [ -f build/CPackConfig.cmake ]; then
         cpack --config build/CPackConfig.cmake -G DEB -C "$BUILD_TYPE" -B "$PACKAGE_DIR" || true
+        if [ "$BUILD_TYPE" = "Release" ]; then
+          cpack --config build/CPackConfig.cmake -G RPM -C "$BUILD_TYPE" -B "$PACKAGE_DIR" || true
+        fi
+      fi
+
+      if [ "$BUILD_TYPE" = "Release" ] && [ -f build/CPackSourceConfig.cmake ]; then
+        cpack --config build/CPackSourceConfig.cmake -G RPM -B "$PACKAGE_DIR" || true
+      fi
+
+      if [ "$BUILD_TYPE" = "Release" ] && command -v dpkg-architecture >/dev/null 2>&1; then
+        APPIMAGE_ARCH="$(dpkg-architecture -q DEB_HOST_ARCH_CPU)"
+        case "$APPIMAGE_ARCH" in
+          amd64) APPIMAGE_ARCH="x86_64" ;;
+          arm64) APPIMAGE_ARCH="aarch64" ;;
+          *) APPIMAGE_ARCH="" ;;
+        esac
+
+        if [ -n "$APPIMAGE_ARCH" ]; then
+          if [ "$APPIMAGE_ARCH" = "x86_64" ]; then
+            LINUXDEPLOY_URL="https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20250213-2/linuxdeploy-x86_64.AppImage"
+            LINUXDEPLOY_SHA256="4648f278ab3ef31f819e67c30d50f462640e5365a77637d7e6f2ad9fd0b4522a"
+            LINUXDEPLOY_QT_URL="https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/1-alpha-20250213-1/linuxdeploy-plugin-qt-x86_64.AppImage"
+            LINUXDEPLOY_QT_SHA256="15106be885c1c48a021198e7e1e9a48ce9d02a86dd0a1848f00bdbf3c1c92724"
+            APPIMAGEUPDATE_URL="https://github.com/AppImageCommunity/AppImageUpdate/releases/download/2.0.0-alpha-1-20241225/AppImageUpdate-x86_64.AppImage"
+            APPIMAGEUPDATE_SHA256="f1747cf60058e99f1bb9099ee9787d16c10241313b7acec81810ea1b1e568c11"
+          else
+            LINUXDEPLOY_URL="https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20250213-2/linuxdeploy-aarch64.AppImage"
+            LINUXDEPLOY_SHA256="06706ac8189797dccd36bd384105892cb5e6e71f784f4df526cc958adc223cd6"
+            LINUXDEPLOY_QT_URL="https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/1-alpha-20250213-1/linuxdeploy-plugin-qt-aarch64.AppImage"
+            LINUXDEPLOY_QT_SHA256="bf1c24aff6d749b5cf423afad6f15abd4440f81dec1aab95706b25f6667cdcf1"
+            APPIMAGEUPDATE_URL="https://github.com/AppImageCommunity/AppImageUpdate/releases/download/2.0.0-alpha-1-20241225/AppImageUpdate-aarch64.AppImage"
+            APPIMAGEUPDATE_SHA256="cf27f810dfe5eda41f130769e4a4b562b9d93665371c15ebeffb84ee06a41550"
+          fi
+
+          curl -fsSL "$LINUXDEPLOY_URL" -o "linuxdeploy-${APPIMAGE_ARCH}.AppImage"
+          echo "${LINUXDEPLOY_SHA256}  linuxdeploy-${APPIMAGE_ARCH}.AppImage" | sha256sum -c -
+          curl -fsSL "$LINUXDEPLOY_QT_URL" -o "linuxdeploy-plugin-qt-${APPIMAGE_ARCH}.AppImage"
+          echo "${LINUXDEPLOY_QT_SHA256}  linuxdeploy-plugin-qt-${APPIMAGE_ARCH}.AppImage" | sha256sum -c -
+          curl -fsSL "$APPIMAGEUPDATE_URL" -o "AppImageUpdate-${APPIMAGE_ARCH}.AppImage"
+          echo "${APPIMAGEUPDATE_SHA256}  AppImageUpdate-${APPIMAGE_ARCH}.AppImage" | sha256sum -c -
+          chmod +x "linuxdeploy-${APPIMAGE_ARCH}.AppImage" "linuxdeploy-plugin-qt-${APPIMAGE_ARCH}.AppImage" "AppImageUpdate-${APPIMAGE_ARCH}.AppImage"
+
+          rm -rf "$APPDIR"
+          mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/lib"
+          DESTDIR="$APPDIR" cmake --install build --config "$BUILD_TYPE" --prefix /usr || true
+
+          if [ -f "$APPDIR/usr/share/metainfo/org.projecttick.ProjTLauncher.metainfo.xml" ]; then
+            mv "$APPDIR/usr/share/metainfo/org.projecttick.ProjTLauncher.metainfo.xml" \
+               "$APPDIR/usr/share/metainfo/org.projecttick.ProjTLauncher.appdata.xml"
+          fi
+
+          cp "AppImageUpdate-${APPIMAGE_ARCH}.AppImage" "$APPDIR/usr/bin/" || true
+          cp /usr/lib/*/libcrypto.so.* "$APPDIR/usr/lib/" 2>/dev/null || true
+          cp /usr/lib/*/libssl.so.* "$APPDIR/usr/lib/" 2>/dev/null || true
+          cp /usr/lib/*/libOpenGL.so.0* "$APPDIR/usr/lib/" 2>/dev/null || true
+
+          export NO_APPSTREAM=1
+          export UPDATE_INFORMATION="gh-releases-zsync|${CI_PROJECT_NAMESPACE}|${CI_PROJECT_NAME}|latest|ProjTLauncher-Linux-${APPIMAGE_ARCH}.AppImage"
+          export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:$APPDIR/usr/lib"
+
+          if [ -n "${LINUX_GPG_KEY:-}" ]; then
+            GNUPGHOME="$(mktemp -d)"
+            chmod 700 "$GNUPGHOME"
+            export GNUPGHOME
+            printf '%s' "$LINUX_GPG_KEY" > "$GNUPGHOME/private.key"
+            chmod 600 "$GNUPGHOME/private.key"
+            gpg --batch --yes --pinentry-mode loopback --import "$GNUPGHOME/private.key"
+            echo "pinentry-mode loopback" >> "$GNUPGHOME/gpg.conf"
+            echo "allow-loopback-pinentry" >> "$GNUPGHOME/gpg-agent.conf"
+            gpgconf --kill gpg-agent || true
+            gpg-connect-agent reloadagent /bye || true
+            if [ -n "${LINUX_GPG_ID:-}" ]; then
+              export SIGN=1
+              export SIGN_KEY="$LINUX_GPG_ID"
+            fi
+          fi
+
+          "./linuxdeploy-${APPIMAGE_ARCH}.AppImage" \
+            --appdir "$APPDIR" \
+            --output appimage \
+            --plugin qt \
+            -i "$APPDIR/usr/share/icons/hicolor/scalable/apps/org.projecttick.ProjTLauncher.svg" || true
+
+          if [ -f "ProjTLauncher-Linux-${APPIMAGE_ARCH}.AppImage" ]; then
+            mv "ProjTLauncher-Linux-${APPIMAGE_ARCH}.AppImage" \
+               "$PACKAGE_DIR/ProjTLauncher-Linux-${APPIMAGE_ARCH}-${BUILD_TYPE}.AppImage"
+          fi
+          if [ -f "ProjTLauncher-Linux-${APPIMAGE_ARCH}.AppImage.zsync" ]; then
+            mv "ProjTLauncher-Linux-${APPIMAGE_ARCH}.AppImage.zsync" \
+               "$PACKAGE_DIR/ProjTLauncher-Linux-${APPIMAGE_ARCH}-${BUILD_TYPE}.AppImage.zsync"
+          fi
+        fi
       fi
 
       ccache -s || true
@@ -579,8 +602,20 @@ javacheck_build:
   script:
     - |
       set -eu
-      if command -v javac >/dev/null 2>&1; then
+      if command -v brew >/dev/null 2>&1; then
+        brew update || true
+        brew install mono ninja extra-cmake-modules temurin@21 zlib quazip cmark tomlplusplus qrencode lcov create-dmg || true
+        brew unlink qt || true
+      fi
+
+      if /usr/libexec/java_home -v 21 >/dev/null 2>&1; then
+        JAVA_HOME="$(/usr/libexec/java_home -v 21)"
+      elif command -v javac >/dev/null 2>&1; then
         JAVA_HOME="$(dirname "$(dirname "$(readlink "$(command -v javac)")")")"
+      else
+        JAVA_HOME=""
+      fi
+      if [ -n "$JAVA_HOME" ]; then
         export JAVA_HOME
         export PATH="$JAVA_HOME/bin:$PATH"
       fi
@@ -593,6 +628,7 @@ javacheck_build:
       PACKAGE_DIR="$CI_PROJECT_DIR/package"
       INSTALL_DIR="$CI_PROJECT_DIR/install"
       PORTABLE_DIR="$CI_PROJECT_DIR/install-portable"
+      DMG_STAGING_DIR="$CI_PROJECT_DIR/dmg-staging"
       mkdir -p "$PACKAGE_DIR" "$INSTALL_DIR" "$PORTABLE_DIR"
 
       cmake --install build --config "$BUILD_TYPE" --prefix "$INSTALL_DIR"
@@ -603,10 +639,96 @@ javacheck_build:
         tar -czf "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-Portable-${BUILD_TYPE}.tar.gz" -C "$PORTABLE_DIR" .
       fi
 
+      APP_PATH=""
+      if [ -d "$INSTALL_DIR/ProjTLauncher.app" ]; then
+        mv "$INSTALL_DIR/ProjTLauncher.app" "$INSTALL_DIR/ProjT Launcher.app"
+      fi
       if [ -d "$INSTALL_DIR/ProjT Launcher.app" ]; then
-        ditto -c -k --sequesterRsrc --keepParent "$INSTALL_DIR/ProjT Launcher.app" "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.zip"
-      elif [ -d "$INSTALL_DIR/ProjTLauncher.app" ]; then
-        ditto -c -k --sequesterRsrc --keepParent "$INSTALL_DIR/ProjTLauncher.app" "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.zip"
+        APP_PATH="$INSTALL_DIR/ProjT Launcher.app"
+      fi
+      INSTALLER_APP_PATH=""
+      if [ -d "$INSTALL_DIR/ProjT Launcher Installer.app" ]; then
+        INSTALLER_APP_PATH="$INSTALL_DIR/ProjT Launcher Installer.app"
+      fi
+
+      MAC_CODESIGN_ID="-"
+      ENTITLEMENTS_FILE="$CI_PROJECT_DIR/program_info/AdhocSignedApp.entitlements"
+      if [ -n "${APPLE_CODESIGN_CERT:-}" ]; then
+        printf '%s' "$APPLE_CODESIGN_CERT" | base64 --decode > "$CI_PROJECT_DIR/codesign.p12"
+      fi
+      if [ -n "${APPLE_CODESIGN_ID:-}" ] && [ -f "$CI_PROJECT_DIR/codesign.p12" ]; then
+        security create-keychain -p "${APPLE_CODESIGN_PASSWORD:-}" build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p "${APPLE_CODESIGN_PASSWORD:-}" build.keychain
+        security import "$CI_PROJECT_DIR/codesign.p12" -k build.keychain -P "${APPLE_CODESIGN_PASSWORD:-}" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${APPLE_CODESIGN_PASSWORD:-}" build.keychain
+        MAC_CODESIGN_ID="$APPLE_CODESIGN_ID"
+        ENTITLEMENTS_FILE="$CI_PROJECT_DIR/program_info/App.entitlements"
+      fi
+
+      if [ -n "$APP_PATH" ]; then
+        chmod +x "$APP_PATH/Contents/MacOS/projtlauncher" || true
+        codesign --sign "$MAC_CODESIGN_ID" --deep --force --entitlements "$ENTITLEMENTS_FILE" --options runtime "$APP_PATH/Contents/MacOS/projtlauncher" || true
+        codesign --sign "$MAC_CODESIGN_ID" --deep --force --entitlements "$ENTITLEMENTS_FILE" --options runtime "$APP_PATH" || true
+      fi
+      if [ -n "$INSTALLER_APP_PATH" ]; then
+        codesign --sign "$MAC_CODESIGN_ID" --deep --force --entitlements "$ENTITLEMENTS_FILE" --options runtime "$INSTALLER_APP_PATH" || true
+      fi
+
+      ZIP_PATH="$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.zip"
+      if [ -n "$APP_PATH" ]; then
+        ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
+      fi
+
+      if [ -n "$APP_PATH" ] && [ -n "${APPLE_NOTARIZE_PASSWORD:-}" ]; then
+        NOTARY_ZIP="$CI_PROJECT_DIR/ProjTLauncher-notary.zip"
+        ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$NOTARY_ZIP"
+        xcrun notarytool submit "$NOTARY_ZIP" \
+          --wait --progress \
+          --apple-id "${APPLE_NOTARIZE_APPLE_ID:-}" \
+          --team-id "${APPLE_NOTARIZE_TEAM_ID:-}" \
+          --password "${APPLE_NOTARIZE_PASSWORD:-}" || true
+        xcrun stapler staple "$APP_PATH" || true
+        ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
+      fi
+
+      if [ -n "$APP_PATH" ] && command -v create-dmg >/dev/null 2>&1; then
+        rm -rf "$DMG_STAGING_DIR"
+        mkdir -p "$DMG_STAGING_DIR"
+        cp -R "$APP_PATH" "$DMG_STAGING_DIR/"
+        if [ -n "$INSTALLER_APP_PATH" ]; then
+          cp -R "$INSTALLER_APP_PATH" "$DMG_STAGING_DIR/"
+        fi
+        DMG_PATH="$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.dmg"
+        create-dmg \
+          --volname "ProjT Launcher" \
+          --window-size 640 420 \
+          --icon-size 128 \
+          --icon "ProjT Launcher.app" 160 210 \
+          --app-drop-link 480 210 \
+          "$DMG_PATH" \
+          "$DMG_STAGING_DIR" || true
+      fi
+
+      if [ -n "$APP_PATH" ] && command -v pkgbuild >/dev/null 2>&1 && command -v productbuild >/dev/null 2>&1; then
+        PKG_COMPONENT="$CI_PROJECT_DIR/bootstrap-component.pkg"
+        PKG_PATH="$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.pkg"
+        rm -f "$PKG_COMPONENT" "$PKG_PATH"
+        pkgbuild --install-location /Applications --component "$APP_PATH" "$PKG_COMPONENT" || true
+        productbuild --package "$PKG_COMPONENT" "$PKG_PATH" || true
+      fi
+
+      if [ -n "${SPARKLE_ED25519_PRIVATE_KEY:-}" ] && [ -f "$ZIP_PATH" ]; then
+        printf '%s' "$SPARKLE_ED25519_PRIVATE_KEY" > "$CI_PROJECT_DIR/ed25519-priv.pem"
+        OPENSSL_BIN="/opt/homebrew/opt/openssl@3/bin/openssl"
+        if [ ! -x "$OPENSSL_BIN" ]; then
+          OPENSSL_BIN="/usr/local/opt/openssl@3/bin/openssl"
+        fi
+        if [ ! -x "$OPENSSL_BIN" ]; then
+          OPENSSL_BIN="openssl"
+        fi
+        SPARKLE_SIG="$("$OPENSSL_BIN" pkeyutl -sign -rawin -in "$ZIP_PATH" -inkey "$CI_PROJECT_DIR/ed25519-priv.pem" | openssl base64 | tr -d '\n')"
+        printf '%s\n' "$SPARKLE_SIG" > "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.sparkle.txt"
       fi
   artifacts:
     when: always
@@ -626,8 +748,21 @@ javacheck_build:
     BUILD_PLATFORM: official
   script:
     - '$ErrorActionPreference = "Stop"'
-    - 'if (Test-Path "build") { Remove-Item -Path "build" -Recurse -Force }'
     - |
+      foreach ($path in @("build","install","install-portable","package","NSISPlugins","codesign.pfx")) {
+        if (Test-Path $path) { Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue }
+      }
+    - |
+      if (-not (Get-Command javac -ErrorAction SilentlyContinue) -and (Get-Command choco -ErrorAction SilentlyContinue)) {
+        choco install temurin21 -y
+      }
+      if (-not (Get-Command python -ErrorAction SilentlyContinue) -and (Get-Command choco -ErrorAction SilentlyContinue)) {
+        choco install python --version=3.13.0 -y
+      }
+      if (-not (Get-Command nuget -ErrorAction SilentlyContinue) -and (Get-Command choco -ErrorAction SilentlyContinue)) {
+        choco install nuget.commandline -y
+      }
+
       if ($env:VCVARS_ARCH) {
         $candidates = @(
           "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat",
@@ -639,6 +774,23 @@ javacheck_build:
           throw "VsDevCmd.bat not found for VCVARS_ARCH=$env:VCVARS_ARCH"
         }
 
+        if ((Test-Path "$env:CI_PROJECT_DIR\packages.config") -and (Get-Command nuget -ErrorAction SilentlyContinue)) {
+          $nugetConfig = "$env:CI_PROJECT_DIR\nuget.config"
+          if ((Test-Path $nugetConfig) -and $env:GITHUB_PACKAGES_TOKEN) {
+            $nugetUser = if ($env:GITHUB_PACKAGES_USER) { $env:GITHUB_PACKAGES_USER } else { "project-tick" }
+            nuget sources Remove -Name "project-tick" -ConfigFile $nugetConfig -NonInteractive | Out-Null
+            nuget sources Add `
+              -Name "project-tick" `
+              -Source "https://nuget.pkg.github.com/Project-Tick/index.json" `
+              -UserName "$nugetUser" `
+              -Password "$env:GITHUB_PACKAGES_TOKEN" `
+              -StorePasswordInClearText `
+              -ConfigFile $nugetConfig `
+              -NonInteractive | Out-Null
+          }
+          nuget install "$env:CI_PROJECT_DIR\packages.config" -OutputDirectory "$env:CI_PROJECT_DIR\dependencies" -ConfigFile "$nugetConfig"
+        }
+
         $configure = "cmake --preset `"$env:CMAKE_PRESET`" -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING -DLauncher_OUTPUT_ROOT=`"$env:CI_PROJECT_DIR/build/out`""
         $build = "cmake --build --preset `"$env:CMAKE_PRESET`" --config `"$env:BUILD_TYPE`""
         $tests = "ctest --preset `"$env:CMAKE_PRESET`" --build-config `"$env:BUILD_TYPE`" --output-on-failure --no-tests=error"
@@ -646,6 +798,26 @@ javacheck_build:
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       }
       elseif ($env:CMAKE_PRESET -eq "windows_mingw") {
+        if ((Get-Command pacman -ErrorAction SilentlyContinue) -and (Get-Command bash -ErrorAction SilentlyContinue)) {
+          bash -lc "pacman -S --needed --noconfirm \
+            git \
+            mingw-w64-x86_64-toolchain \
+            mingw-w64-x86_64-ccache \
+            mingw-w64-x86_64-cmake \
+            mingw-w64-x86_64-extra-cmake-modules \
+            mingw-w64-x86_64-ninja \
+            mingw-w64-x86_64-cmark \
+            mingw-w64-x86_64-tomlplusplus \
+            mingw-w64-x86_64-zlib \
+            mingw-w64-x86_64-qrencode \
+            mingw-w64-x86_64-binutils \
+            mingw-w64-x86_64-qt6-base \
+            mingw-w64-x86_64-qt6-svg \
+            mingw-w64-x86_64-qt6-imageformats \
+            mingw-w64-x86_64-qt6-networkauth \
+            mingw-w64-x86_64-qt6-positioning \
+            mingw-w64-x86_64-qt6-serialport" | Out-Host
+        }
         if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) {
           throw "Ninja not found for windows_mingw preset. Install MSYS2/MinGW toolchain and ensure ninja is in PATH."
         }
@@ -672,9 +844,11 @@ javacheck_build:
       $packageDir = Join-Path $env:CI_PROJECT_DIR "package"
       $installDir = Join-Path $env:CI_PROJECT_DIR "install"
       $portableDir = Join-Path $env:CI_PROJECT_DIR "install-portable"
+      $nsiPluginsDir = Join-Path $env:CI_PROJECT_DIR "NSISPlugins"
       New-Item -Path $packageDir -ItemType Directory -Force | Out-Null
       New-Item -Path $installDir -ItemType Directory -Force | Out-Null
       New-Item -Path $portableDir -ItemType Directory -Force | Out-Null
+      New-Item -Path $nsiPluginsDir -ItemType Directory -Force | Out-Null
 
       cmake --install build --config "$env:BUILD_TYPE" --prefix "$installDir"
       if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -683,6 +857,67 @@ javacheck_build:
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       } catch {
         Write-Host "Portable component packaging skipped: $($_.Exception.Message)"
+      }
+
+      Get-ChildItem $installDir -Recurse -File |
+        ForEach-Object FullName |
+        Resolve-Path -Relative |
+        ForEach-Object { $_ -replace '^[.][\\\\/]', '' } |
+        ForEach-Object { $_ -replace '^install[\\\\/]', '' } |
+        Out-File -FilePath (Join-Path $installDir "manifest.txt")
+
+      Get-ChildItem $portableDir -Recurse -File |
+        ForEach-Object FullName |
+        Resolve-Path -Relative |
+        ForEach-Object { $_ -replace '^[.][\\\\/]', '' } |
+        ForEach-Object { $_ -replace '^install-portable[\\\\/]', '' } |
+        Out-File -FilePath (Join-Path $portableDir "manifest.txt")
+
+      if ($env:WINDOWS_CODESIGN_CERT) {
+        [IO.File]::WriteAllBytes("$env:CI_PROJECT_DIR\codesign.pfx", [Convert]::FromBase64String($env:WINDOWS_CODESIGN_CERT))
+      }
+      $hasCodeSign = (Test-Path "$env:CI_PROJECT_DIR\codesign.pfx") -and ((Get-Item "$env:CI_PROJECT_DIR\codesign.pfx").Length -gt 0)
+
+      if ($hasCodeSign) {
+        Push-Location $installDir
+        foreach ($bin in @("projtlauncher.exe","projtlauncher_updater.exe","projtlauncher_filelink.exe")) {
+          if (Test-Path $bin) {
+            SignTool sign /fd sha256 /td sha256 /f "$env:CI_PROJECT_DIR\codesign.pfx" /p "$env:WINDOWS_CODESIGN_PASSWORD" /tr http://timestamp.digicert.com $bin
+          }
+        }
+        Pop-Location
+      }
+
+      if (-not (Get-Command makensis -ErrorAction SilentlyContinue)) {
+        if (Get-Command choco -ErrorAction SilentlyContinue) {
+          choco install nsis -y
+          $nsisPath = "C:\Program Files (x86)\NSIS"
+          if (Test-Path $nsisPath) { $env:Path = "$nsisPath;$env:Path" }
+        }
+      }
+
+      $nscurlVersion = "v24.9.26.122"
+      $nscurlSha256 = "AEE6C4BE3CB6455858E9C1EE4B3AFE0DB9960FA03FE99CCDEDC28390D57CCBB0"
+      $nscurlZip = Join-Path $nsiPluginsDir "NScurl.zip"
+      Invoke-WebRequest "https://github.com/negrutiu/nsis-nscurl/releases/download/$nscurlVersion/NScurl.zip" -OutFile $nscurlZip
+      $nscurlHash = (Get-FileHash $nscurlZip -Algorithm Sha256).Hash
+      if ($nscurlHash.ToUpperInvariant() -ne $nscurlSha256.ToUpperInvariant()) {
+        throw "NSCurl.zip sha256 mismatch"
+      }
+      Expand-Archive -Path $nscurlZip -DestinationPath (Join-Path $nsiPluginsDir "NScurl") -Force
+
+      $winInstallNsi = Join-Path $env:CI_PROJECT_DIR "build\program_info\win_install.nsi"
+      if ((Test-Path $winInstallNsi) -and (Get-Command makensis -ErrorAction SilentlyContinue)) {
+        Push-Location $installDir
+        makensis -NOCD $winInstallNsi
+        Pop-Location
+      }
+
+      if (Test-Path "$env:CI_PROJECT_DIR\ProjTLauncher-Setup.exe") {
+        if ($hasCodeSign) {
+          SignTool sign /fd sha256 /td sha256 /f "$env:CI_PROJECT_DIR\codesign.pfx" /p "$env:WINDOWS_CODESIGN_PASSWORD" /tr http://timestamp.digicert.com "$env:CI_PROJECT_DIR\ProjTLauncher-Setup.exe"
+        }
+        Move-Item -Path "$env:CI_PROJECT_DIR\ProjTLauncher-Setup.exe" -Destination "$packageDir\ProjTLauncher-$($env:ARTIFACT_NAME)-Setup-$($env:BUILD_TYPE).exe" -Force
       }
 
       Compress-Archive -Path "$installDir\\*" -DestinationPath "$packageDir\\ProjTLauncher-$($env:ARTIFACT_NAME)-$($env:BUILD_TYPE).zip" -Force
