@@ -4,10 +4,10 @@
   "description": "Generates gradient presets for QGradient",
   "main": "gradientgen.js",
   "dependencies": {
-    "lodash": "^4.17.10",
-    "mathjs": "^4.2.2",
+    "lodash": "^4.17.23",
+    "mathjs": "^7.5.1",
     "parse-color": "^1.0.0",
-    "postcss-minify-gradients": "^1.0.5",
+    "postcss-minify-gradients": "^7.0.1",
     "postcss-value-parser": "^3.3.0"
   }
 }
