@@ -40,7 +40,6 @@ nix_system_build_linux:
   parallel:
     matrix:
       - NIX_SYSTEM: x86_64-linux
-        RUNNER_TAG: $LINUX_RUNNER_TAG
       - NIX_SYSTEM: aarch64-linux
         RUNNER_TAG: saas-linux-medium-arm64
   script:

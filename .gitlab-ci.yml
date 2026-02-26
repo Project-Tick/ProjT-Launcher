@@ -6,9 +6,11 @@ workflow:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_PROJECT_PATH != $UPSTREAM_PROJECT_PATH'
       variables:
         LINUX_RUNNER_TAG: saas-linux-medium-amd64
+        RUNNER_TAG: saas-linux-medium-amd64
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID != $CI_MERGE_REQUEST_TARGET_PROJECT_ID'
       variables:
         LINUX_RUNNER_TAG: saas-linux-medium-amd64
+        RUNNER_TAG: saas-linux-medium-amd64
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: never
     - if: '$CI_COMMIT_TAG'
@@ -33,6 +35,7 @@ variables:
   CCACHE_DIR: "$CI_PROJECT_DIR/.cache/ccache"
   UPSTREAM_PROJECT_PATH: "project-tick/core/ProjT-Launcher"
   LINUX_RUNNER_TAG: pt-rhel-runner-01
+  RUNNER_TAG: pt-rhel-runner-01
   WINDOWS_RUNNER_TAG: saas-windows-medium-amd64
 
 default:
@@ -155,7 +158,6 @@ flatpak_build:
   parallel:
     matrix:
       - FLATPAK_ARCH: x86_64
-        RUNNER_TAG: $LINUX_RUNNER_TAG
       - FLATPAK_ARCH: aarch64
         RUNNER_TAG: saas-linux-medium-arm64
   script:
@@ -286,7 +288,6 @@ schedule_cfl:
 schedule_flatpak_deploy:
   extends: .schedule_flatpak_deploy_template
   variables:
-    RUNNER_TAG: $LINUX_RUNNER_TAG
     FLATPAK_ARCH: x86_64
 
 schedule_flatpak_deploy_arm64:
@@ -409,7 +410,6 @@ javacheck_build:
     BUILD_TYPE: Debug
     BUILD_PLATFORM: official
     CMAKE_PRESET: linux
-    RUNNER_TAG: $LINUX_RUNNER_TAG
     LAUNCHER_LINUX_IMAGE_JOB: $LAUNCHER_LINUX_IMAGE
   script:
     - |
@@ -967,7 +967,6 @@ launcher_linux:
   parallel:
     matrix:
       - ARTIFACT_NAME: Linux-amd64
-        RUNNER_TAG: $LINUX_RUNNER_TAG
         TARGET_ARCH: amd64
         CMAKE_PRESET: linux
       - ARTIFACT_NAME: Linux-arm64
