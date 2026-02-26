@@ -3,6 +3,14 @@ include:
 
 workflow:
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_PROJECT_PATH != $UPSTREAM_PROJECT_PATH'
+      variables:
+        LINUX_RUNNER_TAG: saas-linux-medium-amd64
+        WINDOWS_RUNNER_TAG: saas-windows-medium-amd64
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID != $CI_MERGE_REQUEST_TARGET_PROJECT_ID'
+      variables:
+        LINUX_RUNNER_TAG: saas-linux-medium-amd64
+        WINDOWS_RUNNER_TAG: saas-windows-medium-amd64
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: never
     - if: '$CI_COMMIT_TAG'
@@ -25,6 +33,9 @@ variables:
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.cache/npm"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   CCACHE_DIR: "$CI_PROJECT_DIR/.cache/ccache"
+  UPSTREAM_PROJECT_PATH: "project-tick/core/ProjT-Launcher"
+  LINUX_RUNNER_TAG: pt-rhel-runner-01
+  WINDOWS_RUNNER_TAG: pt-windows-02
 
 default:
   cache:
@@ -65,7 +76,7 @@ schedule_js_fuzz:
   stage: scheduled
   image: node:20-bookworm
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
     - if: '$CI_PIPELINE_SOURCE == "web"'
@@ -80,7 +91,7 @@ schedule_python_fuzz:
   stage: scheduled
   image: python:3.11-bookworm
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
     - if: '$CI_PIPELINE_SOURCE == "web"'
@@ -94,7 +105,7 @@ schedule_flatpak_update:
   stage: scheduled
   image: ghcr.io/flathub/flatpak-external-data-checker:latest
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
     - if: '$CI_PIPELINE_SOURCE == "web"'
@@ -146,7 +157,7 @@ flatpak_build:
   parallel:
     matrix:
       - FLATPAK_ARCH: x86_64
-        RUNNER_TAG: pt-rhel-runner-01
+        RUNNER_TAG: $LINUX_RUNNER_TAG
       - FLATPAK_ARCH: aarch64
         RUNNER_TAG: saas-linux-medium-arm64
   script:
@@ -190,7 +201,7 @@ schedule_cfl:
   stage: scheduled
   image: ubuntu:24.04
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
     - if: '$CI_PIPELINE_SOURCE == "web"'
@@ -277,7 +288,7 @@ schedule_cfl:
 schedule_flatpak_deploy:
   extends: .schedule_flatpak_deploy_template
   variables:
-    RUNNER_TAG: pt-rhel-runner-01
+    RUNNER_TAG: $LINUX_RUNNER_TAG
     FLATPAK_ARCH: x86_64
 
 schedule_flatpak_deploy_arm64:
@@ -292,7 +303,7 @@ launcher_linux_image:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
     entrypoint: [""]
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   variables:
     DOCKER_CONFIG: /kaniko/.docker
   rules:
@@ -338,7 +349,7 @@ markdown_lint:
   stage: lint
   image: node:20-bookworm
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *manual_non_tag_rules
   script:
     - npm install --global markdownlint-cli
@@ -348,7 +359,7 @@ bot_smoke:
   stage: lint
   image: node:20-bookworm
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *manual_non_tag_rules
   script:
     - node -c bot/index.js
@@ -357,7 +368,7 @@ meta_smoke:
   stage: lint
   image: python:3.11-bookworm
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *manual_non_tag_rules
   script:
     - python -m compileall meta
@@ -366,7 +377,7 @@ javacheck_build:
   stage: build
   image: ubuntu:24.04
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *manual_non_tag_rules
   script:
     - apt-get -y update
@@ -400,7 +411,7 @@ javacheck_build:
     BUILD_TYPE: Debug
     BUILD_PLATFORM: official
     CMAKE_PRESET: linux
-    RUNNER_TAG: pt-rhel-runner-01
+    RUNNER_TAG: $LINUX_RUNNER_TAG
     LAUNCHER_LINUX_IMAGE_JOB: $LAUNCHER_LINUX_IMAGE
   script:
     - |
@@ -741,7 +752,7 @@ javacheck_build:
 .launcher_windows_template:
   stage: build
   tags:
-    - pt-windows-02
+    - $WINDOWS_RUNNER_TAG
   rules: *launcher_rules
   variables:
     BUILD_TYPE: Debug
@@ -958,7 +969,7 @@ launcher_linux:
   parallel:
     matrix:
       - ARTIFACT_NAME: Linux-amd64
-        RUNNER_TAG: pt-rhel-runner-01
+        RUNNER_TAG: $LINUX_RUNNER_TAG
         TARGET_ARCH: amd64
         CMAKE_PRESET: linux
       - ARTIFACT_NAME: Linux-arm64

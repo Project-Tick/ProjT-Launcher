@@ -18,7 +18,7 @@ nix_flake_check:
   stage: lint
   image: nixos/nix:2.24.14
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *parity_non_schedule_rules
   variables:
     NIX_CONFIG: experimental-features = nix-command flakes
@@ -40,7 +40,7 @@ nix_system_build_linux:
   parallel:
     matrix:
       - NIX_SYSTEM: x86_64-linux
-        RUNNER_TAG: pt-rhel-runner-01
+        RUNNER_TAG: $LINUX_RUNNER_TAG
       - NIX_SYSTEM: aarch64-linux
         RUNNER_TAG: saas-linux-medium-arm64
   script:
@@ -113,7 +113,7 @@ nix_system_build_darwin:
   stage: build
   image: ubuntu:$OS_VERSION
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *quazip_rules
   script:
     - |
@@ -209,7 +209,7 @@ quazip_alpine:
   stage: build
   image: alpine:3.21
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *quazip_rules
   parallel:
     matrix:
@@ -231,7 +231,7 @@ quazip_fedora:
   stage: build
   image: fedora:42
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *quazip_rules
   script:
     - |
@@ -245,7 +245,7 @@ quazip_use_qt_zlib_ubuntu:
   stage: build
   image: ghcr.io/cen1/qt:$QT_VERSION
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *quazip_rules
   parallel:
     matrix:
@@ -328,7 +328,7 @@ quazip_macos:
 .quazip_windows_template:
   stage: build
   tags:
-    - pt-windows-02
+    - $WINDOWS_RUNNER_TAG
   rules: *quazip_rules
   script:
     - '$ErrorActionPreference = "Stop"'
@@ -454,7 +454,7 @@ release_prepare:
   stage: release
   image: ubuntu:24.04
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   needs:
     - job: javacheck_build
       artifacts: true
@@ -521,7 +521,7 @@ release_publish:
   stage: release
   image: registry.gitlab.com/gitlab-org/cli:latest
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   needs:
     - job: release_prepare
       artifacts: true
@@ -544,7 +544,7 @@ winget_release:
   stage: release
   image: python:3.11-bookworm
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules:
     - if: '$CI_COMMIT_TAG'
     - if: '$CI_PIPELINE_SOURCE == "web" && $WINGET_TAG_NAME'
