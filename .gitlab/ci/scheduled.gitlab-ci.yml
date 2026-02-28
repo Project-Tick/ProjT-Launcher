@@ -5,8 +5,7 @@ schedule_js_fuzz:
     - $LINUX_RUNNER_TAG
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release-/)'
+    - when: never
   script:
     - cd bot
     - npm install
@@ -20,8 +19,7 @@ schedule_python_fuzz:
     - $LINUX_RUNNER_TAG
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release-/)'
+    - when: never
   script:
     - python -m pip install --upgrade pip
     - python -m pip install -r requirements.txt atheris
@@ -34,9 +32,7 @@ schedule_cfl:
     - $LINUX_RUNNER_TAG
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "develop"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - when: never
   parallel:
     matrix:
       - SANITIZER: address

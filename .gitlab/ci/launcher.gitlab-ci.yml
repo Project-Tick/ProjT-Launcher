@@ -382,7 +382,11 @@ launcher_linux_image:
       fi
 
       if [ -n "${SPARKLE_ED25519_PRIVATE_KEY:-}" ] && [ -f "$ZIP_PATH" ]; then
-        printf '%s' "$SPARKLE_ED25519_PRIVATE_KEY" > "$CI_PROJECT_DIR/ed25519-priv.pem"
+        if printf '%s' "$SPARKLE_ED25519_PRIVATE_KEY" | base64 --decode > "$CI_PROJECT_DIR/ed25519-priv.pem" 2>/dev/null; then
+          :
+        else
+          printf '%s' "$SPARKLE_ED25519_PRIVATE_KEY" > "$CI_PROJECT_DIR/ed25519-priv.pem"
+        fi
         OPENSSL_BIN="/opt/homebrew/opt/openssl@3/bin/openssl"
         if [ ! -x "$OPENSSL_BIN" ]; then
           OPENSSL_BIN="/usr/local/opt/openssl@3/bin/openssl"
