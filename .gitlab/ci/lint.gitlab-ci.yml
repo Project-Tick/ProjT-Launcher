@@ -1,0 +1,67 @@
+.manual_non_tag_rules: &manual_non_tag_rules
+  - if: '$CI_COMMIT_TAG'
+    when: never
+  - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID != $CI_MERGE_REQUEST_TARGET_PROJECT_ID'
+  - if: '$CI_PIPELINE_SOURCE == "push" && $CI_PROJECT_PATH != $UPSTREAM_PROJECT_PATH'
+  - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID == $CI_MERGE_REQUEST_TARGET_PROJECT_ID'
+    when: manual
+    allow_failure: false
+  - if: '$CI_PIPELINE_SOURCE == "push" && $CI_PROJECT_PATH == $UPSTREAM_PROJECT_PATH'
+    when: manual
+    allow_failure: false
+
+markdown_lint:
+  stage: lint
+  image: node:20-bookworm
+  tags:
+    - $LINUX_RUNNER_TAG
+  rules: *manual_non_tag_rules
+  script:
+    - npm install --global markdownlint-cli
+    - markdownlint . --config .markdownlint.yaml --ignore-path .markdownlintignore
+
+bot_smoke:
+  stage: lint
+  image: node:20-bookworm
+  tags:
+    - $LINUX_RUNNER_TAG
+  rules: *manual_non_tag_rules
+  script:
+    - node -c bot/index.js
+
+meta_smoke:
+  stage: lint
+  image: python:3.11-bookworm
+  tags:
+    - $LINUX_RUNNER_TAG
+  rules: *manual_non_tag_rules
+  script:
+    - python -m compileall meta
+
+javacheck_build:
+  stage: build
+  image: ubuntu:24.04
+  tags:
+    - $LINUX_RUNNER_TAG
+  rules: *manual_non_tag_rules
+  script:
+    - apt-get -y update
+    - >
+      apt-get -y install
+      dpkg-dev
+      ninja-build
+      scdoc
+      appstream
+      libxcb-cursor-dev
+      openjdk-21-jdk
+      libtiff6
+      lcov
+      cmake
+      build-essential
+    - cmake -S javacheck -B javacheck/build -G Ninja
+    - cmake --build javacheck/build --parallel
+  artifacts:
+    when: always
+    paths:
+      - javacheck/build/*.jar
+    expire_in: 3 days
