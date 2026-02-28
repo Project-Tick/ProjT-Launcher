@@ -1,44 +1,45 @@
-include:
-  - local: .gitlab/ci/github-workflow-parity.yml
+.default-runner-variables: &default-runner-variables
+  LINUX_RUNNER_TAG: "${DEFAULT_JOB_TAG}"
+  RUNNER_TAG: "${DEFAULT_JOB_TAG}"
 
-workflow:
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_PROJECT_PATH != $UPSTREAM_PROJECT_PATH'
-      variables:
-        LINUX_RUNNER_TAG: saas-linux-medium-amd64
-        RUNNER_TAG: saas-linux-medium-amd64
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID != $CI_MERGE_REQUEST_TARGET_PROJECT_ID'
-      variables:
-        LINUX_RUNNER_TAG: saas-linux-medium-amd64
-        RUNNER_TAG: saas-linux-medium-amd64
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: never
-    - if: '$CI_COMMIT_TAG'
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-    - when: never
+.fork-runner-variables: &fork-runner-variables
+  LINUX_RUNNER_TAG: "${FORK_DEFAULT_JOB_TAG}"
+  RUNNER_TAG: "${FORK_DEFAULT_JOB_TAG}"
+
+.if-fork-push: &if-fork-push
+  if: '$CI_PIPELINE_SOURCE == "push" && $CI_PROJECT_PATH != $UPSTREAM_PROJECT_PATH'
+
+.if-fork-merge-request: &if-fork-merge-request
+  if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID != $CI_MERGE_REQUEST_TARGET_PROJECT_ID'
+
+.if-self-hosted-push: &if-self-hosted-push
+  if: '$CI_PIPELINE_SOURCE == "push" && $CI_PROJECT_PATH == $UPSTREAM_PROJECT_PATH'
+
+.if-self-hosted-merge-request: &if-self-hosted-merge-request
+  if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID == $CI_MERGE_REQUEST_TARGET_PROJECT_ID'
 
 stages:
+  - sync
+  - preflight
   - prepare
+  - build-images
   - scheduled
   - lint
+  - test-frontend
   - build
+  - test
+  - review
+  - qa
   - release
-
-variables:
-  GIT_DEPTH: "1"
-  GIT_SUBMODULE_DEPTH: "1"
-  LAUNCHER_LINUX_IMAGE: "$CI_REGISTRY_IMAGE/ci/launcher-linux:trixie"
-  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.cache/npm"
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  CCACHE_DIR: "$CI_PROJECT_DIR/.cache/ccache"
-  UPSTREAM_PROJECT_PATH: "project-tick/core/ProjT-Launcher"
-  LINUX_RUNNER_TAG: pt-rhel-runner-01
-  RUNNER_TAG: pt-rhel-runner-01
-  WINDOWS_RUNNER_TAG: saas-windows-medium-amd64
+  - pages
+  - notify
 
 default:
+  image: $DEFAULT_CI_IMAGE
+  tags:
+    - $DEFAULT_JOB_TAG
+  interruptible: true
+  timeout: 90m
   cache:
     key: "$CI_JOB_NAME_SLUG-$CI_COMMIT_REF_SLUG"
     policy: pull-push
@@ -47,13 +48,69 @@ default:
       - .cache/pip/
       - .cache/ccache/
 
+workflow:
+  name: '$PIPELINE_NAME'
+  rules:
+    - <<: *if-fork-push
+      variables:
+        <<: *fork-runner-variables
+        PIPELINE_NAME: 'Fork branch pipeline'
+    - <<: *if-fork-merge-request
+      variables:
+        <<: *fork-runner-variables
+        PIPELINE_NAME: 'Fork merge request pipeline'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    - if: '$CI_COMMIT_TAG'
+      variables:
+        <<: *default-runner-variables
+        PIPELINE_NAME: 'Release $CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      variables:
+        <<: *default-runner-variables
+        PIPELINE_NAME: 'Default branch pipeline'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      variables:
+        <<: *default-runner-variables
+        PIPELINE_NAME: 'Branch pipeline'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      variables:
+        <<: *default-runner-variables
+        PIPELINE_NAME: 'Scheduled pipeline'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      variables:
+        <<: *default-runner-variables
+        PIPELINE_NAME: 'Manual pipeline'
+    - when: never
+
+variables:
+  DEFAULT_CI_IMAGE: "ubuntu:24.04"
+  DEFAULT_JOB_TAG: "pt-rhel-runner-01"
+  FORK_DEFAULT_JOB_TAG: "saas-linux-medium-amd64"
+  PIPELINE_NAME: "ProjT Launcher pipeline"
+  GIT_DEPTH: "1"
+  GIT_SUBMODULE_DEPTH: "1"
+  LAUNCHER_LINUX_IMAGE: "$CI_REGISTRY_IMAGE/ci/launcher-linux:trixie"
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.cache/npm"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  CCACHE_DIR: "$CI_PROJECT_DIR/.cache/ccache"
+  UPSTREAM_PROJECT_PATH: "project-tick/core/ProjT-Launcher"
+  LINUX_RUNNER_TAG: "${DEFAULT_JOB_TAG}"
+  RUNNER_TAG: "${DEFAULT_JOB_TAG}"
+  WINDOWS_RUNNER_TAG: "saas-windows-medium-amd64"
+
+include:
+  - local: .gitlab/ci/github-workflow-parity.yml
+
 .manual_non_tag_rules: &manual_non_tag_rules
   - if: '$CI_COMMIT_TAG'
     when: never
-  - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  - <<: *if-fork-merge-request
+  - <<: *if-fork-push
+  - <<: *if-self-hosted-merge-request
     when: manual
     allow_failure: false
-  - if: '$CI_PIPELINE_SOURCE == "push"'
+  - <<: *if-self-hosted-push
     when: manual
     allow_failure: false
 
@@ -308,10 +365,12 @@ launcher_linux_image:
   rules:
     - if: '$CI_COMMIT_TAG'
       when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - <<: *if-fork-merge-request
+    - <<: *if-fork-push
+    - <<: *if-self-hosted-merge-request
       when: manual
       allow_failure: false
-    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - <<: *if-self-hosted-push
       when: manual
       allow_failure: false
   script:
@@ -330,7 +389,13 @@ launcher_linux_image:
 
 .launcher_rules:
   rules: &launcher_rules
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - <<: *if-fork-merge-request
+      variables:
+        BUILD_TYPE: Debug
+    - <<: *if-fork-push
+      variables:
+        BUILD_TYPE: Debug
+    - <<: *if-self-hosted-merge-request
       when: manual
       allow_failure: false
       variables:
@@ -338,7 +403,7 @@ launcher_linux_image:
     - if: '$CI_COMMIT_TAG'
       variables:
         BUILD_TYPE: Release
-    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - <<: *if-self-hosted-push
       when: manual
       allow_failure: false
       variables:
@@ -560,7 +625,7 @@ javacheck_build:
             GNUPGHOME="$(mktemp -d)"
             chmod 700 "$GNUPGHOME"
             export GNUPGHOME
-            printf '%s' "$LINUX_GPG_KEY" > "$GNUPGHOME/private.key"
+            printf '%s' "$LINUX_GPG_KEY" | base64 -d > "$GNUPGHOME/private.key"
             chmod 600 "$GNUPGHOME/private.key"
             gpg --batch --yes --pinentry-mode loopback --import "$GNUPGHOME/private.key"
             echo "pinentry-mode loopback" >> "$GNUPGHOME/gpg.conf"
