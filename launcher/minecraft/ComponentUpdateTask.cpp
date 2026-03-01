@@ -611,30 +611,49 @@ void ComponentUpdateTask::resolveDependencies(bool checkOnly)
 				}
 				else
 				{
-					// Try to get recommended version from metadata
-					auto versionList = APPLICATION->metadataIndex()->get(add.uid);
-					if (versionList)
+					// Intermediary mappings must align with the selected Minecraft version.
+					// Prefer a metadata entry that explicitly depends on that MC version.
+					if (add.uid == "net.fabricmc.intermediary" || add.uid == "org.quiltmc.hashed")
 					{
-						versionList->waitToLoad();
-						auto recommended = versionList->getRecommended();
-						if (recommended)
+						auto minecraft =
+							std::find_if(components.begin(),
+										 components.end(),
+										 [](ComponentPtr& cmp) { return cmp->getID() == "net.minecraft"; });
+						if (minecraft != components.end())
 						{
-							component->m_version = recommended->descriptor();
+							const auto minecraftVersion = (*minecraft)->getVersion();
+							auto versionList			 = APPLICATION->metadataIndex()->component(add.uid);
+							if (versionList)
+							{
+								versionList->waitUntilReady();
+								auto matched = versionList->stableForParent("net.minecraft", minecraftVersion);
+								if (!matched)
+								{
+									matched = versionList->latestForParent("net.minecraft", minecraftVersion);
+								}
+								if (matched)
+								{
+									component->m_version = matched->descriptor();
+								}
+							}
+							if (component->m_version.isEmpty())
+							{
+								component->m_version = minecraftVersion;
+							}
 						}
 					}
 
-					// Fallback for specific components that need Minecraft version matching
+					// Try to get recommended version from metadata
 					if (component->m_version.isEmpty())
 					{
-						if (add.uid == "net.fabricmc.intermediary" || add.uid == "org.quiltmc.hashed")
+						auto versionList = APPLICATION->metadataIndex()->component(add.uid);
+						if (versionList)
 						{
-							auto minecraft =
-								std::find_if(components.begin(),
-											 components.end(),
-											 [](ComponentPtr& cmp) { return cmp->getID() == "net.minecraft"; });
-							if (minecraft != components.end())
+							versionList->waitUntilReady();
+							auto recommended = versionList->getRecommended();
+							if (recommended)
 							{
-								component->m_version = (*minecraft)->getVersion();
+								component->m_version = recommended->descriptor();
 							}
 						}
 					}
