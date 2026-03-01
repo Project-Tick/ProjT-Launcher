@@ -493,6 +493,9 @@ launcher_linux_image:
       if (-not (Get-Command nuget -ErrorAction SilentlyContinue) -and (Get-Command choco -ErrorAction SilentlyContinue)) {
         choco install nuget.commandline -y
       }
+      if (Get-Command choco -ErrorAction SilentlyContinue) {
+        choco upgrade cmake -y --no-progress
+      }
 
       if ($env:VCVARS_ARCH) {
         $candidates = @(
