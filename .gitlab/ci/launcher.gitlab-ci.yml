@@ -533,6 +533,12 @@ launcher_linux_image:
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       }
       elseif ($env:CMAKE_PRESET -eq "windows_mingw") {
+        if (-not (Get-Command pacman -ErrorAction SilentlyContinue)) {
+          if (Get-Command choco -ErrorAction SilentlyContinue) {
+            choco install msys2 -y --no-progress
+            $env:Path = "C:\tools\msys64\usr\bin;C:\tools\msys64\mingw64\bin;" + $env:Path
+          }
+        }
         if ((Get-Command pacman -ErrorAction SilentlyContinue) -and (Get-Command bash -ErrorAction SilentlyContinue)) {
           bash -lc "pacman -S --needed --noconfirm \
             git \
