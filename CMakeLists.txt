@@ -798,11 +798,11 @@ else()
     message(FATAL_ERROR "Bundled ptlibzippy not found in ${CMAKE_CURRENT_SOURCE_DIR}/zlib/")
 endif()
 
-if(PTLIBZIPPY_INCLUDE_DIRS)
+if(DEFINED PTlibzippy_SOURCE_DIR AND DEFINED PTlibzippy_BINARY_DIR)
     # Make PTlibzippy headers available to libpng config generation.
-    set(ZLIB_INCLUDE_DIRS "${PTLIBZIPPY_INCLUDE_DIRS}")
-elseif(DEFINED PTlibzippy_SOURCE_DIR AND DEFINED PTlibzippy_BINARY_DIR)
     set(ZLIB_INCLUDE_DIRS "${PTlibzippy_SOURCE_DIR};${PTlibzippy_BINARY_DIR}")
+elseif(PTLIBZIPPY_INCLUDE_DIRS)
+    set(ZLIB_INCLUDE_DIRS "${PTLIBZIPPY_INCLUDE_DIRS}")
 endif()
 
 if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND NOT APPLE)
