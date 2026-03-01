@@ -94,7 +94,7 @@ variables:
   GIT_DEPTH: "1"
   GIT_SUBMODULE_DEPTH: "1"
   QUAZIP_CI_DISABLED: "1"
-  LAUNCHER_LINUX_IMAGE: "$CI_REGISTRY_IMAGE/ci/launcher-linux:trixie"
+  LAUNCHER_LINUX_IMAGE: "ubuntu:24.04"
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.cache/npm"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   CCACHE_DIR: "$CI_PROJECT_DIR/.cache/ccache"

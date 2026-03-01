@@ -1,37 +1,3 @@
-launcher_linux_image:
-  stage: prepare
-  image:
-    name: gcr.io/kaniko-project/executor:v1.23.2-debug
-    entrypoint: [""]
-  tags:
-    - $LINUX_RUNNER_TAG
-  variables:
-    DOCKER_CONFIG: /kaniko/.docker
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID != $CI_MERGE_REQUEST_TARGET_PROJECT_ID'
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_PROJECT_PATH != $UPSTREAM_PROJECT_PATH'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID == $CI_MERGE_REQUEST_TARGET_PROJECT_ID'
-      when: manual
-      allow_failure: false
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_PROJECT_PATH == $UPSTREAM_PROJECT_PATH'
-      when: manual
-      allow_failure: false
-  script:
-    - mkdir -p /kaniko/.docker
-    - |
-      printf '{"auths":{"%s":{"username":"%s","password":"%s"}}}\n' \
-        "$CI_REGISTRY" \
-        "$CI_REGISTRY_USER" \
-        "$CI_REGISTRY_PASSWORD" > /kaniko/.docker/config.json
-    - >
-      /kaniko/executor
-      --context "$CI_PROJECT_DIR"
-      --dockerfile "$CI_PROJECT_DIR/.gitlab/docker/launcher-linux/Dockerfile"
-      --destination "$LAUNCHER_LINUX_IMAGE"
-      --destination "$CI_REGISTRY_IMAGE/ci/launcher-linux:$CI_COMMIT_SHORT_SHA"
-
 .launcher_rules:
   rules: &launcher_rules
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID != $CI_MERGE_REQUEST_TARGET_PROJECT_ID'
@@ -69,14 +35,15 @@ launcher_linux_image:
     - |
       set -eu
       QT6_CONFIG_FOUND=0
-      if find /usr -path '*/cmake/Qt6/Qt6Config.cmake' -print -quit 2>/dev/null | grep -q .; then
+      if find /usr /opt -path '*/cmake/Qt6/Qt6Config.cmake' -print -quit 2>/dev/null | grep -q .; then
         QT6_CONFIG_FOUND=1
       fi
 
-      if ! command -v cmake >/dev/null 2>&1 || ! command -v ctest >/dev/null 2>&1 || [ "$QT6_CONFIG_FOUND" -ne 1 ]; then
+      if ! command -v cmake > /dev/null 2>&1 || [ "$QT6_CONFIG_FOUND" -ne 1 ]; then
+        export DEBIAN_FRONTEND=noninteractive
         apt-get -y update
         JAVA_PKG="openjdk-21-jdk"
-        if ! apt-cache show "$JAVA_PKG" >/dev/null 2>&1; then
+        if ! apt-cache show "$JAVA_PKG" > /dev/null 2>&1; then
           JAVA_PKG="openjdk-17-jdk"
         fi
         apt-get -y install \
@@ -94,12 +61,8 @@ launcher_linux_image:
           ninja-build \
           scdoc \
           appstream \
-          qt6-base-dev \
-          qt6-base-dev-tools \
-          qt6-5compat-dev \
-          qt6-networkauth-dev \
-          qt6-webengine-dev \
-          "$JAVA_PKG" \
+          python3-pip \
+          python3-venv \
           lcov \
           libxcb-cursor-dev \
           libdbus-1-dev \
@@ -108,14 +71,38 @@ launcher_linux_image:
           libsystemd-dev \
           libssl-dev \
           libtiff6 \
-          pkg-config
+          libvulkan-dev \
+          vulkan-tools \
+          libgl1 \
+          libglib2.0-0 \
+          pkg-config \
+          "$JAVA_PKG"
 
-        if dpkg -s libtiff6 >/dev/null 2>&1 && command -v dpkg-architecture >/dev/null 2>&1; then
+        # Install Qt 6.10.2 via aqtinstall (Ubuntu 24.04 apt only ships Qt 6.4)
+        python3 -m venv /opt/aqt-venv`
+        /opt/aqt-venv/bin/pip install --quiet aqtinstall
+        /opt/aqt-venv/bin/aqt install-qt linux desktop 6.10.2 gcc_64 \
+          -O /opt/Qt \
+          -m qtwebengine qtwebchannel qtnetworkauth qt5compat
+        export Qt6_DIR="/opt/Qt/6.10.2/gcc_64"
+        export CMAKE_PREFIX_PATH="/opt/Qt/6.10.2/gcc_64:${CMAKE_PREFIX_PATH:-}"
+        export PATH="/opt/Qt/6.10.2/gcc_64/bin:$PATH"
+        export LD_LIBRARY_PATH="/opt/Qt/6.10.2/gcc_64/lib:${LD_LIBRARY_PATH:-}"
+
+        if dpkg -s libtiff6 > /dev/null 2>&1 && command -v dpkg-architecture > /dev/null 2>&1; then
           ARCH_DIR="$(dpkg-architecture -q DEB_HOST_MULTIARCH)"
           if [ -e "/usr/lib/${ARCH_DIR}/libtiff.so.6" ] && [ ! -e "/usr/lib/${ARCH_DIR}/libtiff.so.5" ]; then
             ln -sf "/usr/lib/${ARCH_DIR}/libtiff.so.6" "/usr/lib/${ARCH_DIR}/libtiff.so.5" || true
             ldconfig || true
           fi
+        fi
+      else
+        # Qt already present (cached or pre-installed image)
+        if [ -d "/opt/Qt/6.10.2/gcc_64" ]; then
+          export Qt6_DIR="/opt/Qt/6.10.2/gcc_64"
+          export CMAKE_PREFIX_PATH="/opt/Qt/6.10.2/gcc_64:${CMAKE_PREFIX_PATH:-}"
+          export PATH="/opt/Qt/6.10.2/gcc_64/bin:$PATH"
+          export LD_LIBRARY_PATH="/opt/Qt/6.10.2/gcc_64/lib:${LD_LIBRARY_PATH:-}"
         fi
       fi
 
