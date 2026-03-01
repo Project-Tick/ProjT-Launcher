@@ -622,14 +622,14 @@ void ComponentUpdateTask::resolveDependencies(bool checkOnly)
 						if (minecraft != components.end())
 						{
 							const auto minecraftVersion = (*minecraft)->getVersion();
-							auto versionList			 = APPLICATION->metadataIndex()->component(add.uid);
+							auto versionList			 = APPLICATION->metadataIndex()->get(add.uid);
 							if (versionList)
 							{
-								versionList->waitUntilReady();
-								auto matched = versionList->stableForParent("net.minecraft", minecraftVersion);
+								versionList->waitToLoad();
+								auto matched = versionList->getRecommendedForParent("net.minecraft", minecraftVersion);
 								if (!matched)
 								{
-									matched = versionList->latestForParent("net.minecraft", minecraftVersion);
+									matched = versionList->getLatestForParent("net.minecraft", minecraftVersion);
 								}
 								if (matched)
 								{
@@ -646,10 +646,10 @@ void ComponentUpdateTask::resolveDependencies(bool checkOnly)
 					// Try to get recommended version from metadata
 					if (component->m_version.isEmpty())
 					{
-						auto versionList = APPLICATION->metadataIndex()->component(add.uid);
+						auto versionList = APPLICATION->metadataIndex()->get(add.uid);
 						if (versionList)
 						{
-							versionList->waitUntilReady();
+							versionList->waitToLoad();
 							auto recommended = versionList->getRecommended();
 							if (recommended)
 							{
