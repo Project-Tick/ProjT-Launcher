@@ -103,7 +103,7 @@
     \section2 Main activity
 
     The \c MainActivity class is a simple Kotlin-based Activity but also implements the
-    \l{interface QtQmlStatusChangeListener} to listen to QML loading status events. It also
+    \l{QtQmlStatusChangeListener} interface to listen to QML loading status events. It also
     stores the \l QtQuickViewContent object for the main view of the QML application and an instance
     of the data model detailed above.
 

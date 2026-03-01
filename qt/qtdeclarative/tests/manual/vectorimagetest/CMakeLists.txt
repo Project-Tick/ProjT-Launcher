@@ -68,6 +68,8 @@ qt_add_qml_module(vectorimagetest
     QML_FILES
         VectorImage.qml
         LottieAnimation.qml
+    RESOURCES
+        background.png
 )
 
 

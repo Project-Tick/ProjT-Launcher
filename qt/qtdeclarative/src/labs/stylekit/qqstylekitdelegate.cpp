@@ -15,20 +15,20 @@ QQStyleKitDelegate::QQStyleKitDelegate(QQuickItem *parent)
 {
 }
 
-QQStyleKitDelegateProperties *QQStyleKitDelegate::delegateProperties() const
+QQStyleKitDelegateProperties *QQStyleKitDelegate::delegateStyle() const
 {
     return m_delegateProperties;
 }
 
-void QQStyleKitDelegate::setDelegateProperties(QQStyleKitDelegateProperties *delegateProperties)
+void QQStyleKitDelegate::setDelegateStyle(QQStyleKitDelegateProperties *delegateStyle)
 {
-    if (m_delegateProperties == delegateProperties)
+    if (m_delegateProperties == delegateStyle)
         return;
 
     if (m_delegateProperties)
         disconnect(m_delegateProperties, nullptr, this, nullptr);
 
-    m_delegateProperties = delegateProperties;
+    m_delegateProperties = delegateStyle;
 
     if (!qmlEngine(this)) {
         qmlWarning(this) << "Unable to draw delegate: no QQmlEngine found";
@@ -43,7 +43,7 @@ void QQStyleKitDelegate::setDelegateProperties(QQStyleKitDelegateProperties *del
     connect(m_delegateProperties, &QQStyleKitDelegateProperties::implicitWidthChanged, this, &QQStyleKitDelegate::updateImplicitSize);
     connect(m_delegateProperties, &QQStyleKitDelegateProperties::implicitHeightChanged, this, &QQStyleKitDelegate::updateImplicitSize);
 
-    emit delegatePropertiesChanged();
+    emit delegateStyleChanged();
 }
 
 void QQStyleKitDelegate::updateImplicitSize()
@@ -52,12 +52,12 @@ void QQStyleKitDelegate::updateImplicitSize()
         return;
 
     /* The implicit size is determined by the following priority:
-     * 1. Explicit implicit size set on StyleKitDelegateProperties
+     * 1. Explicit implicit size set on QQStyleKitDelegateProperties
      * 2. Implicit size of the image (if present)
      * 3. Zero
      * The implicit size is read-only because it's calculated in C++ from internal
      * child items that are intentionally not exposed to QML. */
-    const qreal impWidthInStyle = m_delegateProperties->implicitWidth();
+    const qreal impWidthInStyle = qMax(m_delegateProperties->minimumWidth(), m_delegateProperties->implicitWidth());
     const qreal impHeightInStyle = m_delegateProperties->implicitHeight();
     setImplicitWidth(impWidthInStyle > 0 || !m_imageOverlay ? impWidthInStyle : m_imageOverlay->implicitWidth());
     setImplicitHeight(impHeightInStyle > 0 || !m_imageOverlay ? impHeightInStyle : m_imageOverlay->implicitHeight());
@@ -69,13 +69,24 @@ void QQStyleKitDelegate::maybeCreateColor()
         return;
     if (!m_delegateProperties)
         return;
-    if (m_delegateProperties->color().alpha() == 0) {
+    if (m_delegateProperties->color().alpha() == 0
+        && (m_delegateProperties->border()->color().alpha() == 0
+            || m_delegateProperties->border()->width() == 0)) {
+        // Lazy-create the color rectangle later, if/when needed
         connect(m_delegateProperties, &QQStyleKitDelegateProperties::colorChanged,
+                this, &QQStyleKitDelegate::maybeCreateColor, Qt::UniqueConnection);
+        connect(m_delegateProperties->border(), &QQStyleKitBorderProperties::colorChanged,
+                this, &QQStyleKitDelegate::maybeCreateColor, Qt::UniqueConnection);
+        connect(m_delegateProperties->border(), &QQStyleKitBorderProperties::widthChanged,
                 this, &QQStyleKitDelegate::maybeCreateColor, Qt::UniqueConnection);
         return;
     }
 
     disconnect(m_delegateProperties, &QQStyleKitDelegateProperties::colorChanged,
+            this, &QQStyleKitDelegate::maybeCreateColor);
+    disconnect(m_delegateProperties->border(), &QQStyleKitBorderProperties::colorChanged,
+            this, &QQStyleKitDelegate::maybeCreateColor);
+    disconnect(m_delegateProperties->border(), &QQStyleKitBorderProperties::widthChanged,
             this, &QQStyleKitDelegate::maybeCreateColor);
 
     QQmlEngine *engine = qmlEngine(this);
@@ -90,13 +101,14 @@ void QQStyleKitDelegate::maybeCreateColor()
                 z: -3
                 width: parent.width
                 height: parent.height
-                color: delegateProperties.color
-                topLeftRadius: delegateProperties.topLeftRadius
-                topRightRadius: delegateProperties.topRightRadius
-                bottomLeftRadius: delegateProperties.bottomLeftRadius
-                bottomRightRadius: delegateProperties.bottomRightRadius
-                border.width: delegateProperties.border.width
-                border.color: delegateProperties.border.color
+                color: delegateStyle.color
+                opacity: delegateStyle.opacity
+                topLeftRadius: delegateStyle.topLeftRadius
+                topRightRadius: delegateStyle.topRightRadius
+                bottomLeftRadius: delegateStyle.bottomLeftRadius
+                bottomRightRadius: delegateStyle.bottomRightRadius
+                border.width: delegateStyle.border.width
+                border.color: delegateStyle.border.color
             }
         )");
         component->setData(qmlCode.toUtf8(), QUrl());
@@ -113,7 +125,7 @@ void QQStyleKitDelegate::maybeCreateColor()
 
 void QQStyleKitDelegate::maybeCreateGradient()
 {
-    /* Unlike a Rectangle, a StyleKitDelegate draws both the color and the gradient at
+    /* Unlike a Rectangle, a StyledItem draws both the color and the gradient at
      * the same time. This allows a style to define them independently. That way you can
      * define a common semi-transparent grayscale gradient once for a delegate in the style
      * (e.g for control.background.gradient), and then tint it with different colors for
@@ -144,13 +156,13 @@ void QQStyleKitDelegate::maybeCreateGradient()
                 width: parent.width
                 height: parent.height
                 color: "transparent"
-                gradient: delegateProperties.gradient
-                topLeftRadius: delegateProperties.topLeftRadius
-                topRightRadius: delegateProperties.topRightRadius
-                bottomLeftRadius: delegateProperties.bottomLeftRadius
-                bottomRightRadius: delegateProperties.bottomRightRadius
-                border.width: delegateProperties.border.width
-                border.color: delegateProperties.border.color
+                gradient: delegateStyle.gradient
+                topLeftRadius: delegateStyle.topLeftRadius
+                topRightRadius: delegateStyle.topRightRadius
+                bottomLeftRadius: delegateStyle.bottomLeftRadius
+                bottomRightRadius: delegateStyle.bottomRightRadius
+                border.width: delegateStyle.border.width
+                border.color: delegateStyle.border.color
             }
         )");
         component->setData(qmlCode.toUtf8(), QUrl());
@@ -197,9 +209,9 @@ void QQStyleKitDelegate::maybeCreateImage()
                 z: -1
                 width: parent.width
                 height: parent.height
-                color: delegateProperties.image.color
-                source: delegateProperties.image.source
-                fillMode: delegateProperties.image.fillMode
+                color: delegateStyle.image.color
+                source: delegateStyle.image.source
+                fillMode: delegateStyle.image.fillMode
             }
         )");
         component->setData(qmlCode.toUtf8(), QUrl());

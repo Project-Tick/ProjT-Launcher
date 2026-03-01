@@ -22,6 +22,12 @@ T.Slider {
     topPadding: styleReader.topPadding
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
+
+    leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
+
     spacing: styleReader.spacing
 
     states: [
@@ -61,10 +67,10 @@ T.Slider {
         }
     ]
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.Slider
+        controlType: StyleReader.Slider
         enabled: control.enabled
         focused: control.activeFocus
         hovered: control.hovered
@@ -75,13 +81,13 @@ T.Slider {
 
     handle: HandleDelegate {
         quickControl: control
-        handleProperties: styleReader.handle
+        handleStyle: styleReader.handle
     }
 
     background: BackgroundAndIndicatorDelegate {
         quickControl: control
-        indicatorProperties: styleReader.indicator
-        backgroundProperties: styleReader.background
+        indicatorStyle: styleReader.indicator
+        backgroundStyle: styleReader.background
         indicator.secondProgress: control.position
         vertical: control.vertical
     }

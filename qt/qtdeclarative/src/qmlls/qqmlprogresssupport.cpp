@@ -45,17 +45,50 @@ void QQmlProgressSupport::clientInitialized(QLanguageServer *server)
                      &QQmlProgressSupport::onBackgroundBuildCancelRequested);
 }
 
-int QQmlProgressSupport::createUniqueToken(const QByteArray &uri)
+int QQmlProgressSupport::Tokens::createUniqueToken(const QByteArray &uri)
 {
     const int token = m_idForBackgroundBuilds++;
-    m_tokens.append({ uri, token });
+    m_tokens.insert(uri, { uri, token, InCreation });
+    m_uriByToken.insert(token, uri);
     return token;
+}
+
+QQmlProgressSupport::UriWithToken *QQmlProgressSupport::Tokens::find(const QByteArray &uri)
+{
+    const auto it = m_tokens.find(uri);
+    return it == m_tokens.end() ? nullptr : &*it;
+}
+
+std::optional<QQmlProgressSupport::UriWithToken> QQmlProgressSupport::Tokens::takeToken(int token)
+{
+    const auto it = m_uriByToken.find(token);
+    if (it == m_uriByToken.end())
+        return {};
+
+    const auto it2 = m_tokens.find(*it);
+    m_uriByToken.erase(it);
+    if (it2 == m_tokens.end())
+        return {};
+    std::optional<QQmlProgressSupport::UriWithToken> result = std::move(*it2);
+    m_tokens.erase(it2);
+    return result;
+}
+
+void QQmlProgressSupport::Tokens::removeToken(const QByteArray &uri)
+{
+    const auto it = m_tokens.find(uri);
+    if (it != m_tokens.end())
+        return;
+
+    if (const auto it2 = m_uriByToken.find(it->token); it2 != m_uriByToken.end())
+        m_uriByToken.erase(it2);
+    m_tokens.erase(it);
 }
 
 void QQmlProgressSupport::onBackgroundBuildStarted(const QByteArray &uri)
 {
     QLspSpecification::Requests::WorkDoneProgressCreateParamsType p;
-    const int token = createUniqueToken(uri);
+    const int token = m_tokens.createUniqueToken(uri);
     p.token = token;
     m_protocol->requestWorkDoneProgressCreate(p, [this, uri, token]() {
         QLspSpecification::ProgressParams beginParams{ token };
@@ -67,42 +100,64 @@ void QQmlProgressSupport::onBackgroundBuildStarted(const QByteArray &uri)
         workDoneProgressBegin.cancellable = true;
         beginParams.value = workDoneProgressBegin;
         m_protocol->notifyProgress(beginParams);
+
+        const auto token = m_tokens.find(uri);
+        if (!token)
+            return;
+
+        switch (token->status) {
+        case InCreation:
+            token->status = Created;
+            break;
+        case Created:
+            Q_ASSERT(false);
+        case Finished:
+            onBackgroundBuildDone(token->uri);
+            break;
+        }
     });
 }
 
 void QQmlProgressSupport::onBackgroundBuildDone(const QByteArray &uri)
 {
-    const auto it =
-            std::find_if(m_tokens.begin(), m_tokens.end(), [uri](const UriWithToken &uriWithToken) {
-                return uriWithToken.uri == uri;
-            });
-
-    if (it == m_tokens.end())
+    const auto token = m_tokens.find(uri);
+    if (!token)
         return;
 
-    QLspSpecification::WorkDoneProgressEnd workDoneProgressEnd;
-    workDoneProgressEnd.message = "Build terminated";
-    const QLspSpecification::ProgressParams endParams{ it->token, workDoneProgressEnd };
-    m_protocol->notifyProgress(endParams);
-    m_tokens.erase(it);
+    switch (token->status) {
+    case InCreation:
+        // We can't report progress if the WorkDoneProgressCreate request didn't finish yet. Let the
+        // WorkDoneProgressCreate callback call this method again after the request was created.
+        token->status = Finished;
+        return;
+    case Finished:
+    case Created:
+        QLspSpecification::WorkDoneProgressEnd workDoneProgressEnd;
+        workDoneProgressEnd.message = "Build terminated";
+        const QLspSpecification::ProgressParams endParams{ token->token, workDoneProgressEnd };
+        m_protocol->notifyProgress(endParams);
+        m_tokens.removeToken(token->uri);
+    }
 }
 
 void QQmlProgressSupport::onBackgroundBuildCancelRequested(
         const QLspSpecification::Notifications::WorkDoneProgressCancelParamsType &p)
 {
-    const auto token = std::get_if<int>(&p.token);
-    if (!token)
+    const auto tokenNumber = std::get_if<int>(&p.token);
+    if (!tokenNumber) {
+        qCWarning(lspServerLog) << "Ignoring unknown token" << std::get<QByteArray>(p.token)
+                                << "in cancellation request.";
         return;
+    }
 
-    const auto it = std::find_if(
-            m_tokens.begin(), m_tokens.end(),
-            [token](const UriWithToken &uriWithToken) { return uriWithToken.token == *token; });
-
-    if (it == m_tokens.end())
+    const auto token = m_tokens.takeToken(*tokenNumber);
+    if (!token) {
+        qCWarning(lspServerLog) << "Ignoring unknown token" << *tokenNumber
+                                << "in cancellation request.";
         return;
+    }
 
-    m_codeModelManager->cancelBackgroundBuild(it->uri);
-    m_tokens.erase(it);
+    m_codeModelManager->cancelBackgroundBuild(token->uri);
 }
 
 void QQmlProgressSupport::setupCapabilities(const QLspSpecification::InitializeParams &,

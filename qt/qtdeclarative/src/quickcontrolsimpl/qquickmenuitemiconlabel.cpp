@@ -7,6 +7,7 @@
 #include "qquickmenuitemiconlabel_p_p.h"
 #include "qquickmnemoniclabel_p.h"
 
+#include <QtQuick/private/qquicktext_p.h>
 #include <QtQuickTemplates2/private/qquickaction_p.h>
 #include <QtQuickTemplates2/private/qquickmenuitem_p.h>
 

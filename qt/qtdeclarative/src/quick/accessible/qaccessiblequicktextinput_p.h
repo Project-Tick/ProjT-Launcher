@@ -1,5 +1,6 @@
 // Copyright (C) 2025 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #ifndef QACCESSIBLEQUICKTEXTINPUT_H
 #define QACCESSIBLEQUICKTEXTINPUT_H
@@ -23,13 +24,22 @@ QT_BEGIN_NAMESPACE
 
 #if QT_CONFIG(accessibility)
 
-class Q_QUICK_EXPORT QAccessibleQuickTextInput : public QAccessibleQuickItem
+class Q_QUICK_EXPORT QAccessibleQuickTextInput : public QAccessibleQuickItem,
+                                                 public QAccessibleEditableTextInterface
 {
 public:
     QAccessibleQuickTextInput(QQuickTextInput *textEdit);
 
     void removeSelection(int selectionIndex) override;
     void setSelection(int selectionIndex, int startOffset, int endOffset) override;
+
+    // QAccessibleInterface interface
+    void *interface_cast(QAccessible::InterfaceType) override;
+
+    // QAccessibleEditableTextInterface interface
+    void deleteText(int startOffset, int endOffset) override;
+    void insertText(int offset, const QString &text) override;
+    void replaceText(int startOffset, int endOffset, const QString &text) override;
 
 private:
     QQuickTextInput *textInput() const { return static_cast<QQuickTextInput *>(item()); }

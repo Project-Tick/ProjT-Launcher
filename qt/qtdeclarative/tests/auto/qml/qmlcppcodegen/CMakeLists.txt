@@ -29,6 +29,7 @@ qt_internal_add_test(tst_qmlcppcodegen
         with_subdir_test_moduleplugin
     DEFINES
         QT_NO_CAST_FROM_ASCII
+        QT_NO_CAST_TO_ASCII
 )
 
 qt_internal_add_test(tst_qmlcppcodegen_interpreted

@@ -300,6 +300,20 @@ public:
         m_encodedAliasTargetIndex = target;
     }
 
+    int aliasTargetObjectId() const
+    {
+        Q_ASSERT(isAlias());
+        return m_metaObjectOffsetOrAliasTargetObjectId;
+    }
+
+    void setAliasTargetObjectId(int id)
+    {
+        Q_ASSERT(isAlias());
+        Q_ASSERT(id >= std::numeric_limits<qint16>::min());
+        Q_ASSERT(id <= std::numeric_limits<qint16>::max());
+        m_metaObjectOffsetOrAliasTargetObjectId = id;
+    }
+
     QTypeRevision revision() const { return m_revision; }
     void setRevision(QTypeRevision revision) { m_revision = revision; }
 
@@ -355,12 +369,18 @@ public:
         return m_metaObject->method(m_coreIndex);
     }
 
-    int metaObjectOffset() const { return m_metaObjectOffset; }
+    int metaObjectOffset() const
+    {
+        Q_ASSERT(!isAlias());
+        return m_metaObjectOffsetOrAliasTargetObjectId;
+    }
+
     void setMetaObjectOffset(int off)
     {
+        Q_ASSERT(!isAlias());
         Q_ASSERT(off >= std::numeric_limits<qint16>::min());
         Q_ASSERT(off <= std::numeric_limits<qint16>::max());
-        m_metaObjectOffset = qint16(off);
+        m_metaObjectOffsetOrAliasTargetObjectId = qint16(off);
     }
 
     StaticMetaCallFunction staticMetaCallFunction() const
@@ -480,7 +500,7 @@ private:
     qint16 m_notifyIndex = -1;
     qint16 m_overrideIndex = -1;
 
-    qint16 m_metaObjectOffset = -1;
+    qint16 m_metaObjectOffsetOrAliasTargetObjectId = -1;
 
     QTypeRevision m_revision = QTypeRevision::zero();
     QTypeRevision m_typeVersion = QTypeRevision::zero();

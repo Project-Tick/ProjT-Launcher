@@ -10,6 +10,10 @@ set(qml_files
     "TextEditingContextMenu.qml"
 )
 
+set_source_files_properties(TextEditingContextMenu.qml PROPERTIES
+    QT_QML_SOURCE_VERSIONS "6.11"
+)
+
 qt_internal_add_qml_module(QuickControls2ImagineStyleImpl
     URI "QtQuick.Controls.Imagine.impl"
     VERSION "${PROJECT_VERSION}"
@@ -18,6 +22,8 @@ qt_internal_add_qml_module(QuickControls2ImagineStyleImpl
     NO_PRIVATE_MODULE
     QML_FILES
         ${qml_files}
+    DEPENDENCIES
+        QtQuick/auto
     IMPORTS
         QtQuick.Controls.impl/auto
     DEFINES

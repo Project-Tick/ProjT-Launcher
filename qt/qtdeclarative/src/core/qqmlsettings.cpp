@@ -17,6 +17,7 @@
 #include <QtCore/qpointer.h>
 #include <QtCore/qsettings.h>
 
+using namespace Qt::StringLiterals;
 using namespace std::chrono_literals;
 
 QT_BEGIN_NAMESPACE
@@ -261,8 +262,16 @@ QSettings *QQmlSettingsPrivate::instance() const
             if (QCoreApplication::applicationName().isEmpty())
                 missingIdentifiers.append(u"applicationName"_s);
 
-            if (!missingIdentifiers.isEmpty())
-                qmlWarning(q) << "The following application identifiers have not been set: " << missingIdentifiers;
+            if (!missingIdentifiers.isEmpty()) {
+#ifdef Q_CC_MSVC
+                QString formattedList = QStringLiteral("QList(\"")
+                        + missingIdentifiers.join(QStringLiteral("\", \"")) + QStringLiteral("\")");
+                qmlWarning(q) << "The following application identifiers have not been set: " << formattedList;
+#else
+                qmlWarning(q) << "The following application identifiers have not been set: "
+                              << missingIdentifiers;
+#endif
+            }
         }
 
         return settings;
@@ -447,7 +456,7 @@ QVariant QQmlSettings::value(const QString &key, const QVariant &defaultValue) c
 }
 
 /*!
-   \qmlmethod Settings::setValue(string key, var value)
+   \qmlmethod void Settings::setValue(string key, var value)
 
    Sets the value of setting \a key to \a value. If the key already exists,
    the previous value is overwritten.
@@ -462,7 +471,7 @@ void QQmlSettings::setValue(const QString &key, const QVariant &value)
 }
 
 /*!
-   \qmlmethod Settings::sync()
+   \qmlmethod void Settings::sync()
 
     Writes any unsaved changes to permanent storage, and reloads any
     settings that have been changed in the meantime by another

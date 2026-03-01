@@ -3168,6 +3168,12 @@ void QQuickItemPrivate::derefWindow()
     if (!parentItem)
         c->parentlessItems.remove(q);
 
+    if (auto *da = deliveryAgentPrivate()) {
+        if (da->activeFocusItem == q) {
+            qCDebug(lcFocus) << "Removing active focus item from window's delivery agent";
+            da->activeFocusItem = nullptr;
+        }
+    }
     window = nullptr;
 
     itemNodeInstance = nullptr;
@@ -4987,7 +4993,7 @@ void QQuickItem::mapToGlobal(QQmlV4FunctionPtr args) const
 #endif
 
 /*!
-    \qmlmethod QtQuick::Item::forceActiveFocus()
+    \qmlmethod void QtQuick::Item::forceActiveFocus()
 
     Forces active focus on the item.
 
@@ -5018,7 +5024,7 @@ void QQuickItem::forceActiveFocus()
 }
 
 /*!
-    \qmlmethod QtQuick::Item::forceActiveFocus(Qt::FocusReason reason)
+    \qmlmethod void QtQuick::Item::forceActiveFocus(Qt::FocusReason reason)
     \overload
 
     Forces active focus on the item with the given \a reason.
@@ -5107,7 +5113,7 @@ QQuickItem *QQuickItem::childAt(qreal x, qreal y) const
 }
 
 /*!
-    \qmlmethod QtQuick::Item::dumpItemTree()
+    \qmlmethod void QtQuick::Item::dumpItemTree()
 
     Dumps some details about the
     \l {Concepts - Visual Parent in Qt Quick}{visual tree of Items} starting
@@ -6910,7 +6916,8 @@ bool QQuickItemPrivate::effectivelyClipsEventHandlingChildren() const
             }
             if (!childPriv->eventHandlingChildrenWithinBoundsSet) {
                 eventHandlingChildrenWithinBounds = childPriv->effectivelyClipsEventHandlingChildren();
-                qCDebug(lcEffClip) << "child has children that go outside: giving up" << child;
+                if (!eventHandlingChildrenWithinBounds)
+                    qCDebug(lcEffClip) << "child has children that go outside: giving up" << child;
             }
         }
 #ifdef QT_BUILD_INTERNAL
@@ -8526,7 +8533,7 @@ void QQuickItem::setCursor(const QCursor &cursor)
     Q_D(QQuickItem);
 
     Qt::CursorShape oldShape = d->extra.isAllocated() ? d->extra->cursor.shape() : Qt::ArrowCursor;
-    qCDebug(lcHoverTrace) << oldShape << "->" << cursor.shape();
+    qCDebug(lcHoverCursor) << oldShape << "->" << cursor.shape();
 
     if (oldShape != cursor.shape() || oldShape >= Qt::LastCursor || cursor.shape() >= Qt::LastCursor) {
         d->extra.value().cursor = cursor;

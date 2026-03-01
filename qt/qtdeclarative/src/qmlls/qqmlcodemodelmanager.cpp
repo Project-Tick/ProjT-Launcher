@@ -57,9 +57,6 @@ QQmlCodeModelManager::QQmlCodeModelManager(QObject *parent, QQmlToolingSharedSet
     appendWorkspace(defaultCodeModel, ManagedByServer);
     connect(&m_processScheduler, &QProcessScheduler::done, this,
             &QQmlCodeModelManager::onBuildFinished);
-
-    connect(&m_processScheduler, &QProcessScheduler::done, this,
-            &QQmlCodeModelManager::backgroundBuildFinished);
     connect(&m_processScheduler, &QProcessScheduler::started, this,
             &QQmlCodeModelManager::backgroundBuildStarted);
     connect(&m_processScheduler, &QProcessScheduler::cancelled, this,
@@ -76,6 +73,8 @@ void QQmlCodeModelManager::onBuildFinished(const QByteArray &url)
     const QStringList buildPaths = it->codeModel->buildPaths();
     m_buildInformation.loadSettingsFrom(buildPaths, ForceUpdate);
     setBuildPathsOn(&*it, buildPaths, DontAppendPathsFromFallback);
+    it->codeModel->reloadAllOpenFiles();
+    emit backgroundBuildFinished(url);
 }
 
 void QQmlCodeModelManager::prepareForShutdown()

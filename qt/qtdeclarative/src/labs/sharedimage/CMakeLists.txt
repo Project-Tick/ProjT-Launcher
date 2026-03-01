@@ -9,6 +9,8 @@ qt_internal_add_qml_module(LabsSharedImage
     NO_PLUGIN_OPTIONAL
     NO_GENERATE_PLUGIN_SOURCE
     CLASS_NAME QtQuickSharedImagePlugin
+    DEPENDENCIES
+        QtQuick/auto
     SOURCES
         qsharedimageloader.cpp qsharedimageloader_p.h
         qsharedimageprovider.cpp qsharedimageprovider_p.h

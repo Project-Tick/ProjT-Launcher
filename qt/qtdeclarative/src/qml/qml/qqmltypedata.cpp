@@ -204,10 +204,11 @@ QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::resolveAliase
 {
     const CompiledObject *obj = m_compiler->objectAt(objectIndex);
     int aliasIndex = 0;
-    const auto doAppendAlias = [&](const QV4::CompiledData::Alias *alias, int encodedIndex) {
+    const auto doAppendAlias = [&](const QV4::CompiledData::Alias *alias, int encodedIndex,
+                                   int resolvedTargetObjectId) {
         return appendAliasToPropertyCache(
-                &component, alias, objectIndex, aliasIndex++, encodedIndex, aliasCacheCreator,
-                error);
+                &component, alias, objectIndex, aliasIndex++, encodedIndex,
+                resolvedTargetObjectId, aliasCacheCreator, error);
     };
 
     for (auto alias = obj->aliasesBegin(), end = obj->aliasesEnd(); alias != end; ++alias) {
@@ -216,20 +217,28 @@ QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::resolveAliase
             continue;
         }
 
-        if (alias->isAliasToLocalAlias()) {
-            if (doAppendAlias(alias, -1))
-                continue;
-            return SomeAliasesResolved;
+        int targetObjectIndex = -1;
+        for (int i = 0, end = component.namedObjectsInComponentCount(); i < end; ++i) {
+            const int candidateIndex = component.namedObjectsInComponentTable()[i];
+            if (m_compiler->objectAt(candidateIndex)->idNameIndex == alias->idIndex()) {
+                targetObjectIndex = candidateIndex;
+                break;
+            }
         }
-
-        const int targetObjectIndex
-                = objectForId(m_compiler, component, alias->targetObjectId());
+        if (targetObjectIndex == -1) {
+            *error = qQmlCompileError(
+                    alias->referenceLocation(),
+                    tr("Invalid alias reference. Unable to find id \"%1\"")
+                            .arg(stringAt(alias->idIndex())));
+            break;
+        }
         const QV4::CompiledData::Object *targetObject = m_compiler->objectAt(targetObjectIndex);
+        const int resolvedTargetObjectId = targetObject->objectId();
 
         QStringView property;
         QStringView subProperty;
 
-        const QString aliasPropertyValue = stringAt(alias->propertyNameIndex);
+        const QString aliasPropertyValue = stringAt(alias->propertyNameIndex());
         const int propertySeparator = aliasPropertyValue.indexOf(QLatin1Char('.'));
         if (propertySeparator != -1) {
             property = QStringView{aliasPropertyValue}.left(propertySeparator);
@@ -239,7 +248,7 @@ QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::resolveAliase
         }
 
         if (property.isEmpty()) {
-            if (doAppendAlias(alias, -1))
+            if (doAppendAlias(alias, -1, resolvedTargetObjectId))
                 continue;
             return SomeAliasesResolved;
         }
@@ -255,8 +264,10 @@ QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::resolveAliase
 
         const int coreIndex = targetProperty->coreIndex();
         if (subProperty.isEmpty()) {
-            if (doAppendAlias(alias, QQmlPropertyIndex(coreIndex).toEncoded()))
+            if (doAppendAlias(
+                        alias, QQmlPropertyIndex(coreIndex).toEncoded(), resolvedTargetObjectId)) {
                 continue;
+            }
             return SomeAliasesResolved;
         }
 
@@ -267,8 +278,11 @@ QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::resolveAliase
             if (valueTypeIndex == -1)
                 return SomeAliasesResolved;
 
-            if (doAppendAlias(alias, QQmlPropertyIndex(coreIndex, valueTypeIndex).toEncoded()))
+            if (doAppendAlias(
+                        alias, QQmlPropertyIndex(coreIndex, valueTypeIndex).toEncoded(),
+                        resolvedTargetObjectId)) {
                 continue;
+            }
 
             return SomeAliasesResolved;
         }
@@ -287,7 +301,8 @@ QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::resolveAliase
                 continue;
 
             if (doAppendAlias(
-                        alias, QQmlPropertyIndex(coreIndex, actualProperty->coreIndex()).toEncoded())) {
+                        alias, QQmlPropertyIndex(coreIndex, actualProperty->coreIndex()).toEncoded(),
+                        resolvedTargetObjectId)) {
                 isDeepAlias = true;
                 break;
             }
@@ -321,6 +336,7 @@ QQmlError QQmlTypeData::createTypeAndPropertyCaches(
     m_compiledData->typeNameCache = typeNameCache;
     m_compiledData->resolvedTypes = resolvedTypeCache;
     m_compiledData->inlineComponentData = m_inlineComponentData;
+    m_compiledData->qmlType = m_qmlType;
 
     QQmlPendingGroupPropertyBindings pendingGroupPropertyBindings;
 
@@ -535,6 +551,11 @@ void QQmlTypeData::done()
             for (const QQmlError &e : encounteredErrors)
                 qCDebug(DBG_DISK_CACHE) << e.toString();
             m_compiledData.reset();
+            // Clear resolved types, scripts, and composite singletons to break
+            // potential circular references (e.g., A depends on B, B depends on A)
+            m_resolvedTypes.clear();
+            m_compositeSingletons.clear();
+            m_scripts.clear();
         }
     });
 
@@ -1106,7 +1127,7 @@ QQmlError QQmlTypeData::buildTypeResolutionCaches(
             } else {
                 ref->setTypePropertyCache(compilationUnit->rootPropertyCache());
             }
-            if (!resolvedType->selfReference && resolvedType->needsCreation)
+            if (!resolvedType->selfReference)
                 ref->setCompilationUnit(compilationUnit);
         } else if (qmlType.isInlineComponentType()) {
             // Inline component.

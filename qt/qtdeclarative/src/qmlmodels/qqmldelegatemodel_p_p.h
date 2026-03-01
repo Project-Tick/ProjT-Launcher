@@ -84,7 +84,7 @@ public:
 class QQmlAdaptorModel;
 class QQDMIncubationTask;
 
-class QQmlDelegateModelItem : public QObject
+class Q_QMLMODELS_EXPORT QQmlDelegateModelItem : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(int index READ modelIndex NOTIFY modelIndexChanged)

@@ -1440,6 +1440,26 @@ void tst_qv4mm::findObjectsForCompilationUnit_data()
             << 2     // expectedUnit2ObjectCount (only the 2 derived instances)
             << false // component2HasChildObject
             << true; // component2InheritsComponent1
+
+    QTest::newRow("base_type_found_via_derived_compilation_unit")
+            << "RecordTestBase.qml" // base type
+            << "recordTest4.qml"    // derived type
+            << 1      // component1InstanceCount (base type)
+            << 2      // component2InstanceCount (QtObject with base type as child)
+            << 3      // expectedUnit1ObjectCount (1 base + 2 children, all have base's compilation unit)
+            << 4      // expectedUnit2ObjectCount (2 QtObject and 2 children)
+            << true   // component2HasChildObject
+            << false; // component2InheritsComponent1
+
+    QTest::newRow("non_vme_child_found_via_compilation_unit")
+            << "recordTest1.qml"
+            << "recordTestNonVme.qml"
+            << 1      // component1InstanceCount
+            << 1      // component2InstanceCount
+            << 1      // expectedUnit1ObjectCount
+            << 2      // expectedUnit2ObjectCount (root + non-VME child)
+            << true   // component2HasChildObject
+            << false; // component2InheritsComponent1
 }
 
 void tst_qv4mm::findObjectsForCompilationUnit()

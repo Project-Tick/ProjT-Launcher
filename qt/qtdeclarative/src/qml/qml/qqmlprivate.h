@@ -922,119 +922,165 @@ namespace QQmlPrivate
         return qstrcmp(metaObject->classInfo(index).value(), "true") == 0;
     }
 
-    template<class T, class = std::void_t<>>
+    // These detector classes are using a somehow "old school" SFINAE
+    // approach (overloaded test() functions, rather than void_t
+    // and similar more modern constructs) to avoid hitting GCC/MSVC
+    // bugs; be careful when refactoring these. In particular, make sure
+    // that they still work with private members even if you befriend
+    // the detector.
+
+    template<class T>
     struct QmlExtended
     {
-        using Type = void;
+    private:
+        template<class U>
+        static auto test(int) -> std::conditional_t<
+                QmlTypeHasMarker<U, decltype(&U::qt_qmlMarker_extended)>::value,
+                typename U::QmlExtendedType *,
+                void *
+            >;
+
+        template<class U>
+        static auto test(...) -> void *;
+
+    public:
+        // Some compilers complain if we have functions return abstract types.
+        // So we add pointers in the above, and remove the pointer here.
+        using Type = std::remove_pointer_t<decltype(test<T>(0))>;
     };
 
     template<class T>
-    struct QmlExtended<T, std::void_t<typename T::QmlExtendedType>>
-    {
-        using Type = typename std::conditional<
-                QmlTypeHasMarker<T, decltype(&T::qt_qmlMarker_extended)>::value,
-                typename T::QmlExtendedType, void>::type;
-    };
-
-    template<class T, class = std::void_t<>>
     struct QmlExtendedNamespace
     {
-        static constexpr const QMetaObject *metaObject() { return nullptr; }
-    };
-
-    template<class T>
-    struct QmlExtendedNamespace<T, std::void_t<decltype(T::qmlExtendedNamespace())>>
-    {
-        static constexpr const QMetaObject *metaObject()
+    private:
+        template<class U>
+        static constexpr auto metaObjectImpl(int) ->
+            decltype((void)U::qmlExtendedNamespace(), static_cast<const QMetaObject *>(nullptr))
         {
-            if constexpr (QmlTypeHasMarker<T, decltype(&T::qt_qmlMarker_extendedNamespace)>::value)
-                return T::qmlExtendedNamespace();
+            if constexpr (QmlTypeHasMarker<U, decltype(&U::qt_qmlMarker_extendedNamespace)>::value)
+                return U::qmlExtendedNamespace();
             else
                 return nullptr;
         }
+
+        template<class U>
+        static constexpr auto metaObjectImpl(...) -> const QMetaObject *
+        {
+            return nullptr;
+        }
+
+    public:
+        static constexpr const QMetaObject *metaObject() { return metaObjectImpl<T>(0); }
     };
 
-    template<class T, class = std::void_t<>>
+    template<class T>
     struct QmlResolved
     {
-        using Type = T;
+    private:
+        template<class U>
+        static auto test(int) -> std::conditional_t<
+            QmlTypeHasMarker<U, decltype(&U::qt_qmlMarker_foreign)>::value,
+            typename U::QmlForeignType *,
+            U *
+        >;
+
+        template<class U>
+        static auto test(...) -> U *;
+
+    public:
+        using Type = std::remove_pointer_t<decltype(test<T>(0))>;
     };
 
     template<class T>
-    struct QmlResolved<T, std::void_t<typename T::QmlForeignType>>
-    {
-        using Type = typename std::conditional<
-                QmlTypeHasMarker<T, decltype(&T::qt_qmlMarker_foreign)>::value,
-                typename T::QmlForeignType, T>::type;
-    };
-
-    template<class T, class = std::void_t<>>
     struct QmlUncreatable
     {
-        static constexpr bool Value = false;
+    private:
+        template<class U>
+        static auto test(int) -> std::enable_if_t<
+            QmlTypeHasMarker<U, decltype(&U::qt_qmlMarker_uncreatable)>::value
+            && bool(U::QmlIsUncreatable::yes),
+            std::true_type>;
+
+        template<class U>
+        static auto test(...) -> std::false_type;
+
+    public:
+        static constexpr bool Value = decltype(test<T>(0))::value;
     };
 
     template<class T>
-    struct QmlUncreatable<T, std::void_t<typename T::QmlIsUncreatable>>
-    {
-        static constexpr bool Value =
-                QmlTypeHasMarker<T, decltype(&T::qt_qmlMarker_uncreatable)>::value
-                && bool(T::QmlIsUncreatable::yes);
-    };
-
-    template<class T, class = std::void_t<>>
     struct QmlAnonymous
     {
-        static constexpr bool Value = false;
+    private:
+        template<class U>
+        static auto test(int) -> std::enable_if_t<
+            QmlTypeHasMarker<U, decltype(&U::qt_qmlMarker_anonymous)>::value
+            && bool(U::QmlIsAnonymous::yes),
+            std::true_type
+        >;
+
+        template<class U>
+        static auto test(...) -> std::false_type;
+
+    public:
+        static constexpr bool Value = decltype(test<T>(0))::value;
     };
 
-    template<class T>
-    struct QmlAnonymous<T, std::void_t<typename T::QmlIsAnonymous>>
-    {
-        static constexpr bool Value =
-                QmlTypeHasMarker<T, decltype(&T::qt_qmlMarker_anonymous)>::value
-                && bool(T::QmlIsAnonymous::yes);
-    };
-
-
-    template<class T, class = std::void_t<>>
+    template <class T>
     struct QmlSingleton
     {
-        static constexpr bool Value = false;
+    private:
+        template<class U>
+        static auto test(int) -> std::enable_if_t<
+            QmlTypeHasMarker<U, decltype(&U::qt_qmlMarker_singleton)>::value
+            && bool(U::QmlIsSingleton::yes),
+            std::true_type
+        >;
+
+        template<class U>
+        static auto test(...) -> std::false_type;
+
+    public:
+        static constexpr bool Value = decltype(test<T>(0))::value;
     };
 
     template<class T>
-    struct QmlSingleton<T, std::void_t<typename T::QmlIsSingleton>>
-    {
-        static constexpr bool Value =
-                QmlTypeHasMarker<T, decltype(&T::qt_qmlMarker_singleton)>::value
-                && bool(T::QmlIsSingleton::yes);
-    };
-
-    template<class T, class = std::void_t<>>
     struct QmlSequence
     {
-        static constexpr bool Value = false;
+    private:
+        template<class U>
+        static auto test_impl(int) -> std::bool_constant<bool(U::QmlIsSequence::yes)>;
+
+        template<class U>
+        static auto test_impl(...) -> std::false_type;
+
+        template<class U>
+        static constexpr bool test() {
+            if constexpr (decltype(test_impl<U>(0))::value) {
+                static_assert((std::is_same_v<typename U::QmlSequenceValueType,
+                               typename QmlResolved<U>::Type::value_type>));
+                return true;
+            }
+            return false;
+        }
+
+    public:
+        static constexpr bool Value = test<T>();
     };
 
     template<class T>
-    struct QmlSequence<T, std::void_t<typename T::QmlIsSequence>>
-    {
-        Q_STATIC_ASSERT((std::is_same_v<typename T::QmlSequenceValueType,
-                                        typename QmlResolved<T>::Type::value_type>));
-        static constexpr bool Value = bool(T::QmlIsSequence::yes);
-    };
-
-    template<class T, class = std::void_t<>>
     struct QmlInterface
     {
-        static constexpr bool Value = false;
-    };
+    private:
+        template<class U>
+        static auto test(int) ->
+            decltype((void)qobject_interface_iid<U *>(), std::bool_constant<bool(U::QmlIsInterface::yes)>{});
 
-    template<class T>
-    struct QmlInterface<T, std::void_t<typename T::QmlIsInterface, decltype(qobject_interface_iid<T *>())>>
-    {
-        static constexpr bool Value = bool(T::QmlIsInterface::yes);
+        template<class U>
+        static auto test(...) -> std::false_type;
+
+    public:
+        static constexpr bool Value = decltype(test<T>(0))::value;
     };
 
     template<class T, typename = std::void_t<>>

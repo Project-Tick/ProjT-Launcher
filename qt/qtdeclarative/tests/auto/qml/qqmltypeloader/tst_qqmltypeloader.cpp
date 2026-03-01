@@ -724,7 +724,8 @@ void tst_QQMLTypeLoader::circularDependency()
     QQmlEngine engine;
     QTest::ignoreMessage(QtWarningMsg, QRegularExpression("Cyclic dependency detected between (.*) and (.*)"));
     QQmlComponent component(&engine, testFileUrl("CircularDependency.qml"));
-    QCOMPARE(component.status(), QQmlComponent::Null);
+    QCOMPARE(component.status(), QQmlComponent::Error);
+    QVERIFY(component.errorString().contains(QLatin1String("Cyclic dependency detected")));
 }
 
 void tst_QQMLTypeLoader::declarativeCppAndQmlDir()

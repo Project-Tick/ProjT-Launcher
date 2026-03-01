@@ -7,9 +7,21 @@
 #include <QQmlContext>
 #include <qqml.h>
 #include <QMetaMethod>
+
+#include <private/qmlutils_p.h>
+#include <private/qobject_p.h>
+#include <private/qobject_p_p.h>
+
 #include <setjmp.h>
 
-#include <QtQuickTestUtils/private/qmlutils_p.h>
+#if defined(QT_ASAN_ENABLED) && __has_include(<sanitizer/lsan_interface.h>)
+#include <sanitizer/lsan_interface.h>
+#define LSAN_DISABLE() __lsan_disable()
+#define LSAN_ENABLE() __lsan_enable()
+#else
+#define LSAN_DISABLE()
+#define LSAN_ENABLE()
+#endif
 
 class ExportedClass : public QObject
 {
@@ -138,9 +150,9 @@ private:
     void createObjects();
 
     QQmlEngine engine;
-    QObject *root = nullptr;
-    ExportedClass *exportedClass = nullptr;
-    ExportedClass *exportedObject = nullptr;
+    std::unique_ptr<QObject> root;
+    QPointer<ExportedClass> exportedClass;
+    std::unique_ptr<ExportedClass> exportedObject;
 };
 
 void tst_qqmlnotifier::initTestCase()
@@ -151,15 +163,17 @@ void tst_qqmlnotifier::initTestCase()
 
 void tst_qqmlnotifier::createObjects()
 {
-    delete root;
-    root = nullptr;
-    exportedClass = exportedObject = nullptr;
+    root.reset();
+    exportedClass = nullptr;
+    exportedObject.reset();
 
     QQmlComponent component(&engine, testFileUrl("connectnotify.qml"));
-    exportedObject = new ExportedClass();
+    exportedObject = std::make_unique<ExportedClass>();
     exportedObject->setObjectName("exportedObject");
-    root = component.createWithInitialProperties({{"exportedObject", QVariant::fromValue(exportedObject)}});
-    QVERIFY(root != nullptr);
+    root.reset(component.createWithInitialProperties({
+        {"exportedObject", QVariant::fromValue(exportedObject.get())}
+    }));
+    QVERIFY(root);
 
     exportedClass = qobject_cast<ExportedClass *>(
                 root->findChild<ExportedClass*>("exportedClass"));
@@ -169,10 +183,8 @@ void tst_qqmlnotifier::createObjects()
 
 void tst_qqmlnotifier::cleanupTestCase()
 {
-    delete root;
-    root = nullptr;
-    delete exportedObject;
-    exportedObject = nullptr;
+    root.reset();
+    exportedObject.reset();
 }
 
 void tst_qqmlnotifier::testConnectNotify()
@@ -207,7 +219,7 @@ void tst_qqmlnotifier::removeV4Binding()
     createObjects();
 
     // Removing a binding should disconnect all of its guarded properties
-    QVERIFY(QMetaObject::invokeMethod(root, "removeV4Binding"));
+    QVERIFY(QMetaObject::invokeMethod(root.get(), "removeV4Binding"));
     QCOMPARE(exportedClass->v4BindingPropConnections, 0);
     exportedClass->verifyReceiverCount();
 }
@@ -218,7 +230,7 @@ void tst_qqmlnotifier::removeV4Binding2()
 
     // In this case, the v4BindingProp2 property is used by two v4 bindings.
     // Make sure that removing one binding doesn't by accident disconnect all.
-    QVERIFY(QMetaObject::invokeMethod(root, "removeV4Binding2"));
+    QVERIFY(QMetaObject::invokeMethod(root.get(), "removeV4Binding2"));
     QCOMPARE(exportedClass->v4BindingProp2Connections, 1);
     exportedClass->verifyReceiverCount();
 }
@@ -228,7 +240,7 @@ void tst_qqmlnotifier::removeV8Binding()
     createObjects();
 
     // Removing a binding should disconnect all of its guarded properties
-    QVERIFY(QMetaObject::invokeMethod(root, "removeV8Binding"));
+    QVERIFY(QMetaObject::invokeMethod(root.get(), "removeV8Binding"));
     QCOMPARE(exportedClass->v8BindingPropConnections, 0);
     exportedClass->verifyReceiverCount();
 }
@@ -238,7 +250,7 @@ void tst_qqmlnotifier::removeScriptBinding()
     createObjects();
 
     // Removing a binding should disconnect all of its guarded properties
-    QVERIFY(QMetaObject::invokeMethod(root, "removeScriptBinding"));
+    QVERIFY(QMetaObject::invokeMethod(root.get(), "removeScriptBinding"));
     QCOMPARE(exportedClass->scriptBindingPropConnections, 0);
     exportedClass->verifyReceiverCount();
 }
@@ -248,7 +260,7 @@ void tst_qqmlnotifier::readProperty()
     createObjects();
 
     // Reading a property should not connect to it
-    QVERIFY(QMetaObject::invokeMethod(root, "readProperty"));
+    QVERIFY(QMetaObject::invokeMethod(root.get(), "readProperty"));
     QCOMPARE(exportedClass->unboundPropConnections, 0);
     exportedClass->verifyReceiverCount();
 }
@@ -259,10 +271,10 @@ void tst_qqmlnotifier::propertyChange()
 
     // Changing the state will trigger the PropertyChange to overwrite a value with a binding.
     // For this, the new binding needs to be connected, and afterwards disconnected.
-    QVERIFY(QMetaObject::invokeMethod(root, "changeState"));
+    QVERIFY(QMetaObject::invokeMethod(root.get(), "changeState"));
     QCOMPARE(exportedClass->unboundPropConnections, 1);
     exportedClass->verifyReceiverCount();
-    QVERIFY(QMetaObject::invokeMethod(root, "changeState"));
+    QVERIFY(QMetaObject::invokeMethod(root.get(), "changeState"));
     QCOMPARE(exportedClass->unboundPropConnections, 0);
     exportedClass->verifyReceiverCount();
 }
@@ -273,8 +285,7 @@ void tst_qqmlnotifier::disconnectOnDestroy()
 
     // Deleting a QML object should remove all connections. For exportedClass, this is tested in
     // the destructor, and for exportedObject, it is tested below.
-    delete root;
-    root = nullptr;
+    root.reset();
     QCOMPARE(exportedObject->cppObjectPropConnections, 0);
     exportedObject->verifyReceiverCount();
 }
@@ -294,26 +305,31 @@ signals:
 void tst_qqmlnotifier::lotsOfBindings()
 {
     TestObject o;
-    QQmlEngine *e = new QQmlEngine;
+    QQmlEngine e;
 
     qmlRegisterSingletonInstance("Test", 1, 0, "Test", &o);
 
-    QList<QQmlComponent *> components;
+    std::vector<std::unique_ptr<QQmlComponent>> components;
+    std::vector<std::unique_ptr<QObject>> objects;
     for (int i = 0; i < 20000; ++i) {
-        QQmlComponent *component = new QQmlComponent(e);
+        auto component = std::make_unique<QQmlComponent>(&e);
         component->setData("import QtQuick 2.0; import Test 1.0; Item {width: Test.a; }", QUrl());
-        component->create(e->rootContext());
-        components.append(component);
+        objects.emplace_back(component->create(e.rootContext()));
+        components.push_back(std::move(component));
     }
 
     o.aChanged();
-
-    qDeleteAll(components);
-    delete e;
 }
 
 void tst_qqmlnotifier::deleteFromHandler()
 {
+    // Disable leak detection for this test. The longjmp from the fatal message handler
+    // bypasses destructors for multiple stack frames, causing unavoidable leaks:
+    // - QString/QByteArray in QQmlData::destroyed() and qFata() itself
+    // - ConnectionData and related allocations from partially-destroyed objects
+    LSAN_DISABLE();
+    auto enableLsan = qScopeGuard([] { LSAN_ENABLE(); });
+
     static jmp_buf jumpBuffer;
     enum {
         LongJmpSetup = 0,
@@ -331,6 +347,11 @@ void tst_qqmlnotifier::deleteFromHandler()
     QtMessageHandler defaultHandler = qInstallMessageHandler(myMessageHandler);
     auto cleanup = qScopeGuard([&]() {
         qInstallMessageHandler(defaultHandler);
+
+        // The longjmp leaves a dead currentSender in the connectionData. Clear it.
+        QObjectPrivate::ConnectionData *cd = QObjectPrivate::get(this)->connections;
+        QVERIFY(cd);
+        cd->currentSender = nullptr;
     });
     QQmlEngine engine;
     QQmlComponent component(&engine, testFileUrl("objectRenamer.qml"));

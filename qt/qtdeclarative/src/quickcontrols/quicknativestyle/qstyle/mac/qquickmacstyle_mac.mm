@@ -13,6 +13,7 @@
 #include <private/qcore_mac_p.h>
 #include <private/qcoregraphics_p.h>
 #include <private/qguiapplication_p.h>
+#include <private/qmacstyle_p.h>
 #include <private/qqc2qstylehelper_p.h>
 #include <private/qquickcontrol_p.h>
 
@@ -32,9 +33,6 @@
 #define QMAC_QAQUASTYLE_SIZE_CONSTRAIN
 
 using namespace QQC2;
-
-// TODO: qmacstyle_p.h is not self-contained. Move it into the header section when that is fixed.
-#include <private/qmacstyle_p.h>
 
 QT_USE_NAMESPACE
 
@@ -1591,7 +1589,7 @@ void QMacStylePrivate::resolveCurrentNSView(QWindow *window) const
 
 QMacStyle *QMacStyle::create()
 {
-    return new QMacApperanceStyle<QMacStyle>;
+    return new QMacApperanceStyle<QMacStyle, QStyleOption, QStyleOptionComplex>;
 }
 
 QMacStyle::QMacStyle()

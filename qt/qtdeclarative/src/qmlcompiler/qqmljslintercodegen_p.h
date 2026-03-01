@@ -39,6 +39,16 @@ namespace QQmlSA {
 class PassManager;
 };
 
+struct IdMemberShadow
+{
+    QString name; // of id and of the member
+    QQmlJSScope::ConstPtr idScope;
+    QQmlJSScope::ConstPtr memberOwnerScope;
+};
+bool operator==(const IdMemberShadow &lhs, const IdMemberShadow &rhs);
+bool operator!=(const IdMemberShadow &lhs, const IdMemberShadow &rhs);
+size_t qHash(const IdMemberShadow &idShadowsMember, size_t seed = 0);
+
 class QQmlJSLinterCodegen : public QQmlJSAotCompiler
 {
 public:
@@ -59,6 +69,11 @@ public:
         m_typeResolver = std::move(typeResolver);
     }
 
+    void setScopesById(const QQmlJSScopesById scopesByid)
+    {
+        m_scopesById = scopesByid;
+    }
+
     QQmlJSTypeResolver *typeResolver() { return &m_typeResolver; }
 
     void setPassManager(QQmlSA::PassManager *passManager);
@@ -71,6 +86,8 @@ private:
     void analyzeFunction(const QV4::Compiler::Context *context,
                          QQmlJSCompilePass::Function *function);
     ContextPropertyInfo m_contextPropertyInfo;
+    QQmlJSScopesById m_scopesById;
+    QSet<IdMemberShadow> m_idMemberShadows;
 };
 
 QT_END_NAMESPACE

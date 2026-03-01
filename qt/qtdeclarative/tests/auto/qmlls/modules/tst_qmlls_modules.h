@@ -13,7 +13,7 @@
 #include <QtCore/qprocess.h>
 #include <QtCore/qlibraryinfo.h>
 #include <QtCore/qstringlist.h>
-
+#include <QtCore/qmap.h>
 #include <QtTest/qtest.h>
 #include <QtQmlLS/private/qlspcustomtypes_p.h>
 

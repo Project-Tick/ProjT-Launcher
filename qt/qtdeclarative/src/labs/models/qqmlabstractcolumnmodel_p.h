@@ -108,6 +108,9 @@ protected:
     virtual bool validateNewRow(QLatin1StringView functionName, const QVariant &row,
                                 NewRowOperationFlag operation  = OtherOperation) const;
 
+    static QLatin1StringView jsTypeName(const QJSValue &v);
+    std::optional<QVariantList> validateRowsArgument(const QVariant &rows) const;
+
     QList<QQmlTableModelColumn *> mColumns;
 
     bool mComponentCompleted = false;

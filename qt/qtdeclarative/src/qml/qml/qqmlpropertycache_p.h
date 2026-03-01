@@ -328,7 +328,7 @@ private:
     AppendResult appendPropertyAttr(const QString &name, QQmlPropertyData &&data);
     AppendResult appendAlias(const QString &, QQmlPropertyData::Flags flags, int coreIndex,
                              QMetaType propType, QTypeRevision version, int notifyIndex,
-                             int encodedTargetIndex);
+                             int encodedTargetIndex, int targetObjectId);
     void appendSignal(const QString &, QQmlPropertyData::Flags, int coreIndex,
                       const QMetaType *types = nullptr,
                       const QList<QByteArray> &names = QList<QByteArray>());
@@ -388,7 +388,14 @@ private:
                                .arg(qPrintable(name), className());
             return;
         }
-        case OverrideSemantics::Status::OverridingNonVirtual:
+        case OverrideSemantics::Status::OverridingNonVirtual: {
+            // TODO: Make this a warning as soon as we can
+            qCDebug(qqmlPropertyCacheAppend).noquote()
+                    << QStringLiteral("Member %1 of the object %2 overrides a non-virtual member. "
+                              "Consider renaming it or mark it virtual in the base object")
+                            .arg(qPrintable(name), className());
+            return;
+        }
         case OverrideSemantics::Status::OverridingNonVirtualError: {
             qCWarning(qqmlPropertyCacheAppend).noquote()
                     << QStringLiteral("Member %1 of the object %2 overrides a non-virtual member. "
@@ -533,6 +540,10 @@ QQmlPropertyCache::overrideData(const QQmlPropertyData *data) const
 
 bool QQmlPropertyCache::isAllowedInRevision(const QQmlPropertyData *data) const
 {
+    // Aliases can't be revisioned.
+    if (data->isAlias())
+        return true;
+
     const QTypeRevision requested = data->revision();
     const int offset = data->metaObjectOffset();
     if (offset == -1 && requested == QTypeRevision::zero())

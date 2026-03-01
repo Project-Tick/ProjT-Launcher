@@ -19,6 +19,7 @@ NativeStyle.DefaultSearchField {
 
     contentItem: T.TextField {
         text: control.text
+        placeholderText: control.placeholderText
 
         PlaceholderText {
             x: parent.leftPadding

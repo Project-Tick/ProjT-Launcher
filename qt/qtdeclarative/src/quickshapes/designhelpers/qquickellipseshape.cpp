@@ -598,6 +598,18 @@ QQuickEllipseShape::QQuickEllipseShape(QQuickItem *parent)
     d->sp.append(d->path);
     d->path->setParent(this);
     d->extra.value().resourcesList.append(d->path);
+
+    connect(d->path, &QQuickShapePath::strokeColorChanged, this, &QQuickEllipseShape::strokeColorChanged);
+    connect(d->path, &QQuickShapePath::strokeWidthChanged, this, &QQuickEllipseShape::strokeWidthChanged);
+    connect(d->path, &QQuickShapePath::fillColorChanged, this, &QQuickEllipseShape::fillColorChanged);
+    connect(d->path, &QQuickShapePath::joinStyleChanged, this, &QQuickEllipseShape::joinStyleChanged);
+    connect(d->path, &QQuickShapePath::capStyleChanged, this, &QQuickEllipseShape::capStyleChanged);
+    connect(d->path, &QQuickShapePath::strokeStyleChanged, this, &QQuickEllipseShape::strokeStyleChanged);
+    connect(d->path, &QQuickShapePath::dashOffsetChanged, this, &QQuickEllipseShape::dashOffsetChanged);
+    connect(d->path, &QQuickShapePath::dashPatternChanged, this, &QQuickEllipseShape::dashPatternChanged);
+    connect(d->path, &QQuickShapePath::fillItemChanged, this, &QQuickEllipseShape::fillItemChanged);
+    connect(d->path, &QQuickShapePath::fillGradientChanged, this, &QQuickEllipseShape::fillGradientChanged);
+    connect(d->path, &QQuickShapePath::fillRuleChanged, this, &QQuickEllipseShape::fillRuleChanged);
 }
 
 QQuickEllipseShape::~QQuickEllipseShape() = default;
@@ -667,11 +679,7 @@ qreal QQuickEllipseShape::dashOffset() const
 void QQuickEllipseShape::setDashOffset(qreal offset)
 {
     Q_D(QQuickEllipseShape);
-    if (qFuzzyCompare(d->path->dashOffset(), offset))
-        return;
     d->path->setDashOffset(offset);
-    d->updatePath();
-    emit dashOffsetChanged();
 }
 
 /*!
@@ -747,11 +755,7 @@ qreal QQuickEllipseShape::strokeWidth() const
 void QQuickEllipseShape::setStrokeWidth(qreal width)
 {
     Q_D(QQuickEllipseShape);
-    if (qFuzzyCompare(d->path->strokeWidth(), width))
-        return;
     d->path->setStrokeWidth(width);
-    d->updatePath();
-    emit strokeWidthChanged();
 }
 
 /*!
@@ -777,8 +781,6 @@ void QQuickEllipseShape::setFillColor(const QColor &color)
 {
     Q_D(QQuickEllipseShape);
     d->path->setFillColor(color);
-    d->updatePath();
-    emit fillColorChanged();
 }
 
 /*!
@@ -801,8 +803,6 @@ void QQuickEllipseShape::setStrokeColor(const QColor &color)
 {
     Q_D(QQuickEllipseShape);
     d->path->setStrokeColor(color);
-    d->updatePath();
-    emit strokeColorChanged();
 }
 
 /*!
@@ -818,11 +818,7 @@ QQuickShapePath::CapStyle QQuickEllipseShape::capStyle() const
 void QQuickEllipseShape::setCapStyle(QQuickShapePath::CapStyle style)
 {
     Q_D(QQuickEllipseShape);
-    if (d->path->capStyle() == style)
-        return;
     d->path->setCapStyle(style);
-    d->updatePath();
-    emit capStyleChanged();
 }
 
 /*!
@@ -838,11 +834,7 @@ QQuickShapePath::JoinStyle QQuickEllipseShape::joinStyle() const
 void QQuickEllipseShape::setJoinStyle(QQuickShapePath::JoinStyle style)
 {
     Q_D(QQuickEllipseShape);
-    if (d->path->joinStyle() == style)
-        return;
     d->path->setJoinStyle(style);
-    d->updatePath();
-    emit joinStyleChanged();
 }
 
 /*!
@@ -858,11 +850,7 @@ QQuickShapePath::StrokeStyle QQuickEllipseShape::strokeStyle() const
 void QQuickEllipseShape::setStrokeStyle(QQuickShapePath::StrokeStyle style)
 {
     Q_D(QQuickEllipseShape);
-    if (d->path->strokeStyle() == style)
-        return;
     d->path->setStrokeStyle(style);
-    d->updatePath();
-    emit strokeStyleChanged();
 }
 
 /*!
@@ -878,11 +866,7 @@ QQuickShapePath::FillRule QQuickEllipseShape::fillRule() const
 void QQuickEllipseShape::setFillRule(QQuickShapePath::FillRule fillRule)
 {
     Q_D(QQuickEllipseShape);
-    if (d->path->fillRule() == fillRule)
-        return;
     d->path->setFillRule(fillRule);
-    d->updatePath();
-    emit fillRuleChanged();
 }
 
 /*!
@@ -899,8 +883,6 @@ void QQuickEllipseShape::setDashPattern(const QList<qreal> &array)
 {
     Q_D(QQuickEllipseShape);
     d->path->setDashPattern(array);
-    d->updatePath();
-    emit dashPatternChanged();
 }
 
 /*!
@@ -927,8 +909,6 @@ void QQuickEllipseShape::setFillGradient(QQuickShapeGradient *fillGradient)
 {
     Q_D(QQuickEllipseShape);
     d->path->setFillGradient(fillGradient);
-    d->updatePath();
-    emit fillGradientChanged();
 }
 
 void QQuickEllipseShape::resetFillGradient()
@@ -987,8 +967,6 @@ void QQuickEllipseShape::setFillItem(QQuickItem *newFillItem)
 {
     Q_D(QQuickEllipseShape);
     d->path->setFillItem(newFillItem);
-
-    emit fillItemChanged();
 }
 
 void QQuickEllipseShape::itemChange(ItemChange change, const ItemChangeData &value)

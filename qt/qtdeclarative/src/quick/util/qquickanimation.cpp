@@ -489,8 +489,8 @@ void QQuickAbstractAnimation::setGroup(QQuickAnimationGroup *g, int index)
 }
 
 /*!
-    \qmlmethod QtQuick::Animation::start()
-    \brief Starts the animation
+    \qmlmethod void QtQuick::Animation::start()
+    \brief Starts the animation.
 
     If the animation is already running, calling this method has no effect.  The
     \c running property will be true following a call to \c start().
@@ -501,8 +501,8 @@ void QQuickAbstractAnimation::start()
 }
 
 /*!
-    \qmlmethod QtQuick::Animation::pause()
-    \brief Pauses the animation
+    \qmlmethod void QtQuick::Animation::pause()
+    \brief Pauses the animation.
 
     If the animation is already paused or not \c running, calling this method has no effect.
     The \c paused property will be true following a call to \c pause().
@@ -513,8 +513,8 @@ void QQuickAbstractAnimation::pause()
 }
 
 /*!
-    \qmlmethod QtQuick::Animation::resume()
-    \brief Resumes a paused animation
+    \qmlmethod void QtQuick::Animation::resume()
+    \brief Resumes a paused animation.
 
     If the animation is not paused or not \c running, calling this method has no effect.
     The \c paused property will be false following a call to \c resume().
@@ -525,8 +525,8 @@ void QQuickAbstractAnimation::resume()
 }
 
 /*!
-    \qmlmethod QtQuick::Animation::stop()
-    \brief Stops the animation
+    \qmlmethod void QtQuick::Animation::stop()
+    \brief Stops the animation.
 
     If the animation is not running, calling this method has no effect.  Both the
     \c running and \c paused properties will be false following a call to \c stop().
@@ -550,8 +550,8 @@ void QQuickAbstractAnimation::stop()
 }
 
 /*!
-    \qmlmethod QtQuick::Animation::restart()
-    \brief Restarts the animation
+    \qmlmethod void QtQuick::Animation::restart()
+    \brief Restarts the animation.
 
     This is a convenience method, and is equivalent to calling \c stop() and
     then \c start().
@@ -563,8 +563,8 @@ void QQuickAbstractAnimation::restart()
 }
 
 /*!
-    \qmlmethod QtQuick::Animation::complete()
-    \brief Stops the animation, jumping to the final property values
+    \qmlmethod void QtQuick::Animation::complete()
+    \brief Stops the animation, jumping to the final property values.
 
     If the animation is not running, calling this method has no effect.  The
     \c running property will be false following a call to \c complete().
@@ -2275,7 +2275,7 @@ void QQuickPropertyAnimation::setTo(const QVariant &t)
     \qmlproperty real QtQuick::PropertyAnimation::easing.period
     \qmlproperty list<real> QtQuick::PropertyAnimation::easing.bezierCurve
 
-//! propertyanimation.easing
+//! [propertyanimation.easing]
     \brief Specifies the easing curve used for the animation
 
     To specify an easing curve you need to specify at least the type. For some curves you can also specify
@@ -2479,7 +2479,7 @@ void QQuickPropertyAnimation::setTo(const QVariant &t)
     end point: [cx1, cy1, cx2, cy2, endx, endy, ...].  The last point must be 1,1.
 
     See the \l {Qt Quick Examples - Animation#Easing Curves}{Easing Curves} for a demonstration of the different easing settings.
-//! propertyanimation.easing
+//! [propertyanimation.easing]
 */
 QEasingCurve QQuickPropertyAnimation::easing() const
 {

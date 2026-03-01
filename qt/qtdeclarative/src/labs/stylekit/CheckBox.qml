@@ -22,14 +22,19 @@ T.CheckBox {
     rightPadding: checkBoxLayout.padding.right
     bottomPadding: checkBoxLayout.padding.bottom
 
+    leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
+
     spacing: styleReader.spacing
 
     font: styleReader.font
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.CheckBox
+        controlType: StyleReader.CheckBox
         enabled: control.enabled
         focused: control.activeFocus
         checked: control.checked
@@ -68,7 +73,7 @@ T.CheckBox {
 
     indicator: IndicatorDelegate {
         quickControl: control
-        indicatorProperties: styleReader.indicator
+        indicatorStyle: styleReader.indicator
         x: indicatorItem.x
         y: indicatorItem.y
         width: indicatorItem.width
@@ -90,6 +95,6 @@ T.CheckBox {
 
     background: BackgroundDelegate {
         quickControl: control
-        backgroundProperties: styleReader.background
+        backgroundStyle: styleReader.background
     }
 }

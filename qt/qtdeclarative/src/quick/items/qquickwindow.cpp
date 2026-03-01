@@ -1888,10 +1888,10 @@ void QQuickWindowPrivate::updateCursor(const QPointF &scenePos, QQuickItem *root
             QQuickPointerHandlerPrivate::get(cursorItemAndHandler.second)->cursorDirty = false;
         if (cursorItem) {
             const auto cursor = QQuickItemPrivate::get(cursorItem)->effectiveCursor(cursorHandler);
-            qCDebug(lcHoverTrace) << "setting cursor" << cursor << "from" << cursorHandler << "or" << cursorItem;
+            qCDebug(lcHoverCursor) << "setting cursor" << cursor << "from" << cursorHandler << "or" << cursorItem;
             window->setCursor(cursor);
         } else {
-            qCDebug(lcHoverTrace) << "unsetting cursor";
+            qCDebug(lcHoverCursor) << "unsetting cursor";
             window->unsetCursor();
         }
     }
@@ -1913,6 +1913,9 @@ std::pair<QQuickItem*, QQuickPointerHandler*> QQuickWindowPrivate::findCursorIte
         QList<QQuickItem *> children = itemPrivate->paintOrderChildItems();
         for (int ii = children.size() - 1; ii >= 0; --ii) {
             QQuickItem *child = children.at(ii);
+            if (!child->isVisible() || !child->isEnabled() || QQuickItemPrivate::get(child)->culled)
+                continue;
+
             const QQuickItemPrivate *childPrivate = QQuickItemPrivate::get(child);
             QTransform childToParent;
             childPrivate->itemToParentTransform(&childToParent);
@@ -3896,14 +3899,14 @@ void QQuickWindow::endExternalCommands()
 */
 
 /*!
-    \qmlmethod QtQuick::Window::requestActivate()
+    \qmlmethod void QtQuick::Window::requestActivate()
     \since 5.1
 
     Requests the window to be activated, i.e. receive keyboard focus.
  */
 
 /*!
-    \qmlmethod QtQuick::Window::alert(int msec)
+    \qmlmethod void QtQuick::Window::alert(int msec)
     \since 5.1
 
     Causes an alert to be shown for \a msec milliseconds. If \a msec is \c 0
@@ -3915,7 +3918,7 @@ void QQuickWindow::endExternalCommands()
 */
 
 /*!
-    \qmlmethod QtQuick::Window::close()
+    \qmlmethod void QtQuick::Window::close()
 
     Closes the window.
 
@@ -3928,7 +3931,7 @@ void QQuickWindow::endExternalCommands()
 */
 
 /*!
-    \qmlmethod QtQuick::Window::raise()
+    \qmlmethod void QtQuick::Window::raise()
 
     Raises the window in the windowing system.
 
@@ -3936,7 +3939,7 @@ void QQuickWindow::endExternalCommands()
 */
 
 /*!
-    \qmlmethod QtQuick::Window::lower()
+    \qmlmethod void QtQuick::Window::lower()
 
     Lowers the window in the windowing system.
 
@@ -3944,7 +3947,7 @@ void QQuickWindow::endExternalCommands()
 */
 
 /*!
-    \qmlmethod QtQuick::Window::show()
+    \qmlmethod void QtQuick::Window::show()
 
     Shows the window.
 
@@ -3955,7 +3958,7 @@ void QQuickWindow::endExternalCommands()
 */
 
 /*!
-    \qmlmethod QtQuick::Window::hide()
+    \qmlmethod void QtQuick::Window::hide()
 
     Hides the window.
 
@@ -3965,7 +3968,7 @@ void QQuickWindow::endExternalCommands()
 */
 
 /*!
-    \qmlmethod QtQuick::Window::showMinimized()
+    \qmlmethod void QtQuick::Window::showMinimized()
 
     Shows the window as minimized.
 
@@ -3973,7 +3976,7 @@ void QQuickWindow::endExternalCommands()
 */
 
 /*!
-    \qmlmethod QtQuick::Window::showMaximized()
+    \qmlmethod void QtQuick::Window::showMaximized()
 
     Shows the window as maximized.
 
@@ -3981,7 +3984,7 @@ void QQuickWindow::endExternalCommands()
 */
 
 /*!
-    \qmlmethod QtQuick::Window::showFullScreen()
+    \qmlmethod void QtQuick::Window::showFullScreen()
 
     Shows the window as fullscreen.
 
@@ -3989,7 +3992,7 @@ void QQuickWindow::endExternalCommands()
 */
 
 /*!
-    \qmlmethod QtQuick::Window::showNormal()
+    \qmlmethod void QtQuick::Window::showNormal()
 
     Shows the window as normal, i.e. neither maximized, minimized, nor fullscreen.
 

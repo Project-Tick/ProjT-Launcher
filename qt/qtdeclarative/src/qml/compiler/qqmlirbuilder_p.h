@@ -341,6 +341,7 @@ public:
     const RequiredPropertyExtraData *requiredPropertyExtraData() const {return requiredPropertyExtraDatas->first; }
     int requiredPropertyExtraDataCount() const { return requiredPropertyExtraDatas->count; }
     void simplifyRequiredProperties();
+    void sortAliasDependencies(const Document *doc, QList<QQmlJS::DiagnosticMessage> *errors);
 
     PoolList<Binding>::Iterator bindingsBegin() const { return bindings->begin(); }
     PoolList<Binding>::Iterator bindingsEnd() const { return bindings->end(); }
@@ -369,6 +370,8 @@ public:
     QString appendSignal(Signal *signal);
     QString appendProperty(Property *prop, const QString &propertyName, bool isDefaultProperty, const QQmlJS::SourceLocation &defaultToken, QQmlJS::SourceLocation *errorLocation);
     QString appendAlias(Alias *prop, const QString &aliasName, bool isDefaultProperty, const QQmlJS::SourceLocation &defaultToken, QQmlJS::SourceLocation *errorLocation);
+    void setFirstAlias(Alias *alias) { aliases->first = alias; }
+
     void appendFunction(QmlIR::Function *f);
     void appendInlineComponent(InlineComponent *ic);
     void appendRequiredPropertyExtraData(RequiredPropertyExtraData *extraData);

@@ -1992,24 +1992,18 @@ void QSvgVisitorImpl::fillMotionPathAnimationInfo(const QSvgNode *node, NodeInfo
     }
 
     // Default value holds additional parameters
-    info.motionPath.setDefaultValue(QVariant::fromValue(QVariantPair(adaptAngle, baseRotation)));
+    QVariantList params({ QVariant::fromValue(originalPath), adaptAngle, baseRotation });
+    info.motionPath.setDefaultValue(params);
 
     const QList<qreal> propertyKeyFrames = property->keyFrames();
-
-    qreal previousT = 0.0;
+    outAnimation.frames[0] = qreal(0);
     for (int j = 0; j < propertyKeyFrames.size(); ++j) {
         const int time = qRound(propertyKeyFrames.at(j) * duration);
-
-        qreal t = calculateInterpolatedValue(property, j, 0).toReal();
-
-        if (time > 0) {
-            QPainterPath path = originalPath.trimmed(previousT, t);
-
-            outAnimation.frames[time] = QVariant::fromValue(path);
-            qCDebug(lcVectorImageAnimations) << "        -> Frame " << time << " is " << path;
+        if (time >= 0) {
+            qreal t = calculateInterpolatedValue(property, j, 0).toReal();
+            outAnimation.frames[time] = t;
+            qCDebug(lcVectorImageAnimations) << "        -> Frame " << time << " is " << t;
         }
-
-        previousT = t;
     }
 
     info.motionPath.addAnimation(outAnimation);

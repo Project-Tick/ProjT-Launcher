@@ -158,20 +158,6 @@ inline QList<QAnyStringView> split(QAnyStringView source, QLatin1StringView sep)
 
 }
 
-// Do not expose this outside of qmltyperegistrar specific code!
-// TODO: Remove this when QAnyStringView gets a proper qHash()
-constexpr inline size_t qHash(QAnyStringView string, size_t seed = 0)
-{
-    return string.visit([seed](auto view) {
-        if constexpr (std::is_same_v<decltype(view), QStringView>)
-            return qHash(view, seed);
-        if constexpr (std::is_same_v<decltype(view), QLatin1StringView>)
-            return qHash(view, seed);
-        if constexpr (std::is_same_v<decltype(view), QUtf8StringView>)
-            return qHash(QByteArrayView(view.data(), view.length()), seed);
-    });
-}
-
 QT_END_NAMESPACE
 
 #endif // QANYSTRINGVIEWUTILS_P_H

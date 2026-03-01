@@ -20,14 +20,20 @@ T.SpinBox {
     topPadding: spinBoxLayout.padding.top
     rightPadding: spinBoxLayout.padding.right
     bottomPadding: spinBoxLayout.padding.bottom
+
+    leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
+
     spacing: styleReader.spacing
 
     font: styleReader.font
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.SpinBox
+        controlType: StyleReader.SpinBox
         enabled: control.enabled
         focused: control.activeFocus
         hovered: control.hovered || control.down.hovered || control.up.hovered
@@ -35,9 +41,9 @@ T.SpinBox {
         palette: control.palette
     }
 
-    StyleKitReader {
+    StyleReader {
         id: upProperties
-        type: StyleKitReader.SpinBox
+        controlType: StyleReader.SpinBox
         enabled: control.enabled
         focused: control.activeFocus
         hovered: control.up.hovered
@@ -45,9 +51,9 @@ T.SpinBox {
         palette: control.palette
     }
 
-    StyleKitReader {
+    StyleReader {
         id: downProperties
-        type: StyleKitReader.SpinBox
+        controlType: StyleReader.SpinBox
         enabled: control.enabled
         focused: control.activeFocus
         hovered: control.down.hovered
@@ -124,7 +130,7 @@ T.SpinBox {
 
     up.indicator: IndicatorDelegate {
         quickControl: control
-        indicatorProperties: upProperties.indicator.up
+        indicatorStyle: upProperties.indicator.up
         x: upIndicatorItem.x
         y: upIndicatorItem.y
         width: upIndicatorItem.width
@@ -133,7 +139,7 @@ T.SpinBox {
 
     down.indicator: IndicatorDelegate {
         quickControl: control
-        indicatorProperties: downProperties.indicator.down
+        indicatorStyle: downProperties.indicator.down
         x: downIndicatorItem.x
         y: downIndicatorItem.y
         width: downIndicatorItem.width
@@ -142,6 +148,6 @@ T.SpinBox {
 
     background: BackgroundDelegate {
         quickControl: control
-        backgroundProperties: styleReader.background
+        backgroundStyle: styleReader.background
     }
 }

@@ -1,5 +1,6 @@
 // Copyright (C) 2019 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #include "qsgrhisupport_p.h"
 #include "qsgcontext_p.h"
@@ -9,6 +10,8 @@
 #include <QtQuick/private/qquickwindow_p.h>
 
 #include <QtGui/qwindow.h>
+#include <QtGui/qpa/qplatformintegration.h>
+#include <QtGui/private/qguiapplication_p.h>
 
 #if QT_CONFIG(vulkan)
 #include <QtGui/private/qvulkandefaultinstance_p.h>
@@ -127,8 +130,14 @@ void QSGRhiSupport::adjustToPlatformQuirks()
     if (m_rhiBackend == QRhi::Metal) {
         QRhiMetalInitParams rhiParams;
         if (!QRhi::probe(m_rhiBackend, &rhiParams)) {
-            m_rhiBackend = QRhi::OpenGLES2;
             qCDebug(QSG_LOG_INFO, "Metal does not seem to be supported. Falling back to OpenGL.");
+            m_rhiBackend = QRhi::OpenGLES2;
+            auto *platformIntegration = QGuiApplicationPrivate::platformIntegration();
+            if (platformIntegration
+                && !platformIntegration->hasCapability(QPlatformIntegration::OpenGL)) {
+                qCWarning(QSG_LOG_INFO, "OpenGL not available. Falling back to Null backend.");
+                m_rhiBackend = QRhi::Null;
+            }
         }
     }
 #endif

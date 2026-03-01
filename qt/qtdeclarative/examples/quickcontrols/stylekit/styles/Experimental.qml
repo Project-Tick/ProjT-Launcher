@@ -43,7 +43,7 @@ Style {
         text.color: "blue"
 
         transition: Transition {
-            StyleKitAnimation {
+            StyleAnimation {
                 animateColors: true
                 animateBackgroundBorder: true
                 duration: 300
@@ -132,7 +132,7 @@ Style {
             variations: [contextMenu, mini, alert, "dont crash"]
         }
 
-        Variation {
+        StyleVariation {
             id: contextMenu
             itemDelegate {
                 background {
@@ -147,12 +147,12 @@ Style {
             control.transition: null
         }
 
-        Variation {
+        StyleVariation {
             id: mini
             control.background.implicitHeight: 10
         }
 
-        Variation {
+        StyleVariation {
             id: alert
             control.background.color: "red"
         }
@@ -260,7 +260,7 @@ Style {
         }
 
         textField {
-            variations: Variation {
+            variations: StyleVariation {
                 button {
                     background {
                         radius: 0
@@ -324,7 +324,7 @@ Style {
         }
 
         textField {
-            variations: Variation {
+            variations: StyleVariation {
                 button {
                     background {
                         radius: 0

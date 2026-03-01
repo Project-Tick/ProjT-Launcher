@@ -126,8 +126,6 @@ public:
 
     void opened() override;
 
-    Qt::WindowFlags popupWindowType() const override;
-
     QPalette defaultPalette() const override { return QQuickTheme::palette(QQuickTheme::ToolTip); }
 
     int delay = 0;
@@ -139,6 +137,7 @@ public:
 
 QQuickToolTipPrivate::QQuickToolTipPrivate()
 {
+    windowFlags = Qt::ToolTip;
     if (qt_quicktooltipattachedprivate_delay == -1)
         qt_quicktooltipattachedprivate_delay = qGuiApp->styleHints()->toolTipWakeUpDelay();
 }
@@ -171,11 +170,6 @@ void QQuickToolTipPrivate::opened()
 {
     QQuickPopupPrivate::opened();
     startTimeout();
-}
-
-Qt::WindowFlags QQuickToolTipPrivate::popupWindowType() const
-{
-    return Qt::ToolTip;
 }
 
 QQuickToolTip::QQuickToolTip(QQuickItem *parent)
@@ -662,7 +656,7 @@ QQuickToolTip *QQuickToolTipAttached::toolTip() const
     \since 6.12
 
     This attached property controls whether the visibility of the
-    \l {shared tool tip instance}{toolTip} is handled automatically.
+    \l {toolTip}{shared tool tip instance} is handled automatically.
     It only has an effect for items on which \c ToolTip.visible \e {has not}
     been set. Only items that set \c ToolTip.text will be made visible. It only
     has an effect for the following items and their derived types: \l Control,

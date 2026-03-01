@@ -156,7 +156,6 @@ QQmlJSAotFunction QQmlJSCodeGenerator::run(const Function *function, bool basicB
         skip(reason);
         QQmlJSAotFunction result;
         result.skipReason = reason;
-        result.signature = u"    Q_UNUSED(contextUnit);\n    Q_UNUSED(argTypes);\n"_s;
         return result;
     }
 
@@ -3514,6 +3513,8 @@ void QQmlJSCodeGenerator::generate_Mul(int lhs)
 void QQmlJSCodeGenerator::generate_Div(int lhs)
 {
     INJECT_TRACE_INFO(generate_Div);
+    GeneratePragmaWarningBlock warningBlock(this);
+    warningBlock.silenceDivideByZero();
     generateArithmeticOperation(lhs, u"/"_s);
 }
 
@@ -4573,3 +4574,21 @@ QQmlJSCodeGenerator::AccumulatorConverter::~AccumulatorConverter()
 
 
 QT_END_NAMESPACE
+
+QQmlJSCodeGenerator::GeneratePragmaWarningBlock::GeneratePragmaWarningBlock(QQmlJSCodeGenerator *generator)
+    : m_generator(generator)
+{
+    m_generator->m_body += u"QT_WARNING_PUSH\n"_s;
+}
+
+QQmlJSCodeGenerator::GeneratePragmaWarningBlock::~GeneratePragmaWarningBlock()
+{
+    m_generator->m_body += u"QT_WARNING_POP\n"_s;
+}
+
+void QQmlJSCodeGenerator::GeneratePragmaWarningBlock::silenceDivideByZero()
+{
+    // currently only needed with MSVC, if we need it on more compilers, we
+    // should add a proper macro in Qt itself
+    m_generator->m_body += u"QT_WARNING_DISABLE_MSVC(4723) // potential divide by 0\n"_s;
+}

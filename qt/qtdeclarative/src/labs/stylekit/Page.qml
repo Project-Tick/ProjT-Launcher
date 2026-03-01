@@ -24,12 +24,17 @@ T.Page {
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
 
+    leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
+
     font: styleReader.font
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.Page
+        controlType: StyleReader.Page
         enabled: control.enabled
         focused: control.activeFocus
         palette: control.palette
@@ -37,6 +42,6 @@ T.Page {
 
     background: BackgroundDelegate {
         quickControl: control
-        backgroundProperties: styleReader.background
+        backgroundStyle: styleReader.background
     }
 }

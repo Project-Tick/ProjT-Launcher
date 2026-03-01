@@ -545,7 +545,6 @@ bool QmlTypeRegistrar::generatePluginTypes(const QString &pluginTypesFile, bool 
     creator.setModule(m_module.toUtf8());
     creator.setVersion(QTypeRevision::fromVersion(m_moduleVersion.majorVersion(), 0));
     creator.setGeneratingJSRoot(generatingJSRoot);
-    creator.setForeignTypeMetaObjectHashes(m_foreignTypeMetaObjectHashes);
 
     return creator.generate(pluginTypesFile);
 }
@@ -582,12 +581,6 @@ void QmlTypeRegistrar::setReferencedTypes(const QList<QAnyStringView> &reference
 void QmlTypeRegistrar::setUsingDeclarations(const QList<UsingDeclaration> &usingDeclarations)
 {
     m_usingDeclarations = usingDeclarations;
-}
-
-void QmlTypeRegistrar::setForeignTypeMetaObjectHashes(
-        const QHash<QAnyStringView, QAnyStringView> &foreignHashes)
-{
-    m_foreignTypeMetaObjectHashes = foreignHashes;
 }
 
 QT_END_NAMESPACE

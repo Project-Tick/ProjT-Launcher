@@ -48,8 +48,8 @@ class Q_QUICKSHAPESDESIGNHELPERS_EXPORT QQuickRectangleShape : public QQuickShap
     Q_PROPERTY(QQuickShapePath::StrokeStyle strokeStyle READ strokeStyle WRITE setStrokeStyle NOTIFY strokeStyleChanged FINAL)
     Q_PROPERTY(qreal dashOffset READ dashOffset WRITE setDashOffset NOTIFY dashOffsetChanged FINAL)
     Q_PROPERTY(QList<qreal> dashPattern READ dashPattern WRITE setDashPattern NOTIFY dashPatternChanged FINAL)
-    Q_PROPERTY(QQuickShapeGradient *fillGradient READ fillGradient WRITE setFillGradient RESET resetFillGradient FINAL)
-    Q_PROPERTY(BorderMode borderMode READ borderMode WRITE setBorderMode RESET resetBorderMode FINAL)
+    Q_PROPERTY(QQuickShapeGradient *fillGradient READ fillGradient WRITE setFillGradient NOTIFY fillGradientChanged RESET resetFillGradient FINAL)
+    Q_PROPERTY(BorderMode borderMode READ borderMode WRITE setBorderMode NOTIFY borderModeChanged RESET resetBorderMode FINAL)
     Q_PROPERTY(QQuickItem *fillItem READ fillItem WRITE setFillItem NOTIFY fillItemChanged FINAL REVISION(6, 12))
 
     QML_NAMED_ELEMENT(RectangleShape)
@@ -167,6 +167,7 @@ Q_SIGNALS:
     Q_REVISION(6, 11) void drawRightChanged();
     Q_REVISION(6, 11) void drawBottomChanged();
     Q_REVISION(6, 11) void drawLeftChanged();
+    Q_REVISION(6, 11) void fillGradientChanged();
     void radiusChanged();
     void topLeftRadiusChanged();
     void topRightRadiusChanged();

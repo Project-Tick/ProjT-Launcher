@@ -18,11 +18,15 @@ T.TextArea {
                              contentHeight + topPadding + bottomPadding,
                              placeHolder.implicitHeight + topPadding + bottomPadding)
 
-    padding: styleReader.padding
     leftPadding: styleReader.leftPadding
     topPadding: styleReader.topPadding
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
+
+    leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
 
     font: styleReader.font
 
@@ -34,10 +38,10 @@ T.TextArea {
     selectedTextColor: control.palette.highlightedText
     placeholderTextColor: control.palette.placeholderText
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.TextArea
+        controlType: StyleReader.TextArea
         enabled: control.enabled
         focused: control.activeFocus
         hovered: control.hovered
@@ -63,6 +67,6 @@ T.TextArea {
 
     background: BackgroundDelegate {
         quickControl: control
-        backgroundProperties: styleReader.background
+        backgroundStyle: styleReader.background
     }
 }

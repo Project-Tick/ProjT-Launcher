@@ -237,7 +237,7 @@ ApplicationWindow {
 
             GroupBox {
                 title: "Variations"
-                StyleKitControl.variations: ["mini"]
+                StyleVariation.variations: ["mini"]
                 ColumnLayout {
                     spacing: app.spacing
                     Text {
@@ -256,7 +256,7 @@ ApplicationWindow {
 
                         Button {
                             // This button will be affected by both an "alert" and a "mini" variation
-                            StyleKitControl.variations: ["alert"]
+                            StyleVariation.variations: ["alert"]
                             text: "Alert!"
                         }
 
@@ -411,9 +411,9 @@ ApplicationWindow {
         color: fancyButton.background.color
         scale: fancyButton.background.scale
 
-        StyleKitReader {
+        StyleReader {
             id: fancyButton
-            type: hazeStyle.fancyButton
+            controlType: hazeStyle.fancyButton
             hovered: hoverHandler.hovered
             pressed: tapHandler.pressed
             palette: app.palette

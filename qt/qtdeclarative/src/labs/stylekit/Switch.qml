@@ -20,14 +20,20 @@ T.Switch {
     topPadding: switchLayout.padding.top
     rightPadding: switchLayout.padding.right
     bottomPadding: switchLayout.padding.bottom
+
+    leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
+
     spacing: styleReader.spacing
 
     font: styleReader.font
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.SwitchControl
+        controlType: StyleReader.SwitchControl
         enabled: control.enabled
         focused: control.activeFocus
         hovered: control.hovered
@@ -66,7 +72,7 @@ T.Switch {
 
     indicator: IndicatorDelegate {
         quickControl: control
-        indicatorProperties: styleReader.indicator
+        indicatorStyle: styleReader.indicator
         x: indicatorItem.x
         y: indicatorItem.y
         width: indicatorItem.width
@@ -74,7 +80,7 @@ T.Switch {
 
         HandleDelegate {
             quickControl: control
-            handleProperties: styleReader.handle
+            handleStyle: styleReader.handle
             x: control.checked
                ? indicator.width - width - styleReader.handle.rightMargin
                : styleReader.handle.leftMargin
@@ -100,6 +106,6 @@ T.Switch {
 
     background: BackgroundDelegate {
         quickControl: control
-        backgroundProperties: styleReader.background
+        backgroundStyle: styleReader.background
     }
 }

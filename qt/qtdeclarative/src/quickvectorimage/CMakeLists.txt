@@ -29,8 +29,12 @@ qt_internal_add_qml_module(QuickVectorImage
     VERSION "${PROJECT_VERSION}"
     PLUGIN_TARGET qquickvectorimageplugin
     CLASS_NAME QtQuickVectorImagePlugin
-    IMPORTS QtQuick.VectorImage.Helpers
-    DEFAULT_IMPORTS QtQuick.Shapes QtQuick.Effects
+    DEPENDENCIES
+        QtQuick/auto
+        QtQuick.Shapes/auto
+        QtQuick.Effects/auto
+    IMPORTS
+        QtQuick.VectorImage.Helpers/auto
     SOURCES
     qquickvectorimage_p.h qquickvectorimage.cpp
     qquickvectorimage_p_p.h
@@ -46,6 +50,8 @@ qt_internal_add_qml_module(QuickVectorImageHelpers
     PLUGIN_TARGET qquickvectorimagehelpersplugin
     NO_PLUGIN_OPTIONAL
     CLASS_NAME QtQuickVectorImageHelpersPlugin
+    DEPENDENCIES
+        QtQuick/auto
     SOURCES
         helpers/qquickcoloropacityanimation_p.h helpers/qquickcoloropacityanimation.cpp
         helpers/qquicktransformgroup_p.h helpers/qquicktransformgroup.cpp

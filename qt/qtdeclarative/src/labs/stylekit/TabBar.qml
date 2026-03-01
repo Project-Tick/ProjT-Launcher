@@ -20,14 +20,20 @@ T.TabBar {
     rightPadding: styleReader.rightPadding
     topPadding: styleReader.topPadding
     bottomPadding: styleReader.bottomPadding
+
+    leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
+
     spacing: styleReader.spacing
 
     font: styleReader.font
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.TabBar
+        controlType: StyleReader.TabBar
         enabled: control.enabled
         focused: control.activeFocus
         hovered: control.hovered
@@ -52,6 +58,6 @@ T.TabBar {
 
     background: BackgroundDelegate {
         quickControl: control
-        backgroundProperties: styleReader.background
+        backgroundStyle: styleReader.background
     }
 }

@@ -19,12 +19,18 @@ T.ScrollIndicator {
     topPadding: styleReader.topPadding
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
+
+    leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
+
     spacing: styleReader.spacing
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.ScrollIndicator
+        controlType: StyleReader.ScrollIndicator
         enabled: control.enabled
         focused: control.activeFocus
         hovered: control.hovered
@@ -34,7 +40,7 @@ T.ScrollIndicator {
 
     contentItem: IndicatorDelegate {
         quickControl: control
-        indicatorProperties: styleReader.indicator
+        indicatorStyle: styleReader.indicator
         opacity: 0 // TODO: let style decide how, and when, to hide a ScrollIndicator
 
         Connections {
@@ -63,6 +69,6 @@ T.ScrollIndicator {
 
     background: BackgroundDelegate {
         quickControl: control
-        backgroundProperties: styleReader.background
+        backgroundStyle: styleReader.background
     }
 }

@@ -20,6 +20,12 @@ T.TabButton {
     topPadding: styleReader.topPadding
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
+
+    leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
+
     spacing: styleReader.spacing
 
     icon.width: 24
@@ -28,10 +34,10 @@ T.TabButton {
 
     font: styleReader.font
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.TabButton
+        controlType: StyleReader.TabButton
         enabled: control.enabled
         focused: control.activeFocus
         checked: control.checked
@@ -54,6 +60,6 @@ T.TabButton {
 
     background: BackgroundDelegate {
         quickControl: control
-        backgroundProperties: styleReader.background
+        backgroundStyle: styleReader.background
     }
 }

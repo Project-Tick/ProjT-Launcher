@@ -7,7 +7,11 @@
 
 qt_internal_add_qml_module(LabsStyleKit
     URI Qt.labs.StyleKit
-    IMPORTS QtQuick.Controls.Basic
+    VERSION "${PROJECT_VERSION}"
+    DEPENDENCIES
+        QtQuick/auto
+    IMPORTS
+        QtQuick.Controls.Basic/auto
     SOURCES
         qqstylekit_p.h qqstylekit.cpp
         qqstylekitcontrol_p.h qqstylekitcontrol.cpp
@@ -45,8 +49,8 @@ qt_internal_add_qml_module(LabsStyleKit
         ScrollView.qml
         Slider.qml
         Style.qml
-        StyleKitAnimation.qml
-        StyleKitDelegate.qml
+        StyledItem.qml
+        StyleAnimation.qml
         SpinBox.qml
         Switch.qml
         TextField.qml
@@ -68,6 +72,10 @@ qt_internal_add_qml_module(LabsStyleKit
         Qt6::QuickTemplates2
         Qt6::QuickTemplates2Private
         Qt6::QuickControls2ImplPrivate
+)
+
+qt_internal_add_docs(LabsStyleKit
+    doc/qtlabsstylekit.qdocconf
 )
 
 # impl links to QuickStyleKit, so it must be built after it

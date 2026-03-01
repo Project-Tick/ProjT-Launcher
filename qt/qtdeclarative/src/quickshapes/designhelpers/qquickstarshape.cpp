@@ -200,6 +200,17 @@ QQuickStarShape::QQuickStarShape(QQuickItem *parent)
     d->sp.append(d->path);
     d->path->setParent(this);
     d->extra.value().resourcesList.append(d->path);
+
+    connect(d->path, &QQuickShapePath::strokeColorChanged, this, &QQuickStarShape::strokeColorChanged);
+    connect(d->path, &QQuickShapePath::strokeWidthChanged, this, &QQuickStarShape::strokeWidthChanged);
+    connect(d->path, &QQuickShapePath::fillColorChanged, this, &QQuickStarShape::fillColorChanged);
+    connect(d->path, &QQuickShapePath::joinStyleChanged, this, &QQuickStarShape::joinStyleChanged);
+    connect(d->path, &QQuickShapePath::capStyleChanged, this, &QQuickStarShape::capStyleChanged);
+    connect(d->path, &QQuickShapePath::strokeStyleChanged, this, &QQuickStarShape::strokeStyleChanged);
+    connect(d->path, &QQuickShapePath::dashOffsetChanged, this, &QQuickStarShape::dashOffsetChanged);
+    connect(d->path, &QQuickShapePath::dashPatternChanged, this, &QQuickStarShape::dashPatternChanged);
+    connect(d->path, &QQuickShapePath::fillItemChanged, this, &QQuickStarShape::fillItemChanged);
+    connect(d->path, &QQuickShapePath::fillGradientChanged, this, &QQuickStarShape::fillGradientChanged);
 }
 
 QQuickStarShape::~QQuickStarShape() = default;
@@ -218,10 +229,7 @@ qreal QQuickStarShape::dashOffset() const
 void QQuickStarShape::setDashOffset(qreal offset)
 {
     Q_D(QQuickStarShape);
-    if (qFuzzyCompare(d->path->dashOffset(), offset))
-        return;
     d->path->setDashOffset(offset);
-    emit dashOffsetChanged();
 }
 
 /*!
@@ -317,10 +325,7 @@ qreal QQuickStarShape::strokeWidth() const
 void QQuickStarShape::setStrokeWidth(qreal width)
 {
     Q_D(QQuickStarShape);
-    if (qFuzzyCompare(d->path->strokeWidth(), width))
-        return;
     d->path->setStrokeWidth(width);
-    emit strokeWidthChanged();
 }
 
 /*!
@@ -346,8 +351,6 @@ void QQuickStarShape::setFillColor(const QColor &color)
 {
     Q_D(QQuickStarShape);
     d->path->setFillColor(color);
-    d->updatePath();
-    emit fillColorChanged();
 }
 
 /*!
@@ -370,7 +373,6 @@ void QQuickStarShape::setStrokeColor(const QColor &color)
 {
     Q_D(QQuickStarShape);
     d->path->setStrokeColor(color);
-    emit strokeColorChanged();
 }
 
 /*!
@@ -390,10 +392,7 @@ QQuickShapePath::CapStyle QQuickStarShape::capStyle() const
 void QQuickStarShape::setCapStyle(QQuickShapePath::CapStyle style)
 {
     Q_D(QQuickStarShape);
-    if (d->path->capStyle() == style)
-        return;
     d->path->setCapStyle(style);
-    emit capStyleChanged();
 }
 
 /*!
@@ -412,10 +411,7 @@ QQuickShapePath::JoinStyle QQuickStarShape::joinStyle() const
 void QQuickStarShape::setJoinStyle(QQuickShapePath::JoinStyle style)
 {
     Q_D(QQuickStarShape);
-    if (d->path->joinStyle() == style)
-        return;
     d->path->setJoinStyle(style);
-    emit joinStyleChanged();
 }
 
 /*!
@@ -432,10 +428,7 @@ QQuickShapePath::StrokeStyle QQuickStarShape::strokeStyle() const
 void QQuickStarShape::setStrokeStyle(QQuickShapePath::StrokeStyle style)
 {
     Q_D(QQuickStarShape);
-    if (d->path->strokeStyle() == style)
-        return;
     d->path->setStrokeStyle(style);
-    emit strokeStyleChanged();
 }
 
 /*!
@@ -453,7 +446,6 @@ void QQuickStarShape::setDashPattern(const QList<qreal> &array)
 {
     Q_D(QQuickStarShape);
     d->path->setDashPattern(array);
-    emit dashPatternChanged();
 }
 
 /*!
@@ -480,7 +472,6 @@ void QQuickStarShape::setFillGradient(QQuickShapeGradient *fillGradient)
 {
     Q_D(QQuickStarShape);
     d->path->setFillGradient(fillGradient);
-    emit fillGradientChanged();
 }
 
 void QQuickStarShape::resetFillGradient()
@@ -498,8 +489,6 @@ void QQuickStarShape::setFillItem(QQuickItem *newFillItem)
 {
     Q_D(QQuickStarShape);
     d->path->setFillItem(newFillItem);
-
-    emit fillItemChanged();
 }
 
 void QQuickStarShape::itemChange(ItemChange change, const ItemChangeData &value)

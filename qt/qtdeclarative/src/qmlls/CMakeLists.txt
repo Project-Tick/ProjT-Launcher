@@ -40,10 +40,10 @@ qt_internal_add_module(QmlLSPrivate
         qqmldiffer_p.h qqmldiffer.cpp
         qprocessscheduler_p.h qprocessscheduler.cpp
 
-        qqmldocumentsymbolsupport_p.h
-        qqmldocumentsymbolsupport.cpp
-        documentsymbolutils_p.h
-        documentsymbolutils.cpp
+        documentSymbolSupport/qqmldocumentsymbolsupport_p.h
+        documentSymbolSupport/qqmldocumentsymbolsupport.cpp
+        documentSymbolSupport/documentsymbolutils_p.h
+        documentSymbolSupport/documentsymbolutils.cpp
 
         qqmlprogresssupport_p.h qqmlprogresssupport.cpp
 

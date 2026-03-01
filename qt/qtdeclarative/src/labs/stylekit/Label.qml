@@ -15,15 +15,20 @@ T.Label {
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
 
+    leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
+
     font: styleReader.font
 
     color: styleReader.text.color
     linkColor: control.palette.link
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.Label
+        controlType: StyleReader.Label
         enabled: control.enabled
         focused: control.activeFocus
         palette: control.palette
@@ -31,6 +36,6 @@ T.Label {
 
     background: BackgroundDelegate {
         quickControl: control
-        backgroundProperties: styleReader.background
+        backgroundStyle: styleReader.background
     }
 }

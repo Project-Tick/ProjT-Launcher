@@ -41,14 +41,21 @@ QT_WARNING_DISABLE_GCC("-Wmaybe-uninitialized") // use of std::variant
 void QProcessScheduler::schedule(const QList<Command> &list, const Id &id)
 {
     m_queue.enqueue(StartMarker{ id });
+    const int queueSize = m_queue.size();
     for (const auto &x : list) {
         const QueueElement queueElement{ x };
         if (!m_queue.contains(queueElement))
             m_queue.enqueue(queueElement);
     }
+
+    // remove startmarker if no queue element was added, instead just emit that this task was done
+    if (queueSize == m_queue.size()) {
+        m_queue.removeLast(); // remove start marker
+    }
+
     m_queue.enqueue(EndMarker{ id });
-    if (!m_isRunning)
-        processNext();
+    if (!std::exchange(m_isRunning, true))
+        QMetaObject::invokeMethod(this, &QProcessScheduler::processNext, Qt::QueuedConnection);
 }
 QT_WARNING_POP
 
@@ -103,7 +110,8 @@ void QProcessScheduler::cancel(const Id &id)
     }
 
     emit cancelled(id);
-    processNext();
+    if (!std::exchange(m_isRunning, true))
+        QMetaObject::invokeMethod(this, &QProcessScheduler::processNext, Qt::QueuedConnection);
 }
 
 void QProcessScheduler::processNext()

@@ -158,6 +158,9 @@ private Q_SLOTS:
     void shadow_data();
     void shadow();
 
+    void uselessExpressionStatements_data();
+    void uselessExpressionStatements();
+
     void crashes();
 
     void useProperFunction_data();
@@ -868,6 +871,11 @@ void TestQmllint::dirtyQmlCode_data()
                        { { "Cannot assign binding of type QQuickItem to QObject"_L1 } },
                        {},
                        Result::ExitsNormally };
+    QTest::newRow("componentDefinitionInnerRequiredProperty")
+            << u"componentDefinitionInnerRequiredProperty.qml"_s
+            << Result { { {
+                    "Component is missing required property bar from Rectangle"_L1, 11, 13
+               } } };
     QTest::newRow("connectionsBinding")
             << QStringLiteral("autofix/ConnectionsHandler.qml")
             << Result{ { { "Implicitly defining \"onWidthChanged\" as signal handler in "
@@ -1636,6 +1644,10 @@ void TestQmllint::dirtyQmlSnippet_data()
                u"}"_s
             << Result{ { { "Component is missing required property r1 from Base"_L1, 6, 1 } } }
             << defaultOptions;
+    QTest::newRow("requiredInComponent")
+            << u"Item { Component { id: comp; required property var bla; Item {} } }"_s
+            << Result{ { { "Component objects cannot declare new properties."_L1, 1, 30 } } }
+            << defaultOptions;
     QTest::newRow("testSnippet")
             << u"property int qwer: \"Hello\""_s
             << Result{ { { "Cannot assign literal of type string to int"_L1 } } }
@@ -1653,10 +1665,6 @@ void TestQmllint::dirtyQmlSnippet_data()
     QTest::newRow("upperCaseId")
             << u"id: Root"_s
             << Result{ { { "Id must start with a lower case letter or an '_'"_L1, 1, 5 } } }
-            << defaultOptions;
-    QTest::newRow("uselessExpressionStatement")
-            << u"property int i: { let x = 0; 0 + 1; return i + 3; }"_s
-            << Result{ { { "Expression statement has no obvious effect."_L1, 1, 30 } } }
             << defaultOptions;
 }
 
@@ -1721,9 +1729,6 @@ void TestQmllint::cleanQmlSnippet_data()
                u"property var r: 1.0   \n"_s
                u"property var s: \"s\" \n"_s
                u"property var b: true  \n"_s
-            << defaultOptions;
-    QTest::newRow("requiredInComponent")
-            << u"Item { Component { id: comp; required property var bla; Item {} } }"_s
             << defaultOptions;
     QTest::newRow("requiredInComponent2")
             << u"Item { Component { id: comp; Item { required property var bla } } }"_s
@@ -3991,165 +3996,77 @@ void TestQmllint::shadow_data()
                        { { "Signal \"hello\" already exists in base type" } } }
             << defaultOptions;
 
-    QTest::newRow("shadowIdBeforeDeclaration")
-            << u"id: hello;\n"
-               u"property int hello;"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from current type. Rename the id"_L1,
-                         1, 5 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
-                         1 },
-               } }
+    QTest::newRow("idShadowsMember-noUsage") // shadowing but no usage -> don't warn
+            << u"id: i\n"_s
+               u"property int i\n"_s
+            << Result::clean()
             << defaultOptions;
-    QTest::newRow("shadowIdAfterDeclaration")
-            << u"property int hello;\n"
-               u"id: hello"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from current type. Rename the id"_L1,
-                         2, 5 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 1,
-                         1 },
-               } }
+    QTest::newRow("idShadowsMember-property")
+            << u"id: i\n"_s
+               u"property int i\n"_s
+               u"property var v: i\n"_s
+            << Result{ { { "Id for object Item shadows property \"i\""_L1, 3, 17 },
+                         { "Note: Id defined here"_L1, 1, 5 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInParent")
-            << u"id: hello;\n"
-               u"Item { property int hello; }"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:1. Rename the id"_L1
-                                 .arg(fileName),
-                         1, 5 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
-                         8 },
-               } }
+    QTest::newRow("idShadowsMember-method")
+            << u"id: i\n"_s
+               u"function i() {}\n"_s
+               u"property var v: i\n"_s
+            << Result{ { { "Id for object Item shadows method \"i\""_L1, 3, 17 },
+                         { "Note: Id defined here"_L1, 1, 5 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInGrandparent")
-            << u"id: hello;\n"
-               u"Item { Item { Item { property int hello; }}}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:15. Rename the id"_L1
-                                 .arg(fileName),
-                         1, 5 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
-                         22 },
-               } }
+    QTest::newRow("idShadowsMember-signal")
+            << u"id: a\n"_s
+               u"signal a\n"_s
+               u"property var v: a\n"_s
+            << Result{ { { "Id for object Item shadows signal \"a\""_L1, 3, 17 },
+                         { "Note: Id defined here"_L1, 1, 5 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInUnrelated")
-            << u"Item { Item { Item { property int hello; }}}\n"_s
-               u"Item { Item { Item { id: hello; }}}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:3:15. Rename the id"_L1
-                                 .arg(fileName),
-                         2, 26 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 1,
-                         22 },
-               } }
+    QTest::newRow("idShadowsMember-baseProperty")
+            << u"id: i\n"_s
+               u"component C : Item { property int i }\n"_s
+               u"C { property var v: i }\n"_s
+            << Result{ { { "Id for object Item shadows property \"i\""_L1, 3, 21 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInInnerContext")
-            << u"component IC: Item { Item { Item { property int hello; }}}\n"_s
-               u"Item { Item { Item { id: hello; }}}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:3:29. Rename the id or the property"_L1
-                                 .arg(fileName),
-                         2, 26 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 1,
-                         36 },
-               } }
+    QTest::newRow("idShadowsMember-baseMethod")
+            << u"id: i\n"_s
+               u"component C : Item { function i() {} }\n"_s
+               u"C { property var v: i }\n"_s
+            << Result{ { { "Id for object Item shadows method \"i\""_L1, 3, 21 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInOuterContext")
-            << u"Component { Item { Item { Item { property int hello; }}}}\n"_s
-               u"Component { Item { Item { Item { id: hello; }}}}"_s
-            << Result::clean() << defaultOptions;
-    QTest::newRow("shadowIdInOtherComponentBad")
-            << u"Component { id: hello; Item {} }\n"_s
-               u"Item { Item { Item { property int hello; }}}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:15. Rename the id"_L1
-                                 .arg(fileName),
-                         1, 17 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
-                         22 },
-               } }
+    QTest::newRow("idShadowsMember-noDuplicateWarnings") // 1 shadowing, 2 usages -> 1 warning
+            << u"id: i\n"_s
+               u"property int i\n"_s
+               u"property var v1: i\n"_s
+               u"property var v2: i\n"_s
+            << Result{ { { "Id for object Item shadows property \"i\""_L1, 3, 18 } },
+                       { { "Id for object Item shadows property \"i\""_L1, 4, 18 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInOtherComponentBound")
-            << u"pragma ComponentBehavior: Bound\n"
-               u"import QtQuick\n"
-               u"Item {\n"
-               u"    component IC: Item { Item { Item { property int hello; }}}\n"_s
-               u"    Item { Item { Item { id: hello; }}}\n"
-               u"}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:33. Rename the id"_L1
-                                 .arg(fileName),
-                         5, 30 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 4,
-                         40 },
-               } }
+    QTest::newRow("idShadowsMember-componentBoundaries-Bound")
+            << u"pragma ComponentBehavior: Bound\n"_s
+               u"import QtQuick\n"_s
+               u"Item {\n"_s
+               u"    id: i\n"_s
+               u"    component C : Item { property int i; property var v: i }\n"_s
+               u"}\n"_s
+            << Result{ { { "Id for object Item shadows property \"i\""_L1, 5, 58 },
+                         { "Note: Id defined here"_L1, 4, 9 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInOtherComponentBound2")
-            << u"pragma ComponentBehavior: Bound\n"
-               u"import QtQuick\n"
-               u"Item {\n"
-               u"    Component { Item { Item { Item { property int hello; }}}}\n"_s
-               u"    Item { Item { Item { id: hello; }}}\n"_s
-               u"}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:31. Rename the id"_L1
-                                 .arg(fileName),
-                         5, 30 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 4,
-                         38 },
-               } }
+    QTest::newRow("idShadowsMember-componentBoundaries-Unbound")
+            << u"pragma ComponentBehavior: Unbound\n"_s
+               u"import QtQuick\n"_s
+               u"Item {\n"_s
+               u"    id: i\n"_s
+               u"    component C : Item { property int i; property var v: i }\n"_s
+               u"}\n"_s
+            << Result::clean()
             << defaultOptions;
-    QTest::newRow("shadowIdMethod")
-            << u"id: hello;\n"
-               u"function hello() {}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows method \"hello\" from current type. Rename the id"_L1,
-                         1, 5 },
-                       { "Note: method \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
-                         1 },
-               } }
+    QTest::newRow("idShadowsMember-disableDirective")
+            << u"id: i\n"_s
+               u"property int i\n"_s
+               u"property var v: i // qmllint disable id-shadows-member\n"_s
+            << Result::clean()
             << defaultOptions;
-    QTest::newRow("shadowIdSignal")
-            << u"id: hello;\n"
-               u"signal hello;"_s
-            << Result{ {
-                       { "Id \"hello\" shadows signal \"hello\" from current type. Rename the id"_L1,
-                         1, 5 },
-                       { "Note: signal \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
-                         1 },
-               } }
-            << defaultOptions;
-
-    {
-        CallQmllintOptions options = defaultOptions;
-        options.importPaths.append(testFile("ImportPath"));
-        QTest::newRow("shadowIdFromAnotherFile")
-                << u"import ModuleInImportPath\n"
-                   u"A { id: myProperty }"_s
-                << Result{ {
-                           { "Id \"myProperty\" shadows property \"myProperty\" from current type. Rename the id"_L1,
-                             2, 9 },
-                           { "Note: type \"\" defined here has a property \"myProperty\" shadowed by id \"myProperty\""_L1,
-                             2, 1 },
-                   } }
-                << options;
-        QTest::newRow("shadowIdFromAnotherFile2")
-                << u"import ModuleInImportPath\n"
-                   u"import QtQuick\n"
-                   u"Item {\n"
-                   u"   A {}\n"
-                   u"   Item { Item { Item { id: myProperty } } }\n"
-                   u"}"_s
-                << Result{ {
-                           { "Id \"myProperty\" shadows property \"myProperty\" from \"A\" defined at %1:4:4. Rename the id"_L1
-                                     .arg(fileName),
-                             5, 29 },
-                           { "Note: type \"A\" defined here has a property \"myProperty\" shadowed by id \"myProperty\""_L1,
-                             4, 4 },
-                   } }
-                << options;
-    }
 
     QTest::newRow("shadowMethod")
             << u"component IC: Item { function f() {} }\n"
@@ -4281,6 +4198,210 @@ void TestQmllint::shadow_data()
 
 void TestQmllint::shadow()
 {
+    // reuse testing logic from dirtyQmlSnippet
+    dirtyQmlSnippet();
+}
+
+void TestQmllint::uselessExpressionStatements_data()
+{
+    QTest::addColumn<QString>("code");
+    QTest::addColumn<Result>("result");
+    QTest::addColumn<CallQmllintOptions>("options");
+
+    const CallQmllintOptions defaultOptions;
+    const auto warning = "Expression statement has no obvious effect."_L1;
+
+    QTest::newRow("uselessExpressionStatement")
+            << u"property int i: { let x = 0; 0 + 1; return i + 3; }"_s
+            << Result{ { { "Expression statement has no obvious effect."_L1, 1, 30 } } }
+            << defaultOptions;
+
+    QTest::newRow("propertyDef-last-simple")
+            << u"property int i: 1"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyDef-last-block")
+            << u"property int i: { 1 }"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyDef-last-nested")
+            << u"property int i: (1)"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyDef-last-blockNested")
+            << u"property int i: { (1) }"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyDef-last-complex")
+            << u"property int i: { 1 + i < 0 ? ~i : i**i }"_s
+            << Result::clean()
+            << defaultOptions;
+
+    QTest::newRow("propertyBinding-last-simple")
+            << u"x: 1"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyBinding-last-block")
+            << u"x: { 1 }"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyBinding-last-nested")
+            << u"x: (1)"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyBinding-last-blockNested")
+            << u"x: { (1) }"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyBinding-last-complex")
+            << u"x: { 1 + x < 0 ? ~x : x**x }"_s
+            << Result::clean()
+            << defaultOptions;
+
+    QTest::newRow("propertyDef-dirty1")
+            << u"property int i: { 1; 1 }"_s
+            << Result{ { { warning, 1, 19 } } }
+            << defaultOptions;
+    QTest::newRow("propertyDef-dirty2")
+            << u"property int i: { if (true) 1; 1 }"_s
+            << Result{ { { warning, 1, 29 } } }
+            << defaultOptions;
+    QTest::newRow("propertyBinding-dirty1")
+            << u"x: { 1; 1 }"_s
+            << Result{ { { warning, 1, 6 } } }
+            << defaultOptions;
+    QTest::newRow("propertyBinding-dirty2")
+            << u"x: { if (true) 1; 1 }"_s
+            << Result{ { { warning, 1, 16 } } }
+            << defaultOptions;
+
+    QTest::newRow("signalHandler1")
+            << u"onXChanged: 1"_s
+            << Result{ { { warning, 1, 13 } } }
+            << defaultOptions;
+    QTest::newRow("signalHandler2")
+            << u"onXChanged: { 1 }"_s
+            << Result{ { { warning, 1, 15 } } }
+            << defaultOptions;
+    QTest::newRow("signalHandler3")
+            << u"onXChanged: 9 / 8"_s
+            << Result{ { { warning, 1, 13 } } }
+            << defaultOptions;
+    QTest::newRow("signalHandler4")
+            << u"id: item; onXChanged: item.dumpItemTree()"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("attachedSignalHandler")
+            << u"Component.onCompleted: 1"_s
+            << Result{ { { warning, 1, 24 } } }
+            << defaultOptions;
+
+    QTest::newRow("function1")
+            << u"function f() { 1 }"_s
+            << Result{ { { warning, 1, 16 } } }
+            << defaultOptions;
+    QTest::newRow("function2")
+            << u"function f() { 1; return 1 }"_s
+            << Result{ { { warning, 1, 16 } } }
+            << defaultOptions;
+    QTest::newRow("function3")
+            << u"function f() { { x + 1 } }"_s
+            << Result{ { { warning, 1, 18 } } }
+            << defaultOptions;
+
+    QTest::newRow("id")
+            << u"id: a"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("groupedProperty1")
+            << u"anchors { right: anchors.right }"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("groupedProperty2")
+            << u"anchors.right: anchors.right"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("groupedProperty3")
+            << u"Text { font.bold: { 1; true } }"_s
+            << Result{ { { warning, 1, 19 } } }
+            << defaultOptions;
+
+    QTest::newRow("recursive")
+            << uR"( function f() {
+                        let i = 0
+                        {
+                            1;
+                            (2)
+                        }
+
+                        try {
+                            3
+                        } catch(e) {
+                            4
+                        }
+
+                        for (;;)
+                            5
+                        for (let i in ii) // qmllint disable unqualified
+                            6
+                        for (let i of ii) // qmllint disable unqualified
+                            7
+
+                        while (true)
+                            8
+
+                        if (true)
+                            9
+                        else
+                            10
+
+                        switch (i) {
+                        case 0:
+                            11
+                            break
+                        default:
+                            12
+                            break;
+                        case 2:
+                            13
+                        }
+
+                        with (1) // qmllint disable with
+                            14
+
+                    label: 15
+
+                        16
+                    })"_s
+            << Result{ { { warning, 4, 29 },    // block
+                         { warning, 5, 29 },    // nested
+                         { warning, 9, 29 },    // try
+                         { warning, 11, 29 },   // catch
+                         { warning, 15, 29 },   // for
+                         { warning, 17, 29 },   // for-in
+                         { warning, 19, 29 },   // for-of
+                         { warning, 22, 29 },   // while
+                         { warning, 25, 29 },   // if
+                         { warning, 27, 29 },   // else
+                         { warning, 31, 29 },   // case 0
+                         { warning, 34, 29 },   // default
+                         { warning, 37, 29 },   // case 2
+                         { warning, 41, 29 },   // with
+                         { warning, 43, 28 },   // label
+                         { warning, 45, 25 },   // bare
+                       } }
+            << defaultOptions;
+}
+
+void TestQmllint::uselessExpressionStatements()
+{
+    QEXPECT_FAIL("attachedSignalHandler", "", Abort);
+    QEXPECT_FAIL("groupedProperty3", "", Abort);
+    if (QTest::currentDataTag() == "attachedSignalHandler"_L1
+            || QTest::currentDataTag() == "groupedProperty3"_L1) {
+        QFAIL("Incomplete attached and grouped properties support");
+    }
+
     // reuse testing logic from dirtyQmlSnippet
     dirtyQmlSnippet();
 }

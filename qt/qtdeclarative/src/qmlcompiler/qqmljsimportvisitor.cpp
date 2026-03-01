@@ -546,6 +546,7 @@ void QQmlJSImportVisitor::endVisit(UiProgram *)
     for (const auto &scope : std::as_const(m_objectBindingScopes)) {
         breakInheritanceCycles(scope);
         checkDeprecation(scope);
+        checkForComponentTypeWithProperties(scope);
     }
 
     for (const auto &scope : std::as_const(m_objectDefinitionScopes)) {
@@ -553,12 +554,14 @@ void QQmlJSImportVisitor::endVisit(UiProgram *)
             continue; // We're going to check this one below.
         breakInheritanceCycles(scope);
         checkDeprecation(scope);
+        checkForComponentTypeWithProperties(scope);
     }
 
     const auto &keys = m_pendingDefaultProperties.keys();
     for (const auto &scope : keys) {
         breakInheritanceCycles(scope);
         checkDeprecation(scope);
+        checkForComponentTypeWithProperties(scope);
     }
 
     resolveAliases();
@@ -1112,11 +1115,11 @@ void QQmlJSImportVisitor::checkRequiredProperties()
     }
 
     const auto compType = m_rootScopeImports.type(u"Component"_s).scope;
-    const auto isInComponent = [&](const QQmlJSScope::ConstPtr &requiredScope) {
-        for (auto s = requiredScope; s; s = s->parentScope()) {
-            if (s->isWrappedInImplicitComponent() || s->baseType() == compType)
-                return true;
-        }
+    const auto isComponentRoot = [&](const QQmlJSScope::ConstPtr &requiredScope) {
+        if (requiredScope->isWrappedInImplicitComponent())
+            return true;
+        if (const auto s = requiredScope->parentScope(); s &&  s->baseType() == compType)
+            return true;
         return false;
     };
 
@@ -1254,8 +1257,10 @@ void QQmlJSImportVisitor::checkRequiredProperties()
 
                     QQmlJSScope::ConstPtr prevRequiredScope;
                     for (const QQmlJSScope::ConstPtr &requiredScope : std::as_const(scopesToSearch)) {
-                        if (isInComponent(requiredScope))
-                            continue;
+                        // Stop at component boundaries. We don't want to report the same problem
+                        // multiple times.
+                        if (isComponentRoot(requiredScope))
+                            break;
 
                         if (!scopeRequiresProperty(requiredScope, propName, descendant)) {
                             prevRequiredScope = requiredScope;
@@ -1616,6 +1621,28 @@ void QQmlJSImportVisitor::checkGroupedAndAttachedScopes(QQmlJSScope::ConstPtr sc
         default:
             break;
         }
+    }
+}
+
+void QQmlJSImportVisitor::checkForComponentTypeWithProperties(const QQmlJSScope::ConstPtr &scope)
+{
+    const QQmlJSScope::ConstPtr base = scope->baseType();
+    if (!base)
+        return;
+
+    // If the base type is composite itself, we ignore it being a QQmlCompoonent and
+    // assume you actually mean its contents (and produce a deprecation warning).
+    // We can ignore this case here.
+    if (base->isComposite())
+        return;
+
+    if (base->internalName() != "QQmlComponent"_L1)
+        return;
+
+    const auto ownProperties = scope->ownProperties();
+    for (const auto &property : ownProperties) {
+        m_logger->log("Component objects cannot declare new properties."_L1,
+                      qmlSyntax, property.sourceLocation());
     }
 }
 

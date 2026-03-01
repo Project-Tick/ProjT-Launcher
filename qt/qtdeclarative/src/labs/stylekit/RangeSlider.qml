@@ -23,6 +23,12 @@ T.RangeSlider {
     topPadding: styleReaderFirst.topPadding
     rightPadding: styleReaderFirst.rightPadding
     bottomPadding: styleReaderFirst.bottomPadding
+
+    leftInset: styleReaderFirst.background.leftMargin
+    topInset: styleReaderFirst.background.topMargin
+    rightInset: styleReaderFirst.background.rightMargin
+    bottomInset: styleReaderFirst.background.bottomMargin
+
     spacing: styleReaderFirst.spacing
 
     states: [
@@ -79,12 +85,12 @@ T.RangeSlider {
         }
     ]
 
-    readonly property StyleKitReader styleReader: styleReaderFirst
+    readonly property StyleReader styleReader: styleReaderFirst
 
-    StyleKitControl.controlType: styleReaderFirst.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReaderFirst.controlType
+    StyleReader {
         id: styleReaderFirst
-        type: StyleKitReader.Slider
+        controlType: StyleReader.Slider
         enabled: control.enabled
         focused: control.activeFocus
         hovered: control.first.hovered
@@ -93,9 +99,9 @@ T.RangeSlider {
         vertical: !control.horizontal
     }
 
-    StyleKitReader {
+    StyleReader {
         id: styleReaderSecond
-        type: StyleKitReader.Slider
+        controlType: StyleReader.Slider
         enabled: control.enabled
         focused: control.activeFocus
         hovered: control.second.hovered
@@ -104,9 +110,9 @@ T.RangeSlider {
         vertical: !control.horizontal
     }
 
-    StyleKitReader {
+    StyleReader {
         id: styleReaderIndicator
-        type: StyleKitReader.Slider
+        controlType: StyleReader.Slider
         enabled: control.enabled
         focused: control.activeFocus
         hovered: control.hovered || control.first.hovered || control.second.hovered
@@ -117,18 +123,18 @@ T.RangeSlider {
 
     first.handle: HandleDelegate {
         quickControl: control
-        handleProperties: styleReaderFirst.handle.first
+        handleStyle: styleReaderFirst.handle.first
     }
 
     second.handle: HandleDelegate {
         quickControl: control
-        handleProperties: styleReaderSecond.handle.second
+        handleStyle: styleReaderSecond.handle.second
     }
 
     background: BackgroundAndIndicatorDelegate {
         quickControl: control
-        indicatorProperties: styleReaderIndicator.indicator
-        backgroundProperties: styleReaderIndicator.background
+        indicatorStyle: styleReaderIndicator.indicator
+        backgroundStyle: styleReaderIndicator.background
         indicator.firstProgress: control.first.position
         indicator.secondProgress: control.second.position
         vertical: control.vertical

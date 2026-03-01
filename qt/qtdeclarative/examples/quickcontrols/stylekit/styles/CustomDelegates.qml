@@ -9,10 +9,10 @@ Style {
 
     // Define some custom delegates:
 
-    component OverlayDelegate : StyleKitDelegate {
-        // Using StyleKitDelegate as the base type is the easiest approach when creating
-        // a custom delegate. A StyleKitDelegate will draw the delegate as configured by
-        // the style, and give up the opportunity to place your own items on top.
+    component OverlayDelegate : StyledItem {
+        // Using StyledItem as the base type is the easiest approach when creating
+        // a custom delegate. A StyledItem will draw the delegate as configured by
+        // the style, and give you the opportunity to place your own items on top.
         // Note that all delegates used in StyleKit, custom or not, are laid out by
         // StyleKit, so you only need to focus on the appearance.
         Rectangle {
@@ -28,28 +28,28 @@ Style {
     }
 
     component UnderlayDelegate : Item {
-        /* Custom delegates that don't inherit from StyleKitDelegate can optionally
-         * declare 'delegateProperties' and 'control' properties. Use delegateProperties
+        /* Custom delegates that don't inherit from StyledItem can optionally
+         * declare 'delegateStyle' and 'control' properties. Use delegateStyle
          * to bind to style attributes like color, radius, and opacity. Use control
          * to access the Quick Control the owns the delegate. */
-        required property StyleKitDelegateProperties delegateProperties
+        required property DelegateStyle delegateStyle
         required property QtObject control
 
-        implicitWidth: delegateProperties.implicitWidth
-        implicitHeight: delegateProperties.implicitHeight
+        implicitWidth: delegateStyle.implicitWidth
+        implicitHeight: delegateStyle.implicitHeight
         width: parent.width
         height: parent.height
-        scale: delegateProperties.scale
-        rotation: delegateProperties.rotation
-        visible: delegateProperties.visible
+        scale: delegateStyle.scale
+        rotation: delegateStyle.rotation
+        visible: delegateStyle.visible
 
         Rectangle {
             id: underlay
             anchors.centerIn: parent
             width: 10 + (parent.width / 2)
             height: 10 + (parent.height / 2)
-            radius: delegateProperties.radius
-            scale: delegateProperties.data.underlayScale
+            radius: delegateStyle.radius
+            scale: delegateStyle.data.underlayScale
             opacity: 0.5
             border.width: 8
             border.color: palette.accent
@@ -66,14 +66,14 @@ Style {
             }
         }
 
-        StyleKitDelegate {
-            // Embed a StyleKitDelegate to render the standard delegate on top of the custom one
-            delegateProperties: parent.delegateProperties
+        StyledItem {
+            // Embed a StyledItem to render the standard delegate on top of the custom one
+            delegateStyle: parent.delegateStyle
         }
     }
 
-    component SliderHandle : StyleKitDelegate {
-        // You can pass your own properties from the style as well, like
+    component SliderHandle : StyledItem {
+        // You can pass your own properties from the style, like
         // here, where we use 'isFirst' to tell whether the delegate instance
         // represents the first or the second handle, in case of a RangeSlider.
         // By adding a 'control' property, we can access the slider's value(s).
@@ -99,17 +99,18 @@ Style {
     }
 
     component NoiseDelegate : ShaderEffect {
-        // Its also possible to use more advanced delegates with graphical effects.
+        // Use graphical effects in combination with StyledItem to create more
+        // complex delegate appearances. In this delegate, we create a noise overlay.
         implicitWidth: unifiedSourceItem.implicitWidth
         implicitHeight: unifiedSourceItem.implicitHeight
         width: parent.width
         height: parent.height
 
-        required property StyleKitDelegateProperties delegateProperties
+        required property DelegateStyle delegateStyle
 
         // The following properties are used by the shader (noise.frag)
         property size sourceItemSize: Qt.size(unifiedSourceItem.width, unifiedSourceItem.height)
-        property color borderColor: delegateProperties.border.color
+        property color borderColor: delegateStyle.border.color
         property real borderMaskEnabled: 1
         property real borderMaskThreshold: 0.001
         property real particleDensity: 0.1
@@ -129,9 +130,9 @@ Style {
             duration: 1000
         }
 
-        StyleKitDelegate {
+        StyledItem {
             id: unifiedSourceItem
-            delegateProperties: parent.delegateProperties
+            delegateStyle: parent.delegateStyle
             width: parent.width
             height: parent.height
             visible: false
@@ -141,10 +142,10 @@ Style {
     }
 
     component WavingQt : ShaderEffect {
-        implicitWidth: delegateProperties.implicitWidth
-        implicitHeight: delegateProperties.implicitHeight
+        implicitWidth: delegateStyle.implicitWidth
+        implicitHeight: delegateStyle.implicitHeight
 
-        required property StyleKitDelegateProperties delegateProperties
+        required property DelegateStyle delegateStyle
 
         // The following properties are used by the shader (wave.frag)
         property real amplitude: 0.04 * 0.5
@@ -172,19 +173,19 @@ Style {
     }
 
     component CustomShadowDelegate : Item {
-        required property StyleKitDelegateProperties delegateProperties
+        required property DelegateStyle delegateStyle
 
-        x: delegateProperties.shadow.verticalOffset
-        y: delegateProperties.shadow.horizontalOffset
+        x: delegateStyle.shadow.verticalOffset
+        y: delegateStyle.shadow.horizontalOffset
         width: parent.width
         height: parent.height
 
         Rectangle {
             width: parent.width
             height: parent.height
-            radius: parent.delegateProperties.radius
-            color: parent.delegateProperties.shadow.color
-            opacity: parent.delegateProperties.shadow.opacity
+            radius: parent.delegateStyle.radius
+            color: parent.delegateStyle.shadow.color
+            opacity: parent.delegateStyle.shadow.opacity
         }
 
         Text {
@@ -197,7 +198,7 @@ Style {
     }
 
     // Define the style itself, and tell it to use the custom delegates to render
-    // the controls (instead of the otherwise default StyleKitDelegate):
+    // the controls (instead of the otherwise default StyledItem):
 
     checkBox.checked.indicator.delegate: OverlayDelegate {}
     radioButton.checked.indicator.foreground.delegate: OverlayDelegate {}
@@ -233,7 +234,7 @@ Style {
         background.shadow.delegate: CustomShadowDelegate {}
         // verify that the delegate is allowed to change per state
         pressed.background.shadow.delegate: CustomShadowDelegate {}
-        variations: Variation {
+        variations: StyleVariation {
             button.background {
                 delegate: null
                 implicitWidth: 30

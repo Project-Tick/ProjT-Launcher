@@ -41,4 +41,6 @@ qt_internal_extend_target(QuickControlsTestUtilsPrivate CONDITION QT_FEATURE_qui
 qt_internal_add_qml_module(QuickControlsTestUtilsPrivate
     URI "Qt.test.controls"
     VERSION "${PROJECT_VERSION}"
+    DEPENDENCIES
+        QtQuick/auto
 )

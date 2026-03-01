@@ -114,6 +114,7 @@ void registerTypes()
     qmlRegisterType<ImmediateProperties>("Test", 1, 0, "ImmediateProperties");
 
     qmlRegisterTypesAndRevisions<Extended, Foreign, ForeignExtended>("Test", 1);
+
     qmlRegisterTypesAndRevisions<BareSingleton>("Test", 1);
     qmlRegisterTypesAndRevisions<UncreatableSingleton>("Test", 1);
 
@@ -206,6 +207,28 @@ void registerTypes()
     qmlRegisterTypesAndRevisions<LargeRevisionBase>("Test", 1);
     qmlRegisterTypesAndRevisions<LargeRevision>("Test", 1);
 }
+
+static_assert(std::is_same_v<typename QQmlPrivate::QmlExtended<Extended>::Type, Extension>);
+static_assert(std::is_same_v<typename QQmlPrivate::QmlExtended<ForeignExtended>::Type, Extension>);
+
+static_assert(std::is_same_v<typename QQmlPrivate::QmlResolved<Foreign>::Type, Local>);
+static_assert(std::is_same_v<typename QQmlPrivate::QmlResolved<ForeignExtended>::Type, Local>);
+
+static_assert(QQmlPrivate::QmlUncreatable<UncreatableElementNoReason>::Value);
+static_assert(!QQmlPrivate::QmlUncreatable<UncreatableSingleton>::Value);
+
+static_assert(QQmlPrivate::QmlAnonymous<AttachedType>::Value);
+static_assert(!QQmlPrivate::QmlAnonymous<Local>::Value);
+
+static_assert(QQmlPrivate::QmlSingleton<BareSingleton>::Value);
+static_assert(QQmlPrivate::QmlSingleton<UncreatableSingleton>::Value);
+static_assert(!QQmlPrivate::QmlSingleton<Local>::Value);
+
+static_assert(QQmlPrivate::QmlSequence<IntListRegistration>::Value);
+static_assert(!QQmlPrivate::QmlSequence<Local>::Value);
+
+static_assert(QQmlPrivate::QmlInterface<SomeQmlInterface>::Value);
+static_assert(!QQmlPrivate::QmlInterface<Local>::Value);
 
 QVariant myCustomVariantTypeConverter(const QString &data)
 {

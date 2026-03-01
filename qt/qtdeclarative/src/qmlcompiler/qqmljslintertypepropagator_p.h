@@ -25,6 +25,7 @@ struct ContextPropertyInfo
     QQmlJS::UserContextProperties userContextProperties;
 };
 
+struct IdMemberShadow;
 
 class Q_QMLCOMPILER_EXPORT QQmlJSLinterTypePropagator : public QQmlJSTypePropagator
 {
@@ -35,6 +36,16 @@ public:
                                const InstructionAnnotations &annotations = {},
                                QQmlSA::PassManager *passManager = nullptr,
                                const ContextPropertyInfo &contextPropertyInfo = {});
+
+    void setScopesById(const QQmlJSScopesById &scopesById)
+    {
+        m_scopesById = scopesById;
+    }
+
+    void setIdMemberShadows(QSet<IdMemberShadow> *idMemberShadows)
+    {
+        m_idMemberShadows = idMemberShadows;
+    }
 
 private:
 
@@ -62,6 +73,8 @@ private:
 
     QQmlSA::PassManager *m_passManager = nullptr;
     ContextPropertyInfo m_contextPropertyInfo;
+    QQmlJSScopesById m_scopesById;
+    QSet<IdMemberShadow> *m_idMemberShadows = nullptr;
 };
 
 QT_END_NAMESPACE

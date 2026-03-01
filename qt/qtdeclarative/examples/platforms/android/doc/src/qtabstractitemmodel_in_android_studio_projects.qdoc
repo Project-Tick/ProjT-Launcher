@@ -130,7 +130,7 @@
     when the QML is loaded. It is also the main Android activity.
 
     The example creates and initializes the data model. See also
-    \l {Qt Quick View Android Class}{QtQuickView}
+    \l {QtQuickView}
 
     \snippet android/models/qtabstractitemmodel_java/app/src/main/java/com/example/qtabstractitemmodel_java/MainActivity.java 1
 

@@ -22,14 +22,19 @@ T.RadioButton {
     rightPadding: radioButtonLayout.padding.right
     bottomPadding: radioButtonLayout.padding.bottom
 
+    leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
+
     spacing: styleReader.spacing
 
     font: styleReader.font
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.RadioButton
+        controlType: StyleReader.RadioButton
         enabled: control.enabled
         focused: control.activeFocus
         checked: control.checked
@@ -68,7 +73,7 @@ T.RadioButton {
 
     indicator: IndicatorDelegate {
         quickControl: control
-        indicatorProperties: styleReader.indicator
+        indicatorStyle: styleReader.indicator
         x: indicatorItem.x
         y: indicatorItem.y
         width: indicatorItem.width
@@ -90,6 +95,6 @@ T.RadioButton {
 
     background: BackgroundDelegate {
         quickControl: control
-        backgroundProperties: styleReader.background
+        backgroundStyle: styleReader.background
     }
 }

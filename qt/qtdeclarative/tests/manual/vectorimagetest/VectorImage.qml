@@ -9,6 +9,16 @@ Item {
     height: vectorImage.implicitHeight * (VectorImageManager.scale / 10.0)
     scale: VectorImageManager.scale / 10.0
     transformOrigin: Item.TopLeft
+
+
+    Image {
+        anchors.fill: vectorImage
+        source: "background.png"
+        fillMode: Image.Tile
+        horizontalAlignment: Image.AlignLeft
+        verticalAlignment: Image.AlignTop
+    }
+
     VectorImage {
         id: vectorImage
         source: VectorImageManager.currentSource

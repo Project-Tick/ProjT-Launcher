@@ -1,5 +1,6 @@
 // Copyright (C) 2025 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #include <QtCore/qitemselectionmodel.h>
 #include <QtQmlModels/private/qqmlsortfilterproxymodel_p_p.h>
@@ -269,7 +270,7 @@ void QQmlSortFilterProxyModel::invalidateFilter()
 }
 
 /*!
-    \qmlmethod SortFilterProxyModel::invalidate()
+    \qmlmethod void SortFilterProxyModel::invalidate()
 
     This method invalidates the model by reevaluating the configured filters
     and sorters on the source model data.
@@ -284,7 +285,7 @@ void QQmlSortFilterProxyModel::invalidate()
 }
 
 /*!
-    \qmlmethod SortFilterProxyModel::invalidateSorter()
+    \qmlmethod void SortFilterProxyModel::invalidateSorter()
 
     This method force the sort filter proxy model to reevaluate the configured
     sorters against the data. It can used in the case where dynamic sorting
@@ -298,7 +299,7 @@ void QQmlSortFilterProxyModel::invalidateSorter()
 }
 
 /*!
-    \qmlmethod SortFilterProxyModel::setPrimarySorter(sorter)
+    \qmlmethod void SortFilterProxyModel::setPrimarySorter(sorter)
 
     This method allows to set the primary sorter in the sort filter proxy
     model. The primary sorter will be evaluated before all other sorters

@@ -7,4 +7,20 @@ Column {
     Label {
         objectName: "label"
     }
+
+    TextInput {
+        objectName: "textInput"
+    }
+
+    TextField {
+        objectName: "textField"
+    }
+
+    TextEdit {
+        objectName: "textEdit"
+    }
+
+    TextArea {
+        objectName: "textArea"
+    }
 }

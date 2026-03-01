@@ -636,12 +636,6 @@ QImage QQuickWidgetPrivate::grabFramebuffer()
     Qt::WA_TranslucentBackground on the top-level window, request an alpha channel, and
     change the Qt Quick Scenegraph's clear color to Qt::transparent via setClearColor().
 
-    \section1 Tab Key Handling
-
-    On press of the \c[TAB] key, the item inside the QQuickWidget gets focus. If
-    this item can handle \c[TAB] key press, focus will change accordingly within
-    the item, otherwise the next widget in the focus chain gets focus.
-
     \sa {Exposing Attributes of C++ Types to QML}, {Qt Quick Widgets Example}, QQuickView
 */
 

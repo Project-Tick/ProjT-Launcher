@@ -4,7 +4,6 @@
 
 #include "qqmljslintervisitor_p.h"
 #include "qqmljsutils_p.h"
-#include <stack>
 
 QT_BEGIN_NAMESPACE
 
@@ -426,12 +425,85 @@ bool LinterVisitor::visit(QQmlJS::AST::CaseBlock *block)
     return true;
 }
 
-/*!
-\internal
+static QList<const Statement *> possibleLastStatements(const StatementList *ast);
+static QList<const Statement *> possibleLastStatements(const CaseBlock *ast)
+{
+    QList<const Statement *> lasts;
 
-This assumes that there is no custom coercion enabled via \c Symbol.toPrimitive or similar.
-*/
-static bool isUselessExpressionStatement(ExpressionNode *ast)
+    for (const auto *clause = ast->clauses; clause; clause = clause->next)
+        lasts << possibleLastStatements(clause->clause->statements);
+    if (ast->defaultClause)
+        lasts << possibleLastStatements(ast->defaultClause->statements);
+    for (const auto *clause = ast->moreClauses; clause; clause = clause->next)
+        lasts << possibleLastStatements(clause->clause->statements);
+
+    return lasts;
+}
+
+static QList<const Statement *> possibleLastStatements(const Statement *ast)
+{
+    if (const auto *s = cast<const Block *>(ast))
+        return possibleLastStatements(s->statements) << s;
+    if (const auto *s = cast<const BreakStatement *>(ast))
+        return { s };
+    if (const auto *s = cast<const ContinueStatement *>(ast))
+        return { s };
+    if (const auto *s = cast<const DebuggerStatement *>(ast))
+        return { s };
+    if (const auto *s = cast<const DoWhileStatement *>(ast))
+        return possibleLastStatements(s->statement) << s;
+    if (const auto *s = cast<const EmptyStatement *>(ast))
+        return { s };
+    if (const auto *s = cast<const ExportDeclaration *>(ast))
+        return { s };
+    if (const auto *s = cast<const ExpressionStatement *>(ast))
+        return { s };
+    if (const auto *s = cast<const ForEachStatement *>(ast))
+        return possibleLastStatements(s->statement) << s;
+    if (const auto *s = cast<const ForStatement *>(ast))
+        return possibleLastStatements(s->statement) << s;
+    if (const auto *s = cast<const IfStatement *>(ast)) {
+        auto lasts = possibleLastStatements(s->ok);
+        if (s->ko)
+            lasts << possibleLastStatements(s->ko);
+        return lasts << s;
+    }
+    if (const auto *s = cast<const ImportDeclaration *>(ast))
+        return { s };
+    if (const auto *s = cast<const LabelledStatement *>(ast))
+        return possibleLastStatements(s->statement) << ast;
+    if (const auto *s = cast<const ReturnStatement *>(ast))
+        return { s };
+    if (const auto *s = cast<const SwitchStatement *>(ast))
+        return possibleLastStatements(s->block) << s;
+    if (const auto *s = cast<const ThrowStatement *>(ast))
+        return { s };
+    if (const auto *s = cast<const TryStatement *>(ast))
+        return { s };
+    if (const auto *s = cast<const VariableStatement *>(ast))
+        return { s };
+    if (const auto *s = cast<const WhileStatement *>(ast))
+        return possibleLastStatements(s->statement) << s;
+    if (const auto *s = cast<const WithStatement *>(ast))
+        return possibleLastStatements(s->statement) << s;
+
+    Q_UNREACHABLE_RETURN({});
+}
+
+static QList<const Statement *> possibleLastStatements(const StatementList *ast)
+{
+    Q_ASSERT(ast);
+    for (; ast->next; ast = ast->next) { }
+    const auto *statement = ast->statement;
+
+    // Can't store FunctionDeclaration as a statement. See StatementList.
+    if (cast<const FunctionDeclaration *>(statement))
+        return {};
+
+    return possibleLastStatements(static_cast<const Statement *>(statement));
+}
+
+static bool isUselessExpressionStatement_impl(const ExpressionNode *ast)
 {
     switch (ast->kind) {
     case Node::Kind_CallExpression:
@@ -444,50 +516,135 @@ static bool isUselessExpressionStatement(ExpressionNode *ast)
     case Node::Kind_YieldExpression:
     case Node::Kind_FunctionExpression:
         return false;
+    case Node::Kind_NumericLiteral:
+    case Node::Kind_StringLiteral:
+    case Node::Kind_FalseLiteral:
+    case Node::Kind_TrueLiteral:
+    case Node::Kind_NullExpression:
+    case Node::Kind_Undefined:
+    case Node::Kind_RegExpLiteral:
+    case Node::Kind_SuperLiteral:
+    case Node::Kind_ThisExpression:
+    case Node::Kind_FieldMemberExpression:
+    case Node::Kind_IdentifierExpression:
+    case Node::Kind_TypeOfExpression:
+        return true;
     default:
         break;
-    };
-    BinaryExpression *binary = cast<BinaryExpression *>(ast);
-    if (!binary)
-        return false;
-
-    switch (binary->op) {
-    case QSOperator::InplaceAnd:
-    case QSOperator::Assign:
-    case QSOperator::InplaceSub:
-    case QSOperator::InplaceDiv:
-    case QSOperator::InplaceExp:
-    case QSOperator::InplaceAdd:
-    case QSOperator::InplaceLeftShift:
-    case QSOperator::InplaceMod:
-    case QSOperator::InplaceMul:
-    case QSOperator::InplaceOr:
-    case QSOperator::InplaceRightShift:
-    case QSOperator::InplaceURightShift:
-    case QSOperator::InplaceXor:
-        return false;
-    default:
-        return true;
     }
-    Q_UNREACHABLE_RETURN(true);
+
+    if (const auto *e = cast<const NestedExpression *>(ast))
+        return isUselessExpressionStatement_impl(e->expression);
+    if (const auto *e = cast<const NotExpression *>(ast))
+        return isUselessExpressionStatement_impl(e->expression);
+    if (const auto *e = cast<const TildeExpression *>(ast))
+        return isUselessExpressionStatement_impl(e->expression);
+    if (const auto *e = cast<const UnaryMinusExpression *>(ast))
+        return isUselessExpressionStatement_impl(e->expression);
+    if (const auto *e = cast<const UnaryPlusExpression *>(ast))
+        return isUselessExpressionStatement_impl(e->expression);
+    if (const auto *e = cast<const ConditionalExpression *>(ast))
+        return isUselessExpressionStatement_impl(e->ok) && isUselessExpressionStatement_impl(e->ko);
+
+    if (const BinaryExpression *binary = cast<const BinaryExpression *>(ast)) {
+        switch (binary->op) {
+        case QSOperator::InplaceAnd:
+        case QSOperator::Assign:
+        case QSOperator::InplaceSub:
+        case QSOperator::InplaceDiv:
+        case QSOperator::InplaceExp:
+        case QSOperator::InplaceAdd:
+        case QSOperator::InplaceLeftShift:
+        case QSOperator::InplaceMod:
+        case QSOperator::InplaceMul:
+        case QSOperator::InplaceOr:
+        case QSOperator::InplaceRightShift:
+        case QSOperator::InplaceURightShift:
+        case QSOperator::InplaceXor:
+            return false;
+        default:
+            return isUselessExpressionStatement_impl(binary->left)
+                    && isUselessExpressionStatement_impl(binary->right);
+        }
+    }
+
+    return false;
 }
 
-static bool canHaveUselessExpressionStatement(Node *parent)
+/*!
+\internal
+
+This assumes that there is no custom coercion enabled via \c Symbol.toPrimitive or similar.
+*/
+static bool isUselessExpressionStatement(const ExpressionStatement *ast)
 {
-    return parent->kind != Node::Kind_UiScriptBinding && parent->kind != Node::Kind_UiPublicMember;
+    return isUselessExpressionStatement_impl(ast->expression);
+}
+
+void LinterVisitor::handleUselessExpressionStatement(const ExpressionStatement *ast)
+{
+    // property binding, signal handler, or function declaration
+    const auto it = std::find_if(m_ancestryIncludingCurrentNode.crbegin(),
+                                 m_ancestryIncludingCurrentNode.crend(),
+                                 [](auto it) {
+                                     return it->kind == Node::Kind_UiPublicMember
+                                             || it->kind == Node::Kind_FunctionDeclaration
+                                             || it->kind == Node::Kind_UiScriptBinding;
+                                 });
+
+    if (it == m_ancestryIncludingCurrentNode.crend())
+        return;
+
+    // A useless ExpressionStatement in *last position* inside a property binding is not useless
+    const auto isLastExprStat = [](const ExpressionStatement *statement, const Statement *base) {
+        const auto lasts = possibleLastStatements(base);
+        return lasts.contains(statement);
+    };
+
+    if (const auto *usb = cast<UiScriptBinding *>(*it); usb && usb->qualifiedId) {
+        if (usb->qualifiedId->toString() == "id"_L1)
+            return;
+        if (usb->qualifiedId->next)
+            return; // group/attached property, give up
+        if (m_savedBindingOuterScope->scopeType() == QQmlSA::ScopeType::GroupedPropertyScope)
+            return; // group property, give up
+
+        QQmlJSScope::Ptr object = m_currentScope;
+        while (object && object->scopeType() != QQmlSA::ScopeType::QMLScope)
+            object = object->parentScope();
+
+        if (!object)
+            return;
+
+        if (m_propertyBindings.contains(object)) {
+            for (const auto &entry : m_propertyBindings[object]) {
+                if (entry.data == usb->qualifiedId->toString()) {
+                    if (isLastExprStat(ast, usb->statement))
+                        return;
+                    else
+                        break;
+                }
+            }
+        }
+    }
+
+    const auto *upm = cast<const UiPublicMember *>(*it);
+    if (upm && upm->type == AST::UiPublicMember::Property && upm->statement) {
+        if (isLastExprStat(ast, upm->statement))
+            return;
+    }
+
+    if (isUselessExpressionStatement(ast)) {
+        m_logger->log("Expression statement has no obvious effect."_L1,
+                      qmlConfusingExpressionStatement,
+                      combine(ast->firstSourceLocation(), ast->lastSourceLocation()));
+    }
 }
 
 bool LinterVisitor::visit(ExpressionStatement *ast)
 {
     QQmlJSImportVisitor::visit(ast);
-
-    if (canHaveUselessExpressionStatement(astParentOfVisitedNode())
-        && isUselessExpressionStatement(ast->expression)) {
-        m_logger->log("Expression statement has no obvious effect."_L1,
-                      qmlConfusingExpressionStatement,
-                      combine(ast->firstSourceLocation(), ast->lastSourceLocation()));
-    }
-
+    handleUselessExpressionStatement(ast);
     return true;
 }
 
@@ -576,12 +733,6 @@ void LinterVisitor::handleLiteralBinding(const QQmlJSMetaPropertyBinding &bindin
         break;
     }
     }
-}
-
-void LinterVisitor::endVisit(UiProgram *ast)
-{
-    QQmlJSImportVisitor::endVisit(ast);
-    checkIdShadows();
 }
 
 static constexpr QLatin1String s_method = "method"_L1;
@@ -721,116 +872,6 @@ bool LinterVisitor::visit(FunctionDeclaration *fdecl)
                           WithoutOverride, m_logger);
     }
     return QQmlJSImportVisitor::visit(fdecl);
-}
-
-enum MethodOrProperty { Method, Property };
-void warnForShadowsInCurrentScope(const QQmlJSScope::ConstPtr &scopeWithId, const QString &name,
-                                  const QQmlJSScope::ConstPtr &currentScope,
-                                  const QQmlJS::SourceLocation &location, MethodOrProperty mode,
-                                  QQmlJSLogger *logger)
-{
-    static constexpr QLatin1String warningMessage =
-            "Id \"%1\" shadows %2 \"%1\"%3. Rename the id or the %2."_L1;
-
-    if (mode == Property ? !currentScope->hasProperty(name) : !currentScope->hasMethod(name))
-        return;
-
-    const auto owner = mode == Property ? QQmlJSScope::ownerOfProperty(currentScope, name).scope
-                                        : QQmlJSScope::ownerOfMethod(currentScope, name).scope;
-    const QString currentScopeName =
-            QQmlJSUtils::getScopeName(currentScope, QQmlSA::ScopeType::QMLScope);
-
-    const QLatin1String memberType = mode == Property
-            ? "property"_L1
-            : (owner->methods(name).front().methodType() == QQmlJSMetaMethodType::Signal
-                       ? "signal"_L1
-                       : "method"_L1);
-
-    const QQmlJS::SourceLocation definitionLocation = mode == Property
-            ? currentScope->property(name).sourceLocation()
-            : currentScope->methods(name).front().sourceLocation();
-    auto log = [&](const QString &asdf) {
-        logger->log(warningMessage.arg(name, memberType, asdf), qmlIdShadowsMember, location);
-
-        // add hint if the member clashing with the id is defined in the current file
-        if (owner->filePath() == scopeWithId->filePath()) {
-            logger->log("Note: %1 \"%2\" defined here is shadowed by id \"%2\""_L1.arg(memberType,
-                                                                                       name),
-                        qmlIdShadowsMember, definitionLocation, true, true, {}, location.startLine);
-        } else {
-            logger->log(
-                    "Note: type \"%1\" defined here has a %2 \"%3\" shadowed by id \"%3\""_L1.arg(
-                            currentScopeName, memberType, name),
-                    qmlIdShadowsMember, currentScope->sourceLocation(), true, true, {},
-                    location.startLine);
-        }
-    };
-
-    if (currentScope != scopeWithId) {
-        log(" from \"%1\" defined at %2:%3:%4"_L1.arg(
-                currentScopeName, currentScope->filePath(),
-                QString::number(currentScope->sourceLocation().startLine),
-                QString::number(currentScope->sourceLocation().startColumn)));
-        return;
-    }
-    log(" from current type"_L1);
-}
-
-/*!
-\internal
-
-Searches for ids shadowing properties, methods and signals.
-
-An id shadows all properties, methods and signals inside the context the id is defined when
-ComponentBehavior is not set to Bound.
-The id shadows also properties, methods and signals in the child contexts of the context the id
-was defined when ComponentBehavior is set to Bound. Assume here that components are bound for
-clarity.
-
-Compute all possible scopes where an id can shadow properties, methods and signals. All of these
-scopes are inside the component boundary, so represent this set of scopes with the root scope inside
-the component boundary. All descendants of the root scope, that are in the same component
-boundary as the root scope, can have properties, methods and signals shadowed by its id.
-
-Once all roots are computed in "componentRootsToIds", iterate over their descendents to find
-potential clashes of properties and methods with the ids that can be referred from inside that
-component boundary.
-*/
-void LinterVisitor::checkIdShadows()
-{
-    const auto componentRootsToIds = m_scopesById.computeComponentRootsToIds();
-    if (componentRootsToIds.empty())
-        return;
-
-    using It = decltype(componentRootsToIds.begin());
-    auto begin = componentRootsToIds.begin();
-    auto end = componentRootsToIds.end();
-    auto nextKey = [&](It it) -> It {
-        return it == end ? it : componentRootsToIds.upper_bound(it->first);
-    };
-
-    for (auto it = begin, it2 = nextKey(begin); it != end; it = std::exchange(it2, nextKey(it2))) {
-        std::stack<QQmlJSScope::ConstPtr> stack{ { it->first } };
-        while (!stack.empty()) {
-            QQmlJSScope::ConstPtr current = stack.top();
-            stack.pop();
-
-            for (auto scopeWithIdIt = it, scopeWithIdEnd = it2; scopeWithIdIt != scopeWithIdEnd;
-                 ++scopeWithIdIt) {
-                warnForShadowsInCurrentScope(scopeWithIdIt->second.scope, scopeWithIdIt->second.id,
-                                             current,
-                                             scopeWithIdIt->second.scope->idSourceLocation(),
-                                             MethodOrProperty::Property, m_logger);
-                warnForShadowsInCurrentScope(scopeWithIdIt->second.scope, scopeWithIdIt->second.id,
-                                             current,
-                                             scopeWithIdIt->second.scope->idSourceLocation(),
-                                             MethodOrProperty::Method, m_logger);
-            }
-            const auto children = current->childScopes();
-            for (const QQmlJSScope::ConstPtr &child : children)
-                stack.push(child);
-        }
-    }
 }
 
 } // namespace QQmlJS

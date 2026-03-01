@@ -47,8 +47,8 @@ QT_BEGIN_NAMESPACE
 
     These are not indicators in the sense of \l BusyIndicator or \l ProgressBar. Instead,
     they are interactive controls embedded into the field (similar to the up/down buttons
-    in \l SpinBox). Pressing \l searchIndicator triggers \l searchButtonPressed(), and pressing
-    \l clearIndicator triggers \l clearButtonPressed().
+    in \l SpinBox). Pressing \l searchIndicator triggers \l searchButtonPressed, and pressing
+    \l clearIndicator triggers \l clearButtonPressed.
 
     In addition to exposing the actions, the indicator buttons provide interaction state
     (pressed/hovered/focused, etc.) that can be used by styles.
@@ -74,7 +74,7 @@ QT_BEGIN_NAMESPACE
     of the buttons (for example, providing only a search button) or replace the indicator
     content with an alternative item (for example, a microphone icon to trigger speech input).
 
-    \sa searchIndicator, clearIndicator, searchButtonPressed(), clearButtonPressed()
+    \sa searchIndicator, clearIndicator, searchButtonPressed, clearButtonPressed
 
     \section1 SearchField Model Roles
 
@@ -776,9 +776,11 @@ void QQuickSearchField::setSuggestionModel(const QVariant &model)
 {
     Q_D(QQuickSearchField);
 
-    QVariant suggestionModel = model;
-    if (suggestionModel.userType() == qMetaTypeId<QJSValue>())
-        suggestionModel = get<QJSValue>(std::move(suggestionModel)).toVariant();
+    QVariant suggestionModel;
+    if (QJSValue *value = get_if<QJSValue>(&suggestionModel))
+        suggestionModel = value->toVariant();
+    else
+        suggestionModel = model;
 
     if (d->suggestionModel == suggestionModel)
         return;
@@ -950,7 +952,7 @@ void QQuickSearchField::setLive(const bool live)
     \include qquickindicatorbutton.qdocinc {properties} {SearchField} {searchIndicator}
 
     This property holds the search indicator. Pressing it triggers
-    \l searchButtonPressed().
+    \l searchButtonPressed.
 
     It is exposed so that styles and applications can customize it through its
     internal properties (for example, replacing or removing the \c searchIndicator
@@ -969,7 +971,7 @@ QQuickIndicatorButton *QQuickSearchField::searchIndicator() const
     \include qquickindicatorbutton.qdocinc {properties} {SearchField} {clearIndicator}
 
     This property holds the clear indicator. Pressing it triggers
-    \l clearButtonPressed().
+    \l clearButtonPressed.
 
     It is exposed so that styles and applications can customize it through its
     internal properties (for example, replacing or removing the \c clearIndicator
@@ -1139,10 +1141,21 @@ void QQuickSearchField::focusInEvent(QFocusEvent *event)
     Q_D(QQuickSearchField);
     QQuickControl::focusInEvent(event);
 
-    if ((event->reason() == Qt::TabFocusReason || event->reason() == Qt::BacktabFocusReason
-         || event->reason() == Qt::ShortcutFocusReason)
-        && d->contentItem)
-        d->contentItem->forceActiveFocus(event->reason());
+    if (!d->contentItem)
+        return;
+
+    const auto reason = event->reason();
+    switch (reason) {
+    case Qt::TabFocusReason:
+    case Qt::BacktabFocusReason:
+    case Qt::ShortcutFocusReason:
+    case Qt::OtherFocusReason:
+        if (reason != Qt::OtherFocusReason || !d->isPopupVisible())
+            d->contentItem->forceActiveFocus(reason);
+        break;
+    default:
+        break;
+    }
 }
 
 void QQuickSearchField::focusOutEvent(QFocusEvent *event)

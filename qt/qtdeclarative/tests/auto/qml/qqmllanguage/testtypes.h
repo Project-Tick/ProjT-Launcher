@@ -3395,4 +3395,25 @@ public:
     Q_INVOKABLE CustomIdentifier getId2() const { return CustomIdentifier(id2()); }
 };
 
+class IntListRegistration
+{
+public:
+    Q_GADGET
+    QML_FOREIGN(std::list<int>)
+    QML_ANONYMOUS
+    QML_SEQUENTIAL_CONTAINER(int)
+};
+
+struct SomeQmlInterface
+{
+    QML_INTERFACE
+public:
+    virtual ~SomeQmlInterface() {}
+    virtual void doSomething() = 0;
+};
+
+QT_BEGIN_NAMESPACE
+Q_DECLARE_INTERFACE(SomeQmlInterface, "org.test.QmlTypes")
+QT_END_NAMESPACE
+
 #endif // TESTTYPES_H

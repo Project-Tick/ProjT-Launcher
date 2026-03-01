@@ -19,7 +19,6 @@
 #include <private/qduplicatetracker_p.h>
 
 #include <QtCore/qcbormap.h>
-#include <QtCore/qhash.h>
 #include <QtCore/qstring.h>
 #include <QtCore/qtyperevision.h>
 #include <QtCore/qvarlengtharray.h>
@@ -159,12 +158,9 @@ struct MetaTypePrivate
     enum Kind : quint8 { Object, Gadget, Namespace, Unknown };
 
     MetaTypePrivate() = default;
-    MetaTypePrivate(const QCborMap &cbor, const QString &inputFile, const QCborMap &hashes);
+    MetaTypePrivate(const QCborMap &cbor, const QString &inputFile);
 
-    // need to keep these to hold on to the strings
-    const QCborMap cbor;
-    const QCborMap hashes;
-
+    const QCborMap cbor; // need to keep this to hold on to the strings
     const QString inputFile;
 
     QAnyStringView className;
@@ -181,8 +177,6 @@ struct MetaTypePrivate
 
     Enum::Container enums;
 
-    QAnyStringView metaObjectHash;
-
     Kind kind = Unknown;
     int lineNumber = 0;
 };
@@ -193,7 +187,7 @@ public:
     using Kind = MetaTypePrivate::Kind;
 
     MetaType() = default;
-    MetaType(const QCborMap &cbor, const QString &inputFile, const QCborMap &hashes);
+    MetaType(const QCborMap &cbor, const QString &inputFile);
 
     bool isEmpty() const { return d == &s_empty; }
 
@@ -213,8 +207,6 @@ public:
     const Enum::Container &enums() const { return d->enums; }
 
     Kind kind() const { return d->kind; }
-
-    QAnyStringView metaObjectHash() const { return d->metaObjectHash; }
 
 private:
     friend bool operator==(const MetaType &a, const MetaType &b) noexcept
@@ -272,10 +264,6 @@ public:
     QList<QAnyStringView> referencedTypes() const { return m_referencedTypes; }
     QList<UsingDeclaration> usingDeclarations() const { return m_usingDeclarations; }
     QList<QString> includes() const { return m_includes; }
-    QHash<QAnyStringView, QAnyStringView> foreignTypeMetaObjectHashses() const
-    {
-        return m_foreignTypeMetaObjectHashes;
-    }
 
     QString extractRegisteredTypes() const;
 
@@ -315,9 +303,6 @@ private:
     QList<MetaType> m_types;
     QList<MetaType> m_foreignTypes;
     QDuplicateTracker<QString> m_seenMetaTypesFiles;
-    // Types declared as QML_FOREIGN(T) need to get the metaObject hash of the target T type.
-    // Hold it here until generation.
-    QHash<QAnyStringView, QAnyStringView> m_foreignTypeMetaObjectHashes;
     bool m_privateIncludes = false;
 };
 

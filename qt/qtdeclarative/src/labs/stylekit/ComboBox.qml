@@ -22,14 +22,19 @@ T.ComboBox {
     topPadding: comboLayout.padding.top
     bottomPadding: comboLayout.padding.bottom
 
+    leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
+
     spacing: styleReader.spacing
 
     font: styleReader.font
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.ComboBox
+        controlType: StyleReader.ComboBox
         enabled: control.enabled
         focused: control.activeFocus
         hovered: control.hovered || control.pressed
@@ -82,7 +87,7 @@ T.ComboBox {
 
     indicator: IndicatorDelegate {
         quickControl: control
-        indicatorProperties: styleReader.indicator
+        indicatorStyle: styleReader.indicator
         x: indicatorItem.x
         y: indicatorItem.y
         width: indicatorItem.width
@@ -112,7 +117,7 @@ T.ComboBox {
 
     background: BackgroundDelegate {
         quickControl: control
-        backgroundProperties: styleReader.background
+        backgroundStyle: styleReader.background
     }
 
     // TODO: Use the Popup control as is for now,

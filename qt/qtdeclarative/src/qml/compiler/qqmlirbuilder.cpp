@@ -54,6 +54,94 @@ void Object::simplifyRequiredProperties() {
     }
 }
 
+/*!
+    \internal
+
+    Reorders the alias data within the linked list of this object so that
+    aliases targeting other aliases on the same object come after their
+    targets. This ensures that dependencies are resolved and appended to
+    the property cache first, which is necessary because the runtime
+    assumes that the property cache position matches the alias table index.
+
+    Only considers same-object dependencies (where the alias's idIndex
+    resolves to idNameIndex). Cross-object dependencies are handled by
+    the multi-pass resolution in QQmlCOmponentAndAliasResolver.
+*/
+void Object::sortAliasDependencies(const Document *doc, QList<QQmlJS::DiagnosticMessage> *errors)
+{
+    using AliasArray = QVarLengthArray<Alias *, 8>;
+
+    AliasArray ordered;
+    ordered.reserve(aliasCount());
+
+    // Collect aliases as nodes in a graph. Non-local ones are already ordered.
+    AliasArray nodes;
+    for (Alias *a = firstAlias(); a; a = a->next) {
+        if (a->idIndex() == idNameIndex && idNameIndex != 0)
+            nodes.append(a);
+        else
+            ordered.append(a);
+    }
+
+    // Nothing to sort here.
+    if (nodes.isEmpty())
+        return;
+
+    // Collect dependencies as edges between nodes
+    QVarLengthArray<qsizetype, 8> edges(nodes.size(), -1);
+    for (qsizetype i = 0, end = nodes.size(); i < end; ++i) {
+        const QStringView propValue = doc->stringAt(nodes[i]->propertyNameIndex());
+        const int dotIdx = propValue.indexOf(QLatin1Char('.'));
+        const QStringView targetName = dotIdx != -1 ? propValue.left(dotIdx) : propValue;
+        if (targetName.isEmpty())
+            continue;
+
+        for (qsizetype j = 0; j < end; ++j) {
+            if (j != i && doc->stringAt(nodes[j]->nameIndex()) == targetName) {
+                edges[i] = j;
+                break;
+            }
+        }
+    }
+
+    // Simple DFS-based topological sort
+    for (qsizetype i = 0, end = nodes.size(); i < end; ++i) {
+        // Skip already inserted nodes
+        if (nodes[i] == nullptr)
+            continue;
+
+        // Follow the dependency chain to find the root.
+        QVarLengthArray<qsizetype, 8> chain;
+        for (qsizetype j = edges[i]; j != -1 && nodes[j]; j = edges[j]) {
+            if (!chain.contains(j)) {
+                chain.append(j);
+                continue;
+            }
+
+            const QV4::CompiledData::Location &location = nodes[j]->location();
+            QQmlJS::DiagnosticMessage error;
+            error.loc.startLine = location.line();
+            error.loc.startColumn = location.column();
+            error.loc.offset = QQmlJS::SourceLocation::offsetFrom(
+                    doc->code, location.line(), location.column());
+            error.message = QCoreApplication::translate("QQmlParser", "Cyclic alias");
+            errors->append(std::move(error));
+            return;
+        }
+
+        // Emit in reverse (dependency first)
+        for (qsizetype k = chain.size() - 1; k >= 0; --k)
+            ordered.append(std::exchange(nodes[chain[k]], nullptr));
+        ordered.append(std::exchange(nodes[i], nullptr));
+    }
+
+    // Apply the sorted order to the alias list.
+    setFirstAlias(ordered[0]);
+    for (qsizetype i = 0, end = ordered.size() - 1; i < end; ++i)
+        ordered[i]->next = ordered[i + 1];
+    ordered.last()->next = nullptr;
+}
+
 bool Parameter::initType(
         QV4::CompiledData::ParameterType *paramType,
         const QString &typeName, int typeNameIndex,
@@ -439,8 +527,14 @@ bool IRBuilder::generateFromQml(const QString &code, const QString &url, Documen
     qSwap(_pragmas, output->pragmas);
     qSwap(_objects, output->objects);
 
-    for (auto object: output->objects)
+    for (Object *object: std::as_const(output->objects)) {
         object->simplifyRequiredProperties();
+
+        // Reorder aliases so that same-object dependencies come before their
+        // dependents. This later ensures the property cache ordering matches
+        // the alias table, which the runtime relies on.
+        object->sortAliasDependencies(output, &errors);
+    }
 
     return errors.isEmpty();
 }
@@ -1382,17 +1476,15 @@ void IRBuilder::appendBinding(const QQmlJS::SourceLocation &qualifiedNameLocatio
 bool IRBuilder::appendAlias(QQmlJS::AST::UiPublicMember *node)
 {
     Alias *alias = New<Alias>();
-    alias->clearFlags();
-    if (node->isReadonly())
-        alias->setFlag(QV4::CompiledData::Alias::IsReadOnly);
+    alias->setIsReadOnly(node->isReadonly());
 
     const QString propName = node->name.toString();
     alias->setNameIndex(registerString(propName));
 
     QQmlJS::SourceLocation loc = node->firstSourceLocation();
-    alias->location.set(loc.startLine, loc.startColumn);
+    alias->setLocation({loc.startLine, loc.startColumn});
 
-    alias->propertyNameIndex = emptyStringIndex;
+    alias->setPropertyNameIndex(emptyStringIndex);
 
     if (!node->statement && !node->binding)
         COMPILE_EXCEPTION(loc, tr("No property alias location"));
@@ -1404,7 +1496,7 @@ bool IRBuilder::appendAlias(QQmlJS::AST::UiPublicMember *node)
         rhsLoc = node->statement->firstSourceLocation();
     else
         rhsLoc = node->semicolonToken;
-    alias->referenceLocation.set(rhsLoc.startLine, rhsLoc.startColumn);
+    alias->setReferenceLocation({rhsLoc.startLine, rhsLoc.startColumn});
 
     QStringList aliasReference;
 
@@ -1429,7 +1521,7 @@ bool IRBuilder::appendAlias(QQmlJS::AST::UiPublicMember *node)
      QString propertyValue = aliasReference.value(1);
      if (aliasReference.size() == 3)
          propertyValue += QLatin1Char('.') + aliasReference.at(2);
-     alias->propertyNameIndex = registerString(propertyValue);
+     alias->setPropertyNameIndex(registerString(propertyValue));
 
      QQmlJS::SourceLocation errorLocation;
      QString error;

@@ -101,6 +101,7 @@ T.SearchField {
         rightPadding: !control.mirrored ? 6 : 0
 
         text: control.text
+        placeholderText: control.placeholderText
 
         PlaceholderText {
             x: parent.leftPadding

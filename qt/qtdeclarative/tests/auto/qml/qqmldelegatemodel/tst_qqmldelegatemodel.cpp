@@ -49,6 +49,7 @@ private slots:
     void requiredModelData();
     void nestedRequired();
     void overriddenModelData();
+    void overriddenModelData2();
     void deleteRace();
     void persistedItemsStayInCache();
     void unknownContainersAsModel();
@@ -654,14 +655,26 @@ void tst_QQmlDelegateModel::nestedRequired()
     QVERIFY(!delegate5);
 }
 
+static QLoggingCategory::CategoryFilter parentFilter;
+void logFilter(QLoggingCategory *category)
+{
+    if (qstrcmp(category->categoryName(), "qt.qml.propertyCache.append") == 0)
+        category->setEnabled(QtDebugMsg, true);
+    else if (parentFilter)
+        parentFilter(category);
+}
+
 void tst_QQmlDelegateModel::overriddenModelData()
 {
+    parentFilter = QLoggingCategory::installFilter(logFilter);
+    const auto restoreFilter = qScopeGuard([]() { QLoggingCategory::installFilter(parentFilter); });
+
     QTest::failOnWarning(QRegularExpression(
             "Final member [^ ]+ is overridden in class [^\\.]+. The override won't be used."));
     const auto overridenProperies = { "index", "column", "row", "hasModelChildren", "model" };
     for (const auto &property : overridenProperies) {
         QTest::ignoreMessage(
-                QtWarningMsg,
+                QtDebugMsg,
                 qPrintable(QLatin1String("Member ") + QLatin1String(property)
                            + QLatin1String(" of the object QQmlDMAbstractItemModelData overrides a "
                                            "non-virtual member. Consider renaming it or mark it "
@@ -691,6 +704,43 @@ void tst_QQmlDelegateModel::overriddenModelData()
             QCOMPARE(delegate->objectName(), QLatin1String("a b c d e f"));
         }
     }
+}
+
+class ModelWithModelDataRole : public QAbstractListModel
+{
+    Q_OBJECT
+    QML_ELEMENT
+public:
+    ModelWithModelDataRole() { }
+
+    int rowCount(const QModelIndex &parent = {}) const override
+    {
+        Q_UNUSED(parent);
+        return 1;
+    }
+
+    QVariant data(const QModelIndex &index, int role) const override
+    {
+        Q_UNUSED(index);
+        Q_UNUSED(role);
+        return QVariant();
+    }
+
+    QHash<int, QByteArray> roleNames() const override { return { { Qt::UserRole, "modelData" } }; }
+};
+
+void tst_QQmlDelegateModel::overriddenModelData2()
+{
+    QTest::failOnWarning();
+
+    QQmlEngine engine;
+    QQmlComponent c(&engine, testFileUrl("overriddenModelData2.qml"));
+    QVERIFY2(c.isReady(), qPrintable(c.errorString()));
+    QScopedPointer<QObject> o(c.create());
+
+    const auto newModel = std::make_unique<ModelWithModelDataRole>();
+
+    o->setProperty("model", QVariant::fromValue(newModel.get()));
 }
 
 void tst_QQmlDelegateModel::deleteRace()

@@ -173,6 +173,7 @@ public:
     }
     void setCMakeJobs(int jobs) { m_cmakeJobs = jobs; }
     int cmakeJobs() const { return m_cmakeJobs; }
+    void reloadAllOpenFiles();
 
 Q_SIGNALS:
     void updatedSnapshot(const QByteArray &url, UpdatePolicy policy);
@@ -194,7 +195,6 @@ private:
     QString url2Path(const QByteArray &url, UrlLookup options = UrlLookup::Caching);
 
     void callCMakeBuild(QProcessScheduler *scheduler);
-    void onCMakeProcessFinished(const QByteArray &id);
 
     void addFileWatches(const QQmlJS::Dom::DomItem &qmlFile);
 

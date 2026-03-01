@@ -609,17 +609,9 @@ void tst_qqmlpropertycache::metaObjectSize_data()
     QTest::addColumn<int>("expectedFieldCount");
     QTest::addColumn<int>("expectedStringCount");
 
-    // TODO temporarilly handle both output format for a smoother revision transition.
-    // Remove revision 13 version asap
-    if (QtMocConstants::OutputRevision == 13) {
-        TEST_CLASS(TestClass, 49, 10);
-        TEST_CLASS(TestClassWithParameters, 24, 4);
-        TEST_CLASS(TestClassWithClassInfo, 17, 3);
-    } else if (QtMocConstants::OutputRevision == 14) {
-        TEST_CLASS(TestClass, 50, 11);
-        TEST_CLASS(TestClassWithParameters, 25, 5);
-        TEST_CLASS(TestClassWithClassInfo, 18, 4);
-    }
+    TEST_CLASS(TestClass, 49, 10);
+    TEST_CLASS(TestClassWithParameters, 24, 4);
+    TEST_CLASS(TestClassWithClassInfo, 17, 3);
 }
 
 void tst_qqmlpropertycache::metaObjectSize()
@@ -833,45 +825,64 @@ void tst_qqmlpropertycache::appendPropertyAttr_logging_data()
 {
     QTest::addColumn<OverrideSemantics::Status>("overrideStatus");
     QTest::addColumn<QString>("warningPattern");
+    QTest::addColumn<QtMsgType>("level");
 
-    QTest::newRow("NoOverride") << Status::NoOverride << "";
-
-    QTest::newRow("Valid") << Status::Valid << "";
+    QTest::newRow("NoOverride") << Status::NoOverride << "" << QtInfoMsg;
+    QTest::newRow("Valid") << Status::Valid << "" << QtInfoMsg;
 
     QTest::newRow("MissingBase")
             << Status::MissingBase
             << "Member (.*) of the object (.*) does not override anything. Consider "
-               "removing \"override\".";
+               "removing \"override\"."
+            << QtWarningMsg;
     QTest::newRow("OverridingFinal")
             << Status::OverridingFinal
-            << "Final member (.*) is overridden in class (.*). The override won't be used.";
+            << "Final member (.*) is overridden in class (.*). The override won't be used."
+            << QtWarningMsg;
     QTest::newRow("OverridingNonVirtual")
             << Status::OverridingNonVirtual
             << "Member (.*) of the object (.*) overrides a non-virtual "
-               "member. Consider renaming it or mark it virtual in the base object";
+               "member. Consider renaming it or mark it virtual in the base object"
+            << QtDebugMsg;
     QTest::newRow("OverridingNonVirtualError")
             << Status::OverridingNonVirtualError
             << "Member (.*) of the object (.*) overrides a non-virtual "
-               "member. Consider renaming it or mark it virtual in the base object";
+               "member. Consider renaming it or mark it virtual in the base object"
+            << QtWarningMsg;
     QTest::newRow("MissingOverrideSpecifier")
             << Status::MissingOverrideOrFinalSpecifier
             << "Member (.*) of the object (.*) overrides a member of the base object. "
-               "Consider renaming it or adding final or override specifier";
+               "Consider renaming it or adding final or override specifier"
+            << QtWarningMsg;
 }
+
+static QLoggingCategory::CategoryFilter parentFilter;
+void logFilter(QLoggingCategory *category)
+{
+    if (qstrcmp(category->categoryName(), "qt.qml.propertyCache.append") == 0)
+        category->setEnabled(QtDebugMsg, true);
+    else if (parentFilter)
+        parentFilter(category);
+}
+
 
 void tst_qqmlpropertycache::appendPropertyAttr_logging()
 {
     QFETCH(OverrideSemantics::Status, overrideStatus);
     QFETCH(QString, warningPattern);
+    QFETCH(QtMsgType, level);
+
+    parentFilter = QLoggingCategory::installFilter(logFilter);
+    const auto restoreFilter = qScopeGuard([]() { QLoggingCategory::installFilter(parentFilter); });
 
     const auto fakeOverrideHandler = [&overrideStatus](QQmlPropertyData &, QQmlPropertyData *,
                                                        CheckMode) -> Status {
         return overrideStatus;
     };
 
-    if (!warningPattern.isEmpty()) {
-        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(warningPattern.toLatin1()));
-    }
+    if (!warningPattern.isEmpty())
+        QTest::ignoreMessage(level, QRegularExpression(warningPattern.toLatin1()));
+
     newPropertyCache(fakeOverrideHandler)->appendPropertyAttr("p", QQmlPropertyData());
 }
 
@@ -1103,6 +1114,11 @@ void tst_qqmlpropertycache::append_propertyAttr()
 {
     QFETCH(OverrideSemantics::Status, overrideStatus);
     QFETCH(QString, warningPattern);
+    QFETCH(QtMsgType, level);
+
+    parentFilter = QLoggingCategory::installFilter(logFilter);
+    const auto restoreFilter = qScopeGuard([]() { QLoggingCategory::installFilter(parentFilter); });
+
 
     const auto fakeOverrideHandler = [&overrideStatus](QQmlPropertyData &, QQmlPropertyData *,
                                                        CheckMode) -> Status {
@@ -1115,12 +1131,11 @@ void tst_qqmlpropertycache::append_propertyAttr()
     QMetaObjectBuilder moBuilder;
     const QString propName = "p";
     moBuilder.addProperty(propName.toUtf8(), "int", -1);
-    const auto *mo = moBuilder.toMetaObject();
+    std::unique_ptr<QMetaObject, decltype(&free)> mo(moBuilder.toMetaObject(), &free);
 
-    if (!warningPattern.isEmpty()) {
-        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(warningPattern.toLatin1()));
-    }
-    cache->update(mo);
+    if (!warningPattern.isEmpty())
+        QTest::ignoreMessage(level, QRegularExpression(warningPattern.toLatin1()));
+    cache->update(mo.get());
 
     // no matter what the property is added
     QCOMPARE(cache->propertyCount(), mo->propertyCount());

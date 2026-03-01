@@ -6,6 +6,8 @@
 
 #include "qqmljsutils_p.h"
 
+#include <private/qqmljslintercodegen_p.h>
+
 QT_BEGIN_NAMESPACE
 
 using namespace Qt::StringLiterals;
@@ -57,6 +59,8 @@ void QQmlJSLinterTypePropagator::generate_LoadQmlContextPropertyLookup(int index
 {
     QQmlJSTypePropagator::generate_LoadQmlContextPropertyLookup(index);
 
+    Q_ASSERT(m_idMemberShadows);
+
     const int nameIndex = m_jsUnitGenerator->lookupNameIndex(index);
     const QString name = m_jsUnitGenerator->stringForIndex(nameIndex);
 
@@ -66,6 +70,41 @@ void QQmlJSLinterTypePropagator::generate_LoadQmlContextPropertyLookup(int index
             QQmlJSScope::createQQmlSAElement(qmlScope),
             QQmlSA::SourceLocationPrivate::createQQmlSASourceLocation(
                     currentNonEmptySourceLocation()));
+
+    const auto &accumulatorOut = m_state.accumulatorOut();
+    if (!accumulatorOut.isValid())
+        return;
+
+    const QQmlJSScope::ConstPtr scope = accumulatorOut.scopeType();
+    const QQmlJSScope::ConstPtr idScope = m_scopesById.scope(name, scope);
+    if (!idScope.isNull()) {
+        const auto log = [&](const auto &memberType, const auto &memberOwnerScope) {
+            IdMemberShadow idMemberShadow{ name, idScope, memberOwnerScope };
+
+            // Only warn once per shadowing instance, even for multiple usages.
+            if (m_idMemberShadows->contains(idMemberShadow))
+                return;
+
+            m_idMemberShadows->insert(std::move(idMemberShadow));
+            const auto useLoc = currentSourceLocation();
+            m_logger->log("Id for object %1 shadows %2 \"%3\". Rename one or the other."_L1
+                                  .arg(idScope->baseTypeName(), memberType, name),
+                          qmlIdShadowsMember, useLoc);
+            m_logger->log("Note: Id defined here"_L1, qmlIdShadowsMember,
+                          idScope->idSourceLocation(), true, true, {}, useLoc.startLine);
+        };
+
+        if (scope->hasProperty(name)) {
+            log("property"_L1, scope->ownerOfProperty(scope, name).scope);
+        } else if (scope->hasMethod(name)) {
+            const auto methods = scope->methods(name);
+            const auto &method = methods[0];
+            if (method.methodType() == QQmlSA::MethodType::Method)
+                log("method"_L1, scope->ownerOfMethod(scope, name).scope);
+            else if (method.methodType() == QQmlSA::MethodType::Signal)
+                log("signal"_L1, scope->ownerOfMethod(scope, name).scope);
+        }
+    }
 }
 
 void QQmlJSLinterTypePropagator::generate_GetOptionalLookup(int index, int offset)
@@ -282,16 +321,14 @@ void QQmlJSLinterTypePropagator::handleUnqualifiedAccess(const QString &name, bo
             replacement + '\n'_L1
         };
         bindComponents.setAutoApplicable();
-        suggestion = bindComponents;
+        suggestion = std::move(bindComponents);
     }
 
     if (!suggestion.has_value()) {
-        if (auto didYouMean =
-            QQmlJSUtils::didYouMean(
-                    name, qmlScope->properties().keys() + qmlScope->methods().keys(),
-                    location);
-            didYouMean.has_value()) {
-            suggestion = didYouMean;
+        if (auto didYouMean = QQmlJSUtils::didYouMean(
+                    name, qmlScope->properties().keys() + qmlScope->methods().keys(), location);
+                didYouMean.has_value()) {
+            suggestion = std::move(didYouMean);
         }
     }
 
@@ -472,10 +509,10 @@ void QQmlJSLinterTypePropagator::handleLookupError(const QString &propertyName)
 
     std::optional<QQmlJSFixSuggestion> fixSuggestion;
 
-    if (auto suggestion = QQmlJSUtils::didYouMean(propertyName, baseType->properties().keys(),
-                                                  currentSourceLocation());
-        suggestion.has_value()) {
-        fixSuggestion = suggestion;
+    if (auto suggestion = QQmlJSUtils::didYouMean(
+                propertyName, baseType->properties().keys(), currentSourceLocation());
+            suggestion.has_value()) {
+        fixSuggestion = std::move(suggestion);
     }
 
     if (!fixSuggestion.has_value()
@@ -493,8 +530,8 @@ void QQmlJSLinterTypePropagator::handleLookupError(const QString &propertyName)
 
         if (auto suggestion = QQmlJSUtils::didYouMean(
                     propertyName, enumKeys, currentSourceLocation());
-            suggestion.has_value()) {
-            fixSuggestion = suggestion;
+                suggestion.has_value()) {
+            fixSuggestion = std::move(suggestion);
         }
     }
 

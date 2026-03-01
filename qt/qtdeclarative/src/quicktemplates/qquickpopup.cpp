@@ -945,9 +945,14 @@ void QQuickPopupPrivate::opened()
 #endif
 }
 
-Qt::WindowFlags QQuickPopupPrivate::popupWindowType() const
+Qt::WindowFlags QQuickPopupPrivate::popupWindowFlags() const
 {
-    return Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint;
+    return windowFlags;
+}
+
+void QQuickPopupPrivate::setPopupWindowFlags(Qt::WindowFlags flags)
+{
+    windowFlags = flags;
 }
 
 QMarginsF QQuickPopupPrivate::getMargins() const
@@ -3093,7 +3098,7 @@ void QQuickPopup::setFiltersChildMouseEvents(bool filter)
 }
 
 /*!
-    \qmlmethod QtQuick.Controls::Popup::forceActiveFocus(enumeration reason = Qt.OtherFocusReason)
+    \qmlmethod void QtQuick.Controls::Popup::forceActiveFocus(enumeration reason = Qt.OtherFocusReason)
 
     Forces active focus on the popup with the given \a reason.
 

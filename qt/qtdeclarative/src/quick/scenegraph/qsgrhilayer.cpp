@@ -1,5 +1,6 @@
 // Copyright (C) 2019 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #include "qsgrhilayer_p.h"
 
@@ -234,6 +235,11 @@ void QSGRhiLayer::clearMainTexture()
     if (tempRt->create()) {
         m_context->currentFrameCommandBuffer()->beginPass(tempRt.get(), Qt::transparent, { 1.0f, 0 });
         m_context->currentFrameCommandBuffer()->endPass();
+        // Keep the objects alive until a later frame, because the current frame
+        // is only going to be submitted (endFrame) by the scenegraph at a
+        // later point.
+        tempRt.release()->deleteLater();
+        tempRp.release()->deleteLater();
     } else {
         qWarning("Failed to clear layer main texture in recursive mode");
     }

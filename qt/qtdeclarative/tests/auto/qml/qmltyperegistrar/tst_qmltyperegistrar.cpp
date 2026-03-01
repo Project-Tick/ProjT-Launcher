@@ -26,8 +26,6 @@ void tst_qmltyperegistrar::initTestCase()
     QFile file(QCoreApplication::applicationDirPath() + "/tst_qmltyperegistrar.qmltypes");
     QVERIFY(file.open(QIODevice::ReadOnly));
     qmltypesData = file.readAll();
-    // We don't want the output to change everytime a metaobject changes
-    qmltypesData = emptyMetaObjectHashes(qmltypesData);
     QVERIFY(file.atEnd());
     QCOMPARE(file.error(), QFile::NoError);
 
@@ -45,16 +43,6 @@ void tst_qmltyperegistrar::initTestCase()
         QFAIL(qPrintable(message));
     }
 #endif
-}
-
-QByteArray tst_qmltyperegistrar::emptyMetaObjectHashes(const QByteArray &qmltypes)
-{
-    QString copy = QString::fromUtf8(qmltypes);
-    const QString base64Symbols = QRegularExpression::escape(QStringLiteral("+/=")) + "a-zA-Z0-9";
-    const QRegularExpression re(
-            QStringLiteral(R"(metaObjectHash: "[0-9]+\$[%1]+")").arg(base64Symbols));
-    copy.replace(re, QStringLiteral(R"(metaObjectHash: "")"));
-    return copy.toUtf8();
 }
 
 void tst_qmltyperegistrar::qmltypesHasForeign()
@@ -811,7 +799,6 @@ void tst_qmltyperegistrar::unconstructibleValueType()
         lineNumber: 551
         name: "Unconstructible"
         accessSemantics: "value"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/unconstructible 1.0"]
         isCreatable: false
         exportMetaObjectRevisions: [256]
@@ -826,7 +813,6 @@ void tst_qmltyperegistrar::constructibleValueType()
         lineNumber: 558
         name: "Constructible"
         accessSemantics: "value"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/constructible 1.0"]
         exportMetaObjectRevisions: [256]
         Method {
@@ -847,7 +833,6 @@ void tst_qmltyperegistrar::structuredValueType()
         lineNumber: 570
         name: "Structured"
         accessSemantics: "value"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/structured 1.0"]
         isStructured: true
         exportMetaObjectRevisions: [256]
@@ -864,7 +849,6 @@ void tst_qmltyperegistrar::anonymousAndUncreatable()
         name: "AnonymousAndUncreatable"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
     })"));
 }
 
@@ -877,7 +861,6 @@ void tst_qmltyperegistrar::omitInvisible()
         lineNumber: 592
         name: "Invisible"
         accessSemantics: "none"
-        metaObjectHash: ""
     })"));
 }
 
@@ -890,7 +873,6 @@ void tst_qmltyperegistrar::typedEnum()
         name: "TypedEnum"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/TypedEnum 1.0"]
         exportMetaObjectRevisions: [256]
         Enum {
@@ -971,7 +953,6 @@ void tst_qmltyperegistrar::listSignal()
         name: "ListSignal"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         Signal {
             name: "objectListHappened"
             lineNumber: 649
@@ -988,7 +969,6 @@ void tst_qmltyperegistrar::withNamespace()
         name: "Bar"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         Property {
             name: "outerBarProp"
             type: "int"
@@ -1006,7 +986,6 @@ void tst_qmltyperegistrar::withNamespace()
         name: "Testing::Bar"
         accessSemantics: "reference"
         prototype: "Testing::Foo"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/Bar 1.0"]
         exportMetaObjectRevisions: [256]
         Property {
@@ -1026,7 +1005,6 @@ void tst_qmltyperegistrar::withNamespace()
         name: "Testing::Foo"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         Property {
             name: "fooProp"
             type: "int"
@@ -1045,7 +1023,6 @@ void tst_qmltyperegistrar::withNamespace()
         accessSemantics: "reference"
         prototype: "Testing::Bar"
         extension: "Bar"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/Baz 1.0"]
         exportMetaObjectRevisions: [256]
         attachedType: "Testing::Foo"
@@ -1060,7 +1037,6 @@ void tst_qmltyperegistrar::sequenceRegistration()
         name: "std::vector<QByteArray>"
         accessSemantics: "sequence"
         valueType: "QByteArray"
-        metaObjectHash: ""
     })"));
 }
 
@@ -1072,14 +1048,12 @@ void tst_qmltyperegistrar::valueTypeSelfReference()
         name: "QPersistentModelIndex"
         accessSemantics: "value"
         extension: "QPersistentModelIndexValueType"
-        metaObjectHash: ""
     })"));
     QVERIFY(qmltypesData.contains(R"(Component {
         file: "tst_qmltyperegistrar.h"
         lineNumber: 708
         name: "QPersistentModelIndexValueType"
         accessSemantics: "value"
-        metaObjectHash: ""
         Property {
             name: "row"
             type: "int"
@@ -1140,7 +1114,6 @@ void tst_qmltyperegistrar::nameExplosion()
         name: "NameExplosion"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         exports: [
             "QmlTypeRegistrarTest/Name1 1.0",
             "QmlTypeRegistrarTest/Name2 1.0",
@@ -1170,7 +1143,6 @@ void tst_qmltyperegistrar::javaScriptExtension()
         prototype: "QObject"
         extension: "SymbolPrototype"
         extensionIsJavaScript: true
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/JavaScriptExtension 1.0"]
         exportMetaObjectRevisions: [256]
     })"));
@@ -1184,7 +1156,6 @@ void tst_qmltyperegistrar::relatedAddedInVersion()
         name: "AddedIn1_0"
         accessSemantics: "reference"
         prototype: "AddedIn1_5"
-        metaObjectHash: ""
         exports: [
             "QmlTypeRegistrarTest/AddedIn1_0 1.0",
             "QmlTypeRegistrarTest/AddedIn1_0 1.5"
@@ -1201,7 +1172,6 @@ void tst_qmltyperegistrar::longNumberTypes()
         name: "LongNumberTypes"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/LongNumberTypes 1.0"]
         exportMetaObjectRevisions: [256]
         Property { name: "a"; type: "qlonglong"; index: 0; lineNumber: 772 }
@@ -1218,7 +1188,6 @@ void tst_qmltyperegistrar::enumList() {
         name: "QList<NetworkManager::NM>"
         accessSemantics: "sequence"
         valueType: "NetworkManager::NM"
-        metaObjectHash: ""
     })"));
 }
 
@@ -1230,7 +1199,6 @@ void tst_qmltyperegistrar::constReturnType()
         name: "ConstInvokable"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/ConstInvokable 1.0"]
         exportMetaObjectRevisions: [256]
         Method {
@@ -1251,7 +1219,6 @@ void tst_qmltyperegistrar::usingDeclaration()
         name: "WithMyInt"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/WithMyInt 1.0"]
         exportMetaObjectRevisions: [256]
         Property {
@@ -1311,7 +1278,6 @@ void tst_qmltyperegistrar::slotsBeforeInvokables()
         name: "SlotsBeforeInvokables"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         Method { name: "bar"; lineNumber: 833 }
         Method { name: "foo"; lineNumber: 831 }
         Method { name: "baz"; lineNumber: 835 }
@@ -1326,7 +1292,6 @@ void tst_qmltyperegistrar::omitQQmlV4FunctionPtrArg()
         name: "JavaScriptFunction"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/JavaScriptFunction 1.0"]
         exportMetaObjectRevisions: [256]
         Method { name: "jsfunc"; isJavaScriptFunction: true; lineNumber: 844 }
@@ -1341,7 +1306,6 @@ void tst_qmltyperegistrar::preserveVoidStarPropTypes()
         name: "VoidProperties"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/VoidProperties 1.0"]
         exportMetaObjectRevisions: [256]
         Property {
@@ -1382,7 +1346,6 @@ void tst_qmltyperegistrar::inaccessibleBase()
         name: "InaccessibleBase"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         Property { name: "a"; type: "int"; index: 0; lineNumber: 12; isPropertyConstant: true }
     })"));
 
@@ -1394,7 +1357,6 @@ void tst_qmltyperegistrar::inaccessibleBase()
         name: "AccessibleDerived"
         accessSemantics: "reference"
         prototype: "InaccessibleBase"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/AccessibleDerived 1.0"]
         exportMetaObjectRevisions: [256]
         Property {
@@ -1416,7 +1378,6 @@ void tst_qmltyperegistrar::enumsExplicitlyScoped()
         name: "EnumsExplicitlyScoped"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/EnumsExplicitlyScoped 1.0"]
         enforcesScopedEnums: true
         exportMetaObjectRevisions: [256]
@@ -1446,7 +1407,6 @@ void tst_qmltyperegistrar::derivedFromInvisible()
         name: "DerivedFromInvisible"
         accessSemantics: "reference"
         prototype: "InvisibleBase"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/DerivedFromInvisible 1.0"]
         exportMetaObjectRevisions: [256]
         Property {
@@ -1469,7 +1429,6 @@ void tst_qmltyperegistrar::foreignNamespacedWithEnum()
         name: "F::ForeignQObject"
         accessSemantics: "reference"
         prototype: "QObject"
-        metaObjectHash: ""
         exports: ["QmlTypeRegistrarTest/ForeignQObject 1.0"]
         isCreatable: false
         exportMetaObjectRevisions: [256]

@@ -21,12 +21,17 @@ T.ToolSeparator {
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
 
+    leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
+
     font: styleReader.font
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.ToolSeparator
+        controlType: StyleReader.ToolSeparator
         enabled: control.enabled
         hovered: control.hovered
         focused: control.activeFocus
@@ -36,9 +41,14 @@ T.ToolSeparator {
 
     contentItem: IndicatorDelegate {
         quickControl: control
-        indicatorProperties: styleReader.indicator
+        indicatorStyle: styleReader.indicator
         vertical: control.vertical
         // FIXME: Remove and fix inside IndicatorDelegate.qml
         transformOrigin: Item.Center
+    }
+
+    background: BackgroundDelegate {
+        quickControl: control
+        backgroundStyle: styleReader.background
     }
 }

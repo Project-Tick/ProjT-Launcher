@@ -78,7 +78,7 @@ QColor QQuickColor::fromString(const QString &name) const
  * \qmlmethod bool Color::equal(color lhs, color rhs)
  *
  * Returns true if \a lhs and \a rhs are equal.
- * See \l{QColor::operator==(const QColor &color) const}.
+ * See \l{QColor::}{operator==()}.
  *
  * \note This function is a typed version of \l{Qt::colorEqual()}
  */

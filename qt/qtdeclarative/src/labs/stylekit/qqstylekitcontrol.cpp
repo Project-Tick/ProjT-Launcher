@@ -7,7 +7,67 @@
 
 QT_BEGIN_NAMESPACE
 
-int QQStyleKitControlAttached::s_variationCount = 0;
+/*!
+    \qmltype ControlStyle
+    \inqmlmodule Qt.labs.StyleKit
+    \inherits ControlStateStyle
+    \brief Defines the style for a control in the \c normal state
+
+    A ControlStyle describes how a \l Control should be styled. Its API
+    largely mirrors that of a Qt Quick Control: it provides grouped
+    properties for delegates such as
+    \l {ControlState::background}{background},
+    \l {ControlState::indicator}{indicator},
+    \l {ControlState::handle}{handle}, and
+    \l {ControlState::text}{text}, along with layout
+    properties such as
+    \l {ControlState::padding}{padding} and
+    \l {ControlState::spacing}{spacing}.
+    If you are familiar with the API of a \l Control in Qt Quick Controls,
+    you should find the ControlStyle API easy to follow.
+
+    ControlStyle inherits \l ControlStateStyle because it represents the
+    \e normal state: properties set directly on a ControlStyle describe
+    how the control looks when no other state is active. State-specific
+    overrides are set through nested states, such as \l {ControlStateStyle::}{hovered}
+    \l {ControlStateStyle::}{pressed}, and \l {ControlStateStyle::}{checked}.
+
+    \l {AbstractStylableControls}{Each stylable control} in a \l Style, \l Theme, or \l StyleVariation is a ControlStyle.
+    For example, in the snippet below, \l {AbstractStylableControls::}{control},
+    \l {AbstractStylableControls::}{button} and \l {AbstractStylableControls::}{radioButton}
+    are all ControlStyles:
+
+    \snippet ControlStyleSnippets.qml ControlStyle
+
+    \sa {AbstractStylableControls}{All stylable controls}, Style, Theme,
+        StyleVariation, ControlStateStyle, DelegateStyle
+*/
+
+/*!
+    \qmlproperty list<StyleVariation> ControlStyle::variations
+
+    A list of \l {StyleVariation}{type variations} for this control type.
+
+    A type variation provides alternate styling for controls that are
+    children (or descendants) of this control type. For example, you
+    can use it to style all \l {Button}{buttons} inside a \l {Frame}{frame}
+    differently from buttons elsewhere:
+
+    \snippet VariationSnippets.qml frame with variation
+
+    You can also set it back to an empty list for a subtype, if you don't
+    want it to inherit the variations set on a base type:
+
+    \snippet VariationSnippets.qml groupbox without variation
+
+    Unlike instance variations — which are applied to specific control
+    instances from the application via the
+    \l {StyleVariation.variations} attached property — type
+    variations are applied to \e{all} instances of a control type from
+    the \l Style, without requiring the application to opt in.
+
+    \sa StyleVariation
+*/
 
 QQStyleKitControl::QQStyleKitControl(QObject *parent)
     : QQStyleKitControlState(parent)
@@ -47,11 +107,6 @@ QQmlListProperty<QQStyleKitVariation> QQStyleKitControl::variations()
     return QQmlListProperty<QQStyleKitVariation>(this, value);
 }
 
-QQStyleKitControlAttached *QQStyleKitControl::qmlAttachedProperties(QObject *object)
-{
-    return new QQStyleKitControlAttached(object);
-}
-
 QVariant QQStyleKitControl::readStyleProperty(PropertyStorageId key) const
 {
     return m_storage.value(key);
@@ -73,44 +128,6 @@ QQStyleKitExtendableControlType QQStyleKitControl::controlType() const
     const auto &controlsMap = controls()->m_controls;
     Q_ASSERT(std::find(controlsMap.begin(), controlsMap.end(), this) != controlsMap.end());
     return controlsMap.key(const_cast<QQStyleKitControl *>(this));
-}
-
-QQStyleKitControlAttached::QQStyleKitControlAttached(QObject *parent)
-    : QObject(parent)
-{
-}
-
-QStringList QQStyleKitControlAttached::variations() const
-{
-    return m_variations;
-}
-
-void QQStyleKitControlAttached::setVariations(const QStringList &variations)
-{
-    if (m_variations == variations)
-        return;
-
-    /* As an optimization, we count the number of variations set from the application.
-     * That way, if s_variationCount == 1, for example, and we found a variation while
-     * resolving the effective variations for a specific QQStyleReader, we can stop the search. */
-    s_variationCount++;
-
-    m_variations = variations;
-    emit variationsChanged();
-}
-
-QQStyleKitExtendableControlType QQStyleKitControlAttached::controlType()
-{
-    return m_controlType;
-}
-
-void QQStyleKitControlAttached::setControlType(QQStyleKitExtendableControlType type)
-{
-    if (m_controlType == type)
-        return;
-
-    m_controlType = type;
-    emit controlTypeChanged();
 }
 
 QT_END_NAMESPACE

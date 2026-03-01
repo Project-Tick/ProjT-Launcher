@@ -70,11 +70,12 @@ private:
             QQmlPropertyCacheAliasCreator<ObjectContainer> *aliasCacheCreator, QQmlError *error);
     [[nodiscard]] bool appendAliasToPropertyCache(
             const CompiledObject *component, const QV4::CompiledData::Alias *alias, int objectIndex,
-            int aliasIndex, int encodedPropertyIndex,
+            int aliasIndex, int encodedPropertyIndex, int resolvedTargetObjectId,
             QQmlPropertyCacheAliasCreator<ObjectContainer> *aliasCacheCreator, QQmlError *error)
     {
         *error = aliasCacheCreator->appendAliasToPropertyCache(
-                *component, *alias, objectIndex, aliasIndex, encodedPropertyIndex);
+                *component, *alias, objectIndex, aliasIndex, encodedPropertyIndex,
+                resolvedTargetObjectId);
         resolvedAliases.insert(alias);
         return !error->isValid();
     }
@@ -469,8 +470,10 @@ QQmlError QQmlComponentAndAliasResolver<ObjectContainer>::resolveAliases(int com
     if (!atLeastOneAliasResolved && !m_objectsWithAliases.isEmpty()) {
         const CompiledObject *obj = m_compiler->objectAt(m_objectsWithAliases.first());
         for (auto alias = obj->aliasesBegin(), end = obj->aliasesEnd(); alias != end; ++alias) {
-            if (!resolvedAliases.contains(alias))
-                return error(alias->location, QQmlComponentAndAliasResolverBase::tr("Cyclic alias"));
+            if (!resolvedAliases.contains(alias)) {
+                return error(
+                        alias->location(), QQmlComponentAndAliasResolverBase::tr("Cyclic alias"));
+            }
         }
     }
 

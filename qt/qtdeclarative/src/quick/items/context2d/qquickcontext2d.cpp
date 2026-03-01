@@ -1404,6 +1404,21 @@ QV4::ReturnedValue QQuickJSContext2D::method_set_globalCompositeOperation(const 
     RETURN_UNDEFINED();
 }
 
+static QString makeColorString(QColor color)
+{
+    if (color.isValid()) {
+        if (color.alpha() == 255)
+            return color.name();
+        QString alphaString = QString::number(color.alphaF(), 'f');
+        while (alphaString.endsWith(QLatin1Char('0')))
+            alphaString.chop(1);
+        if (alphaString.endsWith(QLatin1Char('.')))
+            alphaString += QLatin1Char('0');
+        return QString::fromLatin1("rgba(%1, %2, %3, %4)").arg(color.red()).arg(color.green()).arg(color.blue()).arg(alphaString);
+    }
+    return {};
+}
+
 // colors and styles
 /*!
     \qmlproperty variant QtQuick::Context2D::fillStyle
@@ -1433,18 +1448,8 @@ QV4::ReturnedValue QQuickJSContext2D::method_get_fillStyle(const QV4::FunctionOb
     QV4::Scoped<QQuickJSContext2D> r(scope, thisObject->as<QQuickJSContext2D>());
     CHECK_CONTEXT(r)
 
-    const QColor color = r->d()->context()->state.fillStyle.color().toRgb();
-    if (color.isValid()) {
-        if (color.alpha() == 255)
-            RETURN_RESULT(scope.engine->newString(color.name()));
-        QString alphaString = QString::number(color.alphaF(), 'f');
-        while (alphaString.endsWith(QLatin1Char('0')))
-            alphaString.chop(1);
-        if (alphaString.endsWith(QLatin1Char('.')))
-            alphaString += QLatin1Char('0');
-        QString str = QString::fromLatin1("rgba(%1, %2, %3, %4)").arg(color.red()).arg(color.green()).arg(color.blue()).arg(alphaString);
-        RETURN_RESULT(scope.engine->newString(str));
-    }
+    if (auto str = makeColorString(r->d()->context()->state.fillStyle.color().toRgb()); !str.isEmpty())
+        RETURN_RESULT(scope.engine->newString(std::move(str)));
     RETURN_RESULT(r->d()->context()->m_fillStyle.value());
 }
 
@@ -1543,18 +1548,8 @@ QV4::ReturnedValue QQuickJSContext2D::method_get_strokeStyle(const QV4::Function
     QV4::Scoped<QQuickJSContext2D> r(scope, thisObject->as<QQuickJSContext2D>());
     CHECK_CONTEXT(r)
 
-    const QColor color = r->d()->context()->state.strokeStyle.color().toRgb();
-    if (color.isValid()) {
-        if (color.alpha() == 255)
-            RETURN_RESULT(scope.engine->newString(color.name()));
-        QString alphaString = QString::number(color.alphaF(), 'f');
-        while (alphaString.endsWith(QLatin1Char('0')))
-            alphaString.chop(1);
-        if (alphaString.endsWith(QLatin1Char('.')))
-            alphaString += QLatin1Char('0');
-        QString str = QString::fromLatin1("rgba(%1, %2, %3, %4)").arg(color.red()).arg(color.green()).arg(color.blue()).arg(alphaString);
-        RETURN_RESULT(scope.engine->newString(str));
-    }
+    if (auto str = makeColorString(r->d()->context()->state.strokeStyle.color().toRgb()); !str.isEmpty())
+        RETURN_RESULT(scope.engine->newString(std::move(str)));
     RETURN_RESULT(r->d()->context()->m_strokeStyle.value());
 }
 
@@ -2058,7 +2053,7 @@ QV4::ReturnedValue QQuickJSContext2DPrototype::method_getLineDash(const QV4::Fun
 }
 
 /*!
-    \qmlmethod QtQuick::Context2D::setLineDash(array pattern)
+    \qmlmethod void QtQuick::Context2D::setLineDash(array pattern)
     \since QtQuick 2.11
     Sets the dash pattern to the given pattern.
 
@@ -3069,7 +3064,7 @@ QV4::ReturnedValue QQuickJSContext2DPrototype::method_measureText(const QV4::Fun
 
 // drawing images
 /*!
-  \qmlmethod QtQuick::Context2D::drawImage(variant image, real dx, real dy)
+  \qmlmethod void QtQuick::Context2D::drawImage(variant image, real dx, real dy)
   Draws the given \a image on the canvas at position (\a dx, \a dy).
   Note:
   The \a image type can be an Image item, an image url or a CanvasImageData object.
@@ -3086,7 +3081,7 @@ QV4::ReturnedValue QQuickJSContext2DPrototype::method_measureText(const QV4::Fun
   \sa {http://www.w3.org/TR/2dcontext/#dom-context-2d-drawimage}{W3C 2d context standard for drawImage}
   */
 /*!
-  \qmlmethod QtQuick::Context2D::drawImage(variant image, real dx, real dy, real dw, real dh)
+  \qmlmethod void QtQuick::Context2D::drawImage(variant image, real dx, real dy, real dw, real dh)
   This is an overloaded function.
   Draws the given item as \a image onto the canvas at point (\a dx, \a dy) and with width \a dw,
   height \a dh.
@@ -3106,7 +3101,7 @@ QV4::ReturnedValue QQuickJSContext2DPrototype::method_measureText(const QV4::Fun
   \sa {http://www.w3.org/TR/2dcontext/#dom-context-2d-drawimage}{W3C 2d context standard for drawImage}
   */
 /*!
-  \qmlmethod QtQuick::Context2D::drawImage(variant image, real sx, real sy, real sw, real sh, real dx, real dy, real dw, real dh)
+  \qmlmethod void QtQuick::Context2D::drawImage(variant image, real sx, real sy, real sw, real sh, real dx, real dy, real dw, real dh)
   This is an overloaded function.
   Draws the given item as \a image from source point (\a sx, \a sy) and source width \a sw, source height \a sh
   onto the canvas at point (\a dx, \a dy) and with width \a dw, height \a dh.

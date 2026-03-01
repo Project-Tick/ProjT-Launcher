@@ -22,6 +22,7 @@
 QT_BEGIN_NAMESPACE
 
 class QQuickMenuItem;
+class QQuickText;
 
 class Q_AUTOTEST_EXPORT QQuickMenuItemIconLabelPrivate : public QQuickIconLabelPrivate
 {

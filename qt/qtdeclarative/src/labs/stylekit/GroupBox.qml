@@ -23,17 +23,17 @@ T.GroupBox {
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
 
-    topInset: styleReader.background.topMargin
-    bottomInset: styleReader.background.bottomMargin
-    rightInset: styleReader.background.rightMargin
     leftInset: styleReader.background.leftMargin
+    topInset: styleReader.background.topMargin
+    rightInset: styleReader.background.rightMargin
+    bottomInset: styleReader.background.bottomMargin
 
     font: styleReader.font
 
-    StyleKitControl.controlType: styleReader.type
-    StyleKitReader {
+    StyleVariation.controlType: styleReader.controlType
+    StyleReader {
         id: styleReader
-        type: StyleKitReader.GroupBox
+        controlType: StyleReader.GroupBox
         enabled: control.enabled
         focused: control.activeFocus
         hovered: control.hovered
@@ -41,6 +41,7 @@ T.GroupBox {
     }
 
     label: Text {
+        x: control.leftPadding
         padding: styleReader.text.padding
         leftPadding: styleReader.text.leftPadding
         rightPadding: styleReader.text.rightPadding
@@ -57,6 +58,6 @@ T.GroupBox {
 
     background: BackgroundDelegate {
         quickControl: control
-        backgroundProperties: styleReader.background
+        backgroundStyle: styleReader.background
     }
 }

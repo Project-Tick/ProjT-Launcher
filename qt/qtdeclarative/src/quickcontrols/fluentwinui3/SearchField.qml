@@ -130,6 +130,7 @@ T.SearchField {
                                  contentHeight + topPadding + bottomPadding)
 
         text: control.text
+        placeholderText: control.placeholderText
 
         PlaceholderText {
             x: parent.leftPadding

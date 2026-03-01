@@ -14,7 +14,7 @@
     before continuing with this tutorial.
 
     Before proceeding, it's worthwhile to explore the Qt Academy course,
-    \l{Qt Academy: Embed 3D in an Android}{Embedding Qt Quick 3D Content in an Android App}.
+    \l{Qt Academy: Embedding Qt Quick 3D Content in an Android App}.
 
     To start, create a new project in Android Studio using the
     \uicontrol{Bottom Navigation Views Activity} template.

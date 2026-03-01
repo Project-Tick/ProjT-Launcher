@@ -433,6 +433,39 @@ bool QQmlAbstractColumnModel::validateNewRow(QLatin1StringView functionName, con
     return true;
 }
 
+QLatin1StringView QQmlAbstractColumnModel::jsTypeName(const QJSValue &v)
+{
+    if (v.isArray()) return "array"_L1;
+    if (v.isObject()) return "object"_L1;
+    if (v.isString()) return "string"_L1;
+    if (v.isNumber()) return "number"_L1;
+    if (v.isBool()) return "boolean"_L1;
+    if (v.isNull()) return "null"_L1;
+    if (v.isUndefined()) return "undefined"_L1;
+    return "unknown"_L1;
+}
+
+std::optional<QVariantList> QQmlAbstractColumnModel::validateRowsArgument(const QVariant &rows) const
+{
+    if (rows.userType() != qMetaTypeId<QJSValue>()) {
+        qmlWarning(this)
+            << "setRows(): \"rows\" must be an array; actual type is"
+            << rows.typeName();
+        return std::nullopt;
+    }
+
+    const auto rowsAsJSValue = rows.value<QJSValue>();
+
+    if (!rowsAsJSValue.isArray()) {
+        qmlWarning(this)
+            << "setRows(): the type of \"rows\" is"
+            << jsTypeName(rowsAsJSValue)
+            << "but an array is expected";
+        return std::nullopt;
+    }
+
+    return rowsAsJSValue.toVariant().toList();
+}
 
 QT_END_NAMESPACE
 

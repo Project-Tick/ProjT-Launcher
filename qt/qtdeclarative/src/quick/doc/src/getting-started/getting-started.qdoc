@@ -98,7 +98,7 @@ of custom styles.
 \section1 Qt Quick Application Development
 
 \l{\QC Documentation}{\QC} has built-in support for creating Qt Quick
-applications. \l{Qt VS Tools} and \l {Qt Extension for VS Code}
+applications. \l{Qt VS Tools} and the \l{Qt Extension for VS Code}
 also allow you to create Qt Quick applications with Visual Studio and Visual
 Studio Code. The \QMLLS can be used from any IDE supporting the language server
 protocol.

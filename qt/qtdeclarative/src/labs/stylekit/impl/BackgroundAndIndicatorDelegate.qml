@@ -27,68 +27,57 @@ Item {
                     : Math.max(background.implicitWidth,
                                indicatorLayout.implicitWidth)
 
-    required property StyleKitDelegateProperties indicatorProperties
-    required property StyleKitDelegateProperties backgroundProperties
+    required property DelegateStyle indicatorStyle
+    required property DelegateStyle backgroundStyle
     required property T.Control quickControl
     property alias indicator: indicator
     property bool vertical: false
 
     StyleKitLayout {
         id: indicatorLayout
-        container: root
+        container: Item {
+            width: !vertical ? root.width : root.height
+            height: !vertical ? root.height : root.width
+        }
         contentMargins {
-            left: quickControl.leftPadding
-            right: quickControl.rightPadding
-            top: quickControl.topPadding
-            bottom: quickControl.bottomPadding
+            left: quickControl.leftPadding - quickControl.leftInset
+            top: quickControl.topPadding - quickControl.topInset
+            right: quickControl.rightPadding - quickControl.rightInset
+            bottom: quickControl.bottomPadding - quickControl.bottomInset
         }
         layoutItems: [
             StyleKitLayoutItem {
                 id: indicatorItem
                 item: root.indicator
-                alignment: indicatorProperties.alignment
-                margins.left: indicatorProperties.leftMargin
-                margins.right: indicatorProperties.rightMargin
-                margins.top: indicatorProperties.topMargin
-                margins.bottom: indicatorProperties.bottomMargin
-                fillWidth: indicatorProperties.implicitWidth === Style.Stretch
-                fillHeight: indicatorProperties.implicitHeight === Style.Stretch
+                alignment: indicatorStyle.alignment
+                margins.left: indicatorStyle.leftMargin
+                margins.right: indicatorStyle.rightMargin
+                margins.top: indicatorStyle.topMargin
+                margins.bottom: indicatorStyle.bottomMargin
+                fillWidth: indicatorStyle.implicitWidth === Style.Stretch
+                fillHeight: indicatorStyle.implicitHeight === Style.Stretch
             }
         ]
         mirrored: quickControl.mirrored
     }
 
-    states: State {
-        /* The delegate logic is moved out of the delegate, to relieve the style
-         * developer from having to re-invent it if he changes the delegate. To
-         * disable it, 'states' can be set to an empty array from the outside. */
-        when: true
-        PropertyChanges {
-            background.parent: root
-            background.x: quickControl.leftInset
-            background.y: quickControl.topInset
-            background.width: root.width - quickControl.leftInset - quickControl.rightInset
-            background.height: root.height - quickControl.topInset - quickControl.bottomInset
-        }
-    }
-
     BackgroundDelegate {
         id: background
         quickControl: root.quickControl
-        delegateProperties: root.backgroundProperties
+        delegateStyle: root.backgroundStyle
+        width: parent.width
+        height: parent.height
     }
 
     IndicatorDelegate {
         id: indicator
         quickControl: root.quickControl
-        indicatorProperties: root.indicatorProperties
+        indicatorStyle: root.indicatorStyle
         vertical: root.vertical
         z: 1
-        x: !vertical ? indicatorItem.x : quickControl.leftPadding + (quickControl.availableWidth - height) / 2
-        y: !vertical ? indicatorItem.y : quickControl.topPadding + width
-        width: !vertical ? indicatorItem.width : __stretchBgWidth ? quickControl.availableHeight : implicitWidth//indicatorItem.height
-        height: !vertical ? indicatorItem.height : __stretchBgHeight ? quickControl.availableWidth : implicitHeight//indicatorItem.width
-        readonly property bool __stretchBgWidth: root.indicatorProperties.implicitWidth === Style.Stretch
-        readonly property bool __stretchBgHeight: root.indicatorProperties.implicitHeight === Style.Stretch
+        x: !vertical ? indicatorItem.x : indicatorItem.y
+        y: !vertical ? indicatorItem.y : indicatorItem.x + indicatorItem.width
+        width: !vertical ? indicatorItem.width : indicatorItem.width
+        height: !vertical ? indicatorItem.height : indicatorItem.height
     }
 }

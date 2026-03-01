@@ -228,6 +228,17 @@ QQuickRegularPolygonShape::QQuickRegularPolygonShape(QQuickItem *parent)
     d->sp.append(d->path);
     d->path->setParent(this);
     d->extra.value().resourcesList.append(d->path);
+
+    connect(d->path, &QQuickShapePath::strokeColorChanged, this, &QQuickRegularPolygonShape::strokeColorChanged);
+    connect(d->path, &QQuickShapePath::strokeWidthChanged, this, &QQuickRegularPolygonShape::strokeWidthChanged);
+    connect(d->path, &QQuickShapePath::fillColorChanged, this, &QQuickRegularPolygonShape::fillColorChanged);
+    connect(d->path, &QQuickShapePath::joinStyleChanged, this, &QQuickRegularPolygonShape::joinStyleChanged);
+    connect(d->path, &QQuickShapePath::capStyleChanged, this, &QQuickRegularPolygonShape::capStyleChanged);
+    connect(d->path, &QQuickShapePath::strokeStyleChanged, this, &QQuickRegularPolygonShape::strokeStyleChanged);
+    connect(d->path, &QQuickShapePath::dashOffsetChanged, this, &QQuickRegularPolygonShape::dashOffsetChanged);
+    connect(d->path, &QQuickShapePath::dashPatternChanged, this, &QQuickRegularPolygonShape::dashPatternChanged);
+    connect(d->path, &QQuickShapePath::fillItemChanged, this, &QQuickRegularPolygonShape::fillItemChanged);
+    connect(d->path, &QQuickShapePath::fillGradientChanged, this, &QQuickRegularPolygonShape::fillGradientChanged);
 }
 
 QQuickRegularPolygonShape::~QQuickRegularPolygonShape() = default;
@@ -246,10 +257,7 @@ qreal QQuickRegularPolygonShape::dashOffset() const
 void QQuickRegularPolygonShape::setDashOffset(qreal offset)
 {
     Q_D(QQuickRegularPolygonShape);
-    if (qFuzzyCompare(d->path->dashOffset(), offset))
-        return;
     d->path->setDashOffset(offset);
-    emit dashOffsetChanged();
 }
 
 /*!
@@ -320,10 +328,7 @@ qreal QQuickRegularPolygonShape::strokeWidth() const
 void QQuickRegularPolygonShape::setStrokeWidth(qreal width)
 {
     Q_D(QQuickRegularPolygonShape);
-    if (qFuzzyCompare(d->path->strokeWidth(), width))
-        return;
     d->path->setStrokeWidth(width);
-    emit strokeWidthChanged();
 }
 
 /*!
@@ -349,8 +354,6 @@ void QQuickRegularPolygonShape::setFillColor(const QColor &color)
 {
     Q_D(QQuickRegularPolygonShape);
     d->path->setFillColor(color);
-    d->updatePath();
-    emit fillColorChanged();
 }
 
 /*!
@@ -373,7 +376,6 @@ void QQuickRegularPolygonShape::setStrokeColor(const QColor &color)
 {
     Q_D(QQuickRegularPolygonShape);
     d->path->setStrokeColor(color);
-    emit strokeColorChanged();
 }
 
 /*!
@@ -393,10 +395,7 @@ QQuickShapePath::CapStyle QQuickRegularPolygonShape::capStyle() const
 void QQuickRegularPolygonShape::setCapStyle(QQuickShapePath::CapStyle style)
 {
     Q_D(QQuickRegularPolygonShape);
-    if (d->path->capStyle() == style)
-        return;
     d->path->setCapStyle(style);
-    emit capStyleChanged();
 }
 
 /*!
@@ -415,10 +414,7 @@ QQuickShapePath::JoinStyle QQuickRegularPolygonShape::joinStyle() const
 void QQuickRegularPolygonShape::setJoinStyle(QQuickShapePath::JoinStyle style)
 {
     Q_D(QQuickRegularPolygonShape);
-    if (d->path->joinStyle() == style)
-        return;
     d->path->setJoinStyle(style);
-    emit joinStyleChanged();
 }
 
 /*!
@@ -435,10 +431,7 @@ QQuickShapePath::StrokeStyle QQuickRegularPolygonShape::strokeStyle() const
 void QQuickRegularPolygonShape::setStrokeStyle(QQuickShapePath::StrokeStyle style)
 {
     Q_D(QQuickRegularPolygonShape);
-    if (d->path->strokeStyle() == style)
-        return;
     d->path->setStrokeStyle(style);
-    emit strokeStyleChanged();
 }
 
 /*!
@@ -456,7 +449,6 @@ void QQuickRegularPolygonShape::setDashPattern(const QList<qreal> &array)
 {
     Q_D(QQuickRegularPolygonShape);
     d->path->setDashPattern(array);
-    emit dashPatternChanged();
 }
 
 /*!
@@ -483,7 +475,6 @@ void QQuickRegularPolygonShape::setFillGradient(QQuickShapeGradient *fillGradien
 {
     Q_D(QQuickRegularPolygonShape);
     d->path->setFillGradient(fillGradient);
-    emit fillGradientChanged();
 }
 
 void QQuickRegularPolygonShape::resetFillGradient()
@@ -501,8 +492,6 @@ void QQuickRegularPolygonShape::setFillItem(QQuickItem *newFillItem)
 {
     Q_D(QQuickRegularPolygonShape);
     d->path->setFillItem(newFillItem);
-
-    emit fillItemChanged();
 }
 
 void QQuickRegularPolygonShape::itemChange(ItemChange change, const ItemChangeData &value)

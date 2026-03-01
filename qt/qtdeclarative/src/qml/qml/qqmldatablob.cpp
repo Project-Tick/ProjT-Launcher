@@ -349,8 +349,11 @@ void QQmlDataBlob::addDependency(const QQmlDataBlob::Ptr &blob)
     if (m_waitingOnMe.indexOf(blob.data()) >= 0) {
         qCWarning(lcCycle) << "Cyclic dependency detected between" << this->url().toString()
                            << "and" << blob->url().toString();
-        cancelAllWaitingFor();
-        setStatus(Error);
+        QQmlError error;
+        error.setUrl(url());
+        error.setDescription(QString::fromLatin1("Cyclic dependency detected between \"%1\" and \"%2\"")
+                                     .arg(url().toString(), blob->url().toString()));
+        setError(error);
     }
 }
 

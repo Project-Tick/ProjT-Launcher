@@ -249,7 +249,7 @@ void QQmlPropertyData::load(const QMetaMethod &m)
     setRevision(QTypeRevision::fromEncodedVersion(m.revision()));
 }
 
-Q_LOGGING_CATEGORY(qqmlPropertyCacheAppend, "qt.qml.propertyCache.append")
+Q_LOGGING_CATEGORY(qqmlPropertyCacheAppend, "qt.qml.propertyCache.append", QtWarningMsg)
 
 /*!
     \internal
@@ -337,7 +337,7 @@ QQmlPropertyCache::Ptr QQmlPropertyCache::copyAndReserve(
 QQmlPropertyCache::AppendResult
 QQmlPropertyCache::appendAlias(const QString &name, QQmlPropertyData::Flags flags, int coreIndex,
                                QMetaType propType, QTypeRevision version, int notifyIndex,
-                               int encodedTargetIndex)
+                               int encodedTargetIndex, int targetObjectId)
 {
     QQmlPropertyData data;
     data.setPropType(propType);
@@ -346,6 +346,7 @@ QQmlPropertyCache::appendAlias(const QString &name, QQmlPropertyData::Flags flag
     flags.setIsAlias(true);
     data.setFlags(flags);
     data.setAliasTarget(encodedTargetIndex);
+    data.setAliasTargetObjectId(targetObjectId);
     data.setTypeVersion(version);
 
     return appendPropertyAttr(name, std::move(data));
@@ -1366,9 +1367,7 @@ int countMetaObjectFields(const QMetaObject &mo, StringVisitor stringVisitor)
 
 } // anonymous namespace
 
-// Temporary leniency to allow for smooth transition of moc change - QTBUG-142186
-static_assert(QMetaObjectPrivate::OutputRevision == 13 || QMetaObjectPrivate::OutputRevision == 14,
-              "Check and adjust determineMetaObjectSizes");
+static_assert(QMetaObjectPrivate::OutputRevision == 13, "Check and adjust determineMetaObjectSizes");
 
 bool QQmlPropertyCache::determineMetaObjectSizes(const QMetaObject &mo, int *fieldCount,
                                                  int *stringCount)

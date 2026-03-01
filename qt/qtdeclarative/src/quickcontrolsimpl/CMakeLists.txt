@@ -5,6 +5,18 @@
 ## QuickControls2Impl Module:
 #####################################################################
 
+set_source_files_properties(
+    CopyAction.qml
+    CutAction.qml
+    DeleteAction.qml
+    PasteAction.qml
+    RedoAction.qml
+    SelectAllAction.qml
+    UndoAction.qml
+    PROPERTIES
+        QT_QML_SOURCE_VERSIONS "6.11"
+)
+
 qt_internal_add_qml_module(QuickControls2Impl
     URI "QtQuick.Controls.impl"
     VERSION "${PROJECT_VERSION}"

@@ -8,6 +8,14 @@ Item {
     scale: VectorImageManager.scale / 10.0
     transformOrigin: Item.TopLeft
 
+    Image {
+        anchors.fill: lottieAnimation
+        source: "background.png"
+        fillMode: Image.Tile
+        horizontalAlignment: Image.AlignLeft
+        verticalAlignment: Image.AlignTop
+    }
+
     LottieAnimation {
         id: lottieAnimation
         textureSize: Qt.size(width * parent.scale, height * parent.scale)

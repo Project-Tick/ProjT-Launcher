@@ -97,6 +97,9 @@ set_source_files_properties(VerticalHeaderViewDelegate.qml PROPERTIES
 set_source_files_properties(SearchField.qml PROPERTIES
     QT_QML_SOURCE_VERSIONS "6.10"
 )
+set_source_files_properties(DoubleSpinBox.qml PROPERTIES
+    QT_QML_SOURCE_VERSIONS "6.11"
+)
 
 add_subdirectory(impl)
 
@@ -105,6 +108,8 @@ qt_internal_add_qml_module(QuickControls2Imagine
     VERSION "${PROJECT_VERSION}"
     PAST_MAJOR_VERSIONS 2
     CLASS_NAME QtQuickControls2ImagineStylePlugin
+    DEPENDENCIES
+        QtQuick/auto
     IMPORTS
         QtQuick.Controls.Basic/auto
     PLUGIN_TARGET qtquickcontrols2imaginestyleplugin

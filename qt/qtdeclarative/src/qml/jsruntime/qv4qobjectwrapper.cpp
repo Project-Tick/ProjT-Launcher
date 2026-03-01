@@ -1503,18 +1503,39 @@ static void markChildQObjectsRecursively(QObject *parent, MarkStack *markStack)
     }
 }
 
-static void recordObjectForCompilationUnits(
+// returns true if and only if an object was recorded
+static bool recordObjectForCompilationUnits(
+        QObject *o, const QQmlRefPointer<QV4::ExecutableCompilationUnit> &compilationUnit,
+        MemoryManager::ObjectsForCompilationUnit *recorded)
+{
+    Q_ASSERT(compilationUnit);
+    Q_ASSERT(o);
+    Q_ASSERT(recorded);
+
+    const auto &baseUnit = compilationUnit->baseCompilationUnit();
+    Q_ASSERT(baseUnit);
+
+    for (const auto &unit : recorded->compilationUnits) {
+        if (baseUnit == unit) {
+            recorded->objects.push_back(o);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// returns true if and only if an object was recorded
+static bool recordVMEObjectForCompilationUnits(
         QObject *o, const QQmlVMEMetaObject *vme,
         MemoryManager::ObjectsForCompilationUnit *recorded)
 {
     for (; vme; vme = vme->parentVMEMetaObject()) {
-        for (const auto &unit : recorded->compilationUnits) {
-            if (vme->compilationUnit()->baseCompilationUnit() == unit) {
-                recorded->objects.push_back(o);
-                return;
-            }
-        }
+        if (recordObjectForCompilationUnits(o, vme->compilationUnit(), recorded))
+            return true;
     }
+
+    return false;
 }
 
 void Heap::QObjectWrapper::markObjects(Heap::Base *that, MarkStack *markStack)
@@ -1541,9 +1562,19 @@ void Heap::QObjectWrapper::markObjects(Heap::Base *that, MarkStack *markStack)
     if (ddata->hasVMEMetaObject) {
         if (auto *vme = static_cast<QQmlVMEMetaObject *>(QObjectPrivate::get(o)->metaObject)) {
             vme->mark(markStack);
-            if (auto *recorded = markStack->engine()->memoryManager->m_recordedObjects)
-                recordObjectForCompilationUnits(o, vme, recorded);
+            if (auto *recorded = markStack->engine()->memoryManager->m_recordedObjects) {
+                // ddata->compilationUnit can be different from the VME compilation units
+                // if the "topmost" instantiation of the object is inaddressible.
+                if (!recordVMEObjectForCompilationUnits(o, vme, recorded)
+                        && ddata->compilationUnit != vme->compilationUnit()) {
+                    recordObjectForCompilationUnits(o, ddata->compilationUnit, recorded);
+                }
+            }
         }
+    } else if (const auto &cu = ddata->compilationUnit) {
+        // Objects without a VMEMetaObject are identified via QQmlData::compilationUnit.
+        if (auto *recorded = markStack->engine()->memoryManager->m_recordedObjects)
+            recordObjectForCompilationUnits(o, cu, recorded);
     }
 
     if (!ddata->hasConstWrapper || !that->internalClass->engine->m_multiplyWrappedQObjects)

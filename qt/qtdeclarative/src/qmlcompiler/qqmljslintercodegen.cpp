@@ -18,6 +18,21 @@ QT_BEGIN_NAMESPACE
 
 using namespace Qt::StringLiterals;
 
+bool operator==(const IdMemberShadow &lhs, const IdMemberShadow &rhs)
+{
+    return lhs.name == rhs.name && lhs.idScope == rhs.idScope
+            && lhs.memberOwnerScope == rhs.memberOwnerScope;
+}
+bool operator!=(const IdMemberShadow &lhs, const IdMemberShadow &rhs)
+{
+    return !(lhs == rhs);
+}
+size_t qHash(const IdMemberShadow &idShadowsMember, size_t seed)
+{
+    return qHashMulti(seed, idShadowsMember.name, idShadowsMember.idScope,
+                      idShadowsMember.memberOwnerScope);
+}
+
 QQmlJSLinterCodegen::QQmlJSLinterCodegen(QQmlJSImporter *importer, const QString &fileName,
                                          const QStringList &qmldirFiles, QQmlJSLogger *logger,
                                          const ContextPropertyInfo &contextPropertyInfo)
@@ -100,11 +115,12 @@ void QQmlJSLinterCodegen::analyzeFunction(const QV4::Compiler::Context *context,
             QQmlJSBasicBlocks(context, m_unitGenerator, &m_typeResolver, m_logger)
                     .run(function, ValidateBasicBlocks, dummy);
 
-    blocksAndAnnotations =
-            QQmlJSLinterTypePropagator(m_unitGenerator, &m_typeResolver, m_logger,
-                                 blocksAndAnnotations.basicBlocks, blocksAndAnnotations.annotations,
-                                 m_passManager, m_contextPropertyInfo)
-                    .run(function);
+    QQmlJSLinterTypePropagator lintTypePropgator(
+            m_unitGenerator, &m_typeResolver, m_logger, blocksAndAnnotations.basicBlocks,
+            blocksAndAnnotations.annotations, m_passManager, m_contextPropertyInfo);
+    lintTypePropgator.setScopesById(m_scopesById);
+    lintTypePropgator.setIdMemberShadows(&m_idMemberShadows);
+    blocksAndAnnotations = lintTypePropgator.run(function);
 
     if (m_logger->categorySeverity(qmlCompiler) == QQmlJS::WarningSeverity::Disable)
         return;

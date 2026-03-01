@@ -746,9 +746,9 @@ utilizing a \c cacheBuffer can, in some rare cases, cause reduced frame rate
 when scrolling.
 
 For additional performance improvements, consider enabling item reuse in views.
-See \l{qml-qtquick-listview.html#reusing-items}{Reusing Items for ListView} and
-\l{qml-qtquick-tableview.html#reusing-items}{Reusing Items for TableView and
-TreeView} for more information.
+See \l{ListView#Reusing Items}{Reusing Items for ListView} and
+\l{TableView#Reusing items}{Reusing Items for TableView and TreeView} for more
+information.
 
 \section1 Visual Effects
 
@@ -1166,8 +1166,8 @@ consider the following best practices:
 \li Optimise the 3D model loading by using glTF.
 \li Limit use of clip and opacity, as these can impact performance.
 \li Measure GPU limitations and take those into account when designing the UI.
-    See \l{qrhi.html#frame-captures-and-performance-profiling}{Frame Captures
-    and Performance Profiling} for more information.
+    See \l{QRhi#Frame captures and performance profiling}{Frame Captures and
+    Performance Profiling} for more information.
 \li Use \l{Qt Quick Compiler} to pre-compile the QML files.
 \li Investigate if static linking is possible for your architecture.
 \li Strive for declarative bindings instead of imperative signal handlers.

@@ -33,18 +33,31 @@ public:
                            QLspSpecification::InitializeResult &) final;
 
 private:
+    enum WorkDoneProgressStatus { InCreation, Created, Finished };
     struct UriWithToken
     {
         QByteArray uri;
-        int token;
+        int token = -1;
+        WorkDoneProgressStatus status = InCreation;
     };
 
-    int createUniqueToken(const QByteArray &uri);
+    class Tokens
+    {
+    public:
+        int createUniqueToken(const QByteArray &uri);
+        void removeToken(const QByteArray &uri);
+        UriWithToken *find(const QByteArray &uri);
+        std::optional<QQmlProgressSupport::UriWithToken> takeToken(int token);
 
-    QmlLsp::QQmlCodeModelManager *m_codeModelManager;
-    QList<UriWithToken> m_tokens;
-    QLanguageServerProtocol *m_protocol;
-    int m_idForBackgroundBuilds = 0;
+    private:
+        QHash<QByteArray, UriWithToken> m_tokens;
+        QHash<int, QByteArray> m_uriByToken;
+        int m_idForBackgroundBuilds = 0;
+    };
+
+    Tokens m_tokens;
+    QmlLsp::QQmlCodeModelManager *m_codeModelManager = nullptr;
+    QLanguageServerProtocol *m_protocol = nullptr;
 
 private slots:
     void onBackgroundBuildStarted(const QByteArray &uri);
