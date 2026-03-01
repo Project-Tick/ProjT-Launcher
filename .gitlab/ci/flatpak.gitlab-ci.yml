@@ -91,6 +91,16 @@ flatpak_build:
     - |
       flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
     - |
+      RUNTIME_VERSION="$(sed -n "s/^runtime-version: ['\"]\\([^'\"]*\\)['\"]$/\\1/p" flatpak/org.projecttick.ProjTLauncher.yml | head -n 1)"
+      if [ -z "$RUNTIME_VERSION" ]; then
+        echo "Failed to detect runtime-version from flatpak/org.projecttick.ProjTLauncher.yml"
+        exit 1
+      fi
+      flatpak install --user -y --or-update flathub \
+        "org.kde.Platform//$RUNTIME_VERSION" \
+        "org.kde.Sdk//$RUNTIME_VERSION" \
+        "org.freedesktop.Sdk.Extension.openjdk21//$RUNTIME_VERSION"
+    - |
       if [ -n "${FLATPAK_GPG_KEY:-}" ] && [ -n "${FLATPAK_GPG_KEY_ID:-}" ]; then
         echo -n "$FLATPAK_GPG_KEY" | base64 -d | gpg --import
       fi
@@ -100,7 +110,7 @@ flatpak_build:
       rm -rf "$REPO_DIR" "$BUILD_DIR"
       mkdir -p "$REPO_DIR" "$BUILD_DIR"
     - |
-      build_cmd="flatpak-builder --force-clean --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
+      build_cmd="flatpak-builder --force-clean --user --install-deps-from=flathub --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
       if command -v dbus-run-session >/dev/null 2>&1; then
         dbus-run-session -- bash -lc "$build_cmd"
       else
@@ -145,6 +155,16 @@ flatpak_build:
     - |
       flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
     - |
+      RUNTIME_VERSION="$(sed -n "s/^runtime-version: ['\"]\\([^'\"]*\\)['\"]$/\\1/p" flatpak/org.projecttick.ProjTLauncher.yml | head -n 1)"
+      if [ -z "$RUNTIME_VERSION" ]; then
+        echo "Failed to detect runtime-version from flatpak/org.projecttick.ProjTLauncher.yml"
+        exit 1
+      fi
+      flatpak install --user -y --or-update flathub \
+        "org.kde.Platform//$RUNTIME_VERSION" \
+        "org.kde.Sdk//$RUNTIME_VERSION" \
+        "org.freedesktop.Sdk.Extension.openjdk21//$RUNTIME_VERSION"
+    - |
       if [ -n "${FLATPAK_GPG_KEY:-}" ] && [ -n "${FLATPAK_GPG_KEY_ID:-}" ]; then
         echo -n "$FLATPAK_GPG_KEY" | base64 -d | gpg --import
       fi
@@ -154,7 +174,7 @@ flatpak_build:
       rm -rf "$REPO_DIR" "$BUILD_DIR"
       mkdir -p "$REPO_DIR" "$BUILD_DIR"
     - |
-      build_cmd="flatpak-builder --force-clean --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
+      build_cmd="flatpak-builder --force-clean --user --install-deps-from=flathub --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
       if command -v dbus-run-session >/dev/null 2>&1; then
         dbus-run-session -- bash -lc "$build_cmd"
       else
