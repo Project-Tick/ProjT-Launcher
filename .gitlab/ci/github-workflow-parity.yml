@@ -102,6 +102,8 @@ nix_system_build_darwin:
 
 .quazip_rules:
   rules: &quazip_rules
+    - if: '$QUAZIP_CI_DISABLED == "1"'
+      when: never
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -331,6 +333,9 @@ quazip_macos:
   tags:
     - $WINDOWS_RUNNER_TAG
   rules: *quazip_rules
+  variables:
+    GET_SOURCES_ATTEMPTS: "3"
+    GIT_FETCH_EXTRA_FLAGS: "--no-tags"
   script:
     - '$ErrorActionPreference = "Stop"'
     - 'Set-Location quazip'

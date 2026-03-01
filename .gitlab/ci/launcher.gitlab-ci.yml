@@ -68,7 +68,12 @@ launcher_linux_image:
   script:
     - |
       set -eu
-      if ! command -v cmake >/dev/null 2>&1 || ! command -v ctest >/dev/null 2>&1; then
+      QT6_CONFIG_FOUND=0
+      if find /usr -path '*/cmake/Qt6/Qt6Config.cmake' -print -quit 2>/dev/null | grep -q .; then
+        QT6_CONFIG_FOUND=1
+      fi
+
+      if ! command -v cmake >/dev/null 2>&1 || ! command -v ctest >/dev/null 2>&1 || [ "$QT6_CONFIG_FOUND" -ne 1 ]; then
         apt-get -y update
         JAVA_PKG="openjdk-21-jdk"
         if ! apt-cache show "$JAVA_PKG" >/dev/null 2>&1; then
@@ -89,6 +94,11 @@ launcher_linux_image:
           ninja-build \
           scdoc \
           appstream \
+          qt6-base-dev \
+          qt6-base-dev-tools \
+          qt6-5compat-dev \
+          qt6-networkauth-dev \
+          qt6-webengine-dev \
           "$JAVA_PKG" \
           lcov \
           libxcb-cursor-dev \
@@ -266,10 +276,61 @@ launcher_linux_image:
   script:
     - |
       set -eu
+      HOMEBREW_PREFIX=""
       if command -v brew >/dev/null 2>&1; then
         brew update || true
-        brew install mono ninja extra-cmake-modules temurin@21 zlib quazip cmark tomlplusplus qrencode lcov create-dmg || true
-        brew unlink qt || true
+        brew install \
+          cmake \
+          mono \
+          ninja \
+          extra-cmake-modules \
+          temurin@21 \
+          zlib \
+          quazip \
+          cmark \
+          tomlplusplus \
+          qrencode \
+          lcov \
+          create-dmg \
+          qt \
+          qt5compat \
+          qtnetworkauth \
+          qtpositioning \
+          qtserialport \
+          qtwebchannel \
+          qtwebengine || true
+        HOMEBREW_PREFIX="$(brew --prefix || true)"
+      fi
+
+      if [ -n "$HOMEBREW_PREFIX" ]; then
+        export PATH="$HOMEBREW_PREFIX/bin:$HOMEBREW_PREFIX/sbin:$PATH"
+        BREW_PREFIXES=""
+        for formula in \
+          qt \
+          qt5compat \
+          qtnetworkauth \
+          qtpositioning \
+          qtserialport \
+          qtwebchannel \
+          qtwebengine \
+          quazip \
+          cmark \
+          tomlplusplus \
+          qrencode \
+          zlib \
+          extra-cmake-modules; do
+          formula_prefix="$(brew --prefix "$formula" 2>/dev/null || true)"
+          if [ -n "$formula_prefix" ]; then
+            if [ -n "$BREW_PREFIXES" ]; then
+              BREW_PREFIXES="$BREW_PREFIXES:$formula_prefix"
+            else
+              BREW_PREFIXES="$formula_prefix"
+            fi
+          fi
+        done
+        if [ -n "$BREW_PREFIXES" ]; then
+          export CMAKE_PREFIX_PATH="$BREW_PREFIXES${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
+        fi
       fi
 
       if /usr/libexec/java_home -v 21 >/dev/null 2>&1; then
@@ -414,6 +475,8 @@ launcher_linux_image:
   variables:
     BUILD_TYPE: Debug
     BUILD_PLATFORM: official
+    GET_SOURCES_ATTEMPTS: "3"
+    GIT_FETCH_EXTRA_FLAGS: "--no-tags"
   script:
     - '$ErrorActionPreference = "Stop"'
     - |

@@ -34,6 +34,11 @@ schedule_flatpak_update:
         fi
       fi
     - |
+      if [ ! -f "$CI_PROJECT_DIR/flatpak/shared-modules/glu/glu-9.json" ]; then
+        rm -rf "$CI_PROJECT_DIR/flatpak/shared-modules"
+        git clone --depth 1 https://github.com/flathub/shared-modules.git "$CI_PROJECT_DIR/flatpak/shared-modules"
+      fi
+    - |
       if command -v flatpak-external-data-checker >/dev/null 2>&1; then
         flatpak-external-data-checker --update --edit-only flatpak/org.projecttick.ProjTLauncher.yml
       elif [ -x /app/flatpak-external-data-checker ]; then
@@ -77,6 +82,11 @@ flatpak_build:
       if command -v apt-get >/dev/null 2>&1; then
         apt-get update
         apt-get install -y git rsync dbus-user-session
+      fi
+    - |
+      if [ ! -f "$CI_PROJECT_DIR/flatpak/shared-modules/glu/glu-9.json" ]; then
+        rm -rf "$CI_PROJECT_DIR/flatpak/shared-modules"
+        git clone --depth 1 https://github.com/flathub/shared-modules.git "$CI_PROJECT_DIR/flatpak/shared-modules"
       fi
     - |
       flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
@@ -126,6 +136,11 @@ flatpak_build:
       if command -v apt-get >/dev/null 2>&1; then
         apt-get update
         apt-get install -y git rsync dbus-user-session
+      fi
+    - |
+      if [ ! -f "$CI_PROJECT_DIR/flatpak/shared-modules/glu/glu-9.json" ]; then
+        rm -rf "$CI_PROJECT_DIR/flatpak/shared-modules"
+        git clone --depth 1 https://github.com/flathub/shared-modules.git "$CI_PROJECT_DIR/flatpak/shared-modules"
       fi
     - |
       flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo

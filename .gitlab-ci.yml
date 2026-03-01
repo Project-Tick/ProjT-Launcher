@@ -93,6 +93,7 @@ variables:
   PIPELINE_NAME: "ProjT Launcher pipeline"
   GIT_DEPTH: "1"
   GIT_SUBMODULE_DEPTH: "1"
+  QUAZIP_CI_DISABLED: "1"
   LAUNCHER_LINUX_IMAGE: "$CI_REGISTRY_IMAGE/ci/launcher-linux:trixie"
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.cache/npm"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"

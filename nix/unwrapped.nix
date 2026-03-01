@@ -5,6 +5,7 @@
   apple-sdk_14,
   extra-cmake-modules,
   gamemode,
+  inih,
   jdk17,
   kdePackages,
   ninja,
@@ -98,6 +99,7 @@ stdenv.mkDerivation {
   ];
 
   buildInputs = [
+    inih
     kdePackages.qtbase
     kdePackages.qtnetworkauth
     kdePackages.qtwebchannel

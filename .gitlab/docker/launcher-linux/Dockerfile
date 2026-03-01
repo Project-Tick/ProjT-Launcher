@@ -19,6 +19,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     scdoc \
     appstream \
+    qt6-base-dev \
+    qt6-base-dev-tools \
+    qt6-5compat-dev \
+    qt6-networkauth-dev \
+    qt6-webengine-dev \
     lcov \
     libxcb-cursor-dev \
     libdbus-1-dev \
