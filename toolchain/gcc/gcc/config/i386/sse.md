@@ -4913,8 +4913,8 @@
 {
   int cmp_imm = INTVAL (operands[3]);
   rtx res = CONST0_RTX (<avx512fmaskmode>mode);
-  /* EQ/LE/NLT.  */
-  if (cmp_imm == 0 || cmp_imm == 2 || cmp_imm == 5)
+  /* EQ/LE/NLT/TRUE.  */
+  if (cmp_imm == 0 || cmp_imm == 2 || cmp_imm == 5 || cmp_imm == 7)
   {
     int nelts = GET_MODE_NUNITS (<MODE>mode);
     if (nelts >= 8)

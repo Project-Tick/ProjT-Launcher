@@ -1202,6 +1202,56 @@ parser_statement_begin( const cbl_name_t statement_name,
   sv_is_i_o = false;
   }
 
+void
+parser_statement_end( const std::list<cbl_field_t*>&flist)
+  {
+  SHOW_PARSE
+    {
+    SHOW_PARSE_HEADER
+    char *psz = xasprintf(" List has %ld elements", flist.size());
+    SHOW_PARSE_TEXT(psz);
+    free(psz);
+    SHOW_PARSE_END
+    }
+  TRACE1
+    {
+    TRACE1_HEADER
+    char *psz = xasprintf(" List has %ld elements", flist.size());
+    TRACE1_TEXT(psz);
+    free(psz);
+    TRACE1_END
+    }
+  if( flist.size() )
+    {
+    for( auto field : flist )
+      {
+      SHOW_PARSE
+        {
+        SHOW_PARSE_INDENT
+        char *psz = xasprintf("Deallocating %s", field->name);
+        SHOW_PARSE_TEXT(psz);
+        free(psz);
+        }
+      TRACE1
+        {
+        TRACE1_INDENT
+        char *psz = xasprintf(" Deallocating %s", field->name);
+        TRACE1_TEXT(psz);
+        free(psz);
+        }
+        
+      gg_free(member(field->var_decl_node, "data"));
+      // Flag this guy as free:
+      gg_assign(member(field->var_decl_node, "data"), gg_cast(UCHAR_P, null_pointer_node));
+      gg_assign(member(field->var_decl_node, "allocated"), gg_cast(SIZE_T, integer_zero_node));
+      }
+    TRACE1
+      {
+      TRACE1_END
+      }
+    }
+  }
+
 static void
 initialize_variable_internal( cbl_refer_t refer,
                               bool explicitly=false,
@@ -1221,7 +1271,9 @@ initialize_variable_internal( cbl_refer_t refer,
     return;
     }
 
-  if( parsed_var->attr & register_e )
+  if(     parsed_var->attr & register_e
+      || (   parsed_var->attr & intermediate_e
+          && parsed_var->type == FldAlphanumeric) )
     {
     return;
     }
@@ -2138,7 +2190,7 @@ compare_binary_binary(tree return_int,
 
   // Let's check for the simplified case where both left and right sides are
   // little-endian binary values:
-  
+
   if(   is_pure_integer(left_side_ref->field)
      && is_pure_integer(right_side_ref->field) )
     {
@@ -3951,7 +4003,7 @@ public:
 } label_verify;
 
 void
-parser_end_program(const char *prog_name  )
+parser_end_program(const char *prog_name )
   {
   if( gg_trans_unit.function_stack.size() )
     {
@@ -4096,7 +4148,7 @@ parser_init_list()
           "__gg__variables_to_init",
           gg_get_address_of(array),
           wsclear() ? build_string_literal(
-                                    1, 
+                                    1,
                                     reinterpret_cast<const char *>(wsclear()))
                     : null_pointer_node,
           NULL_TREE);
@@ -6359,8 +6411,8 @@ void parser_sleep(const cbl_refer_t &seconds)
   }
 
 void
-parser_exit_program(void)  // exits back to COBOL only, else continue
-  {
+parser_exit_program()
+  { // exits back to COBOL only, else continue
   static cbl_label_t this_program = {};
   static cbl_refer_t magic_refer(&this_program, false);
   parser_exit( magic_refer );
@@ -6374,7 +6426,8 @@ parser_exit_program(void)  // exits back to COBOL only, else continue
 
 static
 void
-program_end_stuff(cbl_refer_t refer, ec_type_t ec)
+program_end_stuff(cbl_refer_t refer,
+                  ec_type_t ec)
   {
   // This is the moral equivalent of a C "return xyz;".
 
@@ -6462,7 +6515,8 @@ program_end_stuff(cbl_refer_t refer, ec_type_t ec)
   }
 
 void
-parser_exit( const cbl_refer_t& refer, ec_type_t ec )
+parser_exit( const cbl_refer_t& refer,
+             ec_type_t ec )
   {
   Analyze();
   SHOW_PARSE
@@ -8435,7 +8489,7 @@ parser_perform_conditional( struct cbl_perform_tgt_t *tgt )
 
   // The next instructions that the parser will give us are the conditional
   // calculation, so the first thing that goes down is the condover:
-  /* The following NOP is needed to make NEXT OVER PERFORM BEFORE/AFTER UNTIL 
+  /* The following NOP is needed to make NEXT OVER PERFORM BEFORE/AFTER UNTIL
      behaves properly.  */
   insert_nop(106);
   gg_append_statement(tgt->addresses.condover[i].go_to);
@@ -8516,7 +8570,7 @@ perform_outofline_before_until(struct cbl_perform_tgt_t *tgt,
   create_iline_address_pairs(tgt);
 
   // Tag the top of the perform
-  
+
   gg_append_statement(tgt->addresses.top.label);
 
   // Go do the conditional calculation:
@@ -9776,7 +9830,7 @@ parser_file_add(struct cbl_file_t *file)
     }
   if( varies.max < symbol_file_record(file)->data.capacity())
     {
-    const charmap_t *charmap = 
+    const charmap_t *charmap =
                      __gg__get_charmap(current_encoding(display_encoding_e));
     varies.min *= charmap->stride();
     varies.max *= charmap->stride();
@@ -15911,7 +15965,7 @@ mh_source_is_literalA(const cbl_refer_t &destref,
     if( (   destref.field->type == FldAlphanumeric
          || destref.field->type == FldGroup )
        && !(destref.field->attr & any_length_e)
-       && !sourceref.all                         
+       && !sourceref.all
        && !size_error)
       {
       // A simple alpha-to-alpha move is possible
@@ -16733,12 +16787,20 @@ psa_new_var_decl(cbl_field_t *new_var, const char *external_record_base)
               && new_var->type != FldLiteralA
               && new_var->type != FldLiteralN )
       {
-//      new_var_decl = gg_define_variable(  cblc_field_type_node,
-//                                          base_name,
-//                                          vs_static);
+      gg_variable_scope_t scope = vs_stack;
+      if( new_var->type == FldAlphanumeric )
+        {
+        // This has to be static, because we are putting the actual memory
+        // on the heap.  But if we put the cblc_field_t on the stack inside
+        // of a condition, or in a loop, we just keep recreating the field
+        // without getting freeing the memory.  Eventually, with perhaps a
+        // two-pass compiler, we'll be able to create the stack cblc_field_t
+        // once per program-id.
+        scope = vs_static;
+        }
       new_var_decl = gg_define_variable(  cblc_field_type_node,
                                           base_name,
-                                          vs_stack);
+                                          scope);
       SET_DECL_MODE(new_var_decl, BLKmode);
       }
     else
@@ -16930,7 +16992,9 @@ parser_symbol_add(struct cbl_field_t *new_var )
         || new_var->type == FldLiteralA
         )
       {
-      if( new_var->data.initial && new_var->data.capacity() )
+      if(    new_var->data.initial
+          && new_var->data.capacity()
+          && !(new_var->attr & intermediate_e) )
         {
         SHOW_PARSE_INDENT
         for(size_t i=0; i<new_var->data.capacity(); i++)
@@ -16962,29 +17026,7 @@ parser_symbol_add(struct cbl_field_t *new_var )
 
   if( new_var->var_decl_node )
     {
-    if( new_var->type != FldConditional )
-      {
-      // There is a possibility when re-using variables that a temporary that
-      // was created at compile time might not have a data pointer at run time.
-      if( new_var->attr & (intermediate_e) )
-        {
-        IF( member(new_var->var_decl_node, "allocated"),
-            lt_op,
-            member(new_var->var_decl_node, "capacity") )
-          {
-          gg_free(member(new_var, "data"));
-          gg_assign(member(new_var, "data"),
-                    gg_cast(UCHAR_P, gg_malloc(new_var->data.capacity())));
-          gg_assign(member(new_var, "allocated"),
-                    build_int_cst_type(SIZE_T, new_var->data.capacity()));
-          }
-        ELSE
-          {
-          }
-        ENDIF
-        }
-      }
-    else
+    if( new_var->type == FldConditional )
       {
       gg_assign(new_var->var_decl_node, boolean_false_node);
       }
@@ -17310,7 +17352,9 @@ parser_symbol_add(struct cbl_field_t *new_var )
      * 4.  cbl_field_data_t::capacity is 0 because it requires no working storage
      */
 
-    if( new_var->data.capacity() == 0
+    if(    new_var->data.capacity() == 0
+        && !(   new_var->type == FldAlphanumeric
+             && new_var->attr & intermediate_e)
         && new_var->level != 88
         && new_var->type  != FldClass
         && new_var->type  != FldLiteralN
@@ -17382,7 +17426,7 @@ parser_symbol_add(struct cbl_field_t *new_var )
           bytes_to_allocate = 1;
           }
 
-        if( !bytes_to_allocate )
+        if( !bytes_to_allocate && !(new_var->attr & intermediate_e) )
           {
           cbl_internal_error( "%<bytes_to_allocate%> is zero for %s (symbol number "
                               HOST_SIZE_T_PRINT_DEC ")",
@@ -17408,49 +17452,60 @@ parser_symbol_add(struct cbl_field_t *new_var )
             }
           }
 
-        if( bytes_to_allocate )
+        if(   new_var->attr & intermediate_e
+           && new_var->type == FldAlphanumeric )
           {
-          // We need a unique name for the allocated data for this COBOL variable:
-          char achDataName[256];
-          if( new_var->attr & external_e )
+          // We don't allocate here for intermediates.  We instead use
+          // malloc() in the library when a run-time value is assigned to this
+          // variable
+          data_area = null_pointer_node;
+          }
+        else
+          {
+          if( bytes_to_allocate )
             {
-            sprintf(achDataName, "%s", new_var->name);
-            }
-          else if( new_var->name[0] == '_' )
-            {
-            // Avoid doubling up on leading underscore
-            sprintf(achDataName,
-                    "%s_data_" HOST_SIZE_T_PRINT_UNSIGNED,
-                    new_var->name,
-                    (fmt_size_t)sv_data_name_counter++);
-            }
-          else
-            {
-            sprintf(achDataName,
-                    "_%s_data_" HOST_SIZE_T_PRINT_UNSIGNED,
-                    new_var->name,
-                    (fmt_size_t)sv_data_name_counter++);
-            }
+            // We need a unique name for the allocated data for this COBOL variable:
+            char achDataName[256];
+            if( new_var->attr & external_e )
+              {
+              sprintf(achDataName, "%s", new_var->name);
+              }
+            else if( new_var->name[0] == '_' )
+              {
+              // Avoid doubling up on leading underscore
+              sprintf(achDataName,
+                      "%s_data_" HOST_SIZE_T_PRINT_UNSIGNED,
+                      new_var->name,
+                      (fmt_size_t)sv_data_name_counter++);
+              }
+            else
+              {
+              sprintf(achDataName,
+                      "_%s_data_" HOST_SIZE_T_PRINT_UNSIGNED,
+                      new_var->name,
+                      (fmt_size_t)sv_data_name_counter++);
+              }
 
-          if( new_var->attr & external_e )
-            {
-            tree array_type = build_array_type_nelts(UCHAR, bytes_to_allocate);
-            new_var->data_decl_node = gg_define_variable(
-                                array_type,
-                                achDataName,
-                                vs_external);
-            data_area = gg_get_address_of(new_var->data_decl_node);
-            }
-          else
-            {
-            gg_variable_scope_t vs_scope = (new_var->attr & intermediate_e)
-                                            ? vs_stack : vs_static ;
-            tree array_type = build_array_type_nelts(UCHAR, bytes_to_allocate);
-            new_var->data_decl_node = gg_define_variable(
-                                array_type,
-                                achDataName,
-                                vs_scope);
-            data_area = gg_get_address_of(new_var->data_decl_node);
+            if( new_var->attr & external_e )
+              {
+              tree array_type = build_array_type_nelts(UCHAR, bytes_to_allocate);
+              new_var->data_decl_node = gg_define_variable(
+                                  array_type,
+                                  achDataName,
+                                  vs_external);
+              data_area = gg_get_address_of(new_var->data_decl_node);
+              }
+            else
+              {
+              gg_variable_scope_t vs_scope = (new_var->attr & intermediate_e)
+                                              ? vs_stack : vs_static ;
+              tree array_type = build_array_type_nelts(UCHAR, bytes_to_allocate);
+              new_var->data_decl_node = gg_define_variable(
+                                  array_type,
+                                  achDataName,
+                                  vs_scope);
+              data_area = gg_get_address_of(new_var->data_decl_node);
+              }
             }
           }
         }

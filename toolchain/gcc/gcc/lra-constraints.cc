@@ -3336,7 +3336,15 @@ process_alt_operands (int only_alternative)
 	    early_clobbered_nops[early_clobbered_regs_num++] = nop;
 	}
 
-      if (curr_insn_set != NULL_RTX && n_operands == 2
+      if (curr_insn_set != NULL_RTX
+	  /* Allow just two operands or three operands where the third
+	     is a clobber.  */
+	  && (n_operands == 2
+	      || (n_operands == 3
+		  && GET_CODE (PATTERN (curr_insn)) == PARALLEL
+		  && XVECLEN (PATTERN (curr_insn), 0) == 2
+		  && GET_CODE (XVECEXP (PATTERN (curr_insn), 0, 1))
+		     == CLOBBER))
 	  /* Prevent processing non-move insns.  */
 	  && (GET_CODE (SET_SRC (curr_insn_set)) == SUBREG
 	      || SET_SRC (curr_insn_set) == no_subreg_reg_operand[1])
@@ -4940,6 +4948,8 @@ curr_insn_transform (bool check_only_p)
 	      && find_reg_note (curr_insn, REG_UNUSED, old) == NULL_RTX
 	      /* OLD can be an equivalent constant here.  */
 	      && !CONSTANT_P (old)
+	      /* No need to write back anything for a scratch.  */
+	      && GET_CODE (old) != SCRATCH
 	      && (!REG_P(old) || !ira_former_scratch_p (REGNO (old))))
 	    {
 	      start_sequence ();

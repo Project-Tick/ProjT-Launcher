@@ -1,3 +1,79 @@
+2026-02-26  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/124204
+	* reflect.cc (eval_can_substitute): Call convert_from_reference.
+
+2026-02-26  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/123662
+	PR c++/123611
+	* cvt.cc (convert_to_void): Only call check_out_of_consteval_use
+	when stmts_are_full_exprs_p.
+
+2026-02-26  Marek Polacek  <polacek@redhat.com>
+	    Jakub Jelinek   <jakub@redhat.com>
+
+	PR c++/124215
+	* reflect.cc (class_members_of): Use TYPE_MAIN_VARIANT of R.
+
+2026-02-25  Marek Polacek  <polacek@redhat.com>
+
+	* reflect.cc (check_out_of_consteval_use_r): Walk BIND_EXPR_BODY.
+	For IF_STMT_CONSTEVAL_P, only walk the ELSE_CLAUSE.  For
+	IF_STMT_CONSTEXPR_P, only walk the THEN_ and ELSE_CLAUSE.
+
+2026-02-25  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/124227
+	* reflect.cc (consteval_only_p): Handle TREE_VEC.
+
+2026-02-24  Marek Polacek  <polacek@redhat.com>
+
+	* parser.cc (cp_parser_base_specifier): Use the same error for
+	a typename in a base-specifier outside of templates and inside.
+
+2026-02-23  Marek Polacek  <polacek@redhat.com>
+
+	* parser.cc (cp_parser_splice_expression): For dependent splices return
+	earlier.  Refactor.  For address_p, build an OFFSET_REF.  Don't pass
+	context to finish_id_expression.
+	* semantics.cc (finish_id_expression_1): Adjust an assert to also check
+	flag_reflection.
+
+2026-02-23  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/124150
+	* reflect.cc (eval_substitute): Add an OVERLOAD around
+	a DECL_FUNCTION_TEMPLATE_P.
+
+2026-02-23  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/123641
+	* name-lookup.cc: Move STAT_* and MAYBE_STAT_* macros from here to...
+	* name-lookup.h: ...here.
+	* reflect.cc (namespace_members_of): Use them.  Skip STAT_TYPE_HIDDEN_P.
+
+2026-02-22  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/124173
+	* pt.cc (convert_nontype_argument): For C++11/C++14 handle
+	NULLPTR_TYPE_P non-type arguments like TYPE_PTR_P.
+
+2026-02-22  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/124184
+	* parser.cc (cp_perform_range_for_lookup): If tf_error is
+	missing, call finish_call_expr after perform_koenig_lookup
+	calls immediately with tf_any_viable instead of twice, once
+	with tf_none and then with tf_any_viable.
+	* pt.cc (finish_expansion_stmt): Remove unneeded parens.
+
+2026-02-22  Valentyn Yukhymenko  <valentin.yukhymenko@gmail.com>
+
+	PR c++/123642
+	* typeck.cc (finish_class_member_access_expr): Change context lookup
+	to handle anon union members.
+
 2026-02-19  Marek Polacek  <polacek@redhat.com>
 
 	* metafns.gperf: Define METAFN_KIND_ARG.

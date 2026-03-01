@@ -24,6 +24,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "coretypes.h"
 #include "options.h"
 #include "gfortran.h"
+#include "diagnostic-core.h"
 #include "parse.h"
 #include "match.h"
 #include "constructor.h"
@@ -1887,19 +1888,18 @@ gfc_add_procedure (symbol_attribute *attr, procedure_type t,
   if (attr->proc != PROC_UNKNOWN && !attr->module_procedure
       && attr->access == ACCESS_UNKNOWN)
     {
-      if (attr->proc == PROC_ST_FUNCTION && t == PROC_INTERNAL
-	  && !gfc_notification_std (GFC_STD_F2008))
-	gfc_error ("%s procedure at %L is already declared as %s "
-		   "procedure. \nF2008: A pointer function assignment "
-		   "is ambiguous if it is the first executable statement "
-		   "after the specification block. Please add any other "
-		   "kind of executable statement before it. FIXME",
+      gfc_error ("%s procedure at %L is already declared as %s procedure",
 		 gfc_code2string (procedures, t), where,
 		 gfc_code2string (procedures, attr->proc));
-      else
-	gfc_error ("%s procedure at %L is already declared as %s "
-		   "procedure", gfc_code2string (procedures, t), where,
-		   gfc_code2string (procedures, attr->proc));
+      if (attr->proc == PROC_ST_FUNCTION && t == PROC_INTERNAL
+	  && !gfc_notification_std (GFC_STD_F2008))
+	{
+	  inform (gfc_get_location (where),
+		  "F2008: A pointer function assignment is ambiguous if it is "
+		  "the first executable statement after the specification "
+		  "block.  Please add any other kind of executable "
+		  "statement before it");
+	}
 
       return false;
     }

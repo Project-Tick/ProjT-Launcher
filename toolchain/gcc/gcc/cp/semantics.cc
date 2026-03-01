@@ -5086,7 +5086,11 @@ finish_id_expression_1 (tree id_expression,
 
 		       ??? Should this case make a clone instead, like
 		       handle_using_decl?  */
-		    gcc_assert (TREE_CODE (decl) == CONST_DECL);
+		    gcc_assert (TREE_CODE (decl) == CONST_DECL
+				/* This is for:
+				    constexpr auto r = ^^S::i;
+				    auto a = [:r:];  */
+				|| flag_reflection);
 		  else
 		    perform_or_defer_access_check (TYPE_BINFO (path),
 						   decl, decl,

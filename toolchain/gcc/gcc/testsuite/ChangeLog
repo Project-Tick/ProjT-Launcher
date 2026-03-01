@@ -1,3 +1,499 @@
+2026-02-26  Eric Botcazou  <ebotcazou@adacore.com>
+
+	* gnat.dg/generic_inst17.adb: New test.
+
+2026-02-26  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/124204
+	* g++.dg/reflect/substitute5.C: New test.
+
+2026-02-26  Steve Kargl  <kargls@comcast.net>
+
+	PR fortran/88076
+	* gfortran.dg/coarray/caf.exp: If the target is a FreeBSD
+	system add -pthread when running tests.
+
+2026-02-26  Andre Vehreschild  <vehre@gcc.gnu.org>
+
+	* gfortran.dg/coarray/caf.exp: Only add caf_shmem to tests when
+	is build.
+
+2026-02-26  Jerry DeLisle  <jvdelisle@gcc.gnu.org>
+
+	PR fortran/121360
+	* gfortran.dg/coarray/lock_3.f90: New test.
+
+2026-02-26  Jerry DeLisle  <jvdelisle@gcc.gnu.org>
+
+	PR fortran/121429
+	* gfortran.dg/coarray/lock_1.f90: Updated.
+
+2026-02-26  Andre Vehreschild  <vehre@gcc.gnu.org>
+
+	PR fortran/121429
+	* gfortran.dg/coarray/deallocate_sync.f90: New test.
+
+2026-02-26  Andre Vehreschild  <vehre@gcc.gnu.org>
+
+	PR fortran/124071
+	* gfortran.dg/coarray/form_team_1.f90: New test.
+
+2026-02-26  Andre Vehreschild  <vehre@gcc.gnu.org>
+
+	PR fortran/88076
+	* gfortran.dg/coarray/alloc_comp_4.f90: Make multi image
+	compatible.
+	* gfortran.dg/coarray/atomic_2.f90: Same.
+	* gfortran.dg/coarray/caf.exp: Also test caf_shmem and choose
+	eight images as a default.
+	* gfortran.dg/coarray/coarray_allocated.f90: Add multi image
+	support.
+	* gfortran.dg/coarray/coindexed_1.f90: Same.
+	* gfortran.dg/coarray/coindexed_3.f08: Same.
+	* gfortran.dg/coarray/coindexed_5.f90: Same.
+	* gfortran.dg/coarray/dummy_3.f90: Same.
+	* gfortran.dg/coarray/event_1.f90: Same.
+	* gfortran.dg/coarray/event_3.f08: Same.
+	* gfortran.dg/coarray/event_4.f08: Same.
+	* gfortran.dg/coarray/failed_images_2.f08: Same.
+	* gfortran.dg/coarray/image_status_1.f08: Same.
+	* gfortran.dg/coarray/image_status_2.f08: Same.
+	* gfortran.dg/coarray/lock_2.f90: Same.
+	* gfortran.dg/coarray/poly_run_3.f90: Same.
+	* gfortran.dg/coarray/scalar_alloc_1.f90: Same.
+	* gfortran.dg/coarray/stopped_images_2.f08: Same.
+	* gfortran.dg/coarray/sync_1.f90: Same.
+	* gfortran.dg/coarray/sync_3.f90: Same.
+	* gfortran.dg/coarray/co_reduce_string.f90: New test.
+	* gfortran.dg/coarray/sync_team.f90: New test.
+
+2026-02-26  Andre Vehreschild  <vehre@gcc.gnu.org>
+
+	* gfortran.dg/coarray_sync_memory.f90: Adapt grep pattern for
+	msg being only &msg.
+
+2026-02-26  Andre Vehreschild  <vehre@gcc.gnu.org>
+
+	* gfortran.dg/coarray/failed_images_1.f08: Adapt check of error
+	message.
+	* gfortran.dg/coarray/stopped_images_1.f08: Same.
+
+2026-02-26  Matthieu Longo  <matthieu.longo@arm.com>
+
+	* gcc.target/aarch64/bti-1.c: Update.
+
+2026-02-26  Robin Dapp  <rdapp@oss.qualcomm.com>
+
+	PR target/122448
+	* g++.target/riscv/rvv/base/pr122448.C: New test.
+
+2026-02-26  Karl Meakin  <karl.meakin@arm.com>
+
+	* gcc.target/aarch64/cmpbr-3.c: `dg-do assemble` => `dg-do compile`.
+
+2026-02-26  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/123662
+	PR c++/123611
+	* g++.dg/reflect/reflect_constant_array5.C: New test.
+	* g++.dg/reflect/reflect_constant_array6.C: New test.
+
+2026-02-26  Xi Ruoyao  <xry111@xry111.site>
+
+	PR middle-end/124250
+	PR target/123807
+	* gcc.c-torture/compile/pr124250.c: New test.
+
+2026-02-26  Marek Polacek  <polacek@redhat.com>
+	    Jakub Jelinek   <jakub@redhat.com>
+
+	PR c++/124215
+	* g++.dg/reflect/members_of9.C: New test.
+
+2026-02-26  James Bohl  <bohlj47@gmail.com>
+
+	* algol68/compile/error-denotation-1.a68: New test.
+	* algol68/compile/error-denotation-2.a68: Likewise.
+	* algol68/compile/error-denotation-3.a68: Likewise.
+	* algol68/execute/plusab-1.a68: Fixed denotation overflow.
+
+2026-02-26  Roger Sayle  <roger@nextmovesoftware.com>
+
+	PR target/124194
+	* gcc.target/i386/pr124194.c: New test case.
+
+2026-02-26  Torbjörn SVENSSON  <torbjorn.svensson@foss.st.com>
+
+	* g++.dg/gcov/gcov-threads-1.C: Add require effective target
+	pthread.
+
+2026-02-26  Roger Sayle  <roger@nextmovesoftware.com>
+
+	PR c/119651
+	PR c/123472
+	* gcc.dg/pr119651.c: New test case.
+	* gcc.dg/pr123472.c: Likewise.
+
+2026-02-26  H.J. Lu  <hjl.tools@gmail.com>
+
+	PR target/119979
+	PR target/120888
+	* gcc.target/xtensa/pr120888-1.c: Removed to ...
+	* gcc.dg/zero-extend.c: This.  Enable for mcore and xtensa.
+	* gcc.target/xtensa/pr120888-2.c: Removed to ...
+	* gcc.dg/sign-extend.c: This.  Enable for mcore and xtensa.
+
+2026-02-26  David Malcolm  <dmalcolm@redhat.com>
+
+	PR analyzer/124232
+	* gcc.dg/analyzer/putenv-ice-pr124232.c: New test.
+
+2026-02-25  Jose E. Marchesi  <jemarch@gnu.org>
+
+	* algol68/execute/trimmer-13.a68: New test.
+
+2026-02-25  Christopher Albert  <albert@tugraz.at>
+
+	PR fortran/124235
+	* gfortran.dg/pr124235.f90: New test.
+
+2026-02-25  Marek Polacek  <polacek@redhat.com>
+
+	* g++.dg/reflect/members_of5.C: Remove a FIXME and declaration.
+
+2026-02-25  Cupertino Miranda  <cupertino.miranda@oracle.com>
+
+	PR target/120241
+	* gcc.target/bpf/core-attr-3.c: Add attribute.
+	* gcc.target/bpf/core-attr-4.c: Add attribute.
+	* gcc.target/bpf/core-attr-5.c: Add attribute.
+	* gcc.target/bpf/core-attr-6.c: Add attribute.
+	* gcc.target/bpf/core-attr-7.c: New test.
+	* gcc.target/bpf/core-attr-calls.c: Adapt.
+
+2026-02-25  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	PR tree-optimization/110091
+	* gcc.dg/tree-ssa/pr110091-3.c: New test.
+	* gcc.dg/tree-ssa/pr110091-4.c: New test.
+
+2026-02-25  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	PR tree-optimization/110091
+	* gcc.dg/tree-ssa/pr110091-1.c: New test.
+	* gcc.dg/tree-ssa/pr110091-2.c: New test.
+
+2026-02-25  Marek Polacek  <polacek@redhat.com>
+
+	* g++.dg/reflect/compare9.C: Uncomment the commented out asserts.
+
+2026-02-25  Tamar Christina  <tamar.christina@arm.com>
+
+	PR target/124236
+	* lib/target-supports.exp
+	(check_effective_target_arm_v8_3a_complex_neon_hw): Fix default value.
+
+2026-02-25  Marek Polacek  <polacek@redhat.com>
+
+	* g++.dg/reflect/expr11.C: Test more if constexpr.
+	* g++.dg/reflect/expr12.C: Adjust test.
+
+2026-02-25  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/124227
+	* g++.dg/reflect/pr124227.C: New test.
+
+2026-02-25  Eric Botcazou  <ebotcazou@adacore.com>
+
+	* gnat.dg/protected_deref1.adb: New test.
+
+2026-02-25  Andrew Pinski  <andrew.pinski@oss.qualcomm.com>
+
+	PR target/123285
+	* gcc.target/aarch64/pr123285-1.c: New test.
+
+2026-02-25  Christopher Albert  <albert@tugraz.at>
+
+	PR fortran/124208
+	* gfortran.dg/pr124208.f90: New test.
+
+2026-02-25  Jonathan Yong  <10walls@gmail.com>
+
+	* gcc.dg/plugin/taint-pr112850-precise.c:
+	(__kernel_ulong_t): Change unsigned long to __UINTPTR_TYPE__.
+	(__kernel_size_t): Change __kernel_ulong_t to __kernel_size_t.
+	(copy_from_user): Change unsigned long n to size_t n.
+	(snd_rawmidi_ioctl): Change unsigned long arg to uintptr_t arg.
+	* gcc.dg/plugin/taint-pr112850-too-complex.c: Ditto.
+	* gcc.dg/plugin/taint-pr112850-unsanitized.c: Ditto.
+	* gcc.dg/plugin/taint-pr112850.c: Ditto.
+
+2026-02-24  David Malcolm  <dmalcolm@redhat.com>
+
+	PR analyzer/124188
+	* c-c++-common/analyzer/vector-ice-pr124188.c: New test.
+
+2026-02-24  David Malcolm  <dmalcolm@redhat.com>
+
+	PR analyzer/124195
+	* c-c++-common/analyzer/divide-by-zero-1.c: New test.
+	* c-c++-common/analyzer/divide-by-zero-pr124195-2.c: New test.
+	* gcc.dg/analyzer/divide-by-zero-pr124195-1.c: New test.
+
+2026-02-24  Robin Dapp  <rdapp@oss.qualcomm.com>
+
+	PR target/124147
+	* gcc.target/riscv/rvv/xtheadvector/pr124147.c: New test.
+
+2026-02-24  Robin Dapp  <rdapp@oss.qualcomm.com>
+
+	PR rtl-optimization/123381
+	* gcc.target/riscv/rvv/autovec/pr123381.c: New test.
+
+2026-02-24  Wilco Dijkstra  <wilco.dijkstra@arm.com>
+
+	PR target/121240
+	* gcc.target/aarch64/const_create_using_fmov.c: Fix test.
+	* gcc.target/aarch64/pr121240.c: Add new test.
+	* gcc.target/aarch64/vec-init-single-const.c: Fix test.
+	* gcc.target/aarch64/vect-cse-codegen.c: Fix test.
+
+2026-02-24  Torbjörn SVENSSON  <torbjorn.svensson@foss.st.com>
+
+	PR testsuite/124064
+	* g++.target/arm/bfloat_cpp_typecheck.C: Drop xfail.
+
+2026-02-24  Torbjörn SVENSSON  <torbjorn.svensson@foss.st.com>
+
+	* lib/target-supports.exp: Add -mfpu=auto to
+	arm_v8_3a_complex_neon. This aligns with
+	arm_v8_3a_fp16_complex_neon.
+
+2026-02-24  Eric Botcazou  <ebotcazou@adacore.com>
+	    Liam Powell  <liam@liampwll.com>
+
+	* gnat.dg/specs/aggr12.ads: New test.
+
+2026-02-24  Marek Polacek  <polacek@redhat.com>
+
+	* g++.dg/parse/typename6.C: Adjust dg-error.
+	* g++.dg/reflect/pr122634-2.C: Likewise.
+
+2026-02-23  Gonzalo Silvalde Blanco  <gonzalo.silvalde@gmail.com>
+
+	PR fortran/80012
+	* gfortran.dg/pr80012.f90: New test.
+
+2026-02-23  Paul-Antoine Arras  <parras@baylibre.com>
+
+	PR fortran/120505
+	* gfortran.dg/gomp/map-subarray-4.f90: Update scan dumps for -m32.
+
+2026-02-23  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/124150
+	* g++.dg/reflect/substitute4.C: New test.
+
+2026-02-23  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/123641
+	* g++.dg/reflect/members_of8.C: New test.
+
+2026-02-23  Paul-Antoine Arras  <parras@baylibre.com>
+
+	PR fortran/120505
+	* gfortran.dg/gomp/map-subarray-4.f90: New test.
+
+2026-02-23  Paul-Antoine Arras  <parras@baylibre.com>
+
+	PR fortran/120505
+	* gfortran.dg/gomp/map-subarray-3.f90: New test.
+	* gfortran.dg/gomp/map-subarray-5.f90: New test.
+
+2026-02-23  Alice Carlotti  <alice.carlotti@arm.com>
+
+	* g++.target/aarch64/sme/aarch64-sme-acle-asm.exp: Use
+	-march=armv8-a+sme when SME isn't already enabled.
+	* g++.target/aarch64/sme/aarch64-sme.exp: Ditto.
+	* g++.target/aarch64/sme2/aarch64-sme2-acle-asm.exp: Ditto.
+	* gcc.target/aarch64/sme/aarch64-sme-acle-asm.exp: Ditto.
+	* gcc.target/aarch64/sme/aarch64-sme.exp: Ditto.
+	* gcc.target/aarch64/sme2/aarch64-sme2-acle-asm.exp: Ditto.
+
+2026-02-23  Alice Carlotti  <alice.carlotti@arm.com>
+
+	* g++.target/aarch64/sme/exceptions_2.C: Add +sve pragma.
+	* g++.target/aarch64/sme/exceptions_2_nosve.C: New test.
+	* gcc.target/aarch64/sme/acle-asm/ldr_vnum_za_sc.c: Remove
+	svbool_t parameters.
+	* gcc.target/aarch64/sme/acle-asm/ldr_za_sc.c: Ditto.
+	* gcc.target/aarch64/sme/acle-asm/str_vnum_za_sc.c: Ditto.
+	* gcc.target/aarch64/sme/acle-asm/str_za_sc.c: Ditto.
+	* gcc.target/aarch64/sme/acle-asm/test_sme_acle.h
+	(TEST_LOAD_ZA_NOPRED, TEST_STORE_ZA_NOPRED): New macros.
+	* gcc.target/aarch64/sme/call_sm_switch_1.c: Add +sve pragma.
+	* gcc.target/aarch64/sme/call_sm_switch_1_nosve.c: New test.
+	* gcc.target/aarch64/sme/call_sm_switch_3.c: Add +sve pragma.
+	* gcc.target/aarch64/sme/call_sm_switch_3_nosve.c: New test.
+	* gcc.target/aarch64/sme/call_sm_switch_5.c: Add +sve pragma.
+	* gcc.target/aarch64/sme/call_sm_switch_6.c: Add +sve pragma.
+	* gcc.target/aarch64/sme/call_sm_switch_11.c: Add +sve pragma.
+	* gcc.target/aarch64/sme/call_sm_switch_11_nosve.c: New test.
+	* gcc.target/aarch64/sme/inlining_9.c: Add +sve pragma.
+	* gcc.target/aarch64/sme/inlining_10.c: Add +sve pragma.
+	* gcc.target/aarch64/sme/inlining_11.c: Add +sve pragma.
+	* gcc.target/aarch64/sme/locally_streaming_1.c:
+	* gcc.target/aarch64/sme/locally_streaming_1_nosve.c: New test.
+	* gcc.target/aarch64/sme/pr121028.c: Add +sve to pragma.
+	* gcc.target/aarch64/sme/vect-dotprod-twoway.c: Add -mtune.
+	* gcc.target/aarch64/sme2/acle-asm/ldr_zt.c: Use svcntsb instead
+	of svcntb.
+	* gcc.target/aarch64/sme2/acle-asm/str_zt.c: Ditto.
+
+2026-02-23  Alice Carlotti  <alice.carlotti@arm.com>
+
+	* gcc.target/aarch64/pragma_cpp_predefs_4.c: Remove unnecessary
+	uses of +sve2.
+	* gcc.target/aarch64/sve/acle/general-c/binary_int_opt_single_n_2.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/binary_opt_single_n_2.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/binary_single_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/binary_za_slice_int_opt_single_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/binary_za_slice_lane_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/binary_za_slice_lane_2.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/binary_za_slice_lane_3.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/binary_za_slice_lane_4.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/binary_za_slice_opt_single_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/binary_za_slice_opt_single_2.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/binary_za_slice_opt_single_3.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/binary_za_slice_uint_opt_single_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/binaryxn_2.c: Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/clamp_1.c: Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/compare_scalar_count_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/dot_za_slice_int_lane_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/dot_za_slice_lane_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/dot_za_slice_lane_2.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/dot_za_slice_uint_lane_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/shift_right_imm_narrowxn_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/storexn_1.c: Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/ternary_mfloat8_lane_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/ternary_mfloat8_lane_group_selection_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/ternary_qq_or_011_lane_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/unary_convertxn_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/unary_convertxn_narrow_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/unary_convertxn_narrowt_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/unary_za_slice_1.c:
+	Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/unaryxn_1.c: Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/write_za_1.c: Ditto.
+	* gcc.target/aarch64/sve/acle/general-c/write_za_slice_1.c:
+	Ditto.
+
+2026-02-23  Alice Carlotti  <alice.carlotti@arm.com>
+
+	* gcc.target/aarch64/no-sve-with-sme-1.c: Removed.
+	* gcc.target/aarch64/no-sve-with-sme-2.c: Removed.
+	* gcc.target/aarch64/no-sve-with-sme-3.c: Removed.
+	* gcc.target/aarch64/no-sve-with-sme-4.c: Removed.
+
+2026-02-23  Alice Carlotti  <alice.carlotti@arm.com>
+
+	* lib/scanasm.exp (check_function_body): Log matching portion
+	of body_regexp separately.
+
+2026-02-23  Jose E. Marchesi  <jemarch@gnu.org>
+
+	* algol68/execute/char-in-string-1.a68: It is no longer need to
+	access Transput explicitly.
+
+2026-02-22  Roger Sayle  <roger@nextmovesoftware.com>
+
+	PR c/123716
+	* gcc.dg/pr123716.c: New test case.
+
+2026-02-22  Jose E. Marchesi  <jemarch@gnu.org>
+
+	* algol68/execute/trimmer-12.a68: New test.
+
+2026-02-22  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/124173
+	* g++.dg/cpp0x/pr124173.C: New test.
+
+2026-02-22  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/124184
+	* g++.dg/cpp26/expansion-stmt31.C: New test.
+
+2026-02-22  Nathaniel Shead  <nathanieloshead@gmail.com>
+
+	PR c++/124153
+	* g++.dg/modules/cpp-22.C: New test.
+
+2026-02-22  Valentyn Yukhymenko  <valentin.yukhymenko@gmail.com>
+
+	PR c++/123642
+	* g++.dg/reflect/member4.C: Remove expected error.
+	* g++.dg/reflect/anon4.C: New test based on original bug report.
+
+2026-02-22  Eric Botcazou  <ebotcazou@adacore.com>
+
+	* gnat.dg/asynch2.adb: New test.
+
+2026-02-22  Jose E. Marchesi  <jemarch@gnu.org>
+
+	* algol68/execute/trimmer-11.a68: New test.
+
+2026-02-21  Jose E. Marchesi  <jemarch@gnu.org>
+
+	* algol68/compile/warning-hidding-4.a68: Mention bitspack.
+
+2026-02-21  Jose E. Marchesi  <jemarch@gnu.org>
+
+	* lib/algol68.exp (algol68_init): Add -I options to
+	ALGOL68_UNDER_TEST so exports in libga68.{a,so} are found.
+	* algol68/compile/warning-hidding-6.a68: Likewise.
+	* algol68/compile/warning-hidding-5.a68: Use maxint instead of
+	getchar to trigger the warning.
+	* algol68/compile/error-nest-4.a68: Procedures yielding strings
+	are now on in C formal holes.
+
+2026-02-21  Jeff Law  <jeffrey.law@oss.qualcomm.com>
+
+	PR rtl-optimization/123994
+	* gcc.dg/torture/pr123994.c: New test.
+
+2026-02-21  Harald Anlauf  <anlauf@gmx.de>
+
+	Revert:
+	2026-02-21  Gonzalo Silvalde Blanco  <gonzalo.silvalde@gmail.com>
+
+	PR fortran/80012
+	* gfortran.dg/pr80012.f90: New test.
+
 2026-02-20  Gonzalo Silvalde Blanco  <gonzalo.silvalde@gmail.com>
 
 	PR fortran/80012

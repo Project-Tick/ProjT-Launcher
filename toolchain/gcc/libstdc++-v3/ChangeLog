@@ -1,3 +1,56 @@
+2026-02-26  Torbjörn SVENSSON  <torbjorn.svensson@foss.st.com>
+
+	* testsuite/29_atomics/atomic_ref/requirements_neg.cc: Add
+	using std::size_t.
+
+2026-02-26  Yuao Ma  <c8ef@outlook.com>
+
+	* include/bits/atomic_base.h (__atomic_base<_PTp*>::fetch_min,
+	__atomic_base<_PTp*>::fetch_max,
+	__atomic_ref<_Pt, false, false, true>::fetch_min,
+	__atomic_ref<_Pt, false, false, true>::fetch_max): Define new
+	functions.
+	* include/std/atomic (atomic<_Tp*>::fetch_min,
+	atomic<_Tp*>::fetch_max): Likewise.
+	(atomic_fetch_min_explicit, atomic_fetch_max_explicit,
+	atomic_fetch_min, atomic_fetch_max): Change parameter from
+	__atomic_base<_ITp>* to atomic<_Tp>*.
+	* testsuite/29_atomics/atomic/pointer_fetch_minmax.cc: New test.
+	* testsuite/29_atomics/atomic_ref/pointer_fetch_minmax.cc: New
+	test.
+
+2026-02-25  Nathan Myers  <ncm@cantrip.org>
+
+	PR libstdc++/117404
+	* include/debug/map.h (extract, erase): Define overloads.
+	* include/debug/multimap.h: Same.
+	* include/debug/multiset.h: Same.
+	* include/debug/set.h: Same.
+	* include/debug/unordered_map: Same (2x).
+	* include/debug/unordered_set: Same (2x), rename some locals.
+
+2026-02-24  Tomasz Kamiński  <tkaminsk@redhat.com>
+
+	* testsuite/23_containers/mdspan/at.cc: Updated guard.
+
+2026-02-24  Tomasz Kamiński  <tkaminsk@redhat.com>
+
+	* testsuite/23_containers/mdspan/at.cc: Updated test.
+
+2026-02-23  Tomasz Kamiński  <tkaminsk@redhat.com>
+
+	* include/std/mdspan (__mdspan::__is_multi_index): Removed,
+	replaced with local lambda in mdspan::operator[].
+	(__mdspan::operator[]): Implement in terms of single overload
+	accepting index_type. Use __mdspan::__index_type_cast for type
+	conversion.
+
+2026-02-23  Tomasz Kamiński  <tkaminsk@redhat.com>
+
+	* include/std/mdspan (mdspan::at, mdspan::__index_int_t):
+	Define.
+	* testsuite/23_containers/mdspan/at.cc: New test.
+
 2026-02-20  Jonathan Wakely  <jwakely@redhat.com>
 
 	* testsuite/lib/libstdc++.exp (v3-minimum-std): Remove second

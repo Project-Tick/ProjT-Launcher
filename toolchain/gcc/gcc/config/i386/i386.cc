@@ -25161,7 +25161,7 @@ i386_solaris_elf_named_section (const char *name, unsigned int flags,
       return;
     }
 
-#if !HAVE_GNU_AS
+#if HAVE_SOLARIS_AS
   if (HAVE_COMDAT_GROUP && flags & SECTION_LINKONCE)
     {
       solaris_elf_asm_comdat_section (name, flags, decl);
@@ -26427,26 +26427,29 @@ ix86_vector_costs::add_stmt_cost (int count, vect_cost_for_stmt kind,
 	  TREE_VISITED (op) = 1;
 	  gimple *def = SSA_NAME_DEF_STMT (op);
 	  tree tem;
+	  /* Look through a conversion.  */
 	  if (is_gimple_assign (def)
 	      && CONVERT_EXPR_CODE_P (gimple_assign_rhs_code (def))
 	      && ((tem = gimple_assign_rhs1 (def)), true)
-	      && TREE_CODE (tem) == SSA_NAME
-	      /* A sign-change expands to nothing.  */
-	      && tree_nop_conversion_p (TREE_TYPE (gimple_assign_lhs (def)),
-					TREE_TYPE (tem)))
+	      && TREE_CODE (tem) == SSA_NAME)
 	    def = SSA_NAME_DEF_STMT (tem);
-	  /* When the component is loaded from memory we can directly
-	     move it to a vector register, otherwise we have to go
-	     via a GPR or via vpinsr which involves similar cost.
-	     Likewise with a BIT_FIELD_REF extracting from a vector
-	     register we can hope to avoid using a GPR.  */
-	  if (!is_gimple_assign (def)
-	      || ((!gimple_assign_load_p (def)
-		   || (!TARGET_SSE4_1
-		       && GET_MODE_SIZE (TYPE_MODE (TREE_TYPE (op))) == 1))
-		  && (gimple_assign_rhs_code (def) != BIT_FIELD_REF
-		      || !VECTOR_TYPE_P (TREE_TYPE
-				(TREE_OPERAND (gimple_assign_rhs1 (def), 0))))))
+	  /* When the component is loaded from memory without sign-
+	     or zero-extension we can move it to a vector register and/or
+	     insert it via vpinsr with a memory operand.  */
+	  if (gimple_assign_load_p (def)
+	      && tree_nop_conversion_p (TREE_TYPE (op),
+					TREE_TYPE (gimple_assign_lhs (def)))
+	      && (GET_MODE_SIZE (TYPE_MODE (TREE_TYPE (op))) > 1
+		  || TARGET_SSE4_1))
+	    ;
+	  /* When the component is extracted from a vector it is already
+	     in a vector register.  */
+	  else if (is_gimple_assign (def)
+		   && gimple_assign_rhs_code (def) == BIT_FIELD_REF
+		   && VECTOR_TYPE_P (TREE_TYPE
+				(TREE_OPERAND (gimple_assign_rhs1 (def), 0))))
+	    ;
+	  else
 	    {
 	      if (fp)
 		{
