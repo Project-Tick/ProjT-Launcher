@@ -56,6 +56,10 @@ add_executable(cmark_exe
 cmark_add_compile_options(cmark_exe)
 set_target_properties(cmark_exe PROPERTIES
   OUTPUT_NAME "cmark"
+  # Avoid resolving the executable output to the parent build/cmark directory
+  # when cmark is embedded as a subproject.
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  RUNTIME_OUTPUT_DIRECTORY_${CMAKE_BUILD_TYPE} "${CMAKE_BINARY_DIR}/bin"
   INSTALL_RPATH "${Base_rpath}")
 target_link_libraries(cmark_exe PRIVATE
   cmark)
