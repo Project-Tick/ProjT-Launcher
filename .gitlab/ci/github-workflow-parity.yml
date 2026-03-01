@@ -45,7 +45,7 @@ nix_system_build_linux:
   script:
     - |
       set -eu
-      ATTR="packages.${NIX_SYSTEM}.projtlauncher-debug"
+      ATTR="legacyPackages.${NIX_SYSTEM}.projtlauncher-debug"
       if [ -n "${CI_COMMIT_TAG:-}" ]; then
         ATTR="packages.${NIX_SYSTEM}.projtlauncher"
       fi
@@ -84,7 +84,7 @@ nix_system_build_darwin:
         . "$HOME/.nix-profile/etc/profile.d/nix.sh"
       fi
 
-      ATTR="packages.${NIX_SYSTEM}.projtlauncher-debug"
+      ATTR="legacyPackages.${NIX_SYSTEM}.projtlauncher-debug"
       if [ -n "${CI_COMMIT_TAG:-}" ]; then
         ATTR="packages.${NIX_SYSTEM}.projtlauncher"
       fi
