@@ -63,6 +63,7 @@ nix_system_build_linux:
 
 nix_system_build_darwin:
   stage: build
+  image: $MACOS_CI_IMAGE
   tags:
     - saas-macos-medium-m1
   needs:
@@ -265,6 +266,7 @@ quazip_use_qt_zlib_ubuntu:
 
 .quazip_macos_template:
   stage: build
+  image: $MACOS_CI_IMAGE
   tags:
     - saas-macos-medium-m1
   rules: *quazip_rules

@@ -255,6 +255,7 @@ launcher_linux_image:
 
 .launcher_macos_template:
   stage: build
+  image: $MACOS_CI_IMAGE
   tags:
     - saas-macos-medium-m1
   rules: *launcher_rules

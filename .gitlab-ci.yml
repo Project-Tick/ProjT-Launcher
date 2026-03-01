@@ -88,6 +88,7 @@ workflow:
 
 variables:
   DEFAULT_CI_IMAGE: "ubuntu:24.04"
+  MACOS_CI_IMAGE: "macos-15-xcode-16"
   DEFAULT_JOB_TAG: "pt-rhel-runner-01"
   PIPELINE_NAME: "ProjT Launcher pipeline"
   GIT_DEPTH: "1"
