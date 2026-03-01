@@ -76,9 +76,9 @@ nix_system_build_darwin:
     - |
       set -eu
       if ! command -v nix >/dev/null 2>&1; then
-        curl -L https://nixos.org/nix/install | sh -s -- --no-daemon
-      fi
-      if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+        curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+      elif [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
         . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
       elif [ -f "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
         . "$HOME/.nix-profile/etc/profile.d/nix.sh"
