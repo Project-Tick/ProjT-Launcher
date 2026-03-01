@@ -467,6 +467,13 @@
     BUILD_PLATFORM: official
     GET_SOURCES_ATTEMPTS: "3"
     GIT_FETCH_EXTRA_FLAGS: "--no-tags"
+  timeout: 2h
+  cache:
+    - key: "windows-libs-$CI_COMMIT_REF_SLUG"
+      paths:
+        - dependencies/
+        - "C:/Qt/6.10.2/"
+    - !reference [default, cache]
   script:
     - '$ErrorActionPreference = "Stop"'
     - |
@@ -485,6 +492,8 @@
       }
       if (Get-Command choco -ErrorAction SilentlyContinue) {
         choco upgrade cmake -y --no-progress
+        choco install ninja -y --no-progress
+        $env:Path = "C:\ProgramData\chocolatey\bin;$env:Path"
       }
 
       if ($env:VCVARS_ARCH) {
@@ -531,7 +540,7 @@
         $configure = "cmake --preset `"$env:CMAKE_PRESET`" -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING -DLauncher_OUTPUT_ROOT=`"$env:CI_PROJECT_DIR/build/out`" -DQt6_DIR=`"$env:Qt6_DIR`""
         $build = "cmake --build --preset `"$env:CMAKE_PRESET`" --config `"$env:BUILD_TYPE`""
         $tests = "ctest --preset `"$env:CMAKE_PRESET`" --build-config `"$env:BUILD_TYPE`" --output-on-failure --no-tests=error"
-        cmd /c "`"$vsdev`" -arch=$env:VCVARS_ARCH -host_arch=amd64 && set Qt6_DIR=$env:Qt6_DIR && set CMAKE_PREFIX_PATH=$qtDir;%CMAKE_PREFIX_PATH% && set PATH=$qtDir\bin;%PATH% && $configure && $build && $tests"
+        cmd /c "`"$vsdev`" -arch=$env:VCVARS_ARCH -host_arch=amd64 && set `"PATH=C:\ProgramData\chocolatey\bin;%PATH%`" && set Qt6_DIR=$env:Qt6_DIR && set CMAKE_PREFIX_PATH=$qtDir;%CMAKE_PREFIX_PATH% && set PATH=$qtDir\bin;%PATH% && $configure && $build && $tests"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       }
       elseif ($env:CMAKE_PRESET -eq "windows_mingw") {
