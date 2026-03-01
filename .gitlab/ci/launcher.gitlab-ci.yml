@@ -284,7 +284,6 @@ launcher_linux_image:
           mono \
           ninja \
           extra-cmake-modules \
-          temurin@21 \
           zlib \
           quazip \
           cmark \
@@ -298,7 +297,9 @@ launcher_linux_image:
           qtpositioning \
           qtserialport \
           qtwebchannel \
-          qtwebengine || true
+          qtwebengine \
+          vulkan-headers
+        brew install --cask temurin@21 || true
         HOMEBREW_PREFIX="$(brew --prefix || true)"
       fi
 
