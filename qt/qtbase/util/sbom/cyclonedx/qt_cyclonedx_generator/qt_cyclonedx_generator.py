@@ -55,10 +55,10 @@ def check_package_dependencies() -> None:
         missing_packages.append("tomli")
 
     if importlib.util.find_spec("cyclonedx") is None:
-        missing_packages.append("cyclonedx")
+        missing_packages.append("cyclonedx-python-lib")
 
     if importlib.util.find_spec("packageurl") is None:
-        missing_packages.append("packageurl")
+        missing_packages.append("packageurl-python")
 
     if missing_packages:
         log.error(f"Missing required dependencies: {', '.join(missing_packages)}")
@@ -137,6 +137,13 @@ class LicenseDict(TypedDict):
     text: str
 
 
+class RelationshipDict(TypedDict):
+    # Optional fields
+    relationship_from: str
+    relationship_type: str
+    relationship_to: str
+    relationship_comment: str
+
 class RootComponentDict(TypedDict):
     name: str
     spdx_id: str
@@ -149,6 +156,7 @@ class RootComponentDict(TypedDict):
     supplier: str
     supplier_url: str
     serial_number_uuid: str
+    relationships: list[RelationshipDict]
 
 
 class ComponentDict(TypedDict):
@@ -163,7 +171,7 @@ class ComponentDict(TypedDict):
     purl_list: list[str]
     cpe_list: list[str]
     properties: list[CyclonePropertyDict]
-    dependencies: list[str]
+    relationships: list[RelationshipDict]
 
 
 class BuildToolDict(TypedDict):
@@ -455,6 +463,13 @@ def process_toml(toml_data: TomlDataDict, cydx_bom: Bom) -> None:
             root_component_object,
         )
 
+    log.debug("Processing project relationships.")
+    handle_project_relationships(
+        cydx_bom,
+        toml_data,
+        components,
+    )
+
 
 # Creates the root component of the BOM.
 # The CycloneDX root component is mapped to the Qt spdx project package e.g. qtbase.
@@ -685,20 +700,44 @@ def handle_component_dependencies(
     if component_id not in external_components_spdx_ids:
         cydx_bom.register_dependency(root_component_object, [component_object])  # pyright: ignore [reportAttributeAccessIssue, reportArgumentType]
 
-    # Register dependencies declared in the toml.
-    # CycloneDX does not support different dependency types, like SPDX does.
-    if dependencies := component_toml.get("dependencies"):
-        for dependency_spdx_id in dependencies:
-            if dependency_spdx_id not in components:
-                log.warning(
-                    f"Component {component_id} has a dependency on unknown component {dependency_spdx_id}, skipping."
-                )
-                continue
-            dep_component = components[dependency_spdx_id]
-            cydx_bom.register_dependency(component_object, [dep_component])  # pyright: ignore [reportAttributeAccessIssue, reportArgumentType]
-            log.debug(
-                f"Created dependency from '{component_id}' to '{dependency_spdx_id}'."
+    # Register relationships declared in the toml.
+    if relationships := component_toml.get("relationships"):
+        process_relationships(relationships, cydx_bom, components)
+
+
+def handle_project_relationships(
+    cydx_bom: Bom,
+    toml_data: TomlDataDict,
+    components: dict[str, Component],
+) -> None:
+    root_component_toml = validate_required_field(toml_data, "root_component", "TOML data")
+    if relationships := root_component_toml.get("relationships"):
+        process_relationships(relationships, cydx_bom, components)
+
+
+# Creates dependencies between components based on the relationships declared in the toml data.
+# CycloneDX does not support different relationship types, like SPDX does, so the relationship
+# type is ignored.
+def process_relationships(relationships: list[RelationshipDict], cydx_bom: Bom, components: dict[str, Component]) -> None:
+    for relationship in relationships:
+        from_spdx_id = relationship["relationship_from"]
+        to_spdx_id = relationship["relationship_to"]
+        relationship_type = relationship["relationship_type"]
+        if from_spdx_id not in components:
+            log.warning(
+                f"Component '{from_spdx_id}' in 'from' dependency is unknown, skipping."
             )
+            continue
+        if to_spdx_id not in components:
+            log.warning(
+                f"Component {to_spdx_id} in 'from' dependency is unknown, skipping."
+            )
+            continue
+        from_component = components[from_spdx_id]
+        to_component = components[to_spdx_id]
+        cydx_bom.register_dependency(from_component,
+                                     [to_component])  # pyright: ignore [reportAttributeAccessIssue, reportArgumentType]
+        log.debug(f"Created dependency from '{from_spdx_id}' to '{to_spdx_id}'. The relationship type '{relationship_type}' is currently discarded.")
 
 
 # Handles PURL and CPE entries for a component.

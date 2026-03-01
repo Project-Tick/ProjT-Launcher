@@ -791,8 +791,11 @@ QWindow *QWindow::parent(AncestorMode mode) const
 void QWindow::setParent(QWindow *parent)
 {
     Q_D(QWindow);
-    if (d->parentWindow == parent)
+    if (d->parentWindow == parent
+        // Allow explicit reparenting to top level for embedded windows
+        && !(d->platformWindow && d->platformWindow->isEmbedded())) {
         return;
+    }
 
     QScreen *newScreen = parent ? parent->screen() : screen();
     if (d->windowRecreationRequired(newScreen)) {
@@ -1988,6 +1991,16 @@ void QWindow::setFramePosition(const QPoint &point)
         d->geometry.moveTopLeft(point);
     }
 }
+
+/*!
+    \fn void QWindow::setFramePosition(int x, int y)
+    \brief Sets the upper left position of the window, including its window frame, to \a x, \a y
+
+    The position is in relation to the virtualGeometry() of its screen.
+
+    \since 6.12
+    \sa setGeometry(), frameGeometry()
+*/
 
 /*!
     Returns the safe area margins of the window.

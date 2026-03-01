@@ -43,7 +43,19 @@ freeifaddrs(list);
     /* END TEST: */
     return 0;
 }
-"# FIXME: use: unmapped library: network
+"
+)
+
+# libresolv_auto_refresh
+qt_config_compile_test(libresolv_auto_refresh
+    LABEL "libresolv automatically refreshes"
+    CODE
+"#include <resolv.h>
+
+#if defined(RES_NORELOAD)
+int main() { return 0; }
+#endif
+"
 )
 
 # ipv6ifname
@@ -205,6 +217,11 @@ qt_feature("getifaddrs" PUBLIC
     CONDITION VXWORKS OR UNIX AND NOT QT_FEATURE_linux_netlink AND TEST_getifaddrs
 )
 qt_feature_definition("getifaddrs" "QT_NO_GETIFADDRS" NEGATE VALUE "1")
+qt_feature("hostinfocache" PRIVATE
+    LABEL "QHostInfo cache"
+    DISABLE ANDROID OR DARWIN OR FREEBSD OR OPENBSD OR WINDOWS
+    CONDITION NOT TEST_libresolv_auto_refresh
+)
 qt_feature("ipv6ifname" PUBLIC
     LABEL "IPv6 ifname"
     CONDITION VXWORKS OR UNIX AND NOT QT_FEATURE_linux_netlink AND TEST_ipv6ifname

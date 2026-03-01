@@ -1,6 +1,10 @@
 # Copyright (C) 2025 The Qt Company Ltd.
 # SPDX-License-Identifier: BSD-3-Clause
 
+if(CMAKE_VERSION VERSION_LESS 3.17.0)
+    set(CMAKE_CURRENT_FUNCTION_LIST_DIR "${CMAKE_CURRENT_LIST_DIR}")
+endif()
+
 # Helper function to get common project related variables for SBOM generation for both SPDX and
 # CycloneDX formats.
 function(_qt_internal_sbom_get_common_project_variables)
@@ -70,7 +74,9 @@ function(_qt_internal_sbom_get_common_project_variables)
     # Prevent collision with other generated SPDXID with -[0-9]+ suffix.
     string(REGEX REPLACE "-([0-9]+)$" "\\1" arg_PROJECT_FOR_SPDX_ID "${arg_PROJECT_FOR_SPDX_ID}")
 
-    set(project_spdx_id "SPDXRef-${arg_PROJECT_FOR_SPDX_ID}")
+    _qt_internal_sbom_get_spdx_id_unique_suffix(spdx_id_unique_suffix)
+    set(project_spdx_id "SPDXRef-${arg_PROJECT_FOR_SPDX_ID}${spdx_id_unique_suffix}")
+
     set(${arg_OUT_VAR_PROJECT_FOR_SPDX_ID} "${project_spdx_id}" PARENT_SCOPE)
 
     _qt_internal_sbom_set_default_option_value_and_error_if_empty(SUPPLIER "")
@@ -105,7 +111,7 @@ function(_qt_internal_sbom_save_common_path_variables_in_global_properties)
         OUTPUT
         OUTPUT_RELATIVE_PATH
         SBOM_DIR
-        PROPERTY_SUFFIX
+        SBOM_FORMAT
     )
     set(multi_args "")
     cmake_parse_arguments(PARSE_ARGV 0 arg "${opt_args}" "${single_args}" "${multi_args}")
@@ -137,7 +143,13 @@ function(_qt_internal_sbom_save_common_path_variables_in_global_properties)
     get_filename_component(install_sbom_dir "${install_sbom_path}" DIRECTORY)
     set(install_sbom_path_without_ext "${install_sbom_dir}/${output_file_name_without_ext}")
 
-    set(suffix "${arg_PROPERTY_SUFFIX}")
+    if(arg_SBOM_FORMAT STREQUAL "SPDX_V2")
+        set(suffix "")
+    elseif(arg_SBOM_FORMAT STREQUAL "CYDX_V1_6")
+        set(suffix "_cydx")
+    else()
+        message(FATAL_ERROR "Unknown SBOM_FORMAT: ${arg_SBOM_FORMAT}")
+    endif()
 
     set_property(GLOBAL PROPERTY _qt_sbom_build_output_path${suffix} "${build_sbom_path}")
     set_property(GLOBAL PROPERTY _qt_sbom_build_output_path_without_ext${suffix}
@@ -204,6 +216,25 @@ function(_qt_internal_sbom_get_common_path_variables_from_global_properties)
     endif()
 endfunction()
 
+# Create the build directory that will contain all the intermediate generated sbom files.
+function(_qt_internal_sbom_create_sbom_staging_dir)
+    set(opt_args "")
+    set(single_args
+        OUT_VAR_SBOM_DIR
+    )
+    set(multi_args "")
+    cmake_parse_arguments(PARSE_ARGV 0 arg "${opt_args}" "${single_args}" "${multi_args}")
+    _qt_internal_validate_all_args_are_parsed(arg)
+
+    if(NOT arg_OUT_VAR_SBOM_DIR)
+        message(FATAL_ERROR "OUT_VAR_SBOM_DIR argument is required.")
+    endif()
+
+    _qt_internal_get_current_project_sbom_dir(sbom_dir)
+    file(MAKE_DIRECTORY "${sbom_dir}")
+    set(${arg_OUT_VAR_SBOM_DIR} "${sbom_dir}" PARENT_SCOPE)
+endfunction()
+
 # Helper function to create a staging file for SBOM generation.
 # It is the file that will be incrementally assembled by having content appended to it.
 # Also creates the intro file that will add the assembled content for the SBOM project, aka for the
@@ -211,19 +242,20 @@ endfunction()
 function(_qt_internal_sbom_create_sbom_staging_file)
     set(opt_args "")
     set(single_args
-        CONTENT
         SBOM_FORMAT
         REPO_PROJECT_NAME_LOWERCASE
-        OUT_VAR_CREATE_STAGING_FILE
-        OUT_VAR_SBOM_DIR
+        SBOM_DIR
     )
-    set(multi_args "")
+    set(multi_args
+        RELATIONSHIP_STRINGS
+    )
     cmake_parse_arguments(PARSE_ARGV 0 arg "${opt_args}" "${single_args}" "${multi_args}")
     _qt_internal_validate_all_args_are_parsed(arg)
 
-    # Create the directory that will contain all sbom related files.
-    _qt_internal_get_current_project_sbom_dir(sbom_dir)
-    file(MAKE_DIRECTORY "${sbom_dir}")
+    if(NOT arg_SBOM_DIR)
+        message(FATAL_ERROR "SBOM_DIR argument is required")
+    endif()
+    set(sbom_dir "${arg_SBOM_DIR}")
 
     if(arg_SBOM_FORMAT STREQUAL "SPDX_V2")
         set(doc_base_name "SPDXRef-DOCUMENT")
@@ -234,6 +266,14 @@ function(_qt_internal_sbom_create_sbom_staging_file)
 ")
         _qt_internal_get_staging_area_spdx_file_path(staging_area_file)
         set(starting_message "Starting SPDX SBOM generation in build dir: ${staging_area_file}")
+        set(extra_intro_content "")
+        set(project_relationship_strings "")
+        if(arg_RELATIONSHIP_STRINGS)
+            list(JOIN arg_RELATIONSHIP_STRINGS "\n" arg_RELATIONSHIP_STRINGS)
+
+            # Prepend a newline to separate from the very first always there relationship.
+            string(APPEND extra_intro_content "\n${arg_RELATIONSHIP_STRINGS}")
+        endif()
     elseif(arg_SBOM_FORMAT STREQUAL "CYDX_V1_6")
         set(doc_base_name "cydx-document")
         set(doc_extension "cdx.in.toml")
@@ -242,12 +282,40 @@ function(_qt_internal_sbom_create_sbom_staging_file)
         _qt_internal_get_staging_area_cydx_file_path(staging_area_file)
         set(starting_message
             "Starting CycloneDX SBOM TOML file generation in build dir: ${staging_area_file}")
+        set(extra_intro_content "")
+
+        if(arg_RELATIONSHIP_STRINGS)
+            list(JOIN arg_RELATIONSHIP_STRINGS "\n" arg_RELATIONSHIP_STRINGS)
+            set(project_relationship_strings "${arg_RELATIONSHIP_STRINGS}")
+        else()
+            set(project_relationship_strings "")
+        endif()
     endif()
 
-    # Generate project document intro spdx file.
+    # Assemble final intro content.
+    get_property(intro_content GLOBAL PROPERTY _qt_sbom_project_intro_content${suffix})
+    if(NOT intro_content)
+        message(FATAL_ERROR "Missing intro content for SBOM generation.")
+    endif()
+
+    if(arg_SBOM_FORMAT STREQUAL "CYDX_V1_6")
+        string(REPLACE "<PROJECT_RELATIONSHIP_PLACEHOLDER>" "${project_relationship_strings}"
+            intro_content "${intro_content}")
+    endif()
+
+    if(extra_intro_content)
+        string(APPEND intro_content "${extra_intro_content}")
+    endif()
+
+    # Final new line to separate the main package from rest of info.
+    if(arg_SBOM_FORMAT STREQUAL "SPDX_V2")
+        string(APPEND intro_content "\n")
+    endif()
+
+    # Generate project document intro file.
     set(document_intro_file_name
         "${sbom_dir}/${doc_base_name}-${arg_REPO_PROJECT_NAME_LOWERCASE}.${doc_extension}")
-    file(GENERATE OUTPUT "${document_intro_file_name}" CONTENT "${content}")
+    file(GENERATE OUTPUT "${document_intro_file_name}" CONTENT "${intro_content}")
 
     get_cmake_property(is_multi_config GENERATOR_IS_MULTI_CONFIG)
     if(is_multi_config)
@@ -256,7 +324,7 @@ function(_qt_internal_sbom_create_sbom_staging_file)
         set(multi_config_suffix "")
     endif()
 
-    # Create cmake file to append the document intro spdx to the staging file.
+    # Create cmake file to append the document intro to the staging file.
     set(create_staging_file
         "${sbom_dir}/append_document_to_staging${suffix}${multi_config_suffix}.cmake")
 
@@ -269,9 +337,7 @@ function(_qt_internal_sbom_create_sbom_staging_file)
         file(WRITE \"${staging_area_file}\" \"\${content}\")
 ")
     file(GENERATE OUTPUT "${create_staging_file}" CONTENT "${content}")
-
-    set(${arg_OUT_VAR_CREATE_STAGING_FILE} "${create_staging_file}" PARENT_SCOPE)
-    set(${arg_OUT_VAR_SBOM_DIR} "${sbom_dir}" PARENT_SCOPE)
+    set_property(GLOBAL PROPERTY _qt_sbom_cmake_intro_file${suffix} "${create_staging_file}")
 endfunction()
 
 # Helper function to save common project info like supplier, project name, spdx id in global
@@ -285,7 +351,9 @@ function(_qt_internal_sbom_save_project_info_in_global_properties)
         PROJECT
         PROJECT_SPDX_ID
     )
-    set(multi_args "")
+    set(multi_args
+        EXTERNAL_REFERENCE_SBOM_DIRS
+    )
     cmake_parse_arguments(PARSE_ARGV 0 arg "${opt_args}" "${single_args}" "${multi_args}")
     _qt_internal_validate_all_args_are_parsed(arg)
 
@@ -295,6 +363,34 @@ function(_qt_internal_sbom_save_project_info_in_global_properties)
 
     set_property(GLOBAL PROPERTY _qt_sbom_project_name "${arg_PROJECT}")
     set_property(GLOBAL PROPERTY _qt_sbom_project_spdx_id "${arg_PROJECT_SPDX_ID}")
+
+    # Used for finding external reference spdx documents.
+    if(arg_EXTERNAL_REFERENCE_SBOM_DIRS)
+        set_property(GLOBAL APPEND PROPERTY _qt_internal_sbom_dirs
+            ${arg_EXTERNAL_REFERENCE_SBOM_DIRS})
+    endif()
+endfunction()
+
+# Helper function to save sbom intro content (per sbom format) in a global property.
+function(_qt_internal_sbom_save_intro_content)
+    set(opt_args "")
+    set(single_args
+        SBOM_FORMAT
+        CONTENT
+    )
+    set(multi_args "")
+    cmake_parse_arguments(PARSE_ARGV 0 arg "${opt_args}" "${single_args}" "${multi_args}")
+    _qt_internal_validate_all_args_are_parsed(arg)
+
+    if(arg_SBOM_FORMAT STREQUAL "SPDX_V2")
+        set(suffix "")
+    elseif(arg_SBOM_FORMAT STREQUAL "CYDX_V1_6")
+        set(suffix "_cydx")
+    else()
+        message(FATAL_ERROR "Unknown SBOM_FORMAT: ${arg_SBOM_FORMAT}")
+    endif()
+
+    set_property(GLOBAL PROPERTY _qt_sbom_project_intro_content${suffix} "${content}")
 endfunction()
 
 # Helper function to get cmake include files for SBOM generation from global properties.
@@ -320,7 +416,10 @@ function(_qt_internal_sbom_get_cmake_include_files)
 
     _qt_internal_sbom_collect_cmake_include_files(includes
         JOIN_WITH_NEWLINES
-        PROPERTIES _qt_sbom_cmake_include_files${suffix} _qt_sbom_cmake_end_include_files${suffix}
+        PROPERTIES
+            _qt_sbom_cmake_intro_file${suffix}
+            _qt_sbom_cmake_include_files${suffix}
+            _qt_sbom_cmake_end_include_files${suffix}
     )
 
     # Before checksum includes are included after the verification codes have been collected
@@ -445,6 +544,10 @@ function(_qt_internal_sbom_create_build_time_sbom_targets)
 
     _qt_internal_get_current_project_sbom_dir(sbom_dir)
     set(content "
+        # Include helpers functions.
+        include(\"${CMAKE_CURRENT_FUNCTION_LIST_DIR}/QtPublicCMakeHelpers.cmake\")
+        include(\"${CMAKE_CURRENT_FUNCTION_LIST_DIR}/QtPublicSbomExternalReferenceHelpers.cmake\")
+
         # QT_SBOM_BUILD_TIME be set to FALSE at install time, so don't override if it's set.
         # This allows reusing the same cmake file for both build and install.
         if(NOT DEFINED QT_SBOM_BUILD_TIME)

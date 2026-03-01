@@ -7,6 +7,7 @@
 
 #include <qpa/qplatformwindow.h>
 #include <qpa/qplatformwindow_p.h>
+#include <QtGui/private/qwindow_p.h>
 #include <QRect>
 #include <QPointer>
 
@@ -81,7 +82,7 @@ public:
     void setGeometry(const QRect &rect) override;
     QRect geometry() const override;
     QRect normalGeometry() const override;
-    void setCocoaGeometry(const QRect &rect);
+    void setGeometry(const QRect &rect, QWindowPrivate::PositionPolicy positionPolicy);
 
     QMargins safeAreaMargins() const override;
 
@@ -149,7 +150,7 @@ public:
     bool windowIsPopupType(Qt::WindowType type = Qt::Widget) const;
 
     NSInteger windowLevel(Qt::WindowFlags flags);
-    NSUInteger windowStyleMask(Qt::WindowFlags flags);
+    NSUInteger windowStyleMask(Qt::WindowFlags flags) const;
     void updateTitleBarButtons(Qt::WindowFlags flags);
     bool isFixedSize() const;
 
@@ -187,7 +188,6 @@ public:
         RecreationNotNeeded = 0,
         ParentChanged = 0x1,
         MissingWindow = 0x2,
-        WindowModalityChanged = 0x4,
         ContentViewChanged = 0x10,
         PanelChanged = 0x20,
         EmbeddedChanged = 0x40,
@@ -250,7 +250,6 @@ public: // for QNSView
     QCocoaNSWindow *m_nsWindow = nil;
 
     Qt::WindowStates m_lastReportedWindowState = Qt::WindowNoState;
-    Qt::WindowModality m_windowModality = Qt::NonModal;
 
     static QPointer<QCocoaWindow> s_windowUnderMouse;
 

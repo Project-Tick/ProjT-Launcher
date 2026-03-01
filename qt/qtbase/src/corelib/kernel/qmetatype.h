@@ -467,10 +467,10 @@ public:
 #if QT_DEPRECATED_SINCE(6, 0)
     QT_DEPRECATED_VERSION_6_0
     static int type(const char *typeName)
-    { return QMetaType::fromName(typeName).id(); }
+    { return QMetaType::fromName(typeName).rawId(); }
     QT_DEPRECATED_VERSION_6_0
     static int type(const QT_PREPEND_NAMESPACE(QByteArray) &typeName)
-    { return QMetaType::fromName(typeName).id(); }
+    { return QMetaType::fromName(typeName).rawId(); }
     QT_DEPRECATED_VERSION_6_0
     static const char *typeName(int type)
     { return QMetaType(type).name(); }
@@ -523,6 +523,12 @@ public:
         return registerHelper();
     }
 #endif
+    int rawId() const
+    {
+        Q_PRE(!isValid(QT6_CALL_NEW_OVERLOAD) || isRegistered(QT6_CALL_NEW_OVERLOAD));
+        return d_ptr ? d_ptr->typeId.loadRelaxed() : 0;
+    }
+
     constexpr qsizetype sizeOf() const;
     constexpr qsizetype alignOf() const;
     constexpr TypeFlags flags() const;

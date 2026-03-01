@@ -37,6 +37,12 @@ private slots:
 
     void insertMap();
 
+    void take_data();
+    void take();
+
+    void detach_data();
+    void detach();
+
 private:
     QStringList helloEachWorld(int count);
 };
@@ -296,6 +302,61 @@ void tst_QMap::insertMap()
         map2.insert(i * 7, 0);
     QBENCHMARK_ONCE {
         map.insert(map2);
+    }
+}
+
+void tst_QMap::take_data()
+{
+    QTest::addColumn<int>("size");
+    QTest::addColumn<int>("key");
+
+    QTest::addRow("0 in {}") << 0 << 0;
+    QTest::addRow("0 in {0}") << 1 << 0;
+    QTest::addRow("1 in {0}") << 1 << 1;
+    QTest::addRow("0 in {0, 1}") << 2 << 0;
+    QTest::addRow("1 in {0, 1}") << 2 << 1;
+    QTest::addRow("2 in {0, 1}") << 2 << 2;
+    QTest::addRow("0 in {0...16}") << 17 << 0;
+    QTest::addRow("7 in {0...16}") << 17 << 7;
+    QTest::addRow("16 in {0...16}") << 17 << 16;
+    QTest::addRow("17 in {0...16}") << 17 << 17;
+    QTest::addRow("1024 in {0...2047}") << 2048 << 1024;
+}
+
+void tst_QMap::take()
+{
+    QFETCH(const int, size);
+    QFETCH(const int, key);
+
+    QMap<int, QString> map;
+    for (int i = 0; i < size; ++i)
+        map[i] = QString::number(i);
+
+    QBENCHMARK {
+        auto copy = map;
+        [[maybe_unused]] const auto r = copy.take(key);
+    }
+}
+
+void tst_QMap::detach_data()
+{
+    QTest::addColumn<int>("size");
+
+    for (int sz : {0, 1, 2, 17, 2048})
+        QTest::addRow("%d", sz) << sz;
+}
+
+void tst_QMap::detach()
+{
+    QFETCH(const int, size);
+
+    QMap<int, QString> map;
+    for (int i = 0; i < size; ++i)
+        map[i] = QString::number(i);
+
+    QBENCHMARK {
+        auto copy = map;
+        copy.detach();
     }
 }
 

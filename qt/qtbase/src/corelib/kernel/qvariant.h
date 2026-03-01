@@ -329,7 +329,7 @@ public:
 
         operator QVariant() const noexcept(Indirect::CanNoexceptConvertToQVariant)
         {
-            return ConstReference(m_referred);
+            return ConstReference<Indirect>(m_referred);
         }
 
         void swap(Reference b)
@@ -388,7 +388,7 @@ public:
         operator ConstPointer<Indirect>() const
                 noexcept(std::is_nothrow_copy_constructible_v<Indirect>)
         {
-            return ConstPointer(m_pointed);
+            return ConstPointer<Indirect>(m_pointed);
         }
     };
 
@@ -597,7 +597,7 @@ public:
     QT_DEPRECATED_VERSION_X_6_0("Use typeId() or metaType().")
     Type type() const
     {
-        int type = d.type().id();
+        int type = d.type().rawId();
         return type >= QMetaType::User ? UserType : static_cast<Type>(type);
     }
     QT_DEPRECATED_VERSION_6_0
@@ -606,7 +606,7 @@ public:
     QT_DEPRECATED_VERSION_6_0
     static Type nameToType(const char *name)
     {
-        int metaType = QMetaType::fromName(name).id();
+        int metaType = QMetaType::fromName(name).rawId();
         return metaType <= int(UserType) ? QVariant::Type(metaType) : UserType;
     }
     QT_WARNING_POP
@@ -792,37 +792,51 @@ private:
     QDebug qdebugHelper(QDebug) const;
 #endif
 
+    template <typename T, typename Variant> static constexpr
+    bool canGetTypeFromVariant(Variant *v) noexcept
+    {
+        if (!v)
+            return false;
+        if (std::is_const_v<Variant> && v->d.is_null)
+            return false;       // (const) data() will not detach from is_null
+        return v->d.type() == QMetaType::fromType<T>();
+    }
+
+    template <typename T> T *typedData()
+    {
+        Q_PRE(canGetTypeFromVariant<T>(this));
+        return static_cast<T *>(data());    // detaches if necessary
+    }
+
+    template <typename T> const T *typedData() const
+    {
+        Q_PRE(canGetTypeFromVariant<T>(this));
+        return &d.get<T>();
+    }
+
     template <typename T>
     friend T *get_if(QVariant *v) noexcept
     {
-        // data() will detach from is_null, returning non-nullptr
-        if (!v || v->d.type() != QMetaType::fromType<T>())
+        if (!canGetTypeFromVariant<T>(v))
             return nullptr;
-        return static_cast<T*>(v->data());
+        return v->typedData<T>();
     }
     template <typename T>
     friend const T *get_if(const QVariant *v) noexcept
     {
-        // (const) data() will not detach from is_null, return nullptr
-        if (!v || v->d.is_null || v->d.type() != QMetaType::fromType<T>())
+        if (!canGetTypeFromVariant<T>(v))
             return nullptr;
-        return static_cast<const T*>(v->data());
+        return v->typedData<const T>();
     }
 
-#define Q_MK_GET(cvref) \
-    template <typename T> \
-    friend T cvref get(QVariant cvref v) \
-    { \
-        if constexpr (std::is_const_v<T cvref>) \
-            Q_ASSERT(!v.d.is_null); \
-        Q_ASSERT(v.d.type() == QMetaType::fromType<q20::remove_cvref_t<T>>()); \
-        return static_cast<T cvref>(*get_if<T>(&v)); \
-    } \
+#define Q_MK_GET(CONST, REF)                                            \
+    template <typename T> friend CONST T REF get(CONST QVariant REF v)  \
+    { return static_cast<CONST T REF>(*v.typedData<T>()); }             \
     /* end */
-    Q_MK_GET(&)
-    Q_MK_GET(const &)
-    Q_MK_GET(&&)
-    Q_MK_GET(const &&)
+    Q_MK_GET(, &)
+    Q_MK_GET(const, &)
+    Q_MK_GET(, &&)
+    Q_MK_GET(const, &&)
 #undef Q_MK_GET
 
     static QVariant moveConstruct(QMetaType type, void *data);

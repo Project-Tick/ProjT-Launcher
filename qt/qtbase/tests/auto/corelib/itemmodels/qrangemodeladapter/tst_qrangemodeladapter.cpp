@@ -1875,6 +1875,8 @@ void tst_QRangeModelAdapter::treeAccess()
     {
         auto tree = createValueTree();
         QRangeModelAdapter adapter(std::ref(tree));
+        QVERIFY(!adapter.index(QList<int>{}, 0).isValid());
+        QVERIFY(adapter.index(QList<int>{0}, 0).isValid());
         expectInvalidIndex(4); // row, column, and non-existing children
         verifyTree(adapter, tree);
         // adapter.at(0).value() = u"123"_s;
@@ -2590,6 +2592,7 @@ void tst_QRangeModelAdapter::buildValueTree()
         };
         adapter.at(0).children().assign(std::make_move_iterator(std::begin(newChildren)),
                                         std::make_move_iterator(std::end(newChildren)));
+        QVERIFY(adapter.at(0).children().index({}, 0).isValid());
         QCOMPARE(adapter.rowCount(0), 2);
         QCOMPARE(rowsRemovedSpy.count(), 1);
         QCOMPARE(rowsInsertedSpy.count(), 1);
@@ -2689,6 +2692,26 @@ void tst_QRangeModelAdapter::buildPointerTree()
         QCOMPARE(rowsInsertedSpy.at(0).value(0), adapter.index(1, 0)); // parent
         QCOMPARE(rowsInsertedSpy.at(0).value(1), 0);
         QCOMPARE(rowsInsertedSpy.at(0).value(2), 4); // five children added
+        rowsInsertedSpy.clear();
+    }
+
+    { // insert rows
+        QVERIFY(adapter.insertRow(QList<int>{0}, new tree_row("-1", "negative")));
+        QCOMPARE(rowsInsertedSpy.count(), 1);
+        rowsInsertedSpy.clear();
+        QVERIFY(!adapter.hasChildren(QList<int>{0}));
+        QVERIFY(adapter.insertRow({0, 0}, new tree_row("-1.0", "negative.null")));
+        QVERIFY(adapter.hasChildren(QList<int>{0}));
+        QCOMPARE(rowsInsertedSpy.count(), 1);
+        rowsInsertedSpy.clear();
+        QVERIFY(adapter.insertRows({0, 1}, std::vector{
+            new tree_row("-1.1", "negative.one"),
+            new tree_row("-1.2", "negative.two"),
+        }));
+        QCOMPARE(rowsInsertedSpy.count(), 1);
+        QCOMPARE(rowsInsertedSpy.at(0).value(0), adapter.index(0, 0)); // parent
+        QCOMPARE(rowsInsertedSpy.at(0).value(1), 1);
+        QCOMPARE(rowsInsertedSpy.at(0).value(2), 2);
     }
 }
 

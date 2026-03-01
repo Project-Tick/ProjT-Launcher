@@ -1,5 +1,6 @@
 // Copyright (C) 2021 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #include "qbackingstoredefaultcompositor_p.h"
 #include <QtGui/private/qwindow_p.h>
@@ -133,15 +134,19 @@ static inline QPoint scaledOffset(const QPoint &pt, qreal factor)
     return pt * factor;
 }
 
-static QRegion scaledRegion(const QRegion &region, qreal factor, const QPoint &offset)
+static QRegion scaledDirtyRegion(const QRegion &region, qreal factor, const QPoint &offset)
 {
     if (offset.isNull() && factor <= 1)
         return region;
 
     QVarLengthArray<QRect, 4> rects;
     rects.reserve(region.rectCount());
+    // Add 1x1 to the size since this is specifically for dirty regions for
+    // toTexture(), so a slightly bigger size is not an issue in any case. This
+    // fixes not uploading the last line/column in with non-integer high dpi
+    // scale factors such as 1.25.
     for (const QRect &rect : region)
-        rects.append(scaledRect(rect.translated(offset), factor));
+        rects.append(scaledRect(rect.translated(offset), factor).adjusted(0, 0, 1, 1));
 
     QRegion deviceRegion;
     deviceRegion.setRects(rects.constData(), rects.size());
@@ -511,13 +516,14 @@ QPlatformBackingStore::FlushResult QBackingStoreDefaultCompositor::flush(QPlatfo
     QRhiResourceUpdateBatch *resourceUpdates = rhi->nextResourceUpdateBatch();
     QPlatformBackingStore::TextureFlags flags;
 
+    const QRegion dirtyRegion = scaledDirtyRegion(region, sourceTransformFactor, offset);
     bool gotTextureFromGraphicsBuffer = false;
     if (QPlatformGraphicsBuffer *graphicsBuffer = backingStore->graphicsBuffer()) {
         if (graphicsBuffer->lock(QPlatformGraphicsBuffer::SWReadAccess)) {
             const QImage::Format format = QImage::toImageFormat(graphicsBuffer->format());
             const QSize size = graphicsBuffer->size();
             QImage wrapperImage(graphicsBuffer->data(), size.width(), size.height(), graphicsBuffer->bytesPerLine(), format);
-            toTexture(wrapperImage, rhi, resourceUpdates, scaledRegion(region, sourceTransformFactor, offset), &flags);
+            toTexture(wrapperImage, rhi, resourceUpdates, dirtyRegion, &flags);
             gotTextureFromGraphicsBuffer = true;
             graphicsBuffer->unlock();
             if (graphicsBuffer->origin() == QPlatformGraphicsBuffer::OriginBottomLeft)
@@ -525,7 +531,7 @@ QPlatformBackingStore::FlushResult QBackingStoreDefaultCompositor::flush(QPlatfo
         }
     }
     if (!gotTextureFromGraphicsBuffer)
-        toTexture(backingStore, rhi, resourceUpdates, scaledRegion(region, sourceTransformFactor, offset), &flags);
+        toTexture(backingStore, rhi, resourceUpdates, dirtyRegion, &flags);
 
     ensureResources(resourceUpdates, swapchain->renderPassDescriptor());
 

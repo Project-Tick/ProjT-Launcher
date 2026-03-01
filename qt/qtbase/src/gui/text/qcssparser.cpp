@@ -2639,10 +2639,10 @@ bool Parser::parseAnimation(AnimationRule *animationRule)
                 }
             }
             if (!decl.isEmpty()) {
-                if (decl.d->property == QStringLiteral("animation-timing-function"))
-                    set.timingFunction = decl;
+                if (decl.d->property == "animation-timing-function"_L1)
+                    set.timingFunction = std::move(decl);
                 else
-                    set.declarations.append(decl);
+                    set.declarations.push_back(std::move(decl));
             }
         } while (test(SEMICOLON));
 
@@ -3050,7 +3050,7 @@ bool Parser::testAndParseUri(QString *uri)
         index = rewind;
         return false;
     }
-    *uri = args;
+    *uri = std::move(args);
     removeOptionalQuotes(uri);
     return true;
 }

@@ -234,6 +234,7 @@ function(qt_internal_get_qt_build_private_files_to_install out_var)
         QtBuild.cmake
         QtBuildHelpers.cmake
         QtBuildStaticDocToolsScript.cmake
+        QtBuildCMakeFromSourcesScript.cmake
         QtCMakePackageVersionFile.cmake.in
         QtCompilerFlags.cmake
         QtCompilerOptimization.cmake
@@ -298,11 +299,13 @@ function(qt_internal_get_qt_build_public_helpers out_var)
         QtPublicPluginHelpers
         QtPublicPluginHelpers_v2
         QtPublicSbomAttributionHelpers
+        QtPublicSbomBuildToolHelpers
         QtPublicSbomCommonGenerationHelpers
         QtPublicSbomCpeHelpers
         QtPublicSbomCycloneDXHelpers
         QtPublicSbomDocumentNamespaceHelpers
         QtPublicSbomDepHelpers
+        QtPublicSbomExternalReferenceHelpers
         QtPublicSbomFileHelpers
         QtPublicSbomGenerationHelpers
         QtPublicSbomGenerationCycloneDXHelpers
@@ -312,6 +315,7 @@ function(qt_internal_get_qt_build_public_helpers out_var)
         QtPublicSbomPurlHelpers
         QtPublicSbomPythonHelpers
         QtPublicSbomQtEntityHelpers
+        QtPublicSbomRelationshipHelpers
         QtPublicSbomSystemDepHelpers
         QtPublicTargetHelpers
         QtPublicTestHelpers

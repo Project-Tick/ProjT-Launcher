@@ -121,15 +121,35 @@ void QCocoaWindow::initialize()
 
     if (!isForeignWindow()) {
         // Compute the initial geometry based on the geometry set on the
-        // QWindow. This geometry has already been reflected to the
-        // QPlatformWindow in the constructor, so to ensure that the
-        // resulting setGeometry call does not think the geometry has
-        // already been applied, we reset the QPlatformWindow's view
-        // of the geometry first.
+        // QWindow, with automatic positioning and sizing, if the position
+        // or size has been left unset.
         auto initialGeometry = QPlatformWindow::initialGeometry(window(),
             windowGeometry(), defaultWindowWidth, defaultWindowHeight);
-        QPlatformWindow::d_ptr->rect = QRect();
-        setGeometry(initialGeometry);
+
+        // Note: The initial geometry does not incorporate whether the
+        // positionPolicy includes the frame or not. It's up to us to
+        // account for that below.
+
+        if (QPlatformWindow::parent()) {
+            // If we have a parent window we need to establish the superview
+            // relationship first, before we can set the geometry, so that we
+            // know whether the superview is flipped or not when setting the
+            // geometry.
+            recreateWindowIfNeeded();
+            setGeometry(initialGeometry);
+        } else {
+            // If we're a top level window we need to create the NSWindow
+            // first, so that we know the frame margins of the window. But
+            // since the geometry will be applied during setContentView we
+            // must persist the initial geometry here, so that it's picked
+            // up that that point.
+            QPlatformWindow::setGeometry(initialGeometry);
+            recreateWindowIfNeeded();
+            // We don't need to set the initial geometry again here. And we
+            // must also be careful to not setGeometry with the newly adopted
+            // geometry, as that is now effecively WindowFrameExclusive, while
+            // the QWindow might still be set to WindowFrameInclusive.
+        }
 
         setMask(QHighDpi::toNativeLocalRegion(window()->mask(), window()));
 
@@ -143,11 +163,11 @@ void QCocoaWindow::initialize()
             }, NSKeyValueObservingOptionNew);
 
     } else {
+        // Reparent to superview if needed
+        recreateWindowIfNeeded();
         // Pick up essential foreign window state
         QPlatformWindow::setGeometry(QRectF::fromCGRect(m_view.frame).toRect());
     }
-
-    recreateWindowIfNeeded();
 
     m_initialized = true;
 }
@@ -212,24 +232,6 @@ QSurfaceFormat QCocoaWindow::format() const
     return format;
 }
 
-void QCocoaWindow::setGeometry(const QRect &rectIn)
-{
-    qCDebug(lcQpaWindow) << "QCocoaWindow::setGeometry" << window() << rectIn;
-
-    QScopedValueRollback inSetGeometry(m_inSetGeometry, true);
-
-    QRect rect = rectIn;
-    // This means it is a call from QWindow::setFramePosition() and
-    // the coordinates include the frame (size is still the contents rectangle).
-    if (qt_window_private(const_cast<QWindow *>(window()))->positionPolicy
-            == QWindowPrivate::WindowFrameInclusive) {
-        const QMargins margins = frameMargins();
-        rect.moveTopLeft(rect.topLeft() + QPoint(margins.left(), margins.top()));
-    }
-
-    setCocoaGeometry(rect);
-}
-
 bool QCocoaWindow::isForeignWindow() const
 {
     return ![m_view isKindOfClass:[QNSView class]];
@@ -274,28 +276,41 @@ void QCocoaWindow::updateNormalGeometry()
     m_normalGeometry = geometry();
 }
 
-void QCocoaWindow::setCocoaGeometry(const QRect &rect)
+void QCocoaWindow::setGeometry(const QRect &rect)
 {
-    qCDebug(lcQpaWindow) << "QCocoaWindow::setCocoaGeometry" << window() << rect;
+    QScopedValueRollback inSetGeometry(m_inSetGeometry, true);
+    setGeometry(rect, qt_window_private(window())->positionPolicy);
+}
+
+void QCocoaWindow::setGeometry(const QRect &rectIn, QWindowPrivate::PositionPolicy positionPolicy)
+{
+    qCDebug(lcQpaWindow) << "QCocoaWindow::setGeometry" << window() << rectIn << positionPolicy;
     QMacAutoReleasePool pool;
+
+    QRect rect = rectIn;
+    if (positionPolicy == QWindowPrivate::WindowFrameInclusive) {
+        // This means it is a call from QWindow::setFramePosition(), so the coordinates
+        // include the frame (size is still the contents rectangle). As the functionality
+        // below operates purely in content positions, we need to remove the frame margins.
+        const QMargins margins = frameMargins();
+        rect.moveTopLeft(rect.topLeft() + QPoint(margins.left(), margins.top()));
+        qCDebug(lcQpaWindow) << "Adjusted content geometry to" << rect << "by removing frame margins" << margins;
+    }
 
     QPlatformWindow::setGeometry(rect);
 
-    if (isEmbedded()) {
-        if (!isForeignWindow()) {
-            [m_view setFrame:NSMakeRect(0, 0, rect.width(), rect.height())];
-        }
-        return;
-    }
-
     if (isContentView()) {
-        NSRect bounds = QCocoaScreen::mapToNative(rect);
-        [m_view.window setFrame:[m_view.window frameRectForContentRect:bounds] display:YES animate:NO];
+        if (isEmbedded()) {
+            // Sizing or moving the content view doesn't make sense when
+            // we are embedded, so report the current geometry as is.
+            QCocoaWindow::handleGeometryChange();
+        } else {
+            NSRect bounds = QCocoaScreen::mapToNative(rect);
+            [m_view.window setFrame:[m_view.window frameRectForContentRect:bounds] display:YES animate:NO];
+        }
     } else {
         m_view.frame = QCocoaWindow::mapToNative(rect, m_view.superview);
     }
-
-    // will call QPlatformWindow::setGeometry(rect) during resize confirmation (see qnsview.mm)
 }
 
 QMargins QCocoaWindow::safeAreaMargins() const
@@ -413,7 +428,7 @@ void QCocoaWindow::setVisible(bool visible)
     };
 
     if (visible) {
-        // We need to recreate if the modality has changed as the style mask will need updating
+        // The flags may have changed, in which case we may need to switch window type
         recreateWindowIfNeeded();
 
         // We didn't send geometry changes during creation, as that would have confused
@@ -587,7 +602,7 @@ NSInteger QCocoaWindow::windowLevel(Qt::WindowFlags flags)
     return windowLevel;
 }
 
-NSUInteger QCocoaWindow::windowStyleMask(Qt::WindowFlags flags)
+NSUInteger QCocoaWindow::windowStyleMask(Qt::WindowFlags flags) const
 {
     const Qt::WindowType type = static_cast<Qt::WindowType>(int(flags & Qt::WindowType_Mask));
 
@@ -1238,7 +1253,7 @@ void QCocoaWindow::setParent(const QPlatformWindow *parentWindow)
     // Recreate in case we need to get rid of a NSWindow, or create one
     recreateWindowIfNeeded();
 
-    setCocoaGeometry(geometry());
+    setGeometry(geometry(), QWindowPrivate::WindowFrameExclusive);
 }
 
 NSView *QCocoaWindow::view() const
@@ -1292,6 +1307,32 @@ void QCocoaWindow::viewDidMoveToSuperview(NSView *previousSuperview)
 
         if (m_view.superview)
             [m_view setNeedsDisplay:YES];
+    }
+
+    // The default coordinate system of NSViews is with the origin in the bottom
+    // left corner (also known as non-flipped). Qt's coordinate system on the other
+    // hand has the origin in the top left corner (flipped, in Cocoa terms). When
+    // we're parented into a non-flipped NSView (such as for foreign window parents),
+    // the position we set on our view in setCocoaGeometry will only accurately
+    // represent the QWindow position as long as the superview doesn't change
+    // its size. To ensure a stable y position (following the Qt semantics),
+    // we explicitly set an auto resizing mask, unless one is already set.
+    if (m_view.superview && !m_view.superview.flipped && !isContentView()) {
+        if (m_view.autoresizingMask == NSViewNotSizable) {
+            qCDebug(lcQpaWindow) << "Setting auto resizing mask on" << m_view
+                << "in non-flipped superview to maintain stable y-positioning";
+            setGeometry(geometry(), QWindowPrivate::WindowFrameExclusive);
+            m_view.autoresizingMask = NSViewMinYMargin;
+        }
+    } else if (previousSuperview && !previousSuperview.flipped
+        && m_view.autoresizingMask == NSViewMinYMargin) {
+        // Reset back to default. This assumes someone didn't
+        // actively set NSViewMinYMargin and want it to stay
+        // that way. In that rare case, they can re-apply the
+        // auto resizing mask after reparenting.
+        qCDebug(lcQpaWindow) << "Clearing auto resizing mask on" << m_view
+            << "as explicit stable y-positioning is no longer needed";
+        m_view.autoresizingMask = NSViewNotSizable;
     }
 }
 
@@ -1668,10 +1709,6 @@ void QCocoaWindow::recreateWindowIfNeeded()
     if (!m_view.window)
         recreateReason |= MissingWindow;
 
-    // If the modality has changed the style mask will need updating
-    if (m_windowModality != window()->modality())
-        recreateReason |= WindowModalityChanged;
-
     Qt::WindowType type = window()->type();
 
     const bool shouldBeContentView = !parentWindow
@@ -1959,9 +1996,6 @@ QCocoaNSWindow *QCocoaWindow::createNSWindow(bool shouldBePanel)
         }
     }
 
-    // Persist modality so we can detect changes later on
-    m_windowModality = QPlatformWindow::window()->modality();
-
     applyContentBorderThickness(nsWindow);
 
     // We propagate the view's color space granulary to both the IOSurfaces
@@ -2230,16 +2264,27 @@ QMargins QCocoaWindow::frameMargins() const
 {
     QMacAutoReleasePool pool;
 
-    if (!isContentView())
+    // Child windows don't have frame margins. We explicitly don't check
+    // isContentView() here, as we want to know the frame argins also for
+    // windows that haven't gotten their NSWindow yet.
+    if (QPlatformWindow::parent())
         return QMargins();
 
-    NSRect frameW = m_view.window.frame;
-    NSRect frameC = [m_view.window contentRectForFrameRect:frameW];
+    NSRect frameRect;
+    NSRect contentRect;
 
-    return QMargins(frameW.origin.x - frameC.origin.x,
-        (frameW.origin.y + frameW.size.height) - (frameC.origin.y + frameC.size.height),
-        (frameW.origin.x + frameW.size.width) - (frameC.origin.x + frameC.size.width),
-        frameC.origin.y - frameW.origin.y);
+    if (m_view.window) {
+        frameRect = m_view.window.frame;
+        contentRect = [m_view.window contentRectForFrameRect:frameRect];
+    } else {
+        contentRect = m_view.frame;
+        frameRect = [NSWindow frameRectForContentRect:contentRect styleMask:windowStyleMask(window()->flags())];
+    }
+
+    return QMargins(frameRect.origin.x - contentRect.origin.x,
+        (frameRect.origin.y + frameRect.size.height) - (contentRect.origin.y + contentRect.size.height),
+        (frameRect.origin.x + frameRect.size.width) - (contentRect.origin.x + contentRect.size.width),
+        contentRect.origin.y - contentRect.origin.y);
 }
 
 void QCocoaWindow::setFrameStrutEventsEnabled(bool enabled)

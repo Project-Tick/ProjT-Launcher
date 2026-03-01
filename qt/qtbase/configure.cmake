@@ -1588,10 +1588,27 @@ qt_feature("test_gui" PUBLIC
     LABEL "Build QtGuiTest namespace"
 )
 
-# Run squish based tests
-qt_feature_definition("test_squish" "QT_SQUISH_TEST" VALUE "0")
+# Run squish based tests on Windows, macOS and Linux
 qt_feature("test_squish" PUBLIC
     LABEL "Run Squish based tests"
+    CONDITION WIN32 OR (APPLE AND NOT IOS) OR (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+)
+
+qt_configure_add_report_entry(
+    TYPE NOTE
+    MESSAGE "Bulding Squish Autotests"
+    CONDITION QT_FEATURE_test_squish
+)
+
+# Compile autotests
+qt_feature("test_auto" PUBLIC
+    LABEL "Compile auto tests"
+)
+
+# Compile baseline tests
+qt_feature("test_baseline" PUBLIC
+    LABEL "Compile baseline tests"
+    AUTODETECT OFF
 )
 
 qt_configure_add_report_entry(

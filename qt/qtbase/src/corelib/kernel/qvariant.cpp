@@ -155,10 +155,13 @@ static std::optional<qlonglong> qConvertToNumber(const QVariant::Private *d, boo
     case QMetaType::UShort:
     case QMetaType::ULong:
         return qlonglong(qMetaTypeUNumber(d));
+    case QMetaType::QCborSimpleType:
+        return qToUnderlying(d->get<QCborSimpleType>());
     }
 
-    if (d->typeInterface()->flags & QMetaType::IsEnumeration
-        || d->typeInterface()->typeId == QMetaType::QCborSimpleType)
+    if (d->typeInterface()->flags & QMetaType::IsUnsignedEnumeration)
+        return qMetaTypeUNumber(d);
+    if (d->typeInterface()->flags & QMetaType::IsEnumeration)
         return qMetaTypeNumberBySize(d);
 
     return std::nullopt;
@@ -1224,7 +1227,7 @@ void QVariant::load(QDataStream &s)
         } else if (typeId == Qt5SizePolicy) {
             typeId = QMetaType::QSizePolicy;
         } else if (typeId == Qt5RegExp) {
-            typeId = QMetaType::fromName("QRegExp").id();
+            typeId = QMetaType::fromName("QRegExp").rawId();
         }
     }
 
@@ -1234,7 +1237,7 @@ void QVariant::load(QDataStream &s)
     if (typeId == QMetaType::User) {
         QByteArray name;
         s >> name;
-        typeId = QMetaType::fromName(name).id();
+        typeId = QMetaType::fromName(name).rawId();
         if (typeId == QMetaType::UnknownType) {
             s.setStatus(QDataStream::ReadCorruptData);
             qWarning("QVariant::load: unknown user type with name %s.", name.constData());
@@ -1258,7 +1261,7 @@ void QVariant::load(QDataStream &s)
     void *data = const_cast<void *>(constData());
     if (!d.type().load(s, data)) {
         s.setStatus(QDataStream::ReadCorruptData);
-        qWarning("QVariant::load: unable to load type %d.", d.type().id());
+        qWarning("QVariant::load: unable to load type %d.", d.type().rawId());
     }
 }
 
@@ -1270,7 +1273,7 @@ void QVariant::load(QDataStream &s)
 */
 void QVariant::save(QDataStream &s) const
 {
-    quint32 typeId = d.type().id();
+    quint32 typeId = d.type().rawId();
     bool saveAsUserType = false;
     if (typeId >= QMetaType::User) {
         typeId = QMetaType::User;
@@ -1349,7 +1352,7 @@ void QVariant::save(QDataStream &s) const
 
     if (!d.type().save(s, constData())) {
         qWarning("QVariant::save: unable to save type '%s' (type id: %d).\n",
-                 d.type().name(), d.type().id());
+                 d.type().name(), d.type().rawId());
         Q_ASSERT_X(false, "QVariant::save", "Invalid type to save");
     }
 }
@@ -2266,13 +2269,14 @@ static int numericTypePromotion(const QtPrivate::QMetaTypeInterface *iface1,
     if (qIsFloatingPoint(t1) || qIsFloatingPoint(t2))
         return QMetaType::QReal;
 
-    auto isUnsigned = [](uint tp) {
+    auto isUnsigned = [](uint tp, const QtPrivate::QMetaTypeInterface *iface) {
         // only types for which sizeof(T) >= sizeof(int); lesser ones promote to int
         return tp == QMetaType::ULongLong || tp == QMetaType::ULong ||
-                tp == QMetaType::UInt || tp == QMetaType::Char32;
+                tp == QMetaType::UInt || tp == QMetaType::Char32 ||
+                (iface->flags & QMetaType::IsUnsignedEnumeration && iface->size >= sizeof(int));
     };
-    bool isUnsigned1 = isUnsigned(t1);
-    bool isUnsigned2 = isUnsigned(t2);
+    bool isUnsigned1 = isUnsigned(t1, iface1);
+    bool isUnsigned2 = isUnsigned(t2, iface2);
 
     // integral rules:
     // 1) if either type is a 64-bit unsigned, compare as 64-bit unsigned
@@ -2489,7 +2493,7 @@ bool QVariant::isNull() const
 QDebug QVariant::qdebugHelper(QDebug dbg) const
 {
     QDebugStateSaver saver(dbg);
-    const uint typeId = d.type().id();
+    const uint typeId = d.type().rawId();
     dbg.nospace() << "QVariant(";
     if (typeId != QMetaType::UnknownType) {
         dbg << d.type().name() << ", ";

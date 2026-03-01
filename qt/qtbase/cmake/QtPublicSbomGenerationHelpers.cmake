@@ -141,6 +141,8 @@ PackageVersion: ${QT_SBOM_GIT_VERSION}")
 
     set(project_comment "<text>${project_comment}</text>")
 
+    _qt_internal_sbom_get_spdx_id_unique_suffix(spdx_id_unique_suffix)
+
     set(content
         "SPDXVersion: SPDX-2.3
 DataLicense: CC0-1.0
@@ -151,20 +153,6 @@ Creator: Organization: ${arg_SUPPLIER}${document_fields}
 CreatorComment: <text>This SPDX document was created from CMake ${CMAKE_VERSION}, using the qt
 build system from https://code.qt.io/cgit/qt/qtbase.git/tree/cmake/QtPublicSbomHelpers.cmake</text>
 Created: ${current_utc}\${QT_SBOM_EXTERNAL_DOC_REFS}
-
-PackageName: ${CMAKE_CXX_COMPILER_ID}
-SPDXID: SPDXRef-compiler
-PackageVersion: ${CMAKE_CXX_COMPILER_VERSION}
-PackageDownloadLocation: NOASSERTION
-PackageLicenseConcluded: NOASSERTION
-PackageLicenseDeclared: NOASSERTION
-PackageCopyrightText: NOASSERTION
-PackageSupplier: Organization: Anonymous
-FilesAnalyzed: false
-PackageSummary: <text>The compiler as identified by CMake, running on ${CMAKE_HOST_SYSTEM_NAME} (${CMAKE_HOST_SYSTEM_PROCESSOR})</text>
-PrimaryPackagePurpose: APPLICATION
-Relationship: SPDXRef-compiler BUILD_DEPENDENCY_OF ${project_spdx_id}
-RelationshipComment: <text>${project_spdx_id} is built by compiler ${CMAKE_CXX_COMPILER_ID} version ${CMAKE_CXX_COMPILER_VERSION}</text>
 
 PackageName: ${arg_PROJECT}
 SPDXID: ${project_spdx_id}${fields}
@@ -178,19 +166,14 @@ PackageHomePage: ${arg_SUPPLIER_URL}
 PackageComment: ${project_comment}
 FilesAnalyzed: false
 BuiltDate: ${current_utc}
-Relationship: SPDXRef-DOCUMENT DESCRIBES ${project_spdx_id}
-")
+Relationship: SPDXRef-DOCUMENT DESCRIBES ${project_spdx_id}")
 
-    _qt_internal_sbom_get_root_project_name_lower_case(repo_project_name_lowercase)
-    _qt_internal_sbom_create_sbom_staging_file(
-        CONTENT "${content}"
-        SBOM_FORMAT "SPDX_V2"
-        REPO_PROJECT_NAME_LOWERCASE "${repo_project_name_lowercase}"
-        OUT_VAR_CREATE_STAGING_FILE create_staging_file
-        OUT_VAR_SBOM_DIR sbom_dir
-    )
+    set(sbom_format "SPDX_V2")
+    _qt_internal_sbom_save_intro_content(
+        SBOM_FORMAT "${sbom_format}"
+        CONTENT "${content}")
 
-    set_property(GLOBAL APPEND PROPERTY _qt_internal_sbom_dirs "${sbom_dir}")
+    _qt_internal_sbom_create_sbom_staging_dir(OUT_VAR_SBOM_DIR sbom_dir)
 
     _qt_internal_sbom_save_project_info_in_global_properties(
         SUPPLIER "${arg_SUPPLIER}"
@@ -198,15 +181,15 @@ Relationship: SPDXRef-DOCUMENT DESCRIBES ${project_spdx_id}
         NAMESPACE "${arg_NAMESPACE}"
         PROJECT "${arg_PROJECT}"
         PROJECT_SPDX_ID "${project_spdx_id}"
+        EXTERNAL_REFERENCE_SBOM_DIRS "${sbom_dir}"
     )
 
     _qt_internal_sbom_save_common_path_variables_in_global_properties(
         OUTPUT "${arg_OUTPUT}"
         OUTPUT_RELATIVE_PATH "${arg_OUTPUT_RELATIVE_PATH}"
         SBOM_DIR "${sbom_dir}"
+        SBOM_FORMAT "${sbom_format}"
     )
-
-    set_property(GLOBAL APPEND PROPERTY _qt_sbom_cmake_include_files "${create_staging_file}")
 
     set_property(GLOBAL PROPERTY _qt_sbom_spdx_id_count 0)
     set_property(GLOBAL PROPERTY _qt_sbom_relationship_counter 0)
@@ -216,8 +199,9 @@ endfunction()
 # Creates an 'sbom' custom target to generate an incomplete sbom at build time (no checksums).
 # Creates install rules to install a complete (with checksums) sbom.
 function(_qt_internal_sbom_end_project_generate)
+    set(sbom_format "SPDX_V2")
     _qt_internal_sbom_get_common_path_variables_from_global_properties(
-        SBOM_FORMAT "SPDX_V2"
+        SBOM_FORMAT "${sbom_format}"
         OUT_VAR_SBOM_BUILD_OUTPUT_PATH sbom_build_output_path
         OUT_VAR_SBOM_BUILD_OUTPUT_PATH_WITHOUT_EXT sbom_build_output_path_without_ext
         OUT_VAR_SBOM_BUILD_OUTPUT_DIR sbom_build_output_dir
@@ -232,17 +216,33 @@ function(_qt_internal_sbom_end_project_generate)
 
     _qt_internal_sbom_get_root_project_name_lower_case(repo_project_name_lowercase)
     _qt_internal_sbom_get_qt_repo_project_name_lower_case(real_qt_repo_project_name_lowercase)
+    _qt_internal_get_current_project_sbom_dir(sbom_dir)
+
+    _qt_internal_sbom_handle_project_relationships(
+        OUTPUT_SBOM_FORMAT "${sbom_format}"
+        OUT_VAR_RELATIONSHIP_STRINGS relationship_strings
+    )
+
+    set(staging_file_args "")
+    if(relationship_strings)
+        list(APPEND staging_file_args RELATIONSHIP_STRINGS "${relationship_strings}")
+    endif()
+
+    _qt_internal_sbom_create_sbom_staging_file(
+        SBOM_FORMAT "${sbom_format}"
+        SBOM_DIR "${sbom_dir}"
+        REPO_PROJECT_NAME_LOWERCASE "${repo_project_name_lowercase}"
+        ${staging_file_args}
+    )
 
     _qt_internal_sbom_get_cmake_include_files(
-        SBOM_FORMAT "SPDX_V2"
+        SBOM_FORMAT "${sbom_format}"
         OUT_VAR_INCLUDES includes
         OUT_VAR_BEFORE_CHECKSUM_INCLUDES before_checksum_includes
         OUT_VAR_AFTER_CHECKSUM_INCLUDES after_checksum_includes
         OUT_VAR_POST_GENERATION_INCLUDES post_generation_includes
         OUT_VAR_VERIFY_INCLUDES verify_includes
     )
-
-    _qt_internal_get_current_project_sbom_dir(sbom_dir)
 
     set(build_time_args "")
     if(includes)
@@ -252,7 +252,7 @@ function(_qt_internal_sbom_end_project_generate)
         list(APPEND build_time_args POST_GENERATION_INCLUDES "${post_generation_includes}")
     endif()
     _qt_internal_sbom_create_build_time_sbom_targets(
-        SBOM_FORMAT "SPDX_V2"
+        SBOM_FORMAT "${sbom_format}"
         REPO_PROJECT_NAME_LOWERCASE "${repo_project_name_lowercase}"
         REAL_QT_REPO_PROJECT_NAME_LOWERCASE "${real_qt_repo_project_name_lowercase}"
         SBOM_BUILD_OUTPUT_PATH "${sbom_build_output_path}"
@@ -280,7 +280,7 @@ function(_qt_internal_sbom_end_project_generate)
 
     _qt_internal_sbom_setup_multi_config_install_markers(
         SBOM_DIR "${sbom_dir}"
-        SBOM_FORMAT "SPDX_V2"
+        SBOM_FORMAT "${sbom_format}"
         REPO_PROJECT_NAME_LOWERCASE "${repo_project_name_lowercase}"
         OUT_VAR_EXTRA_CODE_BEGIN extra_code_begin
         OUT_VAR_EXTRA_CODE_INNER_END extra_code_inner_end
@@ -335,7 +335,7 @@ unset(_verification_code)
     endif()
 
     _qt_internal_sbom_setup_sbom_install_code(
-        SBOM_FORMAT "SPDX_V2"
+        SBOM_FORMAT "${sbom_format}"
         REPO_PROJECT_NAME_LOWERCASE "${repo_project_name_lowercase}"
         SBOM_INSTALL_OUTPUT_PATH "${sbom_install_output_path}"
         SBOM_INSTALL_OUTPUT_PATH_WITHOUT_EXT "${sbom_install_output_path_without_ext}"
@@ -346,7 +346,7 @@ unset(_verification_code)
     )
 
     _qt_internal_sbom_clear_cmake_include_files(
-        SBOM_FORMAT "SPDX_V2"
+        SBOM_FORMAT "${sbom_format}"
     )
 endfunction()
 
@@ -529,22 +529,29 @@ Relationship: ${arg_RELATIONSHIP}
     set_property(GLOBAL APPEND PROPERTY _qt_sbom_cmake_include_files "${file_sbom_to_install}")
 endfunction()
 
-# Helper to add a reference to an external SPDX document.
+# Helper to add a reference to an external SPDX v2 document.
 #
 # EXTERNAL_DOCUMENT_SPDX_ID: The spdx id by which the external document should be referenced in
 # the current project SPDX document. This semantically serves as a pointer to the external document
 # URI.
 # e.g. DocumentRef-qtbase.
 #
-# EXTERNAL_DOCUMENT_FILE_PATH: The relative file path of the external sbom document.
-# e.g. "sbom/qtbase-6.9.0.spdx"
+# SBOM_FORMAT: Type of SPDX file, SPDX_V2_TAG_VALUE or SPDX_V2_JSON.
 #
+# EXTERNAL_DOCUMENT_NAMESPACE: Explicit SPDX namespace to embed, instead of parsing the file passed
+# in EXTERNAL_DOCUMENT_FILE_PATH.
+#
+# EXTERNAL_DOCUMENT_SHA1: Explicit sha1 to embed, instead of calculating it from the file passed
+# in EXTERNAL_DOCUMENT_FILE_PATH.
+#
+# EXTERNAL_DOCUMENT_FILE_PATH: An absolute or relative file path of the external sbom document.
+# In case of a relative file path, it will be searched for in the directories specified by the
+# EXTERNAL_DOCUMENT_INSTALL_PREFIXES option.
+# e.g. "sbom/qtbase-6.9.0.spdx"
 # Can contain generator expressions.
-# The file path is searched for in the directories specified by the
-# EXTERNAL_DOCUMENT_INSTALL_PREFIXES option during sbom generation, to compute the file checksum.
-# The file path is NOT embedded into the current project spdx document.
-# Only its spdx id and namespace is embedded. The namespace is extracted from the contents of the
-# referenced file.
+# The file path is NOT embedded into the current project spdx document. Only the document ref id,
+# spdx namespace and sha1 is embedded.
+# The namespace is extracted from the contents of the referenced file.
 #
 # EXTERNAL_DOCUMENT_INSTALL_PREFIXES: A list of directories where the external document file path
 # is searched for. The first existing file is used. Additionally the following locations are
@@ -571,6 +578,10 @@ function(_qt_internal_sbom_generate_add_external_reference)
         EXTERNAL_DOCUMENT_SPDX_ID
         EXTERNAL_PACKAGE_SPDX_ID
         RELATIONSHIP_STRING
+
+        EXTERNAL_DOCUMENT_NAMESPACE
+        EXTERNAL_DOCUMENT_SHA1
+        SBOM_FORMAT
     )
     set(multi_args
         EXTERNAL_DOCUMENT_INSTALL_PREFIXES
@@ -578,7 +589,46 @@ function(_qt_internal_sbom_generate_add_external_reference)
     cmake_parse_arguments(PARSE_ARGV 0 arg "${opt_args}" "${single_args}" "${multi_args}")
     _qt_internal_validate_all_args_are_parsed(arg)
 
-    _qt_internal_sbom_set_default_option_value_and_error_if_empty(EXTERNAL_DOCUMENT_FILE_PATH "")
+    # Default to tag:value if nothing is passed, because that was the previous behavior before this
+    # option got introduced.
+    if(NOT arg_SBOM_FORMAT)
+        set(arg_SBOM_FORMAT "SPDX_V2_TAG_VALUE")
+    endif()
+
+    if(NOT arg_EXTERNAL_DOCUMENT_FILE_PATH AND NOT arg_EXTERNAL_DOCUMENT_NAMESPACE)
+        message(FATAL_ERROR "Either EXTERNAL_DOCUMENT_FILE_PATH or "
+            "EXTERNAL_DOCUMENT_NAMESPACE together with EXTERNAL_DOCUMENT_SHA1 must be specified "
+            "to be able to add an external reference for an external SPDX v2 tag:value document.")
+    endif()
+
+    set(debug_var_assignments "
+        EXTERNAL_DOCUMENT_FILE_PATH: '${arg_EXTERNAL_DOCUMENT_FILE_PATH}'
+        EXTERNAL_DOCUMENT_NAMESPACE: '${arg_EXTERNAL_DOCUMENT_NAMESPACE}'
+        EXTERNAL_DOCUMENT_SHA1: '${arg_EXTERNAL_DOCUMENT_SHA1}'
+        EXTERNAL_DOCUMENT_SPDX_ID: '${arg_EXTERNAL_DOCUMENT_SPDX_ID}'
+")
+
+    if(NOT arg_EXTERNAL_DOCUMENT_FILE_PATH
+            AND arg_EXTERNAL_DOCUMENT_NAMESPACE
+            AND NOT arg_EXTERNAL_DOCUMENT_SHA1)
+        message(FATAL_ERROR
+            "EXTERNAL_DOCUMENT_SHA1 must be specified if EXTERNAL_DOCUMENT_NAMESPACE is specified "
+            "and EXTERNAL_DOCUMENT_FILE_PATH is not specified.\n${debug_var_assignments}")
+    endif()
+
+    if(NOT arg_EXTERNAL_DOCUMENT_FILE_PATH
+            AND NOT arg_EXTERNAL_DOCUMENT_NAMESPACE
+            AND arg_EXTERNAL_DOCUMENT_SHA1)
+        message(FATAL_ERROR
+            "EXTERNAL_DOCUMENT_NAMESPACE must be specified if EXTERNAL_DOCUMENT_SHA1 is specified "
+            "and EXTERNAL_DOCUMENT_FILE_PATH is not specified.\n${debug_var_assignments}")
+    endif()
+
+    if(arg_EXTERNAL_DOCUMENT_FILE_PATH)
+        set(find_external_document TRUE)
+    else()
+        set(find_external_document FALSE)
+    endif()
 
     if(NOT arg_EXTERNAL_DOCUMENT_SPDX_ID)
         get_property(spdx_id_count GLOBAL PROPERTY _qt_sbom_spdx_id_count)
@@ -594,7 +644,8 @@ function(_qt_internal_sbom_generate_add_external_reference)
     if(NOT sbom_project_spdx_id)
         message(FATAL_ERROR "Call _qt_internal_sbom_begin_project() first")
     endif()
-    if(arg_RELATIONSHIP_STRING STREQUAL "")
+
+    if(NOT arg_RELATIONSHIP_STRING)
         if(arg_EXTERNAL_PACKAGE_SPDX_ID)
             set(external_package "${arg_EXTERNAL_DOCUMENT_SPDX_ID}:${arg_EXTERNAL_PACKAGE_SPDX_ID}")
             set(arg_RELATIONSHIP_STRING
@@ -608,42 +659,22 @@ function(_qt_internal_sbom_generate_add_external_reference)
 
     _qt_internal_get_staging_area_spdx_file_path(staging_area_spdx_file)
 
-    set(install_prefixes "")
+    set(document_search_paths "")
+    if(find_external_document)
+        set(search_path_args "")
+        if(arg_EXTERNAL_DOCUMENT_INSTALL_PREFIXES)
+            list(APPEND search_path_args
+                    EXTERNAL_DOCUMENT_SEARCH_PATHS ${arg_EXTERNAL_DOCUMENT_INSTALL_PREFIXES}
+            )
+        endif()
 
-    # Add the current sbom build dirs as install prefixes, so that we can use ninja 'sbom'
-    # in top-level builds. This is needed because the external references will point
-    # to sbom docs in different build dirs, not just one.
-    # We also need it in case we are converting a json document to a tag/value format in the
-    # current build dir of the project, and want it to be found.
-    get_cmake_property(build_sbom_dirs _qt_internal_sbom_dirs)
-    if(build_sbom_dirs)
-        foreach(build_sbom_dir IN LISTS build_sbom_dirs)
-            list(APPEND install_prefixes "${build_sbom_dir}")
-        endforeach()
+        _qt_internal_sbom_get_external_reference_search_paths(document_search_paths
+            SEARCH_IN_BUILD_SBOM_DIRS
+            SEARCH_IN_QT_PREFIXES
+            SEARCH_IN_DESTDIR_INSTALL_PREFIX_AT_INSTALL_TIME
+            ${search_path_args}
+        )
     endif()
-
-    # Always append the install time install prefix.
-    # The variable is escaped, so it is evaluated during cmake install time, so that the value
-    # can be overridden with cmake --install . --prefix <path>.
-    list(APPEND install_prefixes "\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}")
-
-    if(arg_EXTERNAL_DOCUMENT_INSTALL_PREFIXES)
-        list(APPEND install_prefixes ${arg_EXTERNAL_DOCUMENT_INSTALL_PREFIXES})
-    endif()
-
-    if(QT6_INSTALL_PREFIX)
-        list(APPEND install_prefixes ${QT6_INSTALL_PREFIX})
-    endif()
-
-    if(QT_ADDITIONAL_PACKAGES_PREFIX_PATH)
-        list(APPEND install_prefixes ${QT_ADDITIONAL_PACKAGES_PREFIX_PATH})
-    endif()
-
-    if(QT_ADDITIONAL_SBOM_DOCUMENT_PATHS)
-        list(APPEND install_prefixes ${QT_ADDITIONAL_SBOM_DOCUMENT_PATHS})
-    endif()
-
-    list(REMOVE_DUPLICATES install_prefixes)
 
     set(relationship_content "")
     if(arg_RELATIONSHIP_STRING)
@@ -655,29 +686,40 @@ function(_qt_internal_sbom_generate_add_external_reference)
 
     # File path may not exist yet, and it could be a generator expression.
     set(content "
-        set(relative_file_name \"${arg_EXTERNAL_DOCUMENT_FILE_PATH}\")
-        set(document_dir_paths ${install_prefixes})
-        list(JOIN document_dir_paths \"\\n\" document_dir_paths_per_line)
-        foreach(document_dir_path IN LISTS document_dir_paths)
-            set(document_file_path \"\${document_dir_path}/\${relative_file_name}\")
-            if(EXISTS \"\${document_file_path}\")
-                break()
-            endif()
-        endforeach()
-        if(NOT EXISTS \"\${document_file_path}\")
-            message(FATAL_ERROR \"Could not find external SBOM document \${relative_file_name}\"
-                \" in any of the document dir paths: \${document_dir_paths_per_line} \"
+        set(find_external_document \"${find_external_document}\")
+        set(document_search_paths ${document_search_paths})
+        set(maybe_external_document_file_path \"${arg_EXTERNAL_DOCUMENT_FILE_PATH}\")
+        set(sbom_format \"${arg_SBOM_FORMAT}\")
+
+        set(explicit_external_document_namespace \"${arg_EXTERNAL_DOCUMENT_NAMESPACE}\")
+        set(explicit_external_document_sha1 \"${arg_EXTERNAL_DOCUMENT_SHA1}\")
+
+        # The helper functions below are used both during configure time and SBOM generation
+        # time. During configure time, QT_GENERATE_SBOM is checked to return early gracefully,
+        # to allow projects to skip SBOM generation.
+        # During SBOM generation time, we need to ensure these functions run properly.
+        # Backup the var instead of setting it directly, because some of the testing infrastructure
+        # does checks of the variable at the end of sbom generation.
+        set(backup_qt_generate_sbom \"${QT_GENERATE_SBOM}\")
+        set(QT_GENERATE_SBOM ON)
+        if(find_external_document)
+            _qt_internal_sbom_find_external_reference_document(document_file_path
+                EXTERNAL_DOCUMENT_FILE_PATH \"\${maybe_external_document_file_path}\"
+                EXTERNAL_DOCUMENT_SEARCH_PATHS \${document_search_paths}
             )
-        endif()
-        file(SHA1 \"\${document_file_path}\" ext_sha1)
-        file(READ \"\${document_file_path}\" ext_content)
 
-        if(NOT \"\${ext_content}\" MATCHES \"[\\r\\n]DocumentNamespace:\")
-            message(FATAL_ERROR \"Missing DocumentNamespace in \${document_file_path}\")
-        endif()
+            _qt_internal_sbom_parse_spdx_v2_document_namespace(
+                EXTERNAL_DOCUMENT_FILE_PATH \"\${document_file_path}\"
+                SBOM_FORMAT \"\${sbom_format}\"
+                OUT_VAR_DOCUMENT_NAMESPACE ext_ns
+            )
 
-        string(REGEX REPLACE \"^.*[\\r\\n]DocumentNamespace:[ \\t]*([^#\\r\\n]*).*$\"
-                \"\\\\1\" ext_ns \"\${ext_content}\")
+            file(SHA1 \"\${document_file_path}\" ext_sha1)
+        else()
+            set(ext_ns \"\${explicit_external_document_namespace}\")
+            set(ext_sha1 \"\${explicit_external_document_sha1}\")
+        endif()
+        set(QT_GENERATE_SBOM \${backup_qt_generate_sbom})
 
         string(APPEND QT_SBOM_EXTERNAL_DOC_REFS \"
 ExternalDocumentRef: ${arg_EXTERNAL_DOCUMENT_SPDX_ID} \${ext_ns} SHA1: \${ext_sha1}\")
@@ -699,12 +741,12 @@ function(_qt_internal_sbom_generate_add_package)
     )
     set(single_args
         PACKAGE
+        PACKAGE_SUMMARY
         VERSION
         LICENSE_DECLARED
         LICENSE_CONCLUDED
         COPYRIGHT
         DOWNLOAD_LOCATION
-        RELATIONSHIP
         SPDXID
         SUPPLIER
         PURPOSE
@@ -713,6 +755,8 @@ function(_qt_internal_sbom_generate_add_package)
     set(multi_args
         EXTREF
         CPE
+        RELATIONSHIPS # Deprecated, SBOM_RELATIONSHIP_ENTRIES is preferred
+        SBOM_RELATIONSHIP_ENTRIES
     )
     cmake_parse_arguments(PARSE_ARGV 0 arg "${opt_args}" "${single_args}" "${multi_args}")
     _qt_internal_validate_all_args_are_parsed(arg)
@@ -776,6 +820,12 @@ PackageCopyrightText: NOASSERTION"
         )
     endif()
 
+    if(arg_PACKAGE_SUMMARY)
+        set(fields "${fields}
+PackageSummary: <text>${arg_PACKAGE_SUMMARY}</text>"
+        )
+    endif()
+
     if(arg_PURPOSE)
         set(fields "${fields}
 PrimaryPackagePurpose: ${arg_PURPOSE}"
@@ -802,11 +852,32 @@ ExternalRef: SECURITY cpe23Type ${cpe}"
     if(NOT sbom_project_spdx_id)
         message(FATAL_ERROR "Call _qt_internal_sbom_begin_project() first")
     endif()
-    if(NOT arg_RELATIONSHIP)
-        set(arg_RELATIONSHIP "${sbom_project_spdx_id} CONTAINS ${arg_SPDXID}")
-    else()
-        string(REPLACE "@QT_SBOM_LAST_SPDXID@" "${arg_SPDXID}" arg_RELATIONSHIP "${arg_RELATIONSHIP}")
+
+    set(relationship_strings "")
+    if(arg_SBOM_RELATIONSHIP_ENTRIES)
+        _qt_internal_sbom_serialize_relationship_entries(
+            OUTPUT_SBOM_FORMAT "SPDX_V2"
+            OUT_VAR_RELATIONSHIPS_STRINGS entries_relationships_strings
+            SBOM_RELATIONSHIP_ENTRIES ${arg_SBOM_RELATIONSHIP_ENTRIES}
+        )
+        if(entries_relationships_strings)
+            list(APPEND relationship_strings ${entries_relationships_strings})
+        endif()
     endif()
+
+    # TODO: This is deprecated, SBOM_RELATIONSHIP_ENTRIES is preferred, remove it once qtwebengine
+    # is ported over.
+    if(arg_RELATIONSHIPS)
+        string(REPLACE
+            "@QT_SBOM_LAST_SPDXID@" "${arg_SPDXID}" arg_RELATIONSHIPS "${arg_RELATIONSHIPS}")
+        list(APPEND relationship_strings ${arg_RELATIONSHIPS})
+    endif()
+
+    # Remove duplicates, because apparently we sometimes get them for some system libraries.
+    list(REMOVE_DUPLICATES relationship_strings)
+
+    list(JOIN relationship_strings "\n" relationships_str)
+    string(PREPEND relationships_str "\n")
 
     set(fields "${fields}\\\${QT_SBOM_VERIFICATION_CODE_${arg_SPDXID}}")
 
@@ -824,8 +895,7 @@ SPDXID: ${arg_SPDXID}
 PackageDownloadLocation: ${arg_DOWNLOAD_LOCATION}
 PackageVersion: ${arg_VERSION}
 PackageSupplier: ${arg_SUPPLIER}${fields}
-FilesAnalyzed: \\\${QT_SBOM_PACKAGE_HAS_FILES_${arg_SPDXID}}
-Relationship: ${arg_RELATIONSHIP}
+FilesAnalyzed: \\\${QT_SBOM_PACKAGE_HAS_FILES_${arg_SPDXID}}${relationships_str}
 \"
         )
 ")
