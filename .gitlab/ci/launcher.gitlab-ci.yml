@@ -496,6 +496,19 @@
           throw "VsDevCmd.bat not found for VCVARS_ARCH=$env:VCVARS_ARCH"
         }
 
+        # Install Qt 6.10.2 via aqtinstall if not already present
+        $qtArch = if ($env:VCVARS_ARCH -eq "arm64") { "win64_msvc2022_arm64" } else { "win64_msvc2022_64" }
+        $qtSubDir = if ($env:VCVARS_ARCH -eq "arm64") { "msvc2022_arm64" } else { "msvc2022_64" }
+        $qtDir = "C:\Qt\6.10.2\$qtSubDir"
+        if (-not (Test-Path "$qtDir\lib\cmake\Qt6\Qt6Config.cmake")) {
+          Write-Host "Installing Qt 6.10.2 ($qtArch) via aqtinstall..."
+          pip install --quiet aqtinstall
+          aqt install-qt windows desktop 6.10.2 $qtArch -O "C:\Qt" -m qtwebengine qtwebchannel qtnetworkauth qt5compat
+        }
+        $env:Qt6_DIR = "$qtDir\lib\cmake\Qt6"
+        $env:CMAKE_PREFIX_PATH = "$qtDir;$env:CMAKE_PREFIX_PATH"
+        $env:PATH = "$qtDir\bin;$env:PATH"
+
         if ((Test-Path "$env:CI_PROJECT_DIR\packages.config") -and (Get-Command nuget -ErrorAction SilentlyContinue)) {
           $nugetConfig = "$env:CI_PROJECT_DIR\nuget.config"
           if ((Test-Path $nugetConfig) -and $env:GITHUB_PACKAGES_TOKEN) {
@@ -513,10 +526,10 @@
           nuget install "$env:CI_PROJECT_DIR\packages.config" -OutputDirectory "$env:CI_PROJECT_DIR\dependencies" -ConfigFile "$nugetConfig"
         }
 
-        $configure = "cmake --preset `"$env:CMAKE_PRESET`" -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING -DLauncher_OUTPUT_ROOT=`"$env:CI_PROJECT_DIR/build/out`""
+        $configure = "cmake --preset `"$env:CMAKE_PRESET`" -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING -DLauncher_OUTPUT_ROOT=`"$env:CI_PROJECT_DIR/build/out`" -DQt6_DIR=`"$env:Qt6_DIR`""
         $build = "cmake --build --preset `"$env:CMAKE_PRESET`" --config `"$env:BUILD_TYPE`""
         $tests = "ctest --preset `"$env:CMAKE_PRESET`" --build-config `"$env:BUILD_TYPE`" --output-on-failure --no-tests=error"
-        cmd /c "`"$vsdev`" -arch=$env:VCVARS_ARCH -host_arch=amd64 && $configure && $build && $tests"
+        cmd /c "`"$vsdev`" -arch=$env:VCVARS_ARCH -host_arch=amd64 && set Qt6_DIR=$env:Qt6_DIR && set CMAKE_PREFIX_PATH=$qtDir;%CMAKE_PREFIX_PATH% && set PATH=$qtDir\bin;%PATH% && $configure && $build && $tests"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       }
       elseif ($env:CMAKE_PRESET -eq "windows_mingw") {
