@@ -61,6 +61,7 @@ stdenv.mkDerivation {
       ../javacheck
       ../launcher
       ../launcherjava
+      ../libpng
       ../libnbtplusplus
       ../libqrencode
       ../LICENSES
