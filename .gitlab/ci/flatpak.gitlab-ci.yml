@@ -118,7 +118,7 @@ flatpak_build:
       rm -rf "$REPO_DIR" "$BUILD_DIR"
       mkdir -p "$REPO_DIR" "$BUILD_DIR"
     - |
-      build_cmd="flatpak-builder --force-clean --user --install-deps-from=flathub --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
+      build_cmd="flatpak-builder --disable-rofiles-fuse --force-clean --user --install-deps-from=flathub --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
       if command -v dbus-run-session >/dev/null 2>&1; then
         dbus-run-session -- bash -lc "$build_cmd"
       else
@@ -188,7 +188,7 @@ flatpak_build:
       rm -rf "$REPO_DIR" "$BUILD_DIR"
       mkdir -p "$REPO_DIR" "$BUILD_DIR"
     - |
-      build_cmd="flatpak-builder --force-clean --user --install-deps-from=flathub --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
+      build_cmd="flatpak-builder --disable-rofiles-fuse --force-clean --user --install-deps-from=flathub --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
       if command -v dbus-run-session >/dev/null 2>&1; then
         dbus-run-session -- bash -lc "$build_cmd"
       else

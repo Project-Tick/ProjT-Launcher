@@ -47,6 +47,7 @@ stdenv.mkDerivation {
       ../CMakeLists.txt
       ../CMakePresets.json
       ../COPYING
+      ../bootstrap
       ../bot
       ../buildconfig
       ../bzip2
