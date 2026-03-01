@@ -98,8 +98,16 @@ flatpak_build:
       fi
       flatpak install --user -y --or-update flathub \
         "org.kde.Platform//$RUNTIME_VERSION" \
-        "org.kde.Sdk//$RUNTIME_VERSION" \
-        "org.freedesktop.Sdk.Extension.openjdk21//$RUNTIME_VERSION"
+        "org.kde.Sdk//$RUNTIME_VERSION"
+      # org.freedesktop.Sdk.Extension.openjdk21 uses freedesktop SDK versioning (e.g. 24.08),
+      # not KDE runtime versioning (e.g. 6.10). Detect the matching freedesktop SDK version.
+      FDO_VERSION="$(flatpak info --show-metadata "org.kde.Sdk//$RUNTIME_VERSION" 2>/dev/null | grep -oP '(?<=BaseVersion=)\S+' | head -n1 || true)"
+      if [ -z "$FDO_VERSION" ]; then
+        FDO_VERSION="24.08"
+      fi
+      flatpak install --user -y --or-update flathub \
+        "org.freedesktop.Sdk.Extension.openjdk21//$FDO_VERSION" \
+        || echo "WARNING: org.freedesktop.Sdk.Extension.openjdk21//$FDO_VERSION not available."
     - |
       if [ -n "${FLATPAK_GPG_KEY:-}" ] && [ -n "${FLATPAK_GPG_KEY_ID:-}" ]; then
         echo -n "$FLATPAK_GPG_KEY" | base64 -d | gpg --import
@@ -162,8 +170,14 @@ flatpak_build:
       fi
       flatpak install --user -y --or-update flathub \
         "org.kde.Platform//$RUNTIME_VERSION" \
-        "org.kde.Sdk//$RUNTIME_VERSION" \
-        "org.freedesktop.Sdk.Extension.openjdk21//$RUNTIME_VERSION"
+        "org.kde.Sdk//$RUNTIME_VERSION"
+      FDO_VERSION="$(flatpak info --show-metadata "org.kde.Sdk//$RUNTIME_VERSION" 2>/dev/null | grep -oP '(?<=BaseVersion=)\S+' | head -n1 || true)"
+      if [ -z "$FDO_VERSION" ]; then
+        FDO_VERSION="24.08"
+      fi
+      flatpak install --user -y --or-update flathub \
+        "org.freedesktop.Sdk.Extension.openjdk21//$FDO_VERSION" \
+        || echo "WARNING: org.freedesktop.Sdk.Extension.openjdk21//$FDO_VERSION not available."
     - |
       if [ -n "${FLATPAK_GPG_KEY:-}" ] && [ -n "${FLATPAK_GPG_KEY_ID:-}" ]; then
         echo -n "$FLATPAK_GPG_KEY" | base64 -d | gpg --import
