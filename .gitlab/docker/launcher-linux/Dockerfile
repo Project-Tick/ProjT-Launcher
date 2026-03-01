@@ -13,7 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ccache \
     cmake \
-    ctest \
     dpkg-dev \
     ninja-build \
     clang \
