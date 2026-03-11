@@ -929,13 +929,26 @@ get_info_vec (location_t loc, const constexpr_ctx *ctx, tree call, int n,
    and FROM is the info for from().  */
 
 static tree
-get_meta_exception_object (location_t loc, const char *what, tree from,
-			   bool *non_constant_p)
+get_meta_exception_object (location_t loc, const constexpr_ctx *ctx,
+			   const char *what, tree from, bool *non_constant_p)
 {
   /* Don't throw in a template.  */
-  // TODO For -fno-exceptions, report an error.
   if (processing_template_decl)
     {
+      *non_constant_p = true;
+      return NULL_TREE;
+    }
+
+  /* Don't try to throw exceptions with -fno-exceptions.  */
+  if (!flag_exceptions)
+    {
+      if (!cxx_constexpr_quiet_p (ctx))
+	{
+	  auto_diagnostic_group d;
+	  error_at (loc, "%qD should throw %qs; %<what()%>: %qs",
+		    from, "std::meta::exception", _(what));
+	  inform (loc, "exceptions are disabled, treating as non-constant");
+	}
       *non_constant_p = true;
       return NULL_TREE;
     }
@@ -984,7 +997,8 @@ static tree
 throw_exception (location_t loc, const constexpr_ctx *ctx, const char *msgid,
 		 tree from, bool *non_constant_p, tree *jump_target)
 {
-  if (tree obj = get_meta_exception_object (loc, msgid, from, non_constant_p))
+  if (tree obj = get_meta_exception_object (loc, ctx, msgid, from,
+					    non_constant_p))
     *jump_target = cxa_allocate_and_throw_exception (loc, ctx, obj);
   return NULL_TREE;
 }
@@ -3799,7 +3813,13 @@ eval_annotations_of (location_t loc, const constexpr_ctx *ctx, tree r,
 	  }
     }
   else if (TYPE_P (r))
-    r = TYPE_ATTRIBUTES (r);
+    {
+      complete_type (r);
+      if (typedef_variant_p (r))
+	r = DECL_ATTRIBUTES (TYPE_NAME (r));
+      else
+	r = TYPE_ATTRIBUTES (r);
+    }
   else if (DECL_P (r))
     r = DECL_ATTRIBUTES (r);
   else
@@ -4688,12 +4708,16 @@ eval_extent (location_t loc, tree type, tree i)
       --rank;
       type = TREE_TYPE (type);
     }
+  tree r;
   if (rank
       || TREE_CODE (type) != ARRAY_TYPE
       || eval_is_bounded_array_type (loc, type) == boolean_false_node)
-     return size_zero_node;
-  return size_binop (PLUS_EXPR, TYPE_MAX_VALUE (TYPE_DOMAIN (type)),
-		     size_one_node);
+    r = size_zero_node;
+  else
+    r = size_binop (PLUS_EXPR, TYPE_MAX_VALUE (TYPE_DOMAIN (type)),
+		    size_one_node);
+  /* std::meta::extent returns a value of type size_t.  */
+  return cp_fold_convert (size_type_node, r);
 }
 
 /* Process std::meta::is_same_type.  */
@@ -5399,6 +5423,7 @@ eval_substitute (location_t loc, const constexpr_ctx *ctx,
       if (DECL_FUNCTION_TEMPLATE_P (r))
 	r = ovl_make (r, NULL_TREE);
       ret = lookup_template_function (r, rvec);
+      ret = resolve_nondeduced_context (ret, tf_none);
     }
   return get_reflection_raw (loc, ret);
 }
@@ -6539,6 +6564,14 @@ namespace_members_of (location_t loc, tree ns)
 	     so don't bother calling it here.  */
 	  CONSTRUCTOR_APPEND_ELT (elts, NULL_TREE,
 				  get_reflection_raw (loc, m));
+	  /* For typedef struct { ... } S; include both the S type
+	     alias (added above) and dealias of that for the originally
+	     unnamed type (added below).  */
+	  if (TREE_CODE (b) == TYPE_DECL
+	      && TYPE_DECL_FOR_LINKAGE_PURPOSES_P (b))
+	    CONSTRUCTOR_APPEND_ELT (elts, NULL_TREE,
+				    get_reflection_raw (loc,
+							strip_typedefs (m)));
 	}
     }
   delete seen;
@@ -8315,7 +8348,7 @@ compare_reflections (tree lhs, tree rhs)
 				   TREE_VEC_ELT (rhs, 3))
 	    && TREE_VEC_ELT (lhs, 4) == TREE_VEC_ELT (rhs, 4));
   else if (lkind == REFLECT_ANNOTATION)
-    return lhs == rhs;
+    return TREE_VALUE (lhs) == TREE_VALUE (rhs);
   else if (TYPE_P (lhs) && TYPE_P (rhs))
     {
       /* Given "using A = int;", "^^int != ^^A" should hold.  */

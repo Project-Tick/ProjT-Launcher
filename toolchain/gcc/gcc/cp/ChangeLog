@@ -1,3 +1,130 @@
+2026-03-10  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/124399
+	* reflect.cc (compare_reflections): For REFLECT_ANNOTATION, compare
+	TREE_VALUE of lhs and rhs instead of lhs and rhs.
+
+2026-03-10  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/124399
+	* reflect.cc (eval_annotations_of): Call complete_type on r if it
+	is a type.
+
+2026-03-07  Jason Merrill  <jason@redhat.com>
+	     <mtxn@duck.com>
+
+	PR c++/123622
+	* module.cc (preprocess_module): Check deps.missing_files.
+
+2026-03-06  Patrick Palka  <ppalka@redhat.com>
+
+	PR c++/124297
+	* mangle.cc (write_template_param_decl) <case PARM_DECL>:
+	Strip fold-expression before calling write_type_constraint.
+
+2026-03-05  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/124145
+	* constexpr.cc (cxx_eval_constant_expression) <case TARGET_EXPR>: Move
+	ctx->save_expr->safe_push (slot) call before if (*jump_target) test.
+	Use TARGET_EXPR_INITIAL instead of TREE_OPERAND.
+
+2026-03-05  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/123810
+	* cp-tree.h (TYPE_DECL_FOR_LINKAGE_PURPOSES_P): Define.
+	(TYPE_DECL_WAS_UNNAMED): Likewise.
+	(TYPE_WAS_UNNAMED): Also check TYPE_DECL_WAS_UNNAMED.
+	* decl.cc (start_decl): Use TYPE_DECL_FOR_LINKAGE_PURPOSES_P.
+	(maybe_diagnose_non_c_class_typedef_for_l): If t == type, use
+	DECL_SOURCE_LOCATION (orig) instead of
+	DECL_SOURCE_LOCATION (TYPE_NAME (t)).
+	(name_unnamed_type): Set TYPE_DECL_FOR_LINKAGE_PURPOSES_P
+	on decl.  For -freflection don't change TYPE_NAME from
+	orig to decl, but instead change DECL_NAME (orig) to
+	DECL_NAME (decl) and set TYPE_DECL_FOR_LINKAGE_PURPOSES_P on
+	orig too.
+	* decl2.cc (grokfield): Use TYPE_DECL_FOR_LINKAGE_PURPOSES_P.
+	* name-lookup.cc (fields_linear_search): Ignore
+	TYPE_DECL_WAS_UNNAMED decls.
+	(count_class_fields): Likewise.
+	(member_vec_append_class_fields): Likewise.
+	(pop_local_binding): Likewise.
+	* reflect.cc (namespace_members_of): For TYPE_DECL with
+	TYPE_DECL_FOR_LINKAGE_PURPOSES_P set also append
+	reflection of strip_typedefs (m).
+	* class.cc (find_flexarrays): Handle TYPE_DECLs with
+	TYPE_DECL_WAS_UNNAMED like the ones with IDENTIFIER_ANON_P
+	name.
+
+2026-03-04  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/124368
+	* reflect.cc (eval_extent): Convert the result to size_type_node.
+
+2026-03-04  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/124229
+	* pt.cc (in_expansion_stmt_p): New.
+	(tsubst): When reusing typedefs, do retrieve_local_specialization also
+	when in_expansion_stmt_p is true.
+
+2026-03-04  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/123866
+	* reflect.cc (eval_annotations_of): For type aliases look for
+	annotations in DECL_ATTRIBUTES (TYPE_NAME (r)).
+
+2026-03-03  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/124306
+	* pt.cc (regenerate_decl_from_template): Mark the old PARM_DECLs
+	replaced with tsubst_decl result with OLD_PARM_DECL_P flag.
+
+2026-03-03  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/124324
+	* reflect.cc (eval_substitute): Call resolve_nondeduced_context.
+
+2026-03-03  Patrick Palka  <ppalka@redhat.com>
+
+	* constraint.cc (struct sat_entry): New data member inst_entry.
+	(satisfaction_cache::satisfaction_cache): Initialize inst_entry.
+	(satisfaction_cache::get): Use it to prefer printing the
+	instantiated atom in case of constraint recursion.
+	(satisfy_atom): Set inst_entry of the first cache entry to point
+	to the second entry.
+
+2026-03-03  Patrick Palka  <ppalka@redhat.com>
+
+	PR c++/123665
+	PR c++/123408
+	* pt.cc (build_extra_args): If TREE_STATIC was set on the
+	arguments, keep it set.
+	(add_extra_args): Set TREE_STATIC on the resulting arguments
+	when substituting templated arguments into a full set of
+	deferred arguments.
+	(tsubst_lambda_expr): Always defer templated substitution if
+	LAMBDA_EXPR_EXTRA_ARGS was set.
+
+2026-03-01  Nathaniel Shead  <nathanieloshead@gmail.com>
+
+	* constexpr.cc (diagnose_failing_condition): Also decompose
+	comparisons of reflections.
+
+2026-03-01  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/123143
+	* pt.cc (tsubst_expr) <case COMPONENT_REF>: Check identifier_p
+	before doing lookup for a template function.
+
+2026-03-01  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/123608
+	* cp-tree.h (unevaluated_p): Include REFLECT_EXPR.
+	* reflect.cc (check_out_of_consteval_use_r): Don't give up early
+	on REFLECT_EXPR_P.
+
 2026-02-26  Marek Polacek  <polacek@redhat.com>
 
 	PR c++/124204

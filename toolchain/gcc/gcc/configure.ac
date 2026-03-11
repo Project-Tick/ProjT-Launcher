@@ -6581,15 +6581,6 @@ elif test x$gcc_cv_ld != x; then
       ;;
   esac
 fi
-case "$target" in
-  i?86-*-solaris2* | x86_64-*-solaris2*)
-    if echo "$ld_ver" | grep GNU > /dev/null; then
-      # Doesn't work with gld on Solaris/x86 due to PR ld/12320.
-      gcc_cv_ld_as_needed=no
-      gcc_cv_ld_use_as_needed_ldscript=no
-    fi
-    ;;
-esac
 ])
 if test x"$gcc_cv_ld_as_needed" = xyes; then
 	AC_DEFINE(HAVE_LD_AS_NEEDED, 1,
