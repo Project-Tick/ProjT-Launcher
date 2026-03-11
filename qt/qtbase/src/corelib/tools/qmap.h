@@ -12,6 +12,7 @@
 #include <QtCore/qlist.h>
 #include <QtCore/qrefcount.h>
 #include <QtCore/qpair.h>
+#include <QtCore/qscopeguard.h>
 #include <QtCore/qshareddata.h>
 #include <QtCore/qshareddata_impl.h>
 #include <QtCore/qttypetraits.h>
@@ -57,20 +58,22 @@ public:
         Q_ASSERT(m.empty());
 
         size_type result = 0;
-        const auto &keyCompare = source.key_comp();
-        const auto filter = [&result, &key, &keyCompare](const auto &v)
-        {
-            if (!keyCompare(key, v.first) && !keyCompare(v.first, key)) {
-                // keys are equivalent (neither a<b nor b<a) => found it
-                ++result;
-                return true;
-            }
-            return false;
-        };
 
-        std::remove_copy_if(source.cbegin(), source.cend(),
-                            std::inserter(m, m.end()),
-                            filter);
+        const auto keep = [this](auto it) { m.insert(m.cend(), *it); };
+
+        auto it = source.cbegin();
+        const auto end = source.cend();
+        const auto &cmp = m.key_comp();
+        // Keep all before:
+        for (; it != end && cmp(it->first, key); ++it)
+            keep(it);
+        // Count and skip matches:
+        for (; it != end && !cmp(key, it->first); ++it)
+            ++result;
+        // Keep all after:
+        for (; it != end; ++it)
+            keep(it);
+
         return result;
     }
 
@@ -280,6 +283,35 @@ public:
             d.reset(new MapData);
     }
 
+    // A detach for holding an already shared copy, until calling function
+    // is done using references to keys or values that might reference it.
+    QMap referenceHoldingDetach()
+    {
+        if (!d) {
+            d.reset(new MapData);
+        } else if (d.isShared()) {
+            auto hold = *this;
+            d.detach();
+            return hold;
+        }
+        return {};
+    }
+
+    // Specialized version of referenceHoldingDetach(), which will not copy key, if copying
+    QMap referenceHoldingDetachExcept(const Key &key)
+    {
+        if (!d) {
+            d.reset(new MapData);
+        } else if (d.isShared()) {
+            auto hold = *this;
+            QtPrivate::QExplicitlySharedDataPointerV2<MapData> newData(new MapData);
+            newData->copyIfNotEquivalentTo(d->m, key);
+            d.swap(newData);
+            return hold;
+        }
+        return {};
+    }
+
     bool isDetached() const noexcept
     {
         return d ? !d.isShared() : false; // false makes little sense, but that's shared_null's behavior...
@@ -328,10 +360,45 @@ public:
         if (!d)
             return T();
 
-        const auto copy = d.isShared() ? *this : QMap(); // keep `key` alive across the detach
-        // TODO: improve. There is no need of copying all the
-        // elements (the one to be removed can be skipped).
-        detach();
+        if (d.isShared()) {
+            Map m;
+            // For historic reasons, we always un-share (was: detach()) when
+            // this function is called, even if `key` isn't found
+            const auto commit = qScopeGuard([&] { QMap{std::move(m)}.swap(*this); });
+
+            // This way of copying ought to be O(N) (not NlogN) and not causing
+            // any rebalancings in `m`, because we build in-order and with hint
+            // [[citation needed]].
+
+            const auto keep = [&m] (auto it) { m.insert(m.cend(), *it); };
+
+            auto it = d->m.cbegin();
+            const auto end = d->m.cend();
+            const auto cmp = d->m.key_comp();
+            while (it != end) {
+                if (cmp(it->first, key)) { // still before
+                    keep(it);
+                    ++it;
+                } else if (cmp(key, it->first)) { // after, iow: not found
+                    // This should be faster than an actual range-insert, because
+                    // the latter cannot assume that the input is sorted; we can:
+                    while (it != end) {
+                        keep(it);
+                        ++it;
+                    }
+                    break;
+                } else { // found!
+                    return [&] {
+                        T r = it->second; // we cannot move (isShared()!)
+                        while (++it != end)
+                            keep(it);
+                        return r;
+                    }();
+                }
+            }
+            // if we reach here, `key` wasn't found:
+            return T();
+        }
 
 #ifdef __cpp_lib_node_extract
         if (const auto node = d->m.extract(key))
@@ -376,8 +443,7 @@ public:
 
     T &operator[](const Key &key)
     {
-        const auto copy = d.isShared() ? *this : QMap(); // keep `key` alive across the detach
-        detach();
+        const auto hold = referenceHoldingDetach();
         auto i = d->m.find(key);
         if (i == d->m.end())
             i = d->m.insert({key, T()}).first;
@@ -650,8 +716,7 @@ public:
 
     iterator find(const Key &key)
     {
-        const auto copy = d.isShared() ? *this : QMap(); // keep `key` alive across the detach
-        detach();
+        const auto hold = referenceHoldingDetach();
         return iterator(d->m.find(key));
     }
 
@@ -669,8 +734,7 @@ public:
 
     iterator lowerBound(const Key &key)
     {
-        const auto copy = d.isShared() ? *this : QMap(); // keep `key` alive across the detach
-        detach();
+        const auto hold = referenceHoldingDetach();
         return iterator(d->m.lower_bound(key));
     }
 
@@ -683,8 +747,7 @@ public:
 
     iterator upperBound(const Key &key)
     {
-        const auto copy = d.isShared() ? *this : QMap(); // keep `key` alive across the detach
-        detach();
+        const auto hold = referenceHoldingDetach();
         return iterator(d->m.upper_bound(key));
     }
 
@@ -697,25 +760,22 @@ public:
 
     iterator insert(const Key &key, const T &value)
     {
-        const auto copy = d.isShared() ? *this : QMap(); // keep `key` alive across the detach
-        // TODO: improve. In case of assignment, why copying first?
-        detach();
+        const auto hold = referenceHoldingDetachExcept(key);
         return iterator(d->m.insert_or_assign(key, value).first);
     }
 
     iterator insert(const_iterator pos, const Key &key, const T &value)
     {
-        // TODO: improve. In case of assignment, why copying first?
-        typename Map::const_iterator dpos;
-        const auto copy = d.isShared() ? *this : QMap(); // keep `key`/`value` alive across the detach
-        if (!d || d.isShared()) {
-            auto posDistance = d ? std::distance(d->m.cbegin(), pos.i) : 0;
+        if (!d) {
             detach();
-            dpos = std::next(d->m.cbegin(), posDistance);
-        } else {
-            dpos = pos.i;
+            return iterator(d->m.emplace(key, value).first);
+        } else if (d.isShared()) {
+            auto posDistance = std::distance(d->m.cbegin(), pos.i);
+            const auto hold = referenceHoldingDetachExcept(key);
+            auto dpos = std::next(d->m.cbegin(), posDistance);
+            return iterator(d->m.insert_or_assign(dpos, key, value));
         }
-        return iterator(d->m.insert_or_assign(dpos, key, value));
+        return iterator(d->m.insert_or_assign(pos.i, key, value));
     }
 
     void insert(const QMap<Key, T> &map)
@@ -776,8 +836,7 @@ public:
 
     std::pair<iterator, iterator> equal_range(const Key &akey)
     {
-        const auto copy = d.isShared() ? *this : QMap(); // keep `key` alive across the detach
-        detach();
+        const auto hold = referenceHoldingDetach();
         auto result = d->m.equal_range(akey);
         return {iterator(result.first), iterator(result.second)};
     }

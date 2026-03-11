@@ -150,7 +150,7 @@ int pthread_timedjoin_np(...) { return ENOSYS; }    // pretend
 
 Q_CONSTINIT static thread_local QThreadData *currentThreadData = nullptr;
 
-static void destroy_current_thread_data(QThreadData *data)
+static void destroy_current_thread_data(QThreadData *data, bool calledFromExit)
 {
     QThread *thread = data->thread.loadAcquire();
 
@@ -165,7 +165,7 @@ static void destroy_current_thread_data(QThreadData *data)
         // this is very likely the last reference. These pointers cannot be
         // null and there is no race.
         QThreadPrivate *thread_p = static_cast<QThreadPrivate *>(QObjectPrivate::get(thread));
-        thread_p->finish();
+        thread_p->finish(calledFromExit);
         if constexpr (!QT_CONFIG(broken_threadlocal_dtors))
             thread_p->cleanup();
     } else if constexpr (!QT_CONFIG(broken_threadlocal_dtors)) {
@@ -193,7 +193,7 @@ static void deref_current_thread_data(QThreadData *data)
 static void destroy_auxiliary_thread_data(void *p)
 {
     auto data = static_cast<QThreadData *>(p);
-    destroy_current_thread_data(data);
+    destroy_current_thread_data(data, false);
     deref_current_thread_data(data);
 }
 
@@ -225,7 +225,7 @@ struct QThreadDataDestroyer
         {
             // running function-local destructors upon ::exit()
             if (QThreadData *data = get_thread_data())
-                destroy_current_thread_data(data);
+                destroy_current_thread_data(data, true);
         }
     };
 };
@@ -472,7 +472,7 @@ void *QThreadPrivate::start(void *arg)
     return nullptr;
 }
 
-void QThreadPrivate::finish()
+void QThreadPrivate::finish(bool calledFromExit)
 {
     QThreadPrivate *d = this;
     QThread *thr = q_func();
@@ -489,7 +489,7 @@ void QThreadPrivate::finish()
     emit thr->finished(QThread::QPrivateSignal());
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 
-    QThreadStoragePrivate::finish(&d->data->tls);
+    QThreadStoragePrivate::finish(&d->data->tls, calledFromExit);
 
     if constexpr (QT_CONFIG(broken_threadlocal_dtors))
         cleanup();
@@ -974,7 +974,7 @@ bool QThreadPrivate::wait(QMutexLocker<QMutex> &locker, QDeadlineTimer deadline)
         pthread_cleanup_push(&CancelState::run, &nocancel);
         pthread_t thrId = from_HANDLE<pthread_t>(data->threadId.loadRelaxed());
         if constexpr (QT_CONFIG(pthread_clockjoin))
-            r = pthread_clockjoin_np(thrId, nullptr, SteadyClockClockId, pts);
+            r = pthread_clockjoin_np(thrId, nullptr, QSteadyClockClockId, pts);
         else
             r = pthread_timedjoin_np(thrId, nullptr, pts);
         Q_ASSERT(r == 0 || r == ETIMEDOUT);

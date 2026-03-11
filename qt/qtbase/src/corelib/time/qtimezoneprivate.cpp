@@ -23,6 +23,10 @@
 
 #include <algorithm>
 
+#ifdef Q_OS_WASM
+#include <emscripten/val.h>
+#endif
+
 QT_BEGIN_NAMESPACE
 
 using namespace QtMiscUtils;
@@ -197,12 +201,12 @@ QString QTimeZonePrivate::displayName(QTimeZone::TimeType timeType,
 {
     const Data tran = data(timeType);
     if (tran.atMSecsSinceEpoch != invalidMSecs()) {
+#if QT_CONFIG(timezone_locale) // Takes care of offsetformat:
+        return localeName(tran.atMSecsSinceEpoch, tran.offsetFromUtc, timeType, nameType, locale);
+#else // All this base can help with is offset names:
         if (nameType == QTimeZone::OffsetName && isAnglicLocale(locale))
             return isoOffsetFormat(tran.offsetFromUtc);
-
-#if QT_CONFIG(timezone_locale)
-        return localeName(tran.atMSecsSinceEpoch, tran.offsetFromUtc, timeType, nameType, locale);
-#endif
+#endif // Hopefully derived classes can do better.
     }
     return QString();
 }
@@ -1267,7 +1271,16 @@ QString QUtcTimeZonePrivate::displayName(QTimeZone::TimeType timeType,
                                          const QLocale &locale) const
 {
 #if QT_CONFIG(timezone_locale)
-    QString name = QTimeZonePrivate::displayName(timeType, nameType, locale);
+    QString name =
+#  if QT_CONFIG(icu)
+        // ICU doesn't recognize m_name in "UTC±HH:mm" form as an ID - so that
+        // localeName() only does the offset format, making it useless here (and
+        // it's always expensive). It does, however, cope with plain UTC, so
+        // skip except in that case:
+        m_offsetFromUtc != 0 ? QString() :
+#  endif
+        QTimeZonePrivate::displayName(timeType, nameType, locale);
+
     // That may fall back to standard offset format, in which case we'd sooner
     // use m_name if it's non-empty (for the benefit of custom zones).
     // However, a localized fallback is better than ignoring the locale, so only
@@ -1340,7 +1353,19 @@ qint32 QUtcTimeZonePrivate::daylightTimeOffset(qint64 atMSecsSinceEpoch) const
 
 QByteArray QUtcTimeZonePrivate::systemTimeZoneId() const
 {
+#ifdef Q_OS_WASM
+    const emscripten::val date = emscripten::val::global("Date").new_();
+    if (date.isUndefined())
+        return utcQByteArray();
+    // JavaScript's getTimezoneOffset() returns minutes west of UTC.
+    // Qt expects seconds east of UTC, so we negate and convert to seconds.
+    const int offsetSeconds = -date.call<int>("getTimezoneOffset") * 60;
+    if (offsetSeconds == 0)
+        return utcQByteArray();
+    return isoOffsetFormat(offsetSeconds).toUtf8();
+#else
     return utcQByteArray();
+#endif
 }
 
 // TODO: port to QByteArrayView

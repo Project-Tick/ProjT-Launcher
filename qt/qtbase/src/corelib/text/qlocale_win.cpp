@@ -99,7 +99,7 @@ static QVariant nullIfEmpty(T &&value)
     // For use where we should fall back to CLDR if we got an empty value.
     if (value.isEmpty())
         return {};
-    return std::move(value);
+    return std::forward<T>(value);
 }
 }
 
@@ -337,8 +337,7 @@ QVariant QSystemLocalePrivate::groupingSizes()
         int dataSize = getLocaleInfo(LOCALE_SGROUPING, grouping, int(std::size(grouping)));
         if (dataSize) {
             // MS does not seem to include {first} so it will always be NAN.
-            QString sysGroupingStr = QString::fromWCharArray(grouping, dataSize);
-            auto tokenized = sysGroupingStr.tokenize(u";");
+            auto tokenized = QStringView{grouping, dataSize}.tokenize(u';');
             int width[2] = {0, 0};
             int index = 0;
             for (const auto tok : tokenized) {

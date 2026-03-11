@@ -156,6 +156,11 @@ private slots:
 
     void xbmBufferHandling();
 
+    void autoTransformSizes();
+
+    void invalidColorspaceRoundTrip_data();
+    void invalidColorspaceRoundTrip();
+
 private:
     QString prefix;
     QTemporaryDir m_temporaryDir;
@@ -2203,6 +2208,77 @@ void tst_QImageReader::xbmBufferHandling()
     buffer.append("0x");
     // Only check we get no buffer overflow
     QImage::fromData(buffer, "xbm");
+}
+
+void tst_QImageReader::autoTransformSizes()
+{
+    QImageReader r(":/images/rot.jpg");
+    r.setAutoTransform(false);
+    const QSize untransformedSize(131, 174);
+
+    // Read width/height of image data
+    QCOMPARE(r.size(), untransformedSize);
+    QCOMPARE(r.effectiveSize(), untransformedSize);
+    QCOMPARE(r.read().size(), untransformedSize);
+
+    QImageReader r2(":/images/rot.jpg");
+    r2.setAutoTransform(true);
+    const QSize transformedSize = untransformedSize.transposed();
+
+    // Read width/height with indicated transformation (swapping width/height)
+    QCOMPARE(r2.size(), untransformedSize);
+    QCOMPARE(r2.effectiveSize(), transformedSize);
+    QCOMPARE(r2.read().size(), transformedSize);
+}
+
+static bool formatSupportsIccProfiles(QByteArrayView format)
+{
+    return format.compare("png", Qt::CaseInsensitive) == 0 ||
+           format.compare("jpeg", Qt::CaseInsensitive) == 0 ||
+           format.compare("tiff", Qt::CaseInsensitive) == 0;
+}
+
+void tst_QImageReader::invalidColorspaceRoundTrip_data()
+{
+    QTest::addColumn<QByteArray>("imageFormat");
+    for (const QByteArray &format : QImageWriter::supportedImageFormats()) {
+        if (formatSupportsIccProfiles(format))
+            QTest::addRow("%s", format.constData()) << format;
+    }
+}
+
+void tst_QImageReader::invalidColorspaceRoundTrip()
+{
+    QFile iccProfileFile(QFINDTESTDATA("images/test_invalid_icc.icc"));
+    QVERIFY(iccProfileFile.open(QFile::ReadOnly));
+
+    const QByteArray iccProfile = iccProfileFile.readAll();
+    const QColorSpace colorSpace = QColorSpace::fromIccProfile(iccProfile);
+    QVERIFY(!colorSpace.isValid());
+    QCOMPARE(colorSpace.iccProfile(), iccProfile);
+
+    constexpr QSize IMAGE_SIZE = {32, 32};
+
+    QImage image(IMAGE_SIZE, QImage::Format_RGB32);
+    image.fill(Qt::black);
+    image.setColorSpace(colorSpace);
+    QCOMPARE(image.colorSpace().iccProfile(), iccProfile);
+
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString imagePath = dir.filePath("image");
+
+    QFETCH(QByteArray, imageFormat);
+
+    QImageWriter writer(imagePath, imageFormat);
+    QVERIFY(writer.write(image));
+
+    QImageReader reader(imagePath, imageFormat);
+    QImage result;
+    QVERIFY(reader.read(&result));
+
+    QCOMPARE(result.size(), IMAGE_SIZE);
+    QCOMPARE(result.colorSpace().iccProfile(), iccProfile);
 }
 
 QTEST_MAIN(tst_QImageReader)

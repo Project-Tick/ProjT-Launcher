@@ -1,6 +1,6 @@
 // Copyright (C) 2016 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
-// Qt-Security score:significant reason:default
+// Qt-Security score:significant reason:trivial-impl-only
 
 #ifndef QABSTRACTEVENTDISPATCHER_P_H
 #define QABSTRACTEVENTDISPATCHER_P_H
@@ -36,10 +36,10 @@ public:
 
     bool isV2 = false;
 
-    static int allocateTimerId();
-    static void releaseTimerId(int id);
-    static void releaseTimerId(Qt::TimerId id)
-    { releaseTimerId(qToUnderlying(id)); }
+    static Qt::TimerId allocateTimerId();
+    static void releaseTimerId(int id)
+    { releaseTimerId(Qt::TimerId{id}); }
+    static void releaseTimerId(Qt::TimerId id);
 
     static QAbstractEventDispatcherPrivate *get(QAbstractEventDispatcher *o)
     { return o->d_func(); }

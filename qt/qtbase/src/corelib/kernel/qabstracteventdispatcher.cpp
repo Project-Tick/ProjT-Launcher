@@ -92,7 +92,7 @@ QAbstractEventDispatcherPrivate::QAbstractEventDispatcherPrivate()
 QAbstractEventDispatcherPrivate::~QAbstractEventDispatcherPrivate()
     = default;
 
-int QAbstractEventDispatcherPrivate::allocateTimerId()
+Qt::TimerId QAbstractEventDispatcherPrivate::allocateTimerId()
 {
     // This function may be called after timerIdFreeList() has been destructed
     // for example in case when application exits without waiting for
@@ -100,16 +100,16 @@ int QAbstractEventDispatcherPrivate::allocateTimerId()
     // to a slot which triggers a sequence that registers new timer.
     // See https://bugreports.qt-project.org/browse/QTBUG-38957.
     if (QtTimerIdFreeList *fl = timerIdFreeList())
-        return fl->next();
-    return 0; // Note! returning 0 generates a warning
+        return Qt::TimerId{fl->next()};
+    return Qt::TimerId{0}; // Note! returning 0 generates a warning
 }
 
-void QAbstractEventDispatcherPrivate::releaseTimerId(int timerId)
+void QAbstractEventDispatcherPrivate::releaseTimerId(Qt::TimerId timerId)
 {
     // this function may be called by a global destructor after
     // timerIdFreeList() has been destructed
     if (QtTimerIdFreeList *fl = timerIdFreeList())
-        fl->release(timerId);
+        fl->release(qToUnderlying(timerId));
 }
 
 /*!
@@ -277,7 +277,7 @@ int QAbstractEventDispatcher::registerTimer(qint64 interval, Qt::TimerType timer
 Qt::TimerId QAbstractEventDispatcher::registerTimer(Duration interval, Qt::TimerType timerType,
                                                     QObject *object)
 {
-    auto id = Qt::TimerId(QAbstractEventDispatcherPrivate::allocateTimerId());
+    auto id = QAbstractEventDispatcherPrivate::allocateTimerId();
 #if QT_VERSION < QT_VERSION_CHECK(7, 0, 0)
     if (QAbstractEventDispatcherV2 *self = v2(this))
         self->registerTimer(id, interval, timerType, object);
@@ -425,11 +425,6 @@ void QAbstractEventDispatcher::closingDown()
     \l{QAbstractEventDispatcher::TimerInfo::timerType}{timerType}.
 
     \sa registeredTimers(), QAbstractEventDispatcher::TimerInfoV2, timersForObject()
-*/
-/*! \fn QAbstractEventDispatcher::TimerInfo::TimerInfo(int timerId, int interval, Qt::TimerType timerType)
-
-    Constructs a TimerInfo struct with the given \a timerId, \a interval, and
-    \a timerType.
 */
 /*!
     \variable QAbstractEventDispatcher::TimerInfo::timerId

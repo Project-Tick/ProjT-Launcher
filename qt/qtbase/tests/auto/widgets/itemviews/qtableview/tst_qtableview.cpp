@@ -595,9 +595,6 @@ void tst_QTableView::keyboardNavigation_data()
 
 void tst_QTableView::keyboardNavigation()
 {
-    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"), Qt::CaseInsensitive))
-        QSKIP("Wayland: This fails. Figure out why.");
-
     QFETCH(int, rowCount);
     QFETCH(int, columnCount);
     QFETCH(bool, tabKeyNavigation);
@@ -1266,9 +1263,6 @@ void tst_QTableView::moveCursorStrikesBack_data()
 
 void tst_QTableView::moveCursorStrikesBack()
 {
-    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"), Qt::CaseInsensitive))
-        QSKIP("Wayland: This fails. Figure out why.");
-
     QFETCH(int, hideRow);
     QFETCH(int, hideColumn);
     QFETCH(const IntList, disableRows);
@@ -3302,9 +3296,6 @@ void tst_QTableView::spans()
 
 void tst_QTableView::spansAfterRowInsertion()
 {
-    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"), Qt::CaseInsensitive))
-        QSKIP("Wayland: This fails. Figure out why.");
-
     QtTestTableModel model(10, 10);
     QtTestTableView view;
     view.setModel(&model);
@@ -3341,9 +3332,6 @@ void tst_QTableView::spansAfterRowInsertion()
 
 void tst_QTableView::spansAfterColumnInsertion()
 {
-    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"), Qt::CaseInsensitive))
-        QSKIP("Wayland: This fails. Figure out why.");
-
     QtTestTableModel model(10, 10);
     QtTestTableView view;
     view.setModel(&model);
@@ -3380,9 +3368,6 @@ void tst_QTableView::spansAfterColumnInsertion()
 
 void tst_QTableView::spansAfterRowRemoval()
 {
-    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"), Qt::CaseInsensitive))
-        QSKIP("Wayland: This fails. Figure out why.");
-
     QtTestTableModel model(10, 10);
     QtTestTableView view;
     view.setModel(&model);
@@ -3424,9 +3409,6 @@ void tst_QTableView::spansAfterRowRemoval()
 
 void tst_QTableView::spansAfterColumnRemoval()
 {
-    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"), Qt::CaseInsensitive))
-        QSKIP("Wayland: This fails. Figure out why.");
-
     QtTestTableModel model(10, 10);
     QtTestTableView view;
     view.setModel(&model);
@@ -3627,9 +3609,6 @@ public:
 
 void tst_QTableView::editSpanFromDirections()
 {
-    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"), Qt::CaseInsensitive))
-        QSKIP("Wayland: This fails. Figure out why.");
-
     QFETCH(const KeyList, keyPresses);
     QFETCH(QSharedPointer<QStandardItemModel>, model);
     QFETCH(int, row);
@@ -3858,9 +3837,6 @@ QT_END_NAMESPACE
 
 void tst_QTableView::tabFocus()
 {
-    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"), Qt::CaseInsensitive))
-        QSKIP("Wayland: This fails. Figure out why.");
-
     if (!qt_tab_all_widgets())
         QSKIP("This test requires full keyboard control to be enabled.");
 
@@ -4275,7 +4251,7 @@ void tst_QTableView::mouseWheel_data()
 {
     QTest::addColumn<QAbstractItemView::ScrollMode>("scrollMode");
     QTest::addColumn<int>("delta");
-    QTest::addColumn<int>("horizontalPositon");
+    QTest::addColumn<int>("horizontalPosition");
     QTest::addColumn<int>("verticalPosition");
 
     QTest::newRow("scroll up per item")
@@ -4293,7 +4269,7 @@ void tst_QTableView::mouseWheel()
 {
     QFETCH(QAbstractItemView::ScrollMode, scrollMode);
     QFETCH(int, delta);
-    QFETCH(int, horizontalPositon);
+    QFETCH(int, horizontalPosition);
     QFETCH(int, verticalPosition);
 
     QtTestTableModel model(100, 100);
@@ -4322,7 +4298,7 @@ void tst_QTableView::mouseWheel()
     QWheelEvent horizontalEvent(pos, view.mapToGlobal(pos), QPoint(), QPoint(delta, 0),
                                 Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
     QApplication::sendEvent(view.viewport(), &horizontalEvent);
-    QVERIFY(qAbs(view.horizontalScrollBar()->value() - horizontalPositon) < 15);
+    QVERIFY(qAbs(view.horizontalScrollBar()->value() - horizontalPosition) < 15);
     QApplication::sendEvent(view.viewport(), &verticalEvent);
     QVERIFY(qAbs(view.verticalScrollBar()->value() - verticalPosition) < 15);
 }
@@ -4393,9 +4369,6 @@ struct ValueSaver {
 
 void tst_QTableView::task191545_dragSelectRows()
 {
-    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"), Qt::CaseInsensitive))
-        QSKIP("Wayland: This fails. Figure out why.");
-
     QStandardItemModel model(10, 10);
     QTableView table;
     table.setModel(&model);

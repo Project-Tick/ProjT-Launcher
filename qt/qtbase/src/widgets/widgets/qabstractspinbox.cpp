@@ -19,30 +19,23 @@
 #include <qclipboard.h>
 #include <qdatetime.h>
 #include <qevent.h>
+#include <qloggingcategory.h>
 #if QT_CONFIG(menu)
 #include <qmenu.h>
 #endif
-#include <qpainter.h>
-#include <qpalette.h>
 #include <qstylepainter.h>
-#include <qdebug.h>
 #if QT_CONFIG(accessibility)
 # include <qaccessible.h>
 #endif
 
 #include <QtCore/qpointer.h>
 
-//#define QABSTRACTSPINBOX_QSBDEBUG
-#ifdef QABSTRACTSPINBOX_QSBDEBUG
-#  define QASBDEBUG qDebug
-#else
-#  define QASBDEBUG if (false) qDebug
-#endif
-
 QT_BEGIN_NAMESPACE
 
 using namespace Qt::StringLiterals;
 using namespace std::chrono_literals;
+
+Q_STATIC_LOGGING_CATEGORY(lcWidgetAbstractSpinBox, "qt.widgets.qabstractspinbox")
 
 /*!
     \class QAbstractSpinBox
@@ -648,7 +641,8 @@ void QAbstractSpinBox::stepBy(int steps)
         default:
             singleStep = d->singleStep;
         }
-        d->setValue(d->bound(d->value + (singleStep * steps), old, steps), e);
+        const auto newVal = d->bound(d->value + (singleStep * steps), old, steps);
+        d->setValue(d->roundValue(newVal), e);
     } else if (e == AlwaysEmit) {
         d->emitSignals(e, old);
     }
@@ -1781,6 +1775,11 @@ void QAbstractSpinBoxPrivate::setValue(const QVariant &val, EmitPolicy ep,
     }
 }
 
+QVariant QAbstractSpinBoxPrivate::roundValue(const QVariant &val) const
+{
+    return val;
+}
+
 /*!
     \internal
 
@@ -1910,7 +1909,8 @@ void QAbstractSpinBoxPrivate::interpret(EmitPolicy ep)
     if (q->validate(tmp, pos) != QValidator::Acceptable) {
         const QString copy = tmp;
         q->fixup(tmp);
-        QASBDEBUG() << "QAbstractSpinBoxPrivate::interpret() text '"
+        qDebug(lcWidgetAbstractSpinBox)
+                    << "QAbstractSpinBoxPrivate::interpret() text '"
                     << edit->displayText()
                     << "' >> '" << copy << '\''
                     << "' >> '" << tmp << '\'';
@@ -2022,7 +2022,7 @@ QVariant operator+(const QVariant &arg1, const QVariant &arg2)
         QDateTime a2 = arg2.toDateTime();
         QDateTime a1 = arg1.toDateTime().addDays(QDATETIMEEDIT_DATE_MIN.daysTo(a2.date()));
         a1.setTime(a1.time().addMSecs(a2.time().msecsSinceStartOfDay()));
-        ret = QVariant(a1);
+        ret = QVariant(std::move(a1));
         break;
     }
 #endif // datetimeparser
@@ -2058,7 +2058,7 @@ QVariant operator-(const QVariant &arg1, const QVariant &arg2)
             QDateTime dt = a2.addDays(days).addSecs(secs);
             if (msecs > 0)
                 dt.setTime(dt.time().addMSecs(msecs));
-            ret = QVariant(dt);
+            ret = QVariant(std::move(dt));
         }
         break;
     }

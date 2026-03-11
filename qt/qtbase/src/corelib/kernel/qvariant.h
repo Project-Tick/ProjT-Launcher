@@ -122,7 +122,11 @@ public:
 
         constexpr Private() noexcept : is_shared(false), is_null(true), packedType(0) {}
         explicit Private(const QtPrivate::QMetaTypeInterface *iface) noexcept;
-        template <typename T> explicit Private(std::piecewise_construct_t, const T &t);
+        template <typename T>
+        explicit Private(std::in_place_t, T &&t);
+        template <typename T>
+        explicit Private(std::piecewise_construct_t, const T &t)
+            : Private{std::in_place, t} {}
 
         const void *storage() const
         { return is_shared ? data.shared->data() : &data.data; }
@@ -429,22 +433,36 @@ public:
     QVariant(QDate date) noexcept;
     QVariant(QTime time) noexcept;
     QVariant(const QBitArray &bitarray) noexcept;
+    QVariant(QBitArray &&bitarray) noexcept;
     QVariant(const QByteArray &bytearray) noexcept;
+    QVariant(QByteArray &&bytearray) noexcept;
     QVariant(const QDateTime &datetime) noexcept;
+    QVariant(QDateTime &&datetime) noexcept;
     QVariant(const QHash<QString, QVariant> &hash) noexcept;
+    QVariant(QHash<QString, QVariant> &&hash) noexcept;
     QVariant(const QJsonArray &jsonArray) noexcept;
+    QVariant(QJsonArray &&jsonArray) noexcept;
     QVariant(const QJsonObject &jsonObject) noexcept;
+    QVariant(QJsonObject &&jsonObject) noexcept;
     QVariant(const QList<QVariant> &list) noexcept;
+    QVariant(QList<QVariant> &&list) noexcept;
     QVariant(const QLocale &locale) noexcept;
+    QVariant(QLocale &&locale) noexcept;
     QVariant(const QMap<QString, QVariant> &map) noexcept;
+    QVariant(QMap<QString, QVariant> &&map) noexcept;
     QVariant(const QRegularExpression &re) noexcept;
+    QVariant(QRegularExpression &&re) noexcept;
     QVariant(const QString &string) noexcept;
+    QVariant(QString &&string) noexcept;
     QVariant(const QStringList &stringlist) noexcept;
+    QVariant(QStringList &&stringlist) noexcept;
     QVariant(const QUrl &url) noexcept;
+    QVariant(QUrl &&url) noexcept;
 
     // conditionally noexcept trivial or trivially-copyable
     // (most of these are noexcept on 64-bit)
     QVariant(const QJsonValue &jsonValue) noexcept(Private::FitsInInternalSize<sizeof(CborValueStandIn)>);
+    QVariant(QJsonValue &&jsonValue) noexcept(Private::FitsInInternalSize<sizeof(CborValueStandIn)>);
     QVariant(const QModelIndex &modelIndex) noexcept(Private::FitsInInternalSize<8 + 2 * sizeof(quintptr)>);
     QVariant(QUuid uuid) noexcept(Private::FitsInInternalSize<16>);
     QVariant(QSize size) noexcept;
@@ -458,8 +476,11 @@ public:
 
     // not noexcept
     QVariant(const QEasingCurve &easing) noexcept(false);
+    QVariant(QEasingCurve &&easing) noexcept;
     QVariant(const QJsonDocument &jsonDocument) noexcept(false);
+    QVariant(QJsonDocument &&jsonDocument) noexcept;
     QVariant(const QPersistentModelIndex &modelIndex) noexcept(false);
+    QVariant(QPersistentModelIndex &&modelIndex) noexcept;
 
 #ifndef QT_NO_CAST_FROM_ASCII
     QT_ASCII_CAST_WARN QVariant(const char *str) noexcept(false)
