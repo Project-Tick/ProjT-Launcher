@@ -1,32 +1,48 @@
-include:
-  - local: .gitlab/ci/github-workflow-parity.yml
+.self-hosted-runner-variables: &self-hosted-runner-variables
+  LINUX_RUNNER_TAG: "pt-rhel-runner-01"
+  RUNNER_TAG: "pt-rhel-runner-01"
 
-workflow:
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: never
-    - if: '$CI_COMMIT_TAG'
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-    - when: never
+.fork-runner-variables: &fork-runner-variables
+  LINUX_RUNNER_TAG: "saas-linux-medium-amd64"
+  RUNNER_TAG: "saas-linux-medium-amd64"
+
+.if-fork-push: &if-fork-push
+  if: '$CI_PIPELINE_SOURCE == "push" && $CI_PROJECT_PATH != $UPSTREAM_PROJECT_PATH'
+
+.if-fork-merge-request: &if-fork-merge-request
+  if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID != $CI_MERGE_REQUEST_TARGET_PROJECT_ID'
+
+.if-self-hosted-push: &if-self-hosted-push
+  if: '$CI_PIPELINE_SOURCE == "push" && $CI_PROJECT_PATH == $UPSTREAM_PROJECT_PATH'
+
+.if-self-hosted-merge-request: &if-self-hosted-merge-request
+  if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID == $CI_MERGE_REQUEST_TARGET_PROJECT_ID'
+
+# GitLab does not resolve nested variables reliably in runner tags.
+# Keep concrete tag values in the variables assigned by workflow rules.
 
 stages:
+  - sync
+  - preflight
   - prepare
+  - build-images
   - scheduled
   - lint
+  - test-frontend
   - build
+  - test
+  - review
+  - qa
   - release
-
-variables:
-  GIT_DEPTH: "1"
-  GIT_SUBMODULE_DEPTH: "1"
-  LAUNCHER_LINUX_IMAGE: "$CI_REGISTRY_IMAGE/ci/launcher-linux:trixie"
-  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.cache/npm"
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  CCACHE_DIR: "$CI_PROJECT_DIR/.cache/ccache"
+  - pages
+  - notify
 
 default:
+  image: $DEFAULT_CI_IMAGE
+  tags:
+    - $DEFAULT_JOB_TAG
+  interruptible: true
+  timeout: 90m
   cache:
     key: "$CI_JOB_NAME_SLUG-$CI_COMMIT_REF_SLUG"
     policy: pull-push
@@ -35,699 +51,61 @@ default:
       - .cache/pip/
       - .cache/ccache/
 
-schedule_js_fuzz:
-  stage: scheduled
-  image: node:20-bookworm
-  tags:
-    - pt-rhel-runner-01
+workflow:
+  name: '$PIPELINE_NAME'
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release-/)'
-  script:
-    - cd bot
-    - npm install
-    - npm install fast-check
-    - node fuzz/fastcheck.test.js
-
-schedule_python_fuzz:
-  stage: scheduled
-  image: python:3.11-bookworm
-  tags:
-    - pt-rhel-runner-01
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release-/)'
-  script:
-    - python -m pip install --upgrade pip
-    - python -m pip install -r requirements.txt atheris
-    - python fuzz/meta/fuzz_meta_models.py -runs=2000
-
-schedule_flatpak_update:
-  stage: scheduled
-  image: ghcr.io/flathub/flatpak-external-data-checker:latest
-  tags:
-    - pt-rhel-runner-01
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-  script:
-    - |
-      if ! command -v git >/dev/null 2>&1; then
-        if command -v apt-get >/dev/null 2>&1; then
-          apt-get update && apt-get install -y git
-        elif command -v apk >/dev/null 2>&1; then
-          apk add --no-cache git
-        elif command -v dnf >/dev/null 2>&1; then
-          dnf -y install git
-        fi
-      fi
-    - |
-      if command -v flatpak-external-data-checker >/dev/null 2>&1; then
-        flatpak-external-data-checker --update --edit-only flatpak/org.projecttick.ProjTLauncher.yml
-      elif [ -x /app/flatpak-external-data-checker ]; then
-        /app/flatpak-external-data-checker --update --edit-only flatpak/org.projecttick.ProjTLauncher.yml
-      else
-        echo "flatpak-external-data-checker not found in image."
-        exit 1
-      fi
-    - |
-      if git diff --quiet; then
-        echo "No flatpak updates."
-        exit 0
-      fi
-      git config user.name "Project Tick Bot"
-      git config user.email "gitlab-bot@projecttick.org"
-      git checkout -B update-modules
-      git add flatpak/org.projecttick.ProjTLauncher.yml
-      git commit -m "chore: update modules"
-      if [ -n "${GITLAB_BOT_TOKEN:-}" ]; then
-        git push "https://oauth2:${GITLAB_BOT_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:update-modules
-      else
-        echo "GITLAB_BOT_TOKEN not set; updated branch not pushed."
-      fi
-
-flatpak_build:
-  stage: build
-  image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
-  tags:
-    - $RUNNER_TAG
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      changes:
-        - flatpak/**/*.yml
-        - flatpak/**/*.json
-        - flatpak/scripts/**/*
-        - flatpak/shared-modules/**/*
-        - flatpak/static/projtlauncher.flatpakrepo
-        - flatpak/static/projtlauncher-nightly.flatpakref
-        - flatpak/static/index.html
-        - .gitlab-ci.yml
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-  parallel:
-    matrix:
-      - FLATPAK_ARCH: x86_64
-        RUNNER_TAG: pt-rhel-runner-01
-      - FLATPAK_ARCH: aarch64
-        RUNNER_TAG: saas-linux-medium-arm64
-  script:
-    - |
-      if command -v apt-get >/dev/null 2>&1; then
-        apt-get update
-        apt-get install -y git rsync dbus-user-session
-      fi
-    - |
-      flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    - |
-      if [ -n "${FLATPAK_GPG_KEY:-}" ] && [ -n "${FLATPAK_GPG_KEY_ID:-}" ]; then
-        echo -n "$FLATPAK_GPG_KEY" | base64 -d | gpg --import
-      fi
-    - |
-      REPO_DIR="$CI_PROJECT_DIR/flatpak-repo"
-      BUILD_DIR="$CI_PROJECT_DIR/flatpak-build"
-      rm -rf "$REPO_DIR" "$BUILD_DIR"
-      mkdir -p "$REPO_DIR" "$BUILD_DIR"
-    - |
-      build_cmd="flatpak-builder --force-clean --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
-      if command -v dbus-run-session >/dev/null 2>&1; then
-        dbus-run-session -- bash -lc "$build_cmd"
-      else
-        bash -lc "$build_cmd"
-      fi
-    - |
-      flatpak build-update-repo \
-        ${FLATPAK_GPG_KEY_ID:+--gpg-sign="$FLATPAK_GPG_KEY_ID"} \
-        --generate-static-deltas \
-        --prune \
-        "$REPO_DIR"
-    - cp -r flatpak/static/. "$REPO_DIR"/
-  artifacts:
-    when: always
-    paths:
-      - flatpak-repo/
-    expire_in: 3 days
-
-schedule_cfl:
-  stage: scheduled
-  image: ubuntu:24.04
-  tags:
-    - pt-rhel-runner-01
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "develop"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-  parallel:
-    matrix:
-      - SANITIZER: address
-      - SANITIZER: undefined
-  script:
-    - apt-get update
-    - apt-get install -y clang cmake ninja-build build-essential
-    - export CFLAGS="-fsanitize=$SANITIZER -fno-omit-frame-pointer"
-    - export CXXFLAGS="-fsanitize=$SANITIZER -fno-omit-frame-pointer"
-    - export LDFLAGS="-fsanitize=$SANITIZER"
-    - >
-      cmake -S . -B build-fuzz -G Ninja
-      -DCMAKE_BUILD_TYPE=RelWithDebInfo
-      -DBUILD_TESTING=OFF
-      -DBUILD_FUZZERS=ON
-      -DLAUNCHER_FUZZ_ONLY=ON
-      -DCMAKE_C_COMPILER=clang
-      -DCMAKE_CXX_COMPILER=clang++
-    - cmake --build build-fuzz --target fuzz_nbt_reader
-    - ./build-fuzz/fuzz_nbt_reader -max_total_time=3600
-
-schedule_flatpak_deploy:
-  stage: scheduled
-  image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
-  resource_group: flatpak-deploy
-  tags:
-    - $RUNNER_TAG
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
-      changes:
-        - flatpak/**/*.yml
-        - flatpak/**/*.json
-        - flatpak/scripts/**/*
-        - flatpak/shared-modules/**/*
-        - flatpak/static/projtlauncher.flatpakrepo
-        - flatpak/static/projtlauncher-nightly.flatpakref
-        - flatpak/static/index.html
-        - .gitlab-ci.yml
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-  script:
-    - |
-      if [ -z "${FLATPAK_SITE_REPO:-}" ] || [ -z "${FLATPAK_SITE_TOKEN:-}" ]; then
-        echo "FLATPAK_SITE_REPO / FLATPAK_SITE_TOKEN required."
-        exit 1
-      fi
-    - |
-      if command -v apt-get >/dev/null 2>&1; then
-        apt-get update
-        apt-get install -y git rsync dbus-user-session
-      fi
-    - |
-      flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    - |
-      if [ -n "${FLATPAK_GPG_KEY:-}" ] && [ -n "${FLATPAK_GPG_KEY_ID:-}" ]; then
-        echo -n "$FLATPAK_GPG_KEY" | base64 -d | gpg --import
-      fi
-    - |
-      REPO_DIR="$CI_PROJECT_DIR/flatpak-repo"
-      BUILD_DIR="$CI_PROJECT_DIR/flatpak-build"
-      rm -rf "$REPO_DIR" "$BUILD_DIR"
-      mkdir -p "$REPO_DIR" "$BUILD_DIR"
-    - |
-      build_cmd="flatpak-builder --force-clean --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
-      if command -v dbus-run-session >/dev/null 2>&1; then
-        dbus-run-session -- bash -lc "$build_cmd"
-      else
-        bash -lc "$build_cmd"
-      fi
-    - |
-      flatpak build-update-repo \
-        ${FLATPAK_GPG_KEY_ID:+--gpg-sign="$FLATPAK_GPG_KEY_ID"} \
-        --generate-static-deltas \
-        --prune \
-        "$REPO_DIR"
-    - |
-      git clone "https://oauth2:${FLATPAK_SITE_TOKEN}@${FLATPAK_SITE_REPO}" flatpak-site
-      rsync -a --delete "$REPO_DIR"/ flatpak-site/
-      cp -r flatpak/static/. flatpak-site/
-      cd flatpak-site
-      git add -A
-      if git diff --cached --quiet; then
-        echo "No changes to push."
-        exit 0
-      fi
-      git config user.name "Project Tick Bot"
-      git config user.email "gitlab-bot@projecttick.org"
-      git commit -m "chore: update flatpak repository ($FLATPAK_ARCH)"
-      git push
-  variables:
-    RUNNER_TAG: pt-rhel-runner-01
-    FLATPAK_ARCH: x86_64
-
-schedule_flatpak_deploy_arm64:
-  stage: scheduled
-  image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
-  resource_group: flatpak-deploy
-  tags:
-    - saas-linux-medium-arm64
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
-      changes:
-        - flatpak/**/*.yml
-        - flatpak/**/*.json
-        - flatpak/scripts/**/*
-        - flatpak/shared-modules/**/*
-        - flatpak/static/projtlauncher.flatpakrepo
-        - flatpak/static/projtlauncher-nightly.flatpakref
-        - flatpak/static/index.html
-        - .gitlab-ci.yml
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-  variables:
-    FLATPAK_ARCH: aarch64
-  script:
-    - |
-      if [ -z "${FLATPAK_SITE_REPO:-}" ] || [ -z "${FLATPAK_SITE_TOKEN:-}" ]; then
-        echo "FLATPAK_SITE_REPO / FLATPAK_SITE_TOKEN required."
-        exit 1
-      fi
-    - |
-      if command -v apt-get >/dev/null 2>&1; then
-        apt-get update
-        apt-get install -y git rsync dbus-user-session
-      fi
-    - flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    - |
-      if [ -n "${FLATPAK_GPG_KEY:-}" ] && [ -n "${FLATPAK_GPG_KEY_ID:-}" ]; then
-        echo -n "$FLATPAK_GPG_KEY" | base64 -d | gpg --import
-      fi
-    - |
-      REPO_DIR="$CI_PROJECT_DIR/flatpak-repo"
-      BUILD_DIR="$CI_PROJECT_DIR/flatpak-build"
-      rm -rf "$REPO_DIR" "$BUILD_DIR"
-      mkdir -p "$REPO_DIR" "$BUILD_DIR"
-    - |
-      build_cmd="flatpak-builder --force-clean --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
-      if command -v dbus-run-session >/dev/null 2>&1; then
-        dbus-run-session -- bash -lc "$build_cmd"
-      else
-        bash -lc "$build_cmd"
-      fi
-    - |
-      flatpak build-update-repo \
-        ${FLATPAK_GPG_KEY_ID:+--gpg-sign="$FLATPAK_GPG_KEY_ID"} \
-        --generate-static-deltas \
-        --prune \
-        "$REPO_DIR"
-    - |
-      git clone "https://oauth2:${FLATPAK_SITE_TOKEN}@${FLATPAK_SITE_REPO}" flatpak-site
-      rsync -a --delete "$REPO_DIR"/ flatpak-site/
-      cp -r flatpak/static/. flatpak-site/
-      cd flatpak-site
-      git add -A
-      if git diff --cached --quiet; then
-        echo "No changes to push."
-        exit 0
-      fi
-      git config user.name "Project Tick Bot"
-      git config user.email "gitlab-bot@projecttick.org"
-      git commit -m "chore: update flatpak repository ($FLATPAK_ARCH)"
-      git push
-
-launcher_linux_image:
-  stage: prepare
-  image:
-    name: gcr.io/kaniko-project/executor:v1.23.2-debug
-    entrypoint: [""]
-  tags:
-    - pt-rhel-runner-01
-  variables:
-    DOCKER_CONFIG: /kaniko/.docker
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: manual
-      allow_failure: false
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: false
-  script:
-    - mkdir -p /kaniko/.docker
-    - |
-      printf '{"auths":{"%s":{"username":"%s","password":"%s"}}}\n' \
-        "$CI_REGISTRY" \
-        "$CI_REGISTRY_USER" \
-        "$CI_REGISTRY_PASSWORD" > /kaniko/.docker/config.json
-    - >
-      /kaniko/executor
-      --context "$CI_PROJECT_DIR"
-      --dockerfile "$CI_PROJECT_DIR/.gitlab/docker/launcher-linux/Dockerfile"
-      --destination "$LAUNCHER_LINUX_IMAGE"
-      --destination "$CI_REGISTRY_IMAGE/ci/launcher-linux:$CI_COMMIT_SHORT_SHA"
-
-.launcher_rules:
-  rules: &launcher_rules
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: manual
-      allow_failure: false
+    - <<: *if-fork-push
       variables:
-        BUILD_TYPE: Debug
+        <<: *fork-runner-variables
+        PIPELINE_NAME: 'Fork branch pipeline'
+    - <<: *if-fork-merge-request
+      variables:
+        <<: *fork-runner-variables
+        PIPELINE_NAME: 'Fork merge request pipeline'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
     - if: '$CI_COMMIT_TAG'
       variables:
-        BUILD_TYPE: Release
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: false
+        <<: *self-hosted-runner-variables
+        PIPELINE_NAME: 'Release $CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       variables:
-        BUILD_TYPE: Debug
-
-markdown_lint:
-  stage: lint
-  image: node:20-bookworm
-  tags:
-    - pt-rhel-runner-01
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: manual
-      allow_failure: false
+        <<: *self-hosted-runner-variables
+        PIPELINE_NAME: 'Default branch pipeline'
     - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: false
-  script:
-    - npm install --global markdownlint-cli
-    - markdownlint . --config .markdownlint.yaml --ignore-path .markdownlintignore
+      variables:
+        <<: *self-hosted-runner-variables
+        PIPELINE_NAME: 'Branch pipeline'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      variables:
+        <<: *self-hosted-runner-variables
+        PIPELINE_NAME: 'Scheduled pipeline'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      variables:
+        <<: *self-hosted-runner-variables
+        PIPELINE_NAME: 'Manual pipeline'
+    - when: never
 
-bot_smoke:
-  stage: lint
-  image: node:20-bookworm
-  tags:
-    - pt-rhel-runner-01
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: manual
-      allow_failure: false
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: false
-  script:
-    - node -c bot/index.js
+variables:
+  DEFAULT_CI_IMAGE: "ubuntu:24.04"
+  MACOS_CI_IMAGE: "macos-15-xcode-16"
+  DEFAULT_JOB_TAG: "pt-rhel-runner-01"
+  PIPELINE_NAME: "ProjT Launcher pipeline"
+  GIT_DEPTH: "1"
+  GIT_SUBMODULE_DEPTH: "1"
+  QUAZIP_CI_DISABLED: "1"
+  LAUNCHER_LINUX_IMAGE: "ubuntu:24.04"
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.cache/npm"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  CCACHE_DIR: "$CI_PROJECT_DIR/.cache/ccache"
+  UPSTREAM_PROJECT_PATH: "project-tick/core/ProjT-Launcher"
+  LINUX_RUNNER_TAG: "pt-rhel-runner-01"
+  RUNNER_TAG: "pt-rhel-runner-01"
+  WINDOWS_RUNNER_TAG: "saas-windows-medium-amd64"
 
-meta_smoke:
-  stage: lint
-  image: python:3.11-bookworm
-  tags:
-    - pt-rhel-runner-01
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: manual
-      allow_failure: false
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: false
-  script:
-    - python -m compileall meta
-
-javacheck_build:
-  stage: build
-  image: ubuntu:24.04
-  tags:
-    - pt-rhel-runner-01
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: manual
-      allow_failure: false
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: false
-  script:
-    - apt-get -y update
-    - >
-      apt-get -y install
-      dpkg-dev
-      ninja-build
-      scdoc
-      appstream
-      libxcb-cursor-dev
-      openjdk-21-jdk
-      libtiff6
-      lcov
-      cmake
-      build-essential
-    - cmake -S javacheck -B javacheck/build -G Ninja
-    - cmake --build javacheck/build --parallel
-  artifacts:
-    when: always
-    paths:
-      - javacheck/build/*.jar
-    expire_in: 3 days
-
-.launcher_linux_template:
-  stage: build
-  image: $LAUNCHER_LINUX_IMAGE_JOB
-  tags:
-    - $RUNNER_TAG
-  rules: *launcher_rules
-  variables:
-    BUILD_TYPE: Debug
-    BUILD_PLATFORM: official
-    CMAKE_PRESET: linux
-    RUNNER_TAG: pt-rhel-runner-01
-    LAUNCHER_LINUX_IMAGE_JOB: $LAUNCHER_LINUX_IMAGE
-  script:
-    - |
-      set -eu
-      if ! command -v cmake >/dev/null 2>&1; then
-        apt-get -y update
-        JAVA_PKG="openjdk-21-jdk"
-        if ! apt-cache show "$JAVA_PKG" >/dev/null 2>&1; then
-          JAVA_PKG="openjdk-17-jdk"
-        fi
-        apt-get -y install \
-          build-essential \
-          ccache \
-          cmake \
-          dpkg-dev \
-          ninja-build \
-          scdoc \
-          appstream \
-          "$JAVA_PKG" \
-          lcov \
-          libxcb-cursor-dev \
-          libdbus-1-dev \
-          libinih-dev \
-          libsystemd-dev \
-          libssl-dev \
-          libtiff6 \
-          pkg-config
-      fi
-
-      if command -v ccache >/dev/null 2>&1; then
-        export CCACHE_DIR="${CCACHE_DIR:-$CI_PROJECT_DIR/.cache/ccache}"
-        export CCACHE_BASEDIR="$CI_PROJECT_DIR"
-        export CCACHE_COMPRESS=1
-        export CCACHE_MAXSIZE=2G
-        ccache -z || true
-      fi
-
-      if command -v javac >/dev/null 2>&1; then
-        JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
-        export JAVA_HOME
-        export PATH="$JAVA_HOME/bin:$PATH"
-      fi
-
-      rm -rf build
-      if command -v ccache >/dev/null 2>&1; then
-        cmake --preset "$CMAKE_PRESET" \
-          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-      else
-        cmake --preset "$CMAKE_PRESET"
-      fi
-      cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
-      ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --output-on-failure --no-tests=error
-      PACKAGE_DIR="$CI_PROJECT_DIR/package"
-      INSTALL_DIR="$CI_PROJECT_DIR/install"
-      PORTABLE_DIR="$CI_PROJECT_DIR/install-portable"
-      mkdir -p "$PACKAGE_DIR" "$INSTALL_DIR" "$PORTABLE_DIR"
-
-      cmake --install build --config "$BUILD_TYPE" --prefix "$INSTALL_DIR"
-      cmake --install build --config "$BUILD_TYPE" --prefix "$PORTABLE_DIR" --component portable || true
-
-      tar -czf "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.tar.gz" -C "$INSTALL_DIR" .
-      if find "$PORTABLE_DIR" -mindepth 1 -print -quit | grep -q .; then
-        tar -czf "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-Portable-${BUILD_TYPE}.tar.gz" -C "$PORTABLE_DIR" .
-      fi
-
-      if [ -f build/CPackConfig.cmake ]; then
-        cpack --config build/CPackConfig.cmake -G DEB -C "$BUILD_TYPE" -B "$PACKAGE_DIR" || true
-      fi
-
-      ccache -s || true
-  artifacts:
-    when: always
-    name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
-    paths:
-      - build/
-      - package/
-    expire_in: 1 days
-
-.launcher_macos_template:
-  stage: build
-  tags:
-    - saas-macos-medium-m1
-  rules: *launcher_rules
-  variables:
-    BUILD_TYPE: Debug
-    BUILD_PLATFORM: official
-    CMAKE_PRESET: macos_universal
-  script:
-    - |
-      set -eu
-      if command -v javac >/dev/null 2>&1; then
-        JAVA_HOME="$(dirname "$(dirname "$(readlink "$(command -v javac)")")")"
-        export JAVA_HOME
-        export PATH="$JAVA_HOME/bin:$PATH"
-      fi
-
-      rm -rf build
-      cmake --preset "$CMAKE_PRESET"
-      cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
-      ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --output-on-failure --no-tests=error
-
-      PACKAGE_DIR="$CI_PROJECT_DIR/package"
-      INSTALL_DIR="$CI_PROJECT_DIR/install"
-      PORTABLE_DIR="$CI_PROJECT_DIR/install-portable"
-      mkdir -p "$PACKAGE_DIR" "$INSTALL_DIR" "$PORTABLE_DIR"
-
-      cmake --install build --config "$BUILD_TYPE" --prefix "$INSTALL_DIR"
-      cmake --install build --config "$BUILD_TYPE" --prefix "$PORTABLE_DIR" --component portable || true
-
-      tar -czf "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.tar.gz" -C "$INSTALL_DIR" .
-      if find "$PORTABLE_DIR" -mindepth 1 -print -quit | grep -q .; then
-        tar -czf "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-Portable-${BUILD_TYPE}.tar.gz" -C "$PORTABLE_DIR" .
-      fi
-
-      if [ -d "$INSTALL_DIR/ProjT Launcher.app" ]; then
-        ditto -c -k --sequesterRsrc --keepParent "$INSTALL_DIR/ProjT Launcher.app" "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.zip"
-      elif [ -d "$INSTALL_DIR/ProjTLauncher.app" ]; then
-        ditto -c -k --sequesterRsrc --keepParent "$INSTALL_DIR/ProjTLauncher.app" "$PACKAGE_DIR/ProjTLauncher-${ARTIFACT_NAME}-${BUILD_TYPE}.zip"
-      fi
-  artifacts:
-    when: always
-    name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
-    paths:
-      - build/
-      - package/
-    expire_in: 1 days
-
-.launcher_windows_template:
-  stage: build
-  tags:
-    - pt-windows-02
-  rules: *launcher_rules
-  variables:
-    BUILD_TYPE: Debug
-    BUILD_PLATFORM: official
-  script:
-    - '$ErrorActionPreference = "Stop"'
-    - 'if (Test-Path "build") { Remove-Item -Path "build" -Recurse -Force }'
-    - |
-      if ($env:VCVARS_ARCH) {
-        $candidates = @(
-          "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat",
-          "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Professional\Common7\Tools\VsDevCmd.bat",
-          "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat"
-        )
-        $vsdev = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-        if (-not $vsdev) {
-          throw "VsDevCmd.bat not found for VCVARS_ARCH=$env:VCVARS_ARCH"
-        }
-
-        $configure = "cmake --preset `"$env:CMAKE_PRESET`" -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING -DLauncher_OUTPUT_ROOT=`"$env:CI_PROJECT_DIR/build/out`""
-        $build = "cmake --build --preset `"$env:CMAKE_PRESET`" --config `"$env:BUILD_TYPE`""
-        $tests = "ctest --preset `"$env:CMAKE_PRESET`" --build-config `"$env:BUILD_TYPE`" --output-on-failure --no-tests=error"
-        cmd /c "`"$vsdev`" -arch=$env:VCVARS_ARCH -host_arch=amd64 && $configure && $build && $tests"
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      }
-      elseif ($env:CMAKE_PRESET -eq "windows_mingw") {
-        if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) {
-          throw "Ninja not found for windows_mingw preset. Install MSYS2/MinGW toolchain and ensure ninja is in PATH."
-        }
-        if (-not (Get-Command gcc -ErrorAction SilentlyContinue) -and -not (Get-Command clang -ErrorAction SilentlyContinue)) {
-          throw "No MinGW compiler found for windows_mingw preset. Install MSYS2/MinGW toolchain and ensure compiler is in PATH."
-        }
-
-        cmake --preset "$env:CMAKE_PRESET" -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING -DLauncher_OUTPUT_ROOT="$env:CI_PROJECT_DIR/build/out"
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cmake --build --preset "$env:CMAKE_PRESET" --config "$env:BUILD_TYPE"
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        ctest --preset "$env:CMAKE_PRESET" --build-config "$env:BUILD_TYPE" --output-on-failure --no-tests=error
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      }
-      else {
-        cmake --preset "$env:CMAKE_PRESET" -Uqrencode_repo* -UWITH_TESTS -UWITH_TOOLS -UWITH_PNG -UBUILD_TESTING -DLauncher_OUTPUT_ROOT="$env:CI_PROJECT_DIR/build/out"
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cmake --build --preset "$env:CMAKE_PRESET" --config "$env:BUILD_TYPE"
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        ctest --preset "$env:CMAKE_PRESET" --build-config "$env:BUILD_TYPE" --output-on-failure --no-tests=error
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      }
-
-      $packageDir = Join-Path $env:CI_PROJECT_DIR "package"
-      $installDir = Join-Path $env:CI_PROJECT_DIR "install"
-      $portableDir = Join-Path $env:CI_PROJECT_DIR "install-portable"
-      New-Item -Path $packageDir -ItemType Directory -Force | Out-Null
-      New-Item -Path $installDir -ItemType Directory -Force | Out-Null
-      New-Item -Path $portableDir -ItemType Directory -Force | Out-Null
-
-      cmake --install build --config "$env:BUILD_TYPE" --prefix "$installDir"
-      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      try {
-        cmake --install build --config "$env:BUILD_TYPE" --prefix "$portableDir" --component portable
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      } catch {
-        Write-Host "Portable component packaging skipped: $($_.Exception.Message)"
-      }
-
-      Compress-Archive -Path "$installDir\\*" -DestinationPath "$packageDir\\ProjTLauncher-$($env:ARTIFACT_NAME)-$($env:BUILD_TYPE).zip" -Force
-      if ((Get-ChildItem -Path $portableDir -Recurse -File | Measure-Object).Count -gt 0) {
-        Compress-Archive -Path "$portableDir\\*" -DestinationPath "$packageDir\\ProjTLauncher-$($env:ARTIFACT_NAME)-Portable-$($env:BUILD_TYPE).zip" -Force
-      }
-  artifacts:
-    when: always
-    name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
-    paths:
-      - build/
-      - package/
-    expire_in: 3 days
-
-launcher_macos_universal:
-  extends: .launcher_macos_template
-  variables:
-    ARTIFACT_NAME: macOS-universal
-    CMAKE_PRESET: macos_universal
-
-launcher_windows:
-  extends: .launcher_windows_template
-  parallel:
-    matrix:
-      - ARTIFACT_NAME: Windows-MSVC-amd64
-        CMAKE_PRESET: windows_msvc
-        VCVARS_ARCH: amd64
-      - ARTIFACT_NAME: Windows-MSVC-arm64
-        CMAKE_PRESET: windows_msvc
-        VCVARS_ARCH: arm64
-      - ARTIFACT_NAME: Windows-MinGW-amd64
-        CMAKE_PRESET: windows_mingw
-      - ARTIFACT_NAME: Windows-MinGW-arm64
-        CMAKE_PRESET: windows_mingw
-
-launcher_linux:
-  extends: .launcher_linux_template
-  parallel:
-    matrix:
-      - ARTIFACT_NAME: Linux-amd64
-        RUNNER_TAG: pt-rhel-runner-01
-        TARGET_ARCH: amd64
-        CMAKE_PRESET: linux
-      - ARTIFACT_NAME: Linux-arm64
-        RUNNER_TAG: saas-linux-medium-arm64
-        TARGET_ARCH: arm64
-        LAUNCHER_LINUX_IMAGE_JOB: debian:trixie
-        CMAKE_PRESET: linux
+include:
+  - local: .gitlab/ci/scheduled.gitlab-ci.yml
+  - local: .gitlab/ci/flatpak.gitlab-ci.yml
+  - local: .gitlab/ci/lint.gitlab-ci.yml
+  - local: .gitlab/ci/launcher.gitlab-ci.yml
+  - local: .gitlab/ci/github-workflow-parity.yml

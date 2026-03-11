@@ -1,0 +1,55 @@
+schedule_js_fuzz:
+  stage: scheduled
+  image: node:20-bookworm
+  tags:
+    - $LINUX_RUNNER_TAG
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - when: never
+  script:
+    - cd bot
+    - npm install
+    - npm install fast-check
+    - node fuzz/fastcheck.test.js
+
+schedule_python_fuzz:
+  stage: scheduled
+  image: python:3.11-bookworm
+  tags:
+    - $LINUX_RUNNER_TAG
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - when: never
+  script:
+    - python -m pip install --upgrade pip
+    - python -m pip install -r requirements.txt atheris
+    - python fuzz/meta/fuzz_meta_models.py -runs=2000
+
+schedule_cfl:
+  stage: scheduled
+  image: ubuntu:24.04
+  tags:
+    - $LINUX_RUNNER_TAG
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - when: never
+  parallel:
+    matrix:
+      - SANITIZER: address
+      - SANITIZER: undefined
+  script:
+    - apt-get update
+    - apt-get install -y clang cmake ninja-build build-essential
+    - export CFLAGS="-fsanitize=$SANITIZER -fno-omit-frame-pointer"
+    - export CXXFLAGS="-fsanitize=$SANITIZER -fno-omit-frame-pointer"
+    - export LDFLAGS="-fsanitize=$SANITIZER"
+    - >
+      cmake -S . -B build-fuzz -G Ninja
+      -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      -DBUILD_TESTING=OFF
+      -DBUILD_FUZZERS=ON
+      -DLAUNCHER_FUZZ_ONLY=ON
+      -DCMAKE_C_COMPILER=clang
+      -DCMAKE_CXX_COMPILER=clang++
+    - cmake --build build-fuzz --target fuzz_nbt_reader
+    - ./build-fuzz/fuzz_nbt_reader -max_total_time=3600

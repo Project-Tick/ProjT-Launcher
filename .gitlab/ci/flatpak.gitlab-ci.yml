@@ -1,0 +1,227 @@
+.flatpak_change_paths: &flatpak_change_paths
+  - flatpak/**/*.yml
+  - flatpak/**/*.json
+  - flatpak/scripts/**/*
+  - flatpak/shared-modules/**/*
+  - flatpak/static/projtlauncher.flatpakrepo
+  - flatpak/static/projtlauncher-nightly.flatpakref
+  - flatpak/static/index.html
+  - .gitlab-ci.yml
+
+.flatpak_deploy_rules: &flatpak_deploy_rules
+  - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+    changes: *flatpak_change_paths
+  - if: '$CI_PIPELINE_SOURCE == "web"'
+
+schedule_flatpak_update:
+  stage: scheduled
+  image: ghcr.io/flathub/flatpak-external-data-checker:latest
+  tags:
+    - $LINUX_RUNNER_TAG
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+  script:
+    - |
+      if ! command -v git >/dev/null 2>&1; then
+        if command -v apt-get >/dev/null 2>&1; then
+          apt-get update && apt-get install -y git
+        elif command -v apk >/dev/null 2>&1; then
+          apk add --no-cache git
+        elif command -v dnf >/dev/null 2>&1; then
+          dnf -y install git
+        fi
+      fi
+    - |
+      if [ ! -f "$CI_PROJECT_DIR/flatpak/shared-modules/glu/glu-9.json" ]; then
+        rm -rf "$CI_PROJECT_DIR/flatpak/shared-modules"
+        git clone --depth 1 https://github.com/flathub/shared-modules.git "$CI_PROJECT_DIR/flatpak/shared-modules"
+      fi
+    - |
+      if command -v flatpak-external-data-checker >/dev/null 2>&1; then
+        flatpak-external-data-checker --update --edit-only flatpak/org.projecttick.ProjTLauncher.yml
+      elif [ -x /app/flatpak-external-data-checker ]; then
+        /app/flatpak-external-data-checker --update --edit-only flatpak/org.projecttick.ProjTLauncher.yml
+      else
+        echo "flatpak-external-data-checker not found in image."
+        exit 1
+      fi
+    - |
+      if git diff --quiet; then
+        echo "No flatpak updates."
+        exit 0
+      fi
+      git config user.name "Project Tick Bot"
+      git config user.email "gitlab-bot@projecttick.org"
+      git checkout -B update-modules
+      git add flatpak/org.projecttick.ProjTLauncher.yml
+      git commit -m "chore: update modules"
+      if [ -n "${GITLAB_BOT_TOKEN:-}" ]; then
+        git push "https://oauth2:${GITLAB_BOT_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:update-modules
+      else
+        echo "GITLAB_BOT_TOKEN not set; updated branch not pushed."
+      fi
+
+flatpak_build:
+  stage: build
+  image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+  tags:
+    - $RUNNER_TAG
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: *flatpak_change_paths
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+  parallel:
+    matrix:
+      - FLATPAK_ARCH: x86_64
+      - FLATPAK_ARCH: aarch64
+        RUNNER_TAG: saas-linux-medium-arm64
+  script:
+    - |
+      if command -v apt-get >/dev/null 2>&1; then
+        apt-get update
+        apt-get install -y git rsync dbus-user-session
+      fi
+    - |
+      if [ ! -f "$CI_PROJECT_DIR/flatpak/shared-modules/glu/glu-9.json" ]; then
+        rm -rf "$CI_PROJECT_DIR/flatpak/shared-modules"
+        git clone --depth 1 https://github.com/flathub/shared-modules.git "$CI_PROJECT_DIR/flatpak/shared-modules"
+      fi
+    - |
+      flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    - |
+      RUNTIME_VERSION="$(sed -n "s/^runtime-version: ['\"]\\([^'\"]*\\)['\"]$/\\1/p" flatpak/org.projecttick.ProjTLauncher.yml | head -n 1)"
+      if [ -z "$RUNTIME_VERSION" ]; then
+        echo "Failed to detect runtime-version from flatpak/org.projecttick.ProjTLauncher.yml"
+        exit 1
+      fi
+      flatpak install --user -y --or-update flathub \
+        "org.kde.Platform//$RUNTIME_VERSION" \
+        "org.kde.Sdk//$RUNTIME_VERSION"
+      # org.freedesktop.Sdk.Extension.openjdk21 uses freedesktop SDK versioning (e.g. 24.08),
+      # not KDE runtime versioning (e.g. 6.10). Detect the matching freedesktop SDK version.
+      FDO_VERSION="$(flatpak info --show-metadata "org.kde.Sdk//$RUNTIME_VERSION" 2>/dev/null | grep -oP '(?<=BaseVersion=)\S+' | head -n1 || true)"
+      if [ -z "$FDO_VERSION" ]; then
+        FDO_VERSION="24.08"
+      fi
+      flatpak install --user -y --or-update flathub \
+        "org.freedesktop.Sdk.Extension.openjdk21//$FDO_VERSION" \
+        || echo "WARNING: org.freedesktop.Sdk.Extension.openjdk21//$FDO_VERSION not available."
+    - |
+      if [ -n "${FLATPAK_GPG_KEY:-}" ] && [ -n "${FLATPAK_GPG_KEY_ID:-}" ]; then
+        echo -n "$FLATPAK_GPG_KEY" | base64 -d | gpg --import
+      fi
+    - |
+      REPO_DIR="$CI_PROJECT_DIR/flatpak-repo"
+      BUILD_DIR="$CI_PROJECT_DIR/flatpak-build"
+      rm -rf "$REPO_DIR" "$BUILD_DIR"
+      mkdir -p "$REPO_DIR" "$BUILD_DIR"
+    - |
+      build_cmd="flatpak-builder --disable-rofiles-fuse --force-clean --user --install-deps-from=flathub --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
+      if command -v dbus-run-session >/dev/null 2>&1; then
+        dbus-run-session -- bash -lc "$build_cmd"
+      else
+        bash -lc "$build_cmd"
+      fi
+    - |
+      flatpak build-update-repo \
+        ${FLATPAK_GPG_KEY_ID:+--gpg-sign="$FLATPAK_GPG_KEY_ID"} \
+        --generate-static-deltas \
+        --prune \
+        "$REPO_DIR"
+    - cp -r flatpak/static/. "$REPO_DIR"/
+  artifacts:
+    when: always
+    paths:
+      - flatpak-repo/
+    expire_in: 3 days
+
+.schedule_flatpak_deploy_template:
+  stage: scheduled
+  image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+  resource_group: flatpak-deploy
+  tags:
+    - $RUNNER_TAG
+  rules: *flatpak_deploy_rules
+  script:
+    - |
+      if [ -z "${FLATPAK_SITE_REPO:-}" ] || [ -z "${FLATPAK_SITE_TOKEN:-}" ]; then
+        echo "FLATPAK_SITE_REPO / FLATPAK_SITE_TOKEN required."
+        exit 1
+      fi
+    - |
+      if command -v apt-get >/dev/null 2>&1; then
+        apt-get update
+        apt-get install -y git rsync dbus-user-session
+      fi
+    - |
+      if [ ! -f "$CI_PROJECT_DIR/flatpak/shared-modules/glu/glu-9.json" ]; then
+        rm -rf "$CI_PROJECT_DIR/flatpak/shared-modules"
+        git clone --depth 1 https://github.com/flathub/shared-modules.git "$CI_PROJECT_DIR/flatpak/shared-modules"
+      fi
+    - |
+      flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    - |
+      RUNTIME_VERSION="$(sed -n "s/^runtime-version: ['\"]\\([^'\"]*\\)['\"]$/\\1/p" flatpak/org.projecttick.ProjTLauncher.yml | head -n 1)"
+      if [ -z "$RUNTIME_VERSION" ]; then
+        echo "Failed to detect runtime-version from flatpak/org.projecttick.ProjTLauncher.yml"
+        exit 1
+      fi
+      flatpak install --user -y --or-update flathub \
+        "org.kde.Platform//$RUNTIME_VERSION" \
+        "org.kde.Sdk//$RUNTIME_VERSION"
+      FDO_VERSION="$(flatpak info --show-metadata "org.kde.Sdk//$RUNTIME_VERSION" 2>/dev/null | grep -oP '(?<=BaseVersion=)\S+' | head -n1 || true)"
+      if [ -z "$FDO_VERSION" ]; then
+        FDO_VERSION="24.08"
+      fi
+      flatpak install --user -y --or-update flathub \
+        "org.freedesktop.Sdk.Extension.openjdk21//$FDO_VERSION" \
+        || echo "WARNING: org.freedesktop.Sdk.Extension.openjdk21//$FDO_VERSION not available."
+    - |
+      if [ -n "${FLATPAK_GPG_KEY:-}" ] && [ -n "${FLATPAK_GPG_KEY_ID:-}" ]; then
+        echo -n "$FLATPAK_GPG_KEY" | base64 -d | gpg --import
+      fi
+    - |
+      REPO_DIR="$CI_PROJECT_DIR/flatpak-repo"
+      BUILD_DIR="$CI_PROJECT_DIR/flatpak-build"
+      rm -rf "$REPO_DIR" "$BUILD_DIR"
+      mkdir -p "$REPO_DIR" "$BUILD_DIR"
+    - |
+      build_cmd="flatpak-builder --disable-rofiles-fuse --force-clean --user --install-deps-from=flathub --repo=$REPO_DIR --arch=$FLATPAK_ARCH --default-branch=nightly $BUILD_DIR flatpak/org.projecttick.ProjTLauncher.yml"
+      if command -v dbus-run-session >/dev/null 2>&1; then
+        dbus-run-session -- bash -lc "$build_cmd"
+      else
+        bash -lc "$build_cmd"
+      fi
+    - |
+      flatpak build-update-repo \
+        ${FLATPAK_GPG_KEY_ID:+--gpg-sign="$FLATPAK_GPG_KEY_ID"} \
+        --generate-static-deltas \
+        --prune \
+        "$REPO_DIR"
+    - |
+      git clone "https://oauth2:${FLATPAK_SITE_TOKEN}@${FLATPAK_SITE_REPO}" flatpak-site
+      rsync -a --delete "$REPO_DIR"/ flatpak-site/
+      cp -r flatpak/static/. flatpak-site/
+      cd flatpak-site
+      git add -A
+      if git diff --cached --quiet; then
+        echo "No changes to push."
+        exit 0
+      fi
+      git config user.name "Project Tick Bot"
+      git config user.email "gitlab-bot@projecttick.org"
+      git commit -m "chore: update flatpak repository ($FLATPAK_ARCH)"
+      git push
+
+schedule_flatpak_deploy:
+  extends: .schedule_flatpak_deploy_template
+  variables:
+    FLATPAK_ARCH: x86_64
+
+schedule_flatpak_deploy_arm64:
+  extends: .schedule_flatpak_deploy_template
+  variables:
+    RUNNER_TAG: saas-linux-medium-arm64
+    FLATPAK_ARCH: aarch64

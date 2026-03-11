@@ -140,9 +140,21 @@ endif()
 # Find the ptlibzippy library.
 if(TARGET PTlibzippy::PTlibzippy)
   set(PNG_LINK_LIBRARIES PTlibzippy::PTlibzippy)
+  get_target_property(_png_zlib_include_dirs PTlibzippy::PTlibzippy INTERFACE_INCLUDE_DIRECTORIES)
 else()
   find_package(PTlibzippy REQUIRED CONFIG)
   set(PNG_LINK_LIBRARIES PTlibzippy::PTlibzippy)
+endif()
+
+if(TARGET PTlibzippy::PTlibzippy AND _png_zlib_include_dirs)
+  foreach(_png_zlib_include_dir IN LISTS _png_zlib_include_dirs)
+    if(_png_zlib_include_dir MATCHES "^\\$<BUILD_INTERFACE:(.*)>$")
+      list(APPEND ZLIB_INCLUDE_DIRS "${CMAKE_MATCH_1}")
+    elseif(NOT _png_zlib_include_dir MATCHES "^\\$<")
+      list(APPEND ZLIB_INCLUDE_DIRS "${_png_zlib_include_dir}")
+    endif()
+  endforeach()
+  list(REMOVE_DUPLICATES ZLIB_INCLUDE_DIRS)
 endif()
 
 # Find the math library (unless we already know it's not available or

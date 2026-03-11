@@ -5,6 +5,7 @@
   apple-sdk_14,
   extra-cmake-modules,
   gamemode,
+  inih,
   jdk17,
   kdePackages,
   ninja,
@@ -46,6 +47,7 @@ stdenv.mkDerivation {
       ../CMakeLists.txt
       ../CMakePresets.json
       ../COPYING
+      ../bootstrap
       ../bot
       ../buildconfig
       ../bzip2
@@ -61,6 +63,7 @@ stdenv.mkDerivation {
       ../javacheck
       ../launcher
       ../launcherjava
+      ../libpng
       ../libnbtplusplus
       ../libqrencode
       ../LICENSES
@@ -97,6 +100,7 @@ stdenv.mkDerivation {
   ];
 
   buildInputs = [
+    inih
     kdePackages.qtbase
     kdePackages.qtnetworkauth
     kdePackages.qtwebchannel
@@ -123,6 +127,9 @@ stdenv.mkDerivation {
   ];
 
   doCheck = true;
+  preCheck = ''
+    export CMAKE_PREFIX_PATH="$PWD/zlib/test/test_install:$CMAKE_PREFIX_PATH"
+  '';
 
   dontWrapQtApps = true;
 
@@ -134,7 +141,7 @@ stdenv.mkDerivation {
       their own mods, texture packs, saves, etc) and helps you manage them and
       their associated options with a simple interface.
     '';
-    homepage = "https://projecttick.org/projtlauncher/";
+    homepage = "https://projecttick.org/p/projt-launcher/";
     license = lib.licenses.gpl3Only;
     maintainers = with lib.maintainers; [
       yongdohyun

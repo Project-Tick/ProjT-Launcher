@@ -18,7 +18,7 @@ nix_flake_check:
   stage: lint
   image: nixos/nix:2.24.14
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *parity_non_schedule_rules
   variables:
     NIX_CONFIG: experimental-features = nix-command flakes
@@ -40,13 +40,12 @@ nix_system_build_linux:
   parallel:
     matrix:
       - NIX_SYSTEM: x86_64-linux
-        RUNNER_TAG: pt-rhel-runner-01
       - NIX_SYSTEM: aarch64-linux
         RUNNER_TAG: saas-linux-medium-arm64
   script:
     - |
       set -eu
-      ATTR="packages.${NIX_SYSTEM}.projtlauncher-debug"
+      ATTR="legacyPackages.${NIX_SYSTEM}.projtlauncher-debug"
       if [ -n "${CI_COMMIT_TAG:-}" ]; then
         ATTR="packages.${NIX_SYSTEM}.projtlauncher"
       fi
@@ -64,6 +63,7 @@ nix_system_build_linux:
 
 nix_system_build_darwin:
   stage: build
+  image: $MACOS_CI_IMAGE
   tags:
     - saas-macos-medium-m1
   needs:
@@ -76,15 +76,15 @@ nix_system_build_darwin:
     - |
       set -eu
       if ! command -v nix >/dev/null 2>&1; then
-        curl -L https://nixos.org/nix/install | sh -s -- --no-daemon
-      fi
-      if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+        curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+      elif [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
         . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
       elif [ -f "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
         . "$HOME/.nix-profile/etc/profile.d/nix.sh"
       fi
 
-      ATTR="packages.${NIX_SYSTEM}.projtlauncher-debug"
+      ATTR="legacyPackages.${NIX_SYSTEM}.projtlauncher-debug"
       if [ -n "${CI_COMMIT_TAG:-}" ]; then
         ATTR="packages.${NIX_SYSTEM}.projtlauncher"
       fi
@@ -102,6 +102,8 @@ nix_system_build_darwin:
 
 .quazip_rules:
   rules: &quazip_rules
+    - if: '$QUAZIP_CI_DISABLED == "1"'
+      when: never
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -113,7 +115,7 @@ nix_system_build_darwin:
   stage: build
   image: ubuntu:$OS_VERSION
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *quazip_rules
   script:
     - |
@@ -209,7 +211,7 @@ quazip_alpine:
   stage: build
   image: alpine:3.21
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *quazip_rules
   parallel:
     matrix:
@@ -231,7 +233,7 @@ quazip_fedora:
   stage: build
   image: fedora:42
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *quazip_rules
   script:
     - |
@@ -245,7 +247,7 @@ quazip_use_qt_zlib_ubuntu:
   stage: build
   image: ghcr.io/cen1/qt:$QT_VERSION
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules: *quazip_rules
   parallel:
     matrix:
@@ -266,6 +268,7 @@ quazip_use_qt_zlib_ubuntu:
 
 .quazip_macos_template:
   stage: build
+  image: $MACOS_CI_IMAGE
   tags:
     - saas-macos-medium-m1
   rules: *quazip_rules
@@ -328,8 +331,11 @@ quazip_macos:
 .quazip_windows_template:
   stage: build
   tags:
-    - pt-windows-02
+    - $WINDOWS_RUNNER_TAG
   rules: *quazip_rules
+  variables:
+    GET_SOURCES_ATTEMPTS: "3"
+    GIT_FETCH_EXTRA_FLAGS: "--no-tags"
   script:
     - '$ErrorActionPreference = "Stop"'
     - 'Set-Location quazip'
@@ -454,7 +460,7 @@ release_prepare:
   stage: release
   image: ubuntu:24.04
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   needs:
     - job: javacheck_build
       artifacts: true
@@ -521,7 +527,7 @@ release_publish:
   stage: release
   image: registry.gitlab.com/gitlab-org/cli:latest
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   needs:
     - job: release_prepare
       artifacts: true
@@ -544,7 +550,7 @@ winget_release:
   stage: release
   image: python:3.11-bookworm
   tags:
-    - pt-rhel-runner-01
+    - $LINUX_RUNNER_TAG
   rules:
     - if: '$CI_COMMIT_TAG'
     - if: '$CI_PIPELINE_SOURCE == "web" && $WINGET_TAG_NAME'

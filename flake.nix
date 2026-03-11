@@ -193,14 +193,14 @@
         let
           packages' = self.packages.${system};
         in
-        {
+        rec {
           projtlauncher-unwrapped-debug = packages'.projtlauncher-unwrapped.overrideAttrs {
             cmakeBuildType = "Debug";
             dontStrip = true;
           };
 
           projtlauncher-debug = packages'.projtlauncher.override {
-            projtlauncher-unwrapped = packages'.projtlauncher-unwrapped-debug;
+            projtlauncher-unwrapped = projtlauncher-unwrapped-debug;
           };
         }
       );
