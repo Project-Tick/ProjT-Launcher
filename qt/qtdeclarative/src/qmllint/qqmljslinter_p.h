@@ -15,18 +15,14 @@
 //
 // We mean it.
 
-#include <qtqmlcompilerexports.h>
-
-#include <QtQmlCompiler/private/qqmljslogger_p.h>
-#include <QtQmlCompiler/private/qqmljsimporter_p.h>
-#include <QtQmlCompiler/private/qqmljscontextproperties_p.h>
-#include <QtQmlCompiler/private/qqmljsusercontextproperties_p.h>
-#include <QtQmlCompiler/private/qqmljstypepropagator_p.h>
-#include <QtQmlCompiler/private/qqmljslintertypepropagator_p.h>
-
-#include <QtQmlToolingSettings/private/qqmltoolingsettings_p.h>
-
-#include <QtQml/private/qqmljssourcelocation_p.h>
+#include <private/qqmljscontextproperties_p.h>
+#include <private/qqmljsimporter_p.h>
+#include <private/qqmljslintertypepropagator_p.h>
+#include <private/qqmljslogger_p.h>
+#include <private/qqmljssourcelocation_p.h>
+#include <private/qqmljstypepropagator_p.h>
+#include <private/qqmljsusercontextproperties_p.h>
+#include <private/qqmltoolingsettings_p.h>
 
 #include <QtCore/qjsonarray.h>
 #include <QtCore/qstring.h>
@@ -44,7 +40,7 @@ namespace QQmlSA {
 class LintPlugin;
 }
 
-class Q_QMLCOMPILER_EXPORT QQmlJSLinter
+class QQmlJSLinter
 {
 public:
     QQmlJSLinter(const QStringList &importPaths, const QStringList &extraPluginPaths = {},
@@ -53,7 +49,7 @@ public:
     enum LintResult { FailedToOpen, FailedToParse, HasWarnings, HasErrors, LintSuccess };
     enum FixResult { NothingToFix, FixError, FixSuccess };
 
-    class Q_QMLCOMPILER_EXPORT Plugin
+    class Plugin
     {
         Q_DISABLE_COPY(Plugin)
     public:

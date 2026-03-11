@@ -44,7 +44,7 @@ public:
           component(&engine)
     {
         component.setData(testData, QUrl("MyStuff"));
-        mainObject = component.create();
+        mainObject.reset(component.create());
     }
 
 private slots:
@@ -78,18 +78,20 @@ private slots:
 private:
     QQmlApplicationEngine engine;
     QQmlComponent component;
-    QObject *mainObject;
+    std::unique_ptr<QObject> mainObject;
 };
 
 int main(int argc, char *argv[])
 {
-    char **argv2 = new char *[argc + 2];
+    std::unique_ptr<char *[]> argv2(new char *[argc + 2]);
     for (int i = 0; i < argc; ++i)
         argv2[i] = argv[i];
-    argv2[argc] = qstrdup("-qmljsdebugger=native,services:NativeQmlDebugger");
+    std::unique_ptr<char[]> debuggerArg(
+            qstrdup("-qmljsdebugger=native,services:NativeQmlDebugger"));
+    argv2[argc] = debuggerArg.get();
     ++argc;
     argv2[argc] = nullptr;
-    Application app(argc, argv2);
+    Application app(argc, argv2.get());
     return QTest::qExec(&app, argc, argv);
 }
 

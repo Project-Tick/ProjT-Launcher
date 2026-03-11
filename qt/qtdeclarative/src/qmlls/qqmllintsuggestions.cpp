@@ -5,7 +5,7 @@
 #include "qqmllintsuggestions_p.h"
 
 #include <QtLanguageServer/private/qlanguageserverspec_p.h>
-#include <QtQmlCompiler/private/qqmljslinter_p.h>
+#include <private/qqmljslinter_p.h>
 #include <QtQmlCompiler/private/qqmljslogger_p.h>
 #include <QtQmlCompiler/private/qqmljsutils_p.h>
 #include <QtQmlDom/private/qqmldom_utils_p.h>

@@ -6135,7 +6135,12 @@ void tst_qqmlecmascript::stringArg()
     QMetaObject::invokeMethod(object.data(), "success");
     QVERIFY(object->property("returnValue").toBool());
 
-    QString w1 = testFileUrl("stringArg.qml").toString() + QLatin1String(":45: Error: String.arg(): Invalid arguments");
+    // Test multiple arguments support
+    QMetaObject::invokeMethod(object.data(), "multipleArgs");
+    QVERIFY(object->property("returnValue").toBool());
+
+    // Test that calling arg() with no arguments throws an error
+    QString w1 = testFileUrl("stringArg.qml").toString() + QLatin1String(":71: Error: String.arg(): Invalid arguments");
     QTest::ignoreMessage(QtWarningMsg, w1.toLatin1().constData());
     QMetaObject::invokeMethod(object.data(), "failure");
     QVERIFY(object->property("returnValue").toBool());

@@ -2673,7 +2673,7 @@ void QQuickDeliveryAgentPrivate::deliverDragEvent(QQuickDragGrabber *grabber, QE
 
             // Look for any other potential drop targets that are higher than the current ones
             QDragEnterEvent enterEvent(
-                    moveEvent->position().toPoint(),
+                    moveEvent->position(),
                     moveEvent->possibleActions(),
                     moveEvent->mimeData(),
                     moveEvent->buttons(),
@@ -2688,7 +2688,7 @@ void QQuickDeliveryAgentPrivate::deliverDragEvent(QQuickDragGrabber *grabber, QE
                     currentGrabItems.remove(i);
                     // Still grabbed: send move event
                     QDragMoveEvent translatedEvent(
-                            (**grabItem)->mapFromScene(moveEvent->position().toPoint()).toPoint(),
+                            (**grabItem)->mapFromScene(moveEvent->position()),
                             moveEvent->possibleActions(),
                             moveEvent->mimeData(),
                             moveEvent->buttons(),
@@ -2711,7 +2711,7 @@ void QQuickDeliveryAgentPrivate::deliverDragEvent(QQuickDragGrabber *grabber, QE
     if (event->type() == QEvent::DragEnter || event->type() == QEvent::DragMove) {
         QDragMoveEvent *e = static_cast<QDragMoveEvent *>(event);
         QDragEnterEvent enterEvent(
-                e->position().toPoint(),
+                e->position(),
                 e->possibleActions(),
                 e->mimeData(),
                 e->buttons(),
@@ -2743,7 +2743,7 @@ bool QQuickDeliveryAgentPrivate::deliverDragEvent(
     }
 
     QDragEnterEvent enterEvent(
-            event->position().toPoint(),
+            event->position(),
             event->possibleActions(),
             event->mimeData(),
             event->buttons(),
@@ -2785,7 +2785,7 @@ bool QQuickDeliveryAgentPrivate::deliverDragEvent(
                 }
             }
 
-            QDragMoveEvent translatedEvent(p.toPoint(), event->possibleActions(), event->mimeData(),
+            QDragMoveEvent translatedEvent(p, event->possibleActions(), event->mimeData(),
                                            event->buttons(), event->modifiers(), event->type());
             QQuickDropEventEx::copyActions(&translatedEvent, *event);
             translatedEvent.setAccepted(event->isAccepted());

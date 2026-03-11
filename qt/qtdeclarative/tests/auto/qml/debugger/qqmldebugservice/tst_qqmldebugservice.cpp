@@ -57,7 +57,7 @@ void tst_QQmlDebugService::initTestCase()
     QQmlDebugConnector::setPluginKey(QLatin1String("QQmlDebugServer"));
     QQmlDebugConnector::setServices(QStringList()
                                     << QStringLiteral("tst_QQmlDebugService"));
-    m_service = new QQmlDebugTestService("tst_QQmlDebugService", 2);
+    m_service = new QQmlDebugTestService("tst_QQmlDebugService", 2, QCoreApplication::instance());
 
     const QStringList debuggerServices = QQmlDebuggingEnabler::debuggerServices();
     for (const QString &service : debuggerServices)

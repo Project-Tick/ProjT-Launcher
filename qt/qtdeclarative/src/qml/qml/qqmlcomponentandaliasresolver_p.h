@@ -82,7 +82,24 @@ private:
 
 
     void resolveGeneralizedGroupProperty(const CompiledObject &component, CompiledBinding *binding);
-    [[nodiscard]] bool wrapImplicitComponent(CompiledBinding *binding);
+    [[nodiscard]] bool wrapImplicitComponent(CompiledBinding *binding)
+    {
+        const int childObjectIndex = binding->value.objectIndex;
+
+        // Create an implicit component wrapper as an additional property cache entry.
+        // The CU binary is read-only so we cannot patch the binding.
+        QQmlPropertyCache::ConstPtr baseComponentCache
+                = QQmlMetaType::propertyCache(&QQmlComponent::staticMetaObject);
+        QQmlPropertyCache::Ptr wrapperCache = baseComponentCache->copyAndReserve(1, 0, 0, 0);
+        wrapperCache->appendComponentWrapper(
+                wrapperCache->propertyCount(), childObjectIndex);
+
+        const uint wrapperIndex = m_propertyCaches->count();
+        m_propertyCaches->append(std::move(wrapperCache));
+
+        m_componentRoots.append(wrapperIndex);
+        return true;
+    }
 
     [[nodiscard]] QQmlError findAndRegisterImplicitComponents(
             const CompiledObject *obj, const QQmlPropertyCache::ConstPtr &propertyCache);
@@ -349,24 +366,26 @@ QQmlError QQmlComponentAndAliasResolver<ObjectContainer>::resolve(int root)
     }
 
     for (int i = 0; i < m_componentRoots.size(); ++i) {
-        CompiledObject *component = m_compiler->objectAt(m_componentRoots.at(i));
-        const auto rootBinding = component->bindingsBegin();
+        const int componentRoot = m_componentRoots.at(i);
+        const int childObjectIndex = componentRoot < m_compiler->objectCount()
+                ? m_compiler->objectAt(componentRoot)->bindingsBegin()->value.objectIndex
+                : m_compiler->resolvedIndex(componentRoot);
 
         m_idToObjectIndex.clear();
         m_objectsWithAliases.clear();
         m_generalizedGroupProperties.clear();
 
-        if (const QQmlError error = collectIdsAndAliases(rootBinding->value.objectIndex);
+        if (const QQmlError error = collectIdsAndAliases(childObjectIndex);
                 error.isValid()) {
             return error;
         }
 
-        allocateNamedObjects(component);
+        allocateNamedObjects(m_compiler->objectAt(componentRoot));
 
-        if (const QQmlError error = resolveAliases(m_componentRoots.at(i)); error.isValid())
+        if (const QQmlError error = resolveAliases(componentRoot); error.isValid())
             return error;
 
-        resolveGeneralizedGroupProperties(m_componentRoots.at(i));
+        resolveGeneralizedGroupProperties(componentRoot);
     }
 
     // Collect ids and aliases for root
@@ -420,6 +439,10 @@ QQmlError QQmlComponentAndAliasResolver<ObjectContainer>::collectIdsAndAliases(i
         Q_FALLTHROUGH();
         case QV4::CompiledData::Binding::Type_Object:
         case QV4::CompiledData::Binding::Type_AttachedProperty:
+            // Implicit component wrappers are component boundaries.
+            // Their children are collected separately via the componentRoots loop.
+            if (m_compiler->implicitComponentForObject(binding->value.objectIndex) != -1)
+                break;
             if (const QQmlError error = collectIdsAndAliases(binding->value.objectIndex);
                     error.isValid()) {
                 return error;

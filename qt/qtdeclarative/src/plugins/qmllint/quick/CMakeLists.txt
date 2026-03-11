@@ -10,5 +10,5 @@ qt_internal_add_plugin(QmlLintQuickPlugin
         qquickliteralbindingcheck.cpp qquickliteralbindingcheck_p.h
         qquickvaluetypefromstringcheck.cpp qquickvaluetypefromstringcheck_p.h
     LIBRARIES
-        Qt::QmlCompilerPrivate
+        Qt::QmlLintPrivate
 )

@@ -373,7 +373,7 @@ void QQmlContextData::initPropertyNames() const
         m_propertyNameCache = m_typeCompilationUnit->namedObjectsPerComponent(m_componentObjectIndex);
     else
         m_propertyNameCache = QV4::IdentifierHash(m_engine->handle());
-    Q_ASSERT(!m_propertyNameCache.isEmpty());
+    Q_ASSERT(m_propertyNameCache.isValid());
 }
 
 QUrl QQmlContextData::url() const

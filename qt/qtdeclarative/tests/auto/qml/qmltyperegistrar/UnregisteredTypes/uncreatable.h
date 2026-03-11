@@ -55,6 +55,61 @@ public:
     static SingletonForeign *create(QQmlEngine *, QJSEngine *) { return nullptr; }
 };
 
+class SingletonExplicitUncreatable : public QObject
+{
+    Q_OBJECT
+    QML_ELEMENT
+    QML_SINGLETON
+    QML_UNCREATABLE("Provided by C++")
+public:
+    SingletonExplicitUncreatable() = delete;
+    // not default constructible but has the static create method
+public:
+    static SingletonExplicitUncreatable *create(QQmlEngine *, QJSEngine *) { return nullptr; }
+};
+
+class SingletonExplicitUncreatable2 : public QObject
+{
+    Q_OBJECT
+    QML_ELEMENT
+    QML_SINGLETON
+    QML_UNCREATABLE("Provided by C++")
+    // is default constructible
+};
+
+class SingletonExplicitUncreatable3 : public QObject
+{
+    Q_OBJECT
+    QML_ELEMENT
+    QML_SINGLETON
+    QML_UNCREATABLE("Provided by C++")
+public:
+    // is default constructible and has the create method
+    static SingletonExplicitUncreatable3 *create(QQmlEngine *, QJSEngine *) { return nullptr; }
+};
+
+class SingletonExplicitUncreatable4 : public QObject
+{
+    Q_OBJECT
+    QML_ELEMENT
+    QML_SINGLETON
+    QML_UNCREATABLE("Provided by C++")
+public:
+    // is not default constructible and does not have a create method
+    SingletonExplicitUncreatable4() = delete;
+};
+
+class SingletonLocalExplicitUncreatable
+{
+    Q_GADGET
+    QML_FOREIGN(SingletonForeign)
+    QML_ELEMENT
+    QML_SINGLETON
+    QML_UNCREATABLE("Provided by C++")
+public:
+    static SingletonForeign *create(QQmlEngine *, QJSEngine *) { return nullptr; }
+};
+
 class SingletonLocalUncreatable1
 {
     Q_GADGET

@@ -18,6 +18,7 @@
 #include <QtCore/qglobal.h>
 #include <QtCore/qhash.h>
 
+#include <qtqmlcompilerexports.h>
 #include <variant>
 
 QT_BEGIN_NAMESPACE
@@ -29,7 +30,7 @@ struct QQQmlJSDeprecation
     QString reason;
 };
 
-struct QQmlJSAnnotation
+struct Q_QMLCOMPILER_EXPORT QQmlJSAnnotation
 {
     using Value = std::variant<QString, double>;
 

@@ -240,7 +240,6 @@ public:
     void createDelegateModel();
 
     QString currentTextRole() const;
-    void selectAll();
     void updateText();
     void updateDisplayText();
     QString textAt(int index) const;
@@ -542,14 +541,6 @@ void QQuickSearchFieldPrivate::createDelegateModel()
 QString QQuickSearchFieldPrivate::currentTextRole() const
 {
     return textRole.isEmpty() ? QStringLiteral("modelData") : textRole;
-}
-
-void QQuickSearchFieldPrivate::selectAll()
-{
-    QQuickTextInput *input = qobject_cast<QQuickTextInput *>(contentItem);
-    if (!input)
-        return;
-    input->selectAll();
 }
 
 void QQuickSearchFieldPrivate::updateText()
@@ -1109,6 +1100,22 @@ void QQuickSearchField::setPlaceholderText(const QString &text)
     emit placeholderTextChanged();
 }
 
+/*!
+    \qmlmethod void QtQuick.Controls::SearchField::selectAll()
+    \since 6.12
+
+    Selects all text in the text field of the control.
+*/
+
+void QQuickSearchField::selectAll()
+{
+    Q_D(QQuickSearchField);
+    QQuickTextInput *input = qobject_cast<QQuickTextInput *>(d->contentItem);
+    if (!input)
+        return;
+    input->selectAll();
+}
+
 bool QQuickSearchField::eventFilter(QObject *object, QEvent *event)
 {
     Q_D(QQuickSearchField);
@@ -1116,9 +1123,10 @@ bool QQuickSearchField::eventFilter(QObject *object, QEvent *event)
     switch (event->type()) {
     case QEvent::MouseButtonRelease: {
         QQuickTextInput *input = qobject_cast<QQuickTextInput *>(d->contentItem);
-        if (input->hasFocus()) {
-            if (!d->text.isEmpty() && !d->isPopupVisible() && (d->delegateModel && d->delegateModel->count() > 0))
-                d->showPopup();
+        if (input->hasFocus() && !d->text.isEmpty() && !d->isPopupVisible()
+                && (d->delegateModel && d->delegateModel->count() > 0)
+                && static_cast<QMouseEvent*>(event)->button() == Qt::LeftButton) {
+            d->showPopup();
         }
         break;
     }

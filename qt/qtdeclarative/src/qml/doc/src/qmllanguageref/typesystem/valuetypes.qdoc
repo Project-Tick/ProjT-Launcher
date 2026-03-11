@@ -237,10 +237,26 @@ property is only invoked when the property is reassigned to a different object v
     \qml
         var message = "There are %1 items"
         var count = 20
-        console.log(message.arg(count))
+        console.log(message.arg(count))  // "There are 20 items"
     \endqml
 
-    The example above prints "There are 20 items".
+    \since 6.12
+    The \c {arg()} method also supports multiple arguments, allowing you to
+    replace multiple placeholders in a single call:
+
+    \qml
+        var message = "%1 of %2 files copied. Errors: %3"
+        console.log(message.arg(5, 7, 0))  // "5 of 7 files copied. Errors: 0"
+    \endqml
+
+    Using multiple arguments is more efficient than chaining \c {arg()} calls
+    and protects against issues when arguments themselves contain placeholders:
+
+    \qml
+        var result = "%1 %2".arg("%1f", "Hello")  // "%1f Hello" (correct)
+        // Compare with chained calls:
+        var result = "%1 %2".arg("%1f").arg("Hello")  // "Hellof %2" (incorrect)
+    \endqml
 
     The QML string value type supports most of the ECMAScript string features,
     such as template (string) literals, string interpolation, multi-line

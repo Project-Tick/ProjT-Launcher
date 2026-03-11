@@ -30,7 +30,7 @@ qt_internal_add_test(tst_qmllint
     LIBRARIES
         Qt::Gui
         Qt::QuickTestUtilsPrivate
-        Qt::QmlCompilerPrivate
+        Qt::QmlLintPrivate
         Qt::QmlTypeRegistrarPrivate
         LintPlugin
     TESTDATA ${test_data}

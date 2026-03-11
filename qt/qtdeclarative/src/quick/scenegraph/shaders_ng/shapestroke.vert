@@ -12,6 +12,12 @@ layout(location = 2) out vec2 B;
 layout(location = 3) out vec2 C;
 layout(location = 4) out vec4 HGOW; // H and G: args to solveDepressedCubic(); O: offset; W: adj strokeWidth
 
+#if defined(LINEARGRADIENT)
+layout(location = 5) out float gradTabIndex;
+#elif defined(RADIALGRADIENT) || defined(CONICALGRADIENT)
+layout(location = 5) out vec2 coord;
+#endif
+
 layout(std140, binding = 0) uniform buf {
 #if QSHADER_VIEW_COUNT >= 2
     mat4 qt_Matrix[QSHADER_VIEW_COUNT];
@@ -24,12 +30,29 @@ layout(std140, binding = 0) uniform buf {
     float devicePixelRatio;
     float strokeWidth;
 
+#if defined(LINEARGRADIENT)
+    vec2 gradientStart;
+    vec2 gradientEnd;
+#elif defined(RADIALGRADIENT)
+    vec2 translationPoint;
+    vec2 focalToCenter;
+    float centerRadius;
+    float focalRadius;
+    float reserved3;
+    float reserved4;
+#elif defined(CONICALGRADIENT)
+    vec2 translationPoint;
+    float angle;
+    float reserved3;
+#else
     vec4 strokeColor;
+#endif
 
     float debug;
     float reserved5;
     float reserved6;
     float reserved7;
+
 } ubuf;
 
 #define SQRT2 1.41421356237
@@ -68,6 +91,14 @@ void main()
     // adjust stroke width by the given multiplier (usually 1)
     adjStrokeWidth *= normalExt.z;
 #endif // if the shader is expected to expand the stroke by moving vertices outwards
+
+#if defined(LINEARGRADIENT)
+    vec2 gradVec = ubuf.gradientEnd - ubuf.gradientStart;
+    gradTabIndex = dot(gradVec, P.xy - ubuf.gradientStart) / dot(gradVec, gradVec);
+#elif defined(RADIALGRADIENT) || defined(CONICALGRADIENT)
+    coord = P.xy - ubuf.translationPoint;
+#endif
+
 
     A = inA;
     B = inB;

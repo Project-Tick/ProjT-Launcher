@@ -136,6 +136,11 @@ public:
     bool isESModule() const { return m_compilationUnit->isESModule(); }
 
     int objectCount() const { return m_compilationUnit->objectCount(); }
+    int resolvedIndex(int index) const { return m_compilationUnit->resolvedIndex(index); }
+    int implicitComponentForObject(int index) const
+    {
+        return m_compilationUnit->implicitComponentForObject(index);
+    }
     const CompiledObject *objectAt(int index) const
     {
         return m_compilationUnit->objectAt(index);
@@ -293,7 +298,7 @@ IdentifierHash ExecutableCompilationUnit::namedObjectsPerComponent(int component
     auto it = namedObjectsPerComponentCache.constFind(componentObjectIndex);
     if (Q_UNLIKELY(it == namedObjectsPerComponentCache.cend()))
         return createNamedObjectsPerComponent(componentObjectIndex);
-    Q_ASSERT(!it->isEmpty());
+    Q_ASSERT(it->isValid());
     return *it;
 }
 

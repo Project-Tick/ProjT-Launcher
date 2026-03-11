@@ -225,9 +225,12 @@ bool QQuickItemGrabResult::event(QEvent *e)
     Q_D(QQuickItemGrabResult);
     if (e->type() == Event_Grab_Completed) {
         if (d->hasCallback()) {
-        // JS callback
-            d->callback.call(QJSValueList() << d->qmlEngine->newQObject(this));
+            // We have a JS callback. Transfer ownership to JavaScript to follow the documentation.
+            // The user should be able to store the object in QML, but we also want to GC it
+            // eventually.
             QQmlEngine::setObjectOwnership(this, QQmlEngine::JavaScriptOwnership);
+            setParent(nullptr);
+            d->callback.call(QJSValueList() << d->qmlEngine->newQObject(this));
         } else {
             Q_EMIT ready();
         }
@@ -317,7 +320,9 @@ QQuickItemGrabResult *QQuickItemGrabResultPrivate::create(QQuickItem *item, cons
         return nullptr;
     }
 
-    QQuickItemGrabResult *result = new QQuickItemGrabResult();
+    // Initially parent to item so that we don't leak it if Event_Grab_Completed never arrives or
+    // the callback can't be called.
+    QQuickItemGrabResult *result = new QQuickItemGrabResult(item);
     QQuickItemGrabResultPrivate *d = result->d_func();
     d->item = item;
     d->window = item->window();
@@ -429,6 +434,8 @@ bool QQuickItem::grabToImage(const QJSValue &callback, const QSize &targetSize)
     connect(window(), &QQuickWindow::beforeSynchronizing, result, &QQuickItemGrabResult::setup, Qt::DirectConnection);
     connect(window(), &QQuickWindow::afterRendering, result, &QQuickItemGrabResult::render, Qt::DirectConnection);
 
+    // Do not transfer ownership to JavaScript here, yet. There is no reference to the object
+    // We don't want the GC to collect it while the grab is still in flight.
     QQuickItemGrabResultPrivate *d = result->d_func();
     d->qmlEngine = engine;
     d->callback = callback;

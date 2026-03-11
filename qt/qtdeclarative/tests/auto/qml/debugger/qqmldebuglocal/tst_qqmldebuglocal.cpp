@@ -40,7 +40,8 @@ void tst_QQmlDebugLocal::initTestCase()
 {
     fileName = QString::fromLatin1("tst_QQmlDebugLocal%1").arg(std::time(nullptr));
     QQmlDebugConnector::setPluginKey("QQmlDebugServer");
-    m_service = new QQmlDebugTestService("tst_QQmlDebugLocal::handshake()");
+    m_service = new QQmlDebugTestService(
+            "tst_QQmlDebugLocal::handshake()", 1, QCoreApplication::instance());
 
     const QString waitingMsg = QString("QML Debugger: Connecting to socket %1...").arg(fileName);
     QTest::ignoreMessage(QtDebugMsg, waitingMsg.toLatin1().constData());

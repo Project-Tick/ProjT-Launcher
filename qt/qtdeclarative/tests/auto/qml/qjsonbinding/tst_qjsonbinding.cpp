@@ -1,8 +1,17 @@
 // Copyright (C) 2016 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only
-#include <QtTest/QTest>
-#include <QtQml/QtQml>
-#include <QtQuickTestUtils/private/qmlutils_p.h>
+
+#include <QtTest/qtest.h>
+
+#include <QtQml/qqml.h>
+#include <QtQml/qjsvalue.h>
+#include <QtQml/qjsengine.h>
+
+#include <QtCore/qjsonarray.h>
+#include <QtCore/qjsonobject.h>
+#include <QtCore/qjsonvalue.h>
+
+#include <private/qmlutils_p.h>
 
 Q_DECLARE_METATYPE(QJsonValue::Type)
 
@@ -532,6 +541,6 @@ void tst_qjsonbinding::recursiveStringify()
     QVERIFY(result.toString().contains(QLatin1String("Maximum call stack size exceeded")));
 }
 
-QTEST_MAIN(tst_qjsonbinding)
+QTEST_GUILESS_MAIN(tst_qjsonbinding)
 
 #include "tst_qjsonbinding.moc"

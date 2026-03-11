@@ -87,6 +87,9 @@ public:
     QString placeholderText() const;
     void setPlaceholderText(const QString &text);
 
+public Q_SLOTS:
+    Q_REVISION(6, 12) void selectAll();
+
 Q_SIGNALS:
     void activated(int index);
     void highlighted(int index);

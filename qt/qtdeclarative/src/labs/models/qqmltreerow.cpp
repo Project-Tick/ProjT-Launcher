@@ -37,6 +37,12 @@ void QQmlTreeRow::addChild(QQmlTreeRow *child)
     child->setParent(this);
 }
 
+void QQmlTreeRow::insertChild(int index, QQmlTreeRow *child)
+{
+    m_children.insert(m_children.begin() + index, std::unique_ptr<QQmlTreeRow>(child));
+    child->setParent(this);
+}
+
 void QQmlTreeRow::unpackVariantMap(const QVariantMap &variantMap)
 {
     for (auto it = variantMap.begin(); it != variantMap.end(); ++it) {

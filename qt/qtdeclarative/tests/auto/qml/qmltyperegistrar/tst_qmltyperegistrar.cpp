@@ -645,31 +645,43 @@ void tst_qmltyperegistrar::uncreatable()
     QVERIFY(QmlMetaType<Creatable2>::hasAcceptableCtors());
 
     // good singletons
-    QCOMPARE((singletonConstructionMode<SingletonCreatable, SingletonCreatable>()),
+    static_assert((singletonConstructionMode<SingletonCreatable, SingletonCreatable>()) ==
              SingletonConstructionMode::Factory);
-    QCOMPARE((singletonConstructionMode<SingletonCreatable2, SingletonCreatable2>()),
+    static_assert((singletonConstructionMode<SingletonCreatable2, SingletonCreatable2>()) ==
              SingletonConstructionMode::Constructor);
-    QCOMPARE((singletonConstructionMode<SingletonCreatable2, SingletonCreatable2>()),
+    static_assert((singletonConstructionMode<SingletonCreatable3, SingletonCreatable3>()) ==
              SingletonConstructionMode::Constructor);
-    QCOMPARE((singletonConstructionMode<SingletonForeign, SingletonLocalCreatable>()),
+    static_assert((singletonConstructionMode<SingletonForeign, SingletonLocalCreatable>()) ==
              SingletonConstructionMode::FactoryWrapper);
 
+    // good uncreatable singletons
+    static_assert((singletonConstructionMode<SingletonExplicitUncreatable, SingletonExplicitUncreatable>()) ==
+             SingletonConstructionMode::ExplicitNone);
+    static_assert((singletonConstructionMode<SingletonExplicitUncreatable2, SingletonExplicitUncreatable2>()) ==
+             SingletonConstructionMode::ExplicitNone);
+    static_assert((singletonConstructionMode<SingletonExplicitUncreatable3, SingletonExplicitUncreatable3>()) ==
+             SingletonConstructionMode::ExplicitNone);
+    static_assert((singletonConstructionMode<SingletonExplicitUncreatable4, SingletonExplicitUncreatable4>()) ==
+             SingletonConstructionMode::ExplicitNone);
+    static_assert((singletonConstructionMode<SingletonForeign, SingletonLocalExplicitUncreatable>()) ==
+             SingletonConstructionMode::ExplicitNone);
+
     // bad singletons
-    QCOMPARE((singletonConstructionMode<SingletonIncreatable, SingletonIncreatable>()),
+    static_assert((singletonConstructionMode<SingletonIncreatable, SingletonIncreatable>()) ==
              SingletonConstructionMode::None);
-    QCOMPARE((singletonConstructionMode<SingletonIncreatable2, SingletonIncreatable2>()),
+    static_assert((singletonConstructionMode<SingletonIncreatable2, SingletonIncreatable2>()) ==
              SingletonConstructionMode::None);
-    QCOMPARE((singletonConstructionMode<SingletonIncreatable3, SingletonIncreatable3>()),
+    static_assert((singletonConstructionMode<SingletonIncreatable3, SingletonIncreatable3>()) ==
              SingletonConstructionMode::None);
-    QCOMPARE((singletonConstructionMode<SingletonIncreatable4, SingletonIncreatable4>()),
+    static_assert((singletonConstructionMode<SingletonIncreatable4, SingletonIncreatable4>()) ==
              SingletonConstructionMode::None);
-    QCOMPARE((singletonConstructionMode<SingletonIncreatableExtended,
-                                        SingletonIncreatableExtended>()),
+    static_assert((singletonConstructionMode<SingletonIncreatableExtended, SingletonIncreatableExtended>()) ==
              SingletonConstructionMode::None);
-    QCOMPARE((singletonConstructionMode<SingletonForeign, SingletonLocalUncreatable1>()),
+    static_assert((singletonConstructionMode<SingletonForeign, SingletonLocalUncreatable1>()) ==
              SingletonConstructionMode::None);
-    QCOMPARE((singletonConstructionMode<SingletonForeign, SingletonLocalUncreatable2>()),
+    static_assert((singletonConstructionMode<SingletonForeign, SingletonLocalUncreatable2>()) ==
              SingletonConstructionMode::None);
+
 #if QT_DEPRECATED_SINCE(6, 4)
     QTest::ignoreMessage(
                 QtWarningMsg,

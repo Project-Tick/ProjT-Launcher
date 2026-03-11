@@ -19,11 +19,9 @@
 #include <QtCore/qglobal.h>
 #include <QtCore/qstring.h>
 
-#include <qtqmlcompilerexports.h>
-
 QT_BEGIN_NAMESPACE
 
-struct Q_QMLCOMPILER_EXPORT QQmlJSStructuredTypeError
+struct QQmlJSStructuredTypeError
 {
     QString code;
     bool constructedFromInvalidString = false;
@@ -37,8 +35,7 @@ struct Q_QMLCOMPILER_EXPORT QQmlJSStructuredTypeError
     }
 };
 
-
-class Q_QMLCOMPILER_EXPORT QQmlJSValueTypeFromStringCheck
+class QQmlJSValueTypeFromStringCheck
 {
 public:
     static QQmlJSStructuredTypeError hasError(const QString &typeName, const QString &value);

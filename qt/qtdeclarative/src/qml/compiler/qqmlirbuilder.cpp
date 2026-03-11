@@ -74,9 +74,16 @@ void Object::sortAliasDependencies(const Document *doc, QList<QQmlJS::Diagnostic
     AliasArray ordered;
     ordered.reserve(aliasCount());
 
+    // if the default property is an alias, we need to later update the default property index
+    Alias *defaultPropertyAlias = nullptr;
+    qsizetype aliasCounter = 0;
+
     // Collect aliases as nodes in a graph. Non-local ones are already ordered.
     AliasArray nodes;
-    for (Alias *a = firstAlias(); a; a = a->next) {
+    for (Alias *a = firstAlias(); a; ++aliasCounter, a = a->next) {
+        if (defaultPropertyIsAlias && aliasCounter == indexOfDefaultPropertyOrAlias) {
+            defaultPropertyAlias = a;
+        }
         if (a->idIndex() == idNameIndex && idNameIndex != 0)
             nodes.append(a);
         else
@@ -137,8 +144,13 @@ void Object::sortAliasDependencies(const Document *doc, QList<QQmlJS::Diagnostic
 
     // Apply the sorted order to the alias list.
     setFirstAlias(ordered[0]);
-    for (qsizetype i = 0, end = ordered.size() - 1; i < end; ++i)
+    if (ordered[0] == defaultPropertyAlias)
+        indexOfDefaultPropertyOrAlias = 0;
+    for (qsizetype i = 0, end = ordered.size() - 1; i < end; ++i) {
         ordered[i]->next = ordered[i + 1];
+        if (ordered[i] == defaultPropertyAlias)
+            indexOfDefaultPropertyOrAlias = i;
+    }
     ordered.last()->next = nullptr;
 }
 
@@ -378,7 +390,7 @@ QString Object::appendBinding(Binding *b, bool isListBinding)
         }
     }
     if (bindingToDefaultProperty)
-        insertSorted(b);
+        bindings->append(b);
     else
         bindings->prepend(b);
     return QString(); // no error
@@ -390,12 +402,6 @@ Binding *Object::findBinding(quint32 nameIndex) const
         if (b->propertyNameIndex == nameIndex)
             return b;
     return nullptr;
-}
-
-void Object::insertSorted(Binding *b)
-{
-    Binding *insertionPoint = bindings->findSortedInsertionPoint<quint32, Binding, &Binding::offset>(b);
-    bindings->insertAfter(insertionPoint, b);
 }
 
 QString Object::bindingAsString(Document *doc, int scriptIndex) const

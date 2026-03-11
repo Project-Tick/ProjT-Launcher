@@ -152,7 +152,7 @@ private:
     QQmlSA::Method::Methods *q_ptr = nullptr;
 };
 
-class PropertyPrivate
+class Q_QMLCOMPILER_EXPORT PropertyPrivate
 {
     friend class QT_PREPEND_NAMESPACE(QQmlJSMetaProperty);
     Q_DECLARE_PUBLIC(QQmlSA::Property)

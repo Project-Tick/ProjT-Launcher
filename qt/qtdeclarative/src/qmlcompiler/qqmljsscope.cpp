@@ -922,33 +922,10 @@ void QQmlJSScope::addOwnPropertyBindingInQmlIROrder(const QQmlJSMetaPropertyBind
         break;
     }
     case BindingTargetSpecifier::UnnamedPropertyTarget: {
-        // see QmlIR::PoolList<>::findSortedInsertionPoint()
-        const auto findInsertionPoint = [this](const QQmlJSMetaPropertyBinding &x) {
-            qsizetype pos = -1;
-            for (auto it = m_propertyBindingsArray.cbegin(); it != m_propertyBindingsArray.cend();
-                 ++it) {
-                if (!(it->sourceLocationOffset <= x.sourceLocation().offset))
-                    break;
-                ++pos;
-            }
-            return pos;
-        };
-
-        // see QmlIR::PoolList<>::insertAfter()
-        const auto insertAfter = [this](qsizetype pos, const QQmlJSMetaPropertyBinding &x) {
-            if (pos == -1) {
-                m_propertyBindingsArray.emplaceFront(x.propertyName(), x.sourceLocation().offset);
-            } else if (pos == m_propertyBindingsArray.size()) {
-                m_propertyBindingsArray.emplaceBack(x.propertyName(), x.sourceLocation().offset);
-            } else {
-                // since we insert *after*, use (pos + 1) as insertion point
-                m_propertyBindingsArray.emplace(pos + 1, x.propertyName(),
-                                                x.sourceLocation().offset);
-            }
-        };
-
-        const qsizetype insertionPos = findInsertionPoint(binding);
-        insertAfter(insertionPos, binding);
+        // Implicit default property bindings are appended in file order,
+        // matching QmlIR::Object::appendBinding().
+        m_propertyBindingsArray.emplaceBack(
+                binding.propertyName(), binding.sourceLocation().offset);
         break;
     }
     default: {

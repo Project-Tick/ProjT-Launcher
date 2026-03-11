@@ -113,8 +113,8 @@ void QQuickDragAttachedPrivate::deliverEnterEvent()
     mimeData->m_keys = keys;
 
     if (window) {
-        QPoint scenePos = attachedItem->mapToScene(hotSpot).toPoint();
-        QDragEnterEvent event(scenePos, mimeData->m_supportedActions, mimeData, Qt::NoButton, Qt::NoModifier);
+        QDragEnterEvent event(attachedItem->mapToScene(hotSpot), mimeData->m_supportedActions,
+                              mimeData, Qt::NoButton, Qt::NoModifier);
         QQuickDropEventEx::setProposedAction(&event, proposedAction);
         deliverEvent(window, &event);
     }
@@ -126,8 +126,8 @@ void QQuickDragAttachedPrivate::deliverMoveEvent()
 
     itemMoved = false;
     if (window) {
-        QPoint scenePos = attachedItem->mapToScene(hotSpot).toPoint();
-        QDragMoveEvent event(scenePos, mimeData->m_supportedActions, mimeData, Qt::NoButton, Qt::NoModifier);
+        QDragMoveEvent event(attachedItem->mapToScene(hotSpot), mimeData->m_supportedActions,
+                             mimeData, Qt::NoButton, Qt::NoModifier);
         QQuickDropEventEx::setProposedAction(&event, proposedAction);
         deliverEvent(window, &event);
         if (target != dragGrabber.target()) {

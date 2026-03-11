@@ -8,5 +8,5 @@ qt_internal_add_plugin(QmlLintQdsPlugin
         qdslintplugin.h
         qdslintplugin.cpp
     LIBRARIES
-        Qt::QmlCompilerPrivate
+        Qt::QmlLintPrivate
 )

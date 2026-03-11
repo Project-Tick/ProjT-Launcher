@@ -8,6 +8,8 @@
 #include <QtQuick/qtquickexports.h>
 #include <QtQuick/qsgnode.h>
 
+#include <QtQuick/private/qsggradientcache_p.h>
+
 #include "qsgcurveabstractnode_p.h"
 #include "qsgcurvestrokenode_p_p.h"
 
@@ -49,6 +51,28 @@ public:
     void setStrokeWidth(float width)
     {
         m_strokeWidth = width;
+        markDirty(DirtyMaterial);
+    }
+
+    QGradient::Type gradientType() const
+    {
+        return m_gradientType;
+    }
+
+    void setGradientType(QGradient::Type type)
+    {
+        m_gradientType = type;
+        markDirty(DirtyMaterial);
+    }
+
+    const QSGGradientCache::GradientDesc *strokeGradient() const
+    {
+        return &m_strokeGradient;
+    }
+
+    void setStrokeGradient(const QSGGradientCache::GradientDesc &strokeGradient)
+    {
+        m_strokeGradient = strokeGradient;
         markDirty(DirtyMaterial);
     }
 
@@ -140,6 +164,8 @@ private:
     float m_debug = 0.0f;
     float m_localScale = 1.0f;
     bool m_useStandardDerivatives = false;
+    QSGGradientCache::GradientDesc m_strokeGradient;
+    QGradient::Type m_gradientType = QGradient::NoGradient;
 
 protected:
     QScopedPointer<QSGCurveStrokeMaterial> m_material;

@@ -335,4 +335,77 @@ TestCase {
         control.delegate = delegateComponent1
         verify(delegateComponent2)
     }
+
+    Component {
+        id: findShortcutComponent
+        ApplicationWindow {
+            id: window
+            width: 400
+            height: 400
+            visible: true
+
+            property alias searchFieldShortcut: searchFieldShortcut
+            property alias shortcut: shortcut
+
+            SearchField {
+                id: searchFieldShortcut
+
+                Shortcut {
+                    id: shortcut
+                    sequences: [ StandardKey.Find ]
+                    onActivated: {
+                        searchFieldShortcut.forceActiveFocus()
+                        searchFieldShortcut.selectAll()
+                    }
+                }
+            }
+        }
+    }
+
+    function test_findShortcut_givesFocus() {
+        let window = createTemporaryObject(findShortcutComponent, testCase)
+        let control = window.searchFieldShortcut
+        verify(control)
+
+        window.requestActivate()
+        tryCompare(window, "active", true)
+
+        let shortcutActivatedSpy = createTemporaryObject(signalSpy, testCase,
+            { target: window.shortcut, signalName: "activated"} )
+        verify(shortcutActivatedSpy.valid)
+
+        waitForRendering(window.contentItem)
+        verify(!control.contentItem.activeFocus)
+        compare(shortcutActivatedSpy.count, 0)
+
+        keySequence(StandardKey.Find)
+        compare(shortcutActivatedSpy.count, 1)
+        verify(control.contentItem.activeFocus)
+    }
+
+    function test_findShortcut_selectAll() {
+        let window = createTemporaryObject(findShortcutComponent, testCase)
+        let control = window.searchFieldShortcut
+        verify(control)
+
+        window.requestActivate()
+        tryCompare(window, "active", true)
+
+        let shortcutActivatedSpy = createTemporaryObject(signalSpy, testCase,
+            { target: window.shortcut, signalName: "activated"} )
+        verify(shortcutActivatedSpy.valid)
+
+        waitForRendering(window.contentItem)
+
+        control.contentItem.text = "hello"
+
+        verify(!control.contentItem.activeFocus)
+        compare(control.contentItem.selectedText, "")
+        compare(shortcutActivatedSpy.count, 0)
+
+        keySequence(StandardKey.Find)
+        compare(shortcutActivatedSpy.count, 1)
+        verify(control.contentItem.activeFocus)
+        compare(control.contentItem.selectedText, "hello")
+    }
 }

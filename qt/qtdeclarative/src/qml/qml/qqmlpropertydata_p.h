@@ -46,7 +46,7 @@ public:
             QListType            = 4, // Property type is a QML list
             VarPropertyType      = 5, // Property type is a "var" property of VMEMO
             QVariantType         = 6, // Property is a QVariant
-            // One spot left for an extra type in the 3 bits used to store this.
+            ComponentWrapperType = 7, // Synthetic property wrapping a child object into a Component
         };
 
     private:
@@ -231,6 +231,7 @@ public:
     bool isQList() const { return m_flags.type == Flags::QListType; }
     bool isVarProperty() const { return m_flags.type == Flags::VarPropertyType; }
     bool isQVariant() const { return m_flags.type == Flags::QVariantType; }
+    bool isComponentWrapper() const { return m_flags.type == Flags::ComponentWrapperType; }
     bool isVMEFunction() const { return isFunction() && m_flags.isDeepAliasORisVMEFunction; }
     bool hasArguments() const { return isFunction() && m_flags.isWritableORhasArguments; }
     bool isSignal() const { return isFunction() && m_flags.isResettableORisSignal; }
@@ -241,7 +242,7 @@ public:
 
     bool hasStaticMetaCallFunction() const
     {
-        return !isAlias() && staticMetaCallFunction() != nullptr;
+        return !isAlias() && !isComponentWrapper() && staticMetaCallFunction() != nullptr;
     }
 
     // TODO: Remove this once we can. Signals should not be overridable.
@@ -312,6 +313,17 @@ public:
         Q_ASSERT(id >= std::numeric_limits<qint16>::min());
         Q_ASSERT(id <= std::numeric_limits<qint16>::max());
         m_metaObjectOffsetOrAliasTargetObjectId = id;
+    }
+
+    int wrappedObjectIndex() const
+    {
+        Q_ASSERT(isComponentWrapper());
+        return m_wrappedObjectIndex;
+    }
+    void setWrappedObjectIndex(int wrappedObjectIndex)
+    {
+        Q_ASSERT(isComponentWrapper());
+        m_wrappedObjectIndex = wrappedObjectIndex;
     }
 
     QTypeRevision revision() const { return m_revision; }
@@ -519,6 +531,9 @@ private:
 
         // only for aliases
         int m_encodedAliasTargetIndex;
+
+        // only for implicit components
+        int m_wrappedObjectIndex;
     };
 };
 

@@ -329,6 +329,7 @@ QQmlDebugTranslationServiceImpl::~QQmlDebugTranslationServiceImpl()
 {
     delete d->proxyTranslator;
     d->proxyTranslator = {};
+    delete d;
 }
 
 void QQmlDebugTranslationServiceImpl::messageReceived(const QByteArray &message)

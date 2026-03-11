@@ -2372,7 +2372,7 @@ bool AOTCompiledContext::loadContextIdLookup(uint index, void *target) const
         QV4::Scope scope(engine->handle());
         QV4::ScopedString name(scope, compilationUnit->runtimeStrings[lookup->nameIndex]);
         for (context = qmlContext; context; context = context->parent().data()) {
-            objectId = context->propertyIndex(name);
+            objectId = context->propertyIndex(name->d());
             if (objectId != -1 && objectId < context->numIdValues())
                 break;
         }
@@ -2399,7 +2399,7 @@ void AOTCompiledContext::initLoadContextIdLookup(uint index) const
     QV4::ScopedString name(scope, compilationUnit->runtimeStrings[lookup->nameIndex]);
     const QQmlRefPointer<QQmlContextData> ownContext = qmlContext;
     for (auto context = ownContext; context; context = context->parent()) {
-        const int propertyIdx = context->propertyIndex(name);
+        const int propertyIdx = context->propertyIndex(name->d());
         if (propertyIdx == -1 || propertyIdx >= context->numIdValues())
             continue;
 

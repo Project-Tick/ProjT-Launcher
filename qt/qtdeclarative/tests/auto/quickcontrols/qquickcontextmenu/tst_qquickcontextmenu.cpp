@@ -643,7 +643,8 @@ void tst_QQuickContextMenu::textEditingContextMenuUndoRedo()
     QTRY_VERIFY(!contextMenu->menu()->isVisible());
 
     // Ensure that the control has text if it's a SearchField.
-    QVERIFY(selectFirstItemIfSearchField(qobject_cast<QQuickSearchField *>(editor->parentItem())));
+    auto *searchField = qobject_cast<QQuickSearchField *>(editor->parentItem());
+    QVERIFY(selectFirstItemIfSearchField(searchField));
     QCOMPARE(editor->property("text").toString(), expectedTextComplete);
 
     // Modify the text. Undo should then be enabled, but not redo.
@@ -653,9 +654,20 @@ void tst_QQuickContextMenu::textEditingContextMenuUndoRedo()
     QVERIFY(undoMenuItem->isEnabled());
     QVERIFY(!redoMenuItem->isEnabled());
 
+    // If it's a SearchField, ensure that the popup is closed.
+    if (searchField) {
+        QTest::keyClick(&window, Qt::Key_Escape);
+        QTRY_VERIFY(!contextMenu->menu()->isVisible());
+    }
+
     // Right click on the editor to open the context menu.
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
     QTRY_VERIFY(contextMenu->menu()->isOpened());
+    if (searchField) {
+        // SearchField's popup should close when it loses focus,
+        // and it should stay closed (QTBUG-144237).
+        QTRY_VERIFY(!searchField->popup()->isVisible());
+    }
 
     // Click on the Undo menu item. Redo should then be enabled.
     QVERIFY(clickMenuItem(undoMenuItem));
@@ -688,7 +700,6 @@ void tst_QQuickContextMenu::textEditingContextMenuCut()
 
     QQuickView window;
     QVERIFY(QQuickTest::showView(window, testFileUrl(qmlFileName)));
-    window.requestActivate();
     QVERIFY(QTest::qWaitForWindowActive(&window));
 
     auto *editor = window.rootObject()->property("editor").value<QQuickItem *>();
@@ -768,7 +779,6 @@ void tst_QQuickContextMenu::textEditingContextMenuCopy()
 
     QQuickView window;
     QVERIFY(QQuickTest::showView(window, testFileUrl(qmlFileName)));
-    window.requestActivate();
     QVERIFY(QTest::qWaitForWindowActive(&window));
 
     auto *editor = window.rootObject()->property("editor").value<QQuickItem *>();
@@ -840,7 +850,6 @@ void tst_QQuickContextMenu::textEditingContextMenuPaste()
 
     QQuickView window;
     QVERIFY(QQuickTest::showView(window, testFileUrl(qmlFileName)));
-    window.requestActivate();
     QVERIFY(QTest::qWaitForWindowActive(&window));
 
     auto *editor = window.rootObject()->property("editor").value<QQuickItem *>();
@@ -905,7 +914,6 @@ void tst_QQuickContextMenu::textEditingContextMenuDelete()
 
     QQuickView window;
     QVERIFY(QQuickTest::showView(window, testFileUrl(qmlFileName)));
-    window.requestActivate();
     QVERIFY(QTest::qWaitForWindowActive(&window));
 
     auto *editor = window.rootObject()->property("editor").value<QQuickItem *>();
@@ -971,7 +979,6 @@ void tst_QQuickContextMenu::textEditingContextMenuSelectAll()
 
     QQuickView window;
     QVERIFY(QQuickTest::showView(window, testFileUrl(qmlFileName)));
-    window.requestActivate();
     QVERIFY(QTest::qWaitForWindowActive(&window));
 
     auto *editor = window.rootObject()->property("editor").value<QQuickItem *>();

@@ -1,5 +1,6 @@
 // Copyright (C) 2016 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #include "qquickshape_p.h"
 #include "qquickshape_p_p.h"
@@ -92,6 +93,7 @@ QQuickShapeStrokeFillParams::QQuickShapeStrokeFillParams()
       strokeStyle(QQuickShapePath::SolidLine),
       dashOffset(0),
       fillGradient(nullptr),
+      strokeGradient(nullptr),
       fillItem(nullptr),
       trim(nullptr)
 {
@@ -188,7 +190,8 @@ QQuickShapePath::~QQuickShapePath()
 
     This property holds the stroking color.
 
-    When set to \c transparent, no stroking occurs.
+    When set to \c transparent, no stroking occurs. If the \l{strokeGradient} property is set,
+    it will take precedence over \c{strokeColor}.
 
     The default value is \c white.
  */
@@ -240,7 +243,7 @@ void QQuickShapePath::setStrokeWidth(qreal w)
 }
 
 /*! \since 6.11
-    \qmlproperty real QtQuick.Shapes::ShapePath::cosmeticStroke
+    \qmlproperty bool QtQuick.Shapes::ShapePath::cosmeticStroke
 
     This property holds whether the stroke width remains constant despite rendering scale.
 
@@ -453,6 +456,57 @@ void QQuickShapePath::setDashPattern(const QList<qreal> &array)
 }
 
 /*!
+    \qmlproperty ShapeGradient QtQuick.Shapes::ShapePath::strokeGradient
+    \since 6.12
+
+    This property defines the stroke gradient. By default no gradient is enabled
+    and the value is \c null. In this case the stroke will be based \l{strokeColor} property.
+
+    \note The Gradient type cannot be used here. Rather, prefer using one of
+    the advanced subtypes, like LinearGradient.
+
+    \note If set to something other than \c{null}, the \c strokeGradient will take precedence over
+    \l strokeColor.
+
+    By default, up to 256 different gradients may be displayed simultaneously. This limit may be
+    customized with the \c QT_QUICKSHAPES_MAX_GRADIENTS environment variable.
+ */
+QQuickShapeGradient *QQuickShapePath::strokeGradient() const
+{
+    Q_D(const QQuickShapePath);
+    return d->sfp.strokeGradient;
+}
+
+void QQuickShapePath::setStrokeGradient(QQuickShapeGradient *gradient)
+{
+    Q_D(QQuickShapePath);
+    if (d->sfp.strokeGradient != gradient) {
+        if (d->sfp.strokeGradient)
+            qmlobject_disconnect(d->sfp.strokeGradient, QQuickShapeGradient, SIGNAL(updated()),
+                                 this, QQuickShapePath, SLOT(_q_strokeGradientChanged()));
+        d->sfp.strokeGradient = gradient;
+        if (d->sfp.strokeGradient)
+            qmlobject_connect(d->sfp.strokeGradient, QQuickShapeGradient, SIGNAL(updated()),
+                              this, QQuickShapePath, SLOT(_q_strokeGradientChanged()));
+        emit strokeGradientChanged();
+        d->dirty |= QQuickShapePathPrivate::DirtyStrokeGradient;
+        emit shapePathChanged();
+    }
+}
+
+void QQuickShapePath::resetStrokeGradient()
+{
+    setStrokeGradient(nullptr);
+}
+
+void QQuickShapePathPrivate::_q_strokeGradientChanged()
+{
+    Q_Q(QQuickShapePath);
+    dirty |= DirtyStrokeGradient;
+    emit q->shapePathChanged();
+}
+
+/*!
     \qmlproperty ShapeGradient QtQuick.Shapes::ShapePath::fillGradient
 
     This property defines the fill gradient. By default no gradient is enabled
@@ -465,7 +519,7 @@ void QQuickShapePath::setDashPattern(const QList<qreal> &array)
     \note If set to something other than \c{null}, the \c fillGradient will take precedence over
     both \l fillItem and \l fillColor.
 
-    By default, up to 256 different gradients may be displayed simultanously. This limit may be
+    By default, up to 256 different gradients may be displayed simultaneously. This limit may be
     customized with the \c QT_QUICKSHAPES_MAX_GRADIENTS environment variable.
  */
 
@@ -1629,6 +1683,8 @@ void QQuickShapePrivate::sync()
             renderer->setStrokeStyle(i, p->strokeStyle(), p->dashOffset(), p->dashPattern());
         if (dirty & QQuickShapePathPrivate::DirtyFillGradient)
             renderer->setFillGradient(i, p->fillGradient());
+        if (dirty & QQuickShapePathPrivate::DirtyStrokeGradient)
+            renderer->setStrokeGradient(i, p->strokeGradient());
         if (dirty & QQuickShapePathPrivate::DirtyFillTransform)
             renderer->setFillTransform(i, QQuickShapePathPrivate::get(p)->sfp.fillTransform);
         if (dirty & QQuickShapePathPrivate::DirtyFillItem) {

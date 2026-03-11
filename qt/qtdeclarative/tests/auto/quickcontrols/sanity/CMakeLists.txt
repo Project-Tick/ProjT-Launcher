@@ -19,7 +19,7 @@ list(APPEND test_data ${test_data_glob})
 #####################################################################
 
 add_library(QuickControlsSanityPlugin STATIC quickcontrolssanity.h quickcontrolssanity.cpp)
-target_link_libraries(QuickControlsSanityPlugin PRIVATE Qt::QmlCompilerPrivate)
+target_link_libraries(QuickControlsSanityPlugin PRIVATE Qt::QmlLintPrivate)
 qt_autogen_tools_initial_setup(QuickControlsSanityPlugin)
 target_compile_definitions(QuickControlsSanityPlugin PRIVATE QT_STATICPLUGIN)
 
@@ -43,6 +43,7 @@ qt_internal_add_test(tst_sanity
         Qt::QuickTestUtilsPrivate
         Qt::TestPrivate
         Qt::QmlCompilerPrivate
+        Qt::QmlLintPrivate
         QuickControlsSanityPlugin
     TESTDATA ${test_data}
 )

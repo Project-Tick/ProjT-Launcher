@@ -178,7 +178,7 @@ public:
         return m_propertyNameCache.value(name);
     }
 
-    int propertyIndex(QV4::String *name) const
+    int propertyIndex(QV4::Heap::String *name) const
     {
         ensurePropertyNames();
         return m_propertyNameCache.value(name);
@@ -187,12 +187,12 @@ public:
     QString propertyName(int index) const
     {
         ensurePropertyNames();
-        return m_propertyNameCache.findId(index);
+        return m_propertyNameCache.key<QString>(index);
     }
 
     void addPropertyNameAndIndex(const QString &name, int index)
     {
-        Q_ASSERT(!m_propertyNameCache.isEmpty());
+        Q_ASSERT(m_propertyNameCache.isValid());
         m_propertyNameCache.add(name, index);
     }
 
@@ -396,9 +396,9 @@ private:
 
     void ensurePropertyNames() const
     {
-        if (m_propertyNameCache.isEmpty())
+        if (!m_propertyNameCache.isValid())
             initPropertyNames();
-        Q_ASSERT(!m_propertyNameCache.isEmpty());
+        Q_ASSERT(m_propertyNameCache.isValid());
     }
 
     // My parent context and engine

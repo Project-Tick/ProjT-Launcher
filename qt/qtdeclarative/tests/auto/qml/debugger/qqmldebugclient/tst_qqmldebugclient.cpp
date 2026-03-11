@@ -42,7 +42,8 @@ void tst_QQmlDebugClient::initTestCase()
     QQmlDebugConnector::setServices(QStringList()
                                     << QStringLiteral("tst_QQmlDebugClient::handshake()"));
 
-    m_service = new QQmlDebugTestService("tst_QQmlDebugClient::handshake()");
+    m_service = new QQmlDebugTestService(
+            "tst_QQmlDebugClient::handshake()", 1, QCoreApplication::instance());
 
     const QStringList debuggerServices = QQmlDebuggingEnabler::debuggerServices();
     for (const QString &service : debuggerServices)

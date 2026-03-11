@@ -129,7 +129,8 @@ namespace QQmlPrivate
         None,
         Constructor,
         Factory,
-        FactoryWrapper
+        FactoryWrapper,
+        ExplicitNone
     };
 
     template<typename T, typename WrapperT = T, typename = std::void_t<>>
@@ -148,21 +149,6 @@ namespace QQmlPrivate
                                static_cast<QJSEngine *>(nullptr))), T *>;
     };
 
-    template<typename T, typename WrapperT>
-    constexpr SingletonConstructionMode singletonConstructionMode()
-    {
-        if constexpr (!std::is_base_of<QObject, T>::value)
-            return SingletonConstructionMode::None;
-        if constexpr (!std::is_same_v<T, WrapperT> && HasSingletonFactory<T, WrapperT>::value)
-            return SingletonConstructionMode::FactoryWrapper;
-        if constexpr (std::is_default_constructible<T>::value)
-            return SingletonConstructionMode::Constructor;
-        if constexpr (HasSingletonFactory<T>::value)
-            return SingletonConstructionMode::Factory;
-
-        return SingletonConstructionMode::None;
-    }
-
     template<typename>
     struct QmlMarkerFunction;
 
@@ -174,6 +160,40 @@ namespace QQmlPrivate
 
     template<typename T, typename Marker>
     using QmlTypeHasMarker = std::is_same<T, typename QmlMarkerFunction<Marker>::ClassType>;
+
+    template<class T>
+    struct QmlUncreatable
+    {
+    private:
+        template<class U>
+        static auto test(int) -> std::enable_if_t<
+                QmlTypeHasMarker<U, decltype(&U::qt_qmlMarker_uncreatable)>::value
+                        && bool(U::QmlIsUncreatable::yes),
+                std::true_type>;
+
+        template<class U>
+        static auto test(...) -> std::false_type;
+
+    public:
+        static constexpr bool Value = decltype(test<T>(0))::value;
+    };
+
+    template<typename T, typename WrapperT>
+    constexpr SingletonConstructionMode singletonConstructionMode()
+    {
+        if constexpr (!std::is_base_of<QObject, T>::value)
+            return SingletonConstructionMode::None;
+        if constexpr (QmlUncreatable<WrapperT>::Value)
+            return SingletonConstructionMode::ExplicitNone;
+        if constexpr (!std::is_same_v<T, WrapperT> && HasSingletonFactory<T, WrapperT>::value)
+            return SingletonConstructionMode::FactoryWrapper;
+        if constexpr (std::is_default_constructible<T>::value)
+            return SingletonConstructionMode::Constructor;
+        if constexpr (HasSingletonFactory<T>::value)
+            return SingletonConstructionMode::Factory;
+
+        return SingletonConstructionMode::None;
+    }
 
     template<typename T>
     void createInto(void *memory, void *) { new (memory) QQmlElement<T>; }
@@ -220,6 +240,15 @@ namespace QQmlPrivate
     {
         static constexpr CreateIntoFunction createInto = nullptr;
         static constexpr CreateSingletonFunction createSingletonInstance = nullptr;
+    };
+
+    template<typename T, typename WrapperT>
+    struct Constructors<T, WrapperT, SingletonConstructionMode::ExplicitNone>
+    {
+        static constexpr CreateIntoFunction createInto = nullptr;
+        static constexpr CreateSingletonFunction createSingletonInstance
+                = QQmlPrivate::createSingletonInstance<
+                T, WrapperT, SingletonConstructionMode::ExplicitNone>;
     };
 
     template<typename T, typename WrapperT>
@@ -989,23 +1018,6 @@ namespace QQmlPrivate
 
     public:
         using Type = std::remove_pointer_t<decltype(test<T>(0))>;
-    };
-
-    template<class T>
-    struct QmlUncreatable
-    {
-    private:
-        template<class U>
-        static auto test(int) -> std::enable_if_t<
-            QmlTypeHasMarker<U, decltype(&U::qt_qmlMarker_uncreatable)>::value
-            && bool(U::QmlIsUncreatable::yes),
-            std::true_type>;
-
-        template<class U>
-        static auto test(...) -> std::false_type;
-
-    public:
-        static constexpr bool Value = decltype(test<T>(0))::value;
     };
 
     template<class T>

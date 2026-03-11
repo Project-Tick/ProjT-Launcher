@@ -31,13 +31,13 @@ When using CMake, the qmldir is automatically created by \l{qt_add_qml_module}.
 To indicate that the QML file should be turned into a singleton, you need to set
 the \c{QT_QML_SINGLETON_TYPE}
 file property on it:
-\code
+\code [cmake]
 set_source_files_properties(MySingleton.qml
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 \endcode
 
 You can pass multiple files at once to \c{set_source_files_properties}:
-\code
+\code [cmake]
 set(plain_qml_files
     MyItem1.qml
     MyItem2.qml
@@ -61,7 +61,7 @@ qt_add_qml_module(myapp
 If you aren't using \c{qt_add_qml_module}, you'll need to manually create a
 \l{Module Definition qmldir Files}{qmldir file}.
 There, you'll need to mark your singletons accordingly:
-\code
+\code [text]
 module MyModule
 singleton MySingleton 1.0 MySingleton.qml
 singleton MyOtherSingleton 1.0 MyOtherSingleton.qml
@@ -128,6 +128,41 @@ private:
 \note The create function takes both a \l{QJSEngine} and a \l{QQmlEngine} parameter. That is
 for historical reasons. They both point to the same object which is in fact a QQmlEngine.
 
+\section3 Exposing a C++-instantiated object as a singleton
+
+It can be useful to control the instantiation of a singleton from C++, instead
+of letting the \l{QQmlEngine} instantiate the instance. Such singletons do not need
+to be instantiatable by the engine, so you can forgo having a default constructor
+or a static \c{create} function. If you do, you must include the \l{QML_UNCREATABLE}
+macro in the singleton declaration:
+\code
+class MyNonDefaultConstructibleSingleton : public QObject
+{
+    Q_OBJECT
+    QML_SINGLETON
+    QML_NAMED_ELEMENT(MySingleton)
+    QML_UNCREATABLE("Provided by C++")
+public:
+    MyNonDefaultConstructibleSingleton(BackendObject* backend, QObject *parent = nullptr)
+        : QObject(parent)
+        , m_backend(backend)
+    {}
+
+private:
+    class BackendObject* backend;
+};
+\endcode
+
+Then, we set the instance to use on the engine, before we start it:
+
+\code
+MyNonDefaultConstructibleSingleton singleton(backend);
+QQmlApplicationEngine engine;
+engine.setExternalSingletonInstance("MyModule", "MySingleton", &singleton);
+engine.loadFromModule("MyModule", "Main");
+\endcode
+
+
 \section3 Exposing an existing object as a singleton
 
 Sometimes, you have an existing object that might have been created via
@@ -145,40 +180,14 @@ struct SingletonForeign
     QML_FOREIGN(MySingleton)
     QML_SINGLETON
     QML_NAMED_ELEMENT(MySingleton)
-public:
-
-    inline static MySingleton *s_singletonInstance = nullptr;
-
-    static MySingleton *create(QQmlEngine *, QJSEngine *engine)
-    {
-        // The instance has to exist before it is used. We cannot replace it.
-        Q_ASSERT(s_singletonInstance);
-
-        // The engine has to have the same thread affinity as the singleton.
-        Q_ASSERT(engine->thread() == s_singletonInstance->thread());
-
-        // There can only be one engine accessing the singleton.
-        if (s_engine)
-            Q_ASSERT(engine == s_engine);
-        else
-            s_engine = engine;
-
-        // Explicitly specify C++ ownership so that the engine doesn't delete
-        // the instance.
-        QJSEngine::setObjectOwnership(s_singletonInstance,
-                                      QJSEngine::CppOwnership);
-        return s_singletonInstance;
-    }
-
-private:
-    inline static QJSEngine *s_engine = nullptr;
+    QML_UNCREATABLE("Provided from C++")
 };
 \endcode
-Then we set \c{SingletonForeign::s_singletonInstance} before we start
-the first engine
+Then we simply instantiate the MySingleton, and set it to the engine:
 \code
-SingletonForeign::s_singletonInstance = getSingletonInstance();
+MySingleton instance = getSingletonInstance();
 QQmlApplicationEngine engine;
+engine.setExternalSingletonInstance("MyModule", "MySingleton", &instance);
 engine.loadFromModule("MyModule", "Main");
 \endcode
 
@@ -305,7 +314,9 @@ class RemoteBookModel : public QAbstractItemModel
     Q_PROPERTY(QUrl url READ url WRITE setUrl NOTIFY urlChanged)
     // ...
 };
+\endcode
 
+\qml
 // bookbrowser.qml
 Row {
     ListView {
@@ -316,7 +327,7 @@ Row {
     }
 }
 
-\endcode
+\endqml
 
 \section2 Passing initial state
 

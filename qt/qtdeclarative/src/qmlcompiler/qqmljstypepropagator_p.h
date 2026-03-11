@@ -18,8 +18,6 @@
 #include <private/qqmljsast_p.h>
 #include <private/qqmljsscope_p.h>
 #include <private/qqmljscompilepass_p.h>
-#include <private/qqmljscontextproperties_p.h>
-#include <private/qqmljsusercontextproperties_p.h>
 
 QT_BEGIN_NAMESPACE
 

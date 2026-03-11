@@ -1,5 +1,6 @@
 // Copyright (C) 2016 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #ifndef QQUICKSHAPE_P_H
 #define QQUICKSHAPE_P_H
@@ -233,6 +234,7 @@ class Q_QUICKSHAPES_EXPORT QQuickShapePath : public QQuickPath
     Q_PROPERTY(QQuickItem *fillItem READ fillItem WRITE setFillItem NOTIFY fillItemChanged REVISION(6, 8) FINAL)
     Q_PROPERTY(QQuickShapeTrim *trim READ trim CONSTANT REVISION(6, 10) FINAL)
     Q_PROPERTY(bool cosmeticStroke READ cosmeticStroke WRITE setCosmeticStroke NOTIFY cosmeticStrokeChanged REVISION(6, 11) FINAL)
+    Q_PROPERTY(QQuickShapeGradient *strokeGradient READ strokeGradient WRITE setStrokeGradient NOTIFY strokeGradientChanged RESET resetStrokeGradient REVISION(6, 12) FINAL)
     QML_NAMED_ELEMENT(ShapePath)
     QML_ADDED_IN_VERSION(1, 0)
 
@@ -283,6 +285,10 @@ public:
 
     qreal strokeWidth() const;
     void setStrokeWidth(qreal w);
+
+    void setStrokeGradient(QQuickShapeGradient *gradient);
+    QQuickShapeGradient *strokeGradient() const;
+    void resetStrokeGradient();
 
     QColor fillColor() const;
     void setFillColor(const QColor &color);
@@ -345,11 +351,13 @@ Q_SIGNALS:
     Q_REVISION(6, 8) void fillTransformChanged();
     Q_REVISION(6, 8) void fillItemChanged();
     Q_REVISION(6, 11) void cosmeticStrokeChanged();
+    Q_REVISION(6, 12) void strokeGradientChanged();
 
 private:
     Q_DISABLE_COPY(QQuickShapePath)
     Q_DECLARE_PRIVATE(QQuickShapePath)
     Q_PRIVATE_SLOT(d_func(), void _q_fillGradientChanged())
+    Q_PRIVATE_SLOT(d_func(), void _q_strokeGradientChanged())
     Q_PRIVATE_SLOT(d_func(), void _q_fillItemDestroyed())
 };
 

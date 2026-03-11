@@ -308,6 +308,115 @@ Item {
                         })
     }
 
+    function insertRowTopLevel() {
+        testModel.insertRow(0, {
+                        checked: true,
+                        amount: 42,
+                        fruitType: "InsertedOrange",
+                        fruitName: "InsertedNavel",
+                        fruitPrice: 2.50,
+                        color: "orange"
+                        })
+    }
+
+    function insertRowTop() {
+        var index = testModel.index([0], 0)
+
+        testModel.insertRow(0, index, {
+                        checked: true,
+                        amount: 420,
+                        fruitType: "InsertedOrange2",
+                        fruitName: "InsertedNavel2",
+                        fruitPrice: 2.50,
+                        color: "red"
+                        })
+    }
+
+    function insertRow() {
+        var index = testModel.index([0], 0)
+
+        testModel.insertRow(1, index, {
+                        checked: false,
+                        amount: 4200,
+                        fruitType: "InsertedOrange3",
+                        fruitName: "InsertedNavel3",
+                        fruitPrice: 2.50,
+                        color: "blue"
+                        })
+    }
+
+    function insertRowAtEnd() {
+        testModel.insertRow(3, {
+                        checked: false,
+                        amount: 100,
+                        fruitType: "InsertedOrangeEnd",
+                        fruitName: "InsertedNavelEnd",
+                        fruitPrice: 2.50,
+                        color: "black"
+                        })
+    }
+
+    function insertWithChildren() {
+        var index = testModel.index([0], 0)
+
+        testModel.insertRow(0, index, {
+                        checked: false,
+                        amount: 1,
+                        fruitType: "ParentFruit",
+                        fruitName: "ParentFruit",
+                        fruitPrice: 2.50,
+                        color: "green",
+                        rows: [
+                            {
+                                checked: true,
+                                amount: 5,
+                                fruitType: "BabyFruit",
+                                fruitName: "BabyFruit",
+                                fruitPrice: 2.50,
+                                color: "green",
+                            },
+                            {
+                                checked: false,
+                                amount: 6,
+                                fruitType: "BabyFruit1",
+                                fruitName: "BabyFruit1",
+                                fruitPrice: 2.50,
+                                color: "green",
+                            }
+                        ]
+                        })
+    }
+
+    function insertRowNonExisingIndex() {
+        var index = testModel.index([0], 0)
+
+        testModel.insertRow(13, index, {
+                        checked: false,
+                        amount: 4200,
+                        fruitType: "InsertedOrange",
+                        fruitName: "InsertedNavel",
+                        fruitPrice: 2.50,
+                        color: "blue"
+                        })
+    }
+
+    function insertInvalidData() {
+        testModel.insertRow(0, {
+                        house: 12,
+                        tree: false
+                        })
+    }
+
+    function insertInvalidData2() {
+        testModel.insertRow(0, {
+                        house: 12,
+                        tree: false,
+                        bird: "eagle",
+                        fourth: 4,
+                        fifth: 5
+                        })
+    }
+
     TreeView {
         id: treeView
         anchors.fill: parent

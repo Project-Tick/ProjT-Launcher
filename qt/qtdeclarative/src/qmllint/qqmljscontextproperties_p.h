@@ -15,8 +15,6 @@
 //
 // We mean it.
 
-#include <qtqmlcompilerexports.h>
-
 #include <QtCore/qstring.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qlist.h>
@@ -33,7 +31,7 @@ class QSettings;
 namespace QQmlJS {
 class LoggerCategory;
 
-struct Q_QMLCOMPILER_EXPORT HeuristicContextProperty
+struct HeuristicContextProperty
 {
     QString filename = {};
     SourceLocation location = SourceLocation{};
@@ -46,7 +44,7 @@ struct Q_QMLCOMPILER_EXPORT HeuristicContextProperty
     Q_DECLARE_EQUALITY_COMPARABLE(HeuristicContextProperty);
 };
 
-class Q_QMLCOMPILER_EXPORT HeuristicContextProperties
+class HeuristicContextProperties
 {
 public:
     bool contains(const QString &name) const { return m_properties.contains(name); }

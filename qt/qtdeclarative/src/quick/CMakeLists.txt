@@ -381,6 +381,51 @@ qt_internal_add_shaders(Quick "scenegraph_curve_shaders_expanding"
         "scenegraph/shaders_ng/shapestroke_expanding.vert.qsb"
 )
 
+qt_internal_add_shaders(Quick "scenegraph_curve_shaders_lg_expanding"
+    SILENT
+    BATCHABLE
+    PRECOMPILE
+    OPTIMIZED
+    MULTIVIEW
+    DEFINES "STROKE_EXPANDING" "LINEARGRADIENT"
+    PREFIX
+        "/qt-project.org"
+    FILES
+        "scenegraph/shaders_ng/shapestroke.vert"
+    OUTPUTS
+        "scenegraph/shaders_ng/shapestroke_lg_expanding.vert.qsb"
+)
+
+qt_internal_add_shaders(Quick "scenegraph_curve_shaders_rg_expanding"
+    SILENT
+    BATCHABLE
+    PRECOMPILE
+    OPTIMIZED
+    MULTIVIEW
+    DEFINES "STROKE_EXPANDING" "RADIALGRADIENT"
+    PREFIX
+        "/qt-project.org"
+    FILES
+        "scenegraph/shaders_ng/shapestroke.vert"
+    OUTPUTS
+        "scenegraph/shaders_ng/shapestroke_rg_expanding.vert.qsb"
+)
+
+qt_internal_add_shaders(Quick "scenegraph_curve_shaders_cg_expanding"
+    SILENT
+    BATCHABLE
+    PRECOMPILE
+    OPTIMIZED
+    MULTIVIEW
+    DEFINES "STROKE_EXPANDING" "CONICALGRADIENT"
+    PREFIX
+        "/qt-project.org"
+    FILES
+        "scenegraph/shaders_ng/shapestroke.vert"
+    OUTPUTS
+        "scenegraph/shaders_ng/shapestroke_cg_expanding.vert.qsb"
+)
+
 qt_internal_add_shaders(Quick "scenegraph_curve_shaders_lg"
     SILENT
     BATCHABLE
@@ -394,9 +439,13 @@ qt_internal_add_shaders(Quick "scenegraph_curve_shaders_lg"
     FILES
         "scenegraph/shaders_ng/shapecurve.frag"
         "scenegraph/shaders_ng/shapecurve.vert"
+        "scenegraph/shaders_ng/shapestroke.frag"
+        "scenegraph/shaders_ng/shapestroke.vert"
     OUTPUTS
         "scenegraph/shaders_ng/shapecurve_lg.frag.qsb"
         "scenegraph/shaders_ng/shapecurve_lg.vert.qsb"
+        "scenegraph/shaders_ng/shapestroke_lg.frag.qsb"
+        "scenegraph/shaders_ng/shapestroke_lg.vert.qsb"
 )
 
 qt_internal_add_shaders(Quick "scenegraph_curve_shaders_lg_derivatives"
@@ -413,9 +462,11 @@ qt_internal_add_shaders(Quick "scenegraph_curve_shaders_lg_derivatives"
     FILES
         "scenegraph/shaders_ng/shapecurve.frag"
         "scenegraph/shaders_ng/shapecurve.vert"
+        "scenegraph/shaders_ng/shapestroke.frag"
     OUTPUTS
         "scenegraph/shaders_ng/shapecurve_lg_derivatives.frag.qsb"
         "scenegraph/shaders_ng/shapecurve_lg_derivatives.vert.qsb"
+        "scenegraph/shaders_ng/shapestroke_lg_derivatives.frag.qsb"
 )
 
 qt_internal_add_shaders(Quick "scenegraph_curve_shaders_rg"
@@ -431,9 +482,13 @@ qt_internal_add_shaders(Quick "scenegraph_curve_shaders_rg"
     FILES
         "scenegraph/shaders_ng/shapecurve.frag"
         "scenegraph/shaders_ng/shapecurve.vert"
+        "scenegraph/shaders_ng/shapestroke.frag"
+        "scenegraph/shaders_ng/shapestroke.vert"
     OUTPUTS
         "scenegraph/shaders_ng/shapecurve_rg.frag.qsb"
         "scenegraph/shaders_ng/shapecurve_rg.vert.qsb"
+        "scenegraph/shaders_ng/shapestroke_rg.frag.qsb"
+        "scenegraph/shaders_ng/shapestroke_rg.vert.qsb"
 )
 
 qt_internal_add_shaders(Quick "scenegraph_curve_shaders_rg_derivatives"
@@ -450,9 +505,11 @@ qt_internal_add_shaders(Quick "scenegraph_curve_shaders_rg_derivatives"
     FILES
         "scenegraph/shaders_ng/shapecurve.frag"
         "scenegraph/shaders_ng/shapecurve.vert"
+        "scenegraph/shaders_ng/shapestroke.frag"
     OUTPUTS
         "scenegraph/shaders_ng/shapecurve_rg_derivatives.frag.qsb"
         "scenegraph/shaders_ng/shapecurve_rg_derivatives.vert.qsb"
+        "scenegraph/shaders_ng/shapestroke_rg_derivatives.frag.qsb"
 )
 
 qt_internal_add_shaders(Quick "scenegraph_curve_shaders_cg"
@@ -468,9 +525,13 @@ qt_internal_add_shaders(Quick "scenegraph_curve_shaders_cg"
     FILES
         "scenegraph/shaders_ng/shapecurve.frag"
         "scenegraph/shaders_ng/shapecurve.vert"
+        "scenegraph/shaders_ng/shapestroke.frag"
+        "scenegraph/shaders_ng/shapestroke.vert"
     OUTPUTS
         "scenegraph/shaders_ng/shapecurve_cg.frag.qsb"
         "scenegraph/shaders_ng/shapecurve_cg.vert.qsb"
+        "scenegraph/shaders_ng/shapestroke_cg.frag.qsb"
+        "scenegraph/shaders_ng/shapestroke_cg.vert.qsb"
 )
 
 qt_internal_add_shaders(Quick "scenegraph_curve_shaders_cg_derivatives"
@@ -487,9 +548,11 @@ qt_internal_add_shaders(Quick "scenegraph_curve_shaders_cg_derivatives"
     FILES
         "scenegraph/shaders_ng/shapecurve.frag"
         "scenegraph/shaders_ng/shapecurve.vert"
+        "scenegraph/shaders_ng/shapestroke.frag"
     OUTPUTS
         "scenegraph/shaders_ng/shapecurve_cg_derivatives.frag.qsb"
         "scenegraph/shaders_ng/shapecurve_cg_derivatives.vert.qsb"
+        "scenegraph/shaders_ng/shapestroke_cg_derivatives.frag.qsb"
 )
 
 qt_internal_add_shaders(Quick "scenegraph_curve_shaders_tf"

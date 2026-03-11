@@ -60,4 +60,41 @@ Item {
     }
 }
 \endqml
+
+\section1 Array has confusing semantics
+
+\section2 What happened?
+An \c Array constructor was used with more than one argument.
+
+\section2 Why is that bad?
+The \c{Array} constructor has confusing semantics:
+\list
+\li \c{new Array()} creates an empty array.
+\li \c{new Array(42)} creates an array with 42 elements.
+\li \c{new Array(42, 43)} creates an array with two elements, 42 and 43.
+\endlist
+
+\section2 Example
+\qml
+import QtQuick
+
+Item {
+    function createArray() {
+        return new Array(1, 2, 3)
+    }
+}
+\endqml
+
+To fix this warning, use \c{[...]} instead of \c{new Array(...)}.
+
+functions:
+\qml
+import QtQuick
+
+Item {
+    function createArray() {
+        return [1, 2, 3]
+    }
+}
+\endqml
 */

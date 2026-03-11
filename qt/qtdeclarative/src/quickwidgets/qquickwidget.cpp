@@ -1338,9 +1338,7 @@ void QQuickWidget::continueExecute()
     if (d->source.isEmpty())
         d->source = d->component->url();
 
-    d->setRootObject(obj.get());
-    if (d->root)
-        Q_UNUSED(obj.release());
+    d->setRootObject(obj.release());
     emit statusChanged(status());
 }
 

@@ -195,6 +195,8 @@ void QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::resolveG
     }
 }
 
+enum class DeepAliasResult { NoProperty, CannotAppend, Success };
+
 template<>
 typename QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::AliasResolutionResult
 QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::resolveAliasesInObject(
@@ -209,6 +211,24 @@ QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::resolveAliase
         return appendAliasToPropertyCache(
                 &component, alias, objectIndex, aliasIndex++, encodedIndex,
                 resolvedTargetObjectId, aliasCacheCreator, error);
+    };
+
+    const auto handleDeepAlias = [&](
+        const QV4::CompiledData::Alias *alias, const QQmlPropertyCache::ConstPtr &propertyCache,
+        int coreIndex, QStringView subProperty, int resolvedTargetObjectId)
+    {
+        const QQmlPropertyResolver resolver = QQmlPropertyResolver(propertyCache);
+        const QQmlPropertyData *actualProperty = resolver.property(subProperty.toString());
+        if (!actualProperty)
+            return DeepAliasResult::NoProperty;
+
+        if (doAppendAlias(
+                alias, QQmlPropertyIndex(coreIndex, actualProperty->coreIndex()).toEncoded(),
+                resolvedTargetObjectId)) {
+            return DeepAliasResult::Success;
+        }
+
+        return DeepAliasResult::CannotAppend;
     };
 
     for (auto alias = obj->aliasesBegin(), end = obj->aliasesEnd(); alias != end; ++alias) {
@@ -289,41 +309,44 @@ QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::resolveAliase
 
         Q_ASSERT(subProperty.at(0).isLower());
 
-        bool isDeepAlias = false;
+        bool foundDeepAliasInBindings = false;
         for (auto it = targetObject->bindingsBegin(); it != targetObject->bindingsEnd(); ++it) {
             if (m_compiler->stringAt(it->propertyNameIndex) != property)
                 continue;
 
-            const QQmlPropertyResolver resolver
-                    = QQmlPropertyResolver(m_propertyCaches->at(it->value.objectIndex));
-            const QQmlPropertyData *actualProperty = resolver.property(subProperty.toString());
-            if (!actualProperty)
+            switch (handleDeepAlias(
+                    alias, m_propertyCaches->at(it->value.objectIndex), coreIndex, subProperty,
+                    resolvedTargetObjectId)) {
+            case DeepAliasResult::NoProperty:
                 continue;
-
-            if (doAppendAlias(
-                        alias, QQmlPropertyIndex(coreIndex, actualProperty->coreIndex()).toEncoded(),
-                        resolvedTargetObjectId)) {
-                isDeepAlias = true;
+            case DeepAliasResult::CannotAppend:
+                return SomeAliasesResolved;
+            case DeepAliasResult::Success:
+                foundDeepAliasInBindings = true;
                 break;
             }
 
-            return SomeAliasesResolved;
+            break;
         }
 
-        if (!isDeepAlias)
+        if (foundDeepAliasInBindings)
+            continue;
+
+        const QQmlPropertyCache::ConstPtr typeCache
+                = QQmlMetaType::propertyCacheForType(targetProperty->propType());
+        if (!typeCache)
             return SomeAliasesResolved;
+
+        switch (handleDeepAlias(alias, typeCache, coreIndex, subProperty, resolvedTargetObjectId)) {
+        case DeepAliasResult::NoProperty:
+        case DeepAliasResult::CannotAppend:
+            return SomeAliasesResolved;
+        case DeepAliasResult::Success:
+            break;
+        }
     }
 
     return AllAliasesResolved;
-}
-
-template<>
-bool QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::wrapImplicitComponent(
-        const QV4::CompiledData::Binding *binding)
-{
-    // This should have been done when creating the CU.
-    Q_UNUSED(binding);
-    return false;
 }
 
 QQmlError QQmlTypeData::createTypeAndPropertyCaches(
@@ -947,7 +970,7 @@ void QQmlTypeData::compile(const QQmlRefPointer<QQmlTypeNameCache> &typeNameCach
     m_compiledData->resolvedTypes = *resolvedTypeCache;
     m_compiledData->propertyCaches = std::move(*compiler.propertyCaches());
     Q_ASSERT(m_compiledData->propertyCaches.count()
-             == static_cast<int>(m_compiledData->objectCount()));
+             >= static_cast<int>(m_compiledData->objectCount()));
 }
 
 bool QQmlTypeData::resolveTypes()

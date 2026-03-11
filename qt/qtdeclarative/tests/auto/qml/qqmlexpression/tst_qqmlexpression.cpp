@@ -51,7 +51,8 @@ void tst_qqmlexpression::scriptString()
 
     QQmlEngine engine;
     QQmlComponent c(&engine, testFileUrl("scriptString.qml"));
-    TestObject *testObj = qobject_cast<TestObject*>(c.create());
+    std::unique_ptr<QObject> root(c.create());
+    TestObject *testObj = qobject_cast<TestObject*>(root.get());
     QVERIFY(testObj != nullptr);
 
     QQmlScriptString script = testObj->scriptString();

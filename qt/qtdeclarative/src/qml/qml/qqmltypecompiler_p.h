@@ -60,9 +60,19 @@ public:
     // Deliberate choice of map over hash here to ensure stable generated output.
     using IdToObjectMap = QMap<int, int>;
 
-    const QmlIR::Object *objectAt(int index) const { return document->objects.at(index); }
-    QmlIR::Object *objectAt(int index) { return document->objects.at(index); }
+    const QmlIR::Object *objectAt(int index) const
+    {
+        return document->objects.at(resolvedIndex(index));
+    }
+
+    QmlIR::Object *objectAt(int index)
+    {
+        return document->objects.at(resolvedIndex(index));
+    }
+
     int objectCount() const { return document->objects.size(); }
+    int resolvedIndex(int index) const;
+    int implicitComponentForObject(int childIndex) const;
     QString stringAt(int idx) const;
     QmlIR::PoolList<QmlIR::Function>::Iterator objectFunctionsBegin(const QmlIR::Object *object) const { return object->functionsBegin(); }
     QmlIR::PoolList<QmlIR::Function>::Iterator objectFunctionsEnd(const QmlIR::Object *object) const { return object->functionsEnd(); }
@@ -258,20 +268,6 @@ private:
     const QHash<int, QQmlCustomParser*> &customParsers;
 
     bool _seenObjectWithId;
-};
-
-class QQmlDefaultPropertyMerger : public QQmlCompilePass
-{
-public:
-    QQmlDefaultPropertyMerger(QQmlTypeCompiler *typeCompiler);
-
-    void mergeDefaultProperties();
-
-private:
-    void mergeDefaultProperties(int objectIndex);
-
-    const QList<QmlIR::Object*> &qmlObjects;
-    const QQmlPropertyCacheVector * const propertyCaches;
 };
 
 QT_END_NAMESPACE

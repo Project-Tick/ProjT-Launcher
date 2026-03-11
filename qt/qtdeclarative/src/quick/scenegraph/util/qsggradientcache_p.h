@@ -58,6 +58,37 @@ public:
         QPointF b; // end (L) or focal point (R)
         qreal v0; // center radius (R) or start angle (C)
         qreal v1; // focal radius (R)
+
+        int compare(const GradientDesc &other) const {
+            if (int d = a.x() - other.a.x())
+                return d;
+            if (int d = a.y() - other.a.y())
+                return d;
+            if (int d = b.x() - other.b.x())
+                return d;
+            if (int d = b.y() - other.b.y())
+                return d;
+
+            if (int d = v0 - other.v0)
+                return d;
+            if (int d = v1 - other.v1)
+                return d;
+
+            if (int d = spread - other.spread)
+                return d;
+
+            if (int d = stops.size() - other.stops.size())
+                return d;
+
+            for (int i = 0; i < stops.size(); ++i) {
+                if (int d = stops[i].first - other.stops[i].first)
+                    return d;
+                if (int d = stops[i].second.rgba() - other.stops[i].second.rgba())
+                    return d;
+            }
+
+            return 0;
+        }
     };
 
     QSGGradientCache();

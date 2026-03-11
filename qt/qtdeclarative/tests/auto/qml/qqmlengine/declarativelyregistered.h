@@ -16,5 +16,32 @@ public:
     PurelyDeclarativeSingleton(QObject *parent = nullptr);
 };
 
+class UncreatableDeclarativeSingleton : public QObject
+{
+    Q_OBJECT
+    QML_NAMED_ELEMENT(ProvidedSingleton)
+    QML_SINGLETON
+    QML_UNCREATABLE("provided by C++")
+public:
+    UncreatableDeclarativeSingleton(int foo, QObject *parent = nullptr);
+private:
+    int m_foo;
+};
+
+class CppObject: public QObject
+{
+    Q_OBJECT
+public:
+    using QObject::QObject;
+};
+
+struct ForeignUncreatableSingleton
+{
+    Q_GADGET
+    QML_FOREIGN(CppObject)
+    QML_NAMED_ELEMENT(ForeignSingleton)
+    QML_SINGLETON
+    QML_UNCREATABLE("provided by C++")
+};
 
 #endif

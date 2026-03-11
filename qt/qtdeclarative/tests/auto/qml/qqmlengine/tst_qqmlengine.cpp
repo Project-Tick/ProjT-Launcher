@@ -65,6 +65,7 @@ private slots:
     void qrcUrls();
     void cppSignalAndEval();
     void singletonInstance();
+    void setExternalSingletonInstance();
     void aggressiveGc();
     void cachedGetterLookup_qtbug_75335();
     void createComponentOnSingletonDestruction();
@@ -126,6 +127,11 @@ public:
 };
 
 uint CppSingleton::instantiations = 0;
+
+class InheritedCppSingleton : public CppSingleton {
+    Q_OBJECT
+public:
+};
 
 class JsSingleton : public QObject {
     Q_OBJECT
@@ -1343,15 +1349,19 @@ void tst_qqmlengine::singletonInstance()
     {
         // Invalid types
         QJSValue value;
+        QTest::ignoreMessage(QtMsgType::QtWarningMsg, "Singleton instance: type with id -4711 is not valid");
         value = engine.singletonInstance<QJSValue>(-4711);
         QVERIFY(value.isUndefined());
+        QTest::ignoreMessage(QtMsgType::QtWarningMsg, "Singleton instance: type with id 1701 is not valid");
         value = engine.singletonInstance<QJSValue>(1701);
         QVERIFY(value.isUndefined());
     }
 
     {
         // Valid, but non-singleton type
-        int typeId = qmlRegisterType<CppSingleton>("Test", 1, 0, "NotASingleton");
+        const int typeId = qmlRegisterType<CppSingleton>("Test", 1, 0, "NotASingleton");
+        const QString expectedMessage = QString("Singleton instance: type \"NotASingleton\" with id %1 is not declared as a singleton type").arg(typeId);
+        QTest::ignoreMessage(QtWarningMsg, qPrintable(expectedMessage));
         QJSValue value = engine.singletonInstance<QJSValue>(typeId);
         QVERIFY(value.isUndefined());
     }
@@ -1378,6 +1388,113 @@ void tst_qqmlengine::singletonInstance()
         QTest::ignoreMessage(QtMsgType::QtWarningMsg, "<Unknown File>: The registered singleton has already been deleted. Ensure that it outlives the engine.");
         QObject *instance = engine.singletonInstance<QObject*>(id);
         QVERIFY(!instance);
+    }
+}
+
+void tst_qqmlengine::setExternalSingletonInstance()
+{
+    int cppSingletonTypeId = qmlRegisterSingletonType<CppSingleton>("Test", 1, 0, "CppSingleton", &CppSingleton::create);
+
+    { // basics: using module and type name
+        QScopedPointer<CppSingleton> s(new CppSingleton);
+        QPointer<CppSingleton> s_check(s.get());
+        {
+            QQmlEngine engine;
+            QVERIFY(engine.setExternalSingletonInstance("Test", "CppSingleton", s.get()));
+            QCOMPARE(engine.singletonInstance<CppSingleton*>("Test", "CppSingleton"), s.get());
+        } //let engine go out of scope
+        QVERIFY(!s_check.isNull()); //engine didn't delete the singleton
+    }
+
+    { // declarative singleton type
+        QScopedPointer<PurelyDeclarativeSingleton> s(new PurelyDeclarativeSingleton);
+        QPointer<PurelyDeclarativeSingleton> s_check(s.get());
+        {
+            QQmlEngine engine;
+            QVERIFY(engine.setExternalSingletonInstance("OnlyDeclarative", "PurelyDeclarativeSingleton", s.get()));
+            QCOMPARE(engine.singletonInstance<PurelyDeclarativeSingleton*>("OnlyDeclarative", "PurelyDeclarativeSingleton"), s.get());
+        } //let engine go out of scope
+        QVERIFY(!s_check.isNull()); //engine didn't delete the singleton
+    }
+
+    { // respect explicit ownership
+        QPointer<CppSingleton> s(new CppSingleton());
+        {
+            QQmlEngine engine;
+            engine.setObjectOwnership(s.get(), QQmlEngine::JavaScriptOwnership);
+            QVERIFY(engine.setExternalSingletonInstance("Test", "CppSingleton", s.get()));
+            QCOMPARE(engine.singletonInstance<CppSingleton*>("Test", "CppSingleton"), s.get());
+        } //let engine go out of scope
+        QVERIFY(s.isNull()); //engine DID delete the singleton
+    }
+
+    { // set a derived type as the singleton instance
+        QScopedPointer<InheritedCppSingleton> s(new InheritedCppSingleton);
+        QPointer<InheritedCppSingleton> s_check(s.get());
+        {
+            QQmlEngine engine;
+            QVERIFY(engine.setExternalSingletonInstance("Test", "CppSingleton", s.get()));
+            QCOMPARE(engine.singletonInstance<CppSingleton*>("Test", "CppSingleton"), s.get());
+        } //let engine go out of scope
+        QVERIFY(!s_check.isNull()); //engine didn't delete the singleton
+    }
+
+    { // declarative singleton type that engine can't instantiate by itself
+        QScopedPointer<UncreatableDeclarativeSingleton> s(new UncreatableDeclarativeSingleton(42));
+        QPointer<UncreatableDeclarativeSingleton> s_check(s.get());
+        {
+            QQmlEngine engine;
+            QVERIFY(engine.setExternalSingletonInstance("OnlyDeclarative", "ProvidedSingleton", s.get()));
+            QCOMPARE(engine.singletonInstance<UncreatableDeclarativeSingleton*>("OnlyDeclarative", "ProvidedSingleton"), s.get());
+        } //let engine go out of scope
+        QVERIFY(!s_check.isNull()); //engine didn't delete the singleton
+    }
+
+    { // foreign declarative singleton type that engine can't instantiate by itself
+        QScopedPointer<CppObject> s(new CppObject);
+        QPointer<CppObject> s_check(s.get());
+        {
+            QQmlEngine engine;
+            QVERIFY(engine.setExternalSingletonInstance("OnlyDeclarative", "ForeignSingleton", s.get()));
+            QCOMPARE(engine.singletonInstance<CppObject*>("OnlyDeclarative", "ForeignSingleton"), s.get());
+        } //let engine go out of scope
+        QVERIFY(!s_check.isNull()); //engine didn't delete the singleton
+    }
+
+    // error conditions
+    { // can't set singleton if one was already created
+        QScopedPointer<CppSingleton> s(new CppSingleton);
+        QQmlEngine engine;
+        // first get the singleton (thus creating it)
+        const auto engineCreatedSingleton = engine.singletonInstance<CppSingleton*>(cppSingletonTypeId);
+        // attempt to set the singleton fails
+        QTest::ignoreMessage(QtWarningMsg, "Error setting singleton instance: there already is an instance for this singleton");
+        QVERIFY(!engine.setExternalSingletonInstance("Test", "CppSingleton", s.get()));
+        // singleton didn't change and isn't the instance created above
+        QCOMPARE(engine.singletonInstance<CppSingleton*>(cppSingletonTypeId), engineCreatedSingleton);
+        QCOMPARE_NE(engine.singletonInstance<CppSingleton*>(cppSingletonTypeId), s.get());
+    }
+
+    { // can't set nullptr as the singleton instance
+        QQmlEngine engine;
+        QTest::ignoreMessage(QtWarningMsg, "Error setting singleton instance: the instance cannot be a nullptr");
+        QVERIFY(!engine.setExternalSingletonInstance("Test", "CppSingleton", nullptr));
+    }
+
+    { // can't set another type as the singleton instance
+        QQmlEngine engine;
+        QObject o;
+        QTest::ignoreMessage(QtWarningMsg, "Error setting singleton instance: the meta type of the instance QObject does not match the type of the registered singleton CppSingleton");
+        QVERIFY(!engine.setExternalSingletonInstance("Test", "CppSingleton", &o));
+    }
+
+    { // invalid module or type name
+        QQmlEngine engine;
+        QScopedPointer<CppSingleton> s(new CppSingleton);
+        QTest::ignoreMessage(QtWarningMsg, "Error setting singleton instance: type SomeNonsense in module Test is not valid");
+        QVERIFY(!engine.setExternalSingletonInstance("Test", "SomeNonsense", s.get()));
+        QTest::ignoreMessage(QtWarningMsg, "Error setting singleton instance: type CppSingleton in module NonsenseModule is not valid");
+        QVERIFY(!engine.setExternalSingletonInstance("NonsenseModule", "CppSingleton", s.get()));
     }
 }
 

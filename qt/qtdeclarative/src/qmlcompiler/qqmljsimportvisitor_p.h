@@ -163,6 +163,8 @@ protected:
     void setScopeName(QQmlJSScope::Ptr &scope, QQmlJSScope::ScopeType type, const QString &name);
     virtual bool safeInsertJSIdentifier(QQmlJSScope::Ptr &scope, const QString &name,
                                 const QQmlJSScope::JavaScriptIdentifier &identifier);
+    void createAttachedAndGroupedScopes(QQmlJS::AST::UiQualifiedId *propertyName);
+    int openAttachedAndGroupedScopes(QQmlJS::AST::UiQualifiedId *propertyName);
 
     QString m_implicitImportDirectory;
     QStringList m_qmldirFiles;

@@ -111,6 +111,7 @@ struct PathNodeInfo : NodeInfo
     QQuickAnimatedProperty fillOpacity = QQuickAnimatedProperty(QVariant::fromValue(qreal(1.0)));
     StrokeStyle strokeStyle;
     QGradient grad;
+    QGradient strokeGrad;
     QTransform fillTransform;
     PathTrimInfo trim;
 
@@ -150,6 +151,15 @@ struct UseNodeInfo : NodeInfo
     StructureNodeStage stage;
 };
 
+struct TimelineInfo {
+    int startFrame = 0;
+    int endFrame = 0;
+    int duration = 0;
+    int frameCounterOffset = 0;
+    QString frameCounterReference;
+    bool generateFrameCounter = false;
+};
+
 struct StructureNodeInfo : NodeInfo
 {
     StructureNodeStage stage = StructureNodeStage::Start;
@@ -158,6 +168,7 @@ struct StructureNodeInfo : NodeInfo
     QSize size;
     QRectF clipBox;
     bool isPathContainer = false;
+    std::optional<TimelineInfo> timelineInfo;
 };
 
 struct PatternNodeInfo : StructureNodeInfo

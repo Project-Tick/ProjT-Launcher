@@ -5,7 +5,7 @@
 #include <QtCore/qobject.h>
 #include <QtCore/QLibraryInfo>
 #include <QtCore/qdirlisting.h>
-#include <QtQmlCompiler/private/qqmljslinter_p.h>
+#include <private/qqmljslinter_p.h>
 
 using namespace Qt::StringLiterals;
 

@@ -4,7 +4,7 @@
 
 #include "qqmljslintertypepropagator_p.h"
 
-#include "qqmljsutils_p.h"
+#include <private/qqmljsutils_p.h>
 
 #include <private/qqmljslintercodegen_p.h>
 
@@ -250,14 +250,12 @@ void QQmlJSLinterTypePropagator::handleUnqualifiedAccess(const QString &name, bo
 
                 fixString += handler.isMultiline ? u") "_s : u") => "_s;
 
-                suggestion = QQmlJSFixSuggestion {
-                    name + u" is accessible in this scope because you are handling a signal"
-                           " at %1:%2. Use a function instead.\n"_s
-                                    .arg(id.location.startLine)
-                                    .arg(id.location.startColumn),
-                    fixLocation,
-                    fixString
-                };
+                suggestion =
+                        QQmlJSFixSuggestion{ u"\"%1\" is ambiguous. "
+                                             "Use a function instead: %2%3"_s.arg(
+                                                     name, fixString,
+                                                     handler.isMultiline ? "{ ... }"_L1 : "..."_L1),
+                                             fixLocation, fixString };
                 suggestion->setAutoApplicable();
             }
             break;
@@ -278,8 +276,9 @@ void QQmlJSLinterTypePropagator::handleUnqualifiedAccess(const QString &name, bo
                     continue;
                 if (it->objectType() == qmlScope) {
                     suggestion = QQmlJSFixSuggestion {
-                        name + " is implicitly injected into this delegate."
-                               " Add a required property instead."_L1,
+                        "'%1' is implicitly injected into this delegate. "
+                        "Add a required property '%1' to the delegate instead."_L1
+                                .arg(name),
                         qmlScope->sourceLocation()
                     };
                 };

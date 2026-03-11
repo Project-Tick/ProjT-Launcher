@@ -64,7 +64,7 @@ private:
     std::unique_ptr<QQmlJS::LoggerCategoryPrivate> d_ptr;
 };
 
-class LoggerCategoryPrivate
+class Q_QMLCOMPILER_EXPORT LoggerCategoryPrivate
 {
 public:
     LoggerCategoryPrivate() = default;

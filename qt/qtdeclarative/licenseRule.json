@@ -141,6 +141,11 @@
                 "file type": "tools and utils",
                 "spdx": ["LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0"]
             },
+            "src/qmllint/": {
+                "comment": "",
+                "file type": "tools and utils",
+                "spdx": ["LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0"]
+            },
             "src/plugins/qmlls/": {
                 "comment": "",
                 "file type": "tools and utils",

@@ -163,7 +163,7 @@ int QQmlCustomParser::evaluateEnum(const QString &script, bool *ok) const
         if (documentUrl.isValid() && documentUrl == type.sourceUrl()) {
             Q_ASSERT(validator);
             const QQmlPropertyCache::ConstPtr rootCache = validator->rootPropertyCache();
-            const int count = rootCache->qmlEnumCount();
+            const int count = rootCache->ownEnumCount();
             for (int ii = 0; ii < count; ++ii) {
                 const QQmlEnumData *enumData = rootCache->qmlEnum(ii);
                 if (!scopedEnumName.isEmpty() && scopedEnumName != enumData->name)

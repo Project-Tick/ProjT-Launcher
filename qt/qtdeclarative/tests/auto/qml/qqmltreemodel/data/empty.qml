@@ -113,6 +113,28 @@ Item {
         testModel.appendRow([1, 2, 3]);
     }
 
+    function insertRowAtInvalidIndex() {
+        testModel.insertRow(1, {
+                        checked: true,
+                        amount: 42,
+                        fruitType: "InsertedOrange",
+                        fruitName: "InsertedNavel",
+                        fruitPrice: 2.50,
+                        color: "orange"
+                        })
+    }
+
+    function insertRowAsFirstChildAsRoot() {
+        testModel.insertRow(0, {
+                        checked: true,
+                        amount: 42,
+                        fruitType: "InsertedOrange",
+                        fruitName: "InsertedNavel",
+                        fruitPrice: 2.50,
+                        color: "orange"
+                        })
+    }
+
     TreeModel {
         id: treeModel
         objectName: "testModel"

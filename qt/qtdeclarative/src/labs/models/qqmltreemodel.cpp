@@ -14,6 +14,8 @@ QT_BEGIN_NAMESPACE
 
 using namespace Qt::StringLiterals;
 
+Q_STATIC_LOGGING_CATEGORY(lcTreeModel, "qt.qml.treemodel")
+
 static const QString ROWS_PROPERTY_NAME = u"rows"_s;
 
 /*!
@@ -56,6 +58,42 @@ static const QString ROWS_PROPERTY_NAME = u"rows"_s;
 
     To add new rows, use \l appendRow(). To modify existing rows, use
     \l setRow(), \l removeRow() and \l clear().
+
+    \section1 Using the TreeModel with External JSON Sources
+
+    While the intended use of the TreeModel is to define the JSON data in-place in
+    the QML file, you can use any JSON object with the model as long as
+    its structure matches the structure defined by the TreeModel. If all the rows
+    of the JSON object conform to the columns defined by the model, you can
+    assign it directly through the rows property.
+
+    The source of the JSON object can be a file. For example, if the model is
+    defined as
+
+    \snippet setRowsViaJSON.qml model
+
+    and the JSON object stored in the file and looks like
+
+    \snippet TreeData.js file
+
+    then this object can be provided by importing the JavaScript file as a
+
+    module
+
+    \snippet setRowsViaJSON.qml import
+
+    and then it can be assigned directly
+
+    \snippet setRowsViaJSON.qml assignment
+
+    \warning Ensure that the JSON data comes from a trusted source. Since the
+    model dinamically populates its rows based on the input, malformed or
+    untrusted JSON can lead to unexpected behavior or performance issues.
+
+    See \l TableModel for an another example where a JSON object is parsed
+    into and assigned as a JavaScript array.
+
+    \sa TableModelColumn, TreeView
 */
 
 QQmlTreeModel::QQmlTreeModel(QObject *parent)
@@ -296,6 +334,85 @@ QVariant QQmlTreeModel::getRow(const QModelIndex &rowIndex) const
     return {};
 }
 
+/*!
+    \qmlmethod void TreeModel::insertRow(int rowIndex, QModelIndex parent, object row)
+    \since 6.12
+
+    Inserts a new row to the \a parent at position \a rowIndex, with the
+    values (cells) in \a row.
+
+    \code
+        model.insertRow(2, parentIndex, {
+            checkable: true, checked: false,
+            amount: 1,
+            fruitType: "Pear",
+            fruitName: "Williams",
+            fruitPrice: 1.50,
+        })
+    \endcode
+
+    \sa appendRow(), setRow(), removeRow()
+*/
+
+void QQmlTreeModel::insertRow(int rowIndex, QModelIndex parent, const QVariant &row)
+{
+    if (rowIndex < 0) {
+        qmlWarning(this).noquote() << "insertRow(): rowIndex cannot be negative";
+        return;
+    }
+    if (rowIndex > rowCount(parent)) {
+        qmlWarning(this).noquote() << "insertRow(): rowIndex " << rowIndex
+                                   << " is greater than rowCount() of "
+                                   << rowCount(parent);
+        return;
+    }
+    if (!validateNewRow("insertRow()"_L1, row))
+        return;
+
+    doInsert(parent, rowIndex, row);
+}
+
+/*!
+    \qmlmethod void TreeModel::insertRow(int rowIndex, object row)
+    \since 6.12
+
+    Inserts a new row to the root item at position \a rowIndex, with the
+    values (cells) in \a row.
+
+    \sa appendRow(), setRow(), removeRow()
+*/
+void QQmlTreeModel::insertRow(int rowIndex, const QVariant &row)
+{
+    insertRow(rowIndex, {}, row);
+}
+
+void QQmlTreeModel::doInsert(const QModelIndex &parent, int rowIndex, const QVariant &row)
+{
+    beginInsertRows(parent, rowIndex, rowIndex);
+
+    const QVariant data =
+            row.userType() == QMetaType::QVariantMap
+                ? row
+                : row.value<QJSValue>().toVariant();
+
+    auto *newChild = new QQmlTreeRow(data);
+    if (parent.isValid())
+        static_cast<QQmlTreeRow *>(parent.internalPointer())->insertChild(rowIndex, newChild);
+    else
+        mRows.insert(mRows.begin() + rowIndex, std::unique_ptr<QQmlTreeRow>(newChild));
+
+    qCDebug(lcTreeModel).nospace() << "inserted the following row to the row "
+        << parent << " at index "
+        << rowIndex << ":\n" << data.toMap();
+
+    // Gather metadata the first time a row is added.
+    if (mColumnMetadata.isEmpty())
+        fetchColumnMetadata();
+
+    endInsertRows();
+    emit rowsChanged();
+}
+
 QVariant QQmlTreeModel::firstRow() const
 {
     return mRows.front().get()->data();
@@ -475,7 +592,8 @@ QModelIndex QQmlTreeModel::index(const std::vector<int> &treeIndex, int column)
     if (row)
         return createIndex(treeIndex.back(), column, row);
 
-    qmlWarning(this) << "TreeModel::index: could not find any node at the specified index";
+    qmlWarning(this) << "TreeModel::index: could not find any node at the specified index: "
+                     << treeIndex;
     return {};
 }
 

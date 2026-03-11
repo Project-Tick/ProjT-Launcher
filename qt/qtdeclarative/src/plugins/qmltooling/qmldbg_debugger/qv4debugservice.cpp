@@ -703,9 +703,15 @@ void QV4DebugServiceImpl::engineAboutToBeRemoved(QJSEngine *engine)
     if (engine){
         const QV4::ExecutionEngine *ee = engine->handle();
         if (ee) {
-            QV4Debugger *debugger = qobject_cast<QV4Debugger *>(ee->debugger());
-            if (debugger)
-                debuggerAgent.removeDebugger(debugger);
+            const auto debuggers = debuggerAgent.debuggers();
+            for (QV4Debugger *debugger : debuggers) {
+                if (debugger->engine() == ee) {
+                    debuggerAgent.removeDebugger(debugger);
+                    if (ee->debugger() != debugger)
+                        delete debugger;
+                    break;
+                }
+            }
         }
     }
     QQmlConfigurableDebugService<QV4DebugService>::engineAboutToBeRemoved(engine);

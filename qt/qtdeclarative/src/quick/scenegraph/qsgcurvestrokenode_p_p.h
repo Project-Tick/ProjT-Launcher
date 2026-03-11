@@ -32,21 +32,32 @@ public:
     enum class Variant { // flags
         Default = 0,
         Expanding = 0x01,
-        Derivatives = 0x02
+        Derivatives = 0x02,
+        LinearGradient = 0x04,
+        RadialGradient = 0x08,
+        ConicalGradient = 0x10,
     };
 
     QSGCurveStrokeMaterialShader(int variant, int viewCount)
     {
         static constexpr auto baseName = u":/qt-project.org/scenegraph/shaders_ng/shapestroke"_sv;
-        setShaderFileName(VertexStage, baseName +
-                                  (variant & int(Variant::Expanding) ? u"_expanding"_sv : u""_sv)
+
+        setShaderFileName(VertexStage, baseName
+                                  + (variant & int(Variant::LinearGradient) ? u"_lg"_sv : u""_sv)
+                                  + (variant & int(Variant::RadialGradient) ? u"_rg"_sv : u""_sv)
+                                  + (variant & int(Variant::ConicalGradient) ? u"_cg"_sv : u""_sv)
+                                  + (variant & int(Variant::Expanding) ? u"_expanding"_sv : u""_sv)
                                   + u".vert.qsb"_sv, viewCount);
-        setShaderFileName(FragmentStage, baseName +
-                                  (variant & int(Variant::Derivatives) ? u"_derivatives"_sv : u""_sv)
+        setShaderFileName(FragmentStage, baseName
+                                  + (variant & int(Variant::LinearGradient) ? u"_lg"_sv : u""_sv)
+                                  + (variant & int(Variant::RadialGradient) ? u"_rg"_sv : u""_sv)
+                                  + (variant & int(Variant::ConicalGradient) ? u"_cg"_sv : u""_sv)
+                                  + (variant & int(Variant::Derivatives) ? u"_derivatives"_sv : u""_sv)
                                   + u".frag.qsb"_sv, viewCount);
     }
 
     bool updateUniformData(RenderState &state, QSGMaterial *newEffect, QSGMaterial *oldEffect) override;
+    void updateSampledImage(RenderState &state, int binding, QSGTexture **texture, QSGMaterial *newMaterial, QSGMaterial *oldMaterial) override;
 };
 
 
@@ -67,12 +78,7 @@ public:
     }
 
 protected:
-    QSGMaterialType *type() const override
-    {
-        static QSGMaterialType legacyType;
-        static QSGMaterialType strokeExpandingType;
-        return m_strokeExpanding ? &strokeExpandingType : &legacyType;
-    }
+    QSGMaterialType *type() const override;
     QSGMaterialShader *createShader(QSGRendererInterface::RenderMode renderMode) const override;
 
     QSGCurveStrokeNode *m_node;

@@ -15,7 +15,9 @@
 //
 // We mean it.
 
-#include "qqmljstypepropagator_p.h"
+#include <private/qqmljstypepropagator_p.h>
+#include <private/qqmljscontextproperties_p.h>
+#include <private/qqmljsusercontextproperties_p.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -27,7 +29,7 @@ struct ContextPropertyInfo
 
 struct IdMemberShadow;
 
-class Q_QMLCOMPILER_EXPORT QQmlJSLinterTypePropagator : public QQmlJSTypePropagator
+class QQmlJSLinterTypePropagator : public QQmlJSTypePropagator
 {
 public:
     QQmlJSLinterTypePropagator(const QV4::Compiler::JSUnitGenerator *unitGenerator,

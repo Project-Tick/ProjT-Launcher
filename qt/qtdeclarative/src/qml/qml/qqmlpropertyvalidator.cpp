@@ -70,6 +70,14 @@ QList<QQmlError> QQmlPropertyValidator::validateObject(
         bool populatingValueTypeGroupProperty,
         QQmlPropertyResolver::RevisionCheck checkRevision) const
 {
+    // Implicit component wrappers (>= objectCount) have no CU object.
+    // Validate the child object instead.
+    if (objectIndex >= compilationUnit->objectCount()) {
+        return validateObject(
+                compilationUnit->resolvedIndex(objectIndex), instantiatingBinding,
+                populatingValueTypeGroupProperty, checkRevision);
+    }
+
     const QV4::CompiledData::Object *obj = compilationUnit->objectAt(objectIndex);
     for (auto it = obj->inlineComponentsBegin(); it != obj->inlineComponentsEnd(); ++it) {
         const auto errors = validateObject(it->objectIndex, /* instantiatingBinding*/ nullptr);
@@ -731,6 +739,13 @@ QQmlError QQmlPropertyValidator::validateObjectBinding(const QQmlPropertyData *p
         const QMetaType listType = QQmlMetaType::listValueType(property->propType());
         if (!QQmlMetaType::isInterface(listType)) {
             QQmlPropertyCache::ConstPtr source = propertyCaches.at(binding->value.objectIndex);
+
+            if (const int wrapper = compilationUnit->implicitComponentForObject(
+                        binding->value.objectIndex); wrapper != -1) {
+                // If the child is wrapped in an implicit component, use the wrapper for coercion.
+                source = propertyCaches.at(wrapper);
+            }
+
             if (!canCoerce(listType, source)) {
                 const QString expectedTypeName = QString::fromUtf8(listType.name()).remove(QLatin1Char('*'));
                 return qQmlCompileError(binding->valueLocation,
@@ -777,6 +792,13 @@ QQmlError QQmlPropertyValidator::validateObjectBinding(const QQmlPropertyData *p
             // Determine isAssignable value
             bool isAssignable = false;
             QQmlPropertyCache::ConstPtr c = propertyCaches.at(binding->value.objectIndex);
+
+            if (const int wrapper = compilationUnit->implicitComponentForObject(
+                        binding->value.objectIndex); wrapper != -1) {
+                // If the child is wrapped in an implicit component, use the wrapper.
+                c = propertyCaches.at(wrapper);
+            }
+
             while (c && !isAssignable) {
                 isAssignable |= c == propertyMetaObject;
                 c = c->parent();

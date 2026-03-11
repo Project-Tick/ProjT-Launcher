@@ -18,6 +18,15 @@ TestCase {
         compare(Color.transparent("red", 0.2), Qt.rgba(1, 0, 0, 0.2))
         compare(Color.transparent(Qt.rgba(0, 1, 0, 1), 0.2), Qt.rgba(0, 1, 0, 0.2))
         compare(Color.transparent("#0000ff", 0.2), Qt.rgba(0, 0, 1, 0.2))
+        compare(Color.transparent(red, 0.0), Qt.alpha(red, 0.0))
+        compare(Color.transparent(red, 0.5), Qt.alpha(red, 0.5))
+        compare(Color.transparent(red, 1.0), Qt.alpha(red, 1.0))
+        compare(Color.transparent(nope, 0.0), Qt.alpha(nope, 0.0))
+        compare(Color.transparent(nope, 0.5), Qt.alpha(nope, 0.5))
+        compare(Color.transparent(nope, 1.0), Qt.alpha(nope, 1.0))
+        compare(Color.transparent(alphaRed, 0.0), Qt.alpha(alphaRed, 0.0))
+        compare(Color.transparent(alphaRed, 0.5), Qt.alpha(alphaRed, 0.5))
+        compare(Color.transparent(alphaRed, 1.0), Qt.alpha(alphaRed, 1.0))
     }
 
     property color c1: "#112233"
@@ -88,18 +97,6 @@ TestCase {
         compare(Color.equal(red, green), Qt.colorEqual(red, green))
         compare(Color.equal(red, nope), Qt.colorEqual(red, nope))
         compare(Color.equal(alphaRed, red), Qt.colorEqual(alphaRed, red))
-    }
-
-    function test_alpha() {
-        compare(Color.alpha(red, 0.0), Qt.alpha(red, 0.0))
-        compare(Color.alpha(red, 0.5), Qt.alpha(red, 0.5))
-        compare(Color.alpha(red, 1.0), Qt.alpha(red, 1.0))
-        compare(Color.alpha(nope, 0.0), Qt.alpha(nope, 0.0))
-        compare(Color.alpha(nope, 0.5), Qt.alpha(nope, 0.5))
-        compare(Color.alpha(nope, 1.0), Qt.alpha(nope, 1.0))
-        compare(Color.alpha(alphaRed, 0.0), Qt.alpha(alphaRed, 0.0))
-        compare(Color.alpha(alphaRed, 0.5), Qt.alpha(alphaRed, 0.5))
-        compare(Color.alpha(alphaRed, 1.0), Qt.alpha(alphaRed, 1.0))
     }
 
     function test_darker() {

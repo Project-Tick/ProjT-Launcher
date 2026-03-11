@@ -39,6 +39,7 @@ public:
 
     const QQmlTreeRow *getRow(int i) const { return m_children[i].get(); }
     void addChild(QQmlTreeRow *child);
+    void insertChild(int index, QQmlTreeRow *child);
     size_t rowCount() const { return m_children.size(); }
     int subTreeSize() const;
 

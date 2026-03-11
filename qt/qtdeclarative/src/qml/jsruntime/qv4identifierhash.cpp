@@ -15,21 +15,10 @@ namespace QV4 {
 IdentifierHash::IdentifierHash(ExecutionEngine *engine)
 {
     d = new IdentifierHashData(engine->identifierTable, 3);
-    Q_ASSERT(!isEmpty());
+    Q_ASSERT(isValid());
 }
 
-void IdentifierHash::detach()
-{
-    if (!d || d->refCount.loadAcquire() == 1)
-        return;
-    IdentifierHashData *newData = new IdentifierHashData(d);
-    if (d && !d->refCount.deref())
-        delete d;
-    d = newData;
-}
-
-inline
-IdentifierHashEntry *IdentifierHash::addEntry(PropertyKey identifier)
+void IdentifierHash::addEntry(PropertyKey identifier, int value)
 {
     Q_ASSERT(identifier.isStringOrSymbol());
 
@@ -65,72 +54,60 @@ IdentifierHashEntry *IdentifierHash::addEntry(PropertyKey identifier)
     }
     d->entries[idx].identifier = identifier;
     ++d->size;
-    return d->entries + idx;
+    (d->entries + idx)->value = value;
 }
 
-inline
-const IdentifierHashEntry *IdentifierHash::lookup(PropertyKey identifier) const
+int IdentifierHash::lookup(PropertyKey identifier) const
 {
     if (!d || !identifier.isStringOrSymbol())
-        return nullptr;
+        return -1;
     Q_ASSERT(d->entries);
 
     uint idx = identifier.id() % d->alloc;
     while (1) {
         if (!d->entries[idx].identifier.isValid())
-            return nullptr;
+            return -1;
         if (d->entries[idx].identifier == identifier)
-            return d->entries + idx;
+            return (d->entries + idx)->value;
         ++idx;
         idx %= d->alloc;
     }
 }
 
-inline
-const IdentifierHashEntry *IdentifierHash::lookup(const QString &str) const
-{
-    if (!d)
-        return nullptr;
-
-    PropertyKey id = d->identifierTable->asPropertyKey(str, IdentifierTable::ForceConversionToId);
-    return lookup(id);
-}
-
-inline
-const IdentifierHashEntry *IdentifierHash::lookup(String *str) const
-{
-    if (!d)
-        return nullptr;
-    PropertyKey id = d->identifierTable->asPropertyKey(str);
-    if (id.isValid())
-        return lookup(id);
-    return lookup(str->toQString());
-}
-
-inline
-const PropertyKey IdentifierHash::toIdentifier(const QString &str) const
+PropertyKey IdentifierHash::toIdentifier(const QString &str) const
 {
     Q_ASSERT(d);
     return d->identifierTable->asPropertyKey(str, IdentifierTable::ForceConversionToId);
 }
 
-inline
-const PropertyKey IdentifierHash::toIdentifier(Heap::String *str) const
+PropertyKey IdentifierHash::toIdentifier(Heap::String *str) const
 {
     Q_ASSERT(d);
     return d->identifierTable->asPropertyKey(str);
 }
 
-QString QV4::IdentifierHash::findId(int value) const
+PropertyKey IdentifierHash::reverseLookup(int value) const
 {
     IdentifierHashEntry *e = d->entries;
     IdentifierHashEntry *end = e + d->alloc;
     while (e < end) {
         if (e->identifier.isValid() && e->value == value)
-            return e->identifier.toQString();
+            return e->identifier;
         ++e;
     }
-    return QString();
+    return PropertyKey::invalid();
+}
+
+template<>
+QString IdentifierHash::toString<QString>(PropertyKey key) const
+{
+    return key.isValid() ? key.toQString() : QString();
+}
+
+template<>
+Heap::String *IdentifierHash::toString<Heap::String *>(PropertyKey key) const
+{
+    return key.isString() ? static_cast<Heap::String *>(key.asStringOrSymbol()) : nullptr;
 }
 
 QV4::IdentifierHash::IdentifierHash(const IdentifierHash &other)
@@ -156,36 +133,11 @@ IdentifierHash &QV4::IdentifierHash::operator=(const IdentifierHash &other)
     return *this;
 }
 
-int QV4::IdentifierHash::count() const
+int IdentifierHash::size() const
 {
     return d ? d->size : 0;
 }
 
-void QV4::IdentifierHash::add(const QString &str, int value)
-{
-    IdentifierHashEntry *e = addEntry(toIdentifier(str));
-    e->value = value;
-}
-
-void QV4::IdentifierHash::add(Heap::String *str, int value)
-{
-    IdentifierHashEntry *e = addEntry(toIdentifier(str));
-    e->value = value;
-}
-
-int QV4::IdentifierHash::value(const QString &str) const
-{
-    const IdentifierHashEntry *e = lookup(str);
-    return e ? e->value : -1;
-}
-
-int QV4::IdentifierHash::value(String *str) const
-{
-    const IdentifierHashEntry *e = lookup(str);
-    return e ? e->value : -1;
-}
-
-
-}
+} // namespace QV4
 
 QT_END_NAMESPACE

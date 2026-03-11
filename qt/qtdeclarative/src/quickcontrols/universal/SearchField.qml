@@ -43,9 +43,10 @@ T.SearchField {
 
     searchIndicator.indicator: Item {
         x: !control.mirrored ? control.padding : control.width - width - control.padding
-        y: control.topPadding + (control.availableHeight - height) / 2
+        y: control.topPadding
         implicitWidth: 28
         implicitHeight: 28
+        height: control.availableHeight
 
         Rectangle {
             width: parent.width
@@ -70,9 +71,10 @@ T.SearchField {
 
     clearIndicator.indicator: Item {
         x: control.mirrored ? control.padding : control.width - width - control.padding
-        y: control.topPadding + (control.availableHeight - height) / 2
+        y: control.topPadding
         implicitWidth: 28
         implicitHeight: 28
+        height: control.availableHeight
         visible: control.text.length > 0
 
         Rectangle {
@@ -97,6 +99,9 @@ T.SearchField {
     }
 
     contentItem: T.TextField {
+        implicitHeight: Math.max(contentHeight + topPadding + bottomPadding,
+                                 placeholder.implicitHeight + topPadding + bottomPadding)
+
         leftPadding: !control.mirrored ? 6 : 0
         rightPadding: !control.mirrored ? 6 : 0
 
@@ -104,6 +109,7 @@ T.SearchField {
         placeholderText: control.placeholderText
 
         PlaceholderText {
+            id: placeholder
             x: parent.leftPadding
             y: parent.topPadding
             width: parent.width - parent.leftPadding - parent.rightPadding
@@ -115,7 +121,7 @@ T.SearchField {
                               parent.activeFocus ? Universal.chromeBlackMediumLowColor :
                                             Universal.baseMediumColor
             visible: !parent.length && !parent.preeditText && (!parent.activeFocus || parent.horizontalAlignment !== Qt.AlignHCenter)
-            verticalAlignment: Text.AlignVCenter
+            verticalAlignment: parent.verticalAlignment
             elide: Text.ElideRight
             renderType: parent.renderType
         }

@@ -106,10 +106,21 @@ public:
         m_animationGroups.append(m_animations.size());
     }
 
+    QString timelineReferenceId() const
+    {
+        return m_timelineReferenceId;
+    }
+
+    void setTimelineReferenceId(const QString &id)
+    {
+        m_timelineReferenceId = id;
+    }
+
 private:
     QVariant m_defaultValue;
     QList<PropertyAnimation> m_animations;
     QList<int> m_animationGroups;
+    QString m_timelineReferenceId;
 };
 
 QT_END_NAMESPACE

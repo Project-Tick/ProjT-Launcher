@@ -352,6 +352,23 @@ QQmlPropertyCache::appendAlias(const QString &name, QQmlPropertyData::Flags flag
     return appendPropertyAttr(name, std::move(data));
 }
 
+QQmlPropertyCache::AppendResult
+QQmlPropertyCache::appendComponentWrapper(int coreIndex, int wrappedObjectIndex)
+{
+    QQmlPropertyData data;
+    data.setCoreIndex(coreIndex);
+    QQmlPropertyData::Flags flags;
+    flags.setType(QQmlPropertyData::Flags::ComponentWrapperType);
+    data.setFlags(flags);
+    data.setWrappedObjectIndex(wrappedObjectIndex);
+
+    // Use a sentinel name so that defaultProperty() can find the wrapper.
+    // NB: We're not actually using the default property as default property. We only
+    //     need some property to hold the wrapped object index.
+    _defaultPropertyName = QStringLiteral(".qt_component_wrapper__");
+    return appendPropertyAttr(_defaultPropertyName, std::move(data));
+}
+
 void QQmlPropertyCache::appendSignal(const QString &name, QQmlPropertyData::Flags flags,
                                      int coreIndex, const QMetaType *types,
                                      const QList<QByteArray> &names)

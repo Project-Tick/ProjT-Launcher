@@ -23,8 +23,6 @@ qt_internal_add_test(tst_qjsonbinding
     SOURCES
         tst_qjsonbinding.cpp
     LIBRARIES
-        Qt::Gui
-        Qt::GuiPrivate
         Qt::Qml
         Qt::QuickTestUtilsPrivate
     TESTDATA ${test_data}

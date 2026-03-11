@@ -52,6 +52,7 @@ qt_internal_add_module(QmlLSPrivate
         Qt::CorePrivate
         Qt::QmlDomPrivate
         Qt::QmlCompilerPrivate
+        Qt::QmlLintPrivate
         Qt::QmlToolingSettingsPrivate
         Qt::LanguageServerPrivate
         Qt::QmlFormatPrivate

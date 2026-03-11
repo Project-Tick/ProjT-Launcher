@@ -51,6 +51,8 @@ public:
     Q_INVOKABLE void appendRow(const QVariant &row);
     Q_INVOKABLE void clear();
     Q_INVOKABLE QVariant getRow(const QModelIndex &index) const;
+    Q_INVOKABLE void insertRow(int rowIndex, QModelIndex parent, const QVariant &row);
+    Q_INVOKABLE void insertRow(int rowIndex, const QVariant &row);
     Q_INVOKABLE void removeRow(QModelIndex index);
     Q_INVOKABLE void setRow(QModelIndex index, const QVariant &rowData);
 
@@ -78,6 +80,8 @@ private:
 
     bool validateNewRow(QLatin1StringView functionName, const QVariant &row,
         NewRowOperationFlag = OtherOperation) const override;
+
+    void doInsert(const QModelIndex &index, int rowIndex, const QVariant &row);
 
     std::vector<std::unique_ptr<QQmlTreeRow>> mRows;
 

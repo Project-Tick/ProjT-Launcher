@@ -88,15 +88,16 @@ bool QQuickColor::equal(const QColor &lhs, const QColor &rhs) const
 }
 
 /*!
- * \qmlmethod color Color::transparent(color c, real opacity)
+ * \qmlmethod color Color::transparent(color color, real opacity)
  *
- * Returns the color \a c with a given \a opacity
+ * Returns \a color with an alpha value of \a opacity, which ranges from 0
+ * (completely transparent) to 1 (completely opaque).
  */
 QColor QQuickColor::transparent(const QColor &color, qreal opacity) const
 {
-    const auto rgbColor = color.toRgb();
-    return QColor(rgbColor.red(), rgbColor.green(), rgbColor.blue(),
-                  int(qreal(255) * qBound(qreal(0), opacity, qreal(1))));
+    QColor newColor = color;
+    newColor.setAlphaF(opacity);
+    return newColor;
 }
 
 /*!
@@ -122,17 +123,6 @@ QColor QQuickColor::blend(const QColor &a, const QColor &b, qreal factor) const
     color.setGreenF(rgbA.greenF() * (1.0 - factor) + rgbB.greenF() * factor);
     color.setBlueF(rgbA.blueF() * (1.0 - factor) + rgbB.blueF() * factor);
     return color;
-}
-
-/*!
- * \qmlmethod color Color::alpha(color baseColor, real value)
- *
- * Returns \a baseColor with an alpha value of \a value. \a value is a real ranging from 0
- * (completely transparent) to 1 (completely opaque).
- */
-QColor QQuickColor::alpha(const QColor &baseColor, double value) const
-{
-    return QQuickColorValueType(baseColor).alpha(value);
 }
 
 /*!

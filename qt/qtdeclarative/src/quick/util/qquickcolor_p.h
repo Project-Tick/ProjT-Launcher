@@ -44,7 +44,6 @@ public:
 
     Q_INVOKABLE QColor transparent(const QColor &color, qreal opacity) const;
     Q_INVOKABLE QColor blend(const QColor &a, const QColor &b, qreal factor) const;
-    Q_INVOKABLE QColor alpha(const QColor &baseColor, double value) const;
     Q_INVOKABLE QColor darker(const QColor &baseColor, double factor) const;
     Q_INVOKABLE QColor lighter(const QColor &baseColor, double factor) const;
     Q_INVOKABLE QColor tint(const QColor &baseColor, const QColor &tintColor) const;

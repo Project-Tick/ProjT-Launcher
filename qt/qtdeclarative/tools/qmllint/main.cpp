@@ -1,14 +1,13 @@
 // Copyright (C) 2016 Klaralvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Sergio Martins <sergio.martins@kdab.com>
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
-#include <QtQmlToolingSettings/private/qqmltoolingsettings_p.h>
-#include <QtQmlToolingSettings/private/qqmltoolingutils_p.h>
-
-#include <QtQmlCompiler/private/qqmljscompiler_p.h>
-#include <QtQmlCompiler/private/qqmljslinter_p.h>
-#include <QtQmlCompiler/private/qqmljsloggingutils_p.h>
-#include <QtQmlCompiler/private/qqmljsresourcefilemapper_p.h>
-#include <QtQmlCompiler/private/qqmljsutils_p.h>
+#include <private/qqmljscompiler_p.h>
+#include <private/qqmljslinter_p.h>
+#include <private/qqmljsloggingutils_p.h>
+#include <private/qqmljsresourcefilemapper_p.h>
+#include <private/qqmljsutils_p.h>
+#include <private/qqmltoolingsettings_p.h>
+#include <private/qqmltoolingutils_p.h>
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qfile.h>

@@ -3,14 +3,14 @@
 // Qt-Security score:significant
 
 #include "qqmljslintercodegen_p.h"
+#include "qqmljslintertypepropagator_p.h"
 
-#include <QtQmlCompiler/private/qqmljsimportvisitor_p.h>
-#include <QtQmlCompiler/private/qqmljsshadowcheck_p.h>
-#include <QtQmlCompiler/private/qqmljsstoragegeneralizer_p.h>
-#include <QtQmlCompiler/private/qqmljsstorageinitializer_p.h>
-#include <QtQmlCompiler/private/qqmljsfunctioninitializer_p.h>
-#include <QtQmlCompiler/private/qqmljsbasicblocks_p.h>
-#include <QtQmlCompiler/private/qqmljslintertypepropagator_p.h>
+#include <private/qqmljsbasicblocks_p.h>
+#include <private/qqmljsfunctioninitializer_p.h>
+#include <private/qqmljsimportvisitor_p.h>
+#include <private/qqmljsshadowcheck_p.h>
+#include <private/qqmljsstoragegeneralizer_p.h>
+#include <private/qqmljsstorageinitializer_p.h>
 
 #include <QFileInfo>
 

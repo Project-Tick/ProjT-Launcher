@@ -132,6 +132,8 @@ public:
     template<typename T>
     T singletonInstance(QAnyStringView moduleName, QAnyStringView typeName);
 
+    bool setExternalSingletonInstance(QAnyStringView moduleName, QAnyStringView typeName, QObject *instance);
+
     void captureProperty(QObject *object, const QMetaProperty &property) const;
 
 public Q_SLOTS:

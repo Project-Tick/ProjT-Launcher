@@ -27,7 +27,7 @@ qt_internal_add_qml_module(QuickLayouts
         Qt::Qml
     )
 
-qt_internal_extend_target(QuickLayouts CONDITION NOT INTEGRITY AND NOT VXWORKS
+qt_internal_extend_target(QuickLayouts CONDITION NOT INTEGRITY
     INCLUDE_DIRECTORIES
         ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty
     SOURCES

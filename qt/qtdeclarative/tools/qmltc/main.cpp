@@ -19,14 +19,14 @@
 #include <QtCore/qcommandlineparser.h>
 #include <QtCore/qregularexpression.h>
 
-#include <QtQml/private/qqmljslexer_p.h>
-#include <QtQml/private/qqmljsparser_p.h>
-#include <QtQml/private/qqmljsengine_p.h>
-#include <QtQml/private/qqmljsastvisitor_p.h>
-#include <QtQml/private/qqmljsast_p.h>
-#include <QtQml/private/qqmljsdiagnosticmessage_p.h>
+#include <private/qqmljslexer_p.h>
+#include <private/qqmljsparser_p.h>
+#include <private/qqmljsengine_p.h>
+#include <private/qqmljsastvisitor_p.h>
+#include <private/qqmljsast_p.h>
+#include <private/qqmljsdiagnosticmessage_p.h>
 #include <QtQmlCompiler/qqmlsa.h>
-#include <QtQmlCompiler/private/qqmljsliteralbindingcheck_p.h>
+#include <private/qqmljsliteralbindingcheck_p.h>
 
 #include <cstdlib> // EXIT_SUCCESS, EXIT_FAILURE
 

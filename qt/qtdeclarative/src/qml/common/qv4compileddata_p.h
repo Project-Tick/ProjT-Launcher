@@ -52,7 +52,7 @@ QT_BEGIN_NAMESPACE
 // Also change the comment behind the number to describe the latest change. This has the added
 // benefit that if another patch changes the version too, it will result in a merge conflict, and
 // not get removed silently.
-#define QV4_DATA_STRUCTURE_VERSION 0x4a // Removed run-time generated details from Alias
+#define QV4_DATA_STRUCTURE_VERSION 0x4b // Dropped synthetic component wrappers
 
 class QIODevice;
 class QQmlTypeNameCache;
@@ -1624,7 +1624,35 @@ public:
     }
 
     int objectCount() const { return qmlData->nObjects; }
-    const CompiledObject *objectAt(int index) const { return qmlData->objectAt(index); }
+
+    // Resolves implicit component wrapper indices (>= objectCount()) to the
+    // wrapped child object index.  Returns the index unchanged for real objects.
+    int resolvedIndex(int index) const
+    {
+        if (index < objectCount())
+            return index;
+        const QQmlPropertyData *p = propertyCaches.at(index)->defaultProperty();
+        Q_ASSERT(p && p->isComponentWrapper());
+        return p->wrappedObjectIndex();
+    }
+
+    const CompiledObject *objectAt(int index) const
+    {
+        return qmlData->objectAt(resolvedIndex(index));
+    }
+
+    // Returns the index of the implicit component wrapper, or -1.
+    // Scans property caches at indices >= objectCount().
+    int implicitComponentForObject(int index) const
+    {
+        for (int i = objectCount(), end = propertyCaches.count(); i < end; ++i) {
+            const QQmlPropertyData *p = propertyCaches.at(i)->defaultProperty();
+            Q_ASSERT(p && p->isComponentWrapper());
+            if (p->wrappedObjectIndex() == index)
+                return i;
+        }
+        return -1;
+    }
 
     int inlineComponentId(const QString &inlineComponentName) const
     {

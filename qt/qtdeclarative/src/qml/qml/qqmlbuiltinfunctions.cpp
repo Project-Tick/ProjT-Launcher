@@ -35,6 +35,7 @@
 #include <QtCore/qsize.h>
 #include <QtCore/qstring.h>
 #include <QtCore/qurl.h>
+#include <QtCore/qvarlengtharray.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -701,7 +702,7 @@ QVariant QtObject::darker(const QJSValue &color, double factor) const
 
     \a value is a real ranging from 0 (completely transparent) to 1 (completely opaque).
 
-    \note Prefer using the typed \l{Color::alpha}
+    \note Prefer using the typed \l{Color::transparent}
 */
 QVariant QtObject::alpha(const QJSValue &baseColor, double value) const
 {
@@ -2666,20 +2667,51 @@ ReturnedValue GlobalExtensions::method_gc(const FunctionObject *b, const Value *
 ReturnedValue GlobalExtensions::method_string_arg(const FunctionObject *b, const Value *thisObject, const Value *argv, int argc)
 {
     QV4::Scope scope(b);
-    if (argc != 1)
+    if (argc < 1)
         THROW_GENERIC_ERROR("String.arg(): Invalid arguments");
 
     QString value = thisObject->toQString();
 
-    QV4::ScopedValue arg(scope, argv[0]);
-    if (arg->isInteger())
-        RETURN_RESULT(scope.engine->newString(value.arg(arg->integerValue())));
-    else if (arg->isDouble())
-        RETURN_RESULT(scope.engine->newString(value.arg(arg->doubleValue())));
-    else if (arg->isBoolean())
-        RETURN_RESULT(scope.engine->newString(value.arg(arg->booleanValue())));
+    // Fast path for single argument
+    if (argc == 1) {
+        QV4::ScopedValue arg(scope, argv[0]);
+        if (arg->isInteger())
+            value = value.arg(arg->integerValue());
+        else if (arg->isDouble())
+            value = value.arg(arg->doubleValue());
+        else if (arg->isBoolean())
+            value = value.arg(arg->booleanValue());
+        else
+            value = value.arg(arg->toQString());
+        RETURN_RESULT(scope.engine->newString(value));
+    }
 
-    RETURN_RESULT(scope.engine->newString(value.arg(arg->toQString())));
+    // Preallocate for up to 10 arguments on the stack
+    constexpr int PreallocArgCount = 10;
+
+    // Convert QV4 values to QStringViewArg for QtPrivate::argToQString
+    QVarLengthArray<QString, PreallocArgCount> argStrings(argc);
+    QVarLengthArray<QtPrivate::QStringViewArg, PreallocArgCount> args(argc);
+    QVarLengthArray<const QtPrivate::ArgBase *, PreallocArgCount> argBases(argc);
+
+    for (int i = 0; i < argc; ++i) {
+        QV4::ScopedValue arg(scope, argv[i]);
+
+        if (arg->isInteger())
+            argStrings[i] = QString::number(arg->integerValue());
+        else if (arg->isDouble())
+            argStrings[i] = QString::number(arg->doubleValue());
+        else if (arg->isBoolean())
+            argStrings[i] = QString::number(arg->booleanValue());
+        else
+            argStrings[i] = arg->toQString();
+
+        args[i] = QtPrivate::QStringViewArg(argStrings[i]);
+        argBases[i] = &args[i];
+    }
+
+    QString result = QtPrivate::argToQString(value, argc, argBases.data());
+    RETURN_RESULT(scope.engine->newString(result));
 }
 
 /*!

@@ -13,6 +13,6 @@ qt_internal_add_benchmark(tst_qmllint_benchmark
     DEFINES
         SRCDIR="${CMAKE_CURRENT_SOURCE_DIR}"
     LIBRARIES
-        Qt::QmlCompilerPrivate
+        Qt::QmlLintPrivate
         Qt::Test
 )

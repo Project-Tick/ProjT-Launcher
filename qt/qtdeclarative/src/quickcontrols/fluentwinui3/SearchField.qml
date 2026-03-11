@@ -72,10 +72,11 @@ T.SearchField {
         imageConfig: indicatorConfig.indicator_up_background
 
         x: !control.mirrored ? control.width - width - control.spacing : control.spacing
-        y: control.topPadding + (control.availableHeight - height) / 2
+        y: control.topPadding
 
         implicitWidth: 32
         implicitHeight: 24
+        height: control.availableHeight
 
         ColorImage {
             x: (parent.width - width) / 2
@@ -103,9 +104,12 @@ T.SearchField {
         x: (!searchIndicator.indicator || !searchIndicator.indicator.visible)
            ? (!control.mirrored ? control.width - width - control.spacing : control.spacing)
            : (!control.mirrored ? control.width - width - (control.spacing * 2) - searchIndicator.indicator.width : searchIndicator.indicator.width + (control.spacing * 2))
-        y: control.topPadding + (control.availableHeight - height) / 2
+        y: control.topPadding
+
         implicitWidth: 32
         implicitHeight: 24
+        height: control.availableHeight
+
         visible: control.text.length > 0
 
         ColorImage {
@@ -121,18 +125,23 @@ T.SearchField {
     }
 
     contentItem: T.TextField {
+        implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
+                                 contentHeight + topPadding + bottomPadding,
+                                 placeholder.implicitHeight + topPadding + bottomPadding)
+
         leftPadding: control.__config.label_contentItem.leftPadding
         rightPadding: control.__config.label_contentItem.rightPadding
         topPadding: control.__config.label_contentItem.topPadding
         bottomPadding: control.__config.label_contentItem.bottomPadding
 
-        implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
-                                 contentHeight + topPadding + bottomPadding)
+        topInset: -control.__config.label_contentItem.topInset || 0
+        bottomInset: -control.__config.label_contentItem.bottomInset || 0
 
         text: control.text
         placeholderText: control.placeholderText
 
         PlaceholderText {
+            id: placeholder
             x: parent.leftPadding
             y: parent.topPadding
             width: parent.width - parent.leftPadding - parent.rightPadding
@@ -142,7 +151,7 @@ T.SearchField {
             font: parent.font
             color: control.palette.placeholderText
             visible: !parent.length && !parent.preeditText && (!parent.activeFocus || parent.horizontalAlignment !== Qt.AlignHCenter)
-            verticalAlignment: Text.AlignVCenter
+            verticalAlignment: parent.verticalAlignment
             elide: Text.ElideRight
             renderType: parent.renderType
         }

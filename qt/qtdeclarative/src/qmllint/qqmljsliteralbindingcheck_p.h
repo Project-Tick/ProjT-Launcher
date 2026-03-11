@@ -18,7 +18,6 @@
 #include <QtCore/qglobal.h>
 #include <QtQmlCompiler/qqmlsa.h>
 
-#include <qtqmlcompilerexports.h>
 #include "qqmljsvaluetypefromstringcheck_p.h"
 
 QT_BEGIN_NAMESPACE
@@ -26,7 +25,7 @@ QT_BEGIN_NAMESPACE
 class QQmlJSImportVisitor;
 class QQmlJSTypeResolver;
 
-class Q_QMLCOMPILER_EXPORT LiteralBindingCheckBase : public QQmlSA::PropertyPass
+class LiteralBindingCheckBase : public QQmlSA::PropertyPass
 {
 public:
     using QQmlSA::PropertyPass::PropertyPass;
@@ -40,7 +39,7 @@ protected:
     void warnOnCheckedBinding(const QQmlSA::Binding &binding, const QQmlSA::Element &propertyType);
 };
 
-class Q_QMLCOMPILER_EXPORT QQmlJSLiteralBindingCheck: public LiteralBindingCheckBase
+class QQmlJSLiteralBindingCheck : public LiteralBindingCheckBase
 {
 public:
     QQmlJSLiteralBindingCheck(QQmlSA::PassManager *manager);

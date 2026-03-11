@@ -6,7 +6,6 @@
 #####################################################################
 
 qt_internal_add_module(QmlCompiler
-        PLUGIN_TYPES qmllint
     SOURCES
         qcoloroutput.cpp qcoloroutput_p.h
         qdeferredpointer_p.h
@@ -22,11 +21,6 @@ qt_internal_add_module(QmlCompiler
         qqmljsfunctioninitializer.cpp qqmljsfunctioninitializer_p.h
         qqmljsimporter.cpp qqmljsimporter_p.h
         qqmljsimportvisitor.cpp qqmljsimportvisitor_p.h
-        qqmljslinter.cpp qqmljslinter_p.h
-        qqmljslintercodegen.cpp qqmljslintercodegen_p.h
-        qqmljslintertypepropagator.cpp qqmljslintertypepropagator_p.h
-        qqmljslintervisitor_p.h qqmljslintervisitor.cpp
-        qqmljsliteralbindingcheck.cpp qqmljsliteralbindingcheck_p.h
         qqmljsloadergenerator.cpp qqmljsloadergenerator_p.h
         qqmljslogger.cpp qqmljslogger_p.h
         qqmljsloggingutils.cpp qqmljsloggingutils.h qqmljsloggingutils_p.h
@@ -44,13 +38,10 @@ qt_internal_add_module(QmlCompiler
         qqmljstypereader.cpp qqmljstypereader_p.h
         qqmljstyperesolver.cpp qqmljstyperesolver_p.h
         qqmljsutils.cpp qqmljsutils_p.h
-        qqmljsvaluetypefromstringcheck.cpp qqmljsvaluetypefromstringcheck_p.h
         qqmlsa.cpp qqmlsa.h qqmlsa_p.h
         qqmlsaconstants.h
         qqmlsasourcelocation.cpp qqmlsasourcelocation.h qqmlsasourcelocation_p.h
         qresourcerelocater.cpp qresourcerelocater_p.h
-        qqmljscontextproperties_p.h qqmljscontextproperties.cpp
-        qqmljsusercontextproperties_p.h qqmljsusercontextproperties.cpp
     NO_UNITY_BUILD_SOURCES
         qqmljsoptimizations.cpp
     PUBLIC_LIBRARIES

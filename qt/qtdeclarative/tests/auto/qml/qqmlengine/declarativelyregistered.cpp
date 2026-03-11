@@ -5,4 +5,11 @@
 
 PurelyDeclarativeSingleton::PurelyDeclarativeSingleton(QObject *parent) : QObject(parent) {};
 
+
+UncreatableDeclarativeSingleton::UncreatableDeclarativeSingleton(int foo, QObject *parent)
+    : QObject(parent)
+    , m_foo(foo)
+{
+}
+
 #include "moc_declarativelyregistered.cpp"

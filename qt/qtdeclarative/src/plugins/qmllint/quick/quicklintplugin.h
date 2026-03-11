@@ -11,7 +11,7 @@
 #include <QtCore/qhash.h>
 
 #include <QtQmlCompiler/qqmlsa.h>
-#include "qqmlsaconstants.h"
+#include <QtQmlCompiler/qqmlsaconstants.h>
 
 QT_BEGIN_NAMESPACE
 

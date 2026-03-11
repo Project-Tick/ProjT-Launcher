@@ -317,7 +317,7 @@ IdentifierHash ExecutableCompilationUnit::createNamedObjectsPerComponent(int com
         const CompiledData::Object *namedObject = objectAt(*namedObjectIndexPtr);
         namedObjectCache.add(runtimeStrings[namedObject->idNameIndex], namedObject->objectId());
     }
-    Q_ASSERT(!namedObjectCache.isEmpty());
+    Q_ASSERT(namedObjectCache.isValid());
     return *namedObjectsPerComponentCache.insert(componentObjectIndex, namedObjectCache);
 }
 

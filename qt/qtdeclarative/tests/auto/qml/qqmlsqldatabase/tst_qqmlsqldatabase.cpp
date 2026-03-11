@@ -141,7 +141,8 @@ void tst_qqmlsqldatabase::testQml()
     QQmlComponent component(engine);
     component.setData(qml.toUtf8(), testFileUrl("empty.qml")); // just a file for relative local imports
     QVERIFY(!component.isError());
-    QQuickText *text = qobject_cast<QQuickText*>(component.create());
+    std::unique_ptr<QObject> root(component.create());
+    QQuickText *text = qobject_cast<QQuickText*>(root.get());
     QVERIFY(text != nullptr);
     QCOMPARE(text->text(),QString("passed"));
 }
@@ -183,14 +184,14 @@ void tst_qqmlsqldatabase::upgradeDatabase()
     QQmlComponent component(engine, testFile("changeVersion.qml"));
     QVERIFY(component.isReady());
 
-    QObject *object = component.create();
+    std::unique_ptr<QObject> object(component.create());
     QVERIFY(object);
     QVERIFY(object->property("version").toString().isEmpty());
 
-    QVERIFY(QMetaObject::invokeMethod(object, "create"));
+    QVERIFY(QMetaObject::invokeMethod(object.get(), "create"));
     QCOMPARE(object->property("version").toString(), QLatin1String("2"));
 
-    QVERIFY(QMetaObject::invokeMethod(object, "upgrade"));
+    QVERIFY(QMetaObject::invokeMethod(object.get(), "upgrade"));
     QCOMPARE(object->property("version").toString(), QLatin1String("22"));
 }
 

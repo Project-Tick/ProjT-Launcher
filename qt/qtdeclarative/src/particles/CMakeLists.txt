@@ -5,14 +5,13 @@
 ## QuickParticles Module:
 #####################################################################
 
-qt_internal_add_qml_module(QuickParticlesPrivate
+qt_internal_add_qml_module(QuickParticles
     URI "QtQuick.Particles"
     VERSION "${PROJECT_VERSION}"
     PLUGIN_TARGET particlesplugin
     CLASS_NAME QtQuick2ParticlesPlugin
     DEPENDENCIES
         QtQuick/auto
-    INTERNAL_MODULE
     SOURCES
         qquickage.cpp qquickage_p.h
         qquickangledirection.cpp qquickangledirection_p.h
@@ -59,6 +58,13 @@ qt_internal_add_qml_module(QuickParticlesPrivate
         QT_NO_INTEGER_EVENT_COORDINATES
         QT_NO_URL_CAST_FROM_STRING
     PUBLIC_LIBRARIES
+        Qt::Quick
+    LIBRARIES
+        Qt::CorePrivate
+        Qt::GuiPrivate
+        Qt::QmlPrivate
+        Qt::QuickPrivate
+    PRIVATE_MODULE_INTERFACE
         Qt::CorePrivate
         Qt::GuiPrivate
         Qt::QmlPrivate
@@ -73,14 +79,14 @@ set(particles_resource_files
     "particleresources/star.png"
 )
 
-qt_internal_add_resource(QuickParticlesPrivate "particles"
+qt_internal_add_resource(QuickParticles "particles"
     PREFIX
         "/"
     FILES
         ${particles_resource_files}
 )
 
-qt_internal_add_shaders(QuickParticlesPrivate "particles_shaders1"
+qt_internal_add_shaders(QuickParticles "particles_shaders1"
     SILENT
     BATCHABLE
     PRECOMPILE
@@ -100,7 +106,7 @@ qt_internal_add_shaders(QuickParticlesPrivate "particles_shaders1"
         POINT
 )
 
-qt_internal_add_shaders(QuickParticlesPrivate "particles_shaders2"
+qt_internal_add_shaders(QuickParticles "particles_shaders2"
     SILENT
     BATCHABLE
     PRECOMPILE
@@ -121,7 +127,7 @@ qt_internal_add_shaders(QuickParticlesPrivate "particles_shaders2"
         COLOR
 )
 
-qt_internal_add_shaders(QuickParticlesPrivate "particles_shaders3"
+qt_internal_add_shaders(QuickParticles "particles_shaders3"
     SILENT
     BATCHABLE
     PRECOMPILE
@@ -141,7 +147,7 @@ qt_internal_add_shaders(QuickParticlesPrivate "particles_shaders3"
         COLOR
 )
 
-qt_internal_add_shaders(QuickParticlesPrivate "particles_shaders4"
+qt_internal_add_shaders(QuickParticles "particles_shaders4"
     SILENT
     BATCHABLE
     PRECOMPILE
@@ -161,7 +167,7 @@ qt_internal_add_shaders(QuickParticlesPrivate "particles_shaders4"
         COLOR
 )
 
-qt_internal_add_shaders(QuickParticlesPrivate "particles_shaders5"
+qt_internal_add_shaders(QuickParticles "particles_shaders5"
     SILENT
     BATCHABLE
     PRECOMPILE
@@ -183,7 +189,7 @@ qt_internal_add_shaders(QuickParticlesPrivate "particles_shaders5"
         COLOR
 )
 
-qt_internal_add_shaders(QuickParticlesPrivate "particles_shaders6"
+qt_internal_add_shaders(QuickParticles "particles_shaders6"
     SILENT
     BATCHABLE
     PRECOMPILE
@@ -208,7 +214,7 @@ qt_internal_add_shaders(QuickParticlesPrivate "particles_shaders6"
         8
 )
 
-qt_internal_extend_target(QuickParticlesPrivate CONDITION MSVC
+qt_internal_extend_target(QuickParticles CONDITION MSVC
     DEFINES
         _CRT_SECURE_NO_WARNINGS
 )
@@ -216,7 +222,7 @@ qt_internal_extend_target(QuickParticlesPrivate CONDITION MSVC
 #### Keys ignored in scope 3:.:.:particles.pro:solaris-cc_x_:
 # QMAKE_CXXFLAGS_RELEASE = "--O2"
 
-qt_internal_extend_target(QuickParticlesPrivate CONDITION EXISTS "qqml_enable_gcov"
+qt_internal_extend_target(QuickParticles CONDITION EXISTS "qqml_enable_gcov"
     LIBRARIES
         gcov
     COMPILE_OPTIONS

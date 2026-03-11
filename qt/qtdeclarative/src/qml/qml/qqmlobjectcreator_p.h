@@ -140,9 +140,10 @@ class Q_QML_EXPORT QQmlObjectCreator
 public:
     enum class InitFlag: quint8
     {
-        None            = 0x0,
-        IsDocumentRoot  = 0x1,
-        IsContextObject = 0x2,
+        None                = 0x0,
+        IsDocumentRoot      = 0x1,
+        IsContextObject     = 0x2,
+        IsImplicitComponent = 0x4,
     };
     Q_DECLARE_FLAGS(InitFlags, InitFlag);
 

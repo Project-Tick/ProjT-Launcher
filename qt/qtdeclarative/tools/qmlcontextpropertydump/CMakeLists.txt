@@ -9,7 +9,7 @@ qt_internal_add_tool(${target_name}
         main.cpp
     LIBRARIES
         Qt::CorePrivate
-        Qt::QmlCompilerPrivate
+        Qt::QmlLintPrivate
         Qt::QmlToolingSettingsPrivate
 )
 qt_internal_return_unless_building_tools()

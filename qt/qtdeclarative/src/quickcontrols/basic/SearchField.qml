@@ -38,9 +38,10 @@ T.SearchField {
     searchIndicator.indicator: Rectangle {
         implicitWidth: 28
         implicitHeight: 28
+        height: control.height - (background.border.width * 2)
 
         x: !control.mirrored ? 3 : control.width - width - 3
-        y: control.topPadding + (control.availableHeight - height) / 2
+        y: background.border.width
         color: control.palette.button
 
         ColorImage {
@@ -56,9 +57,10 @@ T.SearchField {
     clearIndicator.indicator: Rectangle {
         implicitWidth: 28
         implicitHeight: 28
+        height: control.height - (background.border.width * 2)
 
         x: control.mirrored ? 3 : control.width - width - 3
-        y: control.topPadding + (control.availableHeight - height) / 2
+        y: background.border.width
         visible: control.text.length > 0
         color: control.palette.button
 
@@ -73,6 +75,8 @@ T.SearchField {
     }
 
     contentItem: T.TextField {
+        implicitHeight: Math.max(contentHeight + topPadding + bottomPadding,
+                                 placeholder.implicitHeight + topPadding + bottomPadding)
         leftPadding: control.searchIndicator.indicator && !control.mirrored ? 6 : 0
         rightPadding: control.clearIndicator.indicator && !control.mirrored ? 6 : 0
         topPadding: 6 - control.padding
@@ -82,6 +86,7 @@ T.SearchField {
         placeholderText: control.placeholderText
 
         PlaceholderText {
+            id: placeholder
             x: parent.leftPadding
             y: parent.topPadding
             width: parent.width - parent.leftPadding - parent.rightPadding
@@ -91,7 +96,7 @@ T.SearchField {
             font: parent.font
             color: control.palette.placeholderText
             visible: !parent.length && !parent.preeditText && (!parent.activeFocus || parent.horizontalAlignment !== Qt.AlignHCenter)
-            verticalAlignment: Text.AlignVCenter
+            verticalAlignment: parent.verticalAlignment
             elide: Text.ElideRight
             renderType: parent.renderType
         }

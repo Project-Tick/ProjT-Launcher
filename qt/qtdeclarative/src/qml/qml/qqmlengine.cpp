@@ -785,6 +785,106 @@ void QQmlEngine::markCurrentFunctionAsTranslationBinding()
 }
 
 /*!
+  \since 6.12
+  Set the singleton instance to use for the given type on the QML engine.
+
+  This function allows you to manually set a QObject-derived instance to use as
+  the singleton in QML for this engine. This allows you to control the creation
+  of the instance. This can be useful in several scenarios, including for
+  cases where your singleton needs to communicate with backend components.
+
+  This function takes the \a moduleName and \a typeName to indicate the
+  singleton type you are trying to set, and the \a instance to set. The type
+  has to be already registered as a QML singleton type, ideally by using
+  \l QML_ELEMENT and \l QML_SINGLETON. If the module has not already been
+  loaded, it will be now.
+
+  The function returns true on success or false on failure. If a
+  failure occurs, a warning is emitted detailing the failure.
+
+  As an example, the singleton might need a backend service to work,
+  and could then be declared as follows:
+  \snippet code/src_qml_qqmlengine.cpp 6
+
+  Upon initialization of the application, you can then do:
+  \snippet code/src_qml_qqmlengine.cpp 7
+
+  Note instead of providing a default constructor or a static create
+  function, the \l QML_UNCREATABLE() macro was used to indicate this
+  item cannot be created by the qml engine.
+
+  Singleton instances can only be set once per type and engine, and must
+  be set before any use. Once a singleton instance is created or set,
+  it is no longer possible to set it using this function, so you should set
+  the instances before they are first used from QML.
+
+  The engine will \e{not} take ownership of the instance you pass, unless
+  you explicitly instruct the engine to do so by using
+  \l QJSEngine::setObjectOwnership().
+
+  \warning Make sure the \a instance outlives the lifetime of the engine.
+*/
+bool QQmlEngine::setExternalSingletonInstance(QAnyStringView moduleName, QAnyStringView typeName, QObject *instance)
+{
+    Q_D(QQmlEngine);
+
+    const auto loadHelper = QQml::makeRefPointer<LoadHelper>(
+            QQmlTypeLoader::get(this), moduleName, typeName, QQmlTypeLoader::Synchronous);
+    const QQmlType type = loadHelper->type();
+
+    if (!type.isValid()) {
+        qWarning().noquote() << "Error setting singleton instance: type" << typeName << "in module" << moduleName << "is not valid";
+        return false;
+    }
+
+    if (!instance) {
+        qWarning() << "Error setting singleton instance: the instance cannot be a nullptr";
+        return false;
+    }
+    if (!type.isSingleton()) {
+        qWarning() << "Error setting singleton instance: the type" << type.elementName() << "is not declared as a singleton type";
+        return false;
+    }
+    const QQmlType::SingletonInstanceInfo::ConstPtr siinfo = type.singletonInstanceInfo();
+    Q_ASSERT(siinfo != nullptr);
+    QJSValue value = d->singletonInstances.value(siinfo);
+    if (!value.isUndefined()) {
+        qWarning() << "Error setting singleton instance: there already is an instance for this singleton";
+        return false;
+    }
+
+    const auto baseMetaObject = type.baseMetaObject();
+    if (!(baseMetaObject && instance->metaObject()->inherits(baseMetaObject))) {
+        qWarning() << "Error setting singleton instance: the meta type of the instance" << instance->metaObject()->className()
+        << "does not match the type of the registered singleton"
+        << (baseMetaObject ? baseMetaObject->className() : "(unknown)"); //be careful to assume baseMetaObject is valid
+        return false;
+    }
+
+    QQmlData *data = QQmlData::get(instance, true);
+    if (!data->explicitIndestructibleSet) {
+        // Unless already explicitly set, set it up so that the engine won't delete
+        // the object.
+        data->explicitIndestructibleSet = true;
+        data->indestructible = true;
+    }
+    // even though the object is defined in C++, qmlContext(obj) and qmlEngine(obj)
+    // should behave identically to QML singleton types. You can, however, manually
+    // assign a context; and clearSingletons() retains the contexts, in which case
+    // we don't want to see warnings about the object already having a context.
+    if (!data->context) {
+        auto contextData = QQmlContextData::get(new QQmlContext(rootContext(), this));
+        data->context = contextData.data();
+        contextData->addOwnedObject(data);
+    }
+
+    value = newQObject(instance);
+    d->singletonInstances.convertAndInsert(d->v4Engine.get(), siinfo, &value);
+
+    return true;
+}
+
+/*!
   \internal
 
   Capture the given property as part of a binding.
@@ -850,8 +950,15 @@ QJSValue QQmlEngine::singletonInstance<QJSValue>(int qmlTypeId)
     Q_D(QQmlEngine);
     QQmlType type = QQmlMetaType::qmlTypeById(qmlTypeId);
 
-    if (!type.isValid() || !type.isSingleton())
-        return QJSValue();
+    if (!type.isValid()) {
+        qWarning().noquote() << "Singleton instance: type with id" << qmlTypeId << "is not valid";
+        return {};
+    }
+
+    if (!type.isSingleton()) {
+        qWarning() << "Singleton instance: type" << type.elementName() << "with id" << qmlTypeId << "is not declared as a singleton type";
+        return {};
+    }
 
     return d->singletonInstance<QJSValue>(type);
 }
@@ -888,8 +995,15 @@ QJSValue QQmlEngine::singletonInstance<QJSValue>(QAnyStringView uri, QAnyStringV
             QQmlTypeLoader::get(this), uri, typeName, QQmlTypeLoader::Synchronous);
     const QQmlType type = loadHelper->type();
 
-    if (!type.isSingleton())
+    if (!type.isValid()) {
+        qWarning().noquote() << "Singleton instance: type" << typeName << "in module" << uri << "is not valid";
         return {};
+    }
+
+    if (!type.isSingleton()) {
+        qWarning() << "Singleton instance: type" << type.elementName() << "is not declared as a singleton type";
+        return {};
+    }
 
     return d->singletonInstance<QJSValue>(type);
 }

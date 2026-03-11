@@ -68,32 +68,6 @@ struct PoolList
         ++count;
     }
 
-    template <typename Sortable, typename Base, Sortable Base::*sortMember>
-    T *findSortedInsertionPoint(T *item) const
-    {
-        T *insertPos = nullptr;
-
-        for (T *it = first; it; it = it->next) {
-            if (!(it->*sortMember <= item->*sortMember))
-                break;
-            insertPos = it;
-        }
-
-        return insertPos;
-    }
-
-    void insertAfter(T *insertionPoint, T *item) {
-        if (!insertionPoint) {
-            prepend(item);
-        } else if (insertionPoint == last) {
-            append(item);
-        } else {
-            item->next = insertionPoint->next;
-            insertionPoint->next = item;
-            ++count;
-        }
-    }
-
     T *unlink(T *before, T *item) {
         T * const newNext = item->next;
 
@@ -379,7 +353,6 @@ public:
     QString appendBinding(Binding *b, bool isListBinding);
     Binding *findBinding(quint32 nameIndex) const;
     Binding *unlinkBinding(Binding *before, Binding *binding) { return bindings->unlink(before, binding); }
-    void insertSorted(Binding *b);
     QString bindingAsString(Document *doc, int scriptIndex) const;
 
     PoolList<CompiledFunctionOrExpression> *functionsAndExpressions;

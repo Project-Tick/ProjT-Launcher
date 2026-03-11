@@ -3,13 +3,16 @@
 // Qt-Security score:significant
 
 #include "qqmljslinter_p.h"
-
 #include "qqmljslintercodegen_p.h"
-#include "qqmljsutils_p.h"
 
-#include <QtQmlCompiler/private/qqmljsimporter_p.h>
-#include <QtQmlCompiler/private/qqmljsimportvisitor_p.h>
-#include <QtQmlCompiler/private/qqmljsliteralbindingcheck_p.h>
+#include <private/qqmljsimporter_p.h>
+#include <private/qqmljsimportvisitor_p.h>
+#include <private/qqmljslinterpasses_p.h>
+#include <private/qqmljslintervisitor_p.h>
+#include <private/qqmljsliteralbindingcheck_p.h>
+#include <private/qqmljsloggingutils_p.h>
+#include <private/qqmljsutils_p.h>
+#include <private/qqmlsa_p.h>
 
 #include <QtCore/qjsonobject.h>
 #include <QtCore/qfileinfo.h>
@@ -20,9 +23,6 @@
 #include <QtCore/private/qduplicatetracker_p.h>
 #include <QtCore/qscopedpointer.h>
 
-#include <QtQmlCompiler/private/qqmlsa_p.h>
-#include <QtQmlCompiler/private/qqmljsloggingutils_p.h>
-#include <QtQmlCompiler/private/qqmljslintervisitor_p.h>
 
 #if QT_CONFIG(library)
 #    include <QtCore/qdiriterator.h>
@@ -684,46 +684,7 @@ QQmlJSLinter::lintFileImpl(const QString &filename, const QString *fileContents,
     PassManagerPtr passMan(
             QQmlSA::PassManagerPrivate::createPassManager(&v, codegen.typeResolver()),
             &QQmlSA::PassManagerPrivate::deletePassManager);
-    passMan->registerPropertyPass(std::make_unique<QQmlJSLiteralBindingCheck>(passMan.get()),
-                                  QString(), QString(), QString());
-
-    QQmlSA::PropertyPassBuilder(passMan.get())
-            .withOnCall([](QQmlSA::PropertyPass *self, const QQmlSA::Element &, const QString &,
-                           const QQmlSA::Element &, QQmlSA::SourceLocation location) {
-                self->emitWarning("Do not use 'eval'", qmlEval, location);
-            })
-            .registerOnBuiltin("GlobalObject", "eval");
-
-    QQmlSA::PropertyPassBuilder(passMan.get())
-            .withOnRead([](QQmlSA::PropertyPass *self, const QQmlSA::Element &element,
-                           const QString &propName, const QQmlSA::Element &readScope_,
-                           QQmlSA::SourceLocation location) {
-
-                const auto &elementScope = QQmlJSScope::scope(element);
-                const auto &owner = QQmlJSScope::ownerOfProperty(elementScope, propName).scope;
-                if (!owner || owner->isComposite() || owner->isValueType())
-                    return;
-                const auto &prop = QQmlSA::PropertyPrivate::property(element.property(propName));
-                if (prop.index() != -1 && !prop.isPropertyConstant()
-                        && prop.notify().isEmpty() && prop.bindable().isEmpty()) {
-                    const QQmlJSScope::ConstPtr &readScope = QQmlJSScope::scope(readScope_);
-                    // FIXME: we currently get the closest QML Scope as readScope, instead of
-                    // the innermost scope. We try locate it here via source location
-                    Q_ASSERT(readScope->scopeType() == QQmlJSScope::ScopeType::QMLScope);
-                    for (auto it = readScope->childScopesBegin(); it != readScope->childScopesEnd(); ++it) {
-                        QQmlJS::SourceLocation childLocation = (*it)->sourceLocation();
-                        if ( childLocation.offset <= location.offset() &&
-                            (childLocation.offset + childLocation.length <= location.offset() + location.length())  ) {
-                            if ((*it)->scopeType() != QQmlSA::ScopeType::BindingFunctionScope)
-                                return;
-                        }
-                    }
-                    const QString msg =
-                            "Reading non-constant and non-notifiable property %1. "_L1
-                            "Binding might not update when the property changes."_L1.arg(propName);
-                    self->emitWarning(msg, qmlStalePropertyRead, location);
-                }
-            }).registerOn({}, {}, {});
+    QQmlJSLinterPasses::registerDefaultPasses(passMan.get());
 
     if (m_enablePlugins) {
         for (const Plugin &plugin : m_plugins) {

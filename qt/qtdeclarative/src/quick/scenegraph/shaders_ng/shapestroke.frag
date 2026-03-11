@@ -6,7 +6,15 @@ layout(location = 2) in vec2 B;
 layout(location = 3) in vec2 C;
 layout(location = 4) in vec4 HGOW; // H and G: args to solveDepressedCubic(); O: offset; W: strokeWidth
 
+#if defined(LINEARGRADIENT)
+layout(location = 5) in float gradTabIndex;
+#elif defined(RADIALGRADIENT) || defined(CONICALGRADIENT)
+layout(location = 5) in vec2 coord;
+#endif
+
 layout(location = 0) out vec4 fragColor;
+
+#define INVERSE_2PI 0.1591549430918953358
 
 layout(std140, binding = 0) uniform buf {
 #if QSHADER_VIEW_COUNT >= 2
@@ -20,13 +28,34 @@ layout(std140, binding = 0) uniform buf {
     float devicePixelRatio;
     float strokeWidth;
 
+#if defined(LINEARGRADIENT)
+    vec2 gradientStart;
+    vec2 gradientEnd;
+#elif defined(RADIALGRADIENT)
+    vec2 translationPoint;
+    vec2 focalToCenter;
+    float centerRadius;
+    float focalRadius;
+    float reserved3;
+    float reserved4;
+#elif defined(CONICALGRADIENT)
+    vec2 translationPoint;
+    float angle;
+    float reserved3;
+#else
     vec4 strokeColor;
+#endif
 
     float debug;
     float reserved5;
     float reserved6;
     float reserved7;
 } ubuf;
+
+#if defined(LINEARGRADIENT) || defined(RADIALGRADIENT) || defined(CONICALGRADIENT)
+layout(binding = 1) uniform sampler2D gradTabTexture;
+#endif
+
 
 float cuberoot(float x)
 {
@@ -73,6 +102,38 @@ mat2 qInverse(mat2 matrix) {
     inverseMatrix[1][1] = a * invDet;
 
     return inverseMatrix;
+}
+
+vec4 baseColor()
+{
+#if defined(LINEARGRADIENT)
+    return texture(gradTabTexture, vec2(gradTabIndex, 0.5));
+#elif defined(RADIALGRADIENT)
+    float rd = ubuf.centerRadius - ubuf.focalRadius;
+    float b = 2.0 * (rd * ubuf.focalRadius + dot(coord, ubuf.focalToCenter));
+    float fmp2_m_radius2 = -ubuf.focalToCenter.x * ubuf.focalToCenter.x - ubuf.focalToCenter.y * ubuf.focalToCenter.y + rd * rd;
+    float inverse_2_fmp2_m_radius2 = 1.0 / (2.0 * fmp2_m_radius2);
+    float det = b * b - 4.0 * fmp2_m_radius2 * ((ubuf.focalRadius * ubuf.focalRadius) - dot(coord, coord));
+    vec4 result = vec4(0.0);
+    if (det >= 0.0) {
+        float detSqrt = sqrt(det);
+        float w = max((-b - detSqrt) * inverse_2_fmp2_m_radius2, (-b + detSqrt) * inverse_2_fmp2_m_radius2);
+        if (ubuf.focalRadius + w * (ubuf.centerRadius - ubuf.focalRadius) >= 0.0)
+            result = texture(gradTabTexture, vec2(w, 0.5));
+    }
+
+    return result;
+#elif defined(CONICALGRADIENT)
+    float t;
+    if (abs(coord.y) == abs(coord.x))
+        t = (atan(-coord.y + 0.002, coord.x) + ubuf.angle) * INVERSE_2PI;
+    else
+        t = (atan(-coord.y, coord.x) + ubuf.angle) * INVERSE_2PI;
+    return texture(gradTabTexture, vec2(t - floor(t), 0.5));
+#else
+    return vec4(ubuf.strokeColor.rgb, 1.0) * ubuf.strokeColor.a;
+#endif
+
 }
 
 void main()
@@ -139,6 +200,6 @@ void main()
     float centerline = step(HGOW.w * 0.01, dmin);
     fillCoverage = fillCoverage * centerline + min(1., HGOW.w * ubuf.matrixScale) * (1. - centerline);
 
-    fragColor = vec4(ubuf.strokeColor.rgb, 1.0) * ubuf.strokeColor.a * fillCoverage * ubuf.opacity
+    fragColor = baseColor() * fillCoverage * ubuf.opacity
                 + ubuf.debug * vec4(0.0, 0.5, 1.0, 1.0) * (1.0 - fillCoverage) * ubuf.opacity;
 }

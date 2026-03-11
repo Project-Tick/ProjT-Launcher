@@ -16,13 +16,12 @@
 // We mean it.
 
 #include <QtQmlToolingSettings/private/qqmltoolingsettings_p.h>
-#include <qtqmlcompilerexports.h>
 
 QT_BEGIN_NAMESPACE
 
 namespace QQmlJS {
 
-class Q_QMLCOMPILER_EXPORT UserContextProperties
+class UserContextProperties
 {
 public:
     static constexpr inline QLatin1StringView s_unqualifiedAccessDisabledKey =

@@ -3,7 +3,8 @@
 // Qt-Security score:significant
 
 #include "qqmljslintervisitor_p.h"
-#include "qqmljsutils_p.h"
+
+#include <private/qqmljsutils_p.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -137,6 +138,17 @@ static void warnAboutLiteralConstructors(NewMemberExpression *expression, QQmlJS
     if (std::find(literals.cbegin(), literals.cend(), identifier->name) != literals.cend()) {
         logger->log("Do not use '%1' as a constructor."_L1.arg(identifier->name),
                     qmlLiteralConstructor, identifier->identifierToken);
+    }
+    if (identifier->name == "Array"_L1 && expression->arguments && expression->arguments->next) {
+        const auto fullRange = combine(expression->newToken, expression->rparenToken);
+        const auto parensRange = combine(expression->lparenToken, expression->rparenToken);
+        const auto parens = QStringView(logger->code()).mid(parensRange.offset, parensRange.length);
+        const auto insideParens = parens.mid(1, parens.length() - 2);
+        const QString newCode = u'[' + insideParens + u']';
+        QQmlJSFixSuggestion fix("Replace with array literal"_L1, fullRange, newCode);
+        fix.setAutoApplicable(true);
+        logger->log("Array has confusing semantics, use an array literal ([]) instead."_L1,
+                    qmlLiteralConstructor, identifier->identifierToken, true, true, fix);
     }
 }
 

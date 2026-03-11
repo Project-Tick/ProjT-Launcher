@@ -39,12 +39,12 @@ void tst_qqmlinfo::qmlObject()
 {
     QQmlComponent component(&engine, testFileUrl("qmlObject.qml"));
 
-    QObject *object = component.create();
-    QVERIFY(object != nullptr);
+    std::unique_ptr<QObject> object(component.create());
+    QVERIFY(object);
 
     QString message = component.url().toString() + ":3:1: QML QtObject: Test Message";
     QTest::ignoreMessage(QtInfoMsg, qPrintable(message));
-    qmlInfo(object) << "Test Message";
+    qmlInfo(object.get()) << "Test Message";
 
     QObject *nested = qvariant_cast<QObject *>(object->property("nested"));
     QVERIFY(nested != nullptr);

@@ -374,16 +374,23 @@ static void reloadLotsOfFileMethod()
     QTRY_COMPARE_WITH_TIMEOUT(model.validEnv().field(Fields::qmlFileWithPath).keys().size(),
                               fileNames.size(), 3000);
 
+    auto areAllFilesPopulated = [&model]() {
+        for (const QString &key : model.validEnv().field(Fields::qmlFileWithPath).keys()) {
+            if (model.validEnv()
+                        .field(Fields::qmlFileWithPath)
+                        .key(key)
+                        .field(Fields::currentItem)
+                        .field(Fields::components)
+                        .size()
+                != 1) {
+                return false;
+            }
+        }
+        return true;
+    };
+
     // populate all files
-    for (const QString &key : model.validEnv().field(Fields::qmlFileWithPath).keys()) {
-        QCOMPARE(model.validEnv()
-                         .field(Fields::qmlFileWithPath)
-                         .key(key)
-                         .field(Fields::currentItem)
-                         .field(Fields::components)
-                         .size(),
-                 1);
-    }
+    QTRY_VERIFY_WITH_TIMEOUT(areAllFilesPopulated(), 1000);
 
     // modify all files on disk
     for (const QString &fileName : fileNames) {

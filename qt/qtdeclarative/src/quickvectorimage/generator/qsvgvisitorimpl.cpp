@@ -2081,7 +2081,10 @@ void QSvgVisitorImpl::handlePathNode(const QSvgNode *node, const QPainterPath &p
 
     info.path.setDefaultValue(QVariant::fromValue(path));
     info.fillColor.setDefaultValue(m_styleResolver->currentFillColor());
-    if (strokeGradient == nullptr && !hasStrokePattern) {
+    if (strokeGradient != nullptr)
+        info.strokeGrad = *strokeGradient;
+
+    if (!hasStrokePattern) {
         info.strokeStyle = StrokeStyle::fromPen(m_styleResolver->currentStroke());
         info.strokeStyle.color.setDefaultValue(m_styleResolver->currentStrokeColor());
     }
@@ -2109,17 +2112,13 @@ void QSvgVisitorImpl::handlePathNode(const QSvgNode *node, const QPainterPath &p
 
     m_generator->generatePath(info);
 
-    if (strokeGradient != nullptr || hasStrokePattern) {
+    if (hasStrokePattern) {
         PathNodeInfo strokeInfo;
         fillCommonNodeInfo(node, strokeInfo, QStringLiteral("_stroke"));
 
-        if (strokeGradient != nullptr) {
-            strokeInfo.grad = *strokeGradient;
-        } else {
-            QSvgPatternStyle *patternStyle = static_cast<QSvgPatternStyle *>(strokeStyle->style());
-            strokeInfo.patternId = findOrCreateId(patternStyle->patternNode()->nodeId());
-            strokeInfo.fillTransform = patternStyle->patternNode()->transform();
-        }
+        QSvgPatternStyle *patternStyle = static_cast<QSvgPatternStyle *>(strokeStyle->style());
+        strokeInfo.patternId = findOrCreateId(patternStyle->patternNode()->nodeId());
+        strokeInfo.fillTransform = patternStyle->patternNode()->transform();
 
         QPainterPathStroker stroker(m_styleResolver->currentStroke());
         strokeInfo.path.setDefaultValue(QVariant::fromValue(stroker.createStroke(path)));

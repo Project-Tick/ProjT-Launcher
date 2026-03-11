@@ -1,5 +1,6 @@
 // Copyright (C) 2024 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:significant reason:default
 
 #include "qquickshapecurverenderer_p.h"
 #include "qquickshapecurverenderer_p_p.h"
@@ -301,41 +302,54 @@ void QQuickShapeCurveRenderer::setStrokeStyle(int index,
     pathData.m_dirty |= StrokeDirty;
 }
 
-void QQuickShapeCurveRenderer::setFillGradient(int index, QQuickShapeGradient *gradient)
+static QGradient::Type copyGradient(const QQuickShapeGradient *gradient,
+                                    QSGGradientCache::GradientDesc *dst)
 {
-    PathData &pd(m_paths[index]);
-    const bool wasVisible = pd.isFillVisible();
-    pd.gradientType = QGradient::NoGradient;
-    if (QQuickShapeLinearGradient *g  = qobject_cast<QQuickShapeLinearGradient *>(gradient)) {
-        pd.gradientType = QGradient::LinearGradient;
-        pd.gradient.stops = gradient->gradientStops();
-        pd.gradient.spread = QGradient::Spread(gradient->spread());
-        pd.gradient.a = QPointF(g->x1(), g->y1());
-        pd.gradient.b = QPointF(g->x2(), g->y2());
-    } else if (QQuickShapeRadialGradient *g = qobject_cast<QQuickShapeRadialGradient *>(gradient)) {
-        pd.gradientType = QGradient::RadialGradient;
-        pd.gradient.a = QPointF(g->centerX(), g->centerY());
-        pd.gradient.b = QPointF(g->focalX(), g->focalY());
-        pd.gradient.v0 = g->centerRadius();
-        pd.gradient.v1 = g->focalRadius();
-    } else if (QQuickShapeConicalGradient *g = qobject_cast<QQuickShapeConicalGradient *>(gradient)) {
-        pd.gradientType = QGradient::ConicalGradient;
-        pd.gradient.a = QPointF(g->centerX(), g->centerY());
-        pd.gradient.v0 = g->angle();
+    QGradient::Type gradientType = QGradient::NoGradient;
+    if (const QQuickShapeLinearGradient *g  = qobject_cast<const QQuickShapeLinearGradient *>(gradient)) {
+        gradientType = QGradient::LinearGradient;
+        dst->a = QPointF(g->x1(), g->y1());
+        dst->b = QPointF(g->x2(), g->y2());
+    } else if (const QQuickShapeRadialGradient *g = qobject_cast<const QQuickShapeRadialGradient *>(gradient)) {
+        gradientType = QGradient::RadialGradient;
+        dst->a = QPointF(g->centerX(), g->centerY());
+        dst->b = QPointF(g->focalX(), g->focalY());
+        dst->v0 = g->centerRadius();
+        dst->v1 = g->focalRadius();
+    } else if (const QQuickShapeConicalGradient *g = qobject_cast<const QQuickShapeConicalGradient *>(gradient)) {
+        gradientType = QGradient::ConicalGradient;
+        dst->a = QPointF(g->centerX(), g->centerY());
+        dst->v0 = g->angle();
     } else if (gradient != nullptr) {
         static bool warned = false;
         if (!warned) {
             warned = true;
-            qCWarning(lcShapeCurveRenderer) << "Unsupported gradient fill";
+            qCWarning(lcShapeCurveRenderer) << "Unsupported gradient";
         }
     }
 
-    if (pd.gradientType != QGradient::NoGradient) {
-        pd.gradient.stops = gradient->gradientStops();
-        pd.gradient.spread = QGradient::Spread(gradient->spread());
+    if (gradientType != QGradient::NoGradient) {
+        dst->stops = gradient->gradientStops();
+        dst->spread = QGradient::Spread(gradient->spread());
     }
 
+    return gradientType;
+}
+
+void QQuickShapeCurveRenderer::setFillGradient(int index, QQuickShapeGradient *gradient)
+{
+    PathData &pd(m_paths[index]);
+    const bool wasVisible = pd.isFillVisible();
+    pd.gradientType = copyGradient(gradient, &pd.gradient);
     pd.m_dirty |= (pd.isFillVisible() != wasVisible) ? FillDirty : UniformsDirty;
+}
+
+void QQuickShapeCurveRenderer::setStrokeGradient(int index, QQuickShapeGradient *gradient)
+{
+    PathData &pd(m_paths[index]);
+    const bool wasVisible = pd.isStrokeVisible();
+    pd.strokeGradientType = copyGradient(gradient, &pd.strokeGradient);
+    pd.m_dirty |= (pd.isStrokeVisible() != wasVisible) ? StrokeDirty : UniformsDirty;
 }
 
 void QQuickShapeCurveRenderer::setFillTransform(int index, const QSGTransform &transform)
@@ -505,6 +519,8 @@ void QQuickShapeCurveRenderer::updateNode()
                 auto *strokeNode = static_cast<QSGCurveStrokeNode *>(pathNode);
                 strokeNode->setStrokeWidth(pathData.pen.widthF());
                 strokeNode->setCosmeticStroke(pathData.pen.isCosmetic());
+                strokeNode->setStrokeGradient(pathData.strokeGradient);
+                strokeNode->setGradientType(pathData.strokeGradientType);
             }
         }
     };

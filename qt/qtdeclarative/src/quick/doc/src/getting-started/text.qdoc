@@ -9,7 +9,7 @@
 To display text the Text type is provided by the \l {Qt Quick} module. For
 related uses, the \l{TextInput} and \l{TextEdit} types provide editable text
 controls. For full HTML markup, see the
-\l {qtwebengine-index.html}{Qt WebEngine} module.
+\l {Qt WebEngine} module.
 
 \section1 Displaying and formatting text
 

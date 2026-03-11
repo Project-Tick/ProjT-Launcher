@@ -704,8 +704,11 @@ void QQmlNativeDebugServiceImpl::engineAboutToBeRemoved(QJSEngine *engine)
         QV4::ExecutionEngine *executionEngine = engine->handle();
         const auto debuggersCopy = m_debuggers;
         for (NativeDebugger *debugger : debuggersCopy) {
-            if (debugger->engine() == executionEngine)
+            if (debugger->engine() == executionEngine) {
                 m_debuggers.removeAll(debugger);
+                if (executionEngine->debugger() != debugger)
+                    delete debugger;
+            }
         }
     }
     QQmlDebugService::engineAboutToBeRemoved(engine);
