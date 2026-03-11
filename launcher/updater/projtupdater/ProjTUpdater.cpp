@@ -1613,7 +1613,7 @@ namespace
 	}
 } // namespace
 
-ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
+bool ProjTUpdaterApp::needUpdate(const GitHubRelease& release)
 {
 	auto normalizeVersionString = [](QString ver)
 	{
@@ -1656,17 +1656,9 @@ ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
 	current_version		= normalizeVersionString(current_version);
 	auto parsed_current = parseLineVersion(current_version);
 
-	UpdateCandidate candidate;
-
 	if (!parsed_current.has_value())
 	{
-		auto latest = getLatestRelease();
-		if (latest.isValid() && Version(current_version) < latest.version)
-		{
-			candidate.kind	  = UpdateKind::Update;
-			candidate.release = latest;
-		}
-		return candidate;
+		return Version(current_version) < release.version;
 	}
 
 	const auto current = parsed_current.value();
@@ -1675,8 +1667,6 @@ ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
 	bool has_migration	  = false;
 	LineVersion best_line = current;
 	LineVersion best_migration_line;
-	GitHubRelease best_same_release;
-	GitHubRelease best_migration_release;
 
 	for (const auto& release : m_releases)
 	{
@@ -1695,9 +1685,8 @@ ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
 		{
 			if (compareLinePatch(rel, current) > 0 && (!has_same_line || compareLinePatch(rel, best_line) > 0))
 			{
-				best_line		  = rel;
-				best_same_release = release;
-				has_same_line	  = true;
+				best_line		= rel;
+				has_same_line	= true;
 			}
 			continue;
 		}
@@ -1705,35 +1694,29 @@ ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
 		{
 			if (!has_migration)
 			{
-				best_migration_line	   = rel;
-				best_migration_release = release;
-				has_migration		   = true;
+				best_migration_line	= rel;
+				has_migration		= true;
 				continue;
 			}
 			auto best_cmp = compareLine(rel, best_migration_line);
 			if (best_cmp > 0 || (best_cmp == 0 && compareLinePatch(rel, best_migration_line) > 0))
 			{
-				best_migration_line	   = rel;
-				best_migration_release = release;
+				best_migration_line = rel;
 			}
 		}
 	}
 
 	if (has_same_line)
 	{
-		candidate.kind	  = UpdateKind::Update;
-		candidate.release = best_same_release;
-		return candidate;
+		return true;
 	}
 
 	if (has_migration)
 	{
-		candidate.kind	  = UpdateKind::Migration;
-		candidate.release = best_migration_release;
-		return candidate;
+		return true;
 	}
 
-	return candidate;
+	return false;
 }
 
 void ProjTUpdaterApp::downloadError(QString reason)

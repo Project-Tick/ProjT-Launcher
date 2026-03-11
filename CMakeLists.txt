@@ -52,6 +52,8 @@ set(CMAKE_C_STANDARD_REQUIRED true)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD 11)
 include(GenerateExportHeader)
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
 if(MSVC)
     # /GS Adds buffer security checks, default on but incuded anyway to mirror gcc's fstack-protector flag
     # /permissive- specify standards-conforming compiler behavior, also enabled by Qt6, default on with std:c++20
@@ -118,11 +120,20 @@ else()
         endif()
 
         # -ffunction-sections and -fdata-sections help reduce binary size
-        # -mguard=cf enables Control Flow Guard
+        # -mguard=cf enables Control Flow Guard when supported by the compiler
         # -Wl,--gc-sections removes unused sections during linking
         foreach(lang C CXX)
-            set("CMAKE_${lang}_FLAGS_RELEASE" "-ffunction-sections -fdata-sections -mguard=cf")
+            set("CMAKE_${lang}_FLAGS_RELEASE" "-ffunction-sections -fdata-sections")
         endforeach()
+        check_c_compiler_flag("-mguard=cf" C_COMPILER_SUPPORTS_MGUARD_CF)
+        check_cxx_compiler_flag("-mguard=cf" CXX_COMPILER_SUPPORTS_MGUARD_CF)
+        if(C_COMPILER_SUPPORTS_MGUARD_CF AND CXX_COMPILER_SUPPORTS_MGUARD_CF)
+            foreach(lang C CXX)
+                set("CMAKE_${lang}_FLAGS_RELEASE" "${CMAKE_${lang}_FLAGS_RELEASE} -mguard=cf")
+            endforeach()
+        else()
+            message(STATUS "Compiler does not support -mguard=cf; skipping CFG compile flag")
+        endif()
         set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Wl,--gc-sections ${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
         set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "-Wl,--gc-sections ${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
     elseif(APPLE)
@@ -832,4 +843,3 @@ endif()
 if(NOT LAUNCHER_FUZZ_ONLY)
     add_subdirectory(launcher)
 endif()
-
