@@ -64,6 +64,12 @@ reported the same issue.
 Please see the [`COMPILING.md`](COMPILING.md) file for details.
 This includes instructions for building using Meson or CMake.
 
+## LICENSE
+
+THIS REPOSITORY IS FORKED FOR THE PROJECT TICK. THE PACKAGING/FORKED METADATA
+AND CODE LICENSED UNDER MIT LICENSE. THE ORIGINAL BZIP2 SOURCE CODE REMAINS
+UNDER ITS OWN BZIP2 LICENSE FOUND IN [LICENSES/bzip2-1.0.6.txt](LICENSES/bzip2-1.0.6.txt).
+
 ## WARNING
 
 This program and library (attempts to) compress data by performing several
