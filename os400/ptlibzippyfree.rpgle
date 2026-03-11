@@ -2,7 +2,7 @@
 //  PTLIBZIPPY.INC - Interface to the general purpose compression library
 
 //  ILE RPG400 version by Patrick Monnerat, DATASPHERE.
-//  Version 1.3.2
+//  Version 1.3.2.1
 
 
 //  WARNING:

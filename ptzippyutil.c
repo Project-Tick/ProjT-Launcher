@@ -172,7 +172,6 @@ int PTLIBZIPPY_INTERNAL zmemcmp(const void FAR *s1, const void FAR *s2, z_size_t
 
 void PTLIBZIPPY_INTERNAL zmemzero(void FAR *b, z_size_t len) {
     uchf *p = b;
-    if (len == 0) return;
     while (len) {
         *p++ = 0;
         len--;
