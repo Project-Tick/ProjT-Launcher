@@ -52,6 +52,7 @@ class DataPackPage : public ExternalResourcesPage
 	explicit DataPackPage(BaseInstance* instance,
 						  std::shared_ptr<DataPackFolderModel> model,
 						  QWidget* parent = nullptr);
+	~DataPackPage() override;
 
 	QString displayName() const override
 	{
