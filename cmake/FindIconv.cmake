@@ -73,9 +73,13 @@ endif()
 # handle the QUIETLY and REQUIRED arguments and set ICONV_FOUND to TRUE if
 # all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(ICONV
+find_package_handle_standard_args(Iconv
     REQUIRED_VARS ICONV_FOUND_ANY ICONV_INCLUDE_DIR
     VERSION_VAR ICONV_VERSION_STRING)
+
+if(DEFINED ICONV_FOUND AND NOT DEFINED Iconv_FOUND)
+    set(Iconv_FOUND "${ICONV_FOUND}")
+endif()
 
 mark_as_advanced(ICONV_LIBRARY ICONV_INCLUDE_DIR)
 

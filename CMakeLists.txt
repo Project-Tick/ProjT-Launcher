@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.1.0)
 
+if(POLICY CMP0069)
+  cmake_policy(SET CMP0069 NEW)
+endif()
+
 project(QRencode VERSION 4.1.1 LANGUAGES C)
 
 option(WITH_TOOLS "Build utility tools"  YES )
