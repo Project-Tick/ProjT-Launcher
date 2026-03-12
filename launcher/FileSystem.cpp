@@ -568,8 +568,7 @@ namespace FS
 		m_linked = 0; // reset counter
 		m_path_results.clear();
 		m_links_to_make.clear();
-
-		bool gotResults = false;
+		m_privilegedGotResults = false;
 
 		make_link_list(offset);
 
@@ -580,7 +579,7 @@ namespace FS
 			&m_linkServer,
 			&QLocalServer::newConnection,
 			this,
-			[this, &gotResults]()
+			[this]()
 			{
 				qDebug() << "Client connected, sending out pairs";
 				// construct block of data to send
@@ -657,7 +656,7 @@ namespace FS
 								}
 								m_path_results.append(result);
 							}
-							gotResults = true;
+							m_privilegedGotResults = true;
 							qDebug() << "results received, closing connection";
 							clientConnection->close();
 						});
@@ -678,7 +677,7 @@ namespace FS
 		connect(linkFileProcess,
 				&ExternalLinkFileProcess::processExited,
 				this,
-				[this, gotResults]() { emit finishedPrivileged(gotResults); });
+				[this]() { emit finishedPrivileged(m_privilegedGotResults); });
 		connect(linkFileProcess, &ExternalLinkFileProcess::finished, linkFileProcess, &QObject::deleteLater);
 
 		linkFileProcess->start();

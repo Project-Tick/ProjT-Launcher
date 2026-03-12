@@ -332,6 +332,7 @@ namespace FS
 		QList<LinkPair> m_path_pairs;
 		QList<LinkResult> m_path_results;
 		QList<LinkPair> m_links_to_make;
+		bool m_privilegedGotResults = false;
 
 		int m_linked;
 		bool m_debug = false;
