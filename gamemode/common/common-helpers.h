@@ -59,7 +59,7 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 static inline const char *strtail(const char *haystack, const char *needle)
 {
-	char *pos = strstr(haystack, needle);
+	const char *pos = strstr(haystack, needle);
 	if (pos && (strlen(pos) == strlen(needle)))
 		return pos;
 	return NULL;

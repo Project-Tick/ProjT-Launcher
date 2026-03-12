@@ -159,7 +159,7 @@ static long get_max_perf_level_nv(struct GameModeGPUInfo *info)
 		return -1;
 	}
 
-	char *ptr = strrchr(attr, ';');
+	const char *ptr = strrchr(attr, ';');
 	long level = -1;
 	if (!ptr || sscanf(ptr, "; perf=%ld", &level) != 1) {
 		LOG_ERROR(

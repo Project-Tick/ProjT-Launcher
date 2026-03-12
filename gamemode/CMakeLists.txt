@@ -78,14 +78,14 @@ configure_file(
 set(GAMEMODE_C_WARNINGS
     -fstack-protector
     -Wformat
-    -Wstrict-prototypes
     -Wundef
     -fno-common
-    -Werror-implicit-function-declaration
     -Wformat-security
     -Werror=format-security
     -Wconversion
     -Wunreachable-code
+    $<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>
+    $<$<COMPILE_LANGUAGE:C>:-Werror-implicit-function-declaration>
 )
 
 # Common sources
