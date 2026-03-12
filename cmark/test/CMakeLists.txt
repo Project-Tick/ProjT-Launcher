@@ -104,6 +104,15 @@ IF (Python3_Interpreter_FOUND)
                                                          --spec "${CMAKE_CURRENT_SOURCE_DIR}/regression.txt"
                                                          --program "$<TARGET_FILE:cmark_exe>")
 
+  if(WIN32 AND BUILD_SHARED_LIBS)
+    set_tests_properties(
+      spectest_executable
+      smartpuncttest_executable
+      regressiontest_executable
+      PROPERTIES
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:cmark>$<SEMICOLON>$ENV{PATH}")
+  endif()
+
 ELSE(Python3_Interpreter_FOUND)
 
   message(WARNING "A Python 3 Interpreter is required to run the spec tests")
