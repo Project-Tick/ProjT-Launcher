@@ -138,6 +138,12 @@ add_test(
 
 set_tests_properties(ptlibzippy_install PROPERTIES FIXTURES_SETUP ptlibzippy_install)
 
+# In the launcher superbuild, PTlibzippy installs under a custom libdir
+# (e.g. lib/projtlauncher), so tests must point find_package() at the exact
+# package config directory.
+set(PTLIBZIPPY_TEST_PACKAGE_DIR
+    "${CMAKE_CURRENT_BINARY_DIR}/test_install/${CMAKE_INSTALL_LIBDIR}/cmake/ptlibzippy")
+
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/findpackage_test)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/find_package_no_components_test)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/find_package_wrong_components_test)
@@ -181,6 +187,7 @@ add_test(
         -B${CMAKE_CURRENT_BINARY_DIR}/findpackage_test_build
         -DCMAKE_BUILD_TYPE=$<CONFIG> -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+        -DPTlibzippy_DIR=${PTLIBZIPPY_TEST_PACKAGE_DIR}
         -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/test_install --fresh
         -G "${CMAKE_GENERATOR}" -S${CMAKE_CURRENT_BINARY_DIR}/findpackage_test)
 
@@ -216,6 +223,7 @@ add_test(
         -B${CMAKE_CURRENT_BINARY_DIR}/findpackage_no_components_test_build
         -DCMAKE_BUILD_TYPE=$<CONFIG> -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+        -DPTlibzippy_DIR=${PTLIBZIPPY_TEST_PACKAGE_DIR}
         -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/test_install --fresh
         -G "${CMAKE_GENERATOR}"
         -S${CMAKE_CURRENT_BINARY_DIR}/findpackage_no_components_test)
@@ -240,6 +248,7 @@ add_test(
         -B${CMAKE_CURRENT_BINARY_DIR}/findpackage_wrong_components_test_build
         -DCMAKE_BUILD_TYPE=$<CONFIG> -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+        -DPTlibzippy_DIR=${PTLIBZIPPY_TEST_PACKAGE_DIR}
         -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/test_install --fresh
         -G "${CMAKE_GENERATOR}"
         -S${CMAKE_CURRENT_BINARY_DIR}/findpackage_wrong_components_test)
@@ -260,7 +269,7 @@ add_test(
         -DCMAKE_BUILD_TYPE=$<CONFIG> -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
         -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/test_install --fresh
-        -G "${CMAKE_GENERATOR}" -S${CMAKE_CURRENT_BINARY_DIR}/findpackage_test)
+        -G "${CMAKE_GENERATOR}" -S${CMAKE_CURRENT_BINARY_DIR}/add_subdirectory_test)
 
 add_test(
     NAME ptlibzippy_add_subdirectory_build
@@ -295,7 +304,8 @@ add_test(
         -DCMAKE_BUILD_TYPE=$<CONFIG> -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
         -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/test_install --fresh
-        -G "${CMAKE_GENERATOR}" -S${CMAKE_CURRENT_BINARY_DIR}/findpackage_test)
+        -G "${CMAKE_GENERATOR}"
+        -S${CMAKE_CURRENT_BINARY_DIR}/add_subdirectory_exclude_test)
 
 add_test(
     NAME ptlibzippy_add_subdirectory_exclude_build
@@ -314,7 +324,7 @@ set_tests_properties(
     PROPERTIES FIXTURES_REQUIRED ptlibzippy_install FIXTURES_SETUP asx_config)
 
 set_tests_properties(
-    ptlibzippy_add_subdirectory_exclude_build PROPERTIES FIXTURES_REQUIRED as_config
+    ptlibzippy_add_subdirectory_exclude_build PROPERTIES FIXTURES_REQUIRED asx_config
                                                    FIXTURES_SETUP asx_build)
 
 set_tests_properties(
