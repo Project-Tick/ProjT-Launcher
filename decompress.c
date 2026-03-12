@@ -24,6 +24,11 @@
 
 #include "bzlib_private.h"
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+
 
 /*---------------------------------------------------*/
 static
@@ -33,7 +38,7 @@ void makeMaps_d ( DState* s )
    s->nInUse = 0;
    for (i = 0; i < 256; i++)
       if (s->inUse[i]) {
-         s->seqToUnseq[s->nInUse] = i;
+         s->seqToUnseq[s->nInUse] = (UChar)i;
          s->nInUse++;
       }
 }
@@ -49,9 +54,9 @@ void makeMaps_d ( DState* s )
       if (s->bsLive >= nnn) {                     \
          UInt32 v;                                \
          v = (s->bsBuff >>                        \
-             (s->bsLive-nnn)) & ((1 << nnn)-1);   \
+             (s->bsLive-nnn)) & ((1u << (nnn))-1u); \
          s->bsLive -= nnn;                        \
-         vvv = v;                                 \
+         vvv = (Int32)v;                          \
          break;                                   \
       }                                           \
       if (s->strm->avail_in == 0) RETURN(BZ_OK);  \
@@ -73,6 +78,29 @@ void makeMaps_d ( DState* s )
 #define GET_BIT(lll,uuu)                          \
    GET_BITS(lll,uuu,1)
 
+#define GET_BOOL(lll,uuu)                         \
+   case lll: s->state = lll;                      \
+   while (True) {                                 \
+      if (s->bsLive >= 1) {                       \
+         UInt32 v;                                \
+         v = (s->bsBuff >> (s->bsLive-1)) & 1u;   \
+         s->bsLive -= 1;                          \
+         uuu = (Bool)v;                           \
+         break;                                   \
+      }                                           \
+      if (s->strm->avail_in == 0) RETURN(BZ_OK);  \
+      s->bsBuff                                   \
+         = (s->bsBuff << 8) |                     \
+           ((UInt32)                              \
+              (*((UChar*)(s->strm->next_in))));   \
+      s->bsLive += 8;                             \
+      s->strm->next_in++;                         \
+      s->strm->avail_in--;                        \
+      s->strm->total_in_lo32++;                   \
+      if (s->strm->total_in_lo32 == 0)            \
+         s->strm->total_in_hi32++;                \
+   }
+
 /*---------------------------------------------------*/
 #define GET_MTF_VAL(label1,label2,lval)           \
 {                                                 \
@@ -89,12 +117,14 @@ void makeMaps_d ( DState* s )
    }                                              \
    groupPos--;                                    \
    zn = gMinlen;                                  \
+   BZ_FALLTHROUGH;                                \
    GET_BITS(label1, zvec, zn);                    \
    while (1) {                                    \
       if (zn > 20 /* the longest code */)         \
          RETURN(BZ_DATA_ERROR);                   \
       if (zvec <= gLimit[zn]) break;              \
       zn++;                                       \
+      BZ_FALLTHROUGH;                             \
       GET_BIT(label2, zj);                        \
       zvec = (zvec << 1) | zj;                    \
    };                                             \
@@ -108,7 +138,7 @@ void makeMaps_d ( DState* s )
 /*---------------------------------------------------*/
 Int32 BZ2_decompress ( DState* s )
 {
-   UChar      uc;
+   Int32      uc;
    Int32      retVal;
    Int32      minLen, maxLen;
    bz_stream* strm = s->strm;
@@ -199,41 +229,51 @@ Int32 BZ2_decompress ( DState* s )
 
       GET_UCHAR(BZ_X_MAGIC_1, uc);
       if (uc != BZ_HDR_B) RETURN(BZ_DATA_ERROR_MAGIC);
+      BZ_FALLTHROUGH;
 
       GET_UCHAR(BZ_X_MAGIC_2, uc);
       if (uc != BZ_HDR_Z) RETURN(BZ_DATA_ERROR_MAGIC);
+      BZ_FALLTHROUGH;
 
       GET_UCHAR(BZ_X_MAGIC_3, uc)
       if (uc != BZ_HDR_h) RETURN(BZ_DATA_ERROR_MAGIC);
+      BZ_FALLTHROUGH;
 
       GET_BITS(BZ_X_MAGIC_4, s->blockSize100k, 8)
       if (s->blockSize100k < (BZ_HDR_0 + 1) ||
           s->blockSize100k > (BZ_HDR_0 + 9)) RETURN(BZ_DATA_ERROR_MAGIC);
       s->blockSize100k -= BZ_HDR_0;
+      BZ_FALLTHROUGH;
 
       if (s->smallDecompress) {
-         s->ll16 = BZALLOC( s->blockSize100k * 100000 * sizeof(UInt16) );
+         s->ll16 = BZALLOC( s->blockSize100k * 100000 * (Int32)sizeof(UInt16) );
          s->ll4  = BZALLOC(
-                      ((1 + s->blockSize100k * 100000) >> 1) * sizeof(UChar)
+                      ((1 + s->blockSize100k * 100000) >> 1) * (Int32)sizeof(UChar)
                    );
          if (s->ll16 == NULL || s->ll4 == NULL) RETURN(BZ_MEM_ERROR);
       } else {
-         s->tt  = BZALLOC( s->blockSize100k * 100000 * sizeof(Int32) );
+         s->tt  = BZALLOC( s->blockSize100k * 100000 * (Int32)sizeof(Int32) );
          if (s->tt == NULL) RETURN(BZ_MEM_ERROR);
       }
+      BZ_FALLTHROUGH;
 
       GET_UCHAR(BZ_X_BLKHDR_1, uc);
 
       if (uc == 0x17) goto endhdr_2;
       if (uc != 0x31) RETURN(BZ_DATA_ERROR);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_BLKHDR_2, uc);
       if (uc != 0x41) RETURN(BZ_DATA_ERROR);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_BLKHDR_3, uc);
       if (uc != 0x59) RETURN(BZ_DATA_ERROR);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_BLKHDR_4, uc);
       if (uc != 0x26) RETURN(BZ_DATA_ERROR);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_BLKHDR_5, uc);
       if (uc != 0x53) RETURN(BZ_DATA_ERROR);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_BLKHDR_6, uc);
       if (uc != 0x59) RETURN(BZ_DATA_ERROR);
 
@@ -242,24 +282,31 @@ Int32 BZ2_decompress ( DState* s )
          VPrintf1 ( "\n    [%d: huff+mtf ", s->currBlockNo );
 
       s->storedBlockCRC = 0;
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_BCRC_1, uc);
       s->storedBlockCRC = (s->storedBlockCRC << 8) | ((UInt32)uc);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_BCRC_2, uc);
       s->storedBlockCRC = (s->storedBlockCRC << 8) | ((UInt32)uc);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_BCRC_3, uc);
       s->storedBlockCRC = (s->storedBlockCRC << 8) | ((UInt32)uc);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_BCRC_4, uc);
       s->storedBlockCRC = (s->storedBlockCRC << 8) | ((UInt32)uc);
 
-      GET_BITS(BZ_X_RANDBIT, s->blockRandomised, 1);
+      GET_BOOL(BZ_X_RANDBIT, s->blockRandomised);
 
       s->origPtr = 0;
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_ORIGPTR_1, uc);
-      s->origPtr = (s->origPtr << 8) | ((Int32)uc);
+      s->origPtr = (s->origPtr << 8) | uc;
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_ORIGPTR_2, uc);
-      s->origPtr = (s->origPtr << 8) | ((Int32)uc);
+      s->origPtr = (s->origPtr << 8) | uc;
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_ORIGPTR_3, uc);
-      s->origPtr = (s->origPtr << 8) | ((Int32)uc);
+      s->origPtr = (s->origPtr << 8) | uc;
 
       if (s->origPtr < 0)
          RETURN(BZ_DATA_ERROR);
@@ -285,14 +332,17 @@ Int32 BZ2_decompress ( DState* s )
       makeMaps_d ( s );
       if (s->nInUse == 0) RETURN(BZ_DATA_ERROR);
       alphaSize = s->nInUse+2;
+      BZ_FALLTHROUGH;
 
       /*--- Now the selectors ---*/
       GET_BITS(BZ_X_SELECTOR_1, nGroups, 3);
       if (nGroups < 2 || nGroups > BZ_N_GROUPS) RETURN(BZ_DATA_ERROR);
+      BZ_FALLTHROUGH;
       GET_BITS(BZ_X_SELECTOR_2, nSelectors, 15);
       if (nSelectors < 1) RETURN(BZ_DATA_ERROR);
       for (i = 0; i < nSelectors; i++) {
          j = 0;
+         BZ_FALLTHROUGH;
          while (True) {
             GET_BIT(BZ_X_SELECTOR_3, uc);
             if (uc == 0) break;
@@ -303,7 +353,7 @@ Int32 BZ2_decompress ( DState* s )
             since they will never be used, but some implementations might
             "round up" the number of selectors, so just ignore those. */
          if (i < BZ_MAX_SELECTORS)
-           s->selectorMtf[i] = j;
+           s->selectorMtf[i] = (UChar)j;
       }
       if (nSelectors > BZ_MAX_SELECTORS)
         nSelectors = BZ_MAX_SELECTORS;
@@ -328,12 +378,14 @@ Int32 BZ2_decompress ( DState* s )
          for (i = 0; i < alphaSize; i++) {
             while (True) {
                if (curr < 1 || curr > 20) RETURN(BZ_DATA_ERROR);
+               BZ_FALLTHROUGH;
                GET_BIT(BZ_X_CODING_2, uc);
                if (uc == 0) break;
+               BZ_FALLTHROUGH;
                GET_BIT(BZ_X_CODING_3, uc);
                if (uc == 0) curr++; else curr--;
             }
-            s->len[t][i] = curr;
+            s->len[t][i] = (UChar)curr;
          }
       }
 
@@ -432,15 +484,15 @@ Int32 BZ2_decompress ( DState* s )
             /*-- uc = MTF ( nextSym-1 ) --*/
             {
                Int32 ii, jj, kk, pp, lno, off;
-               UInt32 nn;
-               nn = (UInt32)(nextSym - 1);
+               Int32 nn;
+               nn = nextSym - 1;
 
                if (nn < MTFL_SIZE) {
                   /* avoid general-case expense */
                   pp = s->mtfbase[0];
                   uc = s->mtfa[pp+nn];
                   while (nn > 3) {
-                     Int32 z = pp+nn;
+                     Int32 z = pp + nn;
                      s->mtfa[(z)  ] = s->mtfa[(z)-1];
                      s->mtfa[(z)-1] = s->mtfa[(z)-2];
                      s->mtfa[(z)-2] = s->mtfa[(z)-3];
@@ -450,7 +502,7 @@ Int32 BZ2_decompress ( DState* s )
                   while (nn > 0) {
                      s->mtfa[(pp+nn)] = s->mtfa[(pp+nn)-1]; nn--;
                   };
-                  s->mtfa[pp] = uc;
+                  s->mtfa[pp] = (UChar)uc;
                } else {
                   /* general case */
                   lno = nn / MTFL_SIZE;
@@ -468,7 +520,7 @@ Int32 BZ2_decompress ( DState* s )
                      lno--;
                   }
                   s->mtfbase[0]--;
-                  s->mtfa[s->mtfbase[0]] = uc;
+                  s->mtfa[s->mtfbase[0]] = (UChar)uc;
                   if (s->mtfbase[0] == 0) {
                      kk = MTFA_SIZE-1;
                      for (ii = 256 / MTFL_SIZE-1; ii >= 0; ii--) {
@@ -553,7 +605,7 @@ Int32 BZ2_decompress ( DState* s )
          }
             while (i != s->origPtr);
 
-         s->tPos = s->origPtr;
+         s->tPos = (UInt32)s->origPtr;
          s->nblock_used = 0;
          if (s->blockRandomised) {
             BZ_RAND_INIT_MASK;
@@ -568,7 +620,7 @@ Int32 BZ2_decompress ( DState* s )
          /*-- compute the T^(-1) vector --*/
          for (i = 0; i < nblock; i++) {
             uc = (UChar)(s->tt[i] & 0xff);
-            s->tt[s->cftab[uc]] |= (i << 8);
+            s->tt[s->cftab[uc]] |= ((UInt32)i << 8);
             s->cftab[uc]++;
          }
 
@@ -592,22 +644,30 @@ Int32 BZ2_decompress ( DState* s )
 
       GET_UCHAR(BZ_X_ENDHDR_2, uc);
       if (uc != 0x72) RETURN(BZ_DATA_ERROR);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_ENDHDR_3, uc);
       if (uc != 0x45) RETURN(BZ_DATA_ERROR);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_ENDHDR_4, uc);
       if (uc != 0x38) RETURN(BZ_DATA_ERROR);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_ENDHDR_5, uc);
       if (uc != 0x50) RETURN(BZ_DATA_ERROR);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_ENDHDR_6, uc);
       if (uc != 0x90) RETURN(BZ_DATA_ERROR);
 
       s->storedCombinedCRC = 0;
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_CCRC_1, uc);
       s->storedCombinedCRC = (s->storedCombinedCRC << 8) | ((UInt32)uc);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_CCRC_2, uc);
       s->storedCombinedCRC = (s->storedCombinedCRC << 8) | ((UInt32)uc);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_CCRC_3, uc);
       s->storedCombinedCRC = (s->storedCombinedCRC << 8) | ((UInt32)uc);
+      BZ_FALLTHROUGH;
       GET_UCHAR(BZ_X_CCRC_4, uc);
       s->storedCombinedCRC = (s->storedCombinedCRC << 8) | ((UInt32)uc);
 
@@ -653,3 +713,7 @@ Int32 BZ2_decompress ( DState* s )
 /*-------------------------------------------------------------*/
 /*--- end                                      decompress.c ---*/
 /*-------------------------------------------------------------*/
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
