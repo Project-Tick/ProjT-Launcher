@@ -42,7 +42,7 @@
 
 /*---------------------------------------------------*/
 #ifndef BZ_NO_STDIO
-void BZ2_bz__AssertH__fail ( int errcode )
+BZ_NORETURN void BZ2_bz__AssertH__fail ( int errcode )
 {
    fprintf(stderr,
       "\n\nPT2ziplib/libzip2pt: internal error number %d.\n"
@@ -106,13 +106,16 @@ int bz_config_ok ( void )
 static
 void* default_bzalloc ( void* opaque, Int32 items, Int32 size )
 {
-   void* v = malloc ( items * size );
+   void* v;
+   (void)opaque;
+   v = malloc ( (size_t)items * (size_t)size );
    return v;
 }
 
 static
 void default_bzfree ( void* opaque, void* addr )
 {
+   (void)opaque;
    if (addr != NULL) free ( addr );
 }
 
@@ -179,9 +182,9 @@ int BZ_API(BZ2_bzCompressInit)
    s->ftab = NULL;
 
    n       = 100000 * blockSize100k;
-   s->arr1 = BZALLOC( n                  * sizeof(UInt32) );
-   s->arr2 = BZALLOC( (n+BZ_N_OVERSHOOT) * sizeof(UInt32) );
-   s->ftab = BZALLOC( 65537              * sizeof(UInt32) );
+   s->arr1 = BZALLOC( n                  * (Int32)sizeof(UInt32) );
+   s->arr2 = BZALLOC( (n+BZ_N_OVERSHOOT) * (Int32)sizeof(UInt32) );
+   s->ftab = BZALLOC( 65537              * (Int32)sizeof(UInt32) );
 
    if (s->arr1 == NULL || s->arr2 == NULL || s->ftab == NULL) {
       if (s->arr1 != NULL) BZFREE(s->arr1);
@@ -349,7 +352,7 @@ Bool copy_output_until_stop ( EState* s )
       if (s->state_out_pos >= s->numZ) break;
 
       progress_out = True;
-      *(s->strm->next_out) = s->zbits[s->state_out_pos];
+      *(s->strm->next_out) = (Char)s->zbits[s->state_out_pos];
       s->state_out_pos++;
       s->strm->avail_out--;
       s->strm->next_out++;
@@ -566,7 +569,7 @@ Bool unRLE_obuf_to_output_FAST ( DState* s )
             return True;
 
          s->state_out_len = 1;
-         s->state_out_ch = s->k0;
+         s->state_out_ch = (UChar)s->k0;
          BZ_GET_FAST(k1); BZ_RAND_UPD_MASK;
          k1 ^= BZ_RAND_MASK; s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
@@ -642,7 +645,7 @@ Bool unRLE_obuf_to_output_FAST ( DState* s )
          if (c_nblock_used == s_save_nblockPP) {
             c_state_out_len = 0; goto return_notr;
          };
-         c_state_out_ch = c_k0;
+         c_state_out_ch = (UChar)c_k0;
          BZ_GET_FAST_C(k1); c_nblock_used++;
          if (k1 != c_k0) {
             c_k0 = k1; goto s_state_out_len_eq_one;
@@ -736,7 +739,7 @@ Bool unRLE_obuf_to_output_SMALL ( DState* s )
             return True;
 
          s->state_out_len = 1;
-         s->state_out_ch = s->k0;
+         s->state_out_ch = (UChar)s->k0;
          BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK;
          k1 ^= BZ_RAND_MASK; s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
@@ -785,7 +788,7 @@ Bool unRLE_obuf_to_output_SMALL ( DState* s )
             return True;
 
          s->state_out_len = 1;
-         s->state_out_ch = s->k0;
+         s->state_out_ch = (UChar)s->k0;
          BZ_GET_SMALL(k1); s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
@@ -972,7 +975,8 @@ void BZ_API(BZ2_bzWrite)
                void*   buf,
                int     len )
 {
-   Int32 n, n2, ret;
+   Int32  ret;
+   size_t n, n2;
    bzFile* bzf = (bzFile*)b;
 
    BZ_SETERR(BZ_OK);
@@ -986,18 +990,18 @@ void BZ_API(BZ2_bzWrite)
    if (len == 0)
       { BZ_SETERR(BZ_OK); return; };
 
-   bzf->strm.avail_in = len;
+   bzf->strm.avail_in = (unsigned int)len;
    bzf->strm.next_in  = buf;
 
    while (True) {
-      bzf->strm.avail_out = BZ_MAX_UNUSED;
+      bzf->strm.avail_out = (unsigned int)BZ_MAX_UNUSED;
       bzf->strm.next_out = bzf->buf;
       ret = BZ2_bzCompress ( &(bzf->strm), BZ_RUN );
       if (ret != BZ_RUN_OK)
          { BZ_SETERR(ret); return; };
 
-      if (bzf->strm.avail_out < BZ_MAX_UNUSED) {
-         n = BZ_MAX_UNUSED - bzf->strm.avail_out;
+      if (bzf->strm.avail_out < (unsigned int)BZ_MAX_UNUSED) {
+         n = (size_t)BZ_MAX_UNUSED - (size_t)bzf->strm.avail_out;
          n2 = fwrite ( (void*)(bzf->buf), sizeof(UChar),
                        n, bzf->handle );
          if (n != n2 || ferror(bzf->handle))
@@ -1032,7 +1036,8 @@ void BZ_API(BZ2_bzWriteClose64)
                     unsigned int* nbytes_out_lo32,
                     unsigned int* nbytes_out_hi32 )
 {
-   Int32   n, n2, ret;
+   Int32   ret;
+   size_t  n, n2;
    bzFile* bzf = (bzFile*)b;
 
    if (bzf == NULL)
@@ -1049,14 +1054,14 @@ void BZ_API(BZ2_bzWriteClose64)
 
    if ((!abandon) && bzf->lastErr == BZ_OK) {
       while (True) {
-         bzf->strm.avail_out = BZ_MAX_UNUSED;
+         bzf->strm.avail_out = (unsigned int)BZ_MAX_UNUSED;
          bzf->strm.next_out = bzf->buf;
          ret = BZ2_bzCompress ( &(bzf->strm), BZ_FINISH );
          if (ret != BZ_FINISH_OK && ret != BZ_STREAM_END)
             { BZ_SETERR(ret); return; };
 
-         if (bzf->strm.avail_out < BZ_MAX_UNUSED) {
-            n = BZ_MAX_UNUSED - bzf->strm.avail_out;
+         if (bzf->strm.avail_out < (unsigned int)BZ_MAX_UNUSED) {
+            n = (size_t)BZ_MAX_UNUSED - (size_t)bzf->strm.avail_out;
             n2 = fwrite ( (void*)(bzf->buf), sizeof(UChar),
                           n, bzf->handle );
             if (n != n2 || ferror(bzf->handle))
@@ -1098,6 +1103,7 @@ BZFILE* BZ_API(BZ2_bzReadOpen)
                      int   nUnused )
 {
    bzFile* bzf = NULL;
+   const UChar* unusedBytes = (const UChar*)unused;
    int     ret;
 
    BZ_SETERR(BZ_OK);
@@ -1127,8 +1133,8 @@ BZFILE* BZ_API(BZ2_bzReadOpen)
    bzf->strm.opaque   = NULL;
 
    while (nUnused > 0) {
-      bzf->buf[bzf->bufN] = *((UChar*)(unused)); bzf->bufN++;
-      unused = ((void*)( 1 + ((UChar*)(unused))  ));
+      bzf->buf[bzf->bufN] = (Char)(*unusedBytes); bzf->bufN++;
+      unusedBytes++;
       nUnused--;
    }
 
@@ -1136,7 +1142,7 @@ BZFILE* BZ_API(BZ2_bzReadOpen)
    if (ret != BZ_OK)
       { BZ_SETERR(ret); free(bzf); return NULL; };
 
-   bzf->strm.avail_in = bzf->bufN;
+   bzf->strm.avail_in = (unsigned int)bzf->bufN;
    bzf->strm.next_in  = bzf->buf;
 
    bzf->initialisedOk = True;
@@ -1169,7 +1175,8 @@ int BZ_API(BZ2_bzRead)
              void*   buf,
              int     len )
 {
-   Int32   n, ret;
+   Int32   ret;
+   size_t  n;
    bzFile* bzf = (bzFile*)b;
 
    BZ_SETERR(BZ_OK);
@@ -1183,7 +1190,7 @@ int BZ_API(BZ2_bzRead)
    if (len == 0)
       { BZ_SETERR(BZ_OK); return 0; };
 
-   bzf->strm.avail_out = len;
+   bzf->strm.avail_out = (unsigned int)len;
    bzf->strm.next_out = buf;
 
    while (True) {
@@ -1196,8 +1203,8 @@ int BZ_API(BZ2_bzRead)
                      BZ_MAX_UNUSED, bzf->handle );
          if (ferror(bzf->handle))
             { BZ_SETERR(BZ_IO_ERROR); return 0; };
-         bzf->bufN = n;
-         bzf->strm.avail_in = bzf->bufN;
+         bzf->bufN = (Int32)n;
+         bzf->strm.avail_in = (unsigned int)bzf->bufN;
          bzf->strm.next_in = bzf->buf;
       }
 
@@ -1212,7 +1219,7 @@ int BZ_API(BZ2_bzRead)
 
       if (ret == BZ_STREAM_END)
          { BZ_SETERR(BZ_STREAM_END);
-           return len - bzf->strm.avail_out; };
+           return len - (int)bzf->strm.avail_out; };
       if (bzf->strm.avail_out == 0)
          { BZ_SETERR(BZ_OK); return len; };
 
@@ -1238,7 +1245,7 @@ void BZ_API(BZ2_bzReadGetUnused)
       { BZ_SETERR(BZ_PARAM_ERROR); return; };
 
    BZ_SETERR(BZ_OK);
-   *nUnused = bzf->strm.avail_in;
+   *nUnused = (int)bzf->strm.avail_in;
    *unused = bzf->strm.next_in;
 }
 #endif
@@ -1516,6 +1523,7 @@ int BZ_API(BZ2_bzwrite) (BZFILE* b, void* buf, int len )
 /*---------------------------------------------------*/
 int BZ_API(BZ2_bzflush) (BZFILE *b)
 {
+   (void)b;
    /* do nothing now... */
    return 0;
 }

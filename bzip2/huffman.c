@@ -25,13 +25,13 @@
 #include "bzlib_private.h"
 
 /*---------------------------------------------------*/
-#define WEIGHTOF(zz0)  ((zz0) & 0xffffff00)
-#define DEPTHOF(zz1)   ((zz1) & 0x000000ff)
+#define WEIGHTOF(zz0)  ((UInt32)(zz0) & 0xffffff00u)
+#define DEPTHOF(zz1)   ((UInt32)(zz1) & 0x000000ffu)
 #define MYMAX(zz2,zz3) ((zz2) > (zz3) ? (zz2) : (zz3))
 
 #define ADDWEIGHTS(zw1,zw2)                           \
-   (WEIGHTOF(zw1)+WEIGHTOF(zw2)) |                    \
-   (1 + MYMAX(DEPTHOF(zw1),DEPTHOF(zw2)))
+   ((Int32)((WEIGHTOF(zw1) + WEIGHTOF(zw2)) |         \
+   ((UInt32)(1u + MYMAX(DEPTHOF(zw1), DEPTHOF(zw2))))))
 
 #define UPHEAP(z)                                     \
 {                                                     \
@@ -119,7 +119,7 @@ void BZ2_hbMakeCodeLengths ( UChar *len,
          j = 0;
          k = i;
          while (parent[k] >= 0) { k = parent[k]; j++; }
-         len[i-1] = j;
+         len[i-1] = (UChar)j;
          if (j > maxLen) tooLong = True;
       }
 

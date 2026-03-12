@@ -112,7 +112,7 @@ void makeMaps_e ( EState* s )
    s->nInUse = 0;
    for (i = 0; i < 256; i++)
       if (s->inUse[i]) {
-         s->unseqToSeq[i] = s->nInUse;
+         s->unseqToSeq[i] = (UChar)s->nInUse;
          s->nInUse++;
       }
 }
@@ -166,7 +166,7 @@ void generateMTFValues ( EState* s )
    for (i = 0; i < s->nblock; i++) {
       UChar ll_i;
       AssertD ( wr <= i, "generateMTFValues(1)" );
-      j = ptr[i]-1; if (j < 0) j += s->nblock;
+      j = (Int32)ptr[i] - 1; if (j < 0) j += s->nblock;
       ll_i = s->unseqToSeq[block[j]];
       AssertD ( ll_i < s->nInUse, "generateMTFValues(2a)" );
 
@@ -205,8 +205,8 @@ void generateMTFValues ( EState* s )
                *ryy_j = rtmp2;
             };
             yy[0] = rtmp;
-            j = ryy_j - &(yy[0]);
-            mtfv[wr] = j+1; wr++; s->mtfFreq[j+1]++;
+            j = (Int32)(ryy_j - &(yy[0]));
+            mtfv[wr] = (UInt16)(j + 1); wr++; s->mtfFreq[j+1]++;
          }
 
       }
@@ -228,7 +228,7 @@ void generateMTFValues ( EState* s )
       zPend = 0;
    }
 
-   mtfv[wr] = EOB; wr++; s->mtfFreq[EOB]++;
+   mtfv[wr] = (UInt16)EOB; wr++; s->mtfFreq[EOB]++;
 
    s->nMTF = wr;
 }
@@ -336,9 +336,9 @@ void sendMTFValues ( EState* s )
       ---*/
       if (nGroups == 6) {
          for (v = 0; v < alphaSize; v++) {
-            s->len_pack[v][0] = (s->len[1][v] << 16) | s->len[0][v];
-            s->len_pack[v][1] = (s->len[3][v] << 16) | s->len[2][v];
-            s->len_pack[v][2] = (s->len[5][v] << 16) | s->len[4][v];
+            s->len_pack[v][0] = ((UInt32)s->len[1][v] << 16) | (UInt32)s->len[0][v];
+            s->len_pack[v][1] = ((UInt32)s->len[3][v] << 16) | (UInt32)s->len[2][v];
+            s->len_pack[v][2] = ((UInt32)s->len[5][v] << 16) | (UInt32)s->len[4][v];
          }
       }
 
@@ -383,9 +383,9 @@ void sendMTFValues ( EState* s )
 
 #           undef BZ_ITER
 
-            cost[0] = cost01 & 0xffff; cost[1] = cost01 >> 16;
-            cost[2] = cost23 & 0xffff; cost[3] = cost23 >> 16;
-            cost[4] = cost45 & 0xffff; cost[5] = cost45 >> 16;
+            cost[0] = (UInt16)(cost01 & 0xffffu); cost[1] = (UInt16)(cost01 >> 16);
+            cost[2] = (UInt16)(cost23 & 0xffffu); cost[3] = (UInt16)(cost23 >> 16);
+            cost[4] = (UInt16)(cost45 & 0xffffu); cost[5] = (UInt16)(cost45 >> 16);
 
          } else {
             /*--- slow version which correctly handles all situations ---*/
@@ -404,7 +404,7 @@ void sendMTFValues ( EState* s )
             if (cost[t] < bc) { bc = cost[t]; bt = t; };
          totc += bc;
          fave[bt]++;
-         s->selector[nSelectors] = bt;
+         s->selector[nSelectors] = (UChar)bt;
          nSelectors++;
 
          /*--
@@ -464,7 +464,7 @@ void sendMTFValues ( EState* s )
    /*--- Compute MTF values for the selectors. ---*/
    {
       UChar pos[BZ_N_GROUPS], ll_i, tmp2, tmp;
-      for (i = 0; i < nGroups; i++) pos[i] = i;
+      for (i = 0; i < nGroups; i++) pos[i] = (UChar)i;
       for (i = 0; i < nSelectors; i++) {
          ll_i = s->selector[i];
          j = 0;
@@ -476,7 +476,7 @@ void sendMTFValues ( EState* s )
             pos[j] = tmp2;
          };
          pos[0] = tmp;
-         s->selectorMtf[i] = j;
+         s->selectorMtf[i] = (UChar)j;
       }
    };
 
@@ -519,8 +519,8 @@ void sendMTFValues ( EState* s )
 
    /*--- Now the selectors. ---*/
    nBytes = s->numZ;
-   bsW ( s, 3, nGroups );
-   bsW ( s, 15, nSelectors );
+   bsW ( s, 3, (UInt32)nGroups );
+   bsW ( s, 15, (UInt32)nSelectors );
    for (i = 0; i < nSelectors; i++) {
       for (j = 0; j < s->selectorMtf[i]; j++) bsW(s,1,1);
       bsW(s,1,0);
@@ -533,7 +533,7 @@ void sendMTFValues ( EState* s )
 
    for (t = 0; t < nGroups; t++) {
       Int32 curr = s->len[t][0];
-      bsW ( s, 5, curr );
+      bsW ( s, 5, (UInt32)curr );
       for (i = 0; i < alphaSize; i++) {
          while (curr < s->len[t][i]) { bsW(s,2,2); curr++; /* 10 */ };
          while (curr > s->len[t][i]) { bsW(s,2,3); curr--; /* 11 */ };
@@ -566,7 +566,7 @@ void sendMTFValues ( EState* s )
                mtfv_i = mtfv[gs+(nn)];              \
                bsW ( s,                             \
                      s_len_sel_selCtr[mtfv_i],      \
-                     s_code_sel_selCtr[mtfv_i] )
+                     (UInt32)s_code_sel_selCtr[mtfv_i] )
 
             BZ_ITAH(0);  BZ_ITAH(1);  BZ_ITAH(2);  BZ_ITAH(3);  BZ_ITAH(4);
             BZ_ITAH(5);  BZ_ITAH(6);  BZ_ITAH(7);  BZ_ITAH(8);  BZ_ITAH(9);
@@ -586,7 +586,7 @@ void sendMTFValues ( EState* s )
          for (i = gs; i <= ge; i++) {
             bsW ( s,
                   s->len  [s->selector[selCtr]] [mtfv[i]],
-                  s->code [s->selector[selCtr]] [mtfv[i]] );
+                  (UInt32)s->code [s->selector[selCtr]] [mtfv[i]] );
          }
       }
 
@@ -649,7 +649,7 @@ void BZ2_compressBlock ( EState* s, Bool is_last_block )
       --*/
       bsW(s,1,0);
 
-      bsW ( s, 24, s->origPtr );
+      bsW ( s, 24, (UInt32)s->origPtr );
       generateMTFValues ( s );
       sendMTFValues ( s );
    }

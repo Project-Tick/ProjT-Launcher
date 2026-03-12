@@ -286,6 +286,7 @@ target_sources(bz2_ObjLib
     PRIVATE   ${BZ2_SOURCES}
     PUBLIC    ${CMAKE_CURRENT_SOURCE_DIR}/bzlib_private.h
     INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/bzlib.h)
+set_target_properties(bz2_ObjLib PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
 target_include_directories(bz2_ObjLib PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_BINARY_DIR}")
@@ -317,6 +318,9 @@ if(ENABLE_SHARED_LIB)
     set_property(TARGET bz2 PROPERTY POSITION_INDEPENDENT_CODE ON)
 
     set_target_properties(bz2 PROPERTIES
+        AUTOMOC OFF
+        AUTOUIC OFF
+        AUTORCC OFF
         COMPILE_FLAGS "${WARNCFLAGS}"
         VERSION ${LT_VERSION} SOVERSION ${LT_SOVERSION})
     install(TARGETS bz2
@@ -338,6 +342,9 @@ if(ENABLE_SHARED_LIB)
                 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/bzlib.h
             )
             set_target_properties(bz2_old_soname PROPERTIES
+                AUTOMOC OFF
+                AUTOUIC OFF
+                AUTORCC OFF
                 COMPILE_FLAGS "${WARNCFLAGS}"
                 VERSION ${LT_SOVERSION}.${LT_AGE} SOVERSION ${LT_SOVERSION}.${LT_AGE}
                 OUTPUT_NAME bz2
@@ -365,6 +372,9 @@ if(ENABLE_STATIC_LIB)
     endif()
 
     set_target_properties(bz2_static PROPERTIES
+        AUTOMOC OFF
+        AUTOUIC OFF
+        AUTORCC OFF
         COMPILE_FLAGS       "${WARNCFLAGS}"
         VERSION             ${LT_VERSION}
         SOVERSION           ${LT_SOVERSION}
@@ -379,6 +389,7 @@ endif()
 if(ENABLE_APP)
     # The bzip2 executable.
     add_executable(bzip2)
+    set_target_properties(bzip2 PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
     target_sources(bzip2
         PRIVATE   bzip2.c)
     target_link_libraries(bzip2
@@ -397,6 +408,7 @@ if(ENABLE_APP)
 
     # The bzip2recover executable.
     add_executable(bzip2recover)
+    set_target_properties(bzip2recover PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
     target_sources(bzip2recover
         PRIVATE   bzip2recover.c)
     target_link_libraries(bzip2recover
@@ -412,6 +424,7 @@ if(ENABLE_APP)
         if(ENABLE_SHARED_LIB)
             # The dlltest executable.
             add_executable(dlltest)
+            set_target_properties(dlltest PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
             target_sources(dlltest
                 PRIVATE   dlltest.c)
             target_link_libraries(dlltest bz2)
