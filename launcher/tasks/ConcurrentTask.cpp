@@ -223,13 +223,21 @@ void ConcurrentTask::subTaskFinished(Task::Ptr task, TaskStepState state)
 
 	m_doing.remove(task.get());
 
-	auto task_progress	= *m_task_progress.value(task->getUid());
-	task_progress.state = state;
-	m_task_progress.remove(task->getUid());
+	auto task_progress_it = m_task_progress.find(task->getUid());
+	if (task_progress_it != m_task_progress.end() && task_progress_it.value())
+	{
+		auto task_progress = *task_progress_it.value();
+		task_progress.state = state;
+		m_task_progress.erase(task_progress_it);
+		emit stepProgress(task_progress);
+	}
+	else
+	{
+		m_task_progress.remove(task->getUid());
+	}
 
 	disconnect(task.get(), 0, this, 0);
 
-	emit stepProgress(task_progress);
 	updateState();
 	QMetaObject::invokeMethod(this, &ConcurrentTask::executeNextSubTask, Qt::QueuedConnection);
 }
@@ -246,7 +254,10 @@ void ConcurrentTask::subTaskFailed(Task::Ptr task, [[maybe_unused]] const QStrin
 
 void ConcurrentTask::subTaskStatus(Task::Ptr task, const QString& msg)
 {
-	auto task_progress	  = m_task_progress.value(task->getUid());
+	auto task_progress_it = m_task_progress.find(task->getUid());
+	if (task_progress_it == m_task_progress.end() || !task_progress_it.value())
+		return;
+	auto task_progress	  = task_progress_it.value();
 	task_progress->status = msg;
 	task_progress->state  = TaskStepState::Running;
 
@@ -260,7 +271,10 @@ void ConcurrentTask::subTaskStatus(Task::Ptr task, const QString& msg)
 
 void ConcurrentTask::subTaskDetails(Task::Ptr task, const QString& msg)
 {
-	auto task_progress	   = m_task_progress.value(task->getUid());
+	auto task_progress_it = m_task_progress.find(task->getUid());
+	if (task_progress_it == m_task_progress.end() || !task_progress_it.value())
+		return;
+	auto task_progress	   = task_progress_it.value();
 	task_progress->details = msg;
 	task_progress->state   = TaskStepState::Running;
 
@@ -274,7 +288,10 @@ void ConcurrentTask::subTaskDetails(Task::Ptr task, const QString& msg)
 
 void ConcurrentTask::subTaskProgress(Task::Ptr task, qint64 current, qint64 total)
 {
-	auto task_progress = m_task_progress.value(task->getUid());
+	auto task_progress_it = m_task_progress.find(task->getUid());
+	if (task_progress_it == m_task_progress.end() || !task_progress_it.value())
+		return;
+	auto task_progress = task_progress_it.value();
 
 	task_progress->update(current, total);
 

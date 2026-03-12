@@ -64,7 +64,10 @@ namespace ModPlatform
 
 		QString getName(ResourceType type)
 		{
-			return s_packedTypeNames.constFind(type).value();
+			const auto typeIt = s_packedTypeNames.constFind(type);
+			if (typeIt != s_packedTypeNames.cend())
+				return *typeIt;
+			return s_packedTypeNames.value(ResourceType::Unknown);
 		}
 
 	} // namespace ResourceTypeUtils

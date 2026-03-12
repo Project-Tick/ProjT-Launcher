@@ -95,9 +95,10 @@ void NetJob::executeNextSubTask()
 	if (isRunning() && m_queue.isEmpty() && m_doing.isEmpty() && !m_failed.isEmpty() && m_try < 3)
 	{
 		m_try += 1;
-		while (!m_failed.isEmpty())
+		const auto failedTasks = m_failed.keys();
+		for (auto* failedTask : failedTasks)
 		{
-			auto task = m_failed.take(*m_failed.keyBegin());
+			auto task = m_failed.take(failedTask);
 			m_done.remove(task.get());
 			m_queue.enqueue(task);
 		}

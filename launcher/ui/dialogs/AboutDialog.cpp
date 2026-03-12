@@ -74,7 +74,11 @@ namespace
 	QString getCreditsHtml()
 	{
 		QFile dataFile(":/documents/credits.html");
-		dataFile.open(QIODevice::ReadOnly);
+		if (!dataFile.open(QIODevice::ReadOnly))
+		{
+			qWarning() << "Failed to open file '" << dataFile.fileName() << "' for reading!";
+			return QString();
+		}
 
 		QString fileContent = QString::fromUtf8(dataFile.readAll());
 

@@ -132,6 +132,24 @@ macro(projt_pop_install_libexecdir)
     unset(_PROJT_PREV_INSTALL_FULL_LIBEXECDIR)
 endmacro()
 
+macro(projt_push_autogen_disabled)
+    set(_PROJT_PREV_AUTOMOC "${CMAKE_AUTOMOC}")
+    set(_PROJT_PREV_AUTORCC "${CMAKE_AUTORCC}")
+    set(_PROJT_PREV_AUTOUIC "${CMAKE_AUTOUIC}")
+    set(CMAKE_AUTOMOC OFF)
+    set(CMAKE_AUTORCC OFF)
+    set(CMAKE_AUTOUIC OFF)
+endmacro()
+
+macro(projt_pop_autogen_disabled)
+    set(CMAKE_AUTOMOC "${_PROJT_PREV_AUTOMOC}")
+    set(CMAKE_AUTORCC "${_PROJT_PREV_AUTORCC}")
+    set(CMAKE_AUTOUIC "${_PROJT_PREV_AUTOUIC}")
+    unset(_PROJT_PREV_AUTOMOC)
+    unset(_PROJT_PREV_AUTORCC)
+    unset(_PROJT_PREV_AUTOUIC)
+endmacro()
+
 if(UNIX AND NOT APPLE)
     include(GNUInstallDirs)
     set(_launcher_default_bundled_libdir "${CMAKE_INSTALL_LIBDIR}/projtlauncher")
@@ -750,7 +768,9 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
             endif()
         endif()
         projt_push_output_dirs("zlib")
+        projt_push_autogen_disabled()
         add_subdirectory(zlib)
+        projt_pop_autogen_disabled()
         projt_pop_output_dirs()
         if(UNIX AND NOT APPLE)
             if(DEFINED Launcher_BUNDLED_INCLUDEDIR AND NOT Launcher_BUNDLED_INCLUDEDIR STREQUAL "")
@@ -827,7 +847,9 @@ if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND NOT APPLE)
             endif()
         endif()
         projt_push_output_dirs("libpng")
+        projt_push_autogen_disabled()
         add_subdirectory(libpng)
+        projt_pop_autogen_disabled()
         projt_pop_output_dirs()
         if(UNIX AND NOT APPLE)
             if(DEFINED Launcher_BUNDLED_INCLUDEDIR AND NOT Launcher_BUNDLED_INCLUDEDIR STREQUAL "")
@@ -1013,7 +1035,15 @@ endif()
 if(NOT LAUNCHER_FUZZ_ONLY)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmark/CMakeLists.txt")
         message(STATUS "Using bundled cmark")
-        set(CMARK_SHARED ON CACHE BOOL "" FORCE)
+        set(_launcher_prev_cmark_build_shared_libs "")
+        set(_launcher_cmark_build_shared_libs_set FALSE)
+        if(DEFINED BUILD_SHARED_LIBS)
+            set(_launcher_prev_cmark_build_shared_libs "${BUILD_SHARED_LIBS}")
+            set(_launcher_cmark_build_shared_libs_set TRUE)
+        endif()
+        set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+        unset(CMARK_SHARED CACHE)
+        unset(CMARK_STATIC CACHE)
         set(_launcher_prev_cmark_osx_arch "${CMAKE_OSX_ARCHITECTURES}")
         if(APPLE
             AND CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm64|aarch64"
@@ -1031,6 +1061,13 @@ if(NOT LAUNCHER_FUZZ_ONLY)
         projt_push_output_dirs("cmark")
         add_subdirectory(cmark)
         projt_pop_output_dirs()
+        if(_launcher_cmark_build_shared_libs_set)
+            set(BUILD_SHARED_LIBS "${_launcher_prev_cmark_build_shared_libs}" CACHE BOOL "" FORCE)
+        else()
+            unset(BUILD_SHARED_LIBS CACHE)
+        endif()
+        unset(_launcher_prev_cmark_build_shared_libs)
+        unset(_launcher_cmark_build_shared_libs_set)
         if(UNIX AND NOT APPLE)
             if(DEFINED Launcher_BUNDLED_INCLUDEDIR AND NOT Launcher_BUNDLED_INCLUDEDIR STREQUAL "")
                 projt_pop_install_includedir()
@@ -1096,7 +1133,9 @@ if(NOT LAUNCHER_FUZZ_ONLY)
             endif()
         endif()
         projt_push_output_dirs("libqrencode")
+        projt_push_autogen_disabled()
         add_subdirectory(libqrencode)
+        projt_pop_autogen_disabled()
         projt_pop_output_dirs()
         if(UNIX AND NOT APPLE)
             if(DEFINED Launcher_BUNDLED_INCLUDEDIR AND NOT Launcher_BUNDLED_INCLUDEDIR STREQUAL "")
@@ -1214,6 +1253,29 @@ if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND APPLE)
     endif()
 
 elseif(NOT LAUNCHER_FUZZ_ONLY AND UNIX)
+    foreach(_launcher_install_dir IN ITEMS
+        BINDIR
+        SBINDIR
+        LIBDIR
+        LIBEXECDIR
+        INCLUDEDIR
+        LOCALSTATEDIR
+        SHAREDSTATEDIR
+        DATAROOTDIR
+        DATADIR
+        LOCALEDIR
+        MANDIR
+        INFODIR
+        SYSCONFDIR
+        RUNSTATEDIR
+        DOCDIR)
+        if(NOT DEFINED KDE_INSTALL_${_launcher_install_dir}
+            AND DEFINED CMAKE_INSTALL_${_launcher_install_dir}
+            AND NOT CMAKE_INSTALL_${_launcher_install_dir} STREQUAL "")
+            set(KDE_INSTALL_${_launcher_install_dir} "${CMAKE_INSTALL_${_launcher_install_dir}}" CACHE PATH "" FORCE)
+        endif()
+    endforeach()
+    unset(_launcher_install_dir)
     include(KDEInstallDirs)
 
     set(BINARY_DEST_DIR "bin")

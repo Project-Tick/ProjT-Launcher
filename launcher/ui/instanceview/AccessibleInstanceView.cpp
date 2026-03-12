@@ -797,17 +797,19 @@ QAccessible::Role AccessibleInstanceViewItem::role() const
 QAccessible::State AccessibleInstanceViewItem::state() const
 {
 	QAccessible::State st;
-	if (!isValid())
+	auto* itemView = view.data();
+	if (!itemView || !isValid())
 		return st;
+	auto* selectionModel = itemView->selectionModel();
 
-	QRect globalRect = view->rect();
-	globalRect.translate(view->mapToGlobal(QPoint(0, 0)));
+	QRect globalRect = itemView->rect();
+	globalRect.translate(itemView->mapToGlobal(QPoint(0, 0)));
 	if (!globalRect.intersects(rect()))
 		st.invisible = true;
 
-	if (view->selectionModel()->isSelected(m_index))
+	if (selectionModel && selectionModel->isSelected(m_index))
 		st.selected = true;
-	if (view->selectionModel()->currentIndex() == m_index)
+	if (selectionModel && selectionModel->currentIndex() == m_index)
 		st.focused = true;
 	if (m_index.model()->data(m_index, Qt::CheckStateRole).toInt() == Qt::Checked)
 		st.checked = true;
@@ -817,9 +819,9 @@ QAccessible::State AccessibleInstanceViewItem::state() const
 	{
 		st.selectable = true;
 		st.focusable  = true;
-		if (view->selectionMode() == QAbstractItemView::MultiSelection)
+		if (itemView->selectionMode() == QAbstractItemView::MultiSelection)
 			st.multiSelectable = true;
-		if (view->selectionMode() == QAbstractItemView::ExtendedSelection)
+		if (itemView->selectionMode() == QAbstractItemView::ExtendedSelection)
 			st.extSelectable = true;
 	}
 	return st;
@@ -828,14 +830,16 @@ QAccessible::State AccessibleInstanceViewItem::state() const
 QRect AccessibleInstanceViewItem::rect() const
 {
 	QRect r;
-	if (!isValid())
+	auto* itemView = view.data();
+	if (!itemView || !isValid())
 		return r;
-	r = view->visualRect(m_index);
+	r = itemView->visualRect(m_index);
 
 	if (!r.isNull())
 	{
-		r.translate(view->viewport()->mapTo(view, QPoint(0, 0)));
-		r.translate(view->mapToGlobal(QPoint(0, 0)));
+		if (auto* viewport = itemView->viewport())
+			r.translate(viewport->mapTo(itemView, QPoint(0, 0)));
+		r.translate(itemView->mapToGlobal(QPoint(0, 0)));
 	}
 	return r;
 }
