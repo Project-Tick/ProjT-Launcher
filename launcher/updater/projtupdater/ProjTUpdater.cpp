@@ -136,7 +136,7 @@ ProjTUpdaterApp::ProjTUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
 							 "reliably captured on windows)"),
 						  tr("installed launcher version") },
 						{ { "I", "install-version" }, "Install a specific version.", tr("version name") },
-						{ { "U", "update-url" }, tr("Update from the specified repo."), tr("github repo url") },
+						{ { "U", "update-url" }, tr("Update from the specified release feed."), tr("release feed url") },
 						{ { "c", "check-only" },
 						  tr("Only check if an update is needed. Exit status 100 if true, 0 if false (or non 0 if "
 							 "there was an error).") },
@@ -187,9 +187,9 @@ ProjTUpdaterApp::ProjTUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
 
 	auto projt_update_url = parser.value("update-url");
 	if (projt_update_url.isEmpty())
-		projt_update_url = BuildConfig.UPDATER_GITHUB_REPO;
+		projt_update_url = BuildConfig.UPDATER_RELEASES_URL;
 
-	m_projtRepoUrl = QUrl::fromUserInput(projt_update_url);
+	m_releaseFeedUrl = QUrl::fromUserInput(projt_update_url);
 
 	m_checkOnly		  = parser.isSet("check-only");
 	m_forceUpdate	  = parser.isSet("force");
@@ -441,7 +441,7 @@ ProjTUpdaterApp::ProjTUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
 	}
 	else
 	{
-		QMetaObject::invokeMethod(this, &ProjTUpdaterApp::loadReleaseList, Qt::QueuedConnection);
+		QMetaObject::invokeMethod(this, &ProjTUpdaterApp::loadReleaseFeed, Qt::QueuedConnection);
 	}
 }
 
@@ -495,7 +495,7 @@ void ProjTUpdaterApp::showFatalErrorMessage(const QString& title, const QString&
 
 void ProjTUpdaterApp::run()
 {
-	qDebug() << "found" << m_releases.length() << "releases on github";
+	qDebug() << "found" << m_releases.length() << "releases in update feed";
 	qDebug() << "loading exe at " << m_projtExecutable;
 
 	if (m_printOnly)
@@ -565,7 +565,7 @@ void ProjTUpdaterApp::run()
 
 	if (need_update || m_forceUpdate || !m_userSelectedVersion.isEmpty())
 	{
-		GitHubRelease update_release =
+		ReleaseInfo update_release =
 			update_candidate.release.isValid() ? update_candidate.release : getLatestRelease();
 		if (!m_userSelectedVersion.isEmpty())
 		{
@@ -582,7 +582,7 @@ void ProjTUpdaterApp::run()
 			if (!found)
 			{
 				showFatalErrorMessage("No release for version!",
-									  QString("Can not find a github release for specified version %1")
+									  QString("Can not find a release entry for specified version %1")
 										  .arg(m_userSelectedVersion.toString()));
 				return;
 			}
@@ -740,9 +740,9 @@ void ProjTUpdaterApp::printReleases()
 	}
 }
 
-QList<GitHubRelease> ProjTUpdaterApp::nonDraftReleases()
+QList<ReleaseInfo> ProjTUpdaterApp::nonDraftReleases()
 {
-	QList<GitHubRelease> nonDraft;
+	QList<ReleaseInfo> nonDraft;
 	for (auto rls : m_releases)
 	{
 		if (rls.isValid() && !rls.draft)
@@ -751,9 +751,9 @@ QList<GitHubRelease> ProjTUpdaterApp::nonDraftReleases()
 	return nonDraft;
 }
 
-QList<GitHubRelease> ProjTUpdaterApp::newerReleases()
+QList<ReleaseInfo> ProjTUpdaterApp::newerReleases()
 {
-	QList<GitHubRelease> newer;
+	QList<ReleaseInfo> newer;
 	for (auto rls : nonDraftReleases())
 	{
 		if (rls.version > m_projtVersion)
@@ -762,9 +762,9 @@ QList<GitHubRelease> ProjTUpdaterApp::newerReleases()
 	return newer;
 }
 
-GitHubRelease ProjTUpdaterApp::selectRelease()
+ReleaseInfo ProjTUpdaterApp::selectRelease()
 {
-	QList<GitHubRelease> releases;
+	QList<ReleaseInfo> releases;
 
 	if (m_allowDowngrade)
 	{
@@ -785,14 +785,14 @@ GitHubRelease ProjTUpdaterApp::selectRelease()
 	{
 		return {};
 	}
-	GitHubRelease release = dlg.selectedRelease();
+	ReleaseInfo release = dlg.selectedRelease();
 
 	return release;
 }
 
-QList<GitHubReleaseAsset> ProjTUpdaterApp::validReleaseArtifacts(const GitHubRelease& release)
+QList<ReleaseAsset> ProjTUpdaterApp::validReleaseArtifacts(const ReleaseInfo& release)
 {
-	QList<GitHubReleaseAsset> valid;
+	QList<ReleaseAsset> valid;
 
 	qDebug() << "Selecting best asset from" << release.tag_name << "for platform" << BuildConfig.BUILD_ARTIFACT
 			 << "portable:" << m_isPortable;
@@ -864,7 +864,7 @@ QList<GitHubReleaseAsset> ProjTUpdaterApp::validReleaseArtifacts(const GitHubRel
 	return valid;
 }
 
-GitHubReleaseAsset ProjTUpdaterApp::selectAsset(const QList<GitHubReleaseAsset>& assets)
+ReleaseAsset ProjTUpdaterApp::selectAsset(const QList<ReleaseAsset>& assets)
 {
 	SelectReleaseAssetDialog dlg(assets);
 	auto result = dlg.exec();
@@ -874,23 +874,23 @@ GitHubReleaseAsset ProjTUpdaterApp::selectAsset(const QList<GitHubReleaseAsset>&
 		return {};
 	}
 
-	GitHubReleaseAsset asset = dlg.selectedAsset();
+	ReleaseAsset asset = dlg.selectedAsset();
 	return asset;
 }
 
-void ProjTUpdaterApp::performUpdate(const GitHubRelease& release)
+void ProjTUpdaterApp::performUpdate(const ReleaseInfo& release)
 {
 	m_install_release = release;
 	qDebug() << "Updating to" << release.tag_name;
 	auto valid_assets = validReleaseArtifacts(release);
 	qDebug() << "valid release assets:" << valid_assets;
 
-	GitHubReleaseAsset selected_asset;
+	ReleaseAsset selected_asset;
 	if (valid_assets.isEmpty())
 	{
 		return showFatalErrorMessage(
 			tr("No Valid Release Assets"),
-			tr("Github release %1 has no valid assets for this platform: %2")
+				tr("Release %1 has no valid assets for this platform: %2")
 				.arg(release.tag_name)
 				.arg(tr("%1 portable: %2").arg(BuildConfig.BUILD_ARTIFACT).arg(m_isPortable ? tr("yes") : tr("no"))));
 	}
@@ -919,10 +919,10 @@ void ProjTUpdaterApp::performUpdate(const GitHubRelease& release)
 	performInstall(file);
 }
 
-QFileInfo ProjTUpdaterApp::downloadAsset(const GitHubReleaseAsset& asset)
+QFileInfo ProjTUpdaterApp::downloadAsset(const ReleaseAsset& asset)
 {
 	auto temp_dir	   = QDir::tempPath();
-	auto file_url	   = QUrl(asset.browser_download_url);
+	auto file_url	   = asset.download_url;
 	auto out_file_path = FS::PathCombine(temp_dir, file_url.fileName());
 
 	qDebug() << "downloading" << file_url << "to" << out_file_path;
@@ -1374,54 +1374,62 @@ bool ProjTUpdaterApp::loadProjTVersionFromExe(const QString& exe_path)
 	return true;
 }
 
-void ProjTUpdaterApp::loadReleaseList()
+namespace
 {
-	auto github_repo = m_projtRepoUrl;
-	if (github_repo.host() != "github.com")
-		return fail("updating from a non github url is not supported");
+	QDateTime parseOptionalDateTime(const QJsonObject& object, const QString& key)
+	{
+		auto value = Json::ensureString(object, key);
+		if (value.isEmpty())
+			return {};
+		auto parsed = QDateTime::fromString(value, Qt::ISODate);
+		if (!parsed.isValid())
+		{
+			throw Json::JsonException(QString("'%1' is not a ISO formatted date/time value").arg(key));
+		}
+		return parsed;
+	}
 
-	auto path_parts = github_repo.path().split('/');
-	path_parts.removeFirst(); // empty segment from leading /
-	auto repo_owner = path_parts.takeFirst();
-	auto repo_name	= path_parts.takeFirst();
-	auto api_url	= QString("https://api.github.com/repos/%1/%2/releases").arg(repo_owner, repo_name);
+	QUrl parseAssetUrl(const QJsonObject& object)
+	{
+		for (const auto& key : { QStringLiteral("url"), QStringLiteral("download_url"), QStringLiteral("browser_download_url") })
+		{
+			auto value = Json::ensureString(object, key);
+			if (!value.isEmpty())
+			{
+				return QUrl::fromUserInput(value);
+			}
+		}
+		return {};
+	}
+} // namespace
 
-	qDebug() << "Fetching release list from" << api_url;
+void ProjTUpdaterApp::loadReleaseFeed()
+{
+	if (!m_releaseFeedUrl.isValid() || m_releaseFeedUrl.isEmpty())
+		return fail("release feed url is missing or invalid");
 
-	downloadReleasePage(api_url, 1);
+	qDebug() << "Fetching release feed from" << m_releaseFeedUrl;
+	downloadReleaseFeed();
 }
 
-void ProjTUpdaterApp::downloadReleasePage(const QString& api_url, int page)
+void ProjTUpdaterApp::downloadReleaseFeed()
 {
-	int per_page = 30;
-	auto page_url =
-		QString("%1?per_page=%2&page=%3").arg(api_url).arg(QString::number(per_page)).arg(QString::number(page));
 	auto response = std::make_shared<QByteArray>();
-	auto download = Net::Download::makeByteArray(page_url, response);
+	auto download = Net::Download::makeByteArray(m_releaseFeedUrl, response);
 	download->setNetwork(m_network);
-	m_current_url = page_url;
+	m_current_url = m_releaseFeedUrl.toString();
 
-	auto github_api_headers = new Net::RawHeaderProxy();
-	github_api_headers->addHeaders({
-		{ "Accept", "application/vnd.github+json" },
-		{ "X-GitHub-Api-Version", "2022-11-28" },
-	});
-	download->addHeaderProxy(github_api_headers);
+	auto feed_headers = new Net::RawHeaderProxy();
+	feed_headers->addHeaders({ { "Accept", "application/json" } });
+	download->addHeaderProxy(feed_headers);
 
 	connect(download.get(),
 			&Net::Download::succeeded,
 			this,
-			[this, response, per_page, api_url, page]()
+			[this, response]()
 			{
-				int num_found = parseReleasePage(response.get());
-				if (!(num_found < per_page))
-				{ // there may be more, fetch next page
-					downloadReleasePage(api_url, page + 1);
-				}
-				else
-				{
-					run();
-				}
+				parseReleaseFeed(*response);
+				run();
 			});
 	connect(download.get(), &Net::Download::failed, this, &ProjTUpdaterApp::downloadError);
 
@@ -1441,68 +1449,99 @@ void ProjTUpdaterApp::downloadReleasePage(const QString& api_url, int page)
 	QMetaObject::invokeMethod(download.get(), &Task::start, Qt::QueuedConnection);
 }
 
-int ProjTUpdaterApp::parseReleasePage(const QByteArray* response)
+int ProjTUpdaterApp::parseReleaseFeed(const QByteArray& response)
 {
-	if (response->isEmpty()) // empty page
+	if (response.isEmpty())
 		return 0;
+
 	int num_releases = 0;
 	try
 	{
-		auto doc		  = Json::requireDocument(*response);
-		auto release_list = Json::requireArray(doc);
+		auto doc = Json::requireDocument(response, "Release feed");
+		QJsonArray release_list;
+		if (doc.isArray())
+		{
+			release_list = Json::requireArray(doc, "Release feed");
+		}
+		else
+		{
+			auto root = Json::requireObject(doc, "Release feed");
+			if (root.contains("releases"))
+			{
+				release_list = Json::requireArray(root, "releases");
+			}
+			else if (root.contains("versions"))
+			{
+				release_list = Json::requireArray(root, "versions");
+			}
+			else
+			{
+				throw Json::JsonException("Release feed must be a release array or contain a 'releases' array");
+			}
+		}
+
 		for (auto release_json : release_list)
 		{
 			auto release_obj = Json::requireObject(release_json);
 
-			GitHubRelease release = {};
-			release.id			  = Json::requireInteger(release_obj, "id");
-			release.name		  = Json::ensureString(release_obj, "name");
-			release.tag_name	  = Json::requireString(release_obj, "tag_name");
-			release.created_at	  = QDateTime::fromString(Json::requireString(release_obj, "created_at"), Qt::ISODate);
-			release.published_at  = QDateTime::fromString(Json::ensureString(release_obj, "published_at"), Qt::ISODate);
-			release.draft		  = Json::requireBoolean(release_obj, "draft");
-			release.prerelease	  = Json::requireBoolean(release_obj, "prerelease");
-			release.body		  = Json::ensureString(release_obj, "body");
+			ReleaseInfo release = {};
+			release.name = Json::ensureString(release_obj, "name");
+			release.tag_name = Json::requireString(release_obj, "tag_name");
+			release.created_at = parseOptionalDateTime(release_obj, "created_at");
+			release.published_at = parseOptionalDateTime(release_obj, "published_at");
+			release.draft = Json::ensureBoolean(release_obj, "draft", false);
+			release.prerelease = Json::ensureBoolean(release_obj, "prerelease", false);
+			if (!release.prerelease)
+			{
+				auto channel = Json::ensureString(release_obj, "channel").trimmed();
+				release.prerelease = !channel.isEmpty() && channel != "stable";
+			}
+			release.body = Json::ensureString(release_obj, "body");
 
 			auto normalized_tag = release.tag_name;
 			if (normalized_tag.startsWith(QLatin1Char('v'), Qt::CaseInsensitive))
 			{
-				normalized_tag.remove(0, 1); // drop common tag prefix to avoid false update prompts
+				normalized_tag.remove(0, 1);
 			}
 			release.version = Version(normalized_tag);
 
 			auto release_assets_obj = Json::requireArray(release_obj, "assets");
 			for (auto asset_json : release_assets_obj)
 			{
-				auto asset_obj			 = Json::requireObject(asset_json);
-				GitHubReleaseAsset asset = {};
-				asset.id				 = Json::requireInteger(asset_obj, "id");
-				asset.name				 = Json::requireString(asset_obj, "name");
-				asset.label				 = Json::ensureString(asset_obj, "label");
-				asset.content_type		 = Json::requireString(asset_obj, "content_type");
-				asset.size				 = Json::requireInteger(asset_obj, "size");
-				asset.created_at = QDateTime::fromString(Json::requireString(asset_obj, "created_at"), Qt::ISODate);
-				asset.updated_at = QDateTime::fromString(Json::requireString(asset_obj, "updated_at"), Qt::ISODate);
-				asset.browser_download_url = Json::requireString(asset_obj, "browser_download_url");
+				auto asset_obj = Json::requireObject(asset_json);
+				ReleaseAsset asset = {};
+				asset.name = Json::requireString(asset_obj, "name");
+				asset.label = Json::ensureString(asset_obj, "label");
+				asset.content_type = Json::ensureString(asset_obj, "content_type");
+				asset.size = Json::ensureInteger(asset_obj, "size", 0);
+				asset.created_at = parseOptionalDateTime(asset_obj, "created_at");
+				asset.updated_at = parseOptionalDateTime(asset_obj, "updated_at");
+				asset.download_url = parseAssetUrl(asset_obj);
+				if (!asset.download_url.isValid())
+				{
+					throw Json::JsonException(
+						QString("Asset '%1' is missing a valid download url").arg(asset.name));
+				}
 				release.assets.append(asset);
 			}
+
 			m_releases.append(release);
 			num_releases++;
 		}
 	}
 	catch (Json::JsonException& e)
 	{
-		auto err_msg = QString("Failed to parse releases from github: %1\n%2")
+		auto err_msg = QString("Failed to parse release feed: %1\n%2")
 						   .arg(e.what())
-						   .arg(QString::fromStdString(response->toStdString()));
+						   .arg(QString::fromUtf8(response));
 		fail(err_msg);
 	}
 	return num_releases;
 }
 
-GitHubRelease ProjTUpdaterApp::getLatestRelease()
+ReleaseInfo ProjTUpdaterApp::getLatestRelease()
 {
-	GitHubRelease latest;
+	ReleaseInfo latest;
 	for (auto release : m_releases)
 	{
 		if (release.draft)
@@ -1680,8 +1719,8 @@ ProjTUpdaterApp::UpdateCandidate ProjTUpdaterApp::findUpdateCandidate()
 	bool has_migration	  = false;
 	LineVersion best_line = current;
 	LineVersion best_migration_line;
-	GitHubRelease best_same_release;
-	GitHubRelease best_migration_release;
+	ReleaseInfo best_same_release;
+	ReleaseInfo best_migration_release;
 
 	for (const auto& release : m_releases)
 	{

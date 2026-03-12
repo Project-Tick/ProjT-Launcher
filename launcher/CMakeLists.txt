@@ -610,8 +610,8 @@ set(PROJTUPDATER_SOURCES
     updater/projtupdater/ProjTUpdater.cpp
     updater/projtupdater/UpdaterDialogs.h
     updater/projtupdater/UpdaterDialogs.cpp
-    updater/projtupdater/GitHubRelease.h
-    updater/projtupdater/GitHubRelease.cpp
+    updater/projtupdater/ReleaseInfo.h
+    updater/projtupdater/ReleaseInfo.cpp
 
     Json.h
     Json.cpp

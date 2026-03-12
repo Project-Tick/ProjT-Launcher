@@ -87,7 +87,7 @@ Config::Config()
     BUILD_PLATFORM = "@Launcher_BUILD_PLATFORM@";
     BUILD_ARTIFACT = "@Launcher_BUILD_ARTIFACT@";
     BUILD_DATE = "@Launcher_BUILD_TIMESTAMP@";
-    UPDATER_GITHUB_REPO = "@Launcher_UPDATER_GITHUB_REPO@";
+    UPDATER_RELEASES_URL = "@Launcher_UPDATER_RELEASES_URL@";
 
     COMPILER_NAME = "@Launcher_COMPILER_NAME@";
     COMPILER_VERSION = "@Launcher_COMPILER_VERSION@";
@@ -101,7 +101,7 @@ Config::Config()
 
     if (!MAC_SPARKLE_PUB_KEY.isEmpty() && !MAC_SPARKLE_APPCAST_URL.isEmpty()) {
         UPDATER_ENABLED = true;
-    } else if (!UPDATER_GITHUB_REPO.isEmpty() && !BUILD_ARTIFACT.isEmpty()) {
+    } else if (!UPDATER_RELEASES_URL.isEmpty() && !BUILD_ARTIFACT.isEmpty()) {
         UPDATER_ENABLED = true;
     }
 

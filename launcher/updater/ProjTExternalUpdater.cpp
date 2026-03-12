@@ -304,7 +304,7 @@ void ProjTExternalUpdater::setUpdateCheckInterval(double seconds)
 void ProjTExternalUpdater::setBetaAllowed(bool allowed)
 {
 	priv->allowBeta = allowed;
-	priv->settings->setValue("auto_beta", allowed);
+	priv->settings->setValue("allow_beta", allowed);
 	priv->settings->sync();
 }
 

@@ -4,28 +4,6 @@
 /*
  *  ProjT Launcher - Minecraft Launcher
  *  Copyright (C) 2026 Project Tick
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, write to the Free Software Foundation,
- *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- * === Upstream License Block (Do Not Modify) ==============================
- *
- *
- *
- *
- *
- *
- *  Prism Launcher - Minecraft Launcher
  *  Copyright (C) 2023 Rachel Powers <508861+Ryex@users.noreply.github.com>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -41,20 +19,15 @@
  *  along with this program.  If not, write to the Free Software Foundation,
  *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- *
- *
- * ======================================================================== */
+ */
 
-#include "GitHubRelease.h"
+#include "ReleaseInfo.h"
 
-QDebug operator<<(QDebug debug, const GitHubReleaseAsset& asset)
+QDebug operator<<(QDebug debug, const ReleaseAsset& asset)
 {
 	QDebugStateSaver saver(debug);
-	debug.nospace() << "GitHubReleaseAsset( "
-					   "id: "
-					<< asset.id
-					<< ", "
-					   "name "
+	debug.nospace() << "ReleaseAsset( "
+					   "name: "
 					<< asset.name
 					<< ", "
 					   "label: "
@@ -72,46 +45,43 @@ QDebug operator<<(QDebug debug, const GitHubReleaseAsset& asset)
 					   "updated_at: "
 					<< asset.updated_at
 					<< ", "
-					   "browser_download_url: "
-					<< asset.browser_download_url
+					   "download_url: "
+					<< asset.download_url
 					<< " "
 					   ")";
 	return debug;
 }
 
-QDebug operator<<(QDebug debug, const GitHubRelease& rls)
+QDebug operator<<(QDebug debug, const ReleaseInfo& release)
 {
 	QDebugStateSaver saver(debug);
-	debug.nospace() << "GitHubRelease( "
-					   "id: "
-					<< rls.id
-					<< ", "
-					   "name "
-					<< rls.name
+	debug.nospace() << "ReleaseInfo( "
+					   "name: "
+					<< release.name
 					<< ", "
 					   "tag_name: "
-					<< rls.tag_name
+					<< release.tag_name
 					<< ", "
 					   "created_at: "
-					<< rls.created_at
+					<< release.created_at
 					<< ", "
 					   "published_at: "
-					<< rls.published_at
+					<< release.published_at
 					<< ", "
 					   "prerelease: "
-					<< rls.prerelease
+					<< release.prerelease
 					<< ", "
 					   "draft: "
-					<< rls.draft
+					<< release.draft
 					<< ", "
-					   "version"
-					<< rls.version
+					   "version: "
+					<< release.version
 					<< ", "
 					   "body: "
-					<< rls.body
+					<< release.body
 					<< ", "
 					   "assets: "
-					<< rls.assets
+					<< release.assets
 					<< " "
 					   ")";
 	return debug;

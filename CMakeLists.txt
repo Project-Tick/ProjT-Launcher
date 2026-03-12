@@ -559,8 +559,8 @@ if(TARGET qt-bundled-install OR TARGET toolchain-llvm-install OR TARGET toolchai
     endif()
 endif()
 
-# Github repo URL with releases for updater
-set(Launcher_UPDATER_GITHUB_REPO "https://github.com/Project-Tick/ProjT-Launcher" CACHE STRING "Base github URL for the updater.")
+# Release feed URL for updater
+set(Launcher_UPDATER_RELEASES_URL "https://projecttick.org/product/projt-launcher/feed.xml" CACHE STRING "URL for the updater release feed manifest.")
 
 # Name to help updater identify valid artifacts
 set(Launcher_BUILD_ARTIFACT "" CACHE STRING "Artifact name to help the updater identify valid artifacts.")
@@ -1165,7 +1165,7 @@ endif()
 set(Launcher_ENABLE_UPDATER NO)
 set(Launcher_BUILD_UPDATER NO)
 
-if (NOT APPLE AND (NOT Launcher_UPDATER_GITHUB_REPO STREQUAL "" AND NOT Launcher_BUILD_ARTIFACT STREQUAL ""))
+if (NOT APPLE AND (NOT Launcher_UPDATER_RELEASES_URL STREQUAL "" AND NOT Launcher_BUILD_ARTIFACT STREQUAL ""))
     set(Launcher_BUILD_UPDATER YES)
 endif()
 

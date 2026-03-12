@@ -55,7 +55,7 @@
 #include "StringUtils.h"
 
 SelectReleaseDialog::SelectReleaseDialog(const Version& current_version,
-										 const QList<GitHubRelease>& releases,
+										 const QList<ReleaseInfo>& releases,
 										 QWidget* parent)
 	: QDialog(parent),
 	  m_releases(releases),
@@ -104,24 +104,24 @@ void SelectReleaseDialog::loadReleases()
 	}
 }
 
-void SelectReleaseDialog::appendRelease(GitHubRelease const& release)
+void SelectReleaseDialog::appendRelease(ReleaseInfo const& release)
 {
 	auto rls_item = new QTreeWidgetItem(ui->versionsTree);
 	rls_item->setText(0, release.tag_name);
 	rls_item->setExpanded(true);
 	rls_item->setText(1, release.published_at.toString());
-	rls_item->setData(0, Qt::UserRole, QVariant(release.id));
+	rls_item->setData(0, Qt::UserRole, QVariant(release.tag_name));
 
 	ui->versionsTree->addTopLevelItem(rls_item);
 }
 
-GitHubRelease SelectReleaseDialog::getRelease(QTreeWidgetItem* item)
+ReleaseInfo SelectReleaseDialog::getRelease(QTreeWidgetItem* item)
 {
-	int id = item->data(0, Qt::UserRole).toInt();
-	GitHubRelease release;
+	auto tag_name = item->data(0, Qt::UserRole).toString();
+	ReleaseInfo release;
 	for (auto rls : m_releases)
 	{
-		if (rls.id == id)
+		if (rls.tag_name == tag_name)
 			release = rls;
 	}
 	return release;
@@ -129,14 +129,15 @@ GitHubRelease SelectReleaseDialog::getRelease(QTreeWidgetItem* item)
 
 void SelectReleaseDialog::selectionChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous)
 {
-	GitHubRelease release = getRelease(current);
-	QString body		  = markdownToHTML(release.body.toUtf8());
-	m_selectedRelease	  = release;
+	Q_UNUSED(previous)
+	ReleaseInfo release = getRelease(current);
+	QString body		= markdownToHTML(release.body.toUtf8());
+	m_selectedRelease	= release;
 
 	ui->changelogTextBrowser->setHtml(StringUtils::htmlListPatch(body));
 }
 
-SelectReleaseAssetDialog::SelectReleaseAssetDialog(const QList<GitHubReleaseAsset>& assets, QWidget* parent)
+SelectReleaseAssetDialog::SelectReleaseAssetDialog(const QList<ReleaseAsset>& assets, QWidget* parent)
 	: QDialog(parent),
 	  m_assets(assets),
 	  ui(new Ui::SelectReleaseDialog)
@@ -179,24 +180,24 @@ void SelectReleaseAssetDialog::loadAssets()
 	}
 }
 
-void SelectReleaseAssetDialog::appendAsset(GitHubReleaseAsset const& asset)
+void SelectReleaseAssetDialog::appendAsset(ReleaseAsset const& asset)
 {
 	auto rls_item = new QTreeWidgetItem(ui->versionsTree);
 	rls_item->setText(0, asset.name);
 	rls_item->setExpanded(true);
 	rls_item->setText(1, asset.updated_at.toString());
-	rls_item->setData(0, Qt::UserRole, QVariant(asset.id));
+	rls_item->setData(0, Qt::UserRole, QVariant(asset.download_url.toString()));
 
 	ui->versionsTree->addTopLevelItem(rls_item);
 }
 
-GitHubReleaseAsset SelectReleaseAssetDialog::getAsset(QTreeWidgetItem* item)
+ReleaseAsset SelectReleaseAssetDialog::getAsset(QTreeWidgetItem* item)
 {
-	int id = item->data(0, Qt::UserRole).toInt();
-	GitHubReleaseAsset selected_asset;
+	auto asset_url = item->data(0, Qt::UserRole).toString();
+	ReleaseAsset selected_asset;
 	for (auto asset : m_assets)
 	{
-		if (asset.id == id)
+		if (asset.download_url.toString() == asset_url)
 			selected_asset = asset;
 	}
 	return selected_asset;
@@ -204,6 +205,7 @@ GitHubReleaseAsset SelectReleaseAssetDialog::getAsset(QTreeWidgetItem* item)
 
 void SelectReleaseAssetDialog::selectionChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous)
 {
-	GitHubReleaseAsset asset = getAsset(current);
-	m_selectedAsset			 = asset;
+	Q_UNUSED(previous)
+	ReleaseAsset asset = getAsset(current);
+	m_selectedAsset	   = asset;
 }

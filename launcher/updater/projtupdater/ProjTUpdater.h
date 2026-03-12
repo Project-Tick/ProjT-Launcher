@@ -68,7 +68,7 @@
 #define PRISM_EXTERNAL_EXE
 #include "FileSystem.h"
 
-#include "GitHubRelease.h"
+#include "ReleaseInfo.h"
 
 class ProjTUpdaterApp : public QApplication
 {
@@ -85,7 +85,7 @@ class ProjTUpdaterApp : public QApplication
 	};
 	ProjTUpdaterApp(int& argc, char** argv);
 	virtual ~ProjTUpdaterApp();
-	void loadReleaseList();
+	void loadReleaseFeed();
 	void run();
 	Status status() const
 	{
@@ -99,8 +99,8 @@ class ProjTUpdaterApp : public QApplication
 
 	bool loadProjTVersionFromExe(const QString& exe_path);
 
-	void downloadReleasePage(const QString& api_url, int page);
-	int parseReleasePage(const QByteArray* response);
+	void downloadReleaseFeed();
+	int parseReleaseFeed(const QByteArray& response);
 
 	enum class UpdateKind
 	{
@@ -112,27 +112,27 @@ class ProjTUpdaterApp : public QApplication
 	struct UpdateCandidate
 	{
 		UpdateKind kind = UpdateKind::None;
-		GitHubRelease release;
+		ReleaseInfo release;
 	};
 
 	UpdateCandidate findUpdateCandidate();
 
-	GitHubRelease getLatestRelease();
-	GitHubRelease selectRelease();
-	QList<GitHubRelease> newerReleases();
-	QList<GitHubRelease> nonDraftReleases();
+	ReleaseInfo getLatestRelease();
+	ReleaseInfo selectRelease();
+	QList<ReleaseInfo> newerReleases();
+	QList<ReleaseInfo> nonDraftReleases();
 
 	void printReleases();
 
-	QList<GitHubReleaseAsset> validReleaseArtifacts(const GitHubRelease& release);
-	GitHubReleaseAsset selectAsset(const QList<GitHubReleaseAsset>& assets);
-	void performUpdate(const GitHubRelease& release);
+	QList<ReleaseAsset> validReleaseArtifacts(const ReleaseInfo& release);
+	ReleaseAsset selectAsset(const QList<ReleaseAsset>& assets);
+	void performUpdate(const ReleaseInfo& release);
 	void performInstall(QFileInfo file);
 	void unpackAndInstall(QFileInfo file);
 	void backupAppDir();
 	std::optional<QDir> unpackArchive(QFileInfo file);
 
-	QFileInfo downloadAsset(const GitHubReleaseAsset& asset);
+	QFileInfo downloadAsset(const ReleaseAsset& asset);
 	bool callAppImageUpdate();
 
 	void moveAndFinishUpdate(QDir target);
@@ -161,7 +161,7 @@ class ProjTUpdaterApp : public QApplication
 	bool m_isFlatpak  = false;
 	QString m_appimagePath;
 	QString m_projtExecutable;
-	QUrl m_projtRepoUrl;
+	QUrl m_releaseFeedUrl;
 	Version m_userSelectedVersion;
 	bool m_checkOnly;
 	bool m_forceUpdate;
@@ -180,13 +180,13 @@ class ProjTUpdaterApp : public QApplication
 	QString m_prsimVersionChannel;
 	QString m_projtGitCommit;
 
-	GitHubRelease m_install_release;
+	ReleaseInfo m_install_release;
 
 	Status m_status = Status::Starting;
 	shared_qobject_ptr<QNetworkAccessManager> m_network;
 	QString m_current_url;
 	Task::Ptr m_current_task;
-	QList<GitHubRelease> m_releases;
+	QList<ReleaseInfo> m_releases;
 
   public:
 	std::unique_ptr<QFile> logFile;

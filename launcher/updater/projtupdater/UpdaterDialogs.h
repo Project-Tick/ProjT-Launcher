@@ -50,7 +50,7 @@
 #include <QDialog>
 #include <QTreeWidgetItem>
 
-#include "GitHubRelease.h"
+#include "ReleaseInfo.h"
 #include "Version.h"
 
 namespace Ui
@@ -63,22 +63,22 @@ class SelectReleaseDialog : public QDialog
 	Q_OBJECT
 
   public:
-	explicit SelectReleaseDialog(const Version& cur_version, const QList<GitHubRelease>& releases, QWidget* parent = 0);
+	explicit SelectReleaseDialog(const Version& cur_version, const QList<ReleaseInfo>& releases, QWidget* parent = 0);
 	~SelectReleaseDialog();
 
 	void loadReleases();
-	void appendRelease(GitHubRelease const& release);
-	GitHubRelease selectedRelease()
+	void appendRelease(ReleaseInfo const& release);
+	ReleaseInfo selectedRelease()
 	{
 		return m_selectedRelease;
 	}
   private slots:
-	GitHubRelease getRelease(QTreeWidgetItem* item);
+	ReleaseInfo getRelease(QTreeWidgetItem* item);
 	void selectionChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
 
   protected:
-	QList<GitHubRelease> m_releases;
-	GitHubRelease m_selectedRelease;
+	QList<ReleaseInfo> m_releases;
+	ReleaseInfo m_selectedRelease;
 	Version m_currentVersion;
 
 	Ui::SelectReleaseDialog* ui;
@@ -88,22 +88,22 @@ class SelectReleaseAssetDialog : public QDialog
 {
 	Q_OBJECT
   public:
-	explicit SelectReleaseAssetDialog(const QList<GitHubReleaseAsset>& assets, QWidget* parent = 0);
+	explicit SelectReleaseAssetDialog(const QList<ReleaseAsset>& assets, QWidget* parent = 0);
 	~SelectReleaseAssetDialog();
 
 	void loadAssets();
-	void appendAsset(GitHubReleaseAsset const& asset);
-	GitHubReleaseAsset selectedAsset()
+	void appendAsset(ReleaseAsset const& asset);
+	ReleaseAsset selectedAsset()
 	{
 		return m_selectedAsset;
 	}
   private slots:
-	GitHubReleaseAsset getAsset(QTreeWidgetItem* item);
+	ReleaseAsset getAsset(QTreeWidgetItem* item);
 	void selectionChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
 
   protected:
-	QList<GitHubReleaseAsset> m_assets;
-	GitHubReleaseAsset m_selectedAsset;
+	QList<ReleaseAsset> m_assets;
+	ReleaseAsset m_selectedAsset;
 
 	Ui::SelectReleaseDialog* ui;
 };
