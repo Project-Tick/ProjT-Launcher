@@ -44,6 +44,8 @@
 #include "ResourceDownloadDialog.h"
 #include <QList>
 
+#include <QInputDialog>
+#include <QLineEdit>
 #include <QPushButton>
 #include <algorithm>
 
@@ -58,6 +60,7 @@
 
 #include "minecraft/mod/tasks/GetModDependenciesTask.hpp"
 #include "modplatform/ModIndex.h"
+#include "modplatform/modrinth/ModrinthCollectionImportTask.h"
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/dialogs/ReviewMessageBox.h"
@@ -339,6 +342,16 @@ namespace ResourceDownload
 		initializeContainer();
 		connectButtons();
 
+		if (modrinthPage())
+		{
+			m_importModrinthCollectionButton =
+				m_buttons.addButton(tr("Import Modrinth Collection"), QDialogButtonBox::ActionRole);
+			connect(m_importModrinthCollectionButton,
+					&QPushButton::clicked,
+					this,
+					&ModDownloadDialog::importModrinthCollection);
+		}
+
 		if (!geometrySaveKey().isEmpty())
 			restoreGeometry(
 				QByteArray::fromBase64(APPLICATION->settings()->get(geometrySaveKey()).toString().toUtf8()));
@@ -376,6 +389,68 @@ namespace ResourceDownload
 			}
 		}
 		return nullptr;
+	}
+
+	ResourcePage* ModDownloadDialog::modrinthPage() const
+	{
+		for (auto* page : m_container->getPages())
+		{
+			if (auto* resource_page = dynamic_cast<ResourcePage*>(page); resource_page && resource_page->id() == "modrinth")
+				return resource_page;
+		}
+		return nullptr;
+	}
+
+	void ModDownloadDialog::importModrinthCollection()
+	{
+		auto* page = modrinthPage();
+		if (!page)
+			return;
+
+		bool ok = false;
+		auto input = QInputDialog::getText(this,
+										   tr("Import Modrinth Collection"),
+										   tr("Enter a Modrinth collection URL or collection ID:"),
+										   QLineEdit::Normal,
+										   QString(),
+										   &ok);
+		if (!ok || input.trimmed().isEmpty())
+			return;
+
+		auto task = makeShared<ModrinthCollectionImportTask>(input, static_cast<MinecraftInstance*>(m_instance));
+
+		ProgressDialog progress_dialog(this);
+		progress_dialog.setSkipButton(true, tr("Abort"));
+		progress_dialog.setWindowTitle(tr("Importing Modrinth collection..."));
+
+		if (progress_dialog.execWithTask(*task) == QDialog::Rejected)
+			return;
+
+		selectPage(page->id());
+		auto imported_resources = task->importedResources();
+		for (auto& imported : imported_resources)
+			addResource(imported.pack, imported.version);
+
+		QString message;
+		if (task->collectionName().isEmpty())
+			message = tr("Imported %1 mod(s) from Modrinth collection `%2`.")
+						  .arg(task->importedResources().size())
+						  .arg(input.trimmed());
+		else
+			message = tr("Imported %1 mod(s) from `%2`.")
+						  .arg(task->importedResources().size())
+						  .arg(task->collectionName());
+
+		if (!task->skippedResources().isEmpty())
+		{
+			message += "\n\n"
+					+ tr("Skipped %1 project(s) without a compatible version:")
+						  .arg(task->skippedResources().size())
+					+ "\n"
+					+ task->skippedResources().join(", ");
+		}
+
+		CustomMessageBox::selectable(this, tr("Collection imported"), message, QMessageBox::Information)->exec();
 	}
 
 	ResourcePackDownloadDialog::ResourcePackDownloadDialog(

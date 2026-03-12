@@ -64,6 +64,7 @@ class ResourceFolderModel;
 class ResourcePackFolderModel;
 class TexturePackFolderModel;
 class ShaderPackFolderModel;
+class QPushButton;
 
 namespace ResourceDownload
 {
@@ -160,8 +161,14 @@ namespace ResourceDownload
 		QList<BasePage*> getPages() override;
 		GetModDependenciesTask::Ptr getModDependenciesTask() override;
 
+	  private slots:
+		void importModrinthCollection();
+
 	  private:
+		ResourcePage* modrinthPage() const;
+
 		BaseInstance* m_instance;
+		QPushButton* m_importModrinthCollectionButton = nullptr;
 	};
 
 	class ResourcePackDownloadDialog final : public ResourceDownloadDialog

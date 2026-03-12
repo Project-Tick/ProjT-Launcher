@@ -554,6 +554,8 @@ set(FLAME_SOURCES
 set(MODRINTH_SOURCES
     modplatform/modrinth/ModrinthPackIndex.cpp
     modplatform/modrinth/ModrinthPackIndex.h
+    modplatform/modrinth/ModrinthCollectionImportTask.cpp
+    modplatform/modrinth/ModrinthCollectionImportTask.h
     modplatform/modrinth/ModrinthCheckUpdate.cpp
     modplatform/modrinth/ModrinthCheckUpdate.h
     modplatform/modrinth/ModrinthInstanceCreationTask.cpp
