@@ -142,13 +142,16 @@ class InstallJavaPage : public QWidget, public BasePage
 
 	void setParentContainer(BasePageContainer* container) override
 	{
-		auto dialog = dynamic_cast<QDialog*>(dynamic_cast<PageContainer*>(container)->parent());
+		auto* pageContainer = dynamic_cast<PageContainer*>(container);
+		auto* dialog = pageContainer ? qobject_cast<QDialog*>(pageContainer->parent()) : nullptr;
+		if (!dialog || !javaVersionSelect || !javaVersionSelect->view())
+			return;
 		connect(javaVersionSelect->view(), &QAbstractItemView::doubleClicked, dialog, &QDialog::accept);
 	}
 
 	BaseVersion::Ptr selectedVersion() const
 	{
-		return javaVersionSelect->selectedVersion();
+		return javaVersionSelect ? javaVersionSelect->selectedVersion() : BaseVersion::Ptr{};
 	}
 	void selectSearch()
 	{
@@ -156,8 +159,10 @@ class InstallJavaPage : public QWidget, public BasePage
 	}
 	void loadList()
 	{
-		majorVersionSelect->loadList();
-		javaVersionSelect->loadList();
+		if (majorVersionSelect)
+			majorVersionSelect->loadList();
+		if (javaVersionSelect)
+			javaVersionSelect->loadList();
 	}
 
   public slots:
@@ -175,12 +180,14 @@ class InstallJavaPage : public QWidget, public BasePage
 	{
 		if (m_recommend)
 		{
-			majorVersionSelect->setFilter(BaseVersionList::ModelRoles::JavaMajorRole,
-										  Filters::equalsAny(m_recommended_majors));
+			if (majorVersionSelect)
+				majorVersionSelect->setFilter(BaseVersionList::ModelRoles::JavaMajorRole,
+											  Filters::equalsAny(m_recommended_majors));
 		}
 		else
 		{
-			majorVersionSelect->setFilter(BaseVersionList::ModelRoles::JavaMajorRole, Filters::equalsAny());
+			if (majorVersionSelect)
+				majorVersionSelect->setFilter(BaseVersionList::ModelRoles::JavaMajorRole, Filters::equalsAny());
 		}
 	}
 
@@ -198,7 +205,7 @@ class InstallJavaPage : public QWidget, public BasePage
 	VersionSelectWidget* javaVersionSelect	= nullptr;
 
 	QStringList m_recommended_majors;
-	bool m_recommend;
+	bool m_recommend = false;
 };
 
 static InstallJavaPage* pageCast(BasePage* page)
@@ -241,7 +248,11 @@ namespace Java
 		connect(refreshButton,
 				&QPushButton::clicked,
 				this,
-				[this] { pageCast(container->selectedPage())->loadList(); });
+				[this]
+				{
+					if (auto* selectedPage = pageCast(container->selectedPage()))
+						selectedPage->loadList();
+				});
 		refreshLayout->addWidget(refreshButton);
 
 		auto recommendedCheckBox = new QCheckBox("Recommended", this);
@@ -253,7 +264,8 @@ namespace Java
 				{
 					for (BasePage* page : container->getPages())
 					{
-						pageCast(page)->setRecommend(state == Qt::Checked);
+						if (auto* installPage = pageCast(page))
+							installPage->setRecommend(state == Qt::Checked);
 					}
 				});
 
@@ -312,7 +324,8 @@ namespace Java
 									auto recommendedJavas = getRecommendedJavaVersionsFromVersionList(versions);
 									for (BasePage* page : container->getPages())
 									{
-										pageCast(page)->setRecommendedMajors(recommendedJavas);
+										if (auto* installPage = pageCast(page))
+											installPage->setRecommendedMajors(recommendedJavas);
 									}
 								});
 						if (!newTask->isRunning())
@@ -331,6 +344,8 @@ namespace Java
 				container->selectPage(page->id());
 
 			auto cast = pageCast(page);
+			if (!cast)
+				continue;
 			cast->setRecommend(true);
 			connect(cast, &InstallJavaPage::selectionChanged, this, [this, cast] { validate(cast); });
 			if (!recommendedJavas.isEmpty())
@@ -342,7 +357,8 @@ namespace Java
 				&PageContainer::selectedPageChanged,
 				this,
 				[this](BasePage* previous, BasePage* selected) { validate(selected); });
-		pageCast(container->selectedPage())->selectSearch();
+		if (auto* selectedPage = pageCast(container->selectedPage()))
+			selectedPage->selectSearch();
 		validate(container->selectedPage());
 	}
 
@@ -365,9 +381,10 @@ namespace Java
 
 	void InstallDialog::validate(BasePage* selected)
 	{
+		auto* installPage = pageCast(selected);
 		buttons->button(QDialogButtonBox::Ok)
-			->setEnabled(
-				!!std::dynamic_pointer_cast<projt::java::RuntimePackage>(pageCast(selected)->selectedVersion()));
+			->setEnabled(installPage
+						 && !!std::dynamic_pointer_cast<projt::java::RuntimePackage>(installPage->selectedVersion()));
 	}
 
 	void InstallDialog::done(int result)
@@ -375,7 +392,7 @@ namespace Java
 		if (result == Accepted)
 		{
 			auto* page = pageCast(container->selectedPage());
-			if (page->selectedVersion())
+			if (page && page->selectedVersion())
 			{
 				auto meta = std::dynamic_pointer_cast<projt::java::RuntimePackage>(page->selectedVersion());
 				if (meta)

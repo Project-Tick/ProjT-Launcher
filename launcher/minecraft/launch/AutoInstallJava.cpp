@@ -271,6 +271,11 @@ void AutoInstallJava::tryNextMajorJava()
 	m_majorJavaVersionIndex++;
 
 	auto javaMajor = versionList->getMetaVersion(QString("java%1").arg(majorJavaVersion));
+	if (!javaMajor)
+	{
+		tryNextMajorJava();
+		return;
+	}
 
 	if (javaMajor->isFullyLoaded())
 	{

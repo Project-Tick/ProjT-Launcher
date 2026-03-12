@@ -494,10 +494,14 @@ namespace ATLauncher
 		QList<GradleSpecifier> exempt;
 		for (const auto& componentUid : componentsToInstall.keys())
 		{
-			auto componentVersion = componentsToInstall.value(componentUid);
-			if (componentVersion->detailedData())
+			auto componentIt = componentsToInstall.constFind(componentUid);
+			if (componentIt == componentsToInstall.cend() || !componentIt.value())
+				continue;
+			const auto& componentVersion = componentIt.value();
+			const auto& detailedData = componentVersion->detailedData();
+			if (detailedData)
 			{
-				for (const auto& library : componentVersion->detailedData()->libraries)
+				for (const auto& library : detailedData->libraries)
 				{
 					GradleSpecifier lib(library->rawName());
 					exempt.append(lib);
@@ -505,9 +509,10 @@ namespace ATLauncher
 			}
 		}
 
-		if (minecraftVersion->detailedData())
+		const auto& minecraftDetailedData = minecraftVersion->detailedData();
+		if (minecraftDetailedData)
 		{
-			for (const auto& library : minecraftVersion->detailedData()->libraries)
+			for (const auto& library : minecraftDetailedData->libraries)
 			{
 				GradleSpecifier lib(library->rawName());
 				exempt.append(lib);
@@ -675,15 +680,18 @@ namespace ATLauncher
 		QStringList tweakers;
 		for (const auto& componentUid : componentsToInstall.keys())
 		{
-			auto componentVersion = componentsToInstall.value(componentUid);
-
-			if (componentVersion->detailedData())
+			auto componentIt = componentsToInstall.constFind(componentUid);
+			if (componentIt == componentsToInstall.cend() || !componentIt.value())
+				continue;
+			const auto& componentVersion = componentIt.value();
+			const auto& detailedData = componentVersion->detailedData();
+			if (detailedData)
 			{
-				if (componentVersion->detailedData()->mainClass != QString(""))
+				if (detailedData->mainClass != QString(""))
 				{
-					mainClasses.append(componentVersion->detailedData()->mainClass);
+					mainClasses.append(detailedData->mainClass);
 				}
-				tweakers.append(componentVersion->detailedData()->addTweakers);
+				tweakers.append(detailedData->addTweakers);
 			}
 		}
 

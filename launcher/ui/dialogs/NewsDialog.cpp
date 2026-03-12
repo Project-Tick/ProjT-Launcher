@@ -49,9 +49,14 @@ NewsDialog::NewsDialog(QList<NewsEntryPtr> entries, QWidget* parent) : QDialog(p
 	m_article_list_hidden = ui->articleListWidget->isHidden();
 
 	auto first_item = ui->articleListWidget->item(0);
+	if (!first_item)
+		return;
 	first_item->setSelected(true);
 
-	auto article_entry = m_entries.constFind(first_item->text()).value();
+	auto article_it = m_entries.constFind(first_item->text());
+	if (article_it == m_entries.cend() || !article_it.value())
+		return;
+	auto article_entry = article_it.value();
 	ui->articleTitleLabel->setText(QString("<a href='%1'>%2</a>").arg(article_entry->link, first_item->text()));
 	m_current_link = article_entry->link;
 #if !defined(PROJT_DISABLE_LAUNCHER_HUB)
@@ -69,7 +74,10 @@ NewsDialog::~NewsDialog()
 
 void NewsDialog::selectedArticleChanged(const QString& new_title)
 {
-	auto article_entry = m_entries.constFind(new_title).value();
+	auto article_it = m_entries.constFind(new_title);
+	if (article_it == m_entries.cend() || !article_it.value())
+		return;
+	auto article_entry = article_it.value();
 
 	ui->articleTitleLabel->setText(QString("<a href='%1'>%2</a>").arg(article_entry->link, new_title));
 	m_current_link = article_entry->link;

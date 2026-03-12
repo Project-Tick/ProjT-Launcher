@@ -643,7 +643,9 @@ auto ResourceUpdateDialog::getTasks() -> const QList<ResourceDownloadTask::Ptr>
 	{
 		if (item->checkState(0) == Qt::CheckState::Checked)
 		{
-			list.push_back(m_tasks.find(item->text(0)).value());
+			auto taskIt = m_tasks.find(item->text(0));
+			if (taskIt != m_tasks.end() && taskIt.value())
+				list.push_back(taskIt.value());
 		}
 
 		item = ui->modTreeWidget->topLevelItem(i);

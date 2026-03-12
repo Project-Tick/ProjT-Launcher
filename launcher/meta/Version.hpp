@@ -106,7 +106,7 @@ namespace projt::meta
 		{
 			return m_detailedData != nullptr;
 		}
-		VersionFilePtr detailedData() const
+		const VersionFilePtr& detailedData() const
 		{
 			return m_detailedData;
 		}

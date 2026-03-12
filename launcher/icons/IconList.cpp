@@ -420,12 +420,14 @@ namespace projt::icons
 
 	bool IconList::deleteIcon(const QString& key)
 	{
-		return iconFileExists(key) && FS::deletePath(icon(key)->getFilePath());
+		auto* iconEntry = icon(key);
+		return iconEntry && iconFileExists(key) && FS::deletePath(iconEntry->getFilePath());
 	}
 
 	bool IconList::trashIcon(const QString& key)
 	{
-		return iconFileExists(key) && FS::trash(icon(key)->getFilePath(), nullptr);
+		auto* iconEntry = icon(key);
+		return iconEntry && iconFileExists(key) && FS::trash(iconEntry->getFilePath(), nullptr);
 	}
 
 	bool IconList::addThemeIcon(const QString& key)

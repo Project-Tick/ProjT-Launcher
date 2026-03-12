@@ -125,11 +125,11 @@ namespace ResourceDownload
 
 		QList<DownloadTaskPtr> selectedPacks()
 		{
-			return m_model->selectedPacks();
+			return m_model ? m_model->selectedPacks() : QList<DownloadTaskPtr>{};
 		}
 		bool hasSelectedPacks()
 		{
-			return !(m_model->selectedPacks().isEmpty());
+			return m_model && !m_model->selectedPacks().isEmpty();
 		}
 
 		virtual void openProject(QVariant projectID);

@@ -404,7 +404,13 @@ Task::Ptr EnsureMetadataTask::modrinthProjectsTask()
 						continue;
 					}
 
-					auto hash = addonIds.find(pack.addonId.toString()).value();
+					auto hashIt = addonIds.find(pack.addonId.toString());
+					if (hashIt == addonIds.end())
+					{
+						qWarning() << "Invalid project id from the API response.";
+						continue;
+					}
+					const auto& hash = hashIt.value();
 
 					auto resource_iter = m_resources.find(hash);
 					if (resource_iter == m_resources.end())
@@ -414,10 +420,16 @@ Task::Ptr EnsureMetadataTask::modrinthProjectsTask()
 					}
 
 					auto* resource = resource_iter.value();
+					auto versionIter = m_tempVersions.find(hash);
+					if (versionIter == m_tempVersions.end())
+					{
+						qWarning() << "Missing temporary version data for Modrinth project.";
+						continue;
+					}
 
 					setStatus(tr("Parsing API response from Modrinth for '%1'...").arg(resource->name()));
 
-					updateMetadata(pack, m_tempVersions.find(hash).value(), resource);
+					updateMetadata(pack, versionIter.value(), resource);
 				}
 			});
 
@@ -564,9 +576,27 @@ Task::Ptr EnsureMetadataTask::flameProjectsTask()
 					{
 						auto entry_obj = Json::requireObject(entry);
 
-						auto id		  = QString::number(Json::requireInteger(entry_obj, "id"));
-						auto hash	  = addonIds.find(id).value();
-						auto resource = m_resources.find(hash).value();
+						auto id = QString::number(Json::requireInteger(entry_obj, "id"));
+						auto hashIt = addonIds.find(id);
+						if (hashIt == addonIds.end())
+						{
+							qWarning() << "Invalid project id from the API response.";
+							continue;
+						}
+						const auto& hash = hashIt.value();
+						auto resourceIt = m_resources.find(hash);
+						if (resourceIt == m_resources.end())
+						{
+							qWarning() << "Invalid fingerprint from the API response.";
+							continue;
+						}
+						auto resource = resourceIt.value();
+						auto versionIter = m_tempVersions.find(hash);
+						if (versionIter == m_tempVersions.end())
+						{
+							qWarning() << "Missing temporary version data for CurseForge project.";
+							continue;
+						}
 
 						ModPlatform::IndexedPack pack;
 						try
@@ -582,7 +612,7 @@ Task::Ptr EnsureMetadataTask::flameProjectsTask()
 
 							emitFail(resource);
 						}
-						updateMetadata(pack, m_tempVersions.find(hash).value(), resource);
+						updateMetadata(pack, versionIter.value(), resource);
 					}
 				}
 				catch (Json::JsonException& e)

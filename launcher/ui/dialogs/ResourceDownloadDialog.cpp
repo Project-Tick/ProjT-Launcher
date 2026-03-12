@@ -271,15 +271,14 @@ namespace ResourceDownload
 
 	ResourcePage* ResourceDownloadDialog::selectedPage()
 	{
-		ResourcePage* result = dynamic_cast<ResourcePage*>(m_container->selectedPage());
-		Q_ASSERT(result != nullptr);
-		return result;
+		return dynamic_cast<ResourcePage*>(m_container->selectedPage());
 	}
 
 	void ResourceDownloadDialog::addResource(ModPlatform::IndexedPack::Ptr pack, ModPlatform::IndexedVersion& ver)
 	{
 		removeResource(pack->name);
-		selectedPage()->addResourceToPage(pack, ver, getBaseModel());
+		if (auto* page = selectedPage())
+			page->addResourceToPage(pack, ver, getBaseModel());
 		setButtonStatus();
 	}
 
@@ -287,7 +286,8 @@ namespace ResourceDownload
 	{
 		for (auto page : m_container->getPages())
 		{
-			static_cast<ResourcePage*>(page)->removeResourceFromPage(pack_name);
+			if (auto* resourcePage = dynamic_cast<ResourcePage*>(page))
+				resourcePage->removeResourceFromPage(pack_name);
 		}
 		setButtonStatus();
 	}
@@ -297,8 +297,8 @@ namespace ResourceDownload
 		auto selected = false;
 		for (auto page : m_container->getPages())
 		{
-			auto res = static_cast<ResourcePage*>(page);
-			selected = selected || res->hasSelectedPacks();
+			if (auto* resourcePage = dynamic_cast<ResourcePage*>(page))
+				selected = selected || resourcePage->hasSelectedPacks();
 		}
 		m_buttons.button(QDialogButtonBox::Ok)->setEnabled(selected);
 	}
@@ -308,8 +308,8 @@ namespace ResourceDownload
 		QList<DownloadTaskPtr> selected;
 		for (auto page : m_container->getPages())
 		{
-			auto res = static_cast<ResourcePage*>(page);
-			selected.append(res->selectedPacks());
+			if (auto* resourcePage = dynamic_cast<ResourcePage*>(page))
+				selected.append(resourcePage->selectedPacks());
 		}
 		return selected;
 	}
@@ -319,14 +319,13 @@ namespace ResourceDownload
 		auto* prev_page = dynamic_cast<ResourcePage*>(previous);
 		if (!prev_page)
 		{
-			qCritical() << "Page '" << previous->displayName() << "' in ResourceDownloadDialog is not a ResourcePage!";
+			qCritical() << "Selected previous page in ResourceDownloadDialog is not a ResourcePage!";
 			return;
 		}
 
 		// Same effect as having a global search bar
-		ResourcePage* result = dynamic_cast<ResourcePage*>(selected);
-		Q_ASSERT(result != nullptr);
-		result->setSearchTerm(prev_page->getSearchTerm());
+		if (auto* result = dynamic_cast<ResourcePage*>(selected))
+			result->setSearchTerm(prev_page->getSearchTerm());
 	}
 
 	ModDownloadDialog::ModDownloadDialog(QWidget* parent,

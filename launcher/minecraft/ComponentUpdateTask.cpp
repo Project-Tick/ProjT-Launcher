@@ -266,7 +266,7 @@ void ComponentUpdateTask::loadComponents()
 	for (auto component : d->m_profile->d->components)
 	{
 		Task::Ptr loadTask;
-		LoadResult singleResult;
+		LoadResult singleResult = LoadResult::LoadedLocal;
 		RemoteLoadStatus::Type loadType;
 		component->resetComponentProblems();
 		// Load version lists or components based on resolution mode

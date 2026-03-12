@@ -107,7 +107,10 @@ class InstallLoaderPage : public VersionSelectWidget, public BasePage
 
 	void setParentContainer(BasePageContainer* container) override
 	{
-		auto dialog = dynamic_cast<QDialog*>(dynamic_cast<PageContainer*>(container)->parent());
+		auto* pageContainer = dynamic_cast<PageContainer*>(container);
+		auto* dialog = pageContainer ? qobject_cast<QDialog*>(pageContainer->parent()) : nullptr;
+		if (!dialog || !view())
+			return;
 		connect(view(), &QAbstractItemView::doubleClicked, dialog, &QDialog::accept);
 	}
 
@@ -139,7 +142,14 @@ InstallLoaderDialog::InstallLoaderDialog(std::shared_ptr<PackProfile> profile, c
 	auto buttonLayout = new QHBoxLayout(this);
 
 	auto refreshButton = new QPushButton(tr("&Refresh"), this);
-	connect(refreshButton, &QPushButton::clicked, this, [this] { pageCast(container->selectedPage())->loadList(); });
+	connect(refreshButton,
+			&QPushButton::clicked,
+			this,
+			[this]
+			{
+				if (auto* selectedPage = pageCast(container->selectedPage()))
+					selectedPage->loadList();
+			});
 	buttonLayout->addWidget(refreshButton);
 
 	buttons->setOrientation(Qt::Horizontal);
@@ -166,15 +176,17 @@ InstallLoaderDialog::InstallLoaderDialog(std::shared_ptr<PackProfile> profile, c
 				this,
 				[this, page]
 				{
-					if (page->id() == container->selectedPage()->id())
-						validate(container->selectedPage());
+					auto* selectedPage = container->selectedPage();
+					if (selectedPage && page->id() == selectedPage->id())
+						validate(selectedPage);
 				});
 	}
 	connect(container,
 			&PageContainer::selectedPageChanged,
 			this,
 			[this](BasePage* previous, BasePage* current) { validate(current); });
-	pageCast(container->selectedPage())->selectSearch();
+	if (auto* selectedPage = pageCast(container->selectedPage()))
+		selectedPage->selectSearch();
 	validate(container->selectedPage());
 }
 
@@ -200,7 +212,8 @@ QString InstallLoaderDialog::dialogTitle()
 
 void InstallLoaderDialog::validate(BasePage* page)
 {
-	buttons->button(QDialogButtonBox::Ok)->setEnabled(pageCast(page)->selectedVersion() != nullptr);
+	auto* loaderPage = pageCast(page);
+	buttons->button(QDialogButtonBox::Ok)->setEnabled(loaderPage && loaderPage->selectedVersion() != nullptr);
 }
 
 void InstallLoaderDialog::done(int result)
@@ -208,7 +221,7 @@ void InstallLoaderDialog::done(int result)
 	if (result == Accepted)
 	{
 		auto* page = pageCast(container->selectedPage());
-		if (page->selectedVersion())
+		if (page && page->selectedVersion())
 		{
 			profile->setComponentVersion(page->id(), page->selectedVersion()->descriptor());
 			profile->resolve(Net::Mode::Online);

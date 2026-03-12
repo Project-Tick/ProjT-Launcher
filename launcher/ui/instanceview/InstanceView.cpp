@@ -842,9 +842,9 @@ QRect InstanceView::geometryRect(const QModelIndex& index) const
 	}
 
 	int row = index.row();
-	if (m_geometryCache.contains(row))
+	if (auto* cachedRect = m_geometryCache.object(row))
 	{
-		return *m_geometryCache[row];
+		return *cachedRect;
 	}
 
 	const VisualGroup* cat = category(index);

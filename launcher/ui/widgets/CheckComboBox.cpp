@@ -214,8 +214,8 @@ void CheckComboBox::setItemCheckState(int index, Qt::CheckState state)
 
 QStringList CheckComboBox::checkedItems() const
 {
-	if (model())
-		return dynamic_cast<CheckComboModel*>(model())->getChecked();
+	if (auto* checkModel = dynamic_cast<CheckComboModel*>(model()))
+		return checkModel->getChecked();
 	return {};
 }
 

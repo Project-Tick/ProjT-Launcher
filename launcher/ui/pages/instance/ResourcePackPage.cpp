@@ -114,10 +114,12 @@ void ResourcePackPage::downloadResourcePacks()
 		return; // this is a null instance or a legacy instance
 
 	m_downloadDialog = new ResourceDownload::ResourcePackDownloadDialog(this, m_model, m_instance);
-	connect(this, &QObject::destroyed, m_downloadDialog, &QDialog::close);
-	connect(m_downloadDialog, &QDialog::finished, this, &ResourcePackPage::downloadDialogFinished);
-
-	m_downloadDialog->open();
+	auto* downloadDialog = m_downloadDialog.data();
+	if (!downloadDialog)
+		return;
+	connect(this, &QObject::destroyed, downloadDialog, &QDialog::close);
+	connect(downloadDialog, &QDialog::finished, this, &ResourcePackPage::downloadDialogFinished);
+	downloadDialog->open();
 }
 
 void ResourcePackPage::downloadDialogFinished(int result)
@@ -342,9 +344,11 @@ void ResourcePackPage::changeResourcePackVersion()
 		return;
 
 	m_downloadDialog = new ResourceDownload::ResourcePackDownloadDialog(this, m_model, m_instance);
-	connect(this, &QObject::destroyed, m_downloadDialog, &QDialog::close);
-	connect(m_downloadDialog, &QDialog::finished, this, &ResourcePackPage::downloadDialogFinished);
-
-	m_downloadDialog->setResourceMetadata(resource.metadata());
-	m_downloadDialog->open();
+	auto* downloadDialog = m_downloadDialog.data();
+	if (!downloadDialog)
+		return;
+	connect(this, &QObject::destroyed, downloadDialog, &QDialog::close);
+	connect(downloadDialog, &QDialog::finished, this, &ResourcePackPage::downloadDialogFinished);
+	downloadDialog->setResourceMetadata(resource.metadata());
+	downloadDialog->open();
 }

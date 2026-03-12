@@ -64,7 +64,7 @@ namespace ResourceDownload
 
 	ResourceModel::~ResourceModel()
 	{
-		s_running_models.find(this).value() = false;
+		s_running_models.remove(this);
 	}
 
 	auto ResourceModel::data(const QModelIndex& index, int role) const -> QVariant
@@ -168,6 +168,12 @@ namespace ResourceDownload
 		if (hasActiveSearchJob())
 			return;
 
+		const auto isStillRunning = [this]()
+		{
+			const auto it = s_running_models.constFind(this);
+			return it != s_running_models.cend() && it.value();
+		};
+
 		if (m_search_term.startsWith("#"))
 		{
 			auto projectId = m_search_term.mid(1);
@@ -175,22 +181,22 @@ namespace ResourceDownload
 			{
 				ResourceAPI::Callback<ModPlatform::IndexedPack::Ptr> callbacks;
 
-				callbacks.on_fail = [this](QString reason, int)
+				callbacks.on_fail = [this, isStillRunning](QString reason, int)
 				{
-					if (!s_running_models.constFind(this).value())
+					if (!isStillRunning())
 						return;
 					searchRequestFailed(reason, -1);
 				};
-				callbacks.on_abort = [this]
+				callbacks.on_abort = [this, isStillRunning]
 				{
-					if (!s_running_models.constFind(this).value())
+					if (!isStillRunning())
 						return;
 					searchRequestAborted();
 				};
 
-				callbacks.on_succeed = [this](auto& pack)
+				callbacks.on_succeed = [this, isStillRunning](auto& pack)
 				{
-					if (!s_running_models.constFind(this).value())
+					if (!isStillRunning())
 						return;
 					searchRequestForOneSucceeded(pack);
 				};
@@ -205,21 +211,21 @@ namespace ResourceDownload
 
 		ResourceAPI::Callback<QList<ModPlatform::IndexedPack::Ptr>> callbacks{};
 
-		callbacks.on_succeed = [this](auto& doc)
+		callbacks.on_succeed = [this, isStillRunning](auto& doc)
 		{
-			if (!s_running_models.constFind(this).value())
+			if (!isStillRunning())
 				return;
 			searchRequestSucceeded(doc);
 		};
-		callbacks.on_fail = [this](QString reason, int network_error_code)
+		callbacks.on_fail = [this, isStillRunning](QString reason, int network_error_code)
 		{
-			if (!s_running_models.constFind(this).value())
+			if (!isStillRunning())
 				return;
 			searchRequestFailed(reason, network_error_code);
 		};
-		callbacks.on_abort = [this]
+		callbacks.on_abort = [this, isStillRunning]
 		{
-			if (!s_running_models.constFind(this).value())
+			if (!isStillRunning())
 				return;
 			searchRequestAborted();
 		};
@@ -232,6 +238,12 @@ namespace ResourceDownload
 	{
 		auto const& pack = m_packs[entry.row()];
 
+		const auto isStillRunning = [this]()
+		{
+			const auto it = s_running_models.constFind(this);
+			return it != s_running_models.cend() && it.value();
+		};
+
 		if (!hasActiveInfoJob())
 			m_current_info_job.clear();
 
@@ -243,9 +255,9 @@ namespace ResourceDownload
 			auto addonId = pack->addonId;
 			// Use default if no callbacks are set
 			if (!callbacks.on_succeed)
-				callbacks.on_succeed = [this, entry, addonId](auto& doc)
+				callbacks.on_succeed = [this, entry, addonId, isStillRunning](auto& doc)
 				{
-					if (!s_running_models.constFind(this).value())
+					if (!isStillRunning())
 						return;
 					versionRequestSucceeded(doc, addonId, entry);
 				};
@@ -267,23 +279,23 @@ namespace ResourceDownload
 			auto args{ createInfoArguments(entry) };
 			ResourceAPI::Callback<ModPlatform::IndexedPack::Ptr> callbacks{};
 
-			callbacks.on_succeed = [this, entry](auto& newpack)
+			callbacks.on_succeed = [this, entry, isStillRunning](auto& newpack)
 			{
-				if (!s_running_models.constFind(this).value())
+				if (!isStillRunning())
 					return;
 				infoRequestSucceeded(newpack, entry);
 			};
-			callbacks.on_fail = [this](QString reason, int)
+			callbacks.on_fail = [this, isStillRunning](QString reason, int)
 			{
-				if (!s_running_models.constFind(this).value())
+				if (!isStillRunning())
 					return;
 				QMessageBox::critical(nullptr,
 									  tr("Error"),
 									  tr("A network error occurred. Could not load project info: %1").arg(reason));
 			};
-			callbacks.on_abort = [this]
+			callbacks.on_abort = [this, isStillRunning]
 			{
-				if (!s_running_models.constFind(this).value())
+				if (!isStillRunning())
 					return;
 				qCritical() << tr("The request was aborted for an unknown reason");
 			};
