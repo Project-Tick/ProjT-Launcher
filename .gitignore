@@ -79,6 +79,14 @@ _site/
 # Build dirs
 build
 /build-*
+[Bb]uild*/
+
+# Kconfig outputs (if someone runs with O=. or similar)
+.config
+.config.old
+.tmp.config
+include/config/
+include/generated/
 
 # Ctags File
 tags
@@ -551,3 +559,21 @@ ci-old.yml
 openssl-*
 _CPack_Packages/
 /install/
+
+bz_version.h
+nbt_export.h
+
+# buildconfig is source, not build output
+!buildconfig/
+!buildconfig/**
+!buildconfig/Makefile
+cmark_config.h
+cmark_export.h
+cmark_version.h
+
+scripts/kconfig/conf
+scripts/kconfig/[gmnq]conf
+scripts/kconfig/[gmnq]conf-bin
+scripts/kconfig/[gmnq]conf-cflags
+scripts/kconfig/[gmnq]conf-libs
+scripts/kconfig/qconf-moc.cc

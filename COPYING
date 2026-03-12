@@ -657,6 +657,39 @@ Qt `qt/`
      along with this repository. If not, write to the Free Software Foundation,
      Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
+KConfig (`scripts/kconfig/`)
+============================
+
+     KConfig - Linux Kernel TUI Configurator
+     Copyright (C) 2002 Roman Zippel <zippel@linux-m68k.org>
+     Copyright (C) 2005 Roman Zippel <zippel@linux-m68k.org>
+     Copyright (C) 2002-2003 Romain Lievin <roms@tilp.info>
+     Copyright (C) 2009-2010 Wind River Systems, Inc.
+     Copyright (C) 2011 Linaro
+     Copyright (C) 2008 Nir Tzachar <nir.tzachar@gmail.com>
+     Copyright (C) 2018 Masahiro Yamada <yamada.masahiro@socionext.com>
+     Copyright (C) 2015 Boris Barbulovski <bbarbulovski@gmail.com>
+     Copyright (C) 2005-2009 Steven Rostedt
+     Copyright (C) 2002-2005 Sam Ravnborg <sam@ravnborg.org>
+     Copyright (C) Savio Lam <lam836@cs.cuhk.hk>
+     Copyright (C) Stuart Herbert <S.Herbert@sheffield.ac.uk>
+     Copyright (C) Alessandro Rubini <rubini@ipvvis.unipv.it>
+     Copyright (C) William Roadcap <roadcap@cfw.com>
+     Copyright (C) 2026 Project Tick
+
+     This program is free software; you can redistribute it and/or
+     modify it under the terms of the GNU General Public License
+     as published by the Free Software Foundation; version 2.
+
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
+
+     You should have received a copy of the GNU General Public License
+     along with this program; If not, write to the Free Software Foundation,
+     Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
 MinGW-w64 runtime (Windows)
 ===========================
 
