@@ -120,7 +120,7 @@ def get_single_forge_files_manifest(longversion, artifact: str):
 
 
 def main():
-    # get the remote version list fragments
+    # get the 1.20.1 remote version list fragments
     r = sess.get(
         "https://maven.neoforged.net/api/maven/versions/releases/net%2Fneoforged%2Fforge"
     )
@@ -174,7 +174,10 @@ def main():
             match = match_nf
             artifact = "neoforge"
 
-        assert match, f"{long_version} doesn't match version regex"
+        if not match and not match_nf:
+            print(f"Skipping {long_version} as it does not match regex")
+            continue
+
         try:
             files = get_single_forge_files_manifest(long_version, artifact)
         except:
@@ -186,26 +189,16 @@ def main():
         entry = NeoForgeEntry(
             artifact=artifact,
             long_version=long_version,
-            mc_version=mc_version,
             version=version,
-            build=build,
-            branch=branch,
             # NOTE: we add this later after the fact. The forge promotions file lies about these.
             latest=False,
             recommended=is_recommended,
             files=files,
         )
         new_index.versions[long_version] = entry
-        if not new_index.by_mc_version:
-            new_index.by_mc_version = dict()
-        if mc_version not in new_index.by_mc_version:
-            new_index.by_mc_version.setdefault(mc_version, NeoForgeMCVersionInfo())
-        new_index.by_mc_version[mc_version].versions.append(long_version)
-        # NOTE: we add this later after the fact. The forge promotions file lies about these.
-        # if entry.latest:
-        # new_index.by_mc_version[mc_version].latest = long_version
+        
         if entry.recommended:
-            new_index.by_mc_version[mc_version].recommended = long_version
+            new_index.recommended = long_version
 
     print("")
     print("Dumping index files...")
@@ -221,9 +214,6 @@ def main():
     # get the installer jars - if needed - and get the installer profiles out of them
     for key, entry in new_index.versions.items():
         eprint("Updating NeoForge %s" % key)
-        if entry.mc_version is None:
-            eprint("Skipping %d with invalid MC version" % entry.build)
-            continue
 
         version = NeoForgeVersion(entry)
         if version.url() is None:

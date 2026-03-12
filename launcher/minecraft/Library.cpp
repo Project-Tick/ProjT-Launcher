@@ -65,6 +65,26 @@
 #include <FileSystem.h>
 #include <net/ApiDownload.h>
 #include <net/ChecksumValidator.h>
+#include <QUrl>
+
+static QString normalizeNeoForgedMavenUrl(const QString& url)
+{
+	const QUrl parsed(url);
+	if (!parsed.isValid() || parsed.host().compare("maven.neoforged.net", Qt::CaseInsensitive) != 0)
+	{
+		return url;
+	}
+
+	const auto path = parsed.path();
+	if (!path.startsWith("/net/neoforged/") || path.startsWith("/releases/"))
+	{
+		return url;
+	}
+
+	QUrl fixed(parsed);
+	fixed.setPath("/releases" + path);
+	return fixed.toString(QUrl::FullyEncoded);
+}
 
 /**
  * @brief Collect applicable files for the library.
@@ -168,6 +188,7 @@ QList<Net::NetRequest::Ptr> Library::getDownloads(const RuntimeContext& runtimeC
 		{
 			return check_local_file(storage);
 		}
+		url = normalizeNeoForgedMavenUrl(url);
 		auto entry = cache->resolveEntry("libraries", storage);
 		if (stale)
 		{

@@ -56,6 +56,7 @@ MOJANG_OS_ARCHITECTURES = [
     "x86",
     "arm64",
     "arm32",
+    "riscv64",
 ]
 
 MOJANG_OS_ARCHITECTURE_TRANSLATIONS = {
@@ -66,6 +67,7 @@ MOJANG_OS_ARCHITECTURE_TRANSLATIONS = {
     "aarch64": "arm64",
     "x86_64": "x64",
     "arm": "arm32",
+    "riscv64": "riscv64",
 }
 
 
@@ -466,6 +468,7 @@ def main():
         JavaRuntimeOS.WindowsArm32,
         JavaRuntimeOS.LinuxArm32,
         JavaRuntimeOS.LinuxArm64,
+        JavaRuntimeOS.LinuxRiscv64,
     ]:
         for comp in [
             MojangJavaComponent.JreLegacy,

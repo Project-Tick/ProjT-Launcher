@@ -404,7 +404,7 @@ set(Launcher_HELP_URL "https://projecttick.org/handbook/help-pages/%1" CACHE STR
 set(Launcher_HUB_HOME_URL "https://projecttick.org/p/projt-launcher/" CACHE STRING "Launcher Hub home URL")
 set(Launcher_HUB_COMMUNITY_URL "https://projecttick.org/projtlauncher/discord" CACHE STRING "Launcher Hub community URL")
 set(Launcher_HUB_SEARCH_URL "https://www.google.com/search?q=%1" CACHE STRING "Search URL (with %1 placeholder) used by the Launcher Hub address bar")
-set(Launcher_LOGIN_CALLBACK_URL "https://projecttick.org/projtlauncher/successful-login" CACHE STRING "URL that gets opened when the user successfully logins.")
+set(Launcher_LOGIN_CALLBACK_URL "https://projecttick.org/p/projt-launcher" CACHE STRING "URL that gets opened when the user successfully logins.")
 set(Launcher_FMLLIBS_BASE_URL "https://files.projecttick.org/fmllibs/" CACHE STRING "URL for FML Libraries.")
 
 ######## Set version numbers ########
