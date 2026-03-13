@@ -853,10 +853,19 @@ SET(LAUNCHER_SOURCES
     # GUI - widgets / utilities
     ui/widgets/FileIgnoreProxy.cpp
     ui/widgets/FileIgnoreProxy.h
+    CefRuntime.cpp
+    CefRuntime.h
+    ui/widgets/HubViewBase.h
     ui/widgets/FastFileIconProvider.cpp
     ui/widgets/FastFileIconProvider.h
+    ui/widgets/FallbackHubView.cpp
+    ui/widgets/FallbackHubView.h
+    ui/widgets/CefHubView.cpp
+    ui/widgets/CefHubView.h
     ui/widgets/LauncherHubWidget.cpp
     ui/widgets/LauncherHubWidget.h
+    ui/widgets/QtWebEngineHubView.cpp
+    ui/widgets/QtWebEngineHubView.h
     ui/widgets/WebView2Widget.cpp
     ui/widgets/WebView2Widget.h
 
@@ -1362,13 +1371,16 @@ endif()
 
 set(LAUNCHER_USE_WEBENGINE ON)
 set(LAUNCHER_USE_WEBVIEW2 OFF)
+set(LAUNCHER_USE_CEF OFF)
 set(LAUNCHER_DISABLE_HUB OFF)
+set(Launcher_CEF_ROOT "" CACHE PATH "Path to the CEF binary distribution root used for the Linux Hub backend")
 if(MINGW)
     set(LAUNCHER_USE_WEBENGINE OFF)
     set(LAUNCHER_DISABLE_HUB ON)
 endif()
 if(UNIX AND NOT APPLE)
     set(LAUNCHER_USE_WEBENGINE OFF)
+    set(LAUNCHER_USE_CEF ON)
 endif()
 if(MSVC AND WIN32)
     set(LAUNCHER_USE_WEBENGINE OFF)
@@ -1444,6 +1456,74 @@ if(LAUNCHER_USE_WEBVIEW2 AND WIN32)
     target_link_libraries(Launcher_logic "${WEBVIEW2_LOADER_LIB}")
 endif()
 
+if(LAUNCHER_USE_CEF)
+    target_compile_definitions(Launcher_logic PUBLIC PROJT_USE_CEF)
+    if(UNIX AND NOT APPLE)
+        if(NOT Launcher_CEF_ROOT AND DEFINED ENV{CEF_ROOT})
+            file(TO_CMAKE_PATH "$ENV{CEF_ROOT}" Launcher_CEF_ROOT)
+        endif()
+        if(NOT Launcher_CEF_ROOT)
+            set(_projt_cef_root_candidates
+                "${CMAKE_SOURCE_DIR}/dependencies/cef"
+                "${CMAKE_SOURCE_DIR}/third_party/cef"
+                "${CMAKE_SOURCE_DIR}/vendor/cef"
+            )
+            file(GLOB _projt_cef_glob_candidates LIST_DIRECTORIES true
+                "${CMAKE_SOURCE_DIR}/dependencies/cef_binary_*_linux64*"
+                "${CMAKE_SOURCE_DIR}/third_party/cef_binary_*_linux64*"
+                "${CMAKE_SOURCE_DIR}/vendor/cef_binary_*_linux64*"
+                "/tmp/cef-sdk/extracted/cef_binary_*_linux64*"
+            )
+            list(APPEND _projt_cef_root_candidates ${_projt_cef_glob_candidates})
+            foreach(_projt_cef_candidate ${_projt_cef_root_candidates})
+                if(EXISTS "${_projt_cef_candidate}/cmake/FindCEF.cmake" AND EXISTS "${_projt_cef_candidate}/Release/libcef.so")
+                    set(Launcher_CEF_ROOT "${_projt_cef_candidate}")
+                    break()
+                endif()
+            endforeach()
+            unset(_projt_cef_glob_candidates)
+            unset(_projt_cef_root_candidates)
+        endif()
+        if(NOT Launcher_CEF_ROOT)
+            message(FATAL_ERROR "Launcher_CEF_ROOT or the CEF_ROOT environment variable must point to a Linux CEF binary distribution.")
+        endif()
+        message(STATUS "Using Linux CEF binary distribution at: ${Launcher_CEF_ROOT}")
+
+        list(APPEND CMAKE_MODULE_PATH "${Launcher_CEF_ROOT}/cmake")
+        set(CEF_ROOT "${Launcher_CEF_ROOT}")
+        find_package(CEF REQUIRED)
+
+        if(NOT EXISTS "${CEF_LIB_DEBUG}")
+            set(CEF_LIB_DEBUG "${CEF_LIB_RELEASE}")
+        endif()
+        if(NOT EXISTS "${CEF_BINARY_DIR_DEBUG}/libcef.so")
+            set(CEF_BINARY_DIR_DEBUG "${CEF_BINARY_DIR_RELEASE}")
+        endif()
+        set(_projt_prev_build_shared_libs ${BUILD_SHARED_LIBS})
+        set(BUILD_SHARED_LIBS OFF)
+        if(NOT TARGET libcef_dll_wrapper)
+            add_subdirectory("${CEF_LIBCEF_DLL_WRAPPER_PATH}" "${CMAKE_CURRENT_BINARY_DIR}/libcef_dll_wrapper")
+        endif()
+        set(BUILD_SHARED_LIBS ${_projt_prev_build_shared_libs})
+        unset(_projt_prev_build_shared_libs)
+        target_compile_options(libcef_dll_wrapper PRIVATE -Wno-c++20-extensions -Wno-error=c++20-extensions)
+        if(NOT TARGET projt_cef_runtime)
+            add_library(projt_cef_runtime SHARED IMPORTED GLOBAL)
+            set_target_properties(projt_cef_runtime PROPERTIES
+                IMPORTED_LOCATION_DEBUG "${CEF_LIB_DEBUG}"
+                IMPORTED_LOCATION_RELEASE "${CEF_LIB_RELEASE}"
+                IMPORTED_LOCATION "${CEF_LIB_RELEASE}")
+        endif()
+
+        target_include_directories(Launcher_logic PRIVATE ${CEF_INCLUDE_PATH})
+        target_link_libraries(Launcher_logic
+            libcef_dll_wrapper
+            projt_cef_runtime
+            ${CEF_STANDARD_LIBS}
+        )
+    endif()
+endif()
+
 if(LAUNCHER_DISABLE_HUB)
     target_compile_definitions(Launcher_logic PUBLIC PROJT_DISABLE_LAUNCHER_HUB)
 endif()
@@ -1475,6 +1555,54 @@ target_link_libraries(Launcher_logic)
 
 add_executable(${Launcher_Name} MACOSX_BUNDLE WIN32 main.cpp ${LAUNCHER_RCS})
 target_link_libraries(${Launcher_Name} Launcher_logic)
+
+if(LAUNCHER_USE_CEF AND UNIX AND NOT APPLE)
+    if(CEF_EXE_LINKER_FLAGS)
+        target_link_options(${Launcher_Name} PRIVATE ${CEF_EXE_LINKER_FLAGS})
+    endif()
+    if(CEF_EXE_LINKER_FLAGS_DEBUG)
+        target_link_options(${Launcher_Name} PRIVATE $<$<CONFIG:Debug>:${CEF_EXE_LINKER_FLAGS_DEBUG}>)
+    endif()
+    if(CEF_EXE_LINKER_FLAGS_RELEASE)
+        target_link_options(${Launcher_Name} PRIVATE $<$<CONFIG:Release>:${CEF_EXE_LINKER_FLAGS_RELEASE}>)
+    endif()
+
+    set_target_properties(${Launcher_Name} PROPERTIES
+        BUILD_RPATH "$ORIGIN"
+        INSTALL_RPATH "$ORIGIN")
+
+    foreach(_cef_binary ${CEF_BINARY_FILES})
+        add_custom_command(
+            TARGET ${Launcher_Name}
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CEF_BINARY_DIR_RELEASE}/${_cef_binary}"
+                "$<TARGET_FILE_DIR:${Launcher_Name}>/${_cef_binary}"
+            VERBATIM
+        )
+    endforeach()
+    foreach(_cef_resource ${CEF_RESOURCE_FILES})
+        if(IS_DIRECTORY "${CEF_RESOURCE_DIR}/${_cef_resource}")
+            add_custom_command(
+                TARGET ${Launcher_Name}
+                POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_directory
+                    "${CEF_RESOURCE_DIR}/${_cef_resource}"
+                    "$<TARGET_FILE_DIR:${Launcher_Name}>/${_cef_resource}"
+                VERBATIM
+            )
+        else()
+            add_custom_command(
+                TARGET ${Launcher_Name}
+                POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${CEF_RESOURCE_DIR}/${_cef_resource}"
+                    "$<TARGET_FILE_DIR:${Launcher_Name}>/${_cef_resource}"
+                VERBATIM
+            )
+        endif()
+    endforeach()
+endif()
 
 if(DEFINED Launcher_APP_BINARY_NAME)
     set_target_properties(${Launcher_Name} PROPERTIES OUTPUT_NAME "${Launcher_APP_BINARY_NAME}")

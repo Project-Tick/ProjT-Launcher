@@ -22,47 +22,31 @@
 
 #include "ui/widgets/HubViewBase.h"
 
-class WebView2Widget : public HubViewBase
+class QLabel;
+class QPushButton;
+
+class FallbackHubView : public HubViewBase
 {
 	Q_OBJECT
 
   public:
-	explicit WebView2Widget(QWidget* parent = nullptr);
-	~WebView2Widget() override;
+	explicit FallbackHubView(const QString& title, QWidget* parent = nullptr);
+	~FallbackHubView() override = default;
 
-	void setUrl(const QUrl& url);
-	QUrl url() const;
-
-	bool canGoBack() const;
-	bool canGoForward() const;
+	void setUrl(const QUrl& url) override;
+	QUrl url() const override;
+	bool canGoBack() const override;
+	bool canGoForward() const override;
 
   public slots:
-	void back();
-	void forward();
-	void reload();
-
-  signals:
-	void titleChanged(const QString& title);
-	void urlChanged(const QUrl& url);
-	void loadFinished(bool ok);
-	void navigationStateChanged();
-
-  protected:
-	void resizeEvent(QResizeEvent* event) override;
-	void showEvent(QShowEvent* event) override;
+	void back() override;
+	void forward() override;
+	void reload() override;
 
   private:
-	void initialize();
-	void updateBounds();
-	void updateNavigationState();
+	void openCurrentUrl() const;
 
 	QUrl m_url;
-	bool m_initialized	= false;
-	bool m_canGoBack	= false;
-	bool m_canGoForward = false;
-
-#if defined(PROJT_USE_WEBVIEW2) && defined(_WIN32)
-	struct Impl;
-	Impl* m_impl = nullptr;
-#endif
+	QLabel* m_urlLabel		  = nullptr;
+	QPushButton* m_openButton = nullptr;
 };

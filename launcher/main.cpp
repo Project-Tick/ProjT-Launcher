@@ -58,6 +58,8 @@
 #include "Application.h"
 
 #if defined(Q_OS_LINUX)
+#include "CefRuntime.h"
+
 #include <QByteArray>
 #endif
 
@@ -73,6 +75,14 @@ int main(int argc, char* argv[])
 			qputenv("QT_QPA_PLATFORMTHEME", "gnome");
 		}
 	}
+
+#if defined(PROJT_USE_CEF)
+	const int cefExitCode = projt::cef::Runtime::executeSecondaryProcess(argc, argv);
+	if (cefExitCode >= 0)
+	{
+		return cefExitCode;
+	}
+#endif
 #endif
 
 	// initialize Qt
@@ -83,6 +93,13 @@ int main(int argc, char* argv[])
 		case Application::StartingUp:
 		case Application::Initialized:
 		{
+#if defined(Q_OS_LINUX) && defined(PROJT_USE_CEF)
+			if (!projt::cef::Runtime::instance().initializeBrowserProcess(argc, argv))
+			{
+				return projt::cef::Runtime::instance().exitCode();
+			}
+#endif
+
 			Q_INIT_RESOURCE(multimc);
 			Q_INIT_RESOURCE(backgrounds);
 			Q_INIT_RESOURCE(documents);
@@ -100,7 +117,11 @@ int main(int argc, char* argv[])
 			Q_INIT_RESOURCE(flat_white);
 
 			Q_INIT_RESOURCE(shaders);
-			return app.exec();
+			const int exitCode = app.exec();
+#if defined(Q_OS_LINUX) && defined(PROJT_USE_CEF)
+			projt::cef::Runtime::instance().shutdown();
+#endif
+			return exitCode;
 		}
 		case Application::Failed: return 1;
 		case Application::Succeeded: return 0;

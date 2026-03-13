@@ -34,24 +34,11 @@
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSizePolicy>
-#include <QStandardPaths>
 #include <QStackedWidget>
 #include <QTabBar>
 #include <QTextDocumentFragment>
 #include <QToolButton>
 #include <QVBoxLayout>
-#if defined(PROJT_USE_WEBENGINE)
-#include <QWebChannel>
-#include <QWebEngineHistory>
-#include <QWebEnginePage>
-#include <QWebEngineProfile>
-#include <QWebEngineSettings>
-#include <QWebEngineView>
-#endif
-
-#if defined(PROJT_USE_WEBVIEW2)
-#include "ui/widgets/WebView2Widget.h"
-#endif
 
 #include "Application.h"
 #include "BaseInstance.h"
@@ -60,6 +47,10 @@
 #include "MMCTime.h"
 #include "icons/IconList.hpp"
 #include "news/NewsChecker.h"
+#include "ui/widgets/CefHubView.h"
+#include "ui/widgets/FallbackHubView.h"
+#include "ui/widgets/WebView2Widget.h"
+#include "ui/widgets/QtWebEngineHubView.h"
 
 #if defined(PROJT_DISABLE_LAUNCHER_HUB)
 LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
@@ -256,130 +247,19 @@ namespace
 				  });
 		return instances;
 	}
+	HubViewBase* createBrowserView(QWidget* parent)
+	{
+#if defined(PROJT_USE_WEBVIEW2)
+		return new WebView2Widget(parent);
+#elif defined(PROJT_USE_WEBENGINE)
+		return new QtWebEngineHubView(parent);
+#elif defined(PROJT_USE_CEF)
+		return new CefHubView(parent);
+#else
+		return new FallbackHubView(QObject::tr("This page opens in your browser on this platform."), parent);
+#endif
+	}
 }
-
-#if !defined(PROJT_USE_WEBENGINE) && !defined(PROJT_USE_WEBVIEW2)
-class HubView final : public QWidget
-{
-	Q_OBJECT
-
-  public:
-	explicit HubView(QWidget* parent = nullptr) : QWidget(parent)
-	{
-		auto* layout = new QVBoxLayout(this);
-		layout->setContentsMargins(24, 24, 24, 24);
-		layout->setSpacing(12);
-
-		auto* titleLabel = new QLabel(LauncherHubWidget::tr("This page opens in your browser on this platform."), this);
-		titleLabel->setWordWrap(true);
-		titleLabel->setStyleSheet(QStringLiteral("color: #ffffff; font-size: 18px; font-weight: 700;"));
-
-		m_urlLabel = new QLabel(this);
-		m_urlLabel->setWordWrap(true);
-		m_urlLabel->setStyleSheet(QStringLiteral("color: #9bb0cc;"));
-
-		m_openButton = new QPushButton(LauncherHubWidget::tr("Open in browser"), this);
-		connect(m_openButton,
-				&QPushButton::clicked,
-				this,
-				[this]()
-				{
-					if (m_url.isValid())
-					{
-						QDesktopServices::openUrl(m_url);
-					}
-				});
-
-		layout->addWidget(titleLabel);
-		layout->addWidget(m_urlLabel);
-		layout->addWidget(m_openButton, 0, Qt::AlignLeft);
-		layout->addStretch(1);
-	}
-
-	void setUrl(const QUrl& url)
-	{
-		m_url = url;
-		m_urlLabel->setText(url.toString());
-		m_openButton->setEnabled(url.isValid());
-		if (url.isValid())
-		{
-			QDesktopServices::openUrl(url);
-		}
-	}
-
-	QUrl url() const
-	{
-		return m_url;
-	}
-
-	void back()
-	{}
-
-	void forward()
-	{}
-
-	void reload()
-	{
-		if (m_url.isValid())
-		{
-			QDesktopServices::openUrl(m_url);
-		}
-	}
-
-	bool canGoBack() const
-	{
-		return false;
-	}
-
-	bool canGoForward() const
-	{
-		return false;
-	}
-
-  private:
-	QUrl m_url;
-	QLabel* m_urlLabel		  = nullptr;
-	QPushButton* m_openButton = nullptr;
-};
-#endif
-
-#if defined(PROJT_USE_WEBENGINE)
-class LauncherHubBridge final : public QObject
-{
-	Q_OBJECT
-	Q_PROPERTY(QString launcherVersion READ launcherVersion CONSTANT)
-
-  public:
-	explicit LauncherHubBridge(QObject* parent = nullptr) : QObject(parent)
-	{}
-
-	QString launcherVersion() const
-	{
-		return BuildConfig.printableVersionString();
-	}
-
-	Q_INVOKABLE void openExternal(const QString& url) const
-	{
-		QDesktopServices::openUrl(QUrl(url));
-	}
-};
-
-class LauncherHubPage final : public QWebEnginePage
-{
-  public:
-	LauncherHubPage(QWebEngineProfile* profile, QObject* parent = nullptr) : QWebEnginePage(profile, parent)
-	{}
-
-  protected:
-	bool acceptNavigationRequest(const QUrl& url, NavigationType type, bool isMainFrame) override
-	{
-		Q_UNUSED(url);
-		Q_UNUSED(type);
-		Q_UNUSED(isMainFrame);
-		return true;
-	}
-};
-#endif
 
 LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 {
@@ -443,23 +323,6 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 	toolbar->addWidget(m_homeButton);
 	toolbar->addWidget(m_addressBar, 1);
 	toolbar->addWidget(m_goButton);
-
-#if defined(PROJT_USE_WEBENGINE)
-	static QWebEngineProfile* sharedProfile = nullptr;
-	if (!sharedProfile)
-	{
-		sharedProfile = new QWebEngineProfile(QStringLiteral("LauncherHub"), qApp);
-		sharedProfile->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
-		sharedProfile->setHttpCacheType(QWebEngineProfile::DiskHttpCache);
-		sharedProfile->setHttpCacheMaximumSize(256 * 1024 * 1024);
-		const QString storageRoot =
-			QDir::cleanPath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/webengine");
-		QDir().mkpath(storageRoot);
-		sharedProfile->setPersistentStoragePath(storageRoot + "/storage");
-		sharedProfile->setCachePath(storageRoot + "/cache");
-	}
-	m_profile = sharedProfile;
-#endif
 
 	m_stack = new QStackedWidget(this);
 
@@ -718,13 +581,13 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 
 LauncherHubWidget::~LauncherHubWidget() = default;
 
-HubView* LauncherHubWidget::currentView() const
+HubViewBase* LauncherHubWidget::currentView() const
 {
 	if (!m_stack)
 	{
 		return nullptr;
 	}
-	return qobject_cast<HubView*>(m_stack->currentWidget());
+	return qobject_cast<HubViewBase*>(m_stack->currentWidget());
 }
 
 void LauncherHubWidget::createCockpitTab()
@@ -945,34 +808,14 @@ void LauncherHubWidget::createCockpitTab()
 			});
 }
 
-HubView* LauncherHubWidget::createTab(const QUrl& url, const QString& label, bool switchTo)
+HubViewBase* LauncherHubWidget::createTab(const QUrl& url, const QString& label, bool switchTo)
 {
 	if (!m_stack || !m_tabBar)
 	{
 		return nullptr;
 	}
 
-	auto* view = new HubView(m_stack);
-#if defined(PROJT_USE_WEBENGINE)
-	auto* page = new LauncherHubPage(m_profile, view);
-	view->setPage(page);
-	view->setAttribute(Qt::WA_OpaquePaintEvent, true);
-	view->setStyleSheet(QStringLiteral("background: #121822;"));
-	page->setBackgroundColor(QColor(QStringLiteral("#121822")));
-	view->settings()->setAttribute(QWebEngineSettings::JavascriptEnabled, true);
-	view->settings()->setAttribute(QWebEngineSettings::LocalContentCanAccessRemoteUrls, false);
-	view->settings()->setAttribute(QWebEngineSettings::LocalContentCanAccessFileUrls, false);
-	view->settings()->setAttribute(QWebEngineSettings::PluginsEnabled, false);
-	view->settings()->setAttribute(QWebEngineSettings::HyperlinkAuditingEnabled, false);
-	view->settings()->setAttribute(QWebEngineSettings::ScrollAnimatorEnabled, false);
-	view->settings()->setAttribute(QWebEngineSettings::WebGLEnabled, false);
-	view->settings()->setAttribute(QWebEngineSettings::Accelerated2dCanvasEnabled, false);
-
-	auto* channel = new QWebChannel(view);
-	auto* bridge  = new LauncherHubBridge(channel);
-	channel->registerObject(QStringLiteral("launcher"), bridge);
-	page->setWebChannel(channel);
-#endif
+	auto* view = createBrowserView(m_stack);
 
 	const int stackIndex	   = m_stack->addWidget(view);
 	const QString initialLabel = label.isEmpty() ? tr("New Tab") : label;
@@ -987,10 +830,9 @@ HubView* LauncherHubWidget::createTab(const QUrl& url, const QString& label, boo
 		}
 	};
 
-#if defined(PROJT_USE_WEBENGINE)
-	connect(view, &QWebEngineView::titleChanged, this, updateTitle);
+	connect(view, &HubViewBase::titleChanged, this, updateTitle);
 	connect(view,
-			&QWebEngineView::urlChanged,
+			&HubViewBase::urlChanged,
 			this,
 			[this, view](const QUrl& urlChanged)
 			{
@@ -1001,7 +843,7 @@ HubView* LauncherHubWidget::createTab(const QUrl& url, const QString& label, boo
 				}
 			});
 	connect(view,
-			&QWebEngineView::loadFinished,
+			&HubViewBase::loadFinished,
 			this,
 			[this, view](bool)
 			{
@@ -1010,33 +852,7 @@ HubView* LauncherHubWidget::createTab(const QUrl& url, const QString& label, boo
 					updateNavigationState();
 				}
 			});
-#elif defined(PROJT_USE_WEBVIEW2)
-	connect(view, &WebView2Widget::titleChanged, this, updateTitle);
-	connect(view,
-			&WebView2Widget::urlChanged,
-			this,
-			[this, view](const QUrl& urlChanged)
-			{
-				if (view == currentView())
-				{
-					m_addressBar->setText(urlChanged.toString());
-					updateNavigationState();
-				}
-			});
-	connect(view,
-			&WebView2Widget::loadFinished,
-			this,
-			[this, view](bool)
-			{
-				if (view == currentView())
-				{
-					updateNavigationState();
-				}
-			});
-	connect(view, &WebView2Widget::navigationStateChanged, this, &LauncherHubWidget::updateNavigationState);
-#else
-	Q_UNUSED(updateTitle);
-#endif
+	connect(view, &HubViewBase::navigationStateChanged, this, &LauncherHubWidget::updateNavigationState);
 
 	if (switchTo)
 	{
@@ -1086,7 +902,7 @@ void LauncherHubWidget::activatePendingForIndex(int index)
 	{
 		return;
 	}
-	if (auto* view = qobject_cast<HubView*>(m_stack->widget(index)))
+	if (auto* view = qobject_cast<HubViewBase*>(m_stack->widget(index)))
 	{
 		const QUrl pendingUrl = view->property("hubPendingUrl").toUrl();
 		if (pendingUrl.isValid())
@@ -1114,16 +930,8 @@ void LauncherHubWidget::updateNavigationState()
 	m_goButton->setEnabled(true);
 	m_addressBar->setEnabled(true);
 	m_addressBar->setPlaceholderText(tr("Search or enter address"));
-#if defined(PROJT_USE_WEBENGINE)
-	m_backButton->setEnabled(view->history()->canGoBack());
-	m_forwardButton->setEnabled(view->history()->canGoForward());
-#elif defined(PROJT_USE_WEBVIEW2)
 	m_backButton->setEnabled(view->canGoBack());
 	m_forwardButton->setEnabled(view->canGoForward());
-#else
-	m_backButton->setEnabled(view->canGoBack());
-	m_forwardButton->setEnabled(view->canGoForward());
-#endif
 	m_addressBar->setText(view->url().toString());
 }
 
@@ -1449,5 +1257,3 @@ void LauncherHubWidget::rebuildNewsFeed()
 }
 
 #endif // PROJT_DISABLE_LAUNCHER_HUB
-
-#include "LauncherHubWidget.moc"

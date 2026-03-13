@@ -22,47 +22,52 @@
 
 #include "ui/widgets/HubViewBase.h"
 
-class WebView2Widget : public HubViewBase
+#if defined(PROJT_USE_CEF)
+
+class QResizeEvent;
+class QShowEvent;
+
+class CefHubView : public HubViewBase
 {
 	Q_OBJECT
 
   public:
-	explicit WebView2Widget(QWidget* parent = nullptr);
-	~WebView2Widget() override;
+	explicit CefHubView(QWidget* parent = nullptr);
+	~CefHubView() override;
 
-	void setUrl(const QUrl& url);
-	QUrl url() const;
-
-	bool canGoBack() const;
-	bool canGoForward() const;
+	void setUrl(const QUrl& url) override;
+	QUrl url() const override;
+	bool canGoBack() const override;
+	bool canGoForward() const override;
 
   public slots:
-	void back();
-	void forward();
-	void reload();
-
-  signals:
-	void titleChanged(const QString& title);
-	void urlChanged(const QUrl& url);
-	void loadFinished(bool ok);
-	void navigationStateChanged();
+	void back() override;
+	void forward() override;
+	void reload() override;
 
   protected:
 	void resizeEvent(QResizeEvent* event) override;
 	void showEvent(QShowEvent* event) override;
 
-  private:
-	void initialize();
-	void updateBounds();
-	void updateNavigationState();
+  public:
+	void ensureBrowser();
+	void syncNavigationState();
+	void handleAddressChange(const QUrl& url);
+	void handleTitleChange(const QString& title);
+	void handleLoadingState(bool isLoading, bool canGoBack, bool canGoForward);
+	void handleLoadFinished(bool ok);
+	void handleBrowserClosed();
 
+  private:
 	QUrl m_url;
-	bool m_initialized	= false;
+	QString m_title;
 	bool m_canGoBack	= false;
 	bool m_canGoForward = false;
+	bool m_created		= false;
+	bool m_closing		= false;
 
-#if defined(PROJT_USE_WEBVIEW2) && defined(_WIN32)
 	struct Impl;
 	Impl* m_impl = nullptr;
-#endif
 };
+
+#endif

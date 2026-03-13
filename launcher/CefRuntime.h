@@ -20,49 +20,28 @@
  */
 #pragma once
 
-#include "ui/widgets/HubViewBase.h"
+#include <QObject>
 
-class WebView2Widget : public HubViewBase
+namespace projt::cef
 {
-	Q_OBJECT
+	class Runtime : public QObject
+	{
+		Q_OBJECT
 
-  public:
-	explicit WebView2Widget(QWidget* parent = nullptr);
-	~WebView2Widget() override;
+	  public:
+		static Runtime& instance();
+		static int executeSecondaryProcess(int argc, char* argv[]);
 
-	void setUrl(const QUrl& url);
-	QUrl url() const;
+		bool initializeBrowserProcess(int argc, char* argv[]);
+		void shutdown();
 
-	bool canGoBack() const;
-	bool canGoForward() const;
+		bool isInitialized() const;
+		int exitCode() const;
 
-  public slots:
-	void back();
-	void forward();
-	void reload();
+	  private:
+		explicit Runtime(QObject* parent = nullptr);
 
-  signals:
-	void titleChanged(const QString& title);
-	void urlChanged(const QUrl& url);
-	void loadFinished(bool ok);
-	void navigationStateChanged();
-
-  protected:
-	void resizeEvent(QResizeEvent* event) override;
-	void showEvent(QShowEvent* event) override;
-
-  private:
-	void initialize();
-	void updateBounds();
-	void updateNavigationState();
-
-	QUrl m_url;
-	bool m_initialized	= false;
-	bool m_canGoBack	= false;
-	bool m_canGoForward = false;
-
-#if defined(PROJT_USE_WEBVIEW2) && defined(_WIN32)
-	struct Impl;
-	Impl* m_impl = nullptr;
-#endif
-};
+		bool m_initialized = false;
+		int m_exitCode		= 0;
+	};
+}

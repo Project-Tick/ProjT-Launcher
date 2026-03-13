@@ -54,7 +54,7 @@ struct WebView2Widget::Impl
 };
 #endif
 
-WebView2Widget::WebView2Widget(QWidget* parent) : QWidget(parent)
+WebView2Widget::WebView2Widget(QWidget* parent) : HubViewBase(parent)
 {
 	setAttribute(Qt::WA_NativeWindow);
 	setAttribute(Qt::WA_NoSystemBackground);

@@ -24,13 +24,7 @@
 #include <QUrl>
 #include <QWidget>
 
-#if defined(PROJT_USE_WEBENGINE)
-#include <QWebEngineView>
-#endif
-
-#if defined(PROJT_USE_WEBVIEW2)
-#include "ui/widgets/WebView2Widget.h"
-#endif
+#include "ui/widgets/HubViewBase.h"
 
 class QLineEdit;
 class QLabel;
@@ -38,22 +32,9 @@ class QVBoxLayout;
 class QStackedWidget;
 class QTabBar;
 class QToolButton;
-class QWebEngineProfile;
 class QWidget;
 class QPushButton;
 class NewsChecker;
-
-#if !defined(PROJT_DISABLE_LAUNCHER_HUB)
-#if defined(PROJT_USE_WEBENGINE)
-using HubView = QWebEngineView;
-#elif defined(PROJT_USE_WEBVIEW2)
-using HubView = WebView2Widget;
-#else
-class HubView;
-#endif
-#else
-class HubView;
-#endif
 
 class LauncherHubWidget : public QWidget
 {
@@ -80,8 +61,8 @@ class LauncherHubWidget : public QWidget
 	void openInstanceFolderRequested(const QString& instanceId);
 
   private:
-	HubView* currentView() const;
-	HubView* createTab(const QUrl& url, const QString& label = QString(), bool switchTo = true);
+	HubViewBase* currentView() const;
+	HubViewBase* createTab(const QUrl& url, const QString& label = QString(), bool switchTo = true);
 	void createCockpitTab();
 	void switchToPage(QWidget* page);
 	void activatePendingForIndex(int index);
@@ -96,7 +77,6 @@ class LauncherHubWidget : public QWidget
 	QWidget* m_tabsBarContainer			 = nullptr;
 	QWidget* m_toolbarContainer			 = nullptr;
 	QStackedWidget* m_stack				 = nullptr;
-	QWebEngineProfile* m_profile		 = nullptr;
 	QLineEdit* m_addressBar				 = nullptr;
 	QToolButton* m_backButton			 = nullptr;
 	QToolButton* m_forwardButton		 = nullptr;
