@@ -165,34 +165,46 @@ static ComponentPtr componentFromJsonV1(PackProfile* parent,
 	component->m_important		= Json::ensureBoolean(obj.value("important"), false);
 
 	// Cached values - use safe parsing with fallbacks for resilience
-	// Invalid or missing values are silently ignored to allow loading of 
+	// Invalid or missing values are silently ignored to allow loading of
 	// partially corrupted profiles
-	try {
+	try
+	{
 		component->m_cachedVersion = Json::ensureString(obj.value("cachedVersion"));
-	} catch (...) {
+	}
+	catch (...)
+	{
 		component->m_cachedVersion = QString();
 	}
-	
-	try {
+
+	try
+	{
 		component->m_cachedName = Json::ensureString(obj.value("cachedName"));
-	} catch (...) {
+	}
+	catch (...)
+	{
 		component->m_cachedName = QString();
 	}
-	
-	try {
+
+	try
+	{
 		component->m_cachedRequires = projt::meta::parseDependencies(obj, "cachedRequires");
-	} catch (...) {
+	}
+	catch (...)
+	{
 		component->m_cachedRequires = {};
 	}
-	
-	try {
+
+	try
+	{
 		component->m_cachedConflicts = projt::meta::parseDependencies(obj, "cachedConflicts");
-	} catch (...) {
+	}
+	catch (...)
+	{
 		component->m_cachedConflicts = {};
 	}
-	
+
 	component->m_cachedVolatile = Json::ensureBoolean(obj.value("volatile"), false);
-	bool disabled = Json::ensureBoolean(obj.value("disabled"), false);
+	bool disabled				= Json::ensureBoolean(obj.value("disabled"), false);
 	component->setEnabled(!disabled);
 	return component;
 }

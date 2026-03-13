@@ -802,12 +802,10 @@ namespace FS
 				return false;
 			}
 
-			QDBusInterface trashInterface(
-				"org.freedesktop.portal.Desktop",
-				"/org/freedesktop/portal/desktop",
-				"org.freedesktop.portal.Trash",
-				bus
-			);
+			QDBusInterface trashInterface("org.freedesktop.portal.Desktop",
+										  "/org/freedesktop/portal/desktop",
+										  "org.freedesktop.portal.Trash",
+										  bus);
 
 			if (!trashInterface.isValid())
 			{

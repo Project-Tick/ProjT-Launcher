@@ -161,8 +161,8 @@ void WebView2Widget::initialize()
 	QDir().mkpath(dataPath);
 
 	const auto dataPathWide = dataPath.toStdWString();
-	const auto hwnd = reinterpret_cast<HWND>(winId());
-	HRESULT comInitResult = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+	const auto hwnd			= reinterpret_cast<HWND>(winId());
+	HRESULT comInitResult	= CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 	Q_UNUSED(comInitResult);
 
 	CreateCoreWebView2EnvironmentWithOptions(
@@ -250,15 +250,14 @@ void WebView2Widget::initialize()
 									.Get(),
 								&token);
 
-							m_impl->webview->add_HistoryChanged(
-								Callback<ICoreWebView2HistoryChangedEventHandler>(
-									[this](ICoreWebView2*, IUnknown*) -> HRESULT
-									{
-										updateNavigationState();
-										return S_OK;
-									})
-									.Get(),
-								&token);
+							m_impl->webview->add_HistoryChanged(Callback<ICoreWebView2HistoryChangedEventHandler>(
+																	[this](ICoreWebView2*, IUnknown*) -> HRESULT
+																	{
+																		updateNavigationState();
+																		return S_OK;
+																	})
+																	.Get(),
+																&token);
 
 							if (m_url.isValid())
 							{
@@ -285,9 +284,9 @@ void WebView2Widget::updateBounds()
 		return;
 
 	RECT bounds{};
-	bounds.left = 0;
-	bounds.top = 0;
-	bounds.right = width();
+	bounds.left	  = 0;
+	bounds.top	  = 0;
+	bounds.right  = width();
 	bounds.bottom = height();
 	m_impl->controller->put_Bounds(bounds);
 #endif
@@ -299,16 +298,16 @@ void WebView2Widget::updateNavigationState()
 	if (!m_impl || !m_impl->webview)
 		return;
 
-	BOOL canBack = FALSE;
+	BOOL canBack	= FALSE;
 	BOOL canForward = FALSE;
 	m_impl->webview->get_CanGoBack(&canBack);
 	m_impl->webview->get_CanGoForward(&canForward);
 
-	const bool newCanBack = (canBack == TRUE);
+	const bool newCanBack	 = (canBack == TRUE);
 	const bool newCanForward = (canForward == TRUE);
 	if (newCanBack != m_canGoBack || newCanForward != m_canGoForward)
 	{
-		m_canGoBack = newCanBack;
+		m_canGoBack	   = newCanBack;
 		m_canGoForward = newCanForward;
 		emit navigationStateChanged();
 	}

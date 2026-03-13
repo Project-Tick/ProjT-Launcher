@@ -151,7 +151,7 @@ class Version
 			const auto suffix = lower.mid(3);
 			if (suffix.isEmpty())
 				return false;
-			bool ok = false;
+			bool ok		  = false;
 			const auto rc = suffix.toInt(&ok);
 			if (!ok)
 				return false;
@@ -191,8 +191,8 @@ class Version
 
 			if (!m_isNull && !other.m_isNull)
 			{
-				int rc_a = 0;
-				int rc_b = 0;
+				int rc_a		   = 0;
+				int rc_b		   = 0;
 				const auto is_rc_a = isReleaseCandidate(&rc_a);
 				const auto is_rc_b = other.isReleaseCandidate(&rc_b);
 				if (is_rc_a && is_rc_b && rc_a != rc_b)

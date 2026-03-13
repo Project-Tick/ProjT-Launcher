@@ -224,21 +224,27 @@ void SkinManageDialog::setupCapes()
 {
 	// Create the cape model with on-demand loading support
 	m_capeModel = new CapeListModel(this);
-	
+
 	// Connect signals for async loading
 	connect(m_capeModel, &CapeListModel::loadingFinished, this, &SkinManageDialog::onCapesLoaded);
-	connect(m_capeModel, &CapeListModel::capeLoaded, this, [this](const QString& capeId) {
-		// Update combo box icon when a cape image is loaded
-		if (m_capesIdx.contains(capeId)) {
-			int comboIdx = m_capesIdx[capeId];
-			QImage capeImage = m_capeModel->getCapeImage(capeId);
-			if (!capeImage.isNull()) {
-				m_capes[capeId] = capeImage;
-				m_ui->capeCombo->setItemIcon(comboIdx, previewCape(capeImage, m_ui->elytraCB->isChecked()));
-			}
-		}
-	});
-	
+	connect(m_capeModel,
+			&CapeListModel::capeLoaded,
+			this,
+			[this](const QString& capeId)
+			{
+				// Update combo box icon when a cape image is loaded
+				if (m_capesIdx.contains(capeId))
+				{
+					int comboIdx	 = m_capesIdx[capeId];
+					QImage capeImage = m_capeModel->getCapeImage(capeId);
+					if (!capeImage.isNull())
+					{
+						m_capes[capeId] = capeImage;
+						m_ui->capeCombo->setItemIcon(comboIdx, previewCape(capeImage, m_ui->elytraCB->isChecked()));
+					}
+				}
+			});
+
 	// Load capes from account (this triggers download if needed)
 	m_capeModel->loadFromAccount(m_acct, m_list.getDir());
 }
@@ -248,34 +254,39 @@ void SkinManageDialog::onCapesLoaded()
 	// Clear and repopulate combo box
 	m_ui->capeCombo->clear();
 	m_ui->capeCombo->addItem(tr("No Cape"), QVariant());
-	
+
 	auto& accountData = *m_acct->accountData();
-	auto currentCape = accountData.minecraftProfile.currentCape;
-	int currentIndex = 0;
-	
+	auto currentCape  = accountData.minecraftProfile.currentCape;
+	int currentIndex  = 0;
+
 	// Populate from model
 	int rowCount = m_capeModel->rowCount();
-	for (int i = 0; i < rowCount; ++i) {
-		QModelIndex idx = m_capeModel->index(i, 0);
-		QString capeId = m_capeModel->data(idx, CapeListModel::CapeIdRole).toString();
+	for (int i = 0; i < rowCount; ++i)
+	{
+		QModelIndex idx	  = m_capeModel->index(i, 0);
+		QString capeId	  = m_capeModel->data(idx, CapeListModel::CapeIdRole).toString();
 		QString capeAlias = m_capeModel->data(idx, CapeListModel::CapeAliasRole).toString();
-		QImage capeImage = m_capeModel->data(idx, CapeListModel::CapeImageRole).value<QImage>();
-		
+		QImage capeImage  = m_capeModel->data(idx, CapeListModel::CapeImageRole).value<QImage>();
+
 		// Store in local cache for preview
-		if (!capeImage.isNull()) {
+		if (!capeImage.isNull())
+		{
 			m_capes[capeId] = capeImage;
 			m_ui->capeCombo->addItem(previewCape(capeImage, m_ui->elytraCB->isChecked()), capeAlias, capeId);
-		} else {
+		}
+		else
+		{
 			m_ui->capeCombo->addItem(capeAlias, capeId);
 		}
-		
+
 		m_capesIdx[capeId] = i + 1; // +1 because "No Cape" is at index 0
-		
-		if (capeId == currentCape) {
+
+		if (capeId == currentCape)
+		{
 			currentIndex = i + 1;
 		}
 	}
-	
+
 	m_ui->capeCombo->setCurrentIndex(currentIndex);
 }
 
@@ -283,7 +294,8 @@ void SkinManageDialog::onCapeLoadError(const QString& error)
 {
 	qWarning() << "Failed to load capes:" << error;
 	// Fall back to showing at least "No Cape" option
-	if (m_ui->capeCombo->count() == 0) {
+	if (m_ui->capeCombo->count() == 0)
+	{
 		m_ui->capeCombo->addItem(tr("No Cape"), QVariant());
 	}
 }
@@ -348,7 +360,7 @@ void SkinManageDialog::accept()
 	}
 
 	skinUpload->addTask(m_acct->refresh().staticCast<Task>());
-		if (prog.execWithTask(*skinUpload) != QDialog::Accepted)
+	if (prog.execWithTask(*skinUpload) != QDialog::Accepted)
 	{
 		CustomMessageBox::selectable(this, tr("Skin Upload"), tr("Failed to upload skin!"), QMessageBox::Warning)
 			->exec();
@@ -365,7 +377,7 @@ void SkinManageDialog::on_resetBtn_clicked()
 	NetJob::Ptr skinReset{ new NetJob(tr("Reset skin"), APPLICATION->network(), 1) };
 	skinReset->addNetAction(SkinDelete::make(m_acct->accessToken()));
 	skinReset->addTask(m_acct->refresh().staticCast<Task>());
-		if (prog.execWithTask(*skinReset) != QDialog::Accepted)
+	if (prog.execWithTask(*skinReset) != QDialog::Accepted)
 	{
 		CustomMessageBox::selectable(this,
 									 tr("Skin Delete"),
@@ -466,7 +478,7 @@ void SkinManageDialog::on_urlBtn_clicked()
 	auto path = FS::PathCombine(m_list.getDir(), url.fileName());
 	job->addNetAction(Net::Download::makeFile(url, path));
 	ProgressDialog dlg(this);
-		dlg.execWithTask(*job);
+	dlg.execWithTask(*job);
 	SkinModel s(path);
 	if (!s.isValid())
 	{
@@ -629,7 +641,7 @@ void SkinManageDialog::on_userBtn_clicked()
 	job->addTask(profileLoop);
 	job->addNetAction(downloadSkin);
 	ProgressDialog dlg(this);
-		dlg.execWithTask(*job);
+	dlg.execWithTask(*job);
 
 	SkinModel s(path);
 	if (!s.isValid())

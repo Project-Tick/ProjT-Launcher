@@ -190,8 +190,7 @@ MinecraftSettingsWidget::MinecraftSettingsWidget(MinecraftInstancePtr instance, 
 	if (!(APPLICATION->capabilities() & Application::SupportsGameMode))
 	{
 		m_ui->enableFeralGamemodeCheck->setDisabled(true);
-		m_ui->enableFeralGamemodeCheck->setToolTip(
-			tr("Project Tick GameMode could not be found on your system."));
+		m_ui->enableFeralGamemodeCheck->setToolTip(tr("Project Tick GameMode could not be found on your system."));
 	}
 
 	if (!(APPLICATION->capabilities() & Application::SupportsMangoHud))

@@ -40,7 +40,7 @@
 
 namespace
 {
-constexpr int kProjectBatchSize = 50;
+	constexpr int kProjectBatchSize = 50;
 }
 
 ModrinthCollectionImportTask::ModrinthCollectionImportTask(QString collection_reference, MinecraftInstance* instance)
@@ -128,7 +128,7 @@ bool ModrinthCollectionImportTask::extractCollectionMetadata(const QByteArray& h
 	static const QRegularExpression titlePattern(R"(<title>([^<]+)</title>)");
 	if (auto match = titlePattern.match(text); match.hasMatch())
 	{
-		m_collection_name = match.captured(1).trimmed();
+		m_collection_name	 = match.captured(1).trimmed();
 		const QString suffix = QStringLiteral(" - Modrinth");
 		if (m_collection_name.endsWith(suffix))
 			m_collection_name.chop(suffix.size());
@@ -149,7 +149,7 @@ bool ModrinthCollectionImportTask::extractCollectionMetadata(const QByteArray& h
 		while (id_it.hasNext())
 		{
 			auto id_match = id_it.next();
-			auto id = id_match.captured(1);
+			auto id		  = id_match.captured(1);
 			if (!seen.contains(id))
 			{
 				seen.insert(id);
@@ -171,7 +171,7 @@ void ModrinthCollectionImportTask::fetchCollectionPage()
 	setProgress(0, 1);
 
 	auto response = std::make_shared<QByteArray>();
-	auto job = makeShared<NetJob>(tr("Modrinth collection page"), APPLICATION->network());
+	auto job	  = makeShared<NetJob>(tr("Modrinth collection page"), APPLICATION->network());
 	job->addNetAction(Net::ApiDownload::makeByteArray(QUrl(collectionUrl()), response));
 
 	connect(job.get(),
@@ -215,7 +215,8 @@ void ModrinthCollectionImportTask::fetchProjectBatch()
 
 		if (m_packs.isEmpty())
 		{
-			emitFailed(tr("This collection does not contain any projects that could be resolved through the Modrinth API."));
+			emitFailed(
+				tr("This collection does not contain any projects that could be resolved through the Modrinth API."));
 			return;
 		}
 
@@ -225,9 +226,9 @@ void ModrinthCollectionImportTask::fetchProjectBatch()
 
 	setStatus(tr("Loading collection projects..."));
 
-	auto response = std::make_shared<QByteArray>();
+	auto response	 = std::make_shared<QByteArray>();
 	const auto batch = m_project_ids.mid(m_project_batch_offset, kProjectBatchSize);
-	auto job = m_api.getProjects(batch, response);
+	auto job		 = m_api.getProjects(batch, response);
 	if (!job)
 	{
 		emitFailed(tr("Failed to request Modrinth project metadata for this collection."));
@@ -258,7 +259,7 @@ void ModrinthCollectionImportTask::fetchProjectBatch()
 				{
 					try
 					{
-						auto obj = Json::requireObject(entry);
+						auto obj  = Json::requireObject(entry);
 						auto pack = std::make_shared<ModPlatform::IndexedPack>();
 						m_api.loadIndexedPack(*pack, obj);
 						m_api.loadExtraPackInfo(*pack, obj);

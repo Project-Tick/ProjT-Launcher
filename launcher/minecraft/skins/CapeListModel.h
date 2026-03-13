@@ -31,7 +31,7 @@
 
 /**
  * @brief Model for managing Minecraft capes with on-demand loading
- * 
+ *
  * This model provides a list of available capes for a Minecraft account,
  * downloading cape images on demand and caching them locally.
  */
@@ -39,7 +39,7 @@ class CapeListModel : public QAbstractListModel
 {
 	Q_OBJECT
 
-public:
+  public:
 	enum Roles
 	{
 		CapeIdRole = Qt::UserRole,
@@ -74,7 +74,10 @@ public:
 	 * @brief Get all loaded cape images
 	 * @return Hash of cape ID to image
 	 */
-	QHash<QString, QImage> allCapes() const { return m_capeImages; }
+	QHash<QString, QImage> allCapes() const
+	{
+		return m_capeImages;
+	}
 
 	/**
 	 * @brief Find index of cape by ID
@@ -95,7 +98,7 @@ public:
 	QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 	QHash<int, QByteArray> roleNames() const override;
 
-signals:
+  signals:
 	/**
 	 * @brief Emitted when a cape image has been loaded
 	 * @param capeId The cape that was loaded
@@ -107,11 +110,11 @@ signals:
 	 */
 	void loadingFinished();
 
-private slots:
+  private slots:
 	void onDownloadSucceeded();
 	void onDownloadFailed(QString reason);
 
-private:
+  private:
 	struct CapeInfo
 	{
 		QString id;

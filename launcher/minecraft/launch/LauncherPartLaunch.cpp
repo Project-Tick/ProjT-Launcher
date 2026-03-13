@@ -199,7 +199,7 @@ void LauncherPartLaunch::on_state(LoggedProcess::State state)
 				emitFailed(tr("Game crashed."));
 				return;
 			}
-			
+
 			// Set exit code in environment for post-launch hooks
 			auto env = m_process.processEnvironment();
 			env.insert("INST_EXITCODE", QString::number(exitCode));
@@ -218,10 +218,11 @@ void LauncherPartLaunch::on_state(LoggedProcess::State state)
 				postProcess.waitForFinished(30000); // 30 second timeout
 				if (postProcess.exitCode() != 0)
 				{
-					emit logLine(tr("Post-exit command failed with code %1").arg(postProcess.exitCode()), MessageLevel::Warning);
+					emit logLine(tr("Post-exit command failed with code %1").arg(postProcess.exitCode()),
+								 MessageLevel::Warning);
 				}
 			}
-			
+
 			emitSucceeded();
 			break;
 		}

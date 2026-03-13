@@ -324,9 +324,10 @@ void ResourceUpdateDialog::checkCandidates()
 		}
 
 		// Sort items alphabetically by their text
-		std::sort(items.begin(), items.end(), [](QTreeWidgetItem* a, QTreeWidgetItem* b) {
-			return a->text(0).compare(b->text(0), Qt::CaseInsensitive) < 0;
-		});
+		std::sort(items.begin(),
+				  items.end(),
+				  [](QTreeWidgetItem* a, QTreeWidgetItem* b)
+				  { return a->text(0).compare(b->text(0), Qt::CaseInsensitive) < 0; });
 
 		// Re-add items and sort each item's children in descending order
 		for (auto* item : items)
@@ -337,9 +338,12 @@ void ResourceUpdateDialog::checkCandidates()
 			{
 				children.append(item->takeChild(0));
 			}
-			std::sort(children.begin(), children.end(), [](QTreeWidgetItem* a, QTreeWidgetItem* b) {
-				return a->text(0).compare(b->text(0), Qt::CaseInsensitive) > 0;  // Descending
-			});
+			std::sort(children.begin(),
+					  children.end(),
+					  [](QTreeWidgetItem* a, QTreeWidgetItem* b)
+					  {
+						  return a->text(0).compare(b->text(0), Qt::CaseInsensitive) > 0; // Descending
+					  });
 			for (auto* child : children)
 			{
 				item->addChild(child);

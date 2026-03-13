@@ -188,7 +188,7 @@ QList<Net::NetRequest::Ptr> Library::getDownloads(const RuntimeContext& runtimeC
 		{
 			return check_local_file(storage);
 		}
-		url = normalizeNeoForgedMavenUrl(url);
+		url		   = normalizeNeoForgedMavenUrl(url);
 		auto entry = cache->resolveEntry("libraries", storage);
 		if (stale)
 		{

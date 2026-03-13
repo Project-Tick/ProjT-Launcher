@@ -87,7 +87,7 @@ class ModrinthCollectionImportTask final : public Task
 
 	QStringList m_project_ids;
 	int m_project_batch_offset = 0;
-	int m_version_index = 0;
+	int m_version_index		   = 0;
 
 	QList<ModPlatform::IndexedPack::Ptr> m_packs;
 	QList<ImportedResource> m_imported_resources;

@@ -233,7 +233,7 @@ void ImportPage::updateState()
 					});
 			ProgressDialog dlUrlDialod(this);
 			dlUrlDialod.setSkipButton(true, tr("Abort"));
-						dlUrlDialod.execWithTask(*job);
+			dlUrlDialod.execWithTask(*job);
 			return;
 		}
 		else

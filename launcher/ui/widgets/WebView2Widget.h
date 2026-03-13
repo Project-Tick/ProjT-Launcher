@@ -58,8 +58,8 @@ class WebView2Widget : public QWidget
 	void updateNavigationState();
 
 	QUrl m_url;
-	bool m_initialized = false;
-	bool m_canGoBack  = false;
+	bool m_initialized	= false;
+	bool m_canGoBack	= false;
 	bool m_canGoForward = false;
 
 #if defined(PROJT_USE_WEBVIEW2) && defined(_WIN32)

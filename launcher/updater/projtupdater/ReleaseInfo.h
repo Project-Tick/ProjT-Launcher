@@ -53,7 +53,7 @@ struct ReleaseInfo
 	QDateTime created_at;
 	QDateTime published_at;
 	bool prerelease = false;
-	bool draft = false;
+	bool draft		= false;
 	QString body;
 	QList<ReleaseAsset> assets;
 	Version version;

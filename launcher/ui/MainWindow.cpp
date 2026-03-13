@@ -976,7 +976,7 @@ void MainWindow::runModalTask(Task* task)
 											 tr("The task has been aborted by the user."),
 											 QMessageBox::Information)
 					->show();
-	});
+			});
 	ProgressDialog loadDialog(this);
 	loadDialog.setSkipButton(true, tr("Abort"));
 	loadDialog.execWithTask(*task);
@@ -1569,9 +1569,7 @@ void MainWindow::newsButtonClicked()
 void MainWindow::openLauncherHub(const QUrl& url)
 {
 #if defined(PROJT_DISABLE_LAUNCHER_HUB)
-	QMessageBox::information(this,
-							 tr("Launcher Hub"),
-							 tr("Launcher Hub is not available in this version."));
+	QMessageBox::information(this, tr("Launcher Hub"), tr("Launcher Hub is not available in this version."));
 	if (url.isValid())
 	{
 		QDesktopServices::openUrl(url);

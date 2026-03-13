@@ -395,7 +395,8 @@ namespace ResourceDownload
 	{
 		for (auto* page : m_container->getPages())
 		{
-			if (auto* resource_page = dynamic_cast<ResourcePage*>(page); resource_page && resource_page->id() == "modrinth")
+			if (auto* resource_page = dynamic_cast<ResourcePage*>(page);
+				resource_page && resource_page->id() == "modrinth")
 				return resource_page;
 		}
 		return nullptr;
@@ -407,7 +408,7 @@ namespace ResourceDownload
 		if (!page)
 			return;
 
-		bool ok = false;
+		bool ok	   = false;
 		auto input = QInputDialog::getText(this,
 										   tr("Import Modrinth Collection"),
 										   tr("Enter a Modrinth collection URL or collection ID:"),
@@ -437,17 +438,14 @@ namespace ResourceDownload
 						  .arg(task->importedResources().size())
 						  .arg(input.trimmed());
 		else
-			message = tr("Imported %1 mod(s) from `%2`.")
-						  .arg(task->importedResources().size())
-						  .arg(task->collectionName());
+			message =
+				tr("Imported %1 mod(s) from `%2`.").arg(task->importedResources().size()).arg(task->collectionName());
 
 		if (!task->skippedResources().isEmpty())
 		{
 			message += "\n\n"
-					+ tr("Skipped %1 project(s) without a compatible version:")
-						  .arg(task->skippedResources().size())
-					+ "\n"
-					+ task->skippedResources().join(", ");
+					 + tr("Skipped %1 project(s) without a compatible version:").arg(task->skippedResources().size())
+					 + "\n" + task->skippedResources().join(", ");
 		}
 
 		CustomMessageBox::selectable(this, tr("Collection imported"), message, QMessageBox::Information)->exec();

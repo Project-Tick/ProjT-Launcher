@@ -178,10 +178,7 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent), ui(new Ui::AboutDia
 				this,
 				[this, manifestoHtml]
 				{
-					ScrollMessageBox dialog(this,
-											tr("About Project Tick"),
-											tr("Project Tick Overview"),
-											manifestoHtml);
+					ScrollMessageBox dialog(this, tr("About Project Tick"), tr("Project Tick Overview"), manifestoHtml);
 					dialog.exec();
 				});
 	}

@@ -143,7 +143,7 @@ class InstallJavaPage : public QWidget, public BasePage
 	void setParentContainer(BasePageContainer* container) override
 	{
 		auto* pageContainer = dynamic_cast<PageContainer*>(container);
-		auto* dialog = pageContainer ? qobject_cast<QDialog*>(pageContainer->parent()) : nullptr;
+		auto* dialog		= pageContainer ? qobject_cast<QDialog*>(pageContainer->parent()) : nullptr;
 		if (!dialog || !javaVersionSelect || !javaVersionSelect->view())
 			return;
 		connect(javaVersionSelect->view(), &QAbstractItemView::doubleClicked, dialog, &QDialog::accept);

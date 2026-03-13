@@ -189,7 +189,7 @@ namespace projt::logs
 					{
 						entry->message.chop(1);
 					}
-					haveMessage	   = true;
+					haveMessage = true;
 				}
 			}
 			else if (token == QXmlStreamReader::TokenType::EndElement)

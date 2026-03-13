@@ -74,7 +74,7 @@ inline QString childValue(const QDomElement& element, const QString& childName, 
 
 bool NewsEntry::fromXmlElement(const QDomElement& element, NewsEntry* entry, [[maybe_unused]] QString* errorMsg)
 {
-	QString title = childValue(element, "title", tr("Untitled"));
+	QString title	= childValue(element, "title", tr("Untitled"));
 	QString content = childValue(element, "content", QString());
 	if (content.isEmpty())
 		content = childValue(element, "content:encoded", QString());
@@ -92,7 +92,7 @@ bool NewsEntry::fromXmlElement(const QDomElement& element, NewsEntry* entry, [[m
 		if (linkNodes.count() > 0)
 		{
 			QDomElement linkElem = linkNodes.at(0).toElement();
-			link = linkElem.attribute("href");
+			link				 = linkElem.attribute("href");
 		}
 	}
 

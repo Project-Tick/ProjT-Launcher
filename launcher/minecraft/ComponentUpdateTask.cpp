@@ -166,7 +166,7 @@ namespace
 	static LoadResult loadPackProfile(ComponentPtr component, Task::Ptr& loadTask, Net::Mode netmode)
 	{
 		auto index = APPLICATION->metadataIndex();
-		
+
 		// If index is not yet synchronized and we're online, we need to load it first
 		if (index->state() != projt::meta::MetaEntity::State::Synchronized)
 		{
@@ -175,55 +175,68 @@ namespace
 				qCWarning(instanceProfileResolveC) << "Metadata index not available offline for" << component->m_uid;
 				return LoadResult::Failed;
 			}
-			
+
 			// Create a sequential task that first loads the index, then the version list
 			auto seq = makeShared<SequentialTask>(
 				ComponentUpdateTask::tr("Loading metadata for %1").arg(component->getName()));
 			seq->addTask(index->createLoadTask(netmode));
-			
+
 			// After index loads, we need to load the version list
 			// Use a callback-based approach by connecting after index load completes
 			auto indexLoadTask = index->createLoadTask(netmode);
-			
+
 			// Create a task that will load version list after index is ready
-			class DeferredVersionListLoader : public Task {
-			public:
-				DeferredVersionListLoader(ComponentPtr comp, Net::Mode mode) 
-					: m_component(comp), m_mode(mode) {}
-				
-				void executeTask() override {
+			class DeferredVersionListLoader : public Task
+			{
+			  public:
+				DeferredVersionListLoader(ComponentPtr comp, Net::Mode mode) : m_component(comp), m_mode(mode)
+				{}
+
+				void executeTask() override
+				{
 					auto versionList = m_component->getVersionList();
-					if (!versionList) {
+					if (!versionList)
+					{
 						emitFailed(tr("Component %1 not found in metadata index").arg(m_component->m_uid));
 						return;
 					}
-					if (versionList->isLoaded()) {
+					if (versionList->isLoaded())
+					{
 						emitSucceeded();
 						return;
 					}
 					m_innerTask = versionList->createLoadTask(m_mode);
 					connect(m_innerTask.get(), &Task::succeeded, this, [this]() { emitSucceeded(); });
-					connect(m_innerTask.get(), &Task::failed, this, [this](const QString& reason) { emitFailed(reason); });
+					connect(m_innerTask.get(),
+							&Task::failed,
+							this,
+							[this](const QString& reason) { emitFailed(reason); });
 					connect(m_innerTask.get(), &Task::progress, this, &Task::setProgress);
 					connect(m_innerTask.get(), &Task::status, this, &Task::setStatus);
 					m_innerTask->start();
 				}
-				
-				bool canAbort() const override { return m_innerTask ? m_innerTask->canAbort() : false; }
-				bool abort() override { return m_innerTask ? m_innerTask->abort() : Task::abort(); }
-				
-			private:
+
+				bool canAbort() const override
+				{
+					return m_innerTask ? m_innerTask->canAbort() : false;
+				}
+				bool abort() override
+				{
+					return m_innerTask ? m_innerTask->abort() : Task::abort();
+				}
+
+			  private:
 				ComponentPtr m_component;
 				Net::Mode m_mode;
 				Task::Ptr m_innerTask;
 			};
-			
+
 			seq->addTask(makeShared<DeferredVersionListLoader>(component, netmode));
 			loadTask = seq;
 			loadTask->start();
 			return LoadResult::RequiresRemote;
 		}
-		
+
 		// Index is already synchronized, get version list directly
 		auto versionList = component->getVersionList();
 		if (!versionList)
@@ -709,7 +722,7 @@ void ComponentUpdateTask::resolveDependencies(bool checkOnly)
 						if (minecraft != components.end())
 						{
 							const auto minecraftVersion = (*minecraft)->getVersion();
-							auto versionList			 = APPLICATION->metadataIndex()->component(add.uid);
+							auto versionList			= APPLICATION->metadataIndex()->component(add.uid);
 							if (versionList)
 							{
 								versionList->waitUntilReady();

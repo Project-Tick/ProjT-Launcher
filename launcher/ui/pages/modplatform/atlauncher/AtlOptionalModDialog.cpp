@@ -241,8 +241,9 @@ void AtlOptionalModListModel::shareCodeSuccess()
 	if (response.error)
 	{
 		qWarning() << "ATLauncher API Response Error" << response.message;
-		QMessageBox::critical(m_parentWidget, tr("Share Code Error"),
-			tr("Failed to apply share code: %1").arg(response.message));
+		QMessageBox::critical(m_parentWidget,
+							  tr("Share Code Error"),
+							  tr("Failed to apply share code: %1").arg(response.message));
 		return;
 	}
 
@@ -251,7 +252,9 @@ void AtlOptionalModListModel::shareCodeSuccess()
 	{
 		qWarning() << "Share code pack/version mismatch. Expected:" << m_version.pack << m_version.version
 				   << "Got:" << response.data.pack << response.data.version;
-		QMessageBox::warning(m_parentWidget, tr("Share Code Mismatch"),
+		QMessageBox::warning(
+			m_parentWidget,
+			tr("Share Code Mismatch"),
 			tr("This share code is for a different pack or version.\n\nExpected: %1 %2\nShare code: %3 %4")
 				.arg(m_version.pack, m_version.version, response.data.pack, response.data.version));
 		return;
@@ -278,8 +281,9 @@ void AtlOptionalModListModel::shareCodeFailure([[maybe_unused]] const QString& r
 	m_jobPtr.reset();
 
 	qWarning() << "Share code request failed:" << reason;
-	QMessageBox::critical(m_parentWidget, tr("Share Code Error"),
-		tr("Failed to retrieve share code information: %1").arg(reason));
+	QMessageBox::critical(m_parentWidget,
+						  tr("Share Code Error"),
+						  tr("Failed to retrieve share code information: %1").arg(reason));
 }
 
 void AtlOptionalModListModel::selectRecommended()
@@ -314,10 +318,7 @@ void AtlOptionalModListModel::toggleMod(const ATLauncher::VersionMod& mod, int i
 		auto message = QString("%1<br><br>%2")
 						   .arg(m_version.warnings[mod.warning], tr("Are you sure that you want to enable this mod?"));
 
-		auto result = QMessageBox::warning(m_parentWidget,
-										   tr("Warning"),
-										   message,
-										   QMessageBox::Yes | QMessageBox::No);
+		auto result = QMessageBox::warning(m_parentWidget, tr("Warning"), message, QMessageBox::Yes | QMessageBox::No);
 		if (result != QMessageBox::Yes)
 		{
 			return;

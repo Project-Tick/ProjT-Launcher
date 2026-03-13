@@ -108,7 +108,7 @@ class InstallLoaderPage : public VersionSelectWidget, public BasePage
 	void setParentContainer(BasePageContainer* container) override
 	{
 		auto* pageContainer = dynamic_cast<PageContainer*>(container);
-		auto* dialog = pageContainer ? qobject_cast<QDialog*>(pageContainer->parent()) : nullptr;
+		auto* dialog		= pageContainer ? qobject_cast<QDialog*>(pageContainer->parent()) : nullptr;
 		if (!dialog || !view())
 			return;
 		connect(view(), &QAbstractItemView::doubleClicked, dialog, &QDialog::accept);

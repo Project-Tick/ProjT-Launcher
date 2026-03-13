@@ -84,8 +84,10 @@
 QAccessibleInterface* groupViewAccessibleFactory(const QString& classname, QObject* object);
 
 // Static registration of accessibility factory
-static struct AccessibilityRegistrar {
-	AccessibilityRegistrar() {
+static struct AccessibilityRegistrar
+{
+	AccessibilityRegistrar()
+	{
 		QAccessible::installFactory(groupViewAccessibleFactory);
 	}
 } s_accessibilityRegistrar;
@@ -369,7 +371,7 @@ void InstanceView::mousePressEvent(QMouseEvent* event)
 			auto cat = category(index);
 			if (cat)
 			{
-				QPair<int, int> pos = cat->positionOf(index);
+				QPair<int, int> pos	  = cat->positionOf(index);
 				m_currentCursorColumn = pos.first;
 			}
 			else

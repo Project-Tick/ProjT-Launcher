@@ -54,13 +54,13 @@ struct AssetObject
 
 	/** Get the relative path within the objects directory (e.g., "ab/abcdef..."). */
 	QString getRelPath() const;
-	
+
 	/** Get the full download URL for this asset. */
 	QUrl getUrl() const;
-	
+
 	/** Get the local filesystem path where this asset is stored. */
 	QString getLocalPath() const;
-	
+
 	/** Create a download action for this asset if it needs to be downloaded. */
 	Net::NetRequest::Ptr getDownloadAction() const;
 
@@ -75,18 +75,18 @@ struct AssetsIndex
 {
 	QString id;
 	QMap<QString, AssetObject> objects;
-	bool isVirtual = false;
+	bool isVirtual		= false;
 	bool mapToResources = false;
 
 	/** Create a NetJob to download all missing assets. */
 	NetJob::Ptr getDownloadJob() const;
-	
+
 	/** Get the total size of all assets in bytes. */
 	qint64 totalSize() const;
-	
+
 	/** Get the number of assets that need to be downloaded. */
 	int missingAssetCount() const;
-	
+
 	/** Check if all assets are present locally. */
 	bool isComplete() const;
 };
@@ -103,7 +103,7 @@ class AssetsManager
 	 *  @return The parsed AssetsIndex, or nullopt on failure
 	 */
 	static std::optional<AssetsIndex> loadIndex(const QString& id, const QString& filePath);
-	
+
 	/** Get the appropriate assets directory for an index.
 	 *  Handles virtual assets, legacy resource mapping, and standard paths.
 	 *  @param index The assets index
@@ -111,14 +111,14 @@ class AssetsManager
 	 *  @return The directory where assets should be accessed
 	 */
 	static QDir getAssetsDir(const AssetsIndex& index, const QString& resourcesFolder);
-	
+
 	/** Get the assets directory by ID (loads index internally).
 	 *  @param assetsId The asset index ID
 	 *  @param resourcesFolder Path to the resources folder
 	 *  @return The directory where assets should be accessed
 	 */
 	static QDir getAssetsDir(const QString& assetsId, const QString& resourcesFolder);
-	
+
 	/** Reconstruct virtual/legacy assets from the object store.
 	 *  Copies assets from hash-based storage to named paths for older MC versions.
 	 *  @param index The assets index to reconstruct
@@ -126,16 +126,16 @@ class AssetsManager
 	 *  @return true if reconstruction succeeded
 	 */
 	static bool reconstructAssets(const AssetsIndex& index, const QString& resourcesFolder);
-	
+
 	/** Reconstruct assets by ID (loads index internally). */
 	static bool reconstructAssets(const QString& assetsId, const QString& resourcesFolder);
-	
+
 	/** Get the standard paths for asset storage. */
 	static QDir assetsBaseDir();
 	static QDir indexesDir();
 	static QDir objectsDir();
 	static QDir virtualDir();
-	
+
 	/** Validate the integrity of all assets in an index.
 	 *  Checks that all files exist and have correct sizes.
 	 *  @param index The assets index to validate

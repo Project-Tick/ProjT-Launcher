@@ -226,7 +226,7 @@ void ConcurrentTask::subTaskFinished(Task::Ptr task, TaskStepState state)
 	auto task_progress_it = m_task_progress.find(task->getUid());
 	if (task_progress_it != m_task_progress.end() && task_progress_it.value())
 	{
-		auto task_progress = *task_progress_it.value();
+		auto task_progress	= *task_progress_it.value();
 		task_progress.state = state;
 		m_task_progress.erase(task_progress_it);
 		emit stepProgress(task_progress);

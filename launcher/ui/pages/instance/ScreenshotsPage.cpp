@@ -232,7 +232,7 @@ class FilterModel : public QIdentityProxyModel
 				fsModel->setNameFilterDisables(true);
 				fsModel->setNameFilterDisables(false);
 			}
-			emit layoutChanged();  // Signal views to refresh
+			emit layoutChanged(); // Signal views to refresh
 		}
 
 		return result;

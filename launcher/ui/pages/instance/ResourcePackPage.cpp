@@ -113,7 +113,7 @@ void ResourcePackPage::downloadResourcePacks()
 	if (m_instance->typeName() != "Minecraft")
 		return; // this is a null instance or a legacy instance
 
-	m_downloadDialog = new ResourceDownload::ResourcePackDownloadDialog(this, m_model, m_instance);
+	m_downloadDialog	 = new ResourceDownload::ResourcePackDownloadDialog(this, m_model, m_instance);
 	auto* downloadDialog = m_downloadDialog.data();
 	if (!downloadDialog)
 		return;
@@ -343,7 +343,7 @@ void ResourcePackPage::changeResourcePackVersion()
 	if (resource.metadata() == nullptr)
 		return;
 
-	m_downloadDialog = new ResourceDownload::ResourcePackDownloadDialog(this, m_model, m_instance);
+	m_downloadDialog	 = new ResourceDownload::ResourcePackDownloadDialog(this, m_model, m_instance);
 	auto* downloadDialog = m_downloadDialog.data();
 	if (!downloadDialog)
 		return;

@@ -35,12 +35,16 @@ NewsDialog::NewsDialog(QList<NewsEntryPtr> entries, QWidget* parent) : QDialog(p
 
 	connect(ui->articleListWidget, &QListWidget::currentTextChanged, this, &NewsDialog::selectedArticleChanged);
 	connect(ui->toggleListButton, &QPushButton::clicked, this, &NewsDialog::toggleArticleList);
-	connect(ui->openInHubButton, &QPushButton::clicked, this, [this]() {
-		if (m_current_link.isEmpty())
-			return;
-		emit openHubRequested(QUrl(m_current_link));
-		accept();
-	});
+	connect(ui->openInHubButton,
+			&QPushButton::clicked,
+			this,
+			[this]()
+			{
+				if (m_current_link.isEmpty())
+					return;
+				emit openHubRequested(QUrl(m_current_link));
+				accept();
+			});
 #if defined(PROJT_DISABLE_LAUNCHER_HUB)
 	ui->openInHubButton->setEnabled(false);
 	ui->openInHubButton->setToolTip(tr("Launcher Hub is not available in this build."));

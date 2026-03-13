@@ -157,7 +157,7 @@ namespace ATLauncher
 			return;
 		}
 		version.pack = m_pack_safe_name;
-		m_version = version;
+		m_version	 = version;
 
 		// Derived from the installation mode
 		QString message;
@@ -498,7 +498,7 @@ namespace ATLauncher
 			if (componentIt == componentsToInstall.cend() || !componentIt.value())
 				continue;
 			const auto& componentVersion = componentIt.value();
-			const auto& detailedData = componentVersion->detailedData();
+			const auto& detailedData	 = componentVersion->detailedData();
 			if (detailedData)
 			{
 				for (const auto& library : detailedData->libraries)
@@ -684,7 +684,7 @@ namespace ATLauncher
 			if (componentIt == componentsToInstall.cend() || !componentIt.value())
 				continue;
 			const auto& componentVersion = componentIt.value();
-			const auto& detailedData = componentVersion->detailedData();
+			const auto& detailedData	 = componentVersion->detailedData();
 			if (detailedData)
 			{
 				if (detailedData->mainClass != QString(""))

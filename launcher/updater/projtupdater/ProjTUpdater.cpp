@@ -128,24 +128,25 @@ ProjTUpdaterApp::ProjTUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
 	QCommandLineParser parser;
 	parser.setApplicationDescription(QObject::tr("An auto-updater for ProjT Launcher"));
 
-	parser.addOptions({ { { "d", "dir" },
-						  tr("Use a custom path as application root (use '.' for current directory)."),
-						  tr("directory") },
-						{ { "V", "projt-version" },
-						  tr("Use this version as the installed launcher version. (provided because stdout can not be "
-							 "reliably captured on windows)"),
-						  tr("installed launcher version") },
-						{ { "I", "install-version" }, "Install a specific version.", tr("version name") },
-						{ { "U", "update-url" }, tr("Update from the specified release feed."), tr("release feed url") },
-						{ { "c", "check-only" },
-						  tr("Only check if an update is needed. Exit status 100 if true, 0 if false (or non 0 if "
-							 "there was an error).") },
-						{ { "p", "pre-release" }, tr("Allow updating to pre-release releases") },
-						{ { "F", "force" }, tr("Force an update, even if one is not needed.") },
-						{ { "l", "list" }, tr("List available releases.") },
-						{ "debug", tr("Log debug to console.") },
-						{ { "S", "select-ui" }, tr("Select the version to install with a GUI.") },
-						{ { "D", "allow-downgrade" }, tr("Allow the updater to downgrade to previous versions.") } });
+	parser.addOptions(
+		{ { { "d", "dir" },
+			tr("Use a custom path as application root (use '.' for current directory)."),
+			tr("directory") },
+		  { { "V", "projt-version" },
+			tr("Use this version as the installed launcher version. (provided because stdout can not be "
+			   "reliably captured on windows)"),
+			tr("installed launcher version") },
+		  { { "I", "install-version" }, "Install a specific version.", tr("version name") },
+		  { { "U", "update-url" }, tr("Update from the specified release feed."), tr("release feed url") },
+		  { { "c", "check-only" },
+			tr("Only check if an update is needed. Exit status 100 if true, 0 if false (or non 0 if "
+			   "there was an error).") },
+		  { { "p", "pre-release" }, tr("Allow updating to pre-release releases") },
+		  { { "F", "force" }, tr("Force an update, even if one is not needed.") },
+		  { { "l", "list" }, tr("List available releases.") },
+		  { "debug", tr("Log debug to console.") },
+		  { { "S", "select-ui" }, tr("Select the version to install with a GUI.") },
+		  { { "D", "allow-downgrade" }, tr("Allow the updater to downgrade to previous versions.") } });
 
 	parser.addHelpOption();
 	parser.addVersionOption();
@@ -565,8 +566,7 @@ void ProjTUpdaterApp::run()
 
 	if (need_update || m_forceUpdate || !m_userSelectedVersion.isEmpty())
 	{
-		ReleaseInfo update_release =
-			update_candidate.release.isValid() ? update_candidate.release : getLatestRelease();
+		ReleaseInfo update_release = update_candidate.release.isValid() ? update_candidate.release : getLatestRelease();
 		if (!m_userSelectedVersion.isEmpty())
 		{
 			bool found = false;
@@ -890,7 +890,7 @@ void ProjTUpdaterApp::performUpdate(const ReleaseInfo& release)
 	{
 		return showFatalErrorMessage(
 			tr("No Valid Release Assets"),
-				tr("Release %1 has no valid assets for this platform: %2")
+			tr("Release %1 has no valid assets for this platform: %2")
 				.arg(release.tag_name)
 				.arg(tr("%1 portable: %2").arg(BuildConfig.BUILD_ARTIFACT).arg(m_isPortable ? tr("yes") : tr("no"))));
 	}
@@ -1391,7 +1391,8 @@ namespace
 
 	QUrl parseAssetUrl(const QJsonObject& object)
 	{
-		for (const auto& key : { QStringLiteral("url"), QStringLiteral("download_url"), QStringLiteral("browser_download_url") })
+		for (const auto& key :
+			 { QStringLiteral("url"), QStringLiteral("download_url"), QStringLiteral("browser_download_url") })
 		{
 			auto value = Json::ensureString(object, key);
 			if (!value.isEmpty())
@@ -1484,16 +1485,16 @@ int ProjTUpdaterApp::parseReleaseFeed(const QByteArray& response)
 		{
 			auto release_obj = Json::requireObject(release_json);
 
-			ReleaseInfo release = {};
-			release.name = Json::ensureString(release_obj, "name");
-			release.tag_name = Json::requireString(release_obj, "tag_name");
-			release.created_at = parseOptionalDateTime(release_obj, "created_at");
+			ReleaseInfo release	 = {};
+			release.name		 = Json::ensureString(release_obj, "name");
+			release.tag_name	 = Json::requireString(release_obj, "tag_name");
+			release.created_at	 = parseOptionalDateTime(release_obj, "created_at");
 			release.published_at = parseOptionalDateTime(release_obj, "published_at");
-			release.draft = Json::ensureBoolean(release_obj, "draft", false);
-			release.prerelease = Json::ensureBoolean(release_obj, "prerelease", false);
+			release.draft		 = Json::ensureBoolean(release_obj, "draft", false);
+			release.prerelease	 = Json::ensureBoolean(release_obj, "prerelease", false);
 			if (!release.prerelease)
 			{
-				auto channel = Json::ensureString(release_obj, "channel").trimmed();
+				auto channel	   = Json::ensureString(release_obj, "channel").trimmed();
 				release.prerelease = !channel.isEmpty() && channel != "stable";
 			}
 			release.body = Json::ensureString(release_obj, "body");
@@ -1508,19 +1509,18 @@ int ProjTUpdaterApp::parseReleaseFeed(const QByteArray& response)
 			auto release_assets_obj = Json::requireArray(release_obj, "assets");
 			for (auto asset_json : release_assets_obj)
 			{
-				auto asset_obj = Json::requireObject(asset_json);
+				auto asset_obj	   = Json::requireObject(asset_json);
 				ReleaseAsset asset = {};
-				asset.name = Json::requireString(asset_obj, "name");
-				asset.label = Json::ensureString(asset_obj, "label");
+				asset.name		   = Json::requireString(asset_obj, "name");
+				asset.label		   = Json::ensureString(asset_obj, "label");
 				asset.content_type = Json::ensureString(asset_obj, "content_type");
-				asset.size = Json::ensureInteger(asset_obj, "size", 0);
-				asset.created_at = parseOptionalDateTime(asset_obj, "created_at");
-				asset.updated_at = parseOptionalDateTime(asset_obj, "updated_at");
+				asset.size		   = Json::ensureInteger(asset_obj, "size", 0);
+				asset.created_at   = parseOptionalDateTime(asset_obj, "created_at");
+				asset.updated_at   = parseOptionalDateTime(asset_obj, "updated_at");
 				asset.download_url = parseAssetUrl(asset_obj);
 				if (!asset.download_url.isValid())
 				{
-					throw Json::JsonException(
-						QString("Asset '%1' is missing a valid download url").arg(asset.name));
+					throw Json::JsonException(QString("Asset '%1' is missing a valid download url").arg(asset.name));
 				}
 				release.assets.append(asset);
 			}
@@ -1531,9 +1531,7 @@ int ProjTUpdaterApp::parseReleaseFeed(const QByteArray& response)
 	}
 	catch (Json::JsonException& e)
 	{
-		auto err_msg = QString("Failed to parse release feed: %1\n%2")
-						   .arg(e.what())
-						   .arg(QString::fromUtf8(response));
+		auto err_msg = QString("Failed to parse release feed: %1\n%2").arg(e.what()).arg(QString::fromUtf8(response));
 		fail(err_msg);
 	}
 	return num_releases;
@@ -1560,10 +1558,10 @@ namespace
 {
 	struct LineVersion
 	{
-		int x = -1;
-		int y = -1;
-		int z = -1;
-		int t = -1;
+		int x	   = -1;
+		int y	   = -1;
+		int z	   = -1;
+		int t	   = -1;
 		bool is_rc = false;
 	};
 
@@ -1586,14 +1584,14 @@ namespace
 			const auto main_part = dash_parts.at(0);
 			const auto t_part	 = dash_parts.at(1);
 
-			bool ok_t	 = false;
-			bool is_rc	 = false;
-			int t		 = -1;
+			bool ok_t  = false;
+			bool is_rc = false;
+			int t	   = -1;
 			if (t_part.startsWith("rc", Qt::CaseInsensitive))
 			{
 				const auto rc_part = t_part.mid(2);
-				t				  = rc_part.toInt(&ok_t);
-				is_rc			  = ok_t;
+				t				   = rc_part.toInt(&ok_t);
+				is_rc			   = ok_t;
 			}
 			else
 			{

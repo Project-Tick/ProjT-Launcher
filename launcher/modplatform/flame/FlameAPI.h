@@ -180,14 +180,15 @@ class FlameAPI : public ResourceAPI
 		{
 			return arr;
 		}
-		
+
 		// Filter texture packs based on Minecraft version compatibility
 		// Texture packs with the old format (pre-1.6) use a different structure
 		// than resource packs (1.6+). This filtering ensures we only show
 		// compatible texture packs for older Minecraft versions.
 		auto const& mc_versions = arr.mcVersion;
 
-		if (mc_versions.isEmpty()) {
+		if (mc_versions.isEmpty())
+		{
 			// No version info available - allow it through
 			return arr;
 		}
@@ -195,14 +196,13 @@ class FlameAPI : public ResourceAPI
 		// Check if any of the supported versions is 1.6 or older (texture pack era)
 		bool hasOldVersion = std::any_of(mc_versions.constBegin(),
 										 mc_versions.constEnd(),
-										 [](auto const& mc_version) { 
-											 return Version(mc_version) <= Version("1.6"); 
-										 });
-		
-		if (hasOldVersion) {
+										 [](auto const& mc_version) { return Version(mc_version) <= Version("1.6"); });
+
+		if (hasOldVersion)
+		{
 			return arr;
 		}
-		
+
 		// Version 1.6+ uses resource packs, not texture packs
 		return {};
 	};

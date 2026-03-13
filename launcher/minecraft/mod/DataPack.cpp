@@ -148,9 +148,12 @@ void DataPack::setLocalizedDescription(const QString& langCode, const QString& d
 {
 	QMutexLocker locker(&m_data_lock);
 
-	if (langCode.isEmpty()) {
+	if (langCode.isEmpty())
+	{
 		m_description = description;
-	} else {
+	}
+	else
+	{
 		m_localized_descriptions[langCode] = description;
 	}
 }

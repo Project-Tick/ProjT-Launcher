@@ -171,7 +171,7 @@ class ResourceFolderModel : public QAbstractListModel
 	{
 		return *m_resources.at(index).get();
 	}
-	
+
 	/** Get a weak pointer to a resource by index.
 	 *  This is the preferred way to access resources from external code,
 	 *  as it doesn't extend the resource's lifetime.
@@ -182,12 +182,12 @@ class ResourceFolderModel : public QAbstractListModel
 			return Resource::WeakPtr();
 		return Resource::WeakPtr(m_resources[index].get());
 	}
-	
+
 	/** Get a weak pointer to a resource by internal ID.
 	 *  Returns null WeakPtr if not found.
 	 */
 	Resource::WeakPtr findWeak(const QString& id);
-	
+
 	/** Check if a weak pointer is still valid (resource still exists).
 	 *  This is useful for external code that holds weak references.
 	 */
@@ -195,7 +195,7 @@ class ResourceFolderModel : public QAbstractListModel
 	{
 		return !ptr.isNull() && m_resources_index.contains(ptr->internal_id());
 	}
-	
+
 	QList<Resource*> selectedResources(const QModelIndexList& indexes);
 	QList<Resource*> allResources();
 
@@ -333,7 +333,7 @@ class ResourceFolderModel : public QAbstractListModel
 	 *  Override in subclasses to handle specific task result types.
 	 *  The implementation typically uses static_cast to convert the Task to
 	 *  the specific type returned by createUpdateTask().
-	 *  
+	 *
 	 *  Note: Qt's Q_OBJECT macro doesn't support template classes, so we use
 	 *  runtime polymorphism with virtual methods and static_cast instead.
 	 *  The type relationship is documented in createUpdateTask() for each subclass.

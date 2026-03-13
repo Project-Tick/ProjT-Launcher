@@ -141,15 +141,9 @@ struct Language
 			if (result == "C")
 			{
 				static const QMap<QString, QString> k_languageOverrides = {
-					{ "av", "Avaric" },
-					{ "tay", "Atayal" },
-					{ "tlh", "Klingon" },
-					{ "tw", "Twi" },
-					{ "ty", "Tahitian" },
-					{ "tzl", "Talossan" },
-					{ "val", "Valencian" },
-					{ "vls", "Flemish" },
-					{ "zea", "Zeelandic" },
+					{ "av", "Avaric" },		{ "tay", "Atayal" },  { "tlh", "Klingon" },
+					{ "tw", "Twi" },		{ "ty", "Tahitian" }, { "tzl", "Talossan" },
+					{ "val", "Valencian" }, { "vls", "Flemish" }, { "zea", "Zeelandic" },
 				};
 				auto it = k_languageOverrides.find(base_lang);
 				if (it != k_languageOverrides.end())
@@ -168,8 +162,8 @@ struct Language
 			auto region = key.section('_', 1);
 			if (!region.isEmpty())
 			{
-				QLocale::Territory territory = QLocale::codeToTerritory(QStringView{region});
-				auto territory_name = QLocale::territoryToString(territory);
+				QLocale::Territory territory = QLocale::codeToTerritory(QStringView{ region });
+				auto territory_name			 = QLocale::territoryToString(territory);
 				if (!territory_name.isEmpty() && territory != QLocale::AnyTerritory)
 				{
 					result += " (" + territory_name + ")";

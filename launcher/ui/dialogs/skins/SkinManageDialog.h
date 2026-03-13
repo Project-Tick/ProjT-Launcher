@@ -97,5 +97,5 @@ class SkinManageDialog : public QDialog, public SkinProvider
 	QHash<QString, QImage> m_capes;
 	QHash<QString, int> m_capesIdx;
 	SkinOpenGLWindow* m_skinPreview = nullptr;
-	CapeListModel* m_capeModel = nullptr;
+	CapeListModel* m_capeModel		= nullptr;
 };

@@ -144,7 +144,7 @@ namespace Modrinth
 
 	  protected:
 		void requestLogo(QString file, QString url);
-		
+
 		/** Performs a direct project lookup by ID (for search terms starting with '#')
 		 *  @param api The ModrinthAPI instance to use
 		 *  @return true if lookup was initiated, false otherwise

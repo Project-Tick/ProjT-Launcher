@@ -22,6 +22,6 @@
 #ifndef _WIN32
 extern "C" int projt_console_stub(void)
 {
-    return 0;
+	return 0;
 }
 #endif

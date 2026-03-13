@@ -81,98 +81,128 @@ struct ModLicense
 	 *  - An SPDX identifier (e.g., "MIT", "GPL-3.0-only", "Apache-2.0")
 	 *  - A URL in parentheses or standalone
 	 *  - A plain text license name
-	 *  
+	 *
 	 *  Supports SPDX license expressions: https://spdx.org/licenses/
 	 */
 	ModLicense(const QString license)
 	{
-		if (license.isEmpty()) {
+		if (license.isEmpty())
+		{
 			return;
 		}
 
 		QString remaining = license.trimmed();
-		
+
 		// Common SPDX identifiers for quick matching
-		static const QStringList spdxIdentifiers = {
-			"MIT", "GPL-2.0", "GPL-2.0-only", "GPL-2.0-or-later",
-			"GPL-3.0", "GPL-3.0-only", "GPL-3.0-or-later",
-			"LGPL-2.0", "LGPL-2.1", "LGPL-3.0",
-			"Apache-2.0", "BSD-2-Clause", "BSD-3-Clause",
-			"MPL-2.0", "ISC", "Unlicense", "WTFPL", "Zlib",
-			"CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0",
-			"AGPL-3.0", "AGPL-3.0-only", "AGPL-3.0-or-later",
-			"EPL-2.0", "OSL-3.0", "Artistic-2.0", "BSL-1.0",
-			"All Rights Reserved", "ARR", "Custom", "Proprietary"
-		};
+		static const QStringList spdxIdentifiers = { "MIT",
+													 "GPL-2.0",
+													 "GPL-2.0-only",
+													 "GPL-2.0-or-later",
+													 "GPL-3.0",
+													 "GPL-3.0-only",
+													 "GPL-3.0-or-later",
+													 "LGPL-2.0",
+													 "LGPL-2.1",
+													 "LGPL-3.0",
+													 "Apache-2.0",
+													 "BSD-2-Clause",
+													 "BSD-3-Clause",
+													 "MPL-2.0",
+													 "ISC",
+													 "Unlicense",
+													 "WTFPL",
+													 "Zlib",
+													 "CC0-1.0",
+													 "CC-BY-4.0",
+													 "CC-BY-SA-4.0",
+													 "AGPL-3.0",
+													 "AGPL-3.0-only",
+													 "AGPL-3.0-or-later",
+													 "EPL-2.0",
+													 "OSL-3.0",
+													 "Artistic-2.0",
+													 "BSL-1.0",
+													 "All Rights Reserved",
+													 "ARR",
+													 "Custom",
+													 "Proprietary" };
 
 		// SPDX to URL mapping for common licenses
 		static const QHash<QString, QString> spdxUrls = {
-			{"MIT", "https://opensource.org/licenses/MIT"},
-			{"GPL-2.0", "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html"},
-			{"GPL-2.0-only", "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html"},
-			{"GPL-2.0-or-later", "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html"},
-			{"GPL-3.0", "https://www.gnu.org/licenses/gpl-3.0.html"},
-			{"GPL-3.0-only", "https://www.gnu.org/licenses/gpl-3.0.html"},
-			{"GPL-3.0-or-later", "https://www.gnu.org/licenses/gpl-3.0.html"},
-			{"LGPL-2.1", "https://www.gnu.org/licenses/lgpl-2.1.html"},
-			{"LGPL-3.0", "https://www.gnu.org/licenses/lgpl-3.0.html"},
-			{"Apache-2.0", "https://www.apache.org/licenses/LICENSE-2.0"},
-			{"BSD-2-Clause", "https://opensource.org/licenses/BSD-2-Clause"},
-			{"BSD-3-Clause", "https://opensource.org/licenses/BSD-3-Clause"},
-			{"MPL-2.0", "https://www.mozilla.org/en-US/MPL/2.0/"},
-			{"ISC", "https://opensource.org/licenses/ISC"},
-			{"Unlicense", "https://unlicense.org/"},
-			{"CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"},
-			{"CC-BY-4.0", "https://creativecommons.org/licenses/by/4.0/"},
-			{"CC-BY-SA-4.0", "https://creativecommons.org/licenses/by-sa/4.0/"},
-			{"AGPL-3.0", "https://www.gnu.org/licenses/agpl-3.0.html"},
-			{"AGPL-3.0-only", "https://www.gnu.org/licenses/agpl-3.0.html"},
+			{ "MIT", "https://opensource.org/licenses/MIT" },
+			{ "GPL-2.0", "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html" },
+			{ "GPL-2.0-only", "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html" },
+			{ "GPL-2.0-or-later", "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html" },
+			{ "GPL-3.0", "https://www.gnu.org/licenses/gpl-3.0.html" },
+			{ "GPL-3.0-only", "https://www.gnu.org/licenses/gpl-3.0.html" },
+			{ "GPL-3.0-or-later", "https://www.gnu.org/licenses/gpl-3.0.html" },
+			{ "LGPL-2.1", "https://www.gnu.org/licenses/lgpl-2.1.html" },
+			{ "LGPL-3.0", "https://www.gnu.org/licenses/lgpl-3.0.html" },
+			{ "Apache-2.0", "https://www.apache.org/licenses/LICENSE-2.0" },
+			{ "BSD-2-Clause", "https://opensource.org/licenses/BSD-2-Clause" },
+			{ "BSD-3-Clause", "https://opensource.org/licenses/BSD-3-Clause" },
+			{ "MPL-2.0", "https://www.mozilla.org/en-US/MPL/2.0/" },
+			{ "ISC", "https://opensource.org/licenses/ISC" },
+			{ "Unlicense", "https://unlicense.org/" },
+			{ "CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/" },
+			{ "CC-BY-4.0", "https://creativecommons.org/licenses/by/4.0/" },
+			{ "CC-BY-SA-4.0", "https://creativecommons.org/licenses/by-sa/4.0/" },
+			{ "AGPL-3.0", "https://www.gnu.org/licenses/agpl-3.0.html" },
+			{ "AGPL-3.0-only", "https://www.gnu.org/licenses/agpl-3.0.html" },
 		};
 
 		// Extract URL from parentheses or standalone
 		auto parts = remaining.split(' ');
 		QStringList urlParts;
-		
-		for (const auto& part : parts) {
+
+		for (const auto& part : parts)
+		{
 			QString urlCandidate = part;
-			if (part.startsWith("(") && part.endsWith(")")) {
+			if (part.startsWith("(") && part.endsWith(")"))
+			{
 				urlCandidate = part.mid(1, part.size() - 2);
 			}
-			
+
 			QUrl parsedUrl(urlCandidate);
-			if (parsedUrl.isValid() && !parsedUrl.scheme().isEmpty() && !parsedUrl.host().isEmpty()) {
+			if (parsedUrl.isValid() && !parsedUrl.scheme().isEmpty() && !parsedUrl.host().isEmpty())
+			{
 				this->url = parsedUrl.toString();
 				urlParts.append(part);
 			}
 		}
-		
+
 		// Remove URL parts from remaining
-		for (const auto& urlPart : urlParts) {
+		for (const auto& urlPart : urlParts)
+		{
 			parts.removeOne(urlPart);
 		}
-		
+
 		QString licensePart = parts.join(' ').trimmed();
-		
+
 		// Check if it's a known SPDX identifier
-		for (const QString& spdx : spdxIdentifiers) {
-			if (licensePart.compare(spdx, Qt::CaseInsensitive) == 0) {
-				this->id = spdx;
-				this->name = spdx;
+		for (const QString& spdx : spdxIdentifiers)
+		{
+			if (licensePart.compare(spdx, Qt::CaseInsensitive) == 0)
+			{
+				this->id		  = spdx;
+				this->name		  = spdx;
 				this->description = spdx;
-				
+
 				// Set URL from SPDX mapping if not already set
-				if (this->url.isEmpty() && spdxUrls.contains(spdx)) {
+				if (this->url.isEmpty() && spdxUrls.contains(spdx))
+				{
 					this->url = spdxUrls[spdx];
 				}
 				return;
 			}
 		}
-		
+
 		// Not a known SPDX - treat as custom license
-		this->name = licensePart;
+		this->name		  = licensePart;
 		this->description = licensePart;
-		
-		if (parts.size() == 1) {
+
+		if (parts.size() == 1)
+		{
 			this->id = parts.first();
 		}
 	}

@@ -27,57 +27,57 @@
 
 /**
  * @brief PNG reader using the bundled libpng and zlib
- * 
+ *
  * This class provides PNG reading functionality using the project's own
  * libpng and zlib implementations, avoiding conflicts with system libraries.
- * 
+ *
  * Qt's QImage uses the system libpng which may be compiled with a different
  * zlib version, causing "unsupported zlib version" errors. This class
  * bypasses that by using our bundled libraries directly.
  */
 class PngReader
 {
-public:
+  public:
 	/**
 	 * @brief Read a PNG image from a file
 	 * @param filePath Path to the PNG file
 	 * @return QImage containing the decoded image, or null QImage on failure
 	 */
 	static QImage readFromFile(const QString& filePath);
-	
+
 	/**
 	 * @brief Read a PNG image from memory
 	 * @param data PNG data in memory
 	 * @return QImage containing the decoded image, or null QImage on failure
 	 */
 	static QImage readFromData(const QByteArray& data);
-	
+
 	/**
 	 * @brief Check if a file is a valid PNG
 	 * @param filePath Path to the file
 	 * @return true if the file has a valid PNG signature
 	 */
 	static bool isPngFile(const QString& filePath);
-	
+
 	/**
 	 * @brief Check if data is valid PNG
 	 * @param data Data to check
 	 * @return true if the data has a valid PNG signature
 	 */
 	static bool isPngData(const QByteArray& data);
-	
+
 	/**
 	 * @brief Get the last error message
 	 * @return Error message from the last failed operation
 	 */
 	static QString lastError();
-	
+
 	/**
 	 * @brief Set the last error message (for internal use by callbacks)
 	 * @param error Error message
 	 */
 	static void setLastError(const QString& error);
 
-private:
+  private:
 	static QString s_lastError;
 };

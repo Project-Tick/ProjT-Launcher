@@ -180,7 +180,7 @@ namespace
 		}
 
 		const QDateTime launchedAt = QDateTime::fromMSecsSinceEpoch(timestamp);
-		const qint64 secondsAgo = launchedAt.secsTo(QDateTime::currentDateTime());
+		const qint64 secondsAgo	   = launchedAt.secsTo(QDateTime::currentDateTime());
 		if (secondsAgo < 60)
 		{
 			return LauncherHubWidget::tr("Just now");
@@ -279,12 +279,16 @@ class HubView final : public QWidget
 		m_urlLabel->setStyleSheet(QStringLiteral("color: #9bb0cc;"));
 
 		m_openButton = new QPushButton(LauncherHubWidget::tr("Open in browser"), this);
-		connect(m_openButton, &QPushButton::clicked, this, [this]() {
-			if (m_url.isValid())
-			{
-				QDesktopServices::openUrl(m_url);
-			}
-		});
+		connect(m_openButton,
+				&QPushButton::clicked,
+				this,
+				[this]()
+				{
+					if (m_url.isValid())
+					{
+						QDesktopServices::openUrl(m_url);
+					}
+				});
 
 		layout->addWidget(titleLabel);
 		layout->addWidget(m_urlLabel);
@@ -334,7 +338,7 @@ class HubView final : public QWidget
 
   private:
 	QUrl m_url;
-	QLabel* m_urlLabel = nullptr;
+	QLabel* m_urlLabel		  = nullptr;
 	QPushButton* m_openButton = nullptr;
 };
 #endif
@@ -683,20 +687,21 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 
 	if (APPLICATION->instances())
 	{
-		connect(APPLICATION->instances().get(), &InstanceList::instancesChanged, this, &LauncherHubWidget::refreshCockpit);
+		connect(APPLICATION->instances().get(),
+				&InstanceList::instancesChanged,
+				this,
+				&LauncherHubWidget::refreshCockpit);
 		connect(APPLICATION->instances().get(),
 				&InstanceList::dataChanged,
 				this,
-				[this](const QModelIndex&, const QModelIndex&, const QList<int>&)
-				{
-					refreshCockpit();
-				});
+				[this](const QModelIndex&, const QModelIndex&, const QList<int>&) { refreshCockpit(); });
 	}
 	if (APPLICATION->icons())
 	{
-		connect(APPLICATION->icons().get(), &projt::icons::IconList::iconUpdated, this, [this](const QString&) {
-			refreshCockpit();
-		});
+		connect(APPLICATION->icons().get(),
+				&projt::icons::IconList::iconUpdated,
+				this,
+				[this](const QString&) { refreshCockpit(); });
 	}
 
 	createCockpitTab();
@@ -728,7 +733,7 @@ void LauncherHubWidget::createCockpitTab()
 	scrollArea->setWidgetResizable(true);
 	scrollArea->setFrameShape(QFrame::NoFrame);
 
-	auto* content = new QWidget(scrollArea);
+	auto* content	 = new QWidget(scrollArea);
 	auto* pageLayout = new QVBoxLayout(content);
 	pageLayout->setContentsMargins(18, 18, 18, 18);
 	pageLayout->setSpacing(16);
@@ -809,7 +814,9 @@ void LauncherHubWidget::createCockpitTab()
 
 	metricsLayout->addWidget(makeMetricCard(tr("Instances"), m_instancesValueLabel, m_instancesDetailLabel), 0, 0);
 	metricsLayout->addWidget(makeMetricCard(tr("Total Playtime"), m_playtimeValueLabel, m_playtimeDetailLabel), 0, 1);
-	metricsLayout->addWidget(makeMetricCard(tr("Needs Attention"), m_attentionValueLabel, m_attentionDetailLabel), 0, 2);
+	metricsLayout->addWidget(makeMetricCard(tr("Needs Attention"), m_attentionValueLabel, m_attentionDetailLabel),
+							 0,
+							 2);
 	pageLayout->addLayout(metricsLayout);
 
 	auto* lowerGrid = new QGridLayout();
@@ -886,40 +893,56 @@ void LauncherHubWidget::createCockpitTab()
 	pageLayout->addStretch(1);
 
 	scrollArea->setWidget(content);
-	m_cockpitPage = scrollArea;
+	m_cockpitPage	= scrollArea;
 	const int index = m_stack->addWidget(m_cockpitPage);
 	m_tabBar->addTab(tr("Cockpit"));
 	m_tabBar->setCurrentIndex(index);
 	m_stack->setCurrentIndex(index);
 
-	connect(m_playButton, &QPushButton::clicked, this, [this]() {
-		const QString instanceId = activeInstanceId();
-		if (!instanceId.isEmpty())
-		{
-			emit launchInstanceRequested(instanceId);
-		}
-	});
-	connect(m_editButton, &QPushButton::clicked, this, [this]() {
-		const QString instanceId = activeInstanceId();
-		if (!instanceId.isEmpty())
-		{
-			emit editInstanceRequested(instanceId);
-		}
-	});
-	connect(m_backupsButton, &QPushButton::clicked, this, [this]() {
-		const QString instanceId = activeInstanceId();
-		if (!instanceId.isEmpty())
-		{
-			emit backupsRequested(instanceId);
-		}
-	});
-	connect(m_folderButton, &QPushButton::clicked, this, [this]() {
-		const QString instanceId = activeInstanceId();
-		if (!instanceId.isEmpty())
-		{
-			emit openInstanceFolderRequested(instanceId);
-		}
-	});
+	connect(m_playButton,
+			&QPushButton::clicked,
+			this,
+			[this]()
+			{
+				const QString instanceId = activeInstanceId();
+				if (!instanceId.isEmpty())
+				{
+					emit launchInstanceRequested(instanceId);
+				}
+			});
+	connect(m_editButton,
+			&QPushButton::clicked,
+			this,
+			[this]()
+			{
+				const QString instanceId = activeInstanceId();
+				if (!instanceId.isEmpty())
+				{
+					emit editInstanceRequested(instanceId);
+				}
+			});
+	connect(m_backupsButton,
+			&QPushButton::clicked,
+			this,
+			[this]()
+			{
+				const QString instanceId = activeInstanceId();
+				if (!instanceId.isEmpty())
+				{
+					emit backupsRequested(instanceId);
+				}
+			});
+	connect(m_folderButton,
+			&QPushButton::clicked,
+			this,
+			[this]()
+			{
+				const QString instanceId = activeInstanceId();
+				if (!instanceId.isEmpty())
+				{
+					emit openInstanceFolderRequested(instanceId);
+				}
+			});
 }
 
 HubView* LauncherHubWidget::createTab(const QUrl& url, const QString& label, bool switchTo)
@@ -946,12 +969,12 @@ HubView* LauncherHubWidget::createTab(const QUrl& url, const QString& label, boo
 	view->settings()->setAttribute(QWebEngineSettings::Accelerated2dCanvasEnabled, false);
 
 	auto* channel = new QWebChannel(view);
-	auto* bridge = new LauncherHubBridge(channel);
+	auto* bridge  = new LauncherHubBridge(channel);
 	channel->registerObject(QStringLiteral("launcher"), bridge);
 	page->setWebChannel(channel);
 #endif
 
-	const int stackIndex = m_stack->addWidget(view);
+	const int stackIndex	   = m_stack->addWidget(view);
 	const QString initialLabel = label.isEmpty() ? tr("New Tab") : label;
 	m_tabBar->addTab(initialLabel);
 
@@ -1169,7 +1192,7 @@ void LauncherHubWidget::openUrl(const QUrl& url)
 void LauncherHubWidget::setHomeUrl(const QUrl& url)
 {
 	m_homeUrl = url;
-	m_loaded = false;
+	m_loaded  = false;
 }
 
 QUrl LauncherHubWidget::homeUrl() const
@@ -1214,15 +1237,15 @@ void LauncherHubWidget::refreshCockpit()
 		return;
 	}
 
-	if (m_newsChecker && !m_newsChecker->isLoadingNews() && m_newsChecker->getNewsEntries().isEmpty() &&
-		m_newsChecker->getLastLoadErrorMsg().isEmpty())
+	if (m_newsChecker && !m_newsChecker->isLoadingNews() && m_newsChecker->getNewsEntries().isEmpty()
+		&& m_newsChecker->getLastLoadErrorMsg().isEmpty())
 	{
 		m_newsChecker->reloadNews();
 	}
 
 	const QList<InstancePtr> instances = sortedInstances();
-	int managedCount = 0;
-	int attentionCount = 0;
+	int managedCount				   = 0;
+	int attentionCount				   = 0;
 	for (const auto& instance : instances)
 	{
 		if (instance->isManagedPack())
@@ -1241,18 +1264,17 @@ void LauncherHubWidget::refreshCockpit()
 	}
 	if (m_instancesDetailLabel)
 	{
-		m_instancesDetailLabel->setText(
-			instances.isEmpty() ? tr("No instances yet") : tr("%1 managed pack(s) in rotation").arg(managedCount));
+		m_instancesDetailLabel->setText(instances.isEmpty() ? tr("No instances yet")
+															: tr("%1 managed pack(s) in rotation").arg(managedCount));
 	}
 
 	const int totalPlaytime = APPLICATION->instances() ? APPLICATION->instances()->getTotalPlayTime() : 0;
 	if (m_playtimeValueLabel)
 	{
 		m_playtimeValueLabel->setText(
-			totalPlaytime > 0
-				? Time::prettifyDuration(totalPlaytime,
-										 APPLICATION->settings()->get("ShowGameTimeWithoutDays").toBool())
-				: tr("0m"));
+			totalPlaytime > 0 ? Time::prettifyDuration(totalPlaytime,
+													   APPLICATION->settings()->get("ShowGameTimeWithoutDays").toBool())
+							  : tr("0m"));
 	}
 	if (m_playtimeDetailLabel)
 	{
@@ -1265,7 +1287,7 @@ void LauncherHubWidget::refreshCockpit()
 	if (m_attentionDetailLabel)
 	{
 		m_attentionDetailLabel->setText(attentionCount > 0 ? tr("Updates, crashes, or broken versions to review.")
-														 : tr("Everything looks healthy right now."));
+														   : tr("Everything looks healthy right now."));
 	}
 
 	updateHero();
@@ -1276,14 +1298,15 @@ void LauncherHubWidget::refreshCockpit()
 void LauncherHubWidget::updateHero()
 {
 	const QString instanceId = activeInstanceId();
-	const InstancePtr instance = APPLICATION->instances() ? APPLICATION->instances()->getInstanceById(instanceId) : nullptr;
+	const InstancePtr instance =
+		APPLICATION->instances() ? APPLICATION->instances()->getInstanceById(instanceId) : nullptr;
 
 	if (!instance)
 	{
 		m_cockpitBadgeLabel->setText(tr("Cockpit"));
 		m_cockpitTitleLabel->setText(tr("Launcher Hub is ready"));
-		m_cockpitSubtitleLabel->setText(
-			tr("Open news, community pages, and help from one place. Once you create or select an instance, it will appear here."));
+		m_cockpitSubtitleLabel->setText(tr("Open news, community pages, and help from one place. Once you create or "
+										   "select an instance, it will appear here."));
 		m_cockpitIconLabel->setPixmap(QIcon::fromTheme("applications-games").pixmap(40, 40));
 		m_playButton->setEnabled(false);
 		m_editButton->setEnabled(false);
@@ -1295,7 +1318,7 @@ void LauncherHubWidget::updateHero()
 	m_cockpitBadgeLabel->setText(heroBadgeForInstance(instance));
 	m_cockpitTitleLabel->setText(instance->name());
 
-	QString subtitle = instance->getStatusbarDescription();
+	QString subtitle			 = instance->getStatusbarDescription();
 	const QString lastLaunchText = relativeTimeLabel(instance->lastLaunch());
 	if (!subtitle.isEmpty())
 	{
@@ -1324,7 +1347,8 @@ void LauncherHubWidget::rebuildRecentInstances()
 	const QList<InstancePtr> instances = sortedInstances();
 	if (instances.isEmpty())
 	{
-		auto* label = new QLabel(tr("No instances yet. Your recent worlds and packs will show up here."), m_cockpitPage);
+		auto* label =
+			new QLabel(tr("No instances yet. Your recent worlds and packs will show up here."), m_cockpitPage);
 		label->setObjectName("hubPanelSubtitle");
 		label->setWordWrap(true);
 		m_recentInstancesLayout->addWidget(label);
@@ -1332,38 +1356,47 @@ void LauncherHubWidget::rebuildRecentInstances()
 	}
 
 	const QString currentId = activeInstanceId();
-	const int limit = qMin(6, instances.size());
+	const int limit			= qMin(6, instances.size());
 	for (int i = 0; i < limit; ++i)
 	{
 		const auto& instance = instances.at(i);
-		auto* row = new QWidget(m_cockpitPage);
-		auto* rowLayout = new QHBoxLayout(row);
+		auto* row			 = new QWidget(m_cockpitPage);
+		auto* rowLayout		 = new QHBoxLayout(row);
 		rowLayout->setContentsMargins(0, 0, 0, 0);
 		rowLayout->setSpacing(8);
 
-		auto* button = new QPushButton(
-			QStringLiteral("%1\n%2").arg(instance->name(),
-										 tr("%1  |  %2").arg(instance->typeName(), relativeTimeLabel(instance->lastLaunch()))),
-			row);
+		auto* button =
+			new QPushButton(QStringLiteral("%1\n%2").arg(
+								instance->name(),
+								tr("%1  |  %2").arg(instance->typeName(), relativeTimeLabel(instance->lastLaunch()))),
+							row);
 		button->setObjectName("hubQuickButton");
 		button->setProperty("active", instance->id() == currentId);
 		button->setIcon(APPLICATION->icons()->getIcon(instance->iconKey()));
 		button->setIconSize(QSize(28, 28));
 		button->setMinimumHeight(56);
-		connect(button, &QPushButton::clicked, this, [this, instance]() {
-			m_selectedInstanceId = instance->id();
-			emit selectInstanceRequested(instance->id());
-			refreshCockpit();
-		});
+		connect(button,
+				&QPushButton::clicked,
+				this,
+				[this, instance]()
+				{
+					m_selectedInstanceId = instance->id();
+					emit selectInstanceRequested(instance->id());
+					refreshCockpit();
+				});
 
 		auto* launchButton = new QPushButton(tr("Play"), row);
 		launchButton->setObjectName("hubInlineAction");
 		launchButton->setEnabled(instance->canLaunch() && !instance->isRunning());
-		connect(launchButton, &QPushButton::clicked, this, [this, instance]() {
-			m_selectedInstanceId = instance->id();
-			emit launchInstanceRequested(instance->id());
-			refreshCockpit();
-		});
+		connect(launchButton,
+				&QPushButton::clicked,
+				this,
+				[this, instance]()
+				{
+					m_selectedInstanceId = instance->id();
+					emit launchInstanceRequested(instance->id());
+					refreshCockpit();
+				});
 
 		rowLayout->addWidget(button, 1);
 		rowLayout->addWidget(launchButton);
@@ -1382,10 +1415,10 @@ void LauncherHubWidget::rebuildNewsFeed()
 	const QList<NewsEntryPtr> entries = m_newsChecker->getNewsEntries();
 	if (entries.isEmpty())
 	{
-		auto* label =
-			new QLabel(m_newsChecker->isLoadingNews() ? tr("Loading the latest posts...")
-													  : tr("News is quiet right now. Use the button below to open the full feed."),
-					   m_cockpitPage);
+		auto* label = new QLabel(m_newsChecker->isLoadingNews()
+									 ? tr("Loading the latest posts...")
+									 : tr("News is quiet right now. Use the button below to open the full feed."),
+								 m_cockpitPage);
 		label->setObjectName("hubPanelSubtitle");
 		label->setWordWrap(true);
 		m_newsLayout->addWidget(label);
@@ -1396,13 +1429,15 @@ void LauncherHubWidget::rebuildNewsFeed()
 		for (int i = 0; i < limit; ++i)
 		{
 			const auto& entry = entries.at(i);
-			auto* button =
-				new QPushButton(QStringLiteral("%1\n%2").arg(entry->title, stripHtmlExcerpt(entry->content)), m_cockpitPage);
+			auto* button = new QPushButton(QStringLiteral("%1\n%2").arg(entry->title, stripHtmlExcerpt(entry->content)),
+										   m_cockpitPage);
 			button->setObjectName("hubNewsButton");
 			button->setMinimumHeight(66);
-			connect(button, &QPushButton::clicked, this, [this, entry]() {
-				openUrl(QUrl(entry->link.isEmpty() ? BuildConfig.NEWS_OPEN_URL : entry->link));
-			});
+			connect(button,
+					&QPushButton::clicked,
+					this,
+					[this, entry]()
+					{ openUrl(QUrl(entry->link.isEmpty() ? BuildConfig.NEWS_OPEN_URL : entry->link)); });
 			m_newsLayout->addWidget(button);
 		}
 	}

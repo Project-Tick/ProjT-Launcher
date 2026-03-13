@@ -78,24 +78,25 @@ class DataPack : public Resource
 	QString description() const
 	{
 		QString lang = QLocale::system().name().section('_', 0, 0);
-		if (m_localized_descriptions.contains(lang)) {
+		if (m_localized_descriptions.contains(lang))
+		{
 			return m_localized_descriptions.value(lang);
 		}
 		return m_description;
 	}
-	
+
 	/** Gets the raw (non-localized) description. */
 	QString rawDescription() const
 	{
 		return m_description;
 	}
-	
+
 	/** Gets description for a specific language code. */
 	QString localizedDescription(const QString& langCode) const
 	{
 		return m_localized_descriptions.value(langCode, m_description);
 	}
-	
+
 	/** Gets all available localized descriptions. */
 	QHash<QString, QString> allLocalizedDescriptions() const
 	{
@@ -110,10 +111,10 @@ class DataPack : public Resource
 
 	/** Thread-safe. */
 	void setDescription(QString new_description);
-	
+
 	/** Thread-safe. Sets a localized description for a specific language. */
 	void setLocalizedDescription(const QString& langCode, const QString& description);
-	
+
 	/** Thread-safe. Sets all localized descriptions at once. */
 	void setLocalizedDescriptions(const QHash<QString, QString>& descriptions);
 
@@ -136,7 +137,7 @@ class DataPack : public Resource
 	/** The data pack's description, as defined in the pack.mcmeta file.
 	 */
 	QString m_description;
-	
+
 	/** Localized descriptions keyed by language code (e.g., "en", "de", "ja").
 	 *  Parsed from pack.mcmeta language files if available.
 	 */

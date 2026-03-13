@@ -551,9 +551,9 @@ bool ResourceFolderModel::dropMimeData(const QMimeData* data, Qt::DropAction act
 			{
 				continue;
 			}
-			
+
 			QString sourcePath = url.toLocalFile();
-			
+
 			// Handle move vs copy action
 			if (action == Qt::MoveAction)
 			{
@@ -1037,11 +1037,11 @@ Resource::WeakPtr ResourceFolderModel::findWeak(const QString& id)
 	auto it = m_resources_index.constFind(id);
 	if (it == m_resources_index.constEnd())
 		return Resource::WeakPtr();
-	
+
 	int idx = it.value();
 	if (idx < 0 || idx >= m_resources.size())
 		return Resource::WeakPtr();
-	
+
 	return Resource::WeakPtr(m_resources[idx].get());
 }
 

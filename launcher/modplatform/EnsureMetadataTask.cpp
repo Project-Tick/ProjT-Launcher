@@ -419,7 +419,7 @@ Task::Ptr EnsureMetadataTask::modrinthProjectsTask()
 						continue;
 					}
 
-					auto* resource = resource_iter.value();
+					auto* resource	 = resource_iter.value();
 					auto versionIter = m_tempVersions.find(hash);
 					if (versionIter == m_tempVersions.end())
 					{
@@ -576,7 +576,7 @@ Task::Ptr EnsureMetadataTask::flameProjectsTask()
 					{
 						auto entry_obj = Json::requireObject(entry);
 
-						auto id = QString::number(Json::requireInteger(entry_obj, "id"));
+						auto id		= QString::number(Json::requireInteger(entry_obj, "id"));
 						auto hashIt = addonIds.find(id);
 						if (hashIt == addonIds.end())
 						{
@@ -584,13 +584,13 @@ Task::Ptr EnsureMetadataTask::flameProjectsTask()
 							continue;
 						}
 						const auto& hash = hashIt.value();
-						auto resourceIt = m_resources.find(hash);
+						auto resourceIt	 = m_resources.find(hash);
 						if (resourceIt == m_resources.end())
 						{
 							qWarning() << "Invalid fingerprint from the API response.";
 							continue;
 						}
-						auto resource = resourceIt.value();
+						auto resource	 = resourceIt.value();
 						auto versionIter = m_tempVersions.find(hash);
 						if (versionIter == m_tempVersions.end())
 						{

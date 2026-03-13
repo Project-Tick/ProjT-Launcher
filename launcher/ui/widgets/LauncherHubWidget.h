@@ -59,7 +59,7 @@ class LauncherHubWidget : public QWidget
 {
 	Q_OBJECT
 
- public:
+  public:
 	explicit LauncherHubWidget(QWidget* parent = nullptr);
 	~LauncherHubWidget() override;
 
@@ -92,36 +92,36 @@ class LauncherHubWidget : public QWidget
 	void updateHero();
 	QString activeInstanceId() const;
 
-	QTabBar* m_tabBar			 = nullptr;
-	QWidget* m_tabsBarContainer	 = nullptr;
-	QWidget* m_toolbarContainer	 = nullptr;
-	QStackedWidget* m_stack		 = nullptr;
-	QWebEngineProfile* m_profile = nullptr;
-	QLineEdit* m_addressBar		 = nullptr;
-	QToolButton* m_backButton	 = nullptr;
-	QToolButton* m_forwardButton = nullptr;
-	QToolButton* m_reloadButton	 = nullptr;
-	QToolButton* m_homeButton	 = nullptr;
-	QToolButton* m_goButton		 = nullptr;
-	QToolButton* m_newTabButton	 = nullptr;
-	QWidget* m_cockpitPage		 = nullptr;
-	QLabel* m_cockpitBadgeLabel	 = nullptr;
-	QLabel* m_cockpitTitleLabel	 = nullptr;
-	QLabel* m_cockpitSubtitleLabel = nullptr;
-	QLabel* m_cockpitIconLabel	 = nullptr;
-	QPushButton* m_playButton	 = nullptr;
-	QPushButton* m_editButton	 = nullptr;
-	QPushButton* m_backupsButton = nullptr;
-	QPushButton* m_folderButton	 = nullptr;
-	QLabel* m_instancesValueLabel = nullptr;
-	QLabel* m_instancesDetailLabel = nullptr;
-	QLabel* m_playtimeValueLabel = nullptr;
-	QLabel* m_playtimeDetailLabel = nullptr;
-	QLabel* m_attentionValueLabel = nullptr;
-	QLabel* m_attentionDetailLabel = nullptr;
+	QTabBar* m_tabBar					 = nullptr;
+	QWidget* m_tabsBarContainer			 = nullptr;
+	QWidget* m_toolbarContainer			 = nullptr;
+	QStackedWidget* m_stack				 = nullptr;
+	QWebEngineProfile* m_profile		 = nullptr;
+	QLineEdit* m_addressBar				 = nullptr;
+	QToolButton* m_backButton			 = nullptr;
+	QToolButton* m_forwardButton		 = nullptr;
+	QToolButton* m_reloadButton			 = nullptr;
+	QToolButton* m_homeButton			 = nullptr;
+	QToolButton* m_goButton				 = nullptr;
+	QToolButton* m_newTabButton			 = nullptr;
+	QWidget* m_cockpitPage				 = nullptr;
+	QLabel* m_cockpitBadgeLabel			 = nullptr;
+	QLabel* m_cockpitTitleLabel			 = nullptr;
+	QLabel* m_cockpitSubtitleLabel		 = nullptr;
+	QLabel* m_cockpitIconLabel			 = nullptr;
+	QPushButton* m_playButton			 = nullptr;
+	QPushButton* m_editButton			 = nullptr;
+	QPushButton* m_backupsButton		 = nullptr;
+	QPushButton* m_folderButton			 = nullptr;
+	QLabel* m_instancesValueLabel		 = nullptr;
+	QLabel* m_instancesDetailLabel		 = nullptr;
+	QLabel* m_playtimeValueLabel		 = nullptr;
+	QLabel* m_playtimeDetailLabel		 = nullptr;
+	QLabel* m_attentionValueLabel		 = nullptr;
+	QLabel* m_attentionDetailLabel		 = nullptr;
 	QVBoxLayout* m_recentInstancesLayout = nullptr;
-	QVBoxLayout* m_newsLayout = nullptr;
-	NewsChecker* m_newsChecker = nullptr;
+	QVBoxLayout* m_newsLayout			 = nullptr;
+	NewsChecker* m_newsChecker			 = nullptr;
 	QString m_selectedInstanceId;
 	QUrl m_homeUrl;
 	bool m_loaded = false;

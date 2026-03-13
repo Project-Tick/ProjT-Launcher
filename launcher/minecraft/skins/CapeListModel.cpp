@@ -29,16 +29,14 @@
 #include "FileSystem.h"
 #include "net/Download.h"
 
-CapeListModel::CapeListModel(QObject* parent)
-	: QAbstractListModel(parent)
-{
-}
+CapeListModel::CapeListModel(QObject* parent) : QAbstractListModel(parent)
+{}
 
 void CapeListModel::loadFromAccount(MinecraftAccountPtr account, const QString& cacheDir)
 {
 	beginResetModel();
 
-	m_account = account;
+	m_account  = account;
 	m_cacheDir = cacheDir;
 	m_capes.clear();
 	m_capeImages.clear();
@@ -57,8 +55,8 @@ void CapeListModel::loadFromAccount(MinecraftAccountPtr account, const QString& 
 
 	// Add "No Cape" option first
 	CapeInfo noCape;
-	noCape.id = QString();
-	noCape.alias = tr("No Cape");
+	noCape.id	  = QString();
+	noCape.alias  = tr("No Cape");
 	noCape.loaded = true;
 	m_capes.append(noCape);
 	m_capeIndexMap[QString()] = 0;
@@ -68,9 +66,9 @@ void CapeListModel::loadFromAccount(MinecraftAccountPtr account, const QString& 
 	for (const auto& cape : accountData.minecraftProfile.capes)
 	{
 		CapeInfo info;
-		info.id = cape.id;
-		info.alias = cape.alias;
-		info.url = cape.url;
+		info.id		= cape.id;
+		info.alias	= cape.alias;
+		info.url	= cape.url;
 		info.loaded = false;
 
 		// Check if we have embedded data
@@ -80,7 +78,7 @@ void CapeListModel::loadFromAccount(MinecraftAccountPtr account, const QString& 
 			if (capeImage.loadFromData(cape.data, "PNG"))
 			{
 				m_capeImages[cape.id] = capeImage;
-				info.loaded = true;
+				info.loaded			  = true;
 
 				// Also save to cache
 				QString cachePath = FS::PathCombine(m_cacheDir, cape.id + ".png");
@@ -152,7 +150,7 @@ void CapeListModel::downloadCapes()
 
 	for (int idx : toDownload)
 	{
-		const auto& cape = m_capes[idx];
+		const auto& cape  = m_capes[idx];
 		QString cachePath = FS::PathCombine(m_cacheDir, cape.id + ".png");
 		m_downloadJob->addNetAction(Net::Download::makeFile(cape.url, cachePath));
 	}
@@ -176,7 +174,7 @@ void CapeListModel::onDownloadSucceeded()
 			if (m_capeImages.contains(cape.id))
 			{
 				cape.loaded = true;
-				int idx = m_capeIndexMap.value(cape.id, -1);
+				int idx		= m_capeIndexMap.value(cape.id, -1);
 				if (idx >= 0)
 				{
 					emit dataChanged(index(idx), index(idx));
@@ -229,8 +227,7 @@ QVariant CapeListModel::data(const QModelIndex& index, int role) const
 
 	switch (role)
 	{
-		case Qt::DisplayRole:
-			return cape.alias;
+		case Qt::DisplayRole: return cape.alias;
 
 		case Qt::DecorationRole:
 		{
@@ -242,30 +239,25 @@ QVariant CapeListModel::data(const QModelIndex& index, int role) const
 			return QVariant();
 		}
 
-		case CapeIdRole:
-			return cape.id;
+		case CapeIdRole: return cape.id;
 
-		case CapeAliasRole:
-			return cape.alias;
+		case CapeAliasRole: return cape.alias;
 
-		case CapeImageRole:
-			return m_capeImages.value(cape.id, QImage());
+		case CapeImageRole: return m_capeImages.value(cape.id, QImage());
 
-		case CapeUrlRole:
-			return cape.url;
+		case CapeUrlRole: return cape.url;
 
-		default:
-			return QVariant();
+		default: return QVariant();
 	}
 }
 
 QHash<int, QByteArray> CapeListModel::roleNames() const
 {
 	QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
-	roles[CapeIdRole] = "capeId";
-	roles[CapeAliasRole] = "capeAlias";
-	roles[CapeImageRole] = "capeImage";
-	roles[CapeUrlRole] = "capeUrl";
+	roles[CapeIdRole]			 = "capeId";
+	roles[CapeAliasRole]		 = "capeAlias";
+	roles[CapeImageRole]		 = "capeImage";
+	roles[CapeUrlRole]			 = "capeUrl";
 	return roles;
 }
 
@@ -273,7 +265,7 @@ QPixmap CapeListModel::createCapePreview(const QImage& capeImage, bool elytra) c
 {
 	if (elytra)
 	{
-		auto wing = capeImage.copy(34, 0, 12, 22);
+		auto wing		= capeImage.copy(34, 0, 12, 22);
 		QImage mirrored = wing.flipped(Qt::Horizontal);
 
 		QImage combined(wing.width() * 2 - 2, wing.height(), capeImage.format());
