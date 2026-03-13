@@ -20,6 +20,7 @@
  */
 #pragma once
 
+#include <QString>
 #include <QUrl>
 #include <QWidget>
 
@@ -32,17 +33,23 @@
 #endif
 
 class QLineEdit;
+class QLabel;
+class QVBoxLayout;
 class QStackedWidget;
 class QTabBar;
 class QToolButton;
 class QWebEngineProfile;
 class QWidget;
+class QPushButton;
+class NewsChecker;
 
 #if !defined(PROJT_DISABLE_LAUNCHER_HUB)
 #if defined(PROJT_USE_WEBENGINE)
 using HubView = QWebEngineView;
 #elif defined(PROJT_USE_WEBVIEW2)
 using HubView = WebView2Widget;
+#else
+class HubView;
 #endif
 #else
 class HubView;
@@ -52,7 +59,7 @@ class LauncherHubWidget : public QWidget
 {
 	Q_OBJECT
 
-  public:
+ public:
 	explicit LauncherHubWidget(QWidget* parent = nullptr);
 	~LauncherHubWidget() override;
 
@@ -62,13 +69,28 @@ class LauncherHubWidget : public QWidget
 	void newTab(const QUrl& url = QUrl());
 	void setHomeUrl(const QUrl& url);
 	QUrl homeUrl() const;
+	void setSelectedInstanceId(const QString& id);
+	void refreshCockpit();
+
+  signals:
+	void selectInstanceRequested(const QString& instanceId);
+	void launchInstanceRequested(const QString& instanceId);
+	void editInstanceRequested(const QString& instanceId);
+	void backupsRequested(const QString& instanceId);
+	void openInstanceFolderRequested(const QString& instanceId);
 
   private:
 	HubView* currentView() const;
 	HubView* createTab(const QUrl& url, const QString& label = QString(), bool switchTo = true);
+	void createCockpitTab();
+	void switchToPage(QWidget* page);
 	void activatePendingForIndex(int index);
 	void updateNavigationState();
 	void updateTabPerformanceState();
+	void rebuildRecentInstances();
+	void rebuildNewsFeed();
+	void updateHero();
+	QString activeInstanceId() const;
 
 	QTabBar* m_tabBar			 = nullptr;
 	QWidget* m_tabsBarContainer	 = nullptr;
@@ -82,6 +104,25 @@ class LauncherHubWidget : public QWidget
 	QToolButton* m_homeButton	 = nullptr;
 	QToolButton* m_goButton		 = nullptr;
 	QToolButton* m_newTabButton	 = nullptr;
+	QWidget* m_cockpitPage		 = nullptr;
+	QLabel* m_cockpitBadgeLabel	 = nullptr;
+	QLabel* m_cockpitTitleLabel	 = nullptr;
+	QLabel* m_cockpitSubtitleLabel = nullptr;
+	QLabel* m_cockpitIconLabel	 = nullptr;
+	QPushButton* m_playButton	 = nullptr;
+	QPushButton* m_editButton	 = nullptr;
+	QPushButton* m_backupsButton = nullptr;
+	QPushButton* m_folderButton	 = nullptr;
+	QLabel* m_instancesValueLabel = nullptr;
+	QLabel* m_instancesDetailLabel = nullptr;
+	QLabel* m_playtimeValueLabel = nullptr;
+	QLabel* m_playtimeDetailLabel = nullptr;
+	QLabel* m_attentionValueLabel = nullptr;
+	QLabel* m_attentionDetailLabel = nullptr;
+	QVBoxLayout* m_recentInstancesLayout = nullptr;
+	QVBoxLayout* m_newsLayout = nullptr;
+	NewsChecker* m_newsChecker = nullptr;
+	QString m_selectedInstanceId;
 	QUrl m_homeUrl;
 	bool m_loaded = false;
 };

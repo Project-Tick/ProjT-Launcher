@@ -21,6 +21,7 @@
 #pragma once
 
 #include <QDialog>
+#include <QString>
 #include <QUrl>
 
 class LauncherHubWidget;
@@ -34,6 +35,15 @@ class LauncherHubDialog : public QDialog
 	~LauncherHubDialog() override;
 
 	void openUrl(const QUrl& url);
+	void setSelectedInstanceId(const QString& id);
+	void refreshCockpit();
+
+  signals:
+	void selectInstanceRequested(const QString& instanceId);
+	void launchInstanceRequested(const QString& instanceId);
+	void editInstanceRequested(const QString& instanceId);
+	void backupsRequested(const QString& instanceId);
+	void openInstanceFolderRequested(const QString& instanceId);
 
   private:
 	LauncherHubWidget* m_widget = nullptr;

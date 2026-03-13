@@ -37,6 +37,15 @@ LauncherHubDialog::LauncherHubDialog(QWidget* parent) : QDialog(parent)
 	m_widget = new LauncherHubWidget(this);
 	layout->addWidget(m_widget);
 	m_widget->ensureLoaded();
+
+	connect(m_widget, &LauncherHubWidget::selectInstanceRequested, this, &LauncherHubDialog::selectInstanceRequested);
+	connect(m_widget, &LauncherHubWidget::launchInstanceRequested, this, &LauncherHubDialog::launchInstanceRequested);
+	connect(m_widget, &LauncherHubWidget::editInstanceRequested, this, &LauncherHubDialog::editInstanceRequested);
+	connect(m_widget, &LauncherHubWidget::backupsRequested, this, &LauncherHubDialog::backupsRequested);
+	connect(m_widget,
+			&LauncherHubWidget::openInstanceFolderRequested,
+			this,
+			&LauncherHubDialog::openInstanceFolderRequested);
 }
 
 LauncherHubDialog::~LauncherHubDialog() = default;
@@ -49,4 +58,22 @@ void LauncherHubDialog::openUrl(const QUrl& url)
 	}
 	m_widget->ensureLoaded();
 	m_widget->openUrl(url);
+}
+
+void LauncherHubDialog::setSelectedInstanceId(const QString& id)
+{
+	if (!m_widget)
+	{
+		return;
+	}
+	m_widget->setSelectedInstanceId(id);
+}
+
+void LauncherHubDialog::refreshCockpit()
+{
+	if (!m_widget)
+	{
+		return;
+	}
+	m_widget->refreshCockpit();
 }

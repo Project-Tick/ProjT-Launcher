@@ -1581,7 +1581,49 @@ void MainWindow::openLauncherHub(const QUrl& url)
 	if (!m_launcherHubDialog)
 	{
 		m_launcherHubDialog = new LauncherHubDialog(this);
+		connect(m_launcherHubDialog,
+				&LauncherHubDialog::selectInstanceRequested,
+				this,
+				[this](const QString& instanceId) { setSelectedInstanceById(instanceId); });
+		connect(m_launcherHubDialog,
+				&LauncherHubDialog::launchInstanceRequested,
+				this,
+				[this](const QString& instanceId)
+				{
+					setSelectedInstanceById(instanceId);
+					auto instance = APPLICATION->instances()->getInstanceById(instanceId);
+					if (instance && !instance->isRunning())
+					{
+						activateInstance(instance);
+					}
+				});
+		connect(m_launcherHubDialog,
+				&LauncherHubDialog::editInstanceRequested,
+				this,
+				[this](const QString& instanceId)
+				{
+					setSelectedInstanceById(instanceId);
+					on_actionEditInstance_triggered();
+				});
+		connect(m_launcherHubDialog,
+				&LauncherHubDialog::backupsRequested,
+				this,
+				[this](const QString& instanceId)
+				{
+					setSelectedInstanceById(instanceId);
+					on_actionManageBackups_triggered();
+				});
+		connect(m_launcherHubDialog,
+				&LauncherHubDialog::openInstanceFolderRequested,
+				this,
+				[this](const QString& instanceId)
+				{
+					setSelectedInstanceById(instanceId);
+					on_actionViewSelectedInstFolder_triggered();
+				});
 	}
+	m_launcherHubDialog->setSelectedInstanceId(m_selectedInstance ? m_selectedInstance->id() : QString());
+	m_launcherHubDialog->refreshCockpit();
 	if (url.isValid())
 	{
 		m_launcherHubDialog->openUrl(url);
@@ -1843,6 +1885,11 @@ void MainWindow::instanceChanged(const QModelIndex& current, [[maybe_unused]] co
 				this,
 				&MainWindow::refreshCurrentInstance);
 		connect(m_selectedInstance.get(), &BaseInstance::profilerChanged, this, &MainWindow::refreshCurrentInstance);
+		if (m_launcherHubDialog)
+		{
+			m_launcherHubDialog->setSelectedInstanceId(m_selectedInstance->id());
+			m_launcherHubDialog->refreshCockpit();
+		}
 	}
 	else
 	{
@@ -1879,6 +1926,11 @@ void MainWindow::selectionBad()
 	updateLaunchButton();
 	renameButton->setText(tr("Rename Instance"));
 	updateInstanceToolIcon("grass");
+	if (m_launcherHubDialog)
+	{
+		m_launcherHubDialog->setSelectedInstanceId(QString());
+		m_launcherHubDialog->refreshCockpit();
+	}
 
 	// ...and then see if we can enable the previously selected instance
 	setSelectedInstanceById(APPLICATION->settings()->get("SelectedInstance").toString());
