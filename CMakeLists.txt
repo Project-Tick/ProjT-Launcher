@@ -242,10 +242,15 @@ else()
         endif()
 
         # -ffunction-sections and -fdata-sections help reduce binary size
-        # -mguard=cf enables Control Flow Guard
+        # -mguard=cf enables Control Flow Guard when the MinGW frontend supports it
         # -Wl,--gc-sections removes unused sections during linking
         foreach(lang C CXX)
-            set("CMAKE_${lang}_FLAGS_RELEASE" "-ffunction-sections -fdata-sections -mguard=cf")
+            set(_projt_release_flags "-ffunction-sections -fdata-sections")
+            if(CMAKE_${lang}_COMPILER_ID STREQUAL "Clang")
+                string(APPEND _projt_release_flags " -mguard=cf")
+            endif()
+            set("CMAKE_${lang}_FLAGS_RELEASE" "${_projt_release_flags}")
+            unset(_projt_release_flags)
         endforeach()
         set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Wl,--gc-sections ${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
         set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "-Wl,--gc-sections ${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
