@@ -130,12 +130,12 @@ tomlplusplus/       TOML parsing
 libqrencode/        QR code generation
 libnbtplusplus/     NBT format support
 extra-cmake-modules/    CMake utilities
+gamemode/           GameMode
 ```
 
 ### Vendored Libraries
 
 ```yaml
-gamemode/           GameMode integration
 LocalPeer/          Single instance support
 murmur2/            Hash functions
 qdcss/              Dark CSS support
@@ -152,7 +152,7 @@ This is a summary. See [CODE_STYLE.md](docs/contributing/CODE_STYLE.md) for full
 ### C++ (clang-format)
 
 ```sh
-clang-format -i path/to/file.cpp
+clang-format -i path/to/file.cpp # Please use LLVM 19
 ```
 
 Key rules:
@@ -183,10 +183,10 @@ docs: update build instructions
 
 ## DCO Sign-off
 
-Every commit must include a sign-off line:
+Every commit must include a sign-off line and all files to commit:
 
 ```sh
-git commit -s -m "component: description"
+git commit -s -a
 ```
 
 This adds:
@@ -232,13 +232,7 @@ The bot enforces DCO compliance and labels MRs missing sign-off.
 ### Running Tests
 
 ```sh
-ctest --preset default
-```
-
-### Running Specific Tests
-
-```sh
-ctest -R test_name --preset default
+ctest --preset [ linux or macos or windows_msvc or windows_mingw ]
 ```
 
 ### Writing Tests
@@ -308,8 +302,7 @@ Q: How do I update a fork library?
 
 ## Contact
 
-- Issues: [GitHub Issues](https://github.com/Project-Tick/ProjT-Launcher/issues)
-- Discussions: [GitHub Discussions](https://github.com/Project-Tick/ProjT-Launcher/discussions)
+- Issues: [GitLab Issues](https://github.com/Project-Tick/core/ProjT-Launcher/-/issues)
 - Email: [yongdohyun@projtlauncher.yongdohyun.org.tr](mailto:yongdohyun@projtlauncher.yongdohyun.org.tr)
 
 ---
@@ -317,8 +310,8 @@ Q: How do I update a fork library?
 ## License
 
 By contributing, you agree to license your work under the project's licenses.
-See [LICENSE](LICENSE) and [COPYING.md](COPYING.md).
+See [COPYING](COPYING) and LICENSES/ folder.
 
 ## Code of Conduct
 
-See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+See [CODE_OF_CONDUCT](CODE_OF_CONDUCT).

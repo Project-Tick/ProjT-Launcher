@@ -2,5 +2,6 @@
 <RCC version="1.0">
     <qresource prefix="/">
         <file>@Launcher_AppID@.svg</file>
+        <file>gplv3-127x51.png</file>
     </qresource>
 </RCC>

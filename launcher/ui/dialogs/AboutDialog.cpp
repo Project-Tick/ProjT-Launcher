@@ -68,6 +68,7 @@
 
 #include <net/NetJob.h>
 #include <qobject.h>
+#include <QPixmap>
 
 namespace
 {
@@ -167,6 +168,8 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent), ui(new Ui::AboutDia
 	ui->urlLabel->setText(urlText.arg(BuildConfig.LAUNCHER_GIT));
 
 	ui->copyLabel->setText(BuildConfig.LAUNCHER_COPYRIGHT);
+	ui->licenseBadgeTextLabel->setText(tr("This project is licensed under"));
+	ui->licenseBadgeLabel->setPixmap(QPixmap(QStringLiteral(":/gplv3-127x51.png")));
 
 	connect(ui->closeButton, &QPushButton::clicked, this, &AboutDialog::close);
 

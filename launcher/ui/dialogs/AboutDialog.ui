@@ -142,10 +142,10 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="copyLabel">
-         <property name="font">
-          <font>
-           <pointsize>8</pointsize>
+       <widget class="QLabel" name="copyLabel">
+        <property name="font">
+         <font>
+          <pointsize>8</pointsize>
            <kerning>true</kerning>
           </font>
          </property>
@@ -154,13 +154,50 @@
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="Line" name="line">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="licenseBadgeTextLabel">
+        <property name="font">
+         <font>
+          <pointsize>9</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>This project is licensed under</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item alignment="Qt::AlignHCenter">
+       <widget class="QLabel" name="licenseBadgeLabel">
+        <property name="minimumSize">
+         <size>
+          <width>127</width>
+          <height>51</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>127</width>
+          <height>51</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
          </property>
         </widget>
        </item>

@@ -45,6 +45,7 @@ configure_file(projtlauncher.qrc.in projtlauncher.qrc @ONLY)
 configure_file(projtlauncher.manifest.in projtlauncher.manifest @ONLY)
 configure_file(projtlauncher.ico projtlauncher.ico COPYONLY)
 configure_file(${Launcher_SVGFileName} ${Launcher_SVGFileName} COPYONLY)
+configure_file(gplv3-127x51.png gplv3-127x51.png COPYONLY)
 
 set(Launcher_Project_Source_Dir "${PROJECT_SOURCE_DIR}")
 
