@@ -1373,7 +1373,25 @@ set(LAUNCHER_USE_WEBENGINE ON)
 set(LAUNCHER_USE_WEBVIEW2 OFF)
 set(LAUNCHER_USE_CEF OFF)
 set(LAUNCHER_DISABLE_HUB OFF)
+set(_Launcher_CEF_DOWNLOAD_URL_DEFAULT "")
+if(DEFINED ENV{Launcher_CEF_DOWNLOAD_URL} AND NOT "$ENV{Launcher_CEF_DOWNLOAD_URL}" STREQUAL "")
+    set(_Launcher_CEF_DOWNLOAD_URL_DEFAULT "$ENV{Launcher_CEF_DOWNLOAD_URL}")
+elseif(DEFINED ENV{CEF_DOWNLOAD_URL} AND NOT "$ENV{CEF_DOWNLOAD_URL}" STREQUAL "")
+    set(_Launcher_CEF_DOWNLOAD_URL_DEFAULT "$ENV{CEF_DOWNLOAD_URL}")
+endif()
+set(_Launcher_CEF_DOWNLOAD_SHA256_DEFAULT "")
+if(DEFINED ENV{Launcher_CEF_DOWNLOAD_SHA256} AND NOT "$ENV{Launcher_CEF_DOWNLOAD_SHA256}" STREQUAL "")
+    set(_Launcher_CEF_DOWNLOAD_SHA256_DEFAULT "$ENV{Launcher_CEF_DOWNLOAD_SHA256}")
+elseif(DEFINED ENV{CEF_DOWNLOAD_SHA256} AND NOT "$ENV{CEF_DOWNLOAD_SHA256}" STREQUAL "")
+    set(_Launcher_CEF_DOWNLOAD_SHA256_DEFAULT "$ENV{CEF_DOWNLOAD_SHA256}")
+endif()
 set(Launcher_CEF_ROOT "" CACHE PATH "Path to the CEF binary distribution root used for the Linux Hub backend")
+option(Launcher_CEF_AUTO_DOWNLOAD "Automatically download Linux CEF when Launcher_CEF_ROOT is not set" ON)
+set(Launcher_CEF_DOWNLOAD_URL "${_Launcher_CEF_DOWNLOAD_URL_DEFAULT}" CACHE STRING "URL to a Linux CEF binary distribution archive")
+set(Launcher_CEF_DOWNLOAD_SHA256 "${_Launcher_CEF_DOWNLOAD_SHA256_DEFAULT}" CACHE STRING "Optional SHA256 for Launcher_CEF_DOWNLOAD_URL")
+set(Launcher_CEF_DOWNLOAD_DIR "${CMAKE_BINARY_DIR}/downloads/cef" CACHE PATH "Directory used to download and extract the Linux CEF archive")
+unset(_Launcher_CEF_DOWNLOAD_URL_DEFAULT)
+unset(_Launcher_CEF_DOWNLOAD_SHA256_DEFAULT)
 if(MINGW)
     set(LAUNCHER_USE_WEBENGINE OFF)
     set(LAUNCHER_DISABLE_HUB ON)
@@ -1459,35 +1477,139 @@ endif()
 if(LAUNCHER_USE_CEF)
     target_compile_definitions(Launcher_logic PUBLIC PROJT_USE_CEF)
     if(UNIX AND NOT APPLE)
-        if(NOT Launcher_CEF_ROOT AND DEFINED ENV{CEF_ROOT})
-            file(TO_CMAKE_PATH "$ENV{CEF_ROOT}" Launcher_CEF_ROOT)
-        endif()
-        if(NOT Launcher_CEF_ROOT)
-            set(_projt_cef_root_candidates
-                "${CMAKE_SOURCE_DIR}/dependencies/cef"
-                "${CMAKE_SOURCE_DIR}/third_party/cef"
-                "${CMAKE_SOURCE_DIR}/vendor/cef"
-            )
-            file(GLOB _projt_cef_glob_candidates LIST_DIRECTORIES true
-                "${CMAKE_SOURCE_DIR}/dependencies/cef_binary_*_linux64*"
-                "${CMAKE_SOURCE_DIR}/third_party/cef_binary_*_linux64*"
-                "${CMAKE_SOURCE_DIR}/vendor/cef_binary_*_linux64*"
-                "/tmp/cef-sdk/extracted/cef_binary_*_linux64*"
-            )
-            list(APPEND _projt_cef_root_candidates ${_projt_cef_glob_candidates})
-            foreach(_projt_cef_candidate ${_projt_cef_root_candidates})
-                if(EXISTS "${_projt_cef_candidate}/cmake/FindCEF.cmake" AND EXISTS "${_projt_cef_candidate}/Release/libcef.so")
-                    set(Launcher_CEF_ROOT "${_projt_cef_candidate}")
-                    break()
+        macro(projt_resolve_linux_cef out_var)
+            set(${out_var} "")
+
+            if(Launcher_CEF_ROOT
+               AND (NOT EXISTS "${Launcher_CEF_ROOT}/cmake/FindCEF.cmake"
+                    OR NOT EXISTS "${Launcher_CEF_ROOT}/Release/libcef.so"))
+                message(STATUS "Ignoring invalid Launcher_CEF_ROOT: ${Launcher_CEF_ROOT}")
+                set(Launcher_CEF_ROOT "" CACHE PATH "Path to the CEF binary distribution root used for the Linux Hub backend" FORCE)
+            endif()
+
+            if(NOT Launcher_CEF_ROOT AND DEFINED ENV{CEF_ROOT})
+                file(TO_CMAKE_PATH "$ENV{CEF_ROOT}" Launcher_CEF_ROOT)
+            endif()
+            if(NOT Launcher_CEF_ROOT)
+                set(_projt_cef_root_candidates
+                    "${CMAKE_SOURCE_DIR}/dependencies/cef"
+                    "${CMAKE_SOURCE_DIR}/third_party/cef"
+                    "${CMAKE_SOURCE_DIR}/vendor/cef"
+                )
+                file(GLOB _projt_cef_glob_candidates LIST_DIRECTORIES true
+                    "${CMAKE_SOURCE_DIR}/dependencies/cef_binary_*_linux64*"
+                    "${CMAKE_SOURCE_DIR}/third_party/cef_binary_*_linux64*"
+                    "${CMAKE_SOURCE_DIR}/vendor/cef_binary_*_linux64*"
+                    "/tmp/cef-sdk/extracted/cef_binary_*_linux64*"
+                )
+                list(APPEND _projt_cef_root_candidates ${_projt_cef_glob_candidates})
+                foreach(_projt_cef_candidate ${_projt_cef_root_candidates})
+                    if(EXISTS "${_projt_cef_candidate}/cmake/FindCEF.cmake" AND EXISTS "${_projt_cef_candidate}/Release/libcef.so")
+                        set(Launcher_CEF_ROOT "${_projt_cef_candidate}")
+                        break()
+                    endif()
+                endforeach()
+                unset(_projt_cef_glob_candidates)
+                unset(_projt_cef_root_candidates)
+            endif()
+
+            if(NOT Launcher_CEF_ROOT AND Launcher_CEF_AUTO_DOWNLOAD)
+                if(Launcher_CEF_DOWNLOAD_URL STREQUAL "")
+                    message(STATUS "Linux CEF auto-download is enabled but Launcher_CEF_DOWNLOAD_URL is empty.")
+                else()
+                    file(MAKE_DIRECTORY "${Launcher_CEF_DOWNLOAD_DIR}")
+                    get_filename_component(_projt_cef_archive_name "${Launcher_CEF_DOWNLOAD_URL}" NAME)
+                    if(_projt_cef_archive_name STREQUAL "")
+                        set(_projt_cef_archive_name "cef-linux-archive")
+                    endif()
+                    string(MD5 _projt_cef_download_key "${Launcher_CEF_DOWNLOAD_URL}|${Launcher_CEF_DOWNLOAD_SHA256}")
+                    set(_projt_cef_archive_path "${Launcher_CEF_DOWNLOAD_DIR}/${_projt_cef_archive_name}")
+                    set(_projt_cef_extract_dir "${Launcher_CEF_DOWNLOAD_DIR}/extracted-${_projt_cef_download_key}")
+                    set(_projt_cef_extract_stamp "${_projt_cef_extract_dir}/.projt-cef-ready")
+
+                    if(EXISTS "${_projt_cef_archive_path}" AND NOT Launcher_CEF_DOWNLOAD_SHA256 STREQUAL "")
+                        file(SHA256 "${_projt_cef_archive_path}" _projt_cef_archive_hash)
+                        if(NOT _projt_cef_archive_hash STREQUAL Launcher_CEF_DOWNLOAD_SHA256)
+                            file(REMOVE "${_projt_cef_archive_path}")
+                        endif()
+                        unset(_projt_cef_archive_hash)
+                    endif()
+
+                    if(NOT EXISTS "${_projt_cef_archive_path}")
+                        message(STATUS "Downloading Linux CEF binary distribution from ${Launcher_CEF_DOWNLOAD_URL}")
+                        if(Launcher_CEF_DOWNLOAD_SHA256 STREQUAL "")
+                            file(DOWNLOAD
+                                "${Launcher_CEF_DOWNLOAD_URL}"
+                                "${_projt_cef_archive_path}"
+                                SHOW_PROGRESS
+                                STATUS _projt_cef_download_status
+                                TLS_VERIFY ON
+                            )
+                        else()
+                            file(DOWNLOAD
+                                "${Launcher_CEF_DOWNLOAD_URL}"
+                                "${_projt_cef_archive_path}"
+                                SHOW_PROGRESS
+                                STATUS _projt_cef_download_status
+                                EXPECTED_HASH "SHA256=${Launcher_CEF_DOWNLOAD_SHA256}"
+                                TLS_VERIFY ON
+                            )
+                        endif()
+                        list(GET _projt_cef_download_status 0 _projt_cef_download_code)
+                        list(GET _projt_cef_download_status 1 _projt_cef_download_message)
+                        if(NOT _projt_cef_download_code EQUAL 0)
+                            message(FATAL_ERROR "Failed to download Linux CEF from ${Launcher_CEF_DOWNLOAD_URL}: ${_projt_cef_download_message}")
+                        endif()
+                        unset(_projt_cef_download_code)
+                        unset(_projt_cef_download_message)
+                        unset(_projt_cef_download_status)
+                    endif()
+
+                    if(NOT EXISTS "${_projt_cef_extract_stamp}")
+                        file(MAKE_DIRECTORY "${_projt_cef_extract_dir}")
+                        message(STATUS "Extracting Linux CEF archive to ${_projt_cef_extract_dir}")
+                        file(ARCHIVE_EXTRACT
+                            INPUT "${_projt_cef_archive_path}"
+                            DESTINATION "${_projt_cef_extract_dir}"
+                        )
+                        file(WRITE "${_projt_cef_extract_stamp}" "${Launcher_CEF_DOWNLOAD_URL}\n")
+                    endif()
+
+                    set(_projt_cef_download_candidates "${_projt_cef_extract_dir}")
+                    file(GLOB _projt_cef_download_glob LIST_DIRECTORIES true
+                        "${_projt_cef_extract_dir}/cef_binary_*_linux64*"
+                        "${_projt_cef_extract_dir}/*"
+                    )
+                    list(APPEND _projt_cef_download_candidates ${_projt_cef_download_glob})
+                    foreach(_projt_cef_candidate ${_projt_cef_download_candidates})
+                        if(EXISTS "${_projt_cef_candidate}/cmake/FindCEF.cmake" AND EXISTS "${_projt_cef_candidate}/Release/libcef.so")
+                            set(Launcher_CEF_ROOT "${_projt_cef_candidate}")
+                            set(Launcher_CEF_ROOT "${Launcher_CEF_ROOT}" CACHE PATH "Path to the CEF binary distribution root used for the Linux Hub backend" FORCE)
+                            break()
+                        endif()
+                    endforeach()
+                    unset(_projt_cef_download_glob)
+                    unset(_projt_cef_download_candidates)
+                    unset(_projt_cef_extract_stamp)
+                    unset(_projt_cef_extract_dir)
+                    unset(_projt_cef_archive_path)
+                    unset(_projt_cef_archive_name)
+                    unset(_projt_cef_download_key)
                 endif()
-            endforeach()
-            unset(_projt_cef_glob_candidates)
-            unset(_projt_cef_root_candidates)
-        endif()
+            endif()
+
+            if(Launcher_CEF_ROOT)
+                set(${out_var} "${Launcher_CEF_ROOT}")
+            endif()
+        endmacro()
+
+        projt_resolve_linux_cef(_projt_linux_cef_root)
         if(NOT Launcher_CEF_ROOT)
-            message(FATAL_ERROR "Launcher_CEF_ROOT or the CEF_ROOT environment variable must point to a Linux CEF binary distribution.")
+            message(FATAL_ERROR "Launcher_CEF_ROOT or CEF_ROOT must point to a Linux CEF binary distribution, or enable auto-download by setting Launcher_CEF_DOWNLOAD_URL.")
         endif()
         message(STATUS "Using Linux CEF binary distribution at: ${Launcher_CEF_ROOT}")
+        unset(_projt_linux_cef_root)
+        unset(projt_resolve_linux_cef)
 
         list(APPEND CMAKE_MODULE_PATH "${Launcher_CEF_ROOT}/cmake")
         set(CEF_ROOT "${Launcher_CEF_ROOT}")
