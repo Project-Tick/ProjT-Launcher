@@ -12,7 +12,7 @@ project(
 # ============================================================================
 set(CPACK_PACKAGE_VENDOR "PTlibzippy-Project")
 set(CPACK_PACKAGE_DESCRIPTION_FILE ${PTlibzippy_SOURCE_DIR}/README)
-set(CPACK_RESOURCE_FILE_LICENSE ${PTlibzippy_SOURCE_DIR}/LICENSE)
+set(CPACK_RESOURCE_FILE_LICENSE ${PTlibzippy_SOURCE_DIR}/COPYING)
 set(CPACK_RESOURCE_FILE_README ${PTlibzippy_SOURCE_DIR}/README)
 
 # ============================================================================
@@ -293,7 +293,7 @@ if(PTLIBZIPPY_INSTALL)
         COMPONENT Docs
         DESTINATION "${CMAKE_INSTALL_MANDIR}/man3")
     install(
-        FILES LICENSE
+        FILES COPYING
               doc/algorithm.txt
               doc/crc-doc.1.0.pdf
               doc/rfc1950.txt
