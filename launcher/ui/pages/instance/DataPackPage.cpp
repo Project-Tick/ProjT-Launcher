@@ -80,6 +80,8 @@ DataPackPage::DataPackPage(BaseInstance* instance, std::shared_ptr<DataPackFolde
 	ui->actionsToolbar->insertActionAfter(ui->actionUpdateItem, ui->actionChangeVersion);
 }
 
+DataPackPage::~DataPackPage() = default;
+
 void DataPackPage::updateFrame(const QModelIndex& current, [[maybe_unused]] const QModelIndex& previous)
 {
 	auto sourceCurrent = m_filterModel->mapToSource(current);
