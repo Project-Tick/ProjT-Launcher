@@ -51,7 +51,7 @@ namespace
 				command_line->AppendSwitch("disable-gpu");
 				command_line->AppendSwitch("disable-gpu-compositing");
 				command_line->AppendSwitch("disable-gpu-vsync");
-				command_line->AppendSwitch("disable-features", "VaapiVideoDecoder,Vulkan");
+				command_line->AppendSwitchWithValue("disable-features", "VaapiVideoDecoder,Vulkan");
 			}
 		}
 
