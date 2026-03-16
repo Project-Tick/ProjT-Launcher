@@ -1707,20 +1707,197 @@ if(LAUNCHER_USE_CEF)
         set(BUILD_SHARED_LIBS ${_projt_prev_build_shared_libs})
         unset(_projt_prev_build_shared_libs)
         target_compile_options(libcef_dll_wrapper PRIVATE -Wno-c++20-extensions -Wno-error=c++20-extensions)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+            # Upstream CEF still triggers pedantic diagnostics under C++17 in GCC/Clang.
+            target_compile_options(libcef_dll_wrapper PRIVATE -Wno-pedantic -Wno-error=cpp)
+            # Nix/GCC hardening may inject _FORTIFY_SOURCE even for -O0 debug builds.
+            target_compile_options(libcef_dll_wrapper PRIVATE
+                $<$<CONFIG:Debug>:-U_FORTIFY_SOURCE>
+                $<$<CONFIG:Debug>:-D_FORTIFY_SOURCE=0>)
+        endif()
         if(NOT TARGET projt_cef_runtime)
             add_library(projt_cef_runtime SHARED IMPORTED GLOBAL)
             set_target_properties(projt_cef_runtime PROPERTIES
                 IMPORTED_LOCATION_DEBUG "${CEF_LIB_DEBUG}"
                 IMPORTED_LOCATION_RELEASE "${CEF_LIB_RELEASE}"
                 IMPORTED_LOCATION "${CEF_LIB_RELEASE}")
+            if(UNIX AND NOT APPLE)
+                # Nix linkers don't automatically resolve libcef.so transitive DT_NEEDED entries.
+                find_program(PROJT_CEF_READELF_EXECUTABLE NAMES readelf llvm-readelf)
+                if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+                    set(_projt_cef_expected_elf_class "ELF64")
+                else()
+                    set(_projt_cef_expected_elf_class "ELF32")
+                endif()
+                function(_projt_cef_library_matches_arch out_var candidate)
+                    set(_projt_cef_library_is_compatible TRUE)
+                    if(PROJT_CEF_READELF_EXECUTABLE
+                       AND candidate
+                       AND EXISTS "${candidate}"
+                       AND candidate MATCHES "\\.so(\\..*)?$")
+                        execute_process(
+                            COMMAND "${PROJT_CEF_READELF_EXECUTABLE}" -h "${candidate}"
+                            RESULT_VARIABLE _projt_cef_library_readelf_result
+                            OUTPUT_VARIABLE _projt_cef_library_readelf_output
+                            ERROR_QUIET
+                        )
+                        if(NOT _projt_cef_library_readelf_result EQUAL 0
+                           OR NOT _projt_cef_library_readelf_output MATCHES "Class:[ \t]+${_projt_cef_expected_elf_class}")
+                            set(_projt_cef_library_is_compatible FALSE)
+                        endif()
+                    endif()
+                    set(${out_var} "${_projt_cef_library_is_compatible}" PARENT_SCOPE)
+                endfunction()
+                set(_projt_cef_runtime_link_libs "")
+                set(_projt_cef_runtime_library_specs
+                    "glib-2.0;libglib-2.0.so.0"
+                    "gobject-2.0;libgobject-2.0.so.0"
+                    "nspr4;libnspr4.so"
+                    "nss3;libnss3.so"
+                    "nssutil3;libnssutil3.so"
+                    "smime3;libsmime3.so"
+                    "dbus-1;libdbus-1.so.3"
+                    "gio-2.0;libgio-2.0.so.0"
+                    "atk-1.0;libatk-1.0.so.0;libatk-1.0.so"
+                    "atk-bridge-2.0;libatk-bridge-2.0.so.0;libatk-bridge-2.0.so"
+                    "cups;libcups.so.2"
+                    "X11;libX11.so.6"
+                    "Xcomposite;libXcomposite.so.1"
+                    "Xdamage;libXdamage.so.1"
+                    "Xext;libXext.so.6"
+                    "Xfixes;libXfixes.so.3"
+                    "Xrandr;libXrandr.so.2"
+                    "gbm;libgbm.so.1"
+                    "expat;libexpat.so.1"
+                    "xcb;libxcb.so.1"
+                    "xkbcommon;libxkbcommon.so.0"
+                    "cairo;libcairo.so.2;libcairo.so"
+                    "pango-1.0;libpango-1.0.so.0;libpango-1.0.so"
+                    "udev;libudev.so.1"
+                    "asound;libasound.so.2"
+                    "atspi;libatspi.so.0;libatspi.so"
+                )
+                foreach(_projt_cef_runtime_library_spec IN LISTS _projt_cef_runtime_library_specs)
+                    set(_projt_cef_runtime_search_names ${_projt_cef_runtime_library_spec})
+                    find_library(_projt_cef_runtime_lib_path
+                        NAMES ${_projt_cef_runtime_search_names}
+                        NO_CACHE)
+                    if(_projt_cef_runtime_lib_path)
+                        _projt_cef_library_matches_arch(
+                            _projt_cef_runtime_lib_matches_arch
+                            "${_projt_cef_runtime_lib_path}")
+                        if(NOT _projt_cef_runtime_lib_matches_arch)
+                            unset(_projt_cef_runtime_lib_path)
+                        endif()
+                        unset(_projt_cef_runtime_lib_matches_arch)
+                    endif()
+                    if(NOT _projt_cef_runtime_lib_path)
+                        foreach(_projt_cef_runtime_search_name IN LISTS _projt_cef_runtime_search_names)
+                            if(_projt_cef_runtime_search_name MATCHES "^lib.+\\.so(\\..*)?$")
+                                file(GLOB _projt_cef_runtime_nix_matches
+                                    LIST_DIRECTORIES FALSE
+                                    "/nix/store/*/lib/${_projt_cef_runtime_search_name}")
+                                if(_projt_cef_runtime_nix_matches)
+                                    list(FILTER _projt_cef_runtime_nix_matches EXCLUDE REGEX "/-system-path/")
+                                    if(NOT _projt_cef_runtime_nix_matches)
+                                        file(GLOB _projt_cef_runtime_nix_matches
+                                            LIST_DIRECTORIES FALSE
+                                            "/nix/store/*/lib/${_projt_cef_runtime_search_name}")
+                                    endif()
+                                    list(SORT _projt_cef_runtime_nix_matches)
+                                    if(PROJT_CEF_READELF_EXECUTABLE)
+                                        foreach(_projt_cef_runtime_nix_match IN LISTS _projt_cef_runtime_nix_matches)
+                                            _projt_cef_library_matches_arch(
+                                                _projt_cef_runtime_lib_matches_arch
+                                                "${_projt_cef_runtime_nix_match}")
+                                            if(_projt_cef_runtime_lib_matches_arch)
+                                                set(_projt_cef_runtime_lib_path "${_projt_cef_runtime_nix_match}")
+                                                break()
+                                            endif()
+                                        endforeach()
+                                    endif()
+                                    if(NOT _projt_cef_runtime_lib_path AND NOT PROJT_CEF_READELF_EXECUTABLE)
+                                        list(GET _projt_cef_runtime_nix_matches 0 _projt_cef_runtime_lib_path)
+                                    endif()
+                                    if(_projt_cef_runtime_lib_path)
+                                        break()
+                                    endif()
+                                endif()
+                            endif()
+                        endforeach()
+                    endif()
+                    if(_projt_cef_runtime_lib_path)
+                        list(APPEND _projt_cef_runtime_link_libs "${_projt_cef_runtime_lib_path}")
+                    endif()
+                    unset(_projt_cef_runtime_lib_path)
+                    unset(_projt_cef_runtime_nix_matches)
+                    unset(_projt_cef_runtime_nix_match)
+                    unset(_projt_cef_runtime_lib_matches_arch)
+                    unset(_projt_cef_runtime_search_name)
+                    unset(_projt_cef_runtime_search_names)
+                endforeach()
+                if(_projt_cef_runtime_link_libs)
+                    set_property(TARGET projt_cef_runtime APPEND PROPERTY
+                        INTERFACE_LINK_LIBRARIES "${_projt_cef_runtime_link_libs}")
+                endif()
+                if(NOT TARGET projt_cef_runtime_deps)
+                    add_library(projt_cef_runtime_deps INTERFACE)
+                endif()
+                if(_projt_cef_runtime_link_libs)
+                    target_link_libraries(projt_cef_runtime_deps INTERFACE ${_projt_cef_runtime_link_libs})
+                    set(_projt_cef_runtime_rpath_link_options "")
+                    foreach(_projt_cef_runtime_link_lib IN LISTS _projt_cef_runtime_link_libs)
+                        get_filename_component(_projt_cef_runtime_link_dir "${_projt_cef_runtime_link_lib}" DIRECTORY)
+                        list(APPEND _projt_cef_runtime_link_dirs "${_projt_cef_runtime_link_dir}")
+                    endforeach()
+                    list(REMOVE_DUPLICATES _projt_cef_runtime_link_dirs)
+                    foreach(_projt_cef_runtime_link_dir IN LISTS _projt_cef_runtime_link_dirs)
+                        list(APPEND _projt_cef_runtime_rpath_link_options "LINKER:-rpath-link,${_projt_cef_runtime_link_dir}")
+                    endforeach()
+                    if(_projt_cef_runtime_rpath_link_options)
+                        target_link_options(projt_cef_runtime_deps INTERFACE ${_projt_cef_runtime_rpath_link_options})
+                    endif()
+                    unset(_projt_cef_runtime_rpath_link_options)
+                    unset(_projt_cef_runtime_link_dir)
+                    unset(_projt_cef_runtime_link_dirs)
+                    unset(_projt_cef_runtime_link_lib)
+                endif()
+                set(PROJT_CEF_RUNTIME_LINK_LIBS ${_projt_cef_runtime_link_libs})
+                unset(_projt_cef_runtime_link_libs)
+                unset(_projt_cef_runtime_library_specs)
+                unset(_projt_cef_expected_elf_class)
+            endif()
         endif()
 
         target_include_directories(Launcher_logic PRIVATE ${CEF_INCLUDE_PATH})
         target_link_libraries(Launcher_logic
             libcef_dll_wrapper
             projt_cef_runtime
+            projt_cef_runtime_deps
+            ${PROJT_CEF_RUNTIME_LINK_LIBS}
             ${CEF_STANDARD_LIBS}
         )
+        if(PROJT_CEF_RUNTIME_LINK_LIBS)
+            list(REMOVE_DUPLICATES PROJT_CEF_RUNTIME_LINK_LIBS)
+            # Static libraries don't always re-export raw absolute .so paths in a
+            # way that reaches final executables on Nix, so publish them explicitly.
+            set_property(TARGET Launcher_logic APPEND PROPERTY
+                INTERFACE_LINK_LIBRARIES "${PROJT_CEF_RUNTIME_LINK_LIBS}")
+
+            set(_projt_cef_runtime_link_dirs "")
+            foreach(_projt_cef_runtime_link_lib IN LISTS PROJT_CEF_RUNTIME_LINK_LIBS)
+                get_filename_component(_projt_cef_runtime_link_dir "${_projt_cef_runtime_link_lib}" DIRECTORY)
+                list(APPEND _projt_cef_runtime_link_dirs "${_projt_cef_runtime_link_dir}")
+            endforeach()
+            list(REMOVE_DUPLICATES _projt_cef_runtime_link_dirs)
+            if(_projt_cef_runtime_link_dirs)
+                set_property(TARGET Launcher_logic APPEND PROPERTY
+                    BUILD_RPATH "${_projt_cef_runtime_link_dirs}")
+            endif()
+            unset(_projt_cef_runtime_link_dir)
+            unset(_projt_cef_runtime_link_lib)
+            unset(_projt_cef_runtime_link_dirs)
+        endif()
     endif()
 endif()
 

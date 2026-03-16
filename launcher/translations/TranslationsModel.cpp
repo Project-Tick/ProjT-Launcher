@@ -456,7 +456,10 @@ void TranslationsModel::reloadLocalFiles()
 	{
 		return;
 	}
-	beginInsertRows(QModelIndex(), 0, d->m_languages.size() + languages.size() - 1);
+	// New entries are sorted into the full list immediately, so a model reset is
+	// safer than advertising a contiguous append range that no longer exists
+	// after sorting.
+	beginResetModel();
 	for (auto& language : languages)
 	{
 		d->m_languages.append(language);
@@ -478,7 +481,7 @@ void TranslationsModel::reloadLocalFiles()
 				  }
 				  return a.languageName().toLower() < b.languageName().toLower();
 			  });
-	endInsertRows();
+	endResetModel();
 }
 
 namespace

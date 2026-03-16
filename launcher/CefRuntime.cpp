@@ -26,6 +26,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
+#include <QProcessEnvironment>
 #include <QStandardPaths>
 #include <QTimer>
 
@@ -41,6 +42,17 @@ namespace
 		{
 			command_line->AppendSwitch("disable-pinch");
 			command_line->AppendSwitch("disable-smooth-scrolling");
+
+			const bool enableGpu =
+				qEnvironmentVariableIntValue("PROJT_CEF_ENABLE_GPU") == 1 ||
+				qEnvironmentVariableIntValue("LAUNCHER_CEF_ENABLE_GPU") == 1;
+			if (!enableGpu)
+			{
+				command_line->AppendSwitch("disable-gpu");
+				command_line->AppendSwitch("disable-gpu-compositing");
+				command_line->AppendSwitch("disable-gpu-vsync");
+				command_line->AppendSwitch("disable-features", "VaapiVideoDecoder,Vulkan");
+			}
 		}
 
 		IMPLEMENT_REFCOUNTING(LauncherCefApp);

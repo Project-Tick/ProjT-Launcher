@@ -5,7 +5,11 @@ set(LAUNCHER_TESTS "")
 function(launcher_add_test source name)
     ecm_add_test(${source} LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
         TEST_NAME ${name})
+    if(TARGET projt_cef_runtime_deps)
+        target_link_libraries(${name} projt_cef_runtime_deps)
+    endif()
     list(APPEND LAUNCHER_TESTS ${name})
+    set_property(GLOBAL APPEND PROPERTY PROJT_LAUNCHER_TEST_TARGETS ${name})
     set(LAUNCHER_TESTS "${LAUNCHER_TESTS}" PARENT_SCOPE)
 endfunction()
 
