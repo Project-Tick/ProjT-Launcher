@@ -1,25 +1,46 @@
 {
   addDriverRunpath,
   alsa-lib,
+  atk,
+  at-spi2-atk,
+  cairo,
+  cups,
+  dbus,
+  expat,
+  fontconfig,
   flite,
+  freetype,
   gamemode,
+  gdk-pixbuf,
   glfw3-minecraft,
   jdk17,
   jdk21,
   jdk8,
   kdePackages,
+  glib,
+  gtk3,
+  harfbuzz,
   lib,
   libGL,
   libX11,
+  libXcomposite,
   libXcursor,
+  libXdamage,
   libXext,
+  libXfixes,
   libXrandr,
   libXxf86vm,
+  libxcb,
+  libxkbcommon,
   libjack2,
   libpulseaudio,
   libusb1,
   mesa-demos,
+  mesa,
+  nspr,
+  nss,
   openal,
+  pango,
   pciutils,
   pipewire,
   projtlauncher-unwrapped,
@@ -27,6 +48,7 @@
   symlinkJoin,
   udev,
   vulkan-loader,
+  xorg,
   xrandr,
 
   additionalLibs ? [ ],
@@ -88,13 +110,37 @@ symlinkJoin {
         libpulseaudio
         pipewire
 
+        ## CEF
+        atk
+        at-spi2-atk
+        cairo
+        cups
+        dbus
+        expat
+        fontconfig
+        freetype
+        gdk-pixbuf
+        glib
+        gtk3
+        harfbuzz
+        libxcb
+        libxkbcommon
+        mesa
+        nspr
+        nss
+        pango
+
         ## glfw
         libGL
         libX11
+        libXcomposite
         libXcursor
+        libXdamage
         libXext
+        libXfixes
         libXrandr
         libXxf86vm
+        xorg.xcbutilcursor
 
         udev # oshi
 
@@ -115,7 +161,7 @@ symlinkJoin {
     in
     [ "--prefix PROJTLAUNCHER_JAVA_PATHS : ${lib.makeSearchPath "bin/java" jdks}" ]
     ++ lib.optionals stdenv.hostPlatform.isLinux [
-      "--set LD_LIBRARY_PATH ${addDriverRunpath.driverLink}/lib:${lib.makeLibraryPath runtimeLibs}"
+      "--set LD_LIBRARY_PATH ${projtlauncher'}/lib/projtlauncher:${projtlauncher'}/lib:${addDriverRunpath.driverLink}/lib:${lib.makeLibraryPath runtimeLibs}"
       "--prefix PATH : ${lib.makeBinPath runtimePrograms}"
     ];
 

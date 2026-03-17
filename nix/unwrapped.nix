@@ -1,18 +1,38 @@
 {
+  alsa-lib,
+  atk,
+  at-spi2-atk,
+  cairo,
+  fetchzip,
   lib,
+  libcap,
   stdenv,
   cmake,
   apple-sdk_14,
+  cups,
+  dbus,
+  expat,
   extra-cmake-modules,
   gamemode,
+  glib,
   inih,
   jdk17,
   kdePackages,
+  libxcb,
+  libxkbcommon,
   ninja,
+  nspr,
+  nss,
+  mesa,
   self,
   stripJavaArchivesHook,
+  systemd,
+  xorg,
   msaClientID ? null,
   gamemodeSupport ? stdenv.hostPlatform.isLinux,
+  cefVersion ? "144.0.11+ge135be2+chromium-144.0.7559.97",
+  cefDistribution ? "minimal",
+  cefHash ? if stdenv.hostPlatform.system == "x86_64-linux" then "sha256-gdwTnWfOJ7O/9c5uPa2OWvzeD4O0COyzg2qMOy7JknU=" else null,
 }:
 assert lib.assertMsg (
   gamemodeSupport -> stdenv.hostPlatform.isLinux
@@ -35,6 +55,32 @@ let
       ]
     else
       "unknown";
+
+  cefBinaryPlatform =
+    if stdenv.hostPlatform.system == "x86_64-linux" then
+      "linux64"
+    else if stdenv.hostPlatform.system == "aarch64-linux" then
+      "linuxarm64"
+    else
+      null;
+
+  cefRootDir =
+    if cefBinaryPlatform != null then
+      "cef_binary_${cefVersion}_${cefBinaryPlatform}_${cefDistribution}"
+    else
+      null;
+
+  cefBinary =
+    if stdenv.hostPlatform.isLinux then
+      assert lib.assertMsg (cefBinaryPlatform != null) "No packaged Linux CEF binary platform is configured for ${stdenv.hostPlatform.system}.";
+      assert lib.assertMsg (cefHash != null) "No Linux CEF hash is configured for ${stdenv.hostPlatform.system}. Pass `cefHash` when calling `projtlauncher-unwrapped`.";
+      fetchzip {
+        url = "https://cef-builds.spotifycdn.com/${cefRootDir}.tar.bz2";
+        hash = cefHash;
+        stripRoot = false;
+      }
+    else
+      null;
 in
 
 stdenv.mkDerivation {
@@ -103,17 +149,48 @@ stdenv.mkDerivation {
     inih
     kdePackages.qtbase
     kdePackages.qtnetworkauth
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isDarwin [
     kdePackages.qtwebchannel
     kdePackages.qtwebengine
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isLinux [
+    alsa-lib
+    atk
+    at-spi2-atk
+    cairo
+    cups
+    dbus
+    expat
+    glib
+    libcap
+    libxcb
+    libxkbcommon
+    mesa
+    nspr
+    nss
+    systemd
+    xorg.libX11
+    xorg.libXcomposite
+    xorg.libXdamage
+    xorg.libXext
+    xorg.libXfixes
+    xorg.libXrandr
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk_14 ]
   ++ lib.optional gamemodeSupport gamemode;
 
-  hardeningEnable = lib.optionals stdenv.hostPlatform.isLinux [ "pie" ];
-
   cmakeFlags = [
     # downstream branding
+    (lib.cmakeBool "BUILD_TESTING" false)
     (lib.cmakeFeature "Launcher_BUILD_PLATFORM" "nixpkgs")
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isLinux [
+    (lib.cmakeBool "Launcher_CEF_AUTO_DOWNLOAD" false)
+    (lib.cmakeFeature "Launcher_CEF_ROOT" "${cefBinary}/${cefRootDir}")
+    (lib.cmakeFeature "GAMEMODE_WITH_SYSTEMD_USER_UNIT_DIR" "lib/systemd/user")
+    (lib.cmakeFeature "GAMEMODE_WITH_SYSTEMD_GROUP_DIR" "lib/sysusers.d")
+    (lib.cmakeFeature "GAMEMODE_WITH_PAM_LIMITS_DIR" "etc/security/limits.d")
   ]
   ++ lib.optionals (msaClientID != null) [
     (lib.cmakeFeature "Launcher_MSA_CLIENT_ID" (toString msaClientID))

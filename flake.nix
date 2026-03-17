@@ -123,7 +123,10 @@
           default = pkgs.mkShell {
             name = "projt-launcher";
 
-            inputsFrom = [ packages'.projtlauncher-unwrapped ];
+            inputsFrom = [
+              packages'.projtlauncher-unwrapped
+              packages'.projtlauncher
+            ];
 
             packages = with pkgs; [
               ccache

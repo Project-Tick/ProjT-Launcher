@@ -1412,27 +1412,53 @@ if(DEFINED ENV{Launcher_CEF_DOWNLOAD_SHA256} AND NOT "$ENV{Launcher_CEF_DOWNLOAD
 elseif(DEFINED ENV{CEF_DOWNLOAD_SHA256} AND NOT "$ENV{CEF_DOWNLOAD_SHA256}" STREQUAL "")
     set(_Launcher_CEF_DOWNLOAD_SHA256_DEFAULT "$ENV{CEF_DOWNLOAD_SHA256}")
 endif()
+set(_Launcher_CEF_TARGET_ARCH_DEFAULT "")
+set(_Launcher_CEF_BINARY_PLATFORM_DEFAULT "")
+if(DEFINED ENV{Launcher_CEF_TARGET_ARCH} AND NOT "$ENV{Launcher_CEF_TARGET_ARCH}" STREQUAL "")
+    set(_Launcher_CEF_TARGET_ARCH_DEFAULT "$ENV{Launcher_CEF_TARGET_ARCH}")
+elseif(DEFINED ENV{CEF_TARGET_ARCH} AND NOT "$ENV{CEF_TARGET_ARCH}" STREQUAL "")
+    set(_Launcher_CEF_TARGET_ARCH_DEFAULT "$ENV{CEF_TARGET_ARCH}")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$")
+    set(_Launcher_CEF_TARGET_ARCH_DEFAULT "x64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+    set(_Launcher_CEF_TARGET_ARCH_DEFAULT "arm64")
+endif()
+if(DEFINED ENV{Launcher_CEF_BINARY_PLATFORM} AND NOT "$ENV{Launcher_CEF_BINARY_PLATFORM}" STREQUAL "")
+    set(_Launcher_CEF_BINARY_PLATFORM_DEFAULT "$ENV{Launcher_CEF_BINARY_PLATFORM}")
+elseif(DEFINED ENV{CEF_BINARY_PLATFORM} AND NOT "$ENV{CEF_BINARY_PLATFORM}" STREQUAL "")
+    set(_Launcher_CEF_BINARY_PLATFORM_DEFAULT "$ENV{CEF_BINARY_PLATFORM}")
+elseif(_Launcher_CEF_TARGET_ARCH_DEFAULT STREQUAL "x64")
+    set(_Launcher_CEF_BINARY_PLATFORM_DEFAULT "linux64")
+elseif(_Launcher_CEF_TARGET_ARCH_DEFAULT STREQUAL "arm64")
+    set(_Launcher_CEF_BINARY_PLATFORM_DEFAULT "linuxarm64")
+endif()
 set(Launcher_CEF_ROOT "" CACHE PATH "Path to the CEF binary distribution root used for the Linux Hub backend")
 option(Launcher_CEF_AUTO_DOWNLOAD "Automatically download Linux CEF when Launcher_CEF_ROOT is not set" ON)
 option(Launcher_CEF_BUILD_FROM_SOURCE "Build Linux CEF from source before configuring the launcher" ${_Launcher_CEF_BUILD_FROM_SOURCE_DEFAULT})
 set(Launcher_CEF_VERSION "${_Launcher_CEF_VERSION_DEFAULT}" CACHE STRING "Linux CEF version string used to build the default download URL")
 set(Launcher_CEF_SOURCE_BRANCH "${_Launcher_CEF_SOURCE_BRANCH_DEFAULT}" CACHE STRING "CEF source branch used when building Linux CEF from source")
 set(Launcher_CEF_DISTRIBUTION "${_Launcher_CEF_DISTRIBUTION_DEFAULT}" CACHE STRING "Linux CEF distribution flavor used when constructing the default download URL")
+set(Launcher_CEF_TARGET_ARCH "${_Launcher_CEF_TARGET_ARCH_DEFAULT}" CACHE STRING "CEF target architecture used for Linux source builds")
+set(Launcher_CEF_BINARY_PLATFORM "${_Launcher_CEF_BINARY_PLATFORM_DEFAULT}" CACHE STRING "CEF Linux binary platform suffix used when constructing default download URLs")
 set(Launcher_CEF_DOWNLOAD_URL "${_Launcher_CEF_DOWNLOAD_URL_DEFAULT}" CACHE STRING "URL to a Linux CEF binary distribution archive")
 set(Launcher_CEF_DOWNLOAD_SHA256 "${_Launcher_CEF_DOWNLOAD_SHA256_DEFAULT}" CACHE STRING "Optional SHA256 for Launcher_CEF_DOWNLOAD_URL")
 set(Launcher_CEF_DOWNLOAD_DIR "${CMAKE_BINARY_DIR}/downloads/cef" CACHE PATH "Directory used to download and extract the Linux CEF archive")
 set(Launcher_CEF_SOURCE_DOWNLOAD_DIR "${CMAKE_BINARY_DIR}/cef-source" CACHE PATH "Directory used for Linux CEF source checkouts and builds")
 set(Launcher_CEF_SOURCE_SCRIPT "${CMAKE_SOURCE_DIR}/scripts/build-cef-from-source.sh" CACHE FILEPATH "Script used to build Linux CEF from source")
 option(Launcher_CEF_SOURCE_INSTALL_BUILD_DEPS "Run Chromium's Linux build-deps script during CEF source builds" OFF)
-if(Launcher_CEF_DOWNLOAD_URL STREQUAL "" AND NOT Launcher_CEF_VERSION STREQUAL "")
+if(Launcher_CEF_DOWNLOAD_URL STREQUAL "" AND NOT Launcher_CEF_VERSION STREQUAL "" AND NOT Launcher_CEF_BINARY_PLATFORM STREQUAL "")
     set(Launcher_CEF_DOWNLOAD_URL
-        "https://cef-builds.spotifycdn.com/cef_binary_${Launcher_CEF_VERSION}_linux64_${Launcher_CEF_DISTRIBUTION}.tar.bz2"
+        "https://cef-builds.spotifycdn.com/cef_binary_${Launcher_CEF_VERSION}_${Launcher_CEF_BINARY_PLATFORM}_${Launcher_CEF_DISTRIBUTION}.tar.bz2"
         CACHE STRING "URL to a Linux CEF binary distribution archive" FORCE)
+elseif(Launcher_CEF_DOWNLOAD_URL STREQUAL "" AND NOT Launcher_CEF_VERSION STREQUAL "")
+    message(STATUS "No default Linux CEF binary platform mapping for architecture ${CMAKE_SYSTEM_PROCESSOR}; set Launcher_CEF_DOWNLOAD_URL or Launcher_CEF_ROOT explicitly.")
 endif()
 unset(_Launcher_CEF_BUILD_FROM_SOURCE_DEFAULT)
 unset(_Launcher_CEF_VERSION_DEFAULT)
 unset(_Launcher_CEF_SOURCE_BRANCH_DEFAULT)
 unset(_Launcher_CEF_DISTRIBUTION_DEFAULT)
+unset(_Launcher_CEF_TARGET_ARCH_DEFAULT)
+unset(_Launcher_CEF_BINARY_PLATFORM_DEFAULT)
 unset(_Launcher_CEF_DOWNLOAD_URL_DEFAULT)
 unset(_Launcher_CEF_DOWNLOAD_SHA256_DEFAULT)
 if(MINGW)
@@ -1539,12 +1565,15 @@ if(LAUNCHER_USE_CEF)
                     "${CMAKE_SOURCE_DIR}/third_party/cef"
                     "${CMAKE_SOURCE_DIR}/vendor/cef"
                 )
-                file(GLOB _projt_cef_glob_candidates LIST_DIRECTORIES true
-                    "${CMAKE_SOURCE_DIR}/dependencies/cef_binary_*_linux64*"
-                    "${CMAKE_SOURCE_DIR}/third_party/cef_binary_*_linux64*"
-                    "${CMAKE_SOURCE_DIR}/vendor/cef_binary_*_linux64*"
-                    "/tmp/cef-sdk/extracted/cef_binary_*_linux64*"
-                )
+                set(_projt_cef_glob_candidates "")
+                if(NOT Launcher_CEF_BINARY_PLATFORM STREQUAL "")
+                    file(GLOB _projt_cef_glob_candidates LIST_DIRECTORIES true
+                        "${CMAKE_SOURCE_DIR}/dependencies/cef_binary_*_${Launcher_CEF_BINARY_PLATFORM}*"
+                        "${CMAKE_SOURCE_DIR}/third_party/cef_binary_*_${Launcher_CEF_BINARY_PLATFORM}*"
+                        "${CMAKE_SOURCE_DIR}/vendor/cef_binary_*_${Launcher_CEF_BINARY_PLATFORM}*"
+                        "/tmp/cef-sdk/extracted/cef_binary_*_${Launcher_CEF_BINARY_PLATFORM}*"
+                    )
+                endif()
                 list(APPEND _projt_cef_root_candidates ${_projt_cef_glob_candidates})
                 foreach(_projt_cef_candidate ${_projt_cef_root_candidates})
                     if(EXISTS "${_projt_cef_candidate}/cmake/FindCEF.cmake" AND EXISTS "${_projt_cef_candidate}/Release/libcef.so")
@@ -1572,6 +1601,8 @@ if(LAUNCHER_USE_CEF)
                         "LAUNCHER_CEF_VERSION=${Launcher_CEF_VERSION}"
                         "LAUNCHER_CEF_DISTRIBUTION=${Launcher_CEF_DISTRIBUTION}"
                         "LAUNCHER_CEF_SOURCE_BRANCH=${Launcher_CEF_SOURCE_BRANCH}"
+                        "LAUNCHER_CEF_TARGET_ARCH=${Launcher_CEF_TARGET_ARCH}"
+                        "LAUNCHER_CEF_BINARY_PLATFORM=${Launcher_CEF_BINARY_PLATFORM}"
                         "LAUNCHER_CEF_SOURCE_DOWNLOAD_DIR=${Launcher_CEF_SOURCE_DOWNLOAD_DIR}"
                         "LAUNCHER_CEF_SOURCE_OUT_FILE=${_projt_cef_source_root_file}"
                         "LAUNCHER_CEF_INSTALL_BUILD_DEPS=${Launcher_CEF_SOURCE_INSTALL_BUILD_DEPS}"
@@ -1654,10 +1685,16 @@ if(LAUNCHER_USE_CEF)
                     endif()
 
                     set(_projt_cef_download_candidates "${_projt_cef_extract_dir}")
-                    file(GLOB _projt_cef_download_glob LIST_DIRECTORIES true
-                        "${_projt_cef_extract_dir}/cef_binary_*_linux64*"
-                        "${_projt_cef_extract_dir}/*"
-                    )
+                    if(NOT Launcher_CEF_BINARY_PLATFORM STREQUAL "")
+                        file(GLOB _projt_cef_download_glob LIST_DIRECTORIES true
+                            "${_projt_cef_extract_dir}/cef_binary_*_${Launcher_CEF_BINARY_PLATFORM}*"
+                            "${_projt_cef_extract_dir}/*"
+                        )
+                    else()
+                        file(GLOB _projt_cef_download_glob LIST_DIRECTORIES true
+                            "${_projt_cef_extract_dir}/*"
+                        )
+                    endif()
                     list(APPEND _projt_cef_download_candidates ${_projt_cef_download_glob})
                     foreach(_projt_cef_candidate ${_projt_cef_download_candidates})
                         if(EXISTS "${_projt_cef_candidate}/cmake/FindCEF.cmake" AND EXISTS "${_projt_cef_candidate}/Release/libcef.so")
