@@ -111,6 +111,15 @@ PTLIBZIPPY_0.0.5.1 {
 	compress2_z;
 	uncompress_z;
 	uncompress2_z;
+    ptpng_adler32;
+    ptpng_crc32;
+    ptpng_deflate;
+    ptpng_deflateInit2_;
+    ptpng_deflateReset;
+    ptpng_inflate;
+    ptpng_inflateInit2_;
+    ptpng_inflateReset;
+    ptpng_inflateReset2;
   local:
     inflate_fixed;
 } PTLIBZIPPY_1.3.1.2;

@@ -139,6 +139,7 @@ set(PTLIBZIPPY_SRCS
     infback.c
     inftrees.c
     inffast.c
+    ptlibzippy_pngshim.c
     trees.c
     uncompr.c
     ptzippyutil.c)
