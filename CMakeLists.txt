@@ -740,9 +740,6 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
             set(PTLIBZIPPY_BUILD_STATIC ON CACHE BOOL "" FORCE)
             message(STATUS "Fuzzing build: Building ptlibzippy as static library only")
         endif()
-        # Prefix bundled ptlibzippy symbols so libpng/Qt cannot accidentally
-        # resolve inflate/deflate entry points from a host zlib at runtime.
-        set(PTLIBZIPPY_PREFIX ON CACHE BOOL "" FORCE)
         # Disable instrumentation for external dependencies to avoid linker issues
         # IMPORTANT: Save and restore flags to prevent interference with fuzzer compilation
         set(_SAVED_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
@@ -859,6 +856,21 @@ if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND NOT APPLE)
         add_subdirectory(libpng)
         projt_pop_autogen_disabled()
         projt_pop_output_dirs()
+        foreach(_projt_png_target png_shared png_static png_framework)
+            if(TARGET ${_projt_png_target})
+                target_compile_definitions(
+                    ${_projt_png_target}
+                    PRIVATE adler32=ptpng_adler32
+                            crc32=ptpng_crc32
+                            deflate=ptpng_deflate
+                            deflateInit2_=ptpng_deflateInit2_
+                            deflateReset=ptpng_deflateReset
+                            inflate=ptpng_inflate
+                            inflateInit2_=ptpng_inflateInit2_
+                            inflateReset=ptpng_inflateReset
+                            inflateReset2=ptpng_inflateReset2)
+            endif()
+        endforeach()
         if(UNIX AND NOT APPLE)
             if(DEFINED Launcher_BUNDLED_INCLUDEDIR AND NOT Launcher_BUNDLED_INCLUDEDIR STREQUAL "")
                 projt_pop_install_includedir()
