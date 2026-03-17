@@ -740,6 +740,9 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
             set(PTLIBZIPPY_BUILD_STATIC ON CACHE BOOL "" FORCE)
             message(STATUS "Fuzzing build: Building ptlibzippy as static library only")
         endif()
+        # Prefix bundled ptlibzippy symbols so libpng/Qt cannot accidentally
+        # resolve inflate/deflate entry points from a host zlib at runtime.
+        set(PTLIBZIPPY_PREFIX ON CACHE BOOL "" FORCE)
         # Disable instrumentation for external dependencies to avoid linker issues
         # IMPORTANT: Save and restore flags to prevent interference with fuzzer compilation
         set(_SAVED_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
