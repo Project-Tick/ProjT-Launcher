@@ -1957,6 +1957,20 @@ if(LAUNCHER_USE_CEF AND UNIX AND NOT APPLE)
                 "$<TARGET_FILE_DIR:${Launcher_Name}>/${_cef_binary}"
             VERBATIM
         )
+
+        # linuxdeploy scans the installed AppDir, so CEF runtime files must be
+        # installed next to the launcher binary as well as copied into the build tree.
+        get_filename_component(_cef_binary_name "${_cef_binary}" NAME)
+        if(_cef_binary_name STREQUAL "chrome-sandbox")
+            install(PROGRAMS "${CEF_BINARY_DIR_RELEASE}/${_cef_binary}"
+                DESTINATION ${BINARY_DEST_DIR}
+                COMPONENT Runtime)
+        else()
+            install(FILES "${CEF_BINARY_DIR_RELEASE}/${_cef_binary}"
+                DESTINATION ${BINARY_DEST_DIR}
+                COMPONENT Runtime)
+        endif()
+        unset(_cef_binary_name)
     endforeach()
     foreach(_cef_resource ${CEF_RESOURCE_FILES})
         if(IS_DIRECTORY "${CEF_RESOURCE_DIR}/${_cef_resource}")
@@ -1968,6 +1982,11 @@ if(LAUNCHER_USE_CEF AND UNIX AND NOT APPLE)
                     "$<TARGET_FILE_DIR:${Launcher_Name}>/${_cef_resource}"
                 VERBATIM
             )
+
+            install(DIRECTORY "${CEF_RESOURCE_DIR}/${_cef_resource}"
+                DESTINATION ${BINARY_DEST_DIR}
+                USE_SOURCE_PERMISSIONS
+                COMPONENT Runtime)
         else()
             add_custom_command(
                 TARGET ${Launcher_Name}
@@ -1977,6 +1996,10 @@ if(LAUNCHER_USE_CEF AND UNIX AND NOT APPLE)
                     "$<TARGET_FILE_DIR:${Launcher_Name}>/${_cef_resource}"
                 VERBATIM
             )
+
+            install(FILES "${CEF_RESOURCE_DIR}/${_cef_resource}"
+                DESTINATION ${BINARY_DEST_DIR}
+                COMPONENT Runtime)
         endif()
     endforeach()
 endif()
