@@ -755,7 +755,11 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib/CMakeLists.txt")
         set(PTLIBZIPPY_BUILD_SHARED ON CACHE BOOL "" FORCE)
         set(PTLIBZIPPY_BUILD_STATIC ON CACHE BOOL "" FORCE)
         endif()
-        
+        # Keep the bundled build ABI-compatible with the upstream zlib-style
+        # API. Prefixing breaks the bundled zlib example targets and is not
+        # needed now that libpng uses dedicated shim symbols.
+        set(PTLIBZIPPY_PREFIX OFF CACHE BOOL "" FORCE)
+
         # For OSS-Fuzz: Strip sanitizer flags from zlib build to avoid symbol conflicts
         if(DEFINED ENV{LIB_FUZZING_ENGINE})
             string(REGEX REPLACE "-fsanitize=[^ ]*" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
