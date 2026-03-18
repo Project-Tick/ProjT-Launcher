@@ -182,16 +182,22 @@ int IconPickerDialog::execWithSelection(QString selection)
 
 	int index_nr	 = list->getIconIndex(selection);
 	auto model_index = list->index(index_nr);
-	contentsWidget->selectionModel()->select(model_index, QItemSelectionModel::Current | QItemSelectionModel::Select);
+	auto proxyIndex	 = proxyModel->mapFromSource(model_index);
 
-	QMetaObject::invokeMethod(this, "delayed_scroll", Qt::QueuedConnection, Q_ARG(QModelIndex, model_index));
+	if (proxyIndex.isValid())
+	{
+		contentsWidget->selectionModel()->select(proxyIndex, QItemSelectionModel::Current | QItemSelectionModel::Select);
+		QMetaObject::invokeMethod(this, "delayed_scroll", Qt::QueuedConnection, Q_ARG(QModelIndex, proxyIndex));
+	}
 	return QDialog::exec();
 }
 
-void IconPickerDialog::delayed_scroll(QModelIndex model_index)
+void IconPickerDialog::delayed_scroll(QModelIndex proxy_index)
 {
-	auto contentsWidget = ui->iconView;
-	contentsWidget->scrollTo(model_index);
+	if (proxy_index.isValid())
+	{
+		ui->iconView->scrollTo(proxy_index);
+	}
 }
 
 IconPickerDialog::~IconPickerDialog()
