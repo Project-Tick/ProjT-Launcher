@@ -367,6 +367,10 @@ QString AssetObject::getLocalPath() const
 QUrl AssetObject::getUrl() const
 {
 	auto resourceURL = APPLICATION->settings()->get("ResourceURL").toString();
+	if (resourceURL.isEmpty())
+	{
+		resourceURL = BuildConfig.DEFAULT_RESOURCE_BASE;
+	}
 	return resourceURL + getRelPath();
 }
 

@@ -55,11 +55,11 @@ void CapeListModel::loadFromAccount(MinecraftAccountPtr account, const QString& 
 
 	// Add "No Cape" option first
 	CapeInfo noCape;
-	noCape.id	  = QString();
+	noCape.id	  = "no_cape";
 	noCape.alias  = tr("No Cape");
 	noCape.loaded = true;
 	m_capes.append(noCape);
-	m_capeIndexMap[QString()] = 0;
+	m_capeIndexMap["no_cape"] = 0;
 
 	// Add all available capes
 	int index = 1;
@@ -168,7 +168,7 @@ void CapeListModel::onDownloadSucceeded()
 	// Load all downloaded capes
 	for (auto& cape : m_capes)
 	{
-		if (!cape.loaded && !cape.id.isEmpty())
+		if (!cape.loaded && !cape.id.isEmpty() && cape.id != "no_cape")
 		{
 			loadCapeFromDisk(cape.id);
 			if (m_capeImages.contains(cape.id))
@@ -201,7 +201,12 @@ QImage CapeListModel::getCapeImage(const QString& capeId) const
 
 int CapeListModel::findCapeIndex(const QString& capeId) const
 {
-	return m_capeIndexMap.value(capeId, -1);
+	QString id = capeId;
+	if (id.isEmpty())
+	{
+		id = "no_cape";
+	}
+	return m_capeIndexMap.value(id, -1);
 }
 
 QString CapeListModel::capeIdAt(int index) const

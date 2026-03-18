@@ -23,6 +23,7 @@
 
 #include <QAbstractOAuth2>
 #include <QCoreApplication>
+#include <QFileInfo>
 #include <QNetworkRequest>
 #include <QOAuthHttpServerReplyHandler>
 #include <QOAuthOobReplyHandler>
@@ -67,7 +68,15 @@ namespace projt::minecraft::auth
 		};
 
 		/**
-		 * Check if the custom URL scheme handler is registered with the OS.
+		 * Check if the custom URL scheme handler is registered with the OS AND
+		 * that the registered handler points to the currently running binary.
+		 *
+		 * This is important when multiple builds of the launcher coexist on the same
+		 * machine (e.g. an installed release and a locally compiled dev build).
+		 * If the registered handler points to a *different* binary, the OAuth callback
+		 * URL would be intercepted by that other instance instead of the current one,
+		 * causing the login flow to fail silently. In that case we fall back to the
+		 * HTTP loopback server handler which is always self-contained.
 		 */
 		[[nodiscard]] bool isCustomSchemeRegistered()
 		{
@@ -79,12 +88,72 @@ namespace projt::minecraft::auth
 							QStringLiteral("x-scheme-handler/") + BuildConfig.LAUNCHER_APP_BINARY_NAME });
 			process.waitForFinished();
 			const QString output = process.readAllStandardOutput().trimmed();
-			return output.contains(BuildConfig.LAUNCHER_APP_BINARY_NAME);
+			if (!output.contains(BuildConfig.LAUNCHER_APP_BINARY_NAME))
+				return false;
+
+			// Also verify the registered .desktop entry resolves to our own binary.
+			// xdg-mime returns something like "projtlauncher.desktop"; locate it and
+			// read the Exec= line to compare against our own executable path.
+			const QString desktopFileName = output.section(QLatin1Char('\n'), 0, 0).trimmed();
+			const QStringList dataDirs = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
+			for (const QString& dataDir : dataDirs)
+			{
+				const QString desktopPath = dataDir + QStringLiteral("/applications/") + desktopFileName;
+				QSettings desktopFile(desktopPath, QSettings::IniFormat);
+				desktopFile.beginGroup(QStringLiteral("Desktop Entry"));
+				const QString execLine = desktopFile.value(QStringLiteral("Exec")).toString();
+				desktopFile.endGroup();
+				if (execLine.isEmpty())
+					continue;
+				// Exec= may contain %U or similar; take only the binary part.
+				const QString registeredBin = execLine.section(QLatin1Char(' '), 0, 0);
+				const QFileInfo currentBin(QCoreApplication::applicationFilePath());
+				const QFileInfo registeredBinInfo(registeredBin);
+				if (registeredBinInfo.canonicalFilePath() == currentBin.canonicalFilePath())
+					return true;
+				// Registered handler is a different binary → do not use custom scheme.
+				qDebug() << "Custom URL scheme is registered for a different binary ("
+						 << registeredBin << ") — falling back to HTTP loopback handler.";
+				return false;
+			}
+			return true; // Could not verify; assume it's ours.
 #elif defined(Q_OS_WIN)
 			const QString regPath =
 				QStringLiteral("HKEY_CURRENT_USER\\Software\\Classes\\%1").arg(BuildConfig.LAUNCHER_APP_BINARY_NAME);
 			const QSettings settings(regPath, QSettings::NativeFormat);
-			return settings.contains(QStringLiteral("shell/open/command/."));
+			if (!settings.contains(QStringLiteral("shell/open/command/.")))
+				return false;
+
+			// Verify that the registered command actually points to this binary.
+			// The registry value looks like: "C:\path\to\launcher.exe" "%1"
+			QString registeredCmd = settings.value(QStringLiteral("shell/open/command/.")).toString();
+			// Strip surrounding quotes from the executable portion.
+			if (registeredCmd.startsWith(QLatin1Char('"')))
+			{
+				registeredCmd = registeredCmd.mid(1);
+				const int closeQuote = registeredCmd.indexOf(QLatin1Char('"'));
+				if (closeQuote >= 0)
+					registeredCmd = registeredCmd.left(closeQuote);
+			}
+			else
+			{
+				// No quotes — executable ends at the first space.
+				const int spaceIdx = registeredCmd.indexOf(QLatin1Char(' '));
+				if (spaceIdx >= 0)
+					registeredCmd = registeredCmd.left(spaceIdx);
+			}
+
+			const QFileInfo currentBin(QCoreApplication::applicationFilePath());
+			const QFileInfo registeredBin(registeredCmd);
+			if (registeredBin.canonicalFilePath().compare(currentBin.canonicalFilePath(),
+														   Qt::CaseInsensitive) == 0)
+				return true;
+
+			// The URL scheme is registered, but for a different launcher binary.
+			// Fall back to the HTTP loopback handler so our OAuth callback reaches us.
+			qDebug() << "Custom URL scheme is registered for a different binary ("
+					 << registeredCmd << ") — falling back to HTTP loopback handler.";
+			return false;
 #else
 			return true;
 #endif

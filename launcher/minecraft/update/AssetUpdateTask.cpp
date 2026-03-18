@@ -95,11 +95,11 @@ void AssetUpdateTask::assetIndexFinished()
 	auto job = index.getDownloadJob();
 	if (job)
 	{
-		QString resourceURL = APPLICATION->settings()->get("ResourceURL").toString();
-		QString source		= tr("Mojang");
-		if (resourceURL != BuildConfig.DEFAULT_RESOURCE_BASE)
+		QString resourceURLStr = APPLICATION->settings()->get("ResourceURL").toString();
+		QString source		   = tr("Mojang");
+		if (!resourceURLStr.isEmpty() && resourceURLStr != BuildConfig.DEFAULT_RESOURCE_BASE)
 		{
-			source = QUrl(resourceURL).host();
+			source = QUrl(resourceURLStr).host();
 		}
 		setStatus(tr("Getting the asset files from %1...").arg(source));
 		downloadJob = job;

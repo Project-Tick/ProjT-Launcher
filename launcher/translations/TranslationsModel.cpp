@@ -641,6 +641,9 @@ bool TranslationsModel::selectLanguage(QString key)
 									? QString::fromStdString(std::locale().name())
 									: langCode));
 
+	// Update the layout direction for RTL languages like Arabic
+	qApp->setLayoutDirection(QLocale(langCode).textDirection());
+
 	// if it's the default UI language, finish
 	if (langCode == defaultLangCode)
 	{

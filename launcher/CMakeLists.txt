@@ -1728,6 +1728,8 @@ if(LAUNCHER_USE_CEF)
 
         list(APPEND CMAKE_MODULE_PATH "${Launcher_CEF_ROOT}/cmake")
         set(CEF_ROOT "${Launcher_CEF_ROOT}")
+        set(CEF_TARGET_ARCH "${Launcher_CEF_TARGET_ARCH}")
+        set(PROJECT_ARCH "${Launcher_CEF_TARGET_ARCH}")
         find_package(CEF REQUIRED)
 
         if(NOT EXISTS "${CEF_LIB_DEBUG}")

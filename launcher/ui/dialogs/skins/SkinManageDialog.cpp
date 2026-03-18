@@ -167,7 +167,23 @@ void SkinManageDialog::selectionChanged(QItemSelection selected, [[maybe_unused]
 		return;
 
 	m_skinPreview->updateScene(skin);
-	m_ui->capeCombo->setCurrentIndex(m_capesIdx.value(skin->getCapeId()));
+
+	QString capeId = skin->getCapeId();
+	int capeIndex  = 0;
+	if (capeId.isEmpty())
+	{
+		capeIndex = m_capeModel->findCapeIndex("no_cape");
+	}
+	else
+	{
+		capeIndex = m_capeModel->findCapeIndex(capeId);
+	}
+
+	if (capeIndex >= 0)
+	{
+		m_ui->capeCombo->setCurrentIndex(capeIndex);
+	}
+
 	m_ui->steveBtn->setChecked(skin->getModel() == SkinModel::CLASSIC);
 	m_ui->alexBtn->setChecked(skin->getModel() == SkinModel::SLIM);
 }
@@ -224,6 +240,7 @@ void SkinManageDialog::setupCapes()
 {
 	// Create the cape model with on-demand loading support
 	m_capeModel = new CapeListModel(this);
+	m_ui->capeCombo->setModel(m_capeModel);
 
 	// Connect signals for async loading
 	connect(m_capeModel, &CapeListModel::loadingFinished, this, &SkinManageDialog::onCapesLoaded);
@@ -232,16 +249,11 @@ void SkinManageDialog::setupCapes()
 			this,
 			[this](const QString& capeId)
 			{
-				// Update combo box icon when a cape image is loaded
-				if (m_capesIdx.contains(capeId))
+				// Cache image for instant preview if needed
+				QImage capeImage = m_capeModel->getCapeImage(capeId);
+				if (!capeImage.isNull())
 				{
-					int comboIdx	 = m_capesIdx[capeId];
-					QImage capeImage = m_capeModel->getCapeImage(capeId);
-					if (!capeImage.isNull())
-					{
-						m_capes[capeId] = capeImage;
-						m_ui->capeCombo->setItemIcon(comboIdx, previewCape(capeImage, m_ui->elytraCB->isChecked()));
-					}
+					m_capes[capeId] = capeImage;
 				}
 			});
 
@@ -251,43 +263,36 @@ void SkinManageDialog::setupCapes()
 
 void SkinManageDialog::onCapesLoaded()
 {
-	// Clear and repopulate combo box
-	m_ui->capeCombo->clear();
-	m_ui->capeCombo->addItem(tr("No Cape"), QVariant());
-
 	auto& accountData = *m_acct->accountData();
 	auto currentCape  = accountData.minecraftProfile.currentCape;
-	int currentIndex  = 0;
 
-	// Populate from model
+	// Populate local cache for all available capes from model
 	int rowCount = m_capeModel->rowCount();
-	for (int i = 0; i < rowCount; ++i)
+	for (int i = 0; i < rowCount; i++)
 	{
-		QModelIndex idx	  = m_capeModel->index(i, 0);
-		QString capeId	  = m_capeModel->data(idx, CapeListModel::CapeIdRole).toString();
-		QString capeAlias = m_capeModel->data(idx, CapeListModel::CapeAliasRole).toString();
-		QImage capeImage  = m_capeModel->data(idx, CapeListModel::CapeImageRole).value<QImage>();
-
-		// Store in local cache for preview
-		if (!capeImage.isNull())
+		QString id	   = m_capeModel->data(m_capeModel->index(i), CapeListModel::CapeIdRole).toString();
+		QImage image = m_capeModel->data(m_capeModel->index(i), CapeListModel::CapeImageRole).value<QImage>();
+		if (!image.isNull())
 		{
-			m_capes[capeId] = capeImage;
-			m_ui->capeCombo->addItem(previewCape(capeImage, m_ui->elytraCB->isChecked()), capeAlias, capeId);
-		}
-		else
-		{
-			m_ui->capeCombo->addItem(capeAlias, capeId);
-		}
-
-		m_capesIdx[capeId] = i + 1; // +1 because "No Cape" is at index 0
-
-		if (capeId == currentCape)
-		{
-			currentIndex = i + 1;
+			m_capes[id] = image;
 		}
 	}
 
-	m_ui->capeCombo->setCurrentIndex(currentIndex);
+	// Set initial selection
+	int currentIndex = 0;
+	if (currentCape.isEmpty())
+	{
+		currentIndex = m_capeModel->findCapeIndex("no_cape");
+	}
+	else
+	{
+		currentIndex = m_capeModel->findCapeIndex(currentCape);
+	}
+
+	if (currentIndex >= 0)
+	{
+		m_ui->capeCombo->setCurrentIndex(currentIndex);
+	}
 }
 
 void SkinManageDialog::onCapeLoadError(const QString& error)
@@ -302,8 +307,13 @@ void SkinManageDialog::onCapeLoadError(const QString& error)
 
 void SkinManageDialog::on_capeCombo_currentIndexChanged(int index)
 {
-	auto id	  = m_ui->capeCombo->currentData();
-	auto cape = m_capes.value(id.toString(), {});
+	if (index < 0 || !m_capeModel)
+		return;
+
+	QModelIndex modelIdx = m_capeModel->index(index);
+	QString id			 = m_capeModel->data(modelIdx, CapeListModel::CapeIdRole).toString();
+	QImage cape			 = m_capes.value(id, QImage());
+
 	if (!cape.isNull())
 	{
 		m_ui->capeImage->setPixmap(previewCape(cape, m_ui->elytraCB->isChecked())
@@ -313,10 +323,14 @@ void SkinManageDialog::on_capeCombo_currentIndexChanged(int index)
 	{
 		m_ui->capeImage->clear();
 	}
+
+	// For preview, use empty string for 'no_cape'
+	QString displayId = (id == "no_cape") ? "" : id;
 	m_skinPreview->updateCape(cape);
+
 	if (auto skin = getSelectedSkin(); skin)
 	{
-		skin->setCapeId(id.toString());
+		skin->setCapeId(displayId);
 		m_skinPreview->updateScene(skin);
 	}
 }

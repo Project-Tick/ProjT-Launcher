@@ -23,6 +23,7 @@
 
 #include <QDebug>
 #include <QFile>
+#include <QFileInfo>
 #include <QMap>
 #include <utility>
 
@@ -194,13 +195,43 @@ namespace projt::java
 			return chosen;
 		};
 
+		auto matchesProbeTarget = [](const QString& targetPath, const QString& candidatePath)
+		{
+			if (targetPath.isEmpty() || candidatePath.isEmpty())
+			{
+				return false;
+			}
+			if (candidatePath == targetPath)
+			{
+				return true;
+			}
+#ifdef Q_OS_WIN
+			const QFileInfo targetInfo(targetPath);
+			const QFileInfo candidateInfo(candidatePath);
+			auto normalizeJavaName = [](QString fileName)
+			{
+				fileName = fileName.toLower();
+				if (fileName == "javaw.exe")
+				{
+					return QStringLiteral("java.exe");
+				}
+				return fileName;
+			};
+
+			return targetInfo.absolutePath().compare(candidateInfo.absolutePath(), Qt::CaseInsensitive) == 0
+				&& normalizeJavaName(targetInfo.fileName()) == normalizeJavaName(candidateInfo.fileName());
+#else
+			return false;
+#endif
+		};
+
 		const auto targetPath = resolvePath(m_settings.binaryPath);
 		QMap<QString, QString> results;
 		auto blocks = parseBlocks(m_stdout);
 		for (const auto& block : blocks)
 		{
 			const auto candidatePath = resolvePath(block.value("java.path"));
-			if (!targetPath.isEmpty() && candidatePath == targetPath)
+			if (matchesProbeTarget(targetPath, candidatePath))
 			{
 				results = block;
 				break;

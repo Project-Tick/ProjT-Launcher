@@ -245,6 +245,20 @@ void AuthFlow::succeed()
 		m_legacyData->minecraftProfile.skin.variant = m_credentials.profile.skin.variant;
 		m_legacyData->minecraftProfile.skin.data	= m_credentials.profile.skin.imageData;
 		m_legacyData->minecraftProfile.validity		= toValidity(m_credentials.profile.validity);
+		m_legacyData->minecraftProfile.currentCape	= m_credentials.profile.activeCapeId;
+
+		// Sync capes
+		m_legacyData->minecraftProfile.capes.clear();
+		for (auto it = m_credentials.profile.capes.begin(); it != m_credentials.profile.capes.end(); ++it)
+		{
+			const auto& capeIn = it.value();
+			Cape capeOut;
+			capeOut.id	  = capeIn.id;
+			capeOut.url	  = capeIn.url;
+			capeOut.alias = capeIn.alias;
+			capeOut.data  = capeIn.imageData;
+			m_legacyData->minecraftProfile.capes.insert(capeIn.id, capeOut);
+		}
 
 		m_legacyData->minecraftEntitlement.ownsMinecraft	= m_credentials.entitlements.ownsMinecraft;
 		m_legacyData->minecraftEntitlement.canPlayMinecraft = m_credentials.entitlements.canPlayMinecraft;

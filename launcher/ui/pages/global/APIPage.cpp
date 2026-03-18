@@ -109,6 +109,7 @@ APIPage::APIPage(QWidget* parent) : QWidget(parent), ui(new Ui::APIPage)
 	ui->flameKey->setValidator(new QRegularExpressionValidator(s_validFlameKey, ui->flameKey));
 
 	ui->metaURL->setPlaceholderText(BuildConfig.META_URL);
+	ui->resourceURL->setPlaceholderText(BuildConfig.DEFAULT_RESOURCE_BASE);
 	ui->userAgentLineEdit->setPlaceholderText(BuildConfig.USER_AGENT);
 
 	loadSettings();
