@@ -12,10 +12,12 @@
 #  undef _TIME_BITS
 #endif
 
+#ifndef PTLIBZIPPY_INTERNAL
 #ifdef HAVE_HIDDEN
 #  define PTLIBZIPPY_INTERNAL __attribute__((visibility ("hidden")))
 #else
 #  define PTLIBZIPPY_INTERNAL
+#endif
 #endif
 
 #if defined(_WIN32)

@@ -3,8 +3,7 @@
  * For conditions of distribution and use, see copyright notice in ptlibzippy.h
  */
 
-#define PTLIBZIPPY_INTERNAL
-#include "ptlibzippy.h"
+#include "ptzippyguts.h"
 
 uLong ZEXPORT ptpng_adler32(uLong adler, const Bytef *buf, uInt len) {
     return adler32(adler, buf, len);

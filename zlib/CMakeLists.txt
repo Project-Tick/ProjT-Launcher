@@ -87,24 +87,24 @@ check_include_file(stdarg.h HAVE_STDARG_H)
 #
 check_include_file(unistd.h HAVE_UNISTD_H)
 
-#
 # Check visibility attribute is supported
 #
-if(MSVC)
-    set(CMAKE_REQUIRED_FLAGS "-WX")
-else(MSVC)
-    set(CMAKE_REQUIRED_FLAGS "-Werror")
-endif(MSVC)
+if(NOT WIN32)
+    if(MSVC)
+        set(CMAKE_REQUIRED_FLAGS "-WX")
+    else(MSVC)
+        set(CMAKE_REQUIRED_FLAGS "-Werror")
+    endif(MSVC)
 
-check_c_source_compiles(
-    "
-        #include <stdlib.h>
-        void f(void) __attribute__ ((visibility(\"hidden\")));
-        int main(void) {return 0;}
-    "
-    HAVE___ATTR__VIS_HIDDEN)
-
-unset(CMAKE_COMPILE_FLAGS)
+    check_c_source_compiles(
+        "
+            #include <stdlib.h>
+            void f(void) __attribute__ ((visibility(\"hidden\")));
+            int main(void) {return 0;}
+        "
+        HAVE___ATTR__VIS_HIDDEN)
+    unset(CMAKE_REQUIRED_FLAGS)
+endif()
 set(PTLIBZIPPY_PC ${PTlibzippy_BINARY_DIR}/ptlibzippy.pc)
 configure_file(${PTlibzippy_SOURCE_DIR}/ptlibzippy.pc.cmakein ${PTLIBZIPPY_PC} @ONLY)
 configure_file(${PTlibzippy_BINARY_DIR}/ptzippyconf.h.cmakein ${PTlibzippy_BINARY_DIR}/ptzippyconf.h)
@@ -162,6 +162,7 @@ if(PTLIBZIPPY_BUILD_SHARED)
     target_compile_definitions(
         ptlibzippy
         PRIVATE PTLIBZIPPY_BUILD
+                PTLIBZIPPY_INTERNAL=
                 $<$<BOOL:NOT:${HAVE_FSEEKO}>:NO_FSEEKO>
                 $<$<BOOL:${HAVE___ATTR__VIS_HIDDEN}>:HAVE_HIDDEN>
                 $<$<BOOL:${MSVC}>:_CRT_SECURE_NO_DEPRECATE>
