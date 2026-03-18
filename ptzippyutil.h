@@ -14,10 +14,12 @@
 #ifndef PTZIPPYUTIL_H
 #define PTZIPPYUTIL_H
 
+#ifndef PTLIBZIPPY_INTERNAL
 #ifdef HAVE_HIDDEN
 #  define PTLIBZIPPY_INTERNAL __attribute__((visibility ("hidden")))
 #else
 #  define PTLIBZIPPY_INTERNAL
+#endif
 #endif
 
 #include "ptlibzippy.h"
