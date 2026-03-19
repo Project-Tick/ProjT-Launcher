@@ -1,13 +1,12 @@
 import os
 import re
-import sys
 from packaging import version as pversion
 from operator import attrgetter
 from typing import Collection, Optional
 import hashlib
 
 
-from meta.common import ensure_component_dir, launcher_path, upstream_path, default_session
+from meta.common import ensure_component_dir, launcher_path, upstream_path, eprint, default_session
 from meta.common.forge import (
     FORGE_COMPONENT,
     INSTALLER_MANIFEST_DIR,
@@ -74,10 +73,6 @@ def update_library_info(lib: Library):
         except Exception as e:
             eprint(f"Failed to update info for {lib.name}: {e}")
 
-
-
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
 
 
 # Construct a set of libraries out of a Minecraft version file, for filtering.

@@ -76,6 +76,15 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	const QByteArray sessionType	  = qgetenv("XDG_SESSION_TYPE").toLower();
+	const QByteArray qtPlatform		  = qgetenv("QT_QPA_PLATFORM").toLower();
+	const bool nativeWaylandRequested = (sessionType == "wayland" || !qgetenv("WAYLAND_DISPLAY").isEmpty())
+									 && (qtPlatform.isEmpty() || qtPlatform.startsWith("wayland"));
+	if (nativeWaylandRequested)
+	{
+		qputenv("QT_QPA_PLATFORM", "xcb");
+	}
+
 #if defined(PROJT_USE_CEF)
 	const int cefExitCode = projt::cef::Runtime::executeSecondaryProcess(argc, argv);
 	if (cefExitCode >= 0)

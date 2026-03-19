@@ -42,6 +42,6 @@ namespace projt::cef
 		explicit Runtime(QObject* parent = nullptr);
 
 		bool m_initialized = false;
-		int m_exitCode		= 0;
+		int m_exitCode	   = 0;
 	};
 }

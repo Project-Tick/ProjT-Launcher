@@ -36,6 +36,10 @@ class HubViewBase : public QWidget
 	virtual QUrl url() const			 = 0;
 	virtual bool canGoBack() const		 = 0;
 	virtual bool canGoForward() const	 = 0;
+	virtual void setActive(bool active)
+	{
+		Q_UNUSED(active);
+	}
 
   public slots:
 	virtual void back()	   = 0;
@@ -47,4 +51,5 @@ class HubViewBase : public QWidget
 	void urlChanged(const QUrl& url);
 	void loadFinished(bool ok);
 	void navigationStateChanged();
+	void newTabRequested(const QUrl& url);
 };

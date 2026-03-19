@@ -186,7 +186,8 @@ int IconPickerDialog::execWithSelection(QString selection)
 
 	if (proxyIndex.isValid())
 	{
-		contentsWidget->selectionModel()->select(proxyIndex, QItemSelectionModel::Current | QItemSelectionModel::Select);
+		contentsWidget->selectionModel()->select(proxyIndex,
+												 QItemSelectionModel::Current | QItemSelectionModel::Select);
 		QMetaObject::invokeMethod(this, "delayed_scroll", Qt::QueuedConnection, Q_ARG(QModelIndex, proxyIndex));
 	}
 	return QDialog::exec();

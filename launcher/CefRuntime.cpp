@@ -42,17 +42,26 @@ namespace
 		{
 			command_line->AppendSwitch("disable-pinch");
 			command_line->AppendSwitch("disable-smooth-scrolling");
+			command_line->AppendSwitch("disable-background-networking");
+			command_line->AppendSwitch("disable-background-mode");
+			command_line->AppendSwitch("disable-component-update");
+			command_line->AppendSwitch("disable-sync");
+			command_line->AppendSwitch("disable-notifications");
+			command_line->AppendSwitch("no-first-run");
 
-			const bool enableGpu =
-				qEnvironmentVariableIntValue("PROJT_CEF_ENABLE_GPU") == 1 ||
-				qEnvironmentVariableIntValue("LAUNCHER_CEF_ENABLE_GPU") == 1;
+			QString disabledFeatures = QStringLiteral("PlatformNotifications,PushMessaging,NotificationTriggers");
+
+			const bool enableGpu = qEnvironmentVariableIntValue("PROJT_CEF_ENABLE_GPU") == 1
+								|| qEnvironmentVariableIntValue("LAUNCHER_CEF_ENABLE_GPU") == 1;
 			if (!enableGpu)
 			{
 				command_line->AppendSwitch("disable-gpu");
 				command_line->AppendSwitch("disable-gpu-compositing");
 				command_line->AppendSwitch("disable-gpu-vsync");
-				command_line->AppendSwitchWithValue("disable-features", "VaapiVideoDecoder,Vulkan");
+				disabledFeatures += QStringLiteral(",VaapiVideoDecoder,Vulkan");
 			}
+
+			command_line->AppendSwitchWithValue("disable-features", disabledFeatures.toStdString());
 		}
 
 		IMPLEMENT_REFCOUNTING(LauncherCefApp);
@@ -94,12 +103,13 @@ namespace projt::cef
 
 		CefMainArgs mainArgs(argc, argv);
 		CefSettings settings;
-		settings.no_sandbox				 = true;
-		settings.multi_threaded_message_loop = false;
-		settings.external_message_pump	 = false;
+		settings.no_sandbox					  = true;
+		settings.multi_threaded_message_loop  = false;
+		settings.external_message_pump		  = false;
+		settings.windowless_rendering_enabled = true;
 
 		const QString executablePath = QCoreApplication::applicationFilePath();
-		const QString executableDir  = QFileInfo(executablePath).absolutePath();
+		const QString executableDir	 = QFileInfo(executablePath).absolutePath();
 		const QString dataRoot =
 			QDir::cleanPath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/cef");
 		QDir().mkpath(dataRoot);
@@ -112,7 +122,7 @@ namespace projt::cef
 		CefString(&settings.user_agent_product)		 = "ProjTLauncher";
 
 		const bool ok = CefInitialize(mainArgs, settings, new LauncherCefApp(), nullptr);
-		m_exitCode	 = ok ? 0 : CefGetExitCode();
+		m_exitCode	  = ok ? 0 : CefGetExitCode();
 		if (!ok)
 		{
 			if (m_exitCode == 0)

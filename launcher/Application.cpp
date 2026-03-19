@@ -92,6 +92,7 @@
 #include "ui/setupwizard/LanguageWizardPage.h"
 #include "ui/setupwizard/LoginWizardPage.h"
 #include "ui/setupwizard/PasteWizardPage.h"
+#include "ui/setupwizard/SearchWizardPage.h"
 #include "ui/setupwizard/SetupWizard.h"
 #include "ui/setupwizard/ThemeWizardPage.h"
 
@@ -603,7 +604,13 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 		}
 
 		for (auto i = 4; i > 0; i--)
-			FS::move(logBase.arg(i - 1), logBase.arg(i));
+		{
+			const QString source = logBase.arg(i - 1);
+			if (QFile::exists(source))
+			{
+				FS::move(source, logBase.arg(i));
+			}
+		}
 
 		logFile = std::unique_ptr<QFile>(new QFile(logBase.arg(0)));
 		if (!logFile->open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
@@ -762,6 +769,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 		m_settings->registerSetting("IconTheme", QString());
 		m_settings->registerSetting("ApplicationTheme", QString());
 		m_settings->registerSetting("BackgroundCat", QString("kitteh"));
+		m_settings->registerSetting("HubSearchEngine", QString());
 
 		// Remembered state
 		m_settings->registerSetting("LastUsedGroupForNewInstance", QString());
@@ -1333,12 +1341,14 @@ bool Application::createSetupWizard()
 				&& !settings()->get("UserAskedAboutAutomaticJavaDownload").toBool();
 	bool languageRequired		   = settings()->get("Language").toString().isEmpty();
 	bool pasteInterventionRequired = settings()->get("PastebinURL") != "";
+	bool searchEngineRequired	   = settings()->get("HubSearchEngine").toString().isEmpty();
 	bool validWidgets = m_themeManager->isValidApplicationTheme(settings()->get("ApplicationTheme").toString());
 	bool validIcons	  = m_themeManager->isValidIconTheme(settings()->get("IconTheme").toString());
 	bool login		  = !m_accounts->anyAccountIsValid() && capabilities() & Application::SupportsMSA;
 	bool themeInterventionRequired = !validWidgets || !validIcons;
 	bool wizardRequired =
-		javaRequired || languageRequired || pasteInterventionRequired || themeInterventionRequired || askjava || login;
+		javaRequired || languageRequired || pasteInterventionRequired || searchEngineRequired || themeInterventionRequired
+		|| askjava || login;
 	if (wizardRequired)
 	{
 		// set default theme after going into theme wizard
@@ -1377,6 +1387,11 @@ bool Application::createSetupWizard()
 		if (pasteInterventionRequired)
 		{
 			m_setupWizard->addPage(new PasteWizardPage(m_setupWizard));
+		}
+
+		if (searchEngineRequired)
+		{
+			m_setupWizard->addPage(new SearchWizardPage(m_setupWizard));
 		}
 
 		if (themeInterventionRequired)

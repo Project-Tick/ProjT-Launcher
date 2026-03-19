@@ -146,6 +146,17 @@ bool QtWebEngineHubView::canGoForward() const
 	return m_view && m_view->history() ? m_view->history()->canGoForward() : false;
 }
 
+void QtWebEngineHubView::setActive(bool active)
+{
+	if (!m_view || !m_view->page())
+	{
+		return;
+	}
+
+	m_view->page()->setLifecycleState(active ? QWebEnginePage::LifecycleState::Active
+											 : QWebEnginePage::LifecycleState::Frozen);
+}
+
 void QtWebEngineHubView::back()
 {
 	if (m_view)

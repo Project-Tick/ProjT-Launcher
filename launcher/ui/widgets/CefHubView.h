@@ -22,10 +22,24 @@
 
 #include "ui/widgets/HubViewBase.h"
 
+#include <QImage>
+#include <QRect>
+#include <QVector>
+
 #if defined(PROJT_USE_CEF)
 
+#include "include/cef_frame.h"
+
+class QEvent;
+class QChangeEvent;
+class QFocusEvent;
+class QHideEvent;
+class QKeyEvent;
+class QMouseEvent;
+class QPaintEvent;
 class QResizeEvent;
 class QShowEvent;
+class QWheelEvent;
 
 class CefHubView : public HubViewBase
 {
@@ -39,6 +53,7 @@ class CefHubView : public HubViewBase
 	QUrl url() const override;
 	bool canGoBack() const override;
 	bool canGoForward() const override;
+	void setActive(bool active) override;
 
   public slots:
 	void back() override;
@@ -46,8 +61,20 @@ class CefHubView : public HubViewBase
 	void reload() override;
 
   protected:
+	void paintEvent(QPaintEvent* event) override;
+	void changeEvent(QEvent* event) override;
 	void resizeEvent(QResizeEvent* event) override;
 	void showEvent(QShowEvent* event) override;
+	void hideEvent(QHideEvent* event) override;
+	void focusInEvent(QFocusEvent* event) override;
+	void focusOutEvent(QFocusEvent* event) override;
+	void mouseMoveEvent(QMouseEvent* event) override;
+	void mousePressEvent(QMouseEvent* event) override;
+	void mouseReleaseEvent(QMouseEvent* event) override;
+	void wheelEvent(QWheelEvent* event) override;
+	void keyPressEvent(QKeyEvent* event) override;
+	void keyReleaseEvent(QKeyEvent* event) override;
+	void leaveEvent(QEvent* event) override;
 
   public:
 	void ensureBrowser();
@@ -57,6 +84,12 @@ class CefHubView : public HubViewBase
 	void handleLoadingState(bool isLoading, bool canGoBack, bool canGoForward);
 	void handleLoadFinished(bool ok);
 	void handleBrowserClosed();
+	void handlePopupRequest(const QUrl& url);
+	void handlePopupVisibility(bool visible);
+	void handlePopupRect(const QRect& rect);
+	void handlePaint(bool popup, const QImage& image, const QVector<QRect>& dirtyRects);
+	void applyLauncherTheme();
+	void applyLauncherThemeToFrame(CefRefPtr<CefFrame> frame);
 
   private:
 	QUrl m_url;
@@ -65,6 +98,11 @@ class CefHubView : public HubViewBase
 	bool m_canGoForward = false;
 	bool m_created		= false;
 	bool m_closing		= false;
+	bool m_active		= true;
+	QImage m_viewImage;
+	QImage m_popupImage;
+	QRect m_popupRect;
+	bool m_popupVisible = false;
 
 	struct Impl;
 	Impl* m_impl = nullptr;

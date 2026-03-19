@@ -862,6 +862,8 @@ SET(LAUNCHER_SOURCES
     ui/widgets/FallbackHubView.h
     ui/widgets/CefHubView.cpp
     ui/widgets/CefHubView.h
+    ui/widgets/HubSearchProvider.cpp
+    ui/widgets/HubSearchProvider.h
     ui/widgets/LauncherHubWidget.cpp
     ui/widgets/LauncherHubWidget.h
     ui/widgets/QtWebEngineHubView.cpp
@@ -877,6 +879,8 @@ SET(LAUNCHER_SOURCES
     ui/setupwizard/JavaWizardPage.h
     ui/setupwizard/LanguageWizardPage.cpp
     ui/setupwizard/LanguageWizardPage.h
+    ui/setupwizard/SearchWizardPage.cpp
+    ui/setupwizard/SearchWizardPage.h
     ui/setupwizard/PasteWizardPage.cpp
     ui/setupwizard/PasteWizardPage.h
     ui/setupwizard/ThemeWizardPage.h

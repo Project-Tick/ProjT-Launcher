@@ -25,14 +25,18 @@
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDir>
+#include <QEvent>
 #include <QFrame>
 #include <QGridLayout>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QLineEdit>
 #include <QLocale>
+#include <QPainter>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QSignalBlocker>
 #include <QSizePolicy>
 #include <QStackedWidget>
 #include <QTabBar>
@@ -49,6 +53,7 @@
 #include "news/NewsChecker.h"
 #include "ui/widgets/CefHubView.h"
 #include "ui/widgets/FallbackHubView.h"
+#include "ui/widgets/HubSearchProvider.h"
 #include "ui/widgets/WebView2Widget.h"
 #include "ui/widgets/QtWebEngineHubView.h"
 
@@ -112,35 +117,6 @@ namespace
 		return QUrl(QStringLiteral("https://projecttick.org/p/projt-launcher/"));
 	}
 
-	QUrl resolveInput(const QString& input)
-	{
-		const QString trimmed = input.trimmed();
-		if (trimmed.isEmpty())
-		{
-			return {};
-		}
-
-		QUrl url = QUrl::fromUserInput(trimmed);
-		if (url.isValid() && !url.scheme().isEmpty())
-		{
-			return url;
-		}
-
-		const QString templateUrl = BuildConfig.HUB_SEARCH_URL;
-		if (templateUrl.contains("%1"))
-		{
-			const QByteArray encoded = QUrl::toPercentEncoding(trimmed);
-			return QUrl(templateUrl.arg(QString::fromUtf8(encoded)));
-		}
-		QUrl fallback(templateUrl);
-		if (fallback.isValid() && !fallback.scheme().isEmpty())
-		{
-			return fallback;
-		}
-		return QUrl(QStringLiteral("https://www.google.com/search?q=%1")
-						.arg(QString::fromUtf8(QUrl::toPercentEncoding(trimmed))));
-	}
-
 	void clearLayout(QLayout* layout)
 	{
 		if (!layout)
@@ -152,7 +128,7 @@ namespace
 		{
 			if (auto* widget = item->widget())
 			{
-				widget->deleteLater();
+				delete widget;
 			}
 			if (auto* childLayout = item->layout())
 			{
@@ -247,6 +223,51 @@ namespace
 				  });
 		return instances;
 	}
+
+	QIcon tintedIcon(const QString& themeName, const QWidget* widget, const QSize& size = QSize(18, 18))
+	{
+		QIcon source = QIcon::fromTheme(themeName);
+		if (source.isNull())
+		{
+			return source;
+		}
+
+		const qreal devicePixelRatio = widget ? widget->devicePixelRatioF() : qApp->devicePixelRatio();
+		const QSize pixelSize = QSize(qMax(1, qRound(size.width() * devicePixelRatio)),
+									  qMax(1, qRound(size.height() * devicePixelRatio)));
+
+		auto colorizedPixmap = [&](QIcon::Mode mode)
+		{
+			QPixmap sourcePixmap = source.pixmap(pixelSize, devicePixelRatio, mode);
+			if (sourcePixmap.isNull())
+			{
+				sourcePixmap = source.pixmap(pixelSize, devicePixelRatio, QIcon::Normal);
+			}
+
+			QPixmap tinted(pixelSize);
+			tinted.fill(Qt::transparent);
+
+			const QColor color = widget ? widget->palette().color(mode == QIcon::Disabled ? QPalette::Disabled
+																					  : QPalette::Active,
+															 QPalette::ButtonText)
+									 : QColor(Qt::white);
+
+			QPainter painter(&tinted);
+			painter.drawPixmap(0, 0, sourcePixmap);
+			painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+			painter.fillRect(tinted.rect(), color);
+			painter.end();
+			tinted.setDevicePixelRatio(devicePixelRatio);
+			return tinted;
+		};
+
+		QIcon icon;
+		icon.addPixmap(colorizedPixmap(QIcon::Normal), QIcon::Normal);
+		icon.addPixmap(colorizedPixmap(QIcon::Disabled), QIcon::Disabled);
+		icon.addPixmap(colorizedPixmap(QIcon::Active), QIcon::Active);
+		icon.addPixmap(colorizedPixmap(QIcon::Selected), QIcon::Selected);
+		return icon;
+	}
 	HubViewBase* createBrowserView(QWidget* parent)
 	{
 #if defined(PROJT_USE_WEBVIEW2)
@@ -278,13 +299,7 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 	m_tabBar->setExpanding(false);
 	m_tabBar->setDocumentMode(true);
 	m_tabBar->setTabsClosable(true);
-
-	m_newTabButton = new QToolButton(this);
-	m_newTabButton->setIcon(QIcon::fromTheme("list-add"));
-	m_newTabButton->setToolTip(tr("New Tab"));
-
 	tabsLayout->addWidget(m_tabBar, 1);
-	tabsLayout->addWidget(m_newTabButton);
 
 	m_toolbarContainer = new QWidget(this);
 	m_toolbarContainer->setObjectName("hubToolbar");
@@ -292,35 +307,34 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 	toolbar->setContentsMargins(10, 8, 10, 10);
 
 	m_backButton = new QToolButton(this);
-	m_backButton->setIcon(QIcon::fromTheme("go-previous"));
 	m_backButton->setToolTip(tr("Back"));
 	m_backButton->setEnabled(false);
 
 	m_forwardButton = new QToolButton(this);
-	m_forwardButton->setIcon(QIcon::fromTheme("go-next"));
 	m_forwardButton->setToolTip(tr("Forward"));
 	m_forwardButton->setEnabled(false);
 
 	m_reloadButton = new QToolButton(this);
-	m_reloadButton->setIcon(QIcon::fromTheme("view-refresh"));
 	m_reloadButton->setToolTip(tr("Reload"));
 
 	m_homeButton = new QToolButton(this);
-	m_homeButton->setIcon(QIcon::fromTheme("go-home"));
 	m_homeButton->setToolTip(tr("Cockpit"));
+
+	m_newTabButton = new QToolButton(this);
+	m_newTabButton->setToolTip(tr("New Tab"));
 
 	m_addressBar = new QLineEdit(this);
 	m_addressBar->setPlaceholderText(tr("Search or enter address"));
 	m_addressBar->setClearButtonEnabled(true);
 
 	m_goButton = new QToolButton(this);
-	m_goButton->setIcon(QIcon::fromTheme("system-search"));
 	m_goButton->setToolTip(tr("Go"));
 
 	toolbar->addWidget(m_backButton);
 	toolbar->addWidget(m_forwardButton);
 	toolbar->addWidget(m_reloadButton);
 	toolbar->addWidget(m_homeButton);
+	toolbar->addWidget(m_newTabButton);
 	toolbar->addWidget(m_addressBar, 1);
 	toolbar->addWidget(m_goButton);
 
@@ -329,116 +343,6 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 	layout->addWidget(m_tabsBarContainer);
 	layout->addWidget(m_toolbarContainer);
 	layout->addWidget(m_stack);
-
-	setStyleSheet(QStringLiteral(R"PROJT_HUB(
-		LauncherHubWidget {
-			background: #0f1420;
-		}
-		#hubTabsBar, #hubToolbar {
-			background: #171f2e;
-			border: 1px solid #2b3951;
-			border-radius: 12px;
-		}
-		QTabBar::tab {
-			background: transparent;
-			color: #afbdd3;
-			padding: 7px 13px;
-			margin-right: 5px;
-			border-radius: 9px;
-		}
-		QTabBar::tab:selected {
-			background: #2f4f85;
-			border: 1px solid #4a6ea9;
-			color: #ffffff;
-		}
-		QTabBar::tab:hover {
-			background: #253147;
-			color: #ffffff;
-		}
-		QToolButton {
-			background: #202b3f;
-			border: 1px solid #334764;
-			border-radius: 9px;
-			padding: 6px;
-		}
-		QToolButton:hover {
-			background: #2b3a54;
-		}
-		QLineEdit {
-			background: #0d1422;
-			color: #e6eefc;
-			border: 1px solid #3a4c69;
-			border-radius: 10px;
-			padding: 8px 12px;
-			selection-background-color: #42629a;
-		}
-		QScrollArea {
-			border: none;
-			background: transparent;
-		}
-		QFrame#hubHeroCard, QFrame#hubMetricCard, QFrame#hubPanel {
-			background: #171f2e;
-			border: 1px solid #2b3951;
-			border-radius: 18px;
-		}
-		QLabel#hubBadge {
-			background: #203454;
-			border: 1px solid #33537f;
-			border-radius: 10px;
-			color: #cfe3ff;
-			padding: 4px 10px;
-			font-weight: 600;
-		}
-		QLabel#hubHeroTitle {
-			color: #ffffff;
-			font-size: 24px;
-			font-weight: 700;
-		}
-		QLabel#hubHeroSubtitle, QLabel#hubPanelSubtitle, QLabel#hubMetricDetail {
-			color: #9bb0cc;
-		}
-		QLabel#hubMetricValue {
-			color: #ffffff;
-			font-size: 22px;
-			font-weight: 700;
-		}
-		QLabel#hubPanelTitle {
-			color: #ffffff;
-			font-size: 18px;
-			font-weight: 700;
-		}
-		QPushButton#hubPrimaryButton, QPushButton#hubSecondaryButton, QPushButton#hubInlineAction,
-		QPushButton#hubQuickButton, QPushButton#hubNewsButton {
-			border-radius: 11px;
-			padding: 10px 14px;
-		}
-		QPushButton#hubPrimaryButton {
-			background: #4d7fff;
-			border: 1px solid #6f9bff;
-			color: #ffffff;
-			font-weight: 700;
-		}
-		QPushButton#hubPrimaryButton:hover {
-			background: #608cff;
-		}
-		QPushButton#hubSecondaryButton, QPushButton#hubInlineAction, QPushButton#hubQuickButton,
-		QPushButton#hubNewsButton {
-			background: #202b3f;
-			border: 1px solid #334764;
-			color: #e6eefc;
-		}
-		QPushButton#hubSecondaryButton:hover, QPushButton#hubInlineAction:hover, QPushButton#hubQuickButton:hover,
-		QPushButton#hubNewsButton:hover {
-			background: #2a3850;
-		}
-		QPushButton#hubQuickButton, QPushButton#hubNewsButton {
-			text-align: left;
-		}
-		QPushButton#hubQuickButton[active="true"] {
-			background: #233653;
-			border-color: #5c82c4;
-		}
-	)PROJT_HUB"));
 
 	connect(m_backButton,
 			&QToolButton::clicked,
@@ -475,27 +379,31 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 				}
 			});
 	connect(m_homeButton, &QToolButton::clicked, this, &LauncherHubWidget::loadHome);
-	connect(m_goButton, &QToolButton::clicked, this, [this]() { openUrl(resolveInput(m_addressBar->text())); });
-	connect(m_addressBar, &QLineEdit::returnPressed, this, [this]() { openUrl(resolveInput(m_addressBar->text())); });
+	connect(m_goButton,
+			&QToolButton::clicked,
+			this,
+			[this]()
+			{
+				const QString providerId =
+					APPLICATION->settings() ? APPLICATION->settings()->get("HubSearchEngine").toString() : QString();
+				openUrl(resolveHubInput(m_addressBar->text(), providerId));
+			});
+	connect(m_addressBar,
+			&QLineEdit::returnPressed,
+			this,
+			[this]()
+			{
+				const QString providerId =
+					APPLICATION->settings() ? APPLICATION->settings()->get("HubSearchEngine").toString() : QString();
+				openUrl(resolveHubInput(m_addressBar->text(), providerId));
+			});
 	connect(m_newTabButton, &QToolButton::clicked, this, [this]() { newTab(m_homeUrl); });
 
 	connect(m_tabBar,
 			&QTabBar::tabMoved,
 			this,
-			[this](int from, int to)
+			[this](int, int)
 			{
-				if (!m_stack || from == to || from < 0 || to < 0 || from >= m_stack->count() || to >= m_stack->count())
-				{
-					return;
-				}
-				QWidget* page = m_stack->widget(from);
-				if (!page)
-				{
-					return;
-				}
-				m_stack->removeWidget(page);
-				m_stack->insertWidget(to, page);
-				m_stack->setCurrentIndex(m_tabBar->currentIndex());
 				updateTabPerformanceState();
 				updateNavigationState();
 			});
@@ -504,10 +412,10 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 			this,
 			[this](int index)
 			{
-				if (index >= 0 && index < m_stack->count())
+				if (auto* view = viewForTabIndex(index))
 				{
-					m_stack->setCurrentIndex(index);
-					activatePendingForIndex(index);
+					m_stack->setCurrentWidget(view);
+					activatePendingForPage(view);
 					updateTabPerformanceState();
 					updateNavigationState();
 				}
@@ -517,28 +425,32 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 			this,
 			[this](int index)
 			{
-				if (index < 0 || index >= m_stack->count())
-				{
-					return;
-				}
-				if (m_stack->widget(index) == m_cockpitPage)
-				{
-					return;
-				}
-				if (m_tabBar->count() == 1)
+				auto* view = viewForTabIndex(index);
+				if (!view)
 				{
 					return;
 				}
 
-				QWidget* widget = m_stack->widget(index);
-				m_stack->removeWidget(widget);
+				m_stack->removeWidget(view);
 				m_tabBar->removeTab(index);
-				widget->deleteLater();
+				view->deleteLater();
 
-				const int newIndex = qMin(index, m_tabBar->count() - 1);
-				m_tabBar->setCurrentIndex(newIndex);
-				m_stack->setCurrentIndex(newIndex);
-				activatePendingForIndex(newIndex);
+				if (m_tabBar->count() > 0)
+				{
+					const int newIndex = qMin(index, m_tabBar->count() - 1);
+					m_tabBar->setCurrentIndex(newIndex);
+					if (auto* nextView = viewForTabIndex(newIndex))
+					{
+						m_stack->setCurrentWidget(nextView);
+						activatePendingForPage(nextView);
+					}
+				}
+				else
+				{
+					switchToPage(m_cockpitPage);
+				}
+
+				syncTabsUi();
 				updateTabPerformanceState();
 				updateNavigationState();
 			});
@@ -568,15 +480,11 @@ LauncherHubWidget::LauncherHubWidget(QWidget* parent) : QWidget(parent)
 	}
 
 	createCockpitTab();
-	createTab(QUrl(BuildConfig.NEWS_OPEN_URL), tr("News"), false);
-	if (!BuildConfig.HUB_COMMUNITY_URL.isEmpty())
-	{
-		createTab(QUrl(BuildConfig.HUB_COMMUNITY_URL), tr("Community"), false);
-	}
-	createTab(QUrl(BuildConfig.HELP_URL.arg("")), tr("Help"), false);
+	refreshToolbarIcons();
 
 	refreshCockpit();
 	m_newsChecker->reloadNews();
+	syncTabsUi();
 }
 
 LauncherHubWidget::~LauncherHubWidget() = default;
@@ -590,13 +498,42 @@ HubViewBase* LauncherHubWidget::currentView() const
 	return qobject_cast<HubViewBase*>(m_stack->currentWidget());
 }
 
+HubViewBase* LauncherHubWidget::viewForTabIndex(int index) const
+{
+	if (!m_tabBar || index < 0 || index >= m_tabBar->count())
+	{
+		return nullptr;
+	}
+
+	return qobject_cast<HubViewBase*>(m_tabBar->tabData(index).value<QObject*>());
+}
+
+int LauncherHubWidget::tabIndexForView(const HubViewBase* view) const
+{
+	if (!m_tabBar || !view)
+	{
+		return -1;
+	}
+
+	for (int i = 0; i < m_tabBar->count(); ++i)
+	{
+		if (m_tabBar->tabData(i).value<QObject*>() == view)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
 void LauncherHubWidget::createCockpitTab()
 {
 	auto* scrollArea = new QScrollArea(m_stack);
 	scrollArea->setWidgetResizable(true);
 	scrollArea->setFrameShape(QFrame::NoFrame);
+	scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
 	auto* content	 = new QWidget(scrollArea);
+	content->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 	auto* pageLayout = new QVBoxLayout(content);
 	pageLayout->setContentsMargins(18, 18, 18, 18);
 	pageLayout->setSpacing(16);
@@ -653,6 +590,9 @@ void LauncherHubWidget::createCockpitTab()
 	auto* metricsLayout = new QGridLayout();
 	metricsLayout->setHorizontalSpacing(12);
 	metricsLayout->setVerticalSpacing(12);
+	metricsLayout->setColumnStretch(0, 1);
+	metricsLayout->setColumnStretch(1, 1);
+	metricsLayout->setColumnStretch(2, 1);
 	auto makeMetricCard = [content](const QString& title, QLabel*& valueLabel, QLabel*& detailLabel)
 	{
 		auto* card = new QFrame(content);
@@ -685,6 +625,8 @@ void LauncherHubWidget::createCockpitTab()
 	auto* lowerGrid = new QGridLayout();
 	lowerGrid->setHorizontalSpacing(12);
 	lowerGrid->setVerticalSpacing(12);
+	lowerGrid->setColumnStretch(0, 1);
+	lowerGrid->setColumnStretch(1, 1);
 
 	auto* recentPanel = new QFrame(content);
 	recentPanel->setObjectName("hubPanel");
@@ -756,11 +698,9 @@ void LauncherHubWidget::createCockpitTab()
 	pageLayout->addStretch(1);
 
 	scrollArea->setWidget(content);
-	m_cockpitPage	= scrollArea;
-	const int index = m_stack->addWidget(m_cockpitPage);
-	m_tabBar->addTab(tr("Cockpit"));
-	m_tabBar->setCurrentIndex(index);
-	m_stack->setCurrentIndex(index);
+	m_cockpitPage = scrollArea;
+	m_stack->addWidget(m_cockpitPage);
+	m_stack->setCurrentWidget(m_cockpitPage);
 
 	connect(m_playButton,
 			&QPushButton::clicked,
@@ -808,6 +748,21 @@ void LauncherHubWidget::createCockpitTab()
 			});
 }
 
+void LauncherHubWidget::changeEvent(QEvent* event)
+{
+	QWidget::changeEvent(event);
+	if (!event)
+	{
+		return;
+	}
+
+	if (event->type() == QEvent::PaletteChange || event->type() == QEvent::ApplicationPaletteChange)
+	{
+		refreshToolbarIcons();
+		updateHero();
+	}
+}
+
 HubViewBase* LauncherHubWidget::createTab(const QUrl& url, const QString& label, bool switchTo)
 {
 	if (!m_stack || !m_tabBar)
@@ -817,13 +772,27 @@ HubViewBase* LauncherHubWidget::createTab(const QUrl& url, const QString& label,
 
 	auto* view = createBrowserView(m_stack);
 
-	const int stackIndex	   = m_stack->addWidget(view);
+	QWidget* previousPage	   = m_stack->currentWidget();
+	const int previousTabIndex = m_tabBar->currentIndex();
+
+	m_stack->addWidget(view);
 	const QString initialLabel = label.isEmpty() ? tr("New Tab") : label;
-	m_tabBar->addTab(initialLabel);
+	int tabIndex			   = -1;
+	if (switchTo)
+	{
+		tabIndex = m_tabBar->addTab(initialLabel);
+	}
+	else
+	{
+		const QSignalBlocker blocker(m_tabBar);
+		tabIndex = m_tabBar->addTab(initialLabel);
+		m_tabBar->setCurrentIndex(previousTabIndex);
+	}
+	m_tabBar->setTabData(tabIndex, QVariant::fromValue(static_cast<QObject*>(view)));
 
 	auto updateTitle = [this, view](const QString& title)
 	{
-		const int index = m_stack->indexOf(view);
+		const int index = tabIndexForView(view);
 		if (index >= 0 && !title.isEmpty())
 		{
 			m_tabBar->setTabText(index, title);
@@ -853,11 +822,27 @@ HubViewBase* LauncherHubWidget::createTab(const QUrl& url, const QString& label,
 				}
 			});
 	connect(view, &HubViewBase::navigationStateChanged, this, &LauncherHubWidget::updateNavigationState);
+	connect(view,
+			&HubViewBase::newTabRequested,
+			this,
+			[this](const QUrl& requestedUrl)
+			{
+				if (!requestedUrl.isValid())
+				{
+					return;
+				}
+
+				createTab(requestedUrl, QString(), true);
+			});
 
 	if (switchTo)
 	{
-		m_tabBar->setCurrentIndex(stackIndex);
-		m_stack->setCurrentIndex(stackIndex);
+		m_tabBar->setCurrentIndex(tabIndex);
+		m_stack->setCurrentWidget(view);
+	}
+	else if (previousPage)
+	{
+		m_stack->setCurrentWidget(previousPage);
 	}
 
 	if (url.isValid())
@@ -873,6 +858,7 @@ HubViewBase* LauncherHubWidget::createTab(const QUrl& url, const QString& label,
 		}
 	}
 
+	syncTabsUi();
 	updateTabPerformanceState();
 	return view;
 }
@@ -883,26 +869,38 @@ void LauncherHubWidget::switchToPage(QWidget* page)
 	{
 		return;
 	}
-	const int index = m_stack->indexOf(page);
-	if (index < 0)
+
+	m_stack->setCurrentWidget(page);
+	if (page == m_cockpitPage)
 	{
+		updateTabPerformanceState();
+		updateNavigationState();
+		syncTabsUi();
 		return;
 	}
 
-	m_tabBar->setCurrentIndex(index);
-	m_stack->setCurrentIndex(index);
-	activatePendingForIndex(index);
+	if (auto* view = qobject_cast<HubViewBase*>(page))
+	{
+		const int index = tabIndexForView(view);
+		if (index >= 0)
+		{
+			m_tabBar->setCurrentIndex(index);
+		}
+		activatePendingForPage(view);
+	}
+
 	updateTabPerformanceState();
 	updateNavigationState();
+	syncTabsUi();
 }
 
-void LauncherHubWidget::activatePendingForIndex(int index)
+void LauncherHubWidget::activatePendingForPage(QWidget* page)
 {
-	if (!m_stack || index < 0 || index >= m_stack->count())
+	if (!page)
 	{
 		return;
 	}
-	if (auto* view = qobject_cast<HubViewBase*>(m_stack->widget(index)))
+	if (auto* view = qobject_cast<HubViewBase*>(page))
 	{
 		const QUrl pendingUrl = view->property("hubPendingUrl").toUrl();
 		if (pendingUrl.isValid())
@@ -935,6 +933,42 @@ void LauncherHubWidget::updateNavigationState()
 	m_addressBar->setText(view->url().toString());
 }
 
+void LauncherHubWidget::syncTabsUi()
+{
+	if (m_tabsBarContainer && m_tabBar)
+	{
+		m_tabsBarContainer->setVisible(m_tabBar->count() > 0);
+	}
+}
+
+void LauncherHubWidget::refreshToolbarIcons()
+{
+	if (m_backButton)
+	{
+		m_backButton->setIcon(tintedIcon(QStringLiteral("go-previous"), this));
+	}
+	if (m_forwardButton)
+	{
+		m_forwardButton->setIcon(tintedIcon(QStringLiteral("go-next"), this));
+	}
+	if (m_reloadButton)
+	{
+		m_reloadButton->setIcon(tintedIcon(QStringLiteral("view-refresh"), this));
+	}
+	if (m_homeButton)
+	{
+		m_homeButton->setIcon(tintedIcon(QStringLiteral("go-home"), this));
+	}
+	if (m_newTabButton)
+	{
+		m_newTabButton->setIcon(tintedIcon(QStringLiteral("list-add"), this));
+	}
+	if (m_goButton)
+	{
+		m_goButton->setIcon(tintedIcon(QStringLiteral("system-search"), this));
+	}
+}
+
 void LauncherHubWidget::updateTabPerformanceState()
 {
 #if defined(PROJT_USE_WEBENGINE)
@@ -946,13 +980,12 @@ void LauncherHubWidget::updateTabPerformanceState()
 	const int activeIndex = m_stack->currentIndex();
 	for (int i = 0; i < m_stack->count(); ++i)
 	{
-		auto* view = qobject_cast<QWebEngineView*>(m_stack->widget(i));
-		if (!view || !view->page())
+		auto* view = qobject_cast<HubViewBase*>(m_stack->widget(i));
+		if (!view)
 		{
 			continue;
 		}
-		view->page()->setLifecycleState(i == activeIndex ? QWebEnginePage::LifecycleState::Active
-														 : QWebEnginePage::LifecycleState::Frozen);
+		view->setActive(i == activeIndex);
 	}
 #endif
 }
@@ -1115,7 +1148,7 @@ void LauncherHubWidget::updateHero()
 		m_cockpitTitleLabel->setText(tr("Launcher Hub is ready"));
 		m_cockpitSubtitleLabel->setText(tr("Open news, community pages, and help from one place. Once you create or "
 										   "select an instance, it will appear here."));
-		m_cockpitIconLabel->setPixmap(QIcon::fromTheme("applications-games").pixmap(40, 40));
+		m_cockpitIconLabel->setPixmap(APPLICATION->logo().pixmap(40, 40));
 		m_playButton->setEnabled(false);
 		m_editButton->setEnabled(false);
 		m_backupsButton->setEnabled(false);

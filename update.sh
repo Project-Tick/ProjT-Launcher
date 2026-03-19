@@ -52,7 +52,7 @@ if [ "${DEPLOY_TO_GIT}" = true ]; then
     upstream_git add fabric/loader-installer-json/*.json fabric/meta-v2/*.json fabric/jars/*.json || fail_in
     upstream_git add quilt/loader-installer-json/*.json quilt/meta-v3/*.json quilt/jars/*.json || fail_in
     upstream_git add liteloader/*.json || fail_in
-    upstream_git add java_runtime/adoptium/available_releases.json java_runtime/adoptium/versions/*.json java_runtime/azul/packages.json java_runtime/azul/versions/*.json || fail_in
+    upstream_git add java_runtime/adoptium/available_releases.json java_runtime/adoptium/versions/*.json java_runtime/azul/packages.json java_runtime/azul/versions/*.json java_runtime/ibm/available_releases.json java_runtime/ibm/versions/*.json || fail_in
     if ! upstream_git diff --cached --exit-code; then
         upstream_git commit -a -m "Update Date ${currentDate} Time ${currentHour}:${currentMinute}:${currentSecond}" || fail_in
         upstream_git push || exit 1
@@ -78,7 +78,7 @@ if [ "${DEPLOY_TO_GIT}" = true ]; then
     launcher_git add org.quiltmc.quilt-loader/* || fail_out
     launcher_git add org.quiltmc.hashed/* 2>/dev/null || true
     launcher_git add com.mumfrey.liteloader/* || fail_out
-    launcher_git add net.minecraft.java/* net.adoptium.java/* com.azul.java/* || fail_out
+    launcher_git add net.minecraft.java/* net.adoptium.java/* com.azul.java/* com.ibm.java/* || fail_out
 
     if ! launcher_git diff --cached --exit-code; then
         launcher_git commit -a -m "Update Date ${currentDate} Time ${currentHour}:${currentMinute}:${currentSecond}" || fail_out

@@ -37,6 +37,7 @@ class QtWebEngineHubView : public HubViewBase
 	QUrl url() const override;
 	bool canGoBack() const override;
 	bool canGoForward() const override;
+	void setActive(bool active) override;
 
   public slots:
 	void back() override;

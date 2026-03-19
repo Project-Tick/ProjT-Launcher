@@ -1,13 +1,12 @@
 from copy import deepcopy
 import os
 import re
-import sys
 from operator import attrgetter
 from typing import Collection, Optional
 import hashlib
 
 
-from meta.common import ensure_component_dir, launcher_path, upstream_path, default_session
+from meta.common import ensure_component_dir, launcher_path, upstream_path, eprint, default_session
 from meta.common.neoforge import (
     NEOFORGE_COMPONENT,
     INSTALLER_MANIFEST_DIR,
@@ -68,10 +67,6 @@ def update_library_info(lib: Library):
         except Exception as e:
             eprint(f"Failed to update info for {lib.name}: {e}")
 
-
-
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
 
 
 def version_from_build_system_installer(
@@ -178,20 +173,18 @@ def main():
         installer = MojangVersion.parse_file(installer_version_filepath)
         profile = NeoForgeInstallerProfileV2.parse_file(profile_filepath)
         v = version_from_build_system_installer(installer, profile, version)
-        
-        #we can get the minecraft version from the profile json info, so let's just do that instead of hacky regex
-        v.requires = [Dependency(uid=MINECRAFT_COMPONENT, equals=profile.minecraft)] 
+
+        # we can get the minecraft version from the profile json info, so let's just do that instead of hacky regex
+        v.requires = [Dependency(uid=MINECRAFT_COMPONENT, equals=profile.minecraft)]
         # If we do not have the corresponding Minecraft version, we ignore it
         if not os.path.isfile(
-            os.path.join(
-                LAUNCHER_DIR, MINECRAFT_COMPONENT, f"{profile.minecraft}.json"
-            )
+            os.path.join(LAUNCHER_DIR, MINECRAFT_COMPONENT, f"{profile.minecraft}.json")
         ):
             eprint(
                 "Skipping %s with no corresponding Minecraft version %s"
                 % (key, profile.minecraft)
             )
-            continue     
+            continue
         v.write(os.path.join(LAUNCHER_DIR, NEOFORGE_COMPONENT, f"{v.version}.json"))
 
         recommended_versions.sort()

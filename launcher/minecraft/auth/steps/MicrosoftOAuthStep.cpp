@@ -95,7 +95,7 @@ namespace projt::minecraft::auth
 			// xdg-mime returns something like "projtlauncher.desktop"; locate it and
 			// read the Exec= line to compare against our own executable path.
 			const QString desktopFileName = output.section(QLatin1Char('\n'), 0, 0).trimmed();
-			const QStringList dataDirs = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
+			const QStringList dataDirs	  = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
 			for (const QString& dataDir : dataDirs)
 			{
 				const QString desktopPath = dataDir + QStringLiteral("/applications/") + desktopFileName;
@@ -112,8 +112,8 @@ namespace projt::minecraft::auth
 				if (registeredBinInfo.canonicalFilePath() == currentBin.canonicalFilePath())
 					return true;
 				// Registered handler is a different binary → do not use custom scheme.
-				qDebug() << "Custom URL scheme is registered for a different binary ("
-						 << registeredBin << ") — falling back to HTTP loopback handler.";
+				qDebug() << "Custom URL scheme is registered for a different binary (" << registeredBin
+						 << ") — falling back to HTTP loopback handler.";
 				return false;
 			}
 			return true; // Could not verify; assume it's ours.
@@ -130,7 +130,7 @@ namespace projt::minecraft::auth
 			// Strip surrounding quotes from the executable portion.
 			if (registeredCmd.startsWith(QLatin1Char('"')))
 			{
-				registeredCmd = registeredCmd.mid(1);
+				registeredCmd		 = registeredCmd.mid(1);
 				const int closeQuote = registeredCmd.indexOf(QLatin1Char('"'));
 				if (closeQuote >= 0)
 					registeredCmd = registeredCmd.left(closeQuote);
@@ -145,14 +145,13 @@ namespace projt::minecraft::auth
 
 			const QFileInfo currentBin(QCoreApplication::applicationFilePath());
 			const QFileInfo registeredBin(registeredCmd);
-			if (registeredBin.canonicalFilePath().compare(currentBin.canonicalFilePath(),
-														   Qt::CaseInsensitive) == 0)
+			if (registeredBin.canonicalFilePath().compare(currentBin.canonicalFilePath(), Qt::CaseInsensitive) == 0)
 				return true;
 
 			// The URL scheme is registered, but for a different launcher binary.
 			// Fall back to the HTTP loopback handler so our OAuth callback reaches us.
-			qDebug() << "Custom URL scheme is registered for a different binary ("
-					 << registeredCmd << ") — falling back to HTTP loopback handler.";
+			qDebug() << "Custom URL scheme is registered for a different binary (" << registeredCmd
+					 << ") — falling back to HTTP loopback handler.";
 			return false;
 #else
 			return true;

@@ -35,6 +35,7 @@ class QToolButton;
 class QWidget;
 class QPushButton;
 class NewsChecker;
+class QEvent;
 
 class LauncherHubWidget : public QWidget
 {
@@ -62,16 +63,23 @@ class LauncherHubWidget : public QWidget
 
   private:
 	HubViewBase* currentView() const;
+	HubViewBase* viewForTabIndex(int index) const;
+	int tabIndexForView(const HubViewBase* view) const;
 	HubViewBase* createTab(const QUrl& url, const QString& label = QString(), bool switchTo = true);
 	void createCockpitTab();
 	void switchToPage(QWidget* page);
-	void activatePendingForIndex(int index);
+	void activatePendingForPage(QWidget* page);
 	void updateNavigationState();
 	void updateTabPerformanceState();
+	void syncTabsUi();
+	void refreshToolbarIcons();
 	void rebuildRecentInstances();
 	void rebuildNewsFeed();
 	void updateHero();
 	QString activeInstanceId() const;
+
+  protected:
+	void changeEvent(QEvent* event) override;
 
 	QTabBar* m_tabBar					 = nullptr;
 	QWidget* m_tabsBarContainer			 = nullptr;

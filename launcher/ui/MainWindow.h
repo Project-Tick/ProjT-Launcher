@@ -83,7 +83,8 @@ class InstanceView;
 class KonamiCode;
 class InstanceTask;
 class LabeledToolButton;
-class LauncherHubDialog;
+class LauncherHubWidget;
+class QStackedWidget;
 
 namespace Ui
 {
@@ -258,6 +259,9 @@ class MainWindow : public QMainWindow
 	void setSelectedInstanceById(const QString& id);
 	void updateStatusCenter();
 	void setInstanceActionsEnabled(bool enabled);
+	void showMainContent();
+	void ensureLauncherHubPage();
+	bool isLauncherHubVisible() const;
 
 	void openLauncherHub(const QUrl& url = QUrl());
 
@@ -267,15 +271,18 @@ class MainWindow : public QMainWindow
   private:
 	Ui::MainWindow* ui;
 	// these are managed by Qt's memory management model!
-	InstanceView* view					= nullptr;
-	InstanceProxyModel* proxymodel		= nullptr;
-	QToolButton* newsLabel				= nullptr;
-	QLabel* m_statusLeft				= nullptr;
-	QLabel* m_statusCenter				= nullptr;
-	LabeledToolButton* changeIconButton = nullptr;
-	LabeledToolButton* renameButton		= nullptr;
-	QToolButton* helpMenuButton			= nullptr;
-	KonamiCode* secretEventFilter		= nullptr;
+	InstanceView* view					   = nullptr;
+	QStackedWidget* m_contentStack		   = nullptr;
+	QWidget* m_instancesPage			   = nullptr;
+	LauncherHubWidget* m_launcherHubWidget = nullptr;
+	InstanceProxyModel* proxymodel		   = nullptr;
+	QToolButton* newsLabel				   = nullptr;
+	QLabel* m_statusLeft				   = nullptr;
+	QLabel* m_statusCenter				   = nullptr;
+	LabeledToolButton* changeIconButton	   = nullptr;
+	LabeledToolButton* renameButton		   = nullptr;
+	QToolButton* helpMenuButton			   = nullptr;
+	KonamiCode* secretEventFilter		   = nullptr;
 
 	std::shared_ptr<Setting> instanceToolbarSetting = nullptr;
 
@@ -286,6 +293,4 @@ class MainWindow : public QMainWindow
 
 	// managed by the application object
 	Task* m_versionLoadTask = nullptr;
-
-	QPointer<LauncherHubDialog> m_launcherHubDialog;
 };

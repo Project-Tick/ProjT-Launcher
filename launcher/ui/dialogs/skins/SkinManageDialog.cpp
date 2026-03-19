@@ -270,7 +270,7 @@ void SkinManageDialog::onCapesLoaded()
 	int rowCount = m_capeModel->rowCount();
 	for (int i = 0; i < rowCount; i++)
 	{
-		QString id	   = m_capeModel->data(m_capeModel->index(i), CapeListModel::CapeIdRole).toString();
+		QString id	 = m_capeModel->data(m_capeModel->index(i), CapeListModel::CapeIdRole).toString();
 		QImage image = m_capeModel->data(m_capeModel->index(i), CapeListModel::CapeImageRole).value<QImage>();
 		if (!image.isNull())
 		{

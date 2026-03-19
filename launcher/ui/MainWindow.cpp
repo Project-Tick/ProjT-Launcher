@@ -88,6 +88,7 @@
 #include <QMessageBox>
 #include <QProgressDialog>
 #include <QShortcut>
+#include <QStackedWidget>
 #include <QStatusBar>
 #include <QToolBar>
 #include <QToolButton>
@@ -121,7 +122,6 @@
 #include "ui/dialogs/ExportPackDialog.h"
 #include "ui/dialogs/IconPickerDialog.h"
 #include "ui/dialogs/ImportResourceDialog.h"
-#include "ui/dialogs/LauncherHubDialog.h"
 #include "ui/dialogs/NewInstanceDialog.h"
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/dialogs/NewsDialog.h"
@@ -130,6 +130,7 @@
 #include "ui/instanceview/InstanceView.h"
 #include "ui/themes/Theme.h"
 #include "ui/themes/ThemeManager.h"
+#include "ui/widgets/LauncherHubWidget.h"
 #include "ui/widgets/LabeledToolButton.h"
 
 #include "minecraft/PackProfile.h"
@@ -322,7 +323,15 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 	// Create the instance list widget
 	{
-		view = new InstanceView(ui->centralWidget);
+		m_contentStack = new QStackedWidget(ui->centralWidget);
+		ui->horizontalLayout->addWidget(m_contentStack);
+
+		m_instancesPage		  = new QWidget(m_contentStack);
+		auto* instancesLayout = new QHBoxLayout(m_instancesPage);
+		instancesLayout->setContentsMargins(0, 0, 0, 0);
+		instancesLayout->setSpacing(0);
+
+		view = new InstanceView(m_instancesPage);
 
 		view->setSelectionMode(QAbstractItemView::SingleSelection);
 		// Delegate is owned by 'this', Qt will handle cleanup via parent-child relationship
@@ -371,7 +380,55 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 				&InstanceView::groupStateChanged,
 				APPLICATION->instances().get(),
 				&InstanceList::on_GroupStateChanged);
-		ui->horizontalLayout->addWidget(view);
+		instancesLayout->addWidget(view);
+		m_contentStack->addWidget(m_instancesPage);
+
+#if !defined(PROJT_DISABLE_LAUNCHER_HUB)
+		m_launcherHubWidget = new LauncherHubWidget(m_contentStack);
+		m_launcherHubWidget->hide();
+		m_contentStack->addWidget(m_launcherHubWidget);
+
+		connect(m_launcherHubWidget,
+				&LauncherHubWidget::selectInstanceRequested,
+				this,
+				[this](const QString& instanceId) { setSelectedInstanceById(instanceId); });
+		connect(m_launcherHubWidget,
+				&LauncherHubWidget::launchInstanceRequested,
+				this,
+				[this](const QString& instanceId)
+				{
+					setSelectedInstanceById(instanceId);
+					auto instance = APPLICATION->instances()->getInstanceById(instanceId);
+					if (instance && !instance->isRunning())
+					{
+						activateInstance(instance);
+					}
+				});
+		connect(m_launcherHubWidget,
+				&LauncherHubWidget::editInstanceRequested,
+				this,
+				[this](const QString& instanceId)
+				{
+					setSelectedInstanceById(instanceId);
+					on_actionEditInstance_triggered();
+				});
+		connect(m_launcherHubWidget,
+				&LauncherHubWidget::backupsRequested,
+				this,
+				[this](const QString& instanceId)
+				{
+					setSelectedInstanceById(instanceId);
+					on_actionManageBackups_triggered();
+				});
+		connect(m_launcherHubWidget,
+				&LauncherHubWidget::openInstanceFolderRequested,
+				this,
+				[this](const QString& instanceId)
+				{
+					setSelectedInstanceById(instanceId);
+					on_actionViewSelectedInstFolder_triggered();
+				});
+#endif
 	}
 	// The cat background
 	{
@@ -1554,6 +1611,11 @@ void MainWindow::on_actionMoreNews_triggered()
 
 void MainWindow::on_actionLauncherHub_triggered()
 {
+	if (isLauncherHubVisible())
+	{
+		showMainContent();
+		return;
+	}
 	openLauncherHub();
 }
 
@@ -1566,6 +1628,36 @@ void MainWindow::newsButtonClicked()
 	news_dialog.exec();
 }
 
+void MainWindow::showMainContent()
+{
+	if (!m_contentStack || !m_instancesPage)
+	{
+		return;
+	}
+	m_contentStack->setCurrentWidget(m_instancesPage);
+}
+
+void MainWindow::ensureLauncherHubPage()
+{
+#if defined(PROJT_DISABLE_LAUNCHER_HUB)
+	return;
+#else
+	if (!m_contentStack || !m_launcherHubWidget)
+	{
+		return;
+	}
+
+	m_launcherHubWidget->setSelectedInstanceId(m_selectedInstance ? m_selectedInstance->id() : QString());
+	m_launcherHubWidget->refreshCockpit();
+	m_contentStack->setCurrentWidget(m_launcherHubWidget);
+#endif
+}
+
+bool MainWindow::isLauncherHubVisible() const
+{
+	return m_contentStack && m_launcherHubWidget && m_contentStack->currentWidget() == m_launcherHubWidget;
+}
+
 void MainWindow::openLauncherHub(const QUrl& url)
 {
 #if defined(PROJT_DISABLE_LAUNCHER_HUB)
@@ -1576,59 +1668,16 @@ void MainWindow::openLauncherHub(const QUrl& url)
 	}
 	return;
 #endif
-	if (!m_launcherHubDialog)
+
+	ensureLauncherHubPage();
+	if (!m_launcherHubWidget)
 	{
-		m_launcherHubDialog = new LauncherHubDialog(this);
-		connect(m_launcherHubDialog,
-				&LauncherHubDialog::selectInstanceRequested,
-				this,
-				[this](const QString& instanceId) { setSelectedInstanceById(instanceId); });
-		connect(m_launcherHubDialog,
-				&LauncherHubDialog::launchInstanceRequested,
-				this,
-				[this](const QString& instanceId)
-				{
-					setSelectedInstanceById(instanceId);
-					auto instance = APPLICATION->instances()->getInstanceById(instanceId);
-					if (instance && !instance->isRunning())
-					{
-						activateInstance(instance);
-					}
-				});
-		connect(m_launcherHubDialog,
-				&LauncherHubDialog::editInstanceRequested,
-				this,
-				[this](const QString& instanceId)
-				{
-					setSelectedInstanceById(instanceId);
-					on_actionEditInstance_triggered();
-				});
-		connect(m_launcherHubDialog,
-				&LauncherHubDialog::backupsRequested,
-				this,
-				[this](const QString& instanceId)
-				{
-					setSelectedInstanceById(instanceId);
-					on_actionManageBackups_triggered();
-				});
-		connect(m_launcherHubDialog,
-				&LauncherHubDialog::openInstanceFolderRequested,
-				this,
-				[this](const QString& instanceId)
-				{
-					setSelectedInstanceById(instanceId);
-					on_actionViewSelectedInstFolder_triggered();
-				});
+		return;
 	}
-	m_launcherHubDialog->setSelectedInstanceId(m_selectedInstance ? m_selectedInstance->id() : QString());
-	m_launcherHubDialog->refreshCockpit();
 	if (url.isValid())
 	{
-		m_launcherHubDialog->openUrl(url);
+		m_launcherHubWidget->openUrl(url);
 	}
-	m_launcherHubDialog->show();
-	m_launcherHubDialog->raise();
-	m_launcherHubDialog->activateWindow();
 }
 
 void MainWindow::onCatChanged(int)
@@ -1883,10 +1932,10 @@ void MainWindow::instanceChanged(const QModelIndex& current, [[maybe_unused]] co
 				this,
 				&MainWindow::refreshCurrentInstance);
 		connect(m_selectedInstance.get(), &BaseInstance::profilerChanged, this, &MainWindow::refreshCurrentInstance);
-		if (m_launcherHubDialog)
+		if (m_launcherHubWidget)
 		{
-			m_launcherHubDialog->setSelectedInstanceId(m_selectedInstance->id());
-			m_launcherHubDialog->refreshCockpit();
+			m_launcherHubWidget->setSelectedInstanceId(m_selectedInstance->id());
+			m_launcherHubWidget->refreshCockpit();
 		}
 	}
 	else
@@ -1924,10 +1973,10 @@ void MainWindow::selectionBad()
 	updateLaunchButton();
 	renameButton->setText(tr("Rename Instance"));
 	updateInstanceToolIcon("grass");
-	if (m_launcherHubDialog)
+	if (m_launcherHubWidget)
 	{
-		m_launcherHubDialog->setSelectedInstanceId(QString());
-		m_launcherHubDialog->refreshCockpit();
+		m_launcherHubWidget->setSelectedInstanceId(QString());
+		m_launcherHubWidget->refreshCockpit();
 	}
 
 	// ...and then see if we can enable the previously selected instance

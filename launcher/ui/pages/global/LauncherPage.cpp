@@ -76,6 +76,7 @@
 #include "settings/SettingsObject.h"
 #include "ui/themes/Theme.h"
 #include "ui/themes/ThemeManager.h"
+#include "ui/widgets/HubSearchProvider.h"
 #include "updater/ExternalUpdater.h"
 
 #include <QApplication>
@@ -96,6 +97,11 @@ LauncherPage::LauncherPage(QWidget* parent) : QWidget(parent), ui(new Ui::Launch
 
 	ui->sortingModeGroup->setId(ui->sortByNameBtn, Sort_Name);
 	ui->sortingModeGroup->setId(ui->sortLastLaunchedBtn, Sort_LastLaunch);
+
+	for (const auto& provider : hubSearchProviders())
+	{
+		ui->hubSearchEngineComboBox->addItem(provider.displayName, provider.id);
+	}
 
 	loadSettings();
 
@@ -237,6 +243,7 @@ void LauncherPage::applySettings()
 	}
 
 	s->set("MenuBarInsteadOfToolBar", ui->preferMenuBarCheckBox->isChecked());
+	s->set("HubSearchEngine", ui->hubSearchEngineComboBox->currentData().toString());
 
 	s->set("NumberOfConcurrentTasks", ui->numberOfConcurrentTasksSpinBox->value());
 	s->set("NumberOfConcurrentDownloads", ui->numberOfConcurrentDownloadsSpinBox->value());
@@ -300,6 +307,9 @@ void LauncherPage::loadSettings()
 	}
 
 	ui->preferMenuBarCheckBox->setChecked(s->get("MenuBarInsteadOfToolBar").toBool());
+	const QString currentProvider = normalizedHubSearchProviderId(s->get("HubSearchEngine").toString());
+	const int providerIndex = ui->hubSearchEngineComboBox->findData(currentProvider);
+	ui->hubSearchEngineComboBox->setCurrentIndex(providerIndex >= 0 ? providerIndex : 0);
 
 	ui->numberOfConcurrentTasksSpinBox->setValue(s->get("NumberOfConcurrentTasks").toInt());
 	ui->numberOfConcurrentDownloadsSpinBox->setValue(s->get("NumberOfConcurrentDownloads").toInt());
