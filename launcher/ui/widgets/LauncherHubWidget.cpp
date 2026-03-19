@@ -104,6 +104,11 @@ void LauncherHubWidget::setSelectedInstanceId(const QString&)
 void LauncherHubWidget::refreshCockpit()
 {}
 
+void LauncherHubWidget::changeEvent(QEvent* event)
+{
+	QWidget::changeEvent(event);
+}
+
 #else
 
 namespace
