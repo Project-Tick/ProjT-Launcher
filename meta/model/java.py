@@ -200,7 +200,7 @@ class AdoptxOs(StrEnum):
 
 
 ADOPTIUM_API_BASE = "https://api.adoptium.net"
-OPENJ9_API_BASE = " https://api.adoptopenjdk.net"
+OPENJ9_API_BASE = "https://api.adoptopenjdk.net"
 ADOPTX_API_FEATURE_RELEASES = (
     f"{{base_url}}/v3/assets/feature_releases/{{feature_version}}/{{release_type}}"
 )
