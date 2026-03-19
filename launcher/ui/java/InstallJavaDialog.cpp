@@ -369,6 +369,8 @@ namespace Java
 			new InstallJavaPage("net.minecraft.java", "mojang", tr("Mojang")),
 			// Adoptium
 			new InstallJavaPage("net.adoptium.java", "adoptium", tr("Adoptium")),
+			// IBM Semeru OpenJ9
+			new InstallJavaPage("com.ibm.java", "openj9", tr("IBM Semeru OpenJ9")),
 			// Azul
 			new InstallJavaPage("com.azul.java", "azul", tr("Azul Zulu")),
 		};

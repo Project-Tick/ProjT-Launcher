@@ -43,7 +43,7 @@ class ComponentUpdateTask : public Task
 	virtual ~ComponentUpdateTask();
 
   protected:
-	void executeTask();
+	void executeTask() override;
 
   private:
 	void loadComponents();

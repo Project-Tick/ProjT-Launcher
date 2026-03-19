@@ -374,10 +374,9 @@ namespace ModUtils
 					else
 					{ // parsing the sizes failed
 						// take the first
-						for (auto i : obj)
+						if (auto it = obj.begin(); it != obj.end())
 						{
-							details.icon_file = i.toString();
-							break;
+							details.icon_file = it->toString();
 						}
 					}
 				}
@@ -489,10 +488,9 @@ namespace ModUtils
 						else
 						{ // parsing the sizes failed
 							// take the first
-							for (auto i : obj)
+							if (auto it = obj.begin(); it != obj.end())
 							{
-								details.icon_file = i.toString();
-								break;
+								details.icon_file = it->toString();
 							}
 						}
 					}

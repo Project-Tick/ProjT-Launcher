@@ -464,7 +464,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 		QDir foo;
 		if (DesktopServices::isSnap())
 		{
-			foo = QDir(getenv("SNAP_USER_COMMON"));
+			foo = QDir(qEnvironmentVariable("SNAP_USER_COMMON"));
 		}
 		else
 		{
@@ -850,9 +850,8 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 
 		// Memory
 		m_settings->registerSetting({ "MinMemAlloc", "MinMemoryAlloc" }, 512);
-		m_settings->registerSetting({ "MaxMemAlloc", "MaxMemoryAlloc" }, SysInfo::suitableMaxMem());
+		m_settings->registerSetting({ "MaxMemAlloc", "MaxMemoryAlloc" }, SysInfo::defaultMaxJvmMem());
 		m_settings->registerSetting("PermGen", 128);
-
 		// Java Settings
 		m_settings->registerSetting("JavaPath", "");
 		m_settings->registerSetting("JavaSignature", "");
@@ -894,6 +893,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 		m_settings->registerSetting("ModMetadataDisabled", false);
 		m_settings->registerSetting("ModDependenciesDisabled", false);
 		m_settings->registerSetting("SkipModpackUpdatePrompt", false);
+		m_settings->registerSetting("ShowModIncompat", false);
 
 		// Minecraft offline player name
 		m_settings->registerSetting("LastOfflinePlayerName", "");
@@ -943,6 +943,8 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 		m_settings->registerSetting("ShaderDownloadGeometry", "");
 		m_settings->registerSetting("DataPackDownloadGeometry", "");
 
+		m_settings->registerSetting("NewsGeometry", "");
+
 		// data pack window
 		// in future, more pages may be added - so this name is chosen to avoid needing migration
 		m_settings->registerSetting("WorldManagementGeometry", "");
@@ -990,6 +992,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 			m_settings->reset("CFKeyOverride");
 		}
 		m_settings->registerSetting("ModrinthToken", "");
+		m_settings->registerSetting("FallbackMRBlockedMods", true);
 		m_settings->registerSetting("UserAgentOverride", "");
 
 		// FTBApp instances
@@ -1505,7 +1508,7 @@ void Application::performMainStartupAction()
 				qDebug() << "   Launching with account" << m_profileToUse;
 			}
 
-			launch(inst, !m_offline, false, targetToJoin, accountToUse, m_offlineName);
+			launch(inst, m_offline ? LaunchMode::Offline : LaunchMode::Normal, targetToJoin, accountToUse, m_offlineName);
 			return;
 		}
 	}
@@ -1663,7 +1666,7 @@ void Application::messageReceived(const QByteArray& message)
 			}
 		}
 
-		launch(instance, !offline, false, serverObject, accountObject, offlineName);
+		launch(instance, offline ? LaunchMode::Offline : LaunchMode::Normal, serverObject, accountObject, offlineName);
 	}
 	else
 	{
@@ -1705,8 +1708,7 @@ bool Application::openJsonEditor(const QString& filename)
 }
 
 bool Application::launch(InstancePtr instance,
-						 bool online,
-						 bool demo,
+						 LaunchMode mode,
 						 MinecraftTarget::Ptr targetToJoin,
 						 MinecraftAccountPtr accountToUse,
 						 const QString& offlineName)
@@ -1735,7 +1737,7 @@ bool Application::launch(InstancePtr instance,
 			connect(backupManager,
 					&BackupManager::backupCreated,
 					this,
-					[this, instance, online, demo, offlineName, progress, backupManager](const QString& instanceId,
+					[this, instance, mode, offlineName, progress, backupManager](const QString& instanceId,
 																						 const QString& backupName)
 					{
 						if (instanceId == instance->id())
@@ -1744,8 +1746,7 @@ bool Application::launch(InstancePtr instance,
 							progress->close();
 							progress->deleteLater();
 							backupManager->deleteLater();
-							// Launch işlemini ayrı slot ile başlat
-							emit continueLaunchAfterBackup(instanceId, online, demo, offlineName);
+							continueLaunchAfterBackup(instanceId, mode, offlineName);
 						}
 					});
 			connect(backupManager,
@@ -1767,13 +1768,13 @@ bool Application::launch(InstancePtr instance,
 			// launch işlemini backup tamamlanınca başlatıyoruz, burada return ile çıkıyoruz
 			return true;
 		}
-		continueLaunchAfterBackup(instance->id(), online, demo, offlineName);
+		continueLaunchAfterBackup(instance->id(), mode, offlineName);
 		return true;
 	}
 	return false;
 }
 
-void Application::continueLaunchAfterBackup(QString instanceId, bool online, bool demo, QString offlineName)
+void Application::continueLaunchAfterBackup(QString instanceId, LaunchMode mode, QString offlineName)
 {
 	InstancePtr instance   = instances()->getInstanceById(instanceId);
 	InstanceWindow* window = nullptr;
@@ -1799,8 +1800,7 @@ void Application::continueLaunchAfterBackup(QString instanceId, bool online, boo
 	// Create and configure launch controller
 	auto controller = makeShared<LaunchController>();
 	controller->setInstance(instance);
-	controller->setOnline(online);
-	controller->setDemo(demo);
+	controller->setLaunchMode(mode);
 	controller->setProfiler(profilers().value(instance->settings()->get("Profiler").toString(), nullptr).get());
 	controller->setOfflineName(offlineName);
 	if (window)

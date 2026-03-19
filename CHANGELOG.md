@@ -6,8 +6,6 @@
 
 We are excited to announce the official release of **ProjT Launcher: version 0.0.5-1**.
 
-This is our first version on **GitLab**!
-
 This release strengthens version compliance, particularly by improving Fabric/Quilt and LWJGL
 component parsing; it also adds a Launcher Hub (web-based dashboard) and makes the packaging flow
 (RPM, AppImage, portable, macOS) more consistent. The CI and build systems (Qt/CMake, MSYS2/MSVC
@@ -65,52 +63,3 @@ and metadata-related incompatibilities have been addressed.
 - Expanded targeted standalone test coverage and kept launcher test targets aligned with shared runtime deps.
 - Refined Linux image/Flatpak/runner workflow details and cleaned up repository metadata/docs housekeeping.
 - Debounced instance directory reloads to reduce noisy logs and unnecessary refresh churn.
-
-### Why GitLab?
-
-The decision to position GitLab SaaS as the primary development platform is grounded in operational efficiency, cost structure, and long-term control — not ideology.
-
-**1. OSS Ultimate SaaS Program Approval**
-Project Tick has been accepted into the GitLab OSS Ultimate SaaS Program. This provides:
-
-* Access to Ultimate-tier features
-* 50,000 CI minutes per month
-* Advanced security and compliance tooling
-  This materially reduces operational cost while expanding CI capacity.
-
-**2. Merge Request-Centric Workflow Architecture**
-GitLab provides a more integrated MR-driven workflow model:
-
-* First-class MR pipeline controls
-* Native approval rules and compliance gating
-* Clearer repository governance boundaries
-
-For a multi-repository, high-scale project, centralized MR orchestration is critical.
-
-**3. CI Governance and Hybrid Control**
-GitLab enables:
-
-* Clear separation between repository management and compute execution
-* Flexible runner orchestration (self-managed + hosted)
-* Fine-grained CI control without vendor lock-in
-
-GitHub remains a compute layer in the hybrid model, but GitLab is positioned as the canonical coordination layer.
-
-**4. Platform Independence by Design**
-GitLab is used as the central management layer — not as a single point of failure.
-All repositories are:
-
-* Backed up independently
-* Architected for migration
-* Designed to avoid provider entanglement
-
-The objective is sovereignty with redundancy.
-
-**5. Cost-to-Performance Optimization**
-The hybrid design leverages:
-
-* GitLab OSS CI allocation
-* GitHub Actions compute elasticity
-* Self-managed runner capacity
-
-Workload placement is data-driven and capacity-driven, not preference-driven.

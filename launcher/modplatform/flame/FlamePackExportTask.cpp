@@ -92,8 +92,8 @@ void FlamePackExportTask::collectFiles()
 	setAbortable(false);
 	QCoreApplication::processEvents();
 
-	files.clear();
-	if (!MMCZip::collectFileListRecursively(m_options.instance->gameRoot(), nullptr, &files, m_options.filter))
+	m_files.clear();
+	if (!MMCZip::collectFileListRecursively(m_options.instance->gameRoot(), nullptr, &m_files, m_options.filter))
 	{
 		emitFailed(tr("Could not search for files"));
 		return;
@@ -118,7 +118,7 @@ void FlamePackExportTask::collectHashes()
 	ConcurrentTask::Ptr hashingTask(
 		new ConcurrentTask("MakeHashesTask", APPLICATION->settings()->get("NumberOfConcurrentTasks").toInt()));
 	task.reset(hashingTask);
-	for (const QFileInfo& file : files)
+	for (const QFileInfo& file : m_files)
 	{
 		const QString relative = m_gameRoot.relativeFilePath(file.absoluteFilePath());
 		// require sensible file types
@@ -426,7 +426,7 @@ void FlamePackExportTask::buildZip()
 	setStatus(tr("Adding files..."));
 	setProgress(4, 5);
 
-	auto zipTask = makeShared<MMCZip::ExportToZipTask>(m_options.output, m_gameRoot, files, "overrides/", true, false);
+	auto zipTask = makeShared<MMCZip::ExportToZipTask>(m_options.output, m_gameRoot, m_files, "overrides/", true, false);
 	zipTask->addExtraFile("manifest.json", generateIndex());
 	zipTask->addExtraFile("modlist.html", generateHTML());
 

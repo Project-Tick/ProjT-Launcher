@@ -254,8 +254,8 @@ namespace projt::java
 		auto osArch		 = results["os.arch"];
 		auto javaVersion = results["java.version"];
 		auto javaVendor	 = results["java.vendor"];
-		bool is64 =
-			osArch == "x86_64" || osArch == "amd64" || osArch == "aarch64" || osArch == "arm64" || osArch == "riscv64";
+		bool is64 = osArch == "x86_64" || osArch == "amd64" || osArch == "aarch64" || osArch == "arm64"
+					|| osArch == "riscv64" || osArch == "ppc64le" || osArch == "ppc64";
 
 		report.status		= ProbeReport::Status::Valid;
 		report.is_64bit		= is64;

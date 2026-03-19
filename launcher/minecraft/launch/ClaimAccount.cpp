@@ -27,7 +27,7 @@
 ClaimAccount::ClaimAccount(projt::launch::LaunchPipeline* parent, AuthSessionPtr session)
 	: projt::launch::LaunchStage(parent)
 {
-	if (session->status == AuthSession::Status::PlayableOnline && !session->demo)
+	if (session->launchMode == LaunchMode::Normal)
 	{
 		auto accounts = APPLICATION->accounts();
 		m_account	  = accounts->getAccountByProfileName(session->player_name);
@@ -39,8 +39,8 @@ void ClaimAccount::executeTask()
 	if (m_account)
 	{
 		lock.reset(new UseLock(m_account));
-		emitSucceeded();
 	}
+	emitSucceeded();
 }
 
 void ClaimAccount::finalize()

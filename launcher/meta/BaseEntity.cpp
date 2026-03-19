@@ -135,52 +135,47 @@ namespace projt::meta
 			return;
 		}
 
-		// Try loading from cache
-		try
+		QString cacheError;
+
+		if (m_mode == Net::Mode::Online)
 		{
-			setStatus(tr("Loading cached metadata"));
-
-			QByteArray content		 = FS::read(cachePath);
-			m_target->m_actualSha256 = Hashing::hash(content, Hashing::Algorithm::Sha256);
-
-			// Validate checksum if we have an expected one
-			bool checksumValid =
-				m_target->m_expectedSha256.isEmpty() || (m_target->m_expectedSha256 == m_target->m_actualSha256);
-
-			if (m_mode == Net::Mode::Online && !checksumValid)
+			// In online mode, always revalidate metadata against the remote cache entry on first load.
+			// Relying only on the cached file plus the last known expected checksum can leave us stuck
+			// on stale package manifests across launcher restarts.
+			if (loadCachedMetadata(cachePath, &cacheError))
 			{
-				// Checksum mismatch in online mode - need fresh copy
-				initiateRemoteFetch();
-				return;
-			}
-
-			// Parse the cached file
-			if (m_target->m_state == MetaEntity::State::Pending)
-			{
-				QJsonDocument doc = Json::requireDocument(content, cachePath);
-				QJsonObject root  = Json::requireObject(doc, cachePath);
-				m_target->loadFromJson(root);
-				finalizeLoad(MetaEntity::State::Cached);
+				m_target->m_state	   = MetaEntity::State::Cached;
+				m_canUseLocalFallback = true;
 			}
 			else
 			{
-				// Already loaded, just succeed
-				emitSucceeded();
-			}
-		}
-		catch (const Exception& ex)
-		{
-			qDebug() << "Cache parse failed for" << cachePath << ":" << ex.cause();
-			FS::deletePath(cachePath);
-			m_target->m_state = MetaEntity::State::Pending;
-
-			if (m_mode == Net::Mode::Offline)
-			{
-				emitFailed(tr("Cached metadata corrupted and offline mode active"));
-				return;
+				qDebug() << "Cache parse failed for" << cachePath << ":" << cacheError;
+				FS::deletePath(cachePath);
+				m_target->m_state	   = MetaEntity::State::Pending;
+				m_canUseLocalFallback = false;
 			}
 			initiateRemoteFetch();
+			return;
 		}
+
+		if (loadCachedMetadata(cachePath, &cacheError))
+		{
+			m_target->m_state = MetaEntity::State::Cached;
+			emitSucceeded();
+			return;
+		}
+
+		qDebug() << "Cache parse failed for" << cachePath << ":" << cacheError;
+		FS::deletePath(cachePath);
+		m_target->m_state = MetaEntity::State::Pending;
+
+		if (m_mode == Net::Mode::Offline)
+		{
+			emitFailed(tr("Cached metadata corrupted and offline mode active"));
+			return;
+		}
+
+		initiateRemoteFetch();
 	}
 
 	void EntityLoader::initiateRemoteFetch()
@@ -208,13 +203,64 @@ namespace projt::meta
 
 		// Connect signals
 		connect(m_netTask.get(), &Task::succeeded, this, [this]() { finalizeLoad(MetaEntity::State::Synchronized); });
-		connect(m_netTask.get(), &Task::failed, this, &EntityLoader::emitFailed);
+		connect(m_netTask.get(), &Task::failed, this, &EntityLoader::handleRemoteFailure);
 		connect(m_netTask.get(), &Task::progress, this, &Task::setProgress);
 		connect(m_netTask.get(), &Task::stepProgress, this, &EntityLoader::propagateStepProgress);
 		connect(m_netTask.get(), &Task::status, this, &Task::setStatus);
 		connect(m_netTask.get(), &Task::details, this, &Task::setDetails);
 
 		m_netTask->start();
+	}
+
+	bool EntityLoader::loadCachedMetadata(const QString& cachePath, QString* errorOut)
+	{
+		try
+		{
+			setStatus(tr("Loading cached metadata"));
+
+			QByteArray content		 = FS::read(cachePath);
+			m_target->m_actualSha256 = Hashing::hash(content, Hashing::Algorithm::Sha256);
+
+			if (m_target->m_state == MetaEntity::State::Pending)
+			{
+				QJsonDocument doc = Json::requireDocument(content, cachePath);
+				QJsonObject root  = Json::requireObject(doc, cachePath);
+				m_target->loadFromJson(root);
+			}
+
+			return true;
+		}
+		catch (const Exception& ex)
+		{
+			if (errorOut)
+				*errorOut = ex.cause();
+			return false;
+		}
+	}
+
+	void EntityLoader::handleRemoteFailure(const QString& reason)
+	{
+		if (!m_canUseLocalFallback)
+		{
+			emitFailed(reason);
+			return;
+		}
+
+		QString cachePath = QDir("meta").absoluteFilePath(m_target->cacheFilePath());
+		QString cacheError;
+		if (QFile::exists(cachePath) && loadCachedMetadata(cachePath, &cacheError))
+		{
+			m_target->m_state = MetaEntity::State::Cached;
+			emitSucceeded();
+			qWarning() << "Remote metadata refresh failed for" << m_target->cacheFilePath()
+					   << "- falling back to cached metadata:" << reason;
+			return;
+		}
+
+		if (!cacheError.isEmpty())
+			qWarning() << "Cached fallback also failed for" << cachePath << ":" << cacheError;
+
+		emitFailed(reason);
 	}
 
 	void EntityLoader::finalizeLoad(MetaEntity::State newState)

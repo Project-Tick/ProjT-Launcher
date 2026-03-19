@@ -1,14 +1,14 @@
-projtlauncher(6)
+@Launcher_APP_BINARY_NAME@(6)
 
 
 # NAME
 
-projtlauncher - a launcher and instance manager for Minecraft.
+@Launcher_APP_BINARY_NAME@ - a launcher and instance manager for Minecraft.
 
 
 # SYNOPSIS
 
-*projtlauncher* [OPTIONS...]
+*@Launcher_APP_BINARY_NAME@* [OPTIONS...]
 
 
 # DESCRIPTION
@@ -69,14 +69,14 @@ variables, besides other common Qt variables:
 
 # BUGS
 
-https://github.com/Project-Tick/ProjT-Launcher/issues
+@Launcher_BUG_TRACKER_URL@
 
 # RESOURCES
 
-GitHub: https://github.com/Project-Tick/ProjT-Launcher
+GitLab: @Launcher_Git@
 
-Main website: https://projecttick.org/projtlauncher
+Main website: https://@Launcher_Domain@
 
 # AUTHORS
 
-Project Tick Contributors
+@Launcher_Authors@

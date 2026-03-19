@@ -91,7 +91,7 @@ namespace projt::java
 			case VersionPointerRole: return QVariant::fromValue(m_entries[index.row()]);
 			case VersionIdRole: return runtime->descriptor();
 			case VersionRole: return runtime->version.toString();
-			case RecommendedRole: return runtime->recommended;
+			case RecommendedRole: return false;
 			case PathRole: return runtime->path;
 			case CPUArchitectureRole: return runtime->arch;
 			default: return QVariant();
@@ -108,14 +108,6 @@ namespace projt::java
 		beginResetModel();
 		m_entries = std::move(versions);
 		sortVersions();
-		if (!m_entries.isEmpty())
-		{
-			auto best = std::dynamic_pointer_cast<RuntimeInstall>(m_entries[0]);
-			if (best)
-			{
-				best->recommended = true;
-			}
-		}
 		endResetModel();
 		m_state = State::Ready;
 		m_task.reset();

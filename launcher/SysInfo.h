@@ -19,6 +19,7 @@
  *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 #pragma once
+
 #include <QString>
 
 namespace SysInfo
@@ -26,5 +27,10 @@ namespace SysInfo
 	QString currentSystem();
 	QString useQTForArch();
 	QString getSupportedJavaArchitecture();
-	int suitableMaxMem();
+	int defaultMaxJvmMem();
+
+	inline int suitableMaxMem()
+	{
+		return defaultMaxJvmMem();
+	}
 } // namespace SysInfo

@@ -151,6 +151,8 @@ class MinecraftAccount : public QObject, public Usable
 		return data.profileName();
 	}
 
+	QString displayName() const;
+
 	bool isActive() const;
 
 	AccountType accountType() const noexcept

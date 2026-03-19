@@ -155,11 +155,12 @@ namespace projt::meta
 			return existing;
 
 		auto newVer = std::make_shared<MetaVersion>(m_uid, versionId);
+		int row		= m_entries.size();
+		beginInsertRows(QModelIndex(), row, row);
 		m_versionIndex.insert(versionId, newVer);
-
-		int row = m_entries.size();
 		registerVersion(row, newVer);
 		m_entries.append(newVer);
+		endInsertRows();
 
 		return newVer;
 	}

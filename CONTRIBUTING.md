@@ -11,7 +11,7 @@ License: GPL-3.0-only (Launcher), see COPYING.md
 
 We expect authentic engagement in our community.
 
-- Do not post output from Large Language Models or similar generative AI as comments on GitHub or our discord server, as such comments tend to be formulaic and low-quality content.
+- Do not post output from Large Language Models or similar generative AI as comments on GitLab or our discord server, as such comments tend to be formulaic and low-quality content.
 - If you use generative AI tools as an aid in developing code or documentation changes, ensure that you fully understand the proposed changes and can explain why they are the correct approach.
 
 Make sure you have added value based on your personal competency to your contributions. 
@@ -82,7 +82,7 @@ If you do not agree to the CLA, please do not submit contributions.
 ## Quick Start
 
 ```sh
-git clone https://github.com/Project-Tick/ProjT-Launcher.git
+git clone https://gitlab.com/Project-Tick/core/ProjT-Launcher.git
 cd ProjT-Launcher
 cmake --preset your_os
 cmake --build --preset your_os
@@ -302,7 +302,7 @@ Q: How do I update a fork library?
 
 ## Contact
 
-- Issues: [GitLab Issues](https://github.com/Project-Tick/core/ProjT-Launcher/-/issues)
+- Issues: [GitLab Issues](https://gitlab.com/Project-Tick/core/ProjT-Launcher/-/issues)
 - Email: [yongdohyun@projtlauncher.yongdohyun.org.tr](mailto:yongdohyun@projtlauncher.yongdohyun.org.tr)
 
 ---

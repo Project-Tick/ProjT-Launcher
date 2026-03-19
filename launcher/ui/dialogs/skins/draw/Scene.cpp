@@ -67,20 +67,20 @@ namespace opengl
 									QVector3D(8, 12, 4)),
 			// right leg
 			new opengl::BoxGeometry(QVector3D(4, 12, 4),
-									QVector3D(-1.9, -18, -0.1),
+									QVector3D(-1.9f, -18, -0.1f),
 									QPoint(0, 16),
 									QVector3D(4, 12, 4)),
 			new opengl::BoxGeometry(QVector3D(4.5, 12.5, 4.5),
-									QVector3D(-1.9, -18, -0.1),
+									QVector3D(-1.9f, -18, -0.1f),
 									QPoint(0, 32),
 									QVector3D(4, 12, 4)),
 			// left leg
 			new opengl::BoxGeometry(QVector3D(4, 12, 4),
-									QVector3D(1.9, -18, -0.1),
+									QVector3D(1.9f, -18, -0.1f),
 									QPoint(16, 48),
 									QVector3D(4, 12, 4)),
 			new opengl::BoxGeometry(QVector3D(4.5, 12.5, 4.5),
-									QVector3D(1.9, -18, -0.1),
+									QVector3D(1.9f, -18, -0.1f),
 									QPoint(0, 48),
 									QVector3D(4, 12, 4)),
 		};
@@ -119,7 +119,7 @@ namespace opengl
 										 QPoint(0, 0),
 										 QVector3D(10, 16, 1),
 										 QSize(64, 32));
-		m_cape->rotate(10.8, QVector3D(1, 0, 0));
+		m_cape->rotate(10.8f, QVector3D(1, 0, 0));
 		m_cape->rotate(180, QVector3D(0, 1, 0));
 
 		auto leftWing = new opengl::BoxGeometry(QVector3D(12, 22, 4),
@@ -190,12 +190,10 @@ namespace opengl
 			}
 			else
 			{
-				glDisable(GL_CULL_FACE);
 				for (auto e : m_elytra)
 				{
 					e->draw(program);
 				}
-				glEnable(GL_CULL_FACE);
 			}
 			m_capeTexture->release();
 		}

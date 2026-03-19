@@ -330,12 +330,15 @@ namespace FS
 	{
 #ifdef Q_OS_WIN32
 		auto attrs = GetFileAttributesW(src.toStdWString().c_str());
-		if (attrs == INVALID_FILE_ATTRIBUTES)
-			return false;
-		return SetFileAttributesW(dst.toStdWString().c_str(), attrs);
+	if (attrs == INVALID_FILE_ATTRIBUTES)
+		return false;
+	return SetFileAttributesW(dst.toStdWString().c_str(), attrs);
+#else
+	Q_UNUSED(src);
+	Q_UNUSED(dst);
 #endif
-		return true;
-	}
+	return true;
+}
 
 	// needs folders to exists
 	void copyFolderAttributes(QString src, QString dst, QString relative)
@@ -1123,7 +1126,11 @@ namespace FS
 			qWarning() << "Couldn't create directories within application";
 			return QString();
 		}
-		info.open(QIODevice::WriteOnly | QIODevice::Text);
+	if (!info.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		qWarning() << "Failed to open file" << info.fileName() << "for writing!";
+		return QString();
+	}
 
 		QFile(icon).rename(resources.path() + "/Icon.icns");
 
@@ -1131,8 +1138,12 @@ namespace FS
 		QString exec = binaryDir.path() + "/Run.command";
 
 		QFile f(exec);
-		f.open(QIODevice::WriteOnly | QIODevice::Text);
-		QTextStream stream(&f);
+	if (!f.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		qWarning() << "Failed to open file" << f.fileName() << "for writing!";
+		return QString();
+	}
+	QTextStream stream(&f);
 
 		auto argstring = quoteArgs(args, "\"", "\\\"");
 

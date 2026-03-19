@@ -306,11 +306,11 @@ namespace opengl
 
 		// Transfer vertex data to VBO 0
 		m_vertexBuf.bind();
-		m_vertexBuf.allocate(verticesData.constData(), verticesData.size() * sizeof(VertexData));
+		m_vertexBuf.allocate(verticesData.constData(), static_cast<int>(verticesData.size() * sizeof(VertexData)));
 
 		// Transfer index data to VBO 1
 		m_indexBuf.bind();
-		m_indexBuf.allocate(indices.constData(), indices.size() * sizeof(GLushort));
+		m_indexBuf.allocate(indices.constData(), static_cast<int>(indices.size() * sizeof(GLushort)));
 		m_indecesCount = indices.size();
 	}
 
@@ -325,11 +325,11 @@ namespace opengl
 
 		// Transfer vertex data to VBO 0
 		b->m_vertexBuf.bind();
-		b->m_vertexBuf.allocate(planeVertices.constData(), planeVertices.size() * sizeof(VertexData));
+		b->m_vertexBuf.allocate(planeVertices.constData(), static_cast<int>(planeVertices.size() * sizeof(VertexData)));
 
 		// Transfer index data to VBO 1
 		b->m_indexBuf.bind();
-		b->m_indexBuf.allocate(planeIndices.constData(), planeIndices.size() * sizeof(GLushort));
+		b->m_indexBuf.allocate(planeIndices.constData(), static_cast<int>(planeIndices.size() * sizeof(GLushort)));
 		b->m_indecesCount = planeIndices.size();
 
 		return b;

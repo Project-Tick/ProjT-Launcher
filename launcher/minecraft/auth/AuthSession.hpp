@@ -23,6 +23,8 @@
 #include <QString>
 #include <memory>
 
+#include "LaunchMode.h"
+
 class MinecraftAccount;
 
 struct AuthSession
@@ -53,6 +55,8 @@ struct AuthSession
 	QString uuid;
 	// 'legacy' or 'mojang', depending on account type
 	QString user_type;
+	// The resolved launch mode for this session.
+	LaunchMode launchMode = LaunchMode::Normal;
 	// Did the auth server reply?
 	bool auth_server_online = false;
 	// Did the user request online mode?

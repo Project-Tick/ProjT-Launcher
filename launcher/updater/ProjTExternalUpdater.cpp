@@ -55,6 +55,7 @@
 #include <QProgressDialog>
 #include <QSettings>
 #include <QTimer>
+#include <algorithm>
 #include <memory>
 
 #include "StringUtils.h"
@@ -69,25 +70,25 @@ class ProjTExternalUpdater::Private
 	QDir appDir;
 	QDir dataDir;
 	QTimer updateTimer;
-	bool allowBeta;
-	bool autoCheck;
-	double updateInterval;
+	bool allowBeta{};
+	bool autoCheck{};
+	double updateInterval{};
 	QDateTime lastCheck;
 	std::unique_ptr<QSettings> settings;
 
-	QWidget* parent;
+	QWidget* parent{};
 };
 
 ProjTExternalUpdater::ProjTExternalUpdater(QWidget* parent, const QString& appDir, const QString& dataDir)
+	: priv(new ProjTExternalUpdater::Private())
 {
-	priv			   = new ProjTExternalUpdater::Private();
 	priv->appDir	   = QDir(appDir);
 	priv->dataDir	   = QDir(dataDir);
 	auto settings_file = priv->dataDir.absoluteFilePath("projtlauncher_update.cfg");
 	priv->settings	   = std::make_unique<QSettings>(settings_file, QSettings::Format::IniFormat);
 	priv->allowBeta	   = priv->settings->value("allow_beta", false).toBool();
 	priv->autoCheck	   = priv->settings->value("auto_check", false).toBool();
-	bool interval_ok;
+	bool interval_ok = false;
 	// default once per day
 	priv->updateInterval = priv->settings->value("update_interval", 86400).toInt(&interval_ok);
 	if (!interval_ok)
@@ -100,6 +101,8 @@ ProjTExternalUpdater::ProjTExternalUpdater(QWidget* parent, const QString& appDi
 	priv->parent = parent;
 	connectTimer();
 	resetAutoCheckTimer();
+	if (priv->updateInterval == 0)
+		checkForUpdates(false);
 }
 
 ProjTExternalUpdater::~ProjTExternalUpdater()
@@ -121,7 +124,8 @@ void ProjTExternalUpdater::checkForUpdates(bool triggeredByUser)
 	QProgressDialog progress(tr("Checking for updates..."), "", 0, 0, priv->parent);
 	progress.setCancelButton(nullptr);
 	progress.adjustSize();
-	progress.show();
+	if (triggeredByUser)
+		progress.show();
 	QCoreApplication::processEvents();
 
 	QProcess proc;
@@ -312,18 +316,18 @@ void ProjTExternalUpdater::resetAutoCheckTimer()
 {
 	if (priv->autoCheck && priv->updateInterval > 0)
 	{
-		int timeoutDuration = 0;
-		auto now			= QDateTime::currentDateTime();
+		qint64 timeoutMs = 0;
+		auto now		 = QDateTime::currentDateTime();
 		if (priv->lastCheck.isValid())
 		{
-			auto diff	   = priv->lastCheck.secsTo(now);
-			auto secs_left = priv->updateInterval - diff;
-			if (secs_left < 0)
-				secs_left = 0;
-			timeoutDuration = secs_left * 1000; // to msec
+			qint64 diff		= priv->lastCheck.secsTo(now);
+			qint64 secs_left = std::max<qint64>(priv->updateInterval - diff, 0);
+			timeoutMs		= secs_left * 1000;
 		}
-		qDebug() << "Auto update timer starting," << timeoutDuration / 1000 << "seconds left";
-		priv->updateTimer.start(timeoutDuration);
+		timeoutMs = std::min(timeoutMs, static_cast<qint64>(INT_MAX));
+
+		qDebug() << "Auto update timer starting," << timeoutMs / 1000 << "seconds left";
+		priv->updateTimer.start(static_cast<int>(timeoutMs));
 	}
 	else
 	{
@@ -393,10 +397,7 @@ void ProjTExternalUpdater::offerUpdate(const QString& version_name,
 			priv->settings->sync();
 			return;
 		}
-		case UpdateAvailableDialog::DontInstall:
-		{
-			return;
-		}
+		default: return;
 	}
 }
 
@@ -418,7 +419,9 @@ void ProjTExternalUpdater::performUpdate(const QString& version_tag)
 	if (priv->allowBeta)
 		args.append("--pre-release");
 
-	auto result = proc.startDetached(priv->appDir.absoluteFilePath(exe_name), args);
+	proc.setProgram(priv->appDir.absoluteFilePath(exe_name));
+	proc.setArguments(args);
+	auto result = proc.startDetached();
 	if (!result)
 	{
 		qDebug() << "Failed to start updater:" << proc.error() << proc.errorString();

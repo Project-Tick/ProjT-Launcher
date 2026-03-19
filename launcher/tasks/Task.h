@@ -222,6 +222,7 @@ class Task : public QObject, public QRunnable
 
 	//! Emitted when the canAbort() status has changed. */
 	void abortStatusChanged(bool can_abort);
+	void abortButtonTextChanged(QString text);
 
   public slots:
 	// QRunnable's interface
@@ -244,6 +245,11 @@ class Task : public QObject, public QRunnable
 	{
 		m_can_abort = can_abort;
 		emit abortStatusChanged(can_abort);
+	}
+
+	void setAbortButtonText(QString text)
+	{
+		emit abortButtonTextChanged(std::move(text));
 	}
 
   protected:

@@ -77,7 +77,7 @@ namespace projt::launch::steps
 		{
 			m_lookup->abort();
 		}
-		emitFailed("Aborted");
+		emitAborted();
 		return true;
 	}
 

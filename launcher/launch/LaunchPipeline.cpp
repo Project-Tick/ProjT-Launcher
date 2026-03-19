@@ -185,7 +185,7 @@ namespace projt::launch
 			case State::Idle:
 			{
 				m_state = State::Aborted;
-				emitFailed("Aborted");
+				emitAborted();
 				return true;
 			}
 			case State::Running:

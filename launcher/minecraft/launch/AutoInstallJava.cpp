@@ -306,7 +306,7 @@ bool AutoInstallJava::abort()
 	if (m_current_task && m_current_task->canAbort())
 	{
 		auto status = m_current_task->abort();
-		emitFailed("Aborted.");
+		emitAborted();
 		return status;
 	}
 	return Task::abort();

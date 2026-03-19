@@ -62,7 +62,6 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QRegularExpression>
 #include <QStringList>
 #include <QUuid>
 
@@ -75,8 +74,7 @@
 
 MinecraftAccount::MinecraftAccount(QObject* parent) : QObject(parent)
 {
-	static const QRegularExpression s_removeChars("[{}-]");
-	data.internalId = QUuid::createUuid().toString().remove(s_removeChars);
+	data.internalId = QUuid::createUuid().toString(QUuid::Id128);
 }
 
 MinecraftAccountPtr MinecraftAccount::loadFromJsonV3(const QJsonObject& json)
@@ -98,15 +96,14 @@ MinecraftAccountPtr MinecraftAccount::createBlankMSA()
 
 MinecraftAccountPtr MinecraftAccount::createOffline(const QString& username)
 {
-	static const QRegularExpression s_removeChars("[{}-]");
 	auto account									  = makeShared<MinecraftAccount>();
 	account->data.type								  = AccountType::Offline;
 	account->data.yggdrasilToken.token				  = "0";
 	account->data.yggdrasilToken.validity			  = Validity::Certain;
 	account->data.yggdrasilToken.issueInstant		  = QDateTime::currentDateTimeUtc();
 	account->data.yggdrasilToken.extra["userName"]	  = username;
-	account->data.yggdrasilToken.extra["clientToken"] = QUuid::createUuid().toString().remove(s_removeChars);
-	account->data.minecraftProfile.id				  = uuidFromUsername(username).toString().remove(s_removeChars);
+	account->data.yggdrasilToken.extra["clientToken"] = QUuid::createUuid().toString(QUuid::Id128);
+	account->data.minecraftProfile.id				  = uuidFromUsername(username).toString(QUuid::Id128);
 	account->data.minecraftProfile.name				  = username;
 	account->data.minecraftProfile.validity			  = Validity::Certain;
 	return account;
@@ -238,6 +235,16 @@ void MinecraftAccount::authFailed(QString reason)
 	emit authenticationError(reason);
 }
 
+QString MinecraftAccount::displayName() const
+{
+	const QList validStates{ AccountState::Unchecked, AccountState::Working, AccountState::Offline, AccountState::Online };
+	if (!validStates.contains(accountState()))
+	{
+		return QString("⚠ %1").arg(profileName());
+	}
+	return profileName();
+}
+
 bool MinecraftAccount::isActive() const
 {
 	return !m_currentTask.isNull();
@@ -287,20 +294,22 @@ bool MinecraftAccount::shouldRefresh() const
 
 void MinecraftAccount::fillSession(AuthSessionPtr session)
 {
-	static const QRegularExpression s_removeChars("[{}-]");
+	session->wants_online = session->launchMode != LaunchMode::Offline;
+	session->demo = session->launchMode == LaunchMode::Demo;
+
 	if (ownsMinecraft() && !hasProfile())
 	{
 		session->status = AuthSession::RequiresProfileSetup;
 	}
 	else
 	{
-		if (session->wants_online)
+		if (session->launchMode == LaunchMode::Offline)
 		{
-			session->status = AuthSession::PlayableOnline;
+			session->status = AuthSession::PlayableOffline;
 		}
 		else
 		{
-			session->status = AuthSession::PlayableOffline;
+			session->status = AuthSession::PlayableOnline;
 		}
 	}
 
@@ -311,7 +320,7 @@ void MinecraftAccount::fillSession(AuthSessionPtr session)
 	// profile ID
 	session->uuid = data.profileId();
 	if (session->uuid.isEmpty())
-		session->uuid = uuidFromUsername(session->player_name).toString().remove(s_removeChars);
+		session->uuid = uuidFromUsername(session->player_name).toString(QUuid::Id128);
 	// 'legacy' or 'mojang', depending on account type
 	session->user_type = typeString();
 	if (!session->access_token.isEmpty())
@@ -354,12 +363,12 @@ QUuid MinecraftAccount::uuidFromUsername(QString username)
 	// basically a reimplementation of Java's UUID#nameUUIDFromBytes
 	QByteArray digest = QCryptographicHash::hash(input, QCryptographicHash::Md5);
 
-	auto bOr  = [](QByteArray& array, qsizetype index, char value) { array[index] |= value; };
-	auto bAnd = [](QByteArray& array, qsizetype index, char value) { array[index] &= value; };
-	bAnd(digest, 6, (char)0x0f); // clear version
-	bOr(digest, 6, (char)0x30);	 // set to version 3
-	bAnd(digest, 8, (char)0x3f); // clear variant
-	bOr(digest, 8, (char)0x80);	 // set to IETF variant
+	auto bOr  = [](QByteArray& array, qsizetype index, uint8_t value) { array[index] |= value; };
+	auto bAnd = [](QByteArray& array, qsizetype index, uint8_t value) { array[index] &= value; };
+	bAnd(digest, 6, 0x0f); // clear version
+	bOr(digest, 6, 0x30);	 // set to version 3
+	bAnd(digest, 8, 0x3f); // clear variant
+	bOr(digest, 8, 0x80);	 // set to IETF variant
 
 	return QUuid::fromRfc4122(digest);
 }

@@ -160,7 +160,7 @@ void Task::emitAborted()
 		return;
 	}
 	m_state		 = State::AbortedByUser;
-	m_failReason = "Aborted.";
+	m_failReason = tr("Aborted");
 	qCDebug(taskLogC) << "Task" << describe() << "aborted.";
 	emit aborted();
 	emit finished();

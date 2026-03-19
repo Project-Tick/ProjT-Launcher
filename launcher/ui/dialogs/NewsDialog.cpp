@@ -19,6 +19,10 @@
  *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 #include "NewsDialog.h"
+
+#include "Application.h"
+#include "settings/SettingsObject.h"
+
 #include "ui_NewsDialog.h"
 
 #include <QUrl>
@@ -69,6 +73,12 @@ NewsDialog::NewsDialog(QList<NewsEntryPtr> entries, QWidget* parent) : QDialog(p
 
 	ui->currentArticleContentBrowser->setText(article_entry->content);
 	ui->currentArticleContentBrowser->flush();
+
+	connect(this, &QDialog::finished, this, [this] {
+		APPLICATION->settings()->set("NewsGeometry", QString::fromUtf8(saveGeometry().toBase64()));
+	});
+	const QByteArray base64Geometry = APPLICATION->settings()->get("NewsGeometry").toString().toUtf8();
+	restoreGeometry(QByteArray::fromBase64(base64Geometry));
 }
 
 NewsDialog::~NewsDialog()

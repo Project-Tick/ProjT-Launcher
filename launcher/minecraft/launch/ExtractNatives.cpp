@@ -25,6 +25,8 @@
 
 #include <quazip/quazip.h>
 #include <quazip/quazipdir.h>
+#include <quazip/quazipfile.h>
+#include <quazip/quazipfileinfo.h>
 #include <QDir>
 #include "FileSystem.h"
 #include "MMCZip.h"
@@ -44,6 +46,44 @@ static QString replaceSuffix(QString target, const QString& suffix, const QStrin
 	}
 	target.resize(target.length() - suffix.length());
 	return target + replacement;
+}
+
+static bool isWithinExtractionRoot(const QDir& root, const QString& path)
+{
+	const auto cleanRoot = QDir::cleanPath(root.absolutePath());
+	const auto cleanPath = QDir::cleanPath(path);
+	return cleanPath == cleanRoot || cleanPath.startsWith(cleanRoot + '/');
+}
+
+static bool symlinkEscapesExtractionRoot(QuaZip& zip, const QString& outputPath, const QDir& root)
+{
+	QuaZipFileInfo64 info;
+	if (!zip.getCurrentFileInfo(&info) || !info.isSymbolicLink())
+	{
+		return false;
+	}
+
+	QuaZipFile linkFile(&zip);
+	if (!linkFile.open(QIODevice::ReadOnly))
+	{
+		return true;
+	}
+
+	const auto linkTarget = QFile::decodeName(linkFile.readAll());
+	linkFile.close();
+
+	QString resolvedTarget;
+	if (QDir::isAbsolutePath(linkTarget))
+	{
+		resolvedTarget = QDir::cleanPath(linkTarget);
+	}
+	else
+	{
+		const auto outputDir = QFileInfo(outputPath).dir();
+		resolvedTarget	   = QDir::cleanPath(outputDir.absoluteFilePath(linkTarget));
+	}
+
+	return !isWithinExtractionRoot(root, resolvedTarget);
 }
 
 static bool unzipNatives(QString source, QString targetFolder, bool applyJnilibHack)
@@ -67,6 +107,10 @@ static bool unzipNatives(QString source, QString targetFolder, bool applyJnilibH
 			name = replaceSuffix(name, ".jnilib", ".dylib");
 		}
 		QString absFilePath = directory.absoluteFilePath(name);
+		if (symlinkEscapesExtractionRoot(zip, absFilePath, directory))
+		{
+			return false;
+		}
 		if (!JlCompress::extractFile(&zip, "", absFilePath))
 		{
 			return false;

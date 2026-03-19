@@ -352,6 +352,13 @@
            </widget>
           </item>
           <item>
+           <widget class="QCheckBox" name="FallbackMRBlockedMods">
+            <property name="text">
+             <string>Enable Modrinth fallback for blocked CurseForge mods</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <spacer name="verticalSpacer_3">
             <property name="orientation">
              <enum>Qt::Vertical</enum>

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)  # minimum version required by Qt
+cmake_minimum_required(VERSION 3.25) # Required for features like `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT`
 
 if(POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
@@ -176,69 +176,53 @@ set(CMAKE_C_STANDARD 23)
 endif()
 
 include(GenerateExportHeader)
-if(MSVC)
-    # /GS Adds buffer security checks, default on but incuded anyway to mirror gcc's fstack-protector flag
-    # /permissive- specify standards-conforming compiler behavior, also enabled by Qt6, default on with std:c++20
-    # Use /W4 as /Wall includes unnesserey warnings such as added padding to structs
-    set(CMAKE_CXX_FLAGS "/GS /permissive- /W4 ${CMAKE_CXX_FLAGS}")
+add_compile_definitions(QT_WARN_DEPRECATED_UP_TO=0x060400)
+add_compile_definitions(QT_DISABLE_DEPRECATED_UP_TO=0x060400)
 
-    # /EHs Enables stack unwind semantics for standard C++ exceptions to ensure stackframes are unwound
-    # and object deconstructors are called when an exception is caught.
-    # without it memory leaks and a warning is printed
-    # /EHc tells the compiler to assume that functions declared as extern "C" never throw a C++ exception
-    # This appears to not always be a defualt compiler option in CMAKE
-    set(CMAKE_CXX_FLAGS "/EHsc ${CMAKE_CXX_FLAGS}")
+if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    add_compile_options(
+        # /GS Adds buffer security checks, default on but included anyway to mirror gcc's fstack-protector flag
+        "$<$<COMPILE_LANGUAGE:C,CXX>:/GS>"
 
-    # LINK accepts /SUBSYSTEM whics sets if we are a WINDOWS (gui) or a CONSOLE programs
-    # This implicitly selects an entrypoint specific to the subsystem selected
-    # qtmain/QtEntryPointLib provides the correct entrypoint (wWinMain) for gui programs
-    # Additinaly LINK autodetects we use a GUI so we can omit /SUBSYSTEM
-    # This allows tests to still use have console without using seperate linker flags
-    # /LTCG allows for linking wholy optimizated programs
-    # /MANIFEST:NO disables generating a manifest file, we instead provide our own
-    # /STACK sets the stack reserve size, ATL's pack list needs 3-4 MiB as of November 2022, provide 8 MiB
-    set(CMAKE_EXE_LINKER_FLAGS "/LTCG /MANIFEST:NO /STACK:8388608 ${CMAKE_EXE_LINKER_FLAGS}")
+        # /Gw helps reduce binary size
+        # /Gy allows the compiler to package individual functions
+        # /guard:cf enables control flow guard
+        "$<$<AND:$<CONFIG:Release,RelWithDebInfo>,$<COMPILE_LANGUAGE:C,CXX>>:/Gw;/Gy;/guard:cf>"
+    )
+
+    add_link_options(
+        # /LTCG allows for linking wholy optimizated programs
+        # /MANIFEST:NO disables generating a manifest file, we instead provide our own
+        # /STACK sets the stack reserve size, ATL's pack list needs 3-4 MiB as of November 2022, provide 8 MiB
+        "$<$<COMPILE_LANGUAGE:C,CXX>:/LTCG;/MANIFEST:NO;/STACK:8388608>"
+    )
 
     # /GL enables whole program optimizations
-    # /Gw helps reduce binary size
-    # /Gy allows the compiler to package individual functions
-    # /guard:cf enables control flow guard
-    foreach(lang C CXX)
-        set("CMAKE_${lang}_FLAGS_RELEASE" "/GL /Gw /Gy /guard:cf")
-    endforeach()
+    # NOTE: With Clang, this is implemented as regular LTO and only used during linking
+    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        add_compile_options("$<$<AND:$<CONFIG:Release,RelWithDebInfo>,$<COMPILE_LANGUAGE:C,CXX>>:/GL>")
+    endif()
 
-    # See https://github.com/ccache/ccache/issues/1040
-    # Note, CMake 3.25 replaces this with CMAKE_MSVC_DEBUG_INFORMATION_FORMAT
-    # See https://cmake.org/cmake/help/v3.25/variable/CMAKE_MSVC_DEBUG_INFORMATION_FORMAT.html
-    foreach(config DEBUG RELWITHDEBINFO)
-        foreach(lang C CXX)
-            set(flags_var "CMAKE_${lang}_FLAGS_${config}")
-            string(REGEX REPLACE "/Z[Ii]" "/Z7" ${flags_var} "${${flags_var}}")
-        endforeach()
-    endforeach()
+    # TODO(@getchoo): Is sccache affected by this? Would be nice to use `ProgramDatabase`....
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
 
     if(CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDLL")
         set(CMAKE_MAP_IMPORTED_CONFIG_DEBUG Release "")
         set(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release "")
     endif()
 else()
-    set(CMAKE_CXX_FLAGS "-Wall -pedantic -fstack-protector-strong --param=ssp-buffer-size=4 ${CMAKE_CXX_FLAGS}")
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:-Wall;-pedantic;-fstack-protector-strong;--param=ssp-buffer-size=4>")
 
     # ATL's pack list needs more than the default 1 Mib stack on windows
-    if(WIN32)
-        set(CMAKE_EXE_LINKER_FLAGS "-Wl,--stack,8388608 ${CMAKE_EXE_LINKER_FLAGS}")
+    if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        add_link_options("$<$<COMPILE_LANGUAGE:C,CXX>:-Wl,--stack,8388608>")
 
         # Emit PDBs for WinDbg, etc.
         if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
             set(CMAKE_EXE_LINKER_FLAGS "-Wl,--pdb= ${CMAKE_EXE_LINKER_FLAGS}")
 
-            foreach(lang C CXX)
-                set("CMAKE_${lang}_FLAGS" "-gcodeview ${CMAKE_${lang}_FLAGS}")
-
-                # Force-enabling this to use generator expressions like TARGET_PDB_FILE
-                # (and because we can actually emit PDBs)
-                set("CMAKE_${lang}_LINKER_SUPPORTS_PDB" ON)
-            endforeach()
+            # TODO: Look into -gc-sections to further reduce binary size
+            add_compile_options("$<$<AND:$<CONFIG:Release,RelWithDebInfo>,$<COMPILE_LANGUAGE:C,CXX>>:-ffunction-sections;-fdata-sections;-mguard=cf>")
         endif()
 
         # -ffunction-sections and -fdata-sections help reduce binary size
@@ -268,13 +252,11 @@ else()
     endif()
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DQT_WARN_DEPRECATED_UP_TO=0x060200")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DQT_DISABLE_DEPRECATED_UP_TO=0x060000")
-
 # Fix aarch64 build for toml++
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTOML_ENABLE_FLOAT16=0")
 
-# set CXXFLAGS for build targets
+# set release flags for build targets
+set(CMAKE_C_FLAGS_RELEASE "-O2 -D_FORTIFY_SOURCE=2 ${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -D_FORTIFY_SOURCE=2 ${CMAKE_CXX_FLAGS_RELEASE}")
 
 # Export compile commands for debug builds if we can (useful in LSPs like clangd)
@@ -423,7 +405,8 @@ endif()
 ######## Set URLs ########
 set(Launcher_NEWS_RSS_URL "https://projecttick.org/product/projt-launcher/feed.xml" CACHE STRING "URL to fetch ProjT Launcher's news RSS feed from.")
 set(Launcher_NEWS_OPEN_URL "https://projecttick.org/product/projt-launcher/news" CACHE STRING "URL that gets opened when the user clicks 'More News'")
-set(Launcher_HELP_URL "https://projecttick.org/handbook/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help")
+set(Launcher_WIKI_URL "https://projecttick.org/projtlauncher/wiki/" CACHE STRING "URL that gets opened when the user clicks 'Launcher Help'")
+set(Launcher_HELP_URL "https://projecttick.org/handbook/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help in a dialog window")
 set(Launcher_HUB_HOME_URL "https://projecttick.org/p/projt-launcher/" CACHE STRING "Launcher Hub home URL")
 set(Launcher_HUB_COMMUNITY_URL "https://projecttick.org/projtlauncher/discord" CACHE STRING "Launcher Hub community URL")
 set(Launcher_HUB_SEARCH_URL "https://www.google.com/search?q=%1" CACHE STRING "Search URL (with %1 placeholder) used by the Launcher Hub address bar")
@@ -1277,6 +1260,50 @@ if(NOT LAUNCHER_FUZZ_ONLY AND UNIX AND APPLE)
 
     if(NOT LAUNCHER_FUZZ_ONLY)
         add_subdirectory(bootstrap/macos)
+        find_program(ACTOOL_EXE actool DOC "Path to the apple asset catalog compiler")
+        if(ACTOOL_EXE)
+            execute_process(
+                COMMAND xcodebuild -version
+                OUTPUT_VARIABLE XCODE_VERSION_OUTPUT
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+
+            string(REGEX MATCH "Xcode ([0-9]+\\.[0-9]+)" XCODE_VERSION_MATCH "${XCODE_VERSION_OUTPUT}")
+            if(XCODE_VERSION_MATCH)
+                set(XCODE_VERSION ${CMAKE_MATCH_1})
+            else()
+                set(XCODE_VERSION 0.0)
+            endif()
+
+            if(XCODE_VERSION VERSION_GREATER_EQUAL 26.0)
+                set(ASSETS_OUT_DIR "${CMAKE_BINARY_DIR}/program_info")
+                set(GENERATED_ASSETS_CAR "${ASSETS_OUT_DIR}/Assets.car")
+                set(ICON_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/${Launcher_Branding_MAC_ICON}")
+
+                add_custom_command(
+                    OUTPUT "${GENERATED_ASSETS_CAR}"
+                    COMMAND ${ACTOOL_EXE} "${ICON_SOURCE}"
+                            --compile "${ASSETS_OUT_DIR}"
+                            --output-partial-info-plist /dev/null
+                            --app-icon ${Launcher_Name}
+                            --enable-on-demand-resources NO
+                            --target-device mac
+                            --minimum-deployment-target ${CMAKE_OSX_DEPLOYMENT_TARGET}
+                            --platform macosx
+                    DEPENDS "${ICON_SOURCE}"
+                    COMMENT "Compiling asset catalog (${ICON_SOURCE})"
+                    VERBATIM
+                )
+                add_custom_target(compile_assets ALL DEPENDS "${GENERATED_ASSETS_CAR}")
+                install(FILES "${GENERATED_ASSETS_CAR}" DESTINATION "${RESOURCES_DEST_DIR}")
+            else()
+                message(WARNING "Xcode ${XCODE_VERSION} is too old. Minimum required version is 26.0. Not compiling liquid glass icons.")
+            endif()
+
+        else()
+            message(WARNING "actool not found. Cannot compile macOS app icons.\n"
+                    "Install Xcode command line tools: 'xcode-select --install'")
+        endif()
     endif()
 
 elseif(NOT LAUNCHER_FUZZ_ONLY AND UNIX)
@@ -1321,7 +1348,7 @@ elseif(NOT LAUNCHER_FUZZ_ONLY AND UNIX)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${Launcher_Desktop} DESTINATION ${KDE_INSTALL_APPDIR})
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${Launcher_MetaInfo} DESTINATION ${KDE_INSTALL_METAINFODIR})
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${Launcher_SVG} DESTINATION "${KDE_INSTALL_ICONDIR}/hicolor/scalable/apps")
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${Launcher_mrpack_MIMEInfo} DESTINATION ${KDE_INSTALL_MIMEDIR})
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${Launcher_MIMEInfo} DESTINATION ${KDE_INSTALL_MIMEDIR})
 
     install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/launcher/qtlogging.ini" DESTINATION "share/${Launcher_Name}")
 

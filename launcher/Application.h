@@ -68,6 +68,7 @@
 
 #include <BaseInstance.h>
 
+#include "LaunchMode.h"
 #include "launch/LaunchLogModel.hpp"
 #include "minecraft/launch/MinecraftTarget.hpp"
 
@@ -287,8 +288,7 @@ class Application : public QApplication
 
   public slots:
 	bool launch(InstancePtr instance,
-				bool online						  = true,
-				bool demo						  = false,
+				LaunchMode mode				  = LaunchMode::Normal,
 				MinecraftTarget::Ptr targetToJoin = nullptr,
 				MinecraftAccountPtr accountToUse  = nullptr,
 				const QString& offlineName		  = QString());
@@ -301,7 +301,7 @@ class Application : public QApplication
 	void controllerSucceeded();
 	void controllerFailed(const QString& error);
 	void setupWizardFinished(int status);
-	void continueLaunchAfterBackup(QString instanceId, bool online, bool demo, QString offlineName);
+	void continueLaunchAfterBackup(QString instanceId, LaunchMode mode, QString offlineName);
 
   private:
 	bool handleDataMigration(const QString& currentData,

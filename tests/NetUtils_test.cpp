@@ -65,7 +65,7 @@ class NetUtilsTest : public QObject
 	void test_checksumValidator_matches()
 	{
 		QCryptographicHash hash(QCryptographicHash::Sha256);
-		hash.addData("hello", 5);
+		hash.addData(QByteArrayView("hello", 5));
 		const QByteArray expected = hash.result();
 
 		Net::ChecksumValidator validator(QCryptographicHash::Sha256, expected);
@@ -81,7 +81,7 @@ class NetUtilsTest : public QObject
 	void test_checksumValidator_mismatch()
 	{
 		QCryptographicHash hash(QCryptographicHash::Sha256);
-		hash.addData("world", 5);
+		hash.addData(QByteArrayView("world", 5));
 		const QByteArray expected = hash.result();
 
 		Net::ChecksumValidator validator(QCryptographicHash::Sha256, expected);

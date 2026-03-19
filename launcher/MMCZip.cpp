@@ -62,6 +62,7 @@
 #include <quazip/quazip.h>
 #include <quazip/quazipdir.h>
 #include <quazip/quazipfile.h>
+#include <quazip/quazipfileinfo.h>
 #include "FileSystem.h"
 
 #include <QCoreApplication>
@@ -72,6 +73,47 @@
 #if defined(LAUNCHER_APPLICATION)
 #include <QtConcurrentRun>
 #endif
+
+namespace
+{
+	bool isWithinExtractionRoot(const QDir& root, const QString& path)
+	{
+		const auto cleanRoot = QDir::cleanPath(root.absolutePath());
+		const auto cleanPath = QDir::cleanPath(path);
+		return cleanPath == cleanRoot || cleanPath.startsWith(cleanRoot + '/');
+	}
+
+	bool symlinkEscapesExtractionRoot(QuaZip* zip, const QString& outputPath, const QDir& root)
+	{
+		QuaZipFileInfo64 info;
+		if (!zip->getCurrentFileInfo(&info) || !info.isSymbolicLink())
+		{
+			return false;
+		}
+
+		QuaZipFile linkFile(zip);
+		if (!linkFile.open(QIODevice::ReadOnly))
+		{
+			return true;
+		}
+
+		const auto linkTarget = QFile::decodeName(linkFile.readAll());
+		linkFile.close();
+
+		QString resolvedTarget;
+		if (QDir::isAbsolutePath(linkTarget))
+		{
+			resolvedTarget = QDir::cleanPath(linkTarget);
+		}
+		else
+		{
+			const auto outputDir = QFileInfo(outputPath).dir();
+			resolvedTarget	   = QDir::cleanPath(outputDir.absoluteFilePath(linkTarget));
+		}
+
+		return !isWithinExtractionRoot(root, resolvedTarget);
+	}
+} // namespace
 
 namespace MMCZip
 {
@@ -672,6 +714,7 @@ namespace MMCZip
 	{
 		auto target			= m_output_dir.absolutePath();
 		auto target_top_dir = QUrl::fromLocalFile(target);
+		QDir target_dir(target);
 
 		QStringList extracted;
 
@@ -736,6 +779,12 @@ namespace MMCZip
 			{
 				return ZipResult(
 					tr("Extracting %1 was cancelled, because it was effectively outside of the target path %2")
+						.arg(relative_file_name, target));
+			}
+			if (symlinkEscapesExtractionRoot(m_input.get(), target_file_path, target_dir))
+			{
+				return ZipResult(
+					tr("Extracting %1 was cancelled, because it links outside of the target path %2")
 						.arg(relative_file_name, target));
 			}
 

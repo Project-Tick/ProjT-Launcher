@@ -96,7 +96,7 @@ void DataMigrationTask::dryRunFinished()
 
 void DataMigrationTask::dryRunAborted()
 {
-	emitFailed(tr("Aborted"));
+	emitAborted();
 }
 
 void DataMigrationTask::copyFinished()
@@ -115,5 +115,5 @@ void DataMigrationTask::copyFinished()
 
 void DataMigrationTask::copyAborted()
 {
-	emitFailed(tr("Aborted"));
+	emitAborted();
 }

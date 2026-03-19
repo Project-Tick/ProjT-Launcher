@@ -165,6 +165,7 @@ void APIPage::loadSettings()
 	}
 
 	ui->pasteTypeComboBox->setCurrentIndex(pasteTypeIndex);
+	ui->FallbackMRBlockedMods->setChecked(s->get("FallbackMRBlockedMods").toBool());
 
 	QString msaClientID = s->get("MSAClientIDOverride").toString();
 	ui->msaClientID->setText(msaClientID);
@@ -190,6 +191,7 @@ void APIPage::applySettings()
 
 	QString msaClientID = ui->msaClientID->text();
 	s->set("MSAClientIDOverride", msaClientID);
+	s->set("FallbackMRBlockedMods", ui->FallbackMRBlockedMods->isChecked());
 	QUrl metaURL(ui->metaURL->text());
 	QUrl resourceURL(ui->resourceURL->text());
 	// Add required trailing slash

@@ -348,7 +348,7 @@ namespace Json
 		{
 			return ensureIsArrayOf<QString>(doc.array(), "");
 		}
-		catch (Json::JsonException& e)
+		catch (Json::JsonException&)
 		{
 			return {};
 		}

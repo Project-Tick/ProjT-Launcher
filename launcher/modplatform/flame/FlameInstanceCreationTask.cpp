@@ -78,7 +78,6 @@
 
 #include "settings/INISettingsObject.h"
 
-#include "sys.h"
 #include "tasks/ConcurrentTask.h"
 #include "ui/dialogs/BlockedModsDialog.h"
 #include "ui/dialogs/CustomMessageBox.h"
@@ -87,6 +86,7 @@
 #include <QFileInfo>
 
 #include "meta/Index.hpp"
+#include "HardwareInfo.h"
 #include "minecraft/World.h"
 #include "minecraft/mod/tasks/LocalResourceParse.hpp"
 #include "net/ApiDownload.h"
@@ -99,7 +99,6 @@ bool FlameCreationTask::abort()
 	if (!canAbort())
 		return false;
 
-	m_abort = true;
 	if (m_processUpdateFileInfoJob)
 		m_processUpdateFileInfoJob->abort();
 	if (m_filesJob)
@@ -107,7 +106,7 @@ bool FlameCreationTask::abort()
 	if (m_modIdResolver)
 		m_modIdResolver->abort();
 
-	return Task::abort();
+	return InstanceCreationTask::abort();
 }
 
 bool FlameCreationTask::updateInstance()
@@ -413,7 +412,7 @@ QString FlameCreationTask::getVersionForLoader(QString uid,
 	return loaderVersion;
 }
 
-bool FlameCreationTask::createInstance()
+std::unique_ptr<MinecraftInstance> FlameCreationTask::createInstance()
 {
 	QEventLoop loop;
 
@@ -433,7 +432,7 @@ bool FlameCreationTask::createInstance()
 	catch (const JSONValidationError& e)
 	{
 		setError(tr("Could not understand pack manifest:\n") + e.cause());
-		return false;
+		return nullptr;
 	}
 
 	if (!m_pack.overrides.isEmpty())
@@ -448,7 +447,7 @@ bool FlameCreationTask::createInstance()
 			if (!FS::move(overridePath, mcPath))
 			{
 				setError(tr("Could not rename the overrides folder:\n") + m_pack.overrides);
-				return false;
+				return nullptr;
 			}
 		}
 		else
@@ -501,7 +500,8 @@ bool FlameCreationTask::createInstance()
 
 	QString configPath	  = FS::PathCombine(m_stagingPath, "instance.cfg");
 	auto instanceSettings = std::make_shared<INISettingsObject>(configPath);
-	MinecraftInstance instance(m_globalSettings, instanceSettings, m_stagingPath);
+	auto createdInstance  = std::make_unique<MinecraftInstance>(m_globalSettings, instanceSettings, m_stagingPath);
+	auto& instance		  = *createdInstance;
 	auto mcVersion = m_pack.minecraft.version;
 
 	// Hack to correct some 'special sauce'...
@@ -519,7 +519,7 @@ bool FlameCreationTask::createInstance()
 	{
 		auto version = getVersionForLoader(loaderUid, loaderType, loaderVersion, mcVersion);
 		if (version.isEmpty())
-			return false;
+			return nullptr;
 		components->setComponentVersion(loaderUid, version);
 	}
 
@@ -548,9 +548,8 @@ bool FlameCreationTask::createInstance()
 	// only set memory if this is a fresh instance
 	if (m_instance == nullptr && recommendedRAM > 0)
 	{
-		const uint64_t sysMiB = Sys::getSystemRam() / Sys::mebibyte;
+		const uint64_t sysMiB = HardwareInfo::totalRamMiB();
 		const uint64_t max	  = sysMiB * 0.9;
-
 		if (static_cast<uint64_t>(recommendedRAM) > max)
 		{
 			logWarning(tr("The recommended memory of the modpack exceeds 90% of your system RAM—reducing it from %1 "
@@ -627,7 +626,11 @@ bool FlameCreationTask::createInstance()
 		inst->copyManagedPack(instance);
 	}
 
-	return did_succeed;
+	if (did_succeed)
+	{
+		return createdInstance;
+	}
+	return nullptr;
 }
 
 void FlameCreationTask::idResolverSucceeded(QEventLoop& loop)

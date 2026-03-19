@@ -53,29 +53,41 @@
  *      See the License for the specific language governing permissions and
  *      limitations under the License.
  *
-   ======================================================================== */
+ * ======================================================================== */
 
 #pragma once
-#include <BaseInstance.h>
-#include <tools/BaseProfiler.h>
-#include <QObject>
 
+#include <BaseInstance.h>
+#include <QObject>
+#include <tools/BaseProfiler.h>
+
+#include "LaunchMode.h"
 #include "minecraft/auth/MinecraftAccount.hpp"
 #include "minecraft/launch/MinecraftTarget.hpp"
 
 class InstanceWindow;
+
 namespace projt::launch
 {
 	class LaunchPipeline;
 }
+
+enum class LaunchDecision
+{
+	Undecided,
+	Continue,
+	Abort
+};
+
 class LaunchController : public Task
 {
 	Q_OBJECT
+
   public:
 	void executeTask() override;
 
 	LaunchController();
-	virtual ~LaunchController() = default;
+	~LaunchController() override = default;
 
 	void setInstance(InstancePtr instance)
 	{
@@ -87,19 +99,14 @@ class LaunchController : public Task
 		return m_instance;
 	}
 
-	void setOnline(bool online)
+	void setLaunchMode(LaunchMode mode)
 	{
-		m_online = online;
+		m_wantedLaunchMode = mode;
 	}
 
 	void setOfflineName(const QString& offlineName)
 	{
 		m_offlineName = offlineName;
-	}
-
-	void setDemo(bool demo)
-	{
-		m_demo = demo;
 	}
 
 	void setProfiler(BaseProfilerFactory* profiler)
@@ -133,25 +140,25 @@ class LaunchController : public Task
 	void login();
 	void launchInstance();
 	void decideAccount();
+	LaunchDecision decideLaunchMode();
 	bool askPlayDemo();
-	QString askOfflineName(QString playerName, bool demo, bool& ok);
-	bool reauthenticateAccount(MinecraftAccountPtr account);
+	QString askOfflineName(QString playerName, bool* ok = nullptr);
+	bool reauthenticateAccount(MinecraftAccountPtr account, QString reason = {});
 
   private slots:
 	void readyForLaunch();
-
 	void onSucceeded();
 	void onFailed(QString reason);
 	void onProgressRequested(Task* task);
 
   private:
+	LaunchMode m_wantedLaunchMode = LaunchMode::Normal;
+	LaunchMode m_actualLaunchMode = LaunchMode::Normal;
 	BaseProfilerFactory* m_profiler = nullptr;
-	bool m_online					= true;
 	QString m_offlineName;
-	bool m_demo = false;
 	InstancePtr m_instance;
-	QWidget* m_parentWidget			   = nullptr;
-	InstanceWindow* m_console		   = nullptr;
+	QWidget* m_parentWidget = nullptr;
+	InstanceWindow* m_console = nullptr;
 	MinecraftAccountPtr m_accountToUse = nullptr;
 	AuthSessionPtr m_session;
 	shared_qobject_ptr<projt::launch::LaunchPipeline> m_launcher;

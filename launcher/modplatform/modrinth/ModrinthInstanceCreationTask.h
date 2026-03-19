@@ -70,7 +70,7 @@ class ModrinthCreationTask final : public InstanceCreationTask
 	bool abort() override;
 
 	bool updateInstance() override;
-	bool createInstance() override;
+	std::unique_ptr<MinecraftInstance> createInstance() override;
 
   private:
 	bool parseManifest(const QString&,

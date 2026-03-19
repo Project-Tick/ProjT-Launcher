@@ -32,8 +32,6 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
-#include <sys.h>
-
 #include "DesktopServices.h"
 #include "FileSystem.h"
 #include "JavaCommon.h"
@@ -48,10 +46,11 @@
 
 #include "Application.h"
 #include "BuildConfig.h"
+#include "HardwareInfo.h"
 
 JavaWizardWidget::JavaWizardWidget(QWidget* parent) : QWidget(parent)
 {
-	m_availableMemory = Sys::getSystemRam() / Sys::mebibyte;
+	m_availableMemory = HardwareInfo::totalRamMiB();
 
 	goodIcon	  = QIcon::fromTheme("status-good");
 	yellowIcon	  = QIcon::fromTheme("status-yellow");
@@ -305,15 +304,12 @@ JavaWizardWidget::ValidationStatus JavaWizardWidget::validate()
 				switch (button)
 				{
 					case QMessageBox::Yes: return ValidationStatus::JavaBad;
-					case QMessageBox::Help: DesktopServices::openUrl(QUrl(BuildConfig.HELP_URL.arg("java-wizard")));
-					/* fallthrough */
+					case QMessageBox::Help:
+						DesktopServices::openUrl(QUrl(BuildConfig.HELP_URL.arg("java-wizard")));
+						[[fallthrough]];
 					case QMessageBox::No:
 					/* fallthrough */
 					default: return ValidationStatus::Bad;
-				}
-				if (button == QMessageBox::No)
-				{
-					return ValidationStatus::Bad;
 				}
 			}
 			return ValidationStatus::JavaBad;

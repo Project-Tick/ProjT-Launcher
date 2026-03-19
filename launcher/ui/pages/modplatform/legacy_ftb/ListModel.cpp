@@ -235,6 +235,7 @@ namespace LegacyFTB
 					// bugged pack, currently only indicates bugged xml
 					return COLOR_BUGGED;
 				}
+				return {};
 			}
 			case Qt::DisplayRole: return pack.name;
 			case Qt::SizeHintRole: return QSize(0, 58);

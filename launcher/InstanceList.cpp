@@ -56,37 +56,32 @@
  *
    ======================================================================== */
 
+#include "InstanceList.h"
+
 #include <QDebug>
-#include <QDir>
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
-#include <QFileSystemWatcher>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QMimeData>
-#include <QPair>
 #include <QSet>
 #include <QStack>
-#include <QTextStream>
-#include <QThread>
 #include <QTimer>
 #include <QUuid>
-#include <QXmlStreamReader>
 
 #include "BaseInstance.h"
 #include "ExponentialSeries.h"
 #include "FileSystem.h"
-#include "InstanceList.h"
+
 #include "InstanceTask.h"
 #include "NullInstance.h"
 #include "WatchLock.h"
 #include "minecraft/MinecraftInstance.h"
-#include "minecraft/ShortcutUtils.h"
 #include "settings/INISettingsObject.h"
 
 #ifdef Q_OS_WIN32
-#include <Windows.h>
+#include <windows.h>
 #endif
 
 const static int GROUP_FILE_FORMAT_VERSION = 1;
@@ -1112,6 +1107,7 @@ class InstanceStaging : public Task
 		connect(child, &Task::failed, this, &InstanceStaging::childFailed);
 		connect(child, &Task::aborted, this, &InstanceStaging::childAborted);
 		connect(child, &Task::abortStatusChanged, this, &InstanceStaging::setAbortable);
+		connect(child, &Task::abortButtonTextChanged, this, &InstanceStaging::setAbortButtonText);
 		connect(child, &Task::status, this, &InstanceStaging::setStatus);
 		connect(child, &Task::details, this, &InstanceStaging::setDetails);
 		connect(child, &Task::progress, this, &InstanceStaging::setProgress);
@@ -1128,19 +1124,12 @@ class InstanceStaging : public Task
 		m_aborted = true;
 		m_backoffTimer.stop();
 
-		if (m_child && m_child->canAbort())
-		{
-			m_child->abort();
-		}
+		if (!m_child || !m_child->canAbort())
+			return false;
 
-		m_parent->destroyStagingPath(m_stagingPath);
-
-		return Task::abort();
+		return m_child->abort();
 	}
-	bool canAbort() const override
-	{
-		return true;
-	} // Always allow abort, even during retries
+	bool canAbort() const override { return (m_child && m_child->canAbort()); }
 
   protected:
 	virtual void executeTask() override

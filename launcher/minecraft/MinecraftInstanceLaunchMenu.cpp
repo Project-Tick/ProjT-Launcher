@@ -46,10 +46,10 @@ void MinecraftInstanceLaunchMenu::populate(MinecraftInstance* instance, QMenu* m
 					 [instance] { APPLICATION->launch(instance->shared_from_this()); });
 	QObject::connect(normalLaunchOffline,
 					 &QAction::triggered,
-					 [instance] { APPLICATION->launch(instance->shared_from_this(), false, false); });
+					 [instance] { APPLICATION->launch(instance->shared_from_this(), LaunchMode::Offline); });
 	QObject::connect(normalLaunchDemo,
 					 &QAction::triggered,
-					 [instance] { APPLICATION->launch(instance->shared_from_this(), false, true); });
+					 [instance] { APPLICATION->launch(instance->shared_from_this(), LaunchMode::Demo); });
 
 	QString profilersTitle = MinecraftInstance::tr("Profilers");
 	menu->addSeparator()->setText(profilersTitle);

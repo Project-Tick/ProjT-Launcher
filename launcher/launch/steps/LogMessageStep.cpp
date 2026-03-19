@@ -48,7 +48,7 @@ namespace projt::launch::steps
 
 	bool LogMessageStep::abort()
 	{
-		emitFailed("Aborted.");
+		emitAborted();
 		return true;
 	}
 } // namespace projt::launch::steps

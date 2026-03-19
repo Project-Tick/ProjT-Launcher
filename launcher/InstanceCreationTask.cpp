@@ -22,7 +22,22 @@
 
 #include <QDebug>
 #include <QFile>
+
 #include "FileSystem.h"
+#include "minecraft/MinecraftLoadAndCheck.h"
+#include "tasks/SequentialTask.h"
+
+bool InstanceCreationTask::abort()
+{
+	if (!canAbort())
+		return false;
+
+	m_abort = true;
+	if (m_gameFilesTask)
+		return m_gameFilesTask->abort();
+
+	return true;
+}
 
 void InstanceCreationTask::executeTask()
 {
@@ -41,7 +56,8 @@ void InstanceCreationTask::executeTask()
 		return;
 	}
 
-	if (!createInstance())
+	m_createdInstance = createInstance();
+	if (!m_createdInstance)
 	{
 		if (m_abort)
 			return;
@@ -91,6 +107,49 @@ void InstanceCreationTask::executeTask()
 			return;
 		}
 	}
-	if (!m_abort)
+
+	if (m_abort)
+		return;
+
+	m_createdInstance->saveNow();
+
+	setAbortable(true);
+	setAbortButtonText(tr("Skip"));
+	qDebug() << "Downloading game files";
+
+	auto updateTasks = m_createdInstance->createUpdateTask();
+	if (updateTasks.isEmpty())
+	{
 		emitSucceeded();
+		return;
+	}
+
+	auto task = makeShared<SequentialTask>();
+	task->addTask(makeShared<MinecraftLoadAndCheck>(m_createdInstance.get(), Net::Mode::Online));
+	for (const auto& updateTask : updateTasks)
+	{
+		task->addTask(updateTask);
+	}
+	connect(task.get(),
+			&Task::finished,
+			this,
+			[this, task]
+			{
+				if (task->wasSuccessful() || m_abort)
+				{
+					emitSucceeded();
+				}
+				else
+				{
+					emitFailed(tr("Could not download game files: %1").arg(task->failReason()));
+				}
+			});
+	connect(task.get(), &Task::progress, this, &InstanceCreationTask::setProgress);
+	connect(task.get(), &Task::stepProgress, this, &InstanceCreationTask::propagateStepProgress);
+	connect(task.get(), &Task::status, this, &InstanceCreationTask::setStatus);
+	connect(task.get(), &Task::details, this, &InstanceCreationTask::setDetails);
+
+	setDetails(tr("Downloading game files"));
+	m_gameFilesTask = task;
+	m_gameFilesTask->start();
 }

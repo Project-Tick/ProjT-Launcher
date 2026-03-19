@@ -68,7 +68,7 @@ namespace nbt
 		{}
 
 		///Constructs an empty list with the given content type
-		explicit tag_list(tag_type type) : el_type_(type)
+		explicit tag_list(tag_type content_type): el_type_(content_type)
 		{}
 
 		///Constructs a list with the given contents

@@ -54,10 +54,9 @@ bool ModrinthCreationTask::abort()
 	if (!canAbort())
 		return false;
 
-	m_abort = true;
 	if (m_task)
 		m_task->abort();
-	return Task::abort();
+	return InstanceCreationTask::abort();
 }
 
 bool ModrinthCreationTask::updateInstance()
@@ -247,7 +246,7 @@ bool ModrinthCreationTask::updateInstance()
 }
 
 // https://docs.modrinth.com/docs/modpacks/format_definition/
-bool ModrinthCreationTask::createInstance()
+std::unique_ptr<MinecraftInstance> ModrinthCreationTask::createInstance()
 {
 	QEventLoop loop;
 
@@ -255,7 +254,7 @@ bool ModrinthCreationTask::createInstance()
 
 	QString index_path = FS::PathCombine(m_stagingPath, "modrinth.index.json");
 	if (m_files.empty() && !parseManifest(index_path, m_files, true, true))
-		return false;
+		return nullptr;
 
 	// Keep index file in case we need it some other time (like when changing versions)
 	QString new_index_place(FS::PathCombine(parent_folder, "modrinth.index.json"));
@@ -274,7 +273,7 @@ bool ModrinthCreationTask::createInstance()
 		if (!FS::move(override_path, mcPath))
 		{
 			setError(tr("Could not rename the overrides folder:\n") + "overrides");
-			return false;
+			return nullptr;
 		}
 	}
 
@@ -289,13 +288,14 @@ bool ModrinthCreationTask::createInstance()
 		if (!FS::overrideFolder(mcPath, client_override_path))
 		{
 			setError(tr("Could not rename the client overrides folder:\n") + "client overrides");
-			return false;
+			return nullptr;
 		}
 	}
 
 	QString configPath	  = FS::PathCombine(m_stagingPath, "instance.cfg");
 	auto instanceSettings = std::make_shared<INISettingsObject>(configPath);
-	MinecraftInstance instance(m_globalSettings, instanceSettings, m_stagingPath);
+	auto createdInstance  = std::make_unique<MinecraftInstance>(m_globalSettings, instanceSettings, m_stagingPath);
+	auto& instance		  = *createdInstance;
 
 	auto components = instance.getPackProfile();
 	components->buildingFromScratch();
@@ -349,7 +349,7 @@ bool ModrinthCreationTask::createInstance()
 			setError(tr("One of the files has a path that leads to an arbitrary location (%1). This is a security risk "
 						"and isn't allowed.")
 						 .arg(fileName));
-			return false;
+			return nullptr;
 		}
 		if (fileName.startsWith("mods/"))
 		{
@@ -362,7 +362,7 @@ bool ModrinthCreationTask::createInstance()
 		if (file.downloads.empty())
 		{
 			setError(tr("The file '%1' is missing a download link. This is invalid in the pack format.").arg(fileName));
-			return false;
+			return nullptr;
 		}
 
 		auto fileTask = makeShared<MultipleOptionsTask>(tr("Download %1").arg(fileName));
@@ -409,7 +409,7 @@ bool ModrinthCreationTask::createInstance()
 		{
 			delete resource;
 		}
-		return ended_well;
+		return nullptr;
 	}
 
 	QEventLoop ensureMetaLoop;
@@ -455,7 +455,11 @@ bool ModrinthCreationTask::createInstance()
 		inst->copyManagedPack(instance);
 	}
 
-	return ended_well;
+	if (ended_well)
+	{
+		return createdInstance;
+	}
+	return nullptr;
 }
 
 bool ModrinthCreationTask::parseManifest(const QString& index_path,

@@ -22,6 +22,9 @@
 
 #include "BaseVersion.h"
 #include "InstanceTask.h"
+#include "minecraft/MinecraftInstance.h"
+
+#include <memory>
 
 class InstanceCreationTask : public InstanceTask
 {
@@ -29,6 +32,8 @@ class InstanceCreationTask : public InstanceTask
   public:
 	InstanceCreationTask()			= default;
 	virtual ~InstanceCreationTask() = default;
+
+	bool abort() override;
 
   protected:
 	void executeTask() final override;
@@ -51,11 +56,11 @@ class InstanceCreationTask : public InstanceTask
 	/**
 	 * Creates a new instance.
 	 *
-	 * Returns whether the instance creation was successful (true) or not (false).
+	 * Returns the instance if it was created or nullptr otherwise.
 	 */
-	virtual bool createInstance()
+	virtual std::unique_ptr<MinecraftInstance> createInstance()
 	{
-		return false;
+		return nullptr;
 	};
 
 	QString getError() const
@@ -76,4 +81,6 @@ class InstanceCreationTask : public InstanceTask
 
   private:
 	QString m_error_message;
+	std::unique_ptr<MinecraftInstance> m_createdInstance;
+	Task::Ptr m_gameFilesTask;
 };

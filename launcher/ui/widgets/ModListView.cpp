@@ -57,6 +57,7 @@ ModListView::ModListView(QWidget* parent) : QTreeView(parent)
 	setDragEnabled(true);
 	setDragDropMode(QAbstractItemView::DropOnly);
 	viewport()->setAcceptDrops(true);
+	setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
 }
 
 void ModListView::setModel(QAbstractItemModel* model)

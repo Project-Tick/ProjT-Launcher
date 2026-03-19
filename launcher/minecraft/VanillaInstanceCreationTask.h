@@ -32,7 +32,7 @@ class VanillaCreationTask final : public InstanceCreationTask
 	{}
 	VanillaCreationTask(BaseVersion::Ptr version, QString loader, BaseVersion::Ptr loader_version);
 
-	bool createInstance() override;
+	std::unique_ptr<MinecraftInstance> createInstance() override;
 
   private:
 	// Version to update to / create of the instance.

@@ -135,6 +135,9 @@ ManagedPackPage::ManagedPackPage(BaseInstance* inst, InstanceWindow* instance_wi
 		ui->versionsComboBox->setStyle(comboStyle);
 	}
 
+	ui->versionsComboBox->view()->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+	ui->versionsComboBox->view()->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+
 	ui->reloadButton->setVisible(false);
 	connect(ui->reloadButton,
 			&QPushButton::clicked,

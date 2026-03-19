@@ -593,6 +593,15 @@ bool ResourceFolderModel::validateIndex(const QModelIndex& index) const
 	return true;
 }
 
+QBrush ResourceFolderModel::rowBackground(int row) const
+{
+	if (APPLICATION->settings()->get("ShowModIncompat").toBool() && m_resources[row]->hasIssues())
+	{
+		return { QColor(255, 0, 0, 40) };
+	}
+	return {};
+}
+
 QVariant ResourceFolderModel::data(const QModelIndex& index, int role) const
 {
 	if (!validateIndex(index))
@@ -603,6 +612,7 @@ QVariant ResourceFolderModel::data(const QModelIndex& index, int role) const
 
 	switch (role)
 	{
+		case Qt::BackgroundRole: return rowBackground(row);
 		case Qt::DisplayRole:
 			switch (column)
 			{
@@ -613,30 +623,41 @@ QVariant ResourceFolderModel::data(const QModelIndex& index, int role) const
 				default: return {};
 			}
 		case Qt::ToolTipRole:
+		{
+			QString tooltip = m_resources[row]->internal_id();
 			if (column == NameColumn)
 			{
+				if (APPLICATION->settings()->get("ShowModIncompat").toBool())
+				{
+					for (const QString& issue : at(row).issues())
+					{
+						tooltip += "\n" + issue;
+					}
+				}
 				if (at(row).isSymLinkUnder(instDirPath()))
 				{
-					return m_resources[row]->internal_id()
-						 + tr("\nWarning: This resource is symbolically linked from elsewhere. Editing it will also "
-							  "change the original."
-							  "\nCanonical Path: %1")
-							   .arg(at(row).fileinfo().canonicalFilePath());
-					;
+					tooltip += tr("\nWarning: This resource is symbolically linked from elsewhere. Editing it will also "
+								  "change the original."
+								  "\nCanonical Path: %1")
+								   .arg(at(row).fileinfo().canonicalFilePath());
 				}
 				if (at(row).isMoreThanOneHardLink())
 				{
-					return m_resources[row]->internal_id()
-						 + tr("\nWarning: This resource is hard linked elsewhere. Editing it will also change the "
-							  "original.");
+					tooltip += tr(
+						"\nWarning: This resource is hard linked elsewhere. Editing it will also change the original.");
 				}
 			}
-
-			return m_resources[row]->internal_id();
+			return tooltip;
+		}
 		case Qt::DecorationRole:
 		{
-			if (column == NameColumn && (at(row).isSymLinkUnder(instDirPath()) || at(row).isMoreThanOneHardLink()))
-				return QIcon::fromTheme("status-yellow");
+			if (column == NameColumn)
+			{
+				if (APPLICATION->settings()->get("ShowModIncompat").toBool() && at(row).hasIssues())
+					return QIcon::fromTheme("status-bad");
+				if (at(row).isSymLinkUnder(instDirPath()) || at(row).isMoreThanOneHardLink())
+					return QIcon::fromTheme("status-yellow");
+			}
 
 			return {};
 		}
@@ -933,7 +954,12 @@ void ResourceFolderModel::applyUpdates(QSet<QString>& current_set,
 
 			if (new_resource->dateTimeChanged() == current_resource->dateTimeChanged())
 			{
-				// no significant change, ignore...
+				bool hadIssues = current_resource->hasIssues();
+				current_resource->updateIssues(m_instance);
+				if (hadIssues != current_resource->hasIssues())
+				{
+					emit dataChanged(index(row, 0), index(row, columnCount({}) - 1));
+				}
 				continue;
 			}
 
@@ -950,6 +976,7 @@ void ResourceFolderModel::applyUpdates(QSet<QString>& current_set,
 			}
 
 			m_resources[row].reset(new_resource);
+			new_resource->updateIssues(m_instance);
 			resolveResource(m_resources.at(row));
 			emit dataChanged(index(row, 0), index(row, columnCount(QModelIndex()) - 1));
 		}
@@ -1003,6 +1030,7 @@ void ResourceFolderModel::applyUpdates(QSet<QString>& current_set,
 			for (auto& added : added_set)
 			{
 				auto res = new_resources[added];
+				res->updateIssues(m_instance);
 				m_resources.append(res);
 				resolveResource(m_resources.last());
 			}

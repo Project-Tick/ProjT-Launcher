@@ -257,9 +257,6 @@ void SkinOpenGLWindow::paintGL()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
-	// Enable back face culling
-	glEnable(GL_CULL_FACE);
-
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -315,7 +312,7 @@ void SkinOpenGLWindow::updateCape(const QImage& cape)
 
 QColor calculateContrastingColor(const QColor& color)
 {
-	constexpr float contrast = 0.2;
+	constexpr float contrast = 0.2f;
 	auto luma				 = Rainbow::luma(color);
 	if (luma < 0.5)
 	{

@@ -18,23 +18,21 @@
  *  along with this program.  If not, write to the Free Software Foundation,
  *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
-#include <QDebug>
+#include "SysInfo.h"
+
 #include <QString>
-#include "sys.h"
-#ifdef Q_OS_MACOS
-#include <sys/sysctl.h>
-#endif
-#include <QFile>
-#include <QMap>
-#include <QProcess>
-#include <QStandardPaths>
+#include <QSysInfo>
+
+#include "HardwareInfo.h"
 
 #ifdef Q_OS_MACOS
+#include <sys/sysctl.h>
+
 bool rosettaDetect()
 {
 	int ret		= 0;
 	size_t size = sizeof(ret);
-	if (sysctlbyname("sysctl.proc_translated", &ret, &size, NULL, 0) == -1)
+	if (sysctlbyname("sysctl.proc_translated", &ret, &size, nullptr, 0) == -1)
 	{
 		return false;
 	}
@@ -76,18 +74,13 @@ namespace SysInfo
 		return QSysInfo::currentCpuArchitecture();
 	}
 
-	int suitableMaxMem()
+	int defaultMaxJvmMem()
 	{
-		float totalRAM = (float)Sys::getSystemRam() / (float)Sys::mebibyte;
-		int maxMemoryAlloc;
-
 		// If totalRAM < 6GB, use (totalRAM / 1.5), else 4GB
-		if (totalRAM < (4096 * 1.5))
-			maxMemoryAlloc = (int)(totalRAM / 1.5);
+		if (const uint64_t totalRAM = HardwareInfo::totalRamMiB(); totalRAM < (4096 * 1.5))
+			return totalRAM / 1.5;
 		else
-			maxMemoryAlloc = 4096;
-
-		return maxMemoryAlloc;
+			return 4096;
 	}
 
 	QString getSupportedJavaArchitecture()

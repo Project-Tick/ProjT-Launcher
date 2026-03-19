@@ -43,6 +43,7 @@
 #include "FileResolvingTask.h"
 #include <algorithm>
 
+#include "Application.h"
 #include "Json.h"
 #include "modplatform/ModIndex.h"
 #include "modplatform/flame/FlameAPI.h"
@@ -89,7 +90,7 @@ void Flame::FileResolvingTask::executeTask()
 
 	auto step_progress = std::make_shared<TaskStepProgress>();
 	connect(m_task.get(),
-			&Task::finished,
+			&Task::succeeded,
 			this,
 			[this, step_progress]()
 			{
@@ -201,7 +202,7 @@ void Flame::FileResolvingTask::netJobFinished()
 			return;
 		}
 	}
-	if (hashes.isEmpty())
+	if (hashes.isEmpty() || !APPLICATION->settings()->get("FallbackMRBlockedMods").toBool())
 	{
 		getFlameProjects();
 		return;
@@ -211,7 +212,7 @@ void Flame::FileResolvingTask::netJobFinished()
 	(dynamic_cast<NetJob*>(m_task.get()))->setAskRetry(false);
 	auto step_progress = std::make_shared<TaskStepProgress>();
 	connect(m_task.get(),
-			&Task::finished,
+			&Task::succeeded,
 			this,
 			[this, step_progress]()
 			{
@@ -243,14 +244,8 @@ void Flame::FileResolvingTask::netJobFinished()
 
 								auto file = Modrinth::loadIndexedPackVersion(entry);
 
-								// If there's more than one mod loader for this version, we can't know for sure
-								// which file is relative to each loader, so it's best to not use any one and
-								// let the user download it manually.
-								if (!file.loaders || hasSingleModLoaderSelected(file.loaders))
-								{
-									out.version.downloadUrl = file.downloadUrl;
-									qDebug() << "Found alternative on modrinth " << out.version.fileName;
-								}
+								out.version.downloadUrl = file.downloadUrl;
+								qDebug() << "Found alternative on modrinth " << out.version.fileName;
 							}
 							catch (Json::JsonException& e)
 							{
@@ -274,6 +269,7 @@ void Flame::FileResolvingTask::netJobFinished()
 			{
 				step_progress->state = TaskStepState::Failed;
 				stepProgress(*step_progress);
+				getFlameProjects();
 			});
 	connect(m_task.get(), &Task::stepProgress, this, &FileResolvingTask::propagateStepProgress);
 	connect(m_task.get(),

@@ -105,11 +105,14 @@ namespace projt::meta
 	  private:
 		void attemptLocalLoad();
 		void initiateRemoteFetch();
+		bool loadCachedMetadata(const QString& cachePath, QString* errorOut = nullptr);
+		void handleRemoteFailure(const QString& reason);
 		void finalizeLoad(MetaEntity::State newState);
 
 		MetaEntity* m_target;
 		Net::Mode m_mode;
 		NetJob::Ptr m_netTask;
+		bool m_canUseLocalFallback = false;
 	};
 
 } // namespace projt::meta

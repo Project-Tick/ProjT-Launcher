@@ -232,10 +232,7 @@ QVariant VersionProxyModel::data(const QModelIndex& index, int role) const
 					}
 				}
 			}
-			else
-			{
-				return sourceModel()->data(parentIndex, BaseVersionList::VersionIdRole);
-			}
+			return sourceModel()->data(parentIndex, BaseVersionList::VersionIdRole);
 		}
 		case Qt::DecorationRole:
 		{

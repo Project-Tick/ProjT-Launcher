@@ -51,10 +51,10 @@ namespace LaunchMenu
 		QObject::connect(normalLaunch, &QAction::triggered, [instance] { APPLICATION->launch(instance); });
 		QObject::connect(normalLaunchOffline,
 						 &QAction::triggered,
-						 [instance] { APPLICATION->launch(instance, false, false); });
+						 [instance] { APPLICATION->launch(instance, LaunchMode::Offline); });
 		QObject::connect(normalLaunchDemo,
 						 &QAction::triggered,
-						 [instance] { APPLICATION->launch(instance, false, true); });
+						 [instance] { APPLICATION->launch(instance, LaunchMode::Demo); });
 
 		QString profilersTitle = QObject::tr("Profilers");
 		menu->addSeparator()->setText(profilersTitle);

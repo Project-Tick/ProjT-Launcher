@@ -43,6 +43,7 @@
 
 #include "Packwiz.h"
 
+#include <algorithm>
 #include <QDebug>
 #include <QDir>
 #include <QObject>
@@ -51,6 +52,7 @@
 
 #include "FileSystem.h"
 #include "StringUtils.h"
+#include "Version.h"
 
 #include "modplatform/ModIndex.h"
 
@@ -62,6 +64,14 @@
 
 namespace Packwiz
 {
+	namespace
+	{
+		void sortMinecraftVersionsDescending(QStringList& versions)
+		{
+			std::sort(versions.begin(), versions.end(), [](const QString& left, const QString& right)
+					  { return Version(left) > Version(right); });
+		}
+	} // namespace
 
 	auto getRealIndexName(const QDir& index_dir, QString normalized_fname, bool should_find_match) -> QString
 	{
@@ -92,7 +102,7 @@ namespace Packwiz
 	}
 
 	// Helpers
-	static inline auto indexFileName(QString const& mod_slug) -> QString
+	static inline auto indexFileName(const QString& mod_slug) -> QString
 	{
 		if (mod_slug.endsWith(".pw.toml"))
 			return mod_slug;
@@ -153,7 +163,7 @@ namespace Packwiz
 		mod.side	   = mod_version.side == ModPlatform::Side::NoSide ? mod_pack.side : mod_version.side;
 		mod.loaders	   = mod_version.loaders;
 		mod.mcVersions = mod_version.mcVersion;
-		mod.mcVersions.sort();
+		sortMinecraftVersionsDescending(mod.mcVersions);
 		mod.releaseType = mod_version.version_type;
 
 		mod.version_number = mod_version.version_number;
@@ -414,7 +424,7 @@ namespace Packwiz
 						}
 					}
 				}
-				mod.mcVersions.sort();
+				sortMinecraftVersionsDescending(mod.mcVersions);
 			}
 		}
 		mod.version_number = table["x-projtlauncher-version-number"].value_or("");

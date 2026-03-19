@@ -440,6 +440,7 @@ void InstanceImportTask::processFlame()
 
 	connect(inst_creation_task.get(), &Task::aborted, this, &InstanceImportTask::emitAborted);
 	connect(inst_creation_task.get(), &Task::abortStatusChanged, this, &Task::setAbortable);
+	connect(inst_creation_task.get(), &Task::abortButtonTextChanged, this, &Task::setAbortButtonText);
 
 	connect(inst_creation_task.get(),
 			&Task::warningLogged,
@@ -634,6 +635,7 @@ void InstanceImportTask::processModrinth()
 
 	connect(inst_creation_task.get(), &Task::aborted, this, &InstanceImportTask::emitAborted);
 	connect(inst_creation_task.get(), &Task::abortStatusChanged, this, &Task::setAbortable);
+	connect(inst_creation_task.get(), &Task::abortButtonTextChanged, this, &Task::setAbortButtonText);
 
 	connect(inst_creation_task.get(),
 			&Task::warningLogged,

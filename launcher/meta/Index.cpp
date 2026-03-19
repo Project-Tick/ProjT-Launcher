@@ -96,8 +96,12 @@ namespace projt::meta
 			return existing;
 
 		auto newList = std::make_shared<MetaVersionList>(uid);
+		int row		 = m_components.size();
+		beginInsertRows(QModelIndex(), row, row);
 		m_componentIndex.insert(uid, newList);
 		m_components.append(newList);
+		bindComponentSignals(row, newList);
+		endInsertRows();
 
 		return newList;
 	}

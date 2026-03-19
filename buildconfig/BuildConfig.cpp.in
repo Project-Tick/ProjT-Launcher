@@ -131,6 +131,7 @@ Config::Config()
 
     NEWS_RSS_URL = "@Launcher_NEWS_RSS_URL@";
     NEWS_OPEN_URL = "@Launcher_NEWS_OPEN_URL@";
+    WIKI_URL = "@Launcher_WIKI_URL@";
     HELP_URL = "@Launcher_HELP_URL@";
     HUB_HOME_URL = "@Launcher_HUB_HOME_URL@";
     HUB_COMMUNITY_URL = "@Launcher_HUB_COMMUNITY_URL@";

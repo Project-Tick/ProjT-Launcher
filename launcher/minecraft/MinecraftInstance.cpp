@@ -60,6 +60,7 @@
  * ======================================================================== */
 
 #include "MinecraftInstance.h"
+#include "LaunchMode.h"
 #include "Application.h"
 #include "BuildConfig.h"
 #include "Commandline.h"
@@ -621,7 +622,7 @@ QMap<QString, QString> MinecraftInstance::getVariables()
 	out.insert("INST_ID", id());
 	out.insert("INST_DIR", QDir::toNativeSeparators(QDir(instanceRoot()).absolutePath()));
 	out.insert("INST_MC_DIR", QDir::toNativeSeparators(QDir(gameRoot()).absolutePath()));
-	out.insert("INST_JAVA", settings()->get("JavaPath").toString());
+	out.insert("INST_JAVA", QDir::toNativeSeparators(QDir(settings()->get("JavaPath").toString()).absolutePath()));
 	out.insert("INST_JAVA_ARGS", javaArguments().join(' '));
 	out.insert("NO_COLOR", "1");
 #ifdef Q_OS_MACOS
@@ -790,7 +791,7 @@ QStringList MinecraftInstance::processMinecraftArgs(AuthSessionPtr session, Mine
 		token_mapping["auth_uuid"]		   = session->uuid;
 		token_mapping["user_properties"]   = session->serializeUserProperties();
 		token_mapping["user_type"]		   = session->user_type;
-		if (session->demo)
+		if (session->launchMode == LaunchMode::Demo)
 		{
 			args_pattern += " --demo";
 		}
@@ -1228,9 +1229,7 @@ shared_qobject_ptr<projt::launch::LaunchPipeline> MinecraftInstance::createLaunc
 
 	// load meta
 	{
-		// Always try online mode for metadata downloads - only use offline if we truly have no network
-		// PlayableOffline means the player CAN play offline, not that they MUST be offline
-		auto mode = Net::Mode::Online;
+		auto mode = session->launchMode != LaunchMode::Offline ? Net::Mode::Online : Net::Mode::Offline;
 		process->appendStage(
 			makeShared<projt::launch::TaskBridgeStage>(pptr, makeShared<MinecraftLoadAndCheck>(this, mode)));
 	}
@@ -1252,13 +1251,10 @@ shared_qobject_ptr<projt::launch::LaunchPipeline> MinecraftInstance::createLaunc
 		process->appendStage(step);
 	}
 
-	// if we aren't in offline mode,.
-	if (session->status != AuthSession::PlayableOffline)
+	// if we aren't in offline mode
+	if (session->launchMode != LaunchMode::Offline)
 	{
-		if (!session->demo)
-		{
-			process->appendStage(makeShared<ClaimAccount>(pptr, session));
-		}
+		process->appendStage(makeShared<ClaimAccount>(pptr, session));
 		for (auto t : createUpdateTask())
 		{
 			process->appendStage(makeShared<projt::launch::TaskBridgeStage>(pptr, t));
