@@ -1,6 +1,20 @@
 ProjT Launcher
 ==============
 
+################
+!!!!!NOTICE!!!!!
+################
+
+As of March 24, 2026, the development of ProjT Launcher has ended. Simultaneously,
+PTlibzippy has also reached the end of its lifecycle. We are migrating you to MeshMC!
+MeshMC is a fork of MultiMC. Our reasons for this migration are the limited scope of
+our workspace, incompatible code styles, and licensing issues. Thank you.
+MeshMC URL: https://github.com/Project-Tick/MeshMC
+
+######################
+!!!!!NOTICE ENDED!!!!!
+######################
+
 A Minecraft launcher engineered for long-term maintainability, architectural clarity,
 and controlled ecosystem evolution.
 
